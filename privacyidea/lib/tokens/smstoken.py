@@ -378,6 +378,7 @@ class SmsTokenClass(HotpTokenClass):
         :rtype: int
         """
         options = options or {}
+
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             if safe_compare(options.get("data"), anOtpVal):

@@ -2,6 +2,9 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
+import logging
+
+from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
@@ -117,11 +120,8 @@ class YubikeyTokenTestCase(MyTestCase):
         r, opt = YubikeyTokenClass.check_yubikey_pass(
             "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
         self.assertFalse(r)
-        #self.assertTrue(opt.get("action_detail") ==
-        #                "The serial UBAM@1382015 could not be found!", opt)
         self.assertTrue(opt.get("action_detail") ==
                         "The prefix fcebeeejedecebeg could not be found!", opt)
-
 
         # check for an invalid OTP
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[0])
@@ -181,7 +181,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
                 "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
-        ]
+                ]
 
         token = init_token({"type": "yubikey",
                             "otpkey": otpkey,
@@ -218,7 +218,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
                 "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
-        ]
+                ]
 
         token = init_token({"type": "yubikey",
                             "otpkey": otpkey,
@@ -245,7 +245,36 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue("status=OK" in result, result)
         self.assertTrue("nonce={0!s}".format(nonce) in result, result)
 
-    def test_98_wrong_tokenid(self):
+    def test_20_broken_otp_value(self):
+        token = init_token({"type": "yubikey",
+                            "otpkey": self.otpkey,
+                            "otplen": len(self.valid_otps[0])})
+        r = token.check_otp(self.valid_otps[0])
+        self.assertGreater(r, 0, r)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp(self.valid_otps[1][:-1]))
+            # we have OTPs with 16 chars of public uid and 32 chars of OTP
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (47 != 48)'))
+            self.assertEqual(-1, token.check_otp(self.valid_otps[2] + "a"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (49 != 48)'))
+            # trigger a CRC-Checksum failure
+            self.assertEqual(-3, token.check_otp(self.valid_otps[3][:-1] + "k"))
+            lc.check_present(
+                ('privacyidea.lib.tokens.yubikeytoken', 'INFO',
+                 f'CRC checksum for token {token.token.serial!r} failed'))
+            # trigger a modhex-decode error
+            self.assertEqual(-4, token.check_otp(self.valid_otps[3][:-1] + "a"))
+        # check an all-caps Yubikey-OTP
+        self.assertLessEqual(0, token.check_otp(self.valid_otps[4].upper()))
+        token.delete_token()
+
+    def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
         token.add_tokeninfo("yubikey.tokenid", "wrongid!")
@@ -255,8 +284,46 @@ class YubikeyTokenTestCase(MyTestCase):
         r = token.check_otp(self.further_otps[2])
         self.assertTrue(r == -2, r)
 
-    def test_99_delete_token(self):
+    def test_98_delete_token(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
         # delete the token
         token.delete_token()
+
+    def test_99_different_public_uid_lenghts(self):
+        pui = ["e", "ec", "ece", "eceb", "ecebe", "ecebee", "ecebeee", "ecebeeej", "ecebeeeje", "ecebeeejed",
+               "ecebeeejede", "ecebeeejedecebe", "ecebeeejedecebeg"]
+        for id in pui:
+            new_otps = [
+                id + "fcniufvgvjturjgvinhebbbertjnihit",
+                id + "tbkfkdhnfjbjnkcbtbcckklhvgkljifu",
+                id + "ktvkekfgufndgbfvctgfrrkinergbtdj",
+                id + "jbefledlhkvjjcibvrdfcfetnjdjitrn",
+                id + "druecevifbfufgdegglttghghhvhjcbh",
+                id + "nvfnejvhkcililuvhntcrrulrfcrukll",
+                id + "kttkktdergcenthdredlvbkiulrkftuk",
+                id + "hutbgchjucnjnhlcnfijckbniegbglrt",
+                id + "vneienejjnedbfnjnnrfhhjudjgghckl",
+            ]
+            db_token = Token(self.serial1, tokentype="yubikey")
+            db_token.save()
+            token = YubikeyTokenClass(db_token)
+            token.set_otpkey(self.otpkey)
+            token.set_otplen(len(id) + 32)
+            token.set_pin(self.pin)
+            token.save()
+            self.assertTrue(token.token.serial == self.serial1, token)
+            self.assertTrue(token.token.tokentype == "yubikey", token.token)
+            self.assertTrue(token.type == "yubikey", token)
+            class_prefix = token.get_class_prefix()
+            self.assertTrue(class_prefix == "UBAM", class_prefix)
+            self.assertTrue(token.get_class_type() == "yubikey", token)
+
+            # Test a bunch of otp values
+            old_r = 0
+            for otp in new_otps:
+                r = token.check_otp(otp)
+                # check if the newly returned counter is bigger than the old one
+                self.assertTrue(r > old_r, (r, old_r))
+                old_r = r
+            token.delete_token()

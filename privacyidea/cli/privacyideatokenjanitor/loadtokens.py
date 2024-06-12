@@ -52,8 +52,7 @@ loadtokens_cli = AppGroup("load")
 
 
 @loadtokens_cli.command("load")
-@click.option('--pskc',
-              help='Import this PSKC file.')
+@click.argument('pskc', type=click.File())
 @click.option('--preshared_key_hex',
               help='The AES encryption key.')
 @click.option('--validate_mac', default='check_fail_hard',
@@ -63,12 +62,11 @@ loadtokens_cli = AppGroup("load")
                    "'check_fail_hard' : Only import tokens if all HMAC are valid.")
 def loadtokens(pskc, preshared_key_hex, validate_mac):
     """
-    Loads token data from a PSKC file.
+    Loads token data from the PSKC file.
     """
     from privacyidea.lib.importotp import parsePSKCdata
 
-    with open(pskc, 'r') as pskcfile:
-        file_contents = pskcfile.read()
+    file_contents = pskc.read()
 
     tokens, not_parsed_tokens = parsePSKCdata(file_contents,
                                               preshared_key_hex=preshared_key_hex,

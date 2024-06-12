@@ -40,7 +40,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.utils import determine_logged_in_userparams
 from privacyidea.lib import _, lazy_gettext
@@ -292,6 +292,7 @@ class TotpTokenClass(HotpTokenClass):
         # return the current timestamp
         return datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
