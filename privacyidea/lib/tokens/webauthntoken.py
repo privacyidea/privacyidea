@@ -455,7 +455,7 @@ from privacyidea.models import Challenge
 
 IMAGES = IMAGES
 
-DEFAULT_DESCRIPTION = _('Generic WebAuthn Token')
+DEFAULT_DESCRIPTION = lazy_gettext('Generic WebAuthn Token')
 
 # Policy defaults
 DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
@@ -843,7 +843,7 @@ class WebAuthnTokenClass(TokenClass):
         transaction_id = getParam(param, "transaction_id", optional)
         reg_data = getParam(param, "regdata", optional)
         client_data = getParam(param, "clientdata", optional)
-        automatic_description = DEFAULT_DESCRIPTION
+        automatic_description = str(DEFAULT_DESCRIPTION)
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT

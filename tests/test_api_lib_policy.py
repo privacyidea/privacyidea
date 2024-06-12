@@ -4350,7 +4350,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
-        self.assertIn(EXPIRE_MESSAGE, jresult.get("result").get("value").get("supportmail"))
+        self.assertIn(str(EXPIRE_MESSAGE), jresult.get("result").get("value").get("supportmail"))
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

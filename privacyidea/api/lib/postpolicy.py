@@ -70,7 +70,7 @@ from privacyidea.lib.subscriptions import (subscription_status,
 from privacyidea.lib.utils import create_img, get_version
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
-BODY_TEMPLATE = _("""
+BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
 <--- Please provide as many additional information as possible --->
@@ -694,16 +694,16 @@ def get_webui_settings(request, response):
                     subject = "Problem with {0!s}".format(version)
                     check_subscription("privacyidea")
                 except SubscriptionError:
-                    subject = EXPIRE_MESSAGE
+                    subject = str(EXPIRE_MESSAGE)
                 # Check policy, if the admin is allowed to save config
                 action_allowed = Match.generic(g, scope=role,
                                                action=ACTION.SYSTEMWRITE,
                                                adminuser=loginname,
                                                adminrealm=realm).allowed()
                 if action_allowed:
-                    body = BODY_TEMPLATE.format(subscriptions=subscriptions,
-                                                version=version,
-                                                subscriber_name=subscription.get("for_name"))
+                    body = str(BODY_TEMPLATE).format(subscriptions=subscriptions,
+                                                     version=version,
+                                                     subscriber_name=subscription.get("for_name"))
 
                     body = quote(body)
                     content["result"]["value"]["supportmail"] = \

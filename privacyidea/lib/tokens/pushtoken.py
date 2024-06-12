@@ -66,7 +66,7 @@ import time
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
+DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your mobile device!")
 ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
                                     " to check for a new Login request.")
 DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
@@ -885,9 +885,7 @@ class PushTokenClass(TokenClass):
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
-                                                 options) or _("Please confirm the"
-                                                               " authentication on your mobile device!")
-
+                                                 options) or str(DEFAULT_CHALLENGE_TEXT)
         data = None
         # Initially we assume there is no error from Firebase
         res = True
