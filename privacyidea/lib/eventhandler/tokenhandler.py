@@ -616,7 +616,7 @@ class TokenEventHandler(BaseEventHandler):
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
             if is_true(handler_options.get("container")):
-                container_serial = self._get_container_serial(request, content, g)
+                container_serial = self._get_container_serial(request, content)
                 if container_serial:
                     add_tokens_to_container(container_serial, [t.get_serial()])
                 else:

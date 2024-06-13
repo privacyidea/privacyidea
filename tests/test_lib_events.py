@@ -1897,6 +1897,19 @@ class ContainerEventTestCase(MyTestCase):
 
         return options
 
+    def test_00_missing_container_serial(self):
+        options = self.setup_request()
+        c_handler = ContainerEventHandler()
+        actions = c_handler.actions
+
+        for action in actions:
+            # All actions should fail if no container serial is provided
+            if action == C_ACTION_TYPE.INIT:
+                # except for creating a container
+                continue
+            res = c_handler.do(action, options=options)
+            self.assertFalse(res)
+
     def test_01_init_container(self):
         # check actions
         actions = ContainerEventHandler().actions
@@ -2217,7 +2230,7 @@ class ContainerEventTestCase(MyTestCase):
 
         # Remove all tokens for container without tokens
         res = c_handler.do(C_ACTION_TYPE.REMOVE_TOKENS, options=options)
-        self.assertFalse(res)
+        self.assertTrue(res)
 
         # Clean up
         container.delete()
@@ -2286,6 +2299,51 @@ class ContainerEventTestCase(MyTestCase):
 
         # Clean up
         container.delete()
+
+    def test_09_enable_disable_all_tokens(self):
+        # create container
+        container_serial = init_container({"type": "generic"})
+        container = find_container_by_serial(container_serial)
+
+        # create tokens
+        token_serial_01 = "SPASS01"
+        token_01 = init_token({"serial": token_serial_01, "type": "spass"})
+        token_serial_02 = "SPASS02"
+        token_02 = init_token({"serial": token_serial_02, "type": "spass"})
+
+        # Setup request and options
+        options = self.setup_request(container_serial=container_serial)
+
+        c_handler = ContainerEventHandler()
+
+        # Disable all tokens if container does not have any token
+        res = c_handler.do(C_ACTION_TYPE.DISABLE_TOKENS, options=options)
+        self.assertTrue(res)
+
+        # Add tokens to container
+        container.add_token(token_01)
+        container.add_token(token_02)
+
+        # Disable all tokens
+        res = c_handler.do(C_ACTION_TYPE.DISABLE_TOKENS, options=options)
+        self.assertTrue(res)
+
+        # Check that both tokens are disabled
+        self.assertFalse(token_01.is_active())
+        self.assertFalse(token_02.is_active())
+
+        # Enable all tokens
+        res = c_handler.do(C_ACTION_TYPE.ENABLE_TOKENS, options=options)
+        self.assertTrue(res)
+
+        # Check that both tokens are enabled
+        self.assertTrue(token_01.is_active())
+        self.assertTrue(token_02.is_active())
+
+        # clean up
+        container.delete()
+        token_01.delete_token()
+        token_02.delete_token()
 
 
 class TokenEventTestCase(MyTestCase):

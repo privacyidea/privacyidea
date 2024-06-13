@@ -9,7 +9,7 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import logging
 
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, enable_token
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ class ACTION_TYPE(object):
     ADD_CONTAINER_INFO = "add container info"
     DELETE_CONTAINER_INFO = "delete container info"
     REMOVE_TOKENS = "remove all tokens"
+    DISABLE_TOKENS = "disable all tokens"
+    ENABLE_TOKENS = "enable all tokens"
 
 
 class ContainerEventHandler(BaseEventHandler):
@@ -120,7 +122,9 @@ class ContainerEventHandler(BaseEventHandler):
                      {"type": "str",
                       "description": _("Set the value for the key above.")}
                  },
-            ACTION_TYPE.DELETE_CONTAINER_INFO: {}
+            ACTION_TYPE.DELETE_CONTAINER_INFO: {},
+            ACTION_TYPE.DISABLE_TOKENS: {},
+            ACTION_TYPE.ENABLE_TOKENS: {}
         }
         return actions
 
@@ -142,7 +146,7 @@ class ContainerEventHandler(BaseEventHandler):
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
-        container_serial = self._get_container_serial(request, content, g)
+        container_serial = self._get_container_serial(request, content)
         if not container_serial:
             container_serial = self._get_container_serial_from_token(request, content, g)
 
@@ -155,7 +159,9 @@ class ContainerEventHandler(BaseEventHandler):
                               ACTION_TYPE.REMOVE_TOKENS,
                               ACTION_TYPE.SET_CONTAINER_INFO,
                               ACTION_TYPE.ADD_CONTAINER_INFO,
-                              ACTION_TYPE.DELETE_CONTAINER_INFO
+                              ACTION_TYPE.DELETE_CONTAINER_INFO,
+                              ACTION_TYPE.DISABLE_TOKENS,
+                              ACTION_TYPE.ENABLE_TOKENS
                               ]:
             if container_serial:
                 log.info(f"{action} for container {container_serial}")
@@ -228,7 +234,6 @@ class ContainerEventHandler(BaseEventHandler):
                     if len(token_serials) > 0:
                         remove_tokens_from_container(container_serial, token_serials)
                     else:
-                        ret = False
                         log.debug(f"No tokens found to remove from container {container_serial}")
 
                 elif action.lower() == ACTION_TYPE.SET_CONTAINER_INFO:
@@ -248,9 +253,29 @@ class ContainerEventHandler(BaseEventHandler):
                     container = find_container_by_serial(container_serial)
                     container.delete_container_info()
 
+                elif action.lower() == ACTION_TYPE.DISABLE_TOKENS:
+                    container = find_container_by_serial(container_serial)
+                    tokens = container.get_tokens()
+                    for token in tokens:
+                        token.enable(False)
+                        token.save()
+
+                    if len(tokens) == 0:
+                        log.debug(f"No tokens found to disable in container {container_serial}")
+
+                elif action.lower() == ACTION_TYPE.ENABLE_TOKENS:
+                    container = find_container_by_serial(container_serial)
+                    tokens = container.get_tokens()
+                    for token in tokens:
+                        token.enable(True)
+                        token.save()
+
+                    if len(tokens) == 0:
+                        log.debug(f"No tokens found to enable in container {container_serial}")
+
             else:
-                log.info(f"Action {action} requires serial number. But no valid serial "
-                         f"number could be found in request {request}.")
+                log.debug(f"Action {action} requires serial number. But no valid serial "
+                          f"number could be found in request {request}.")
                 ret = False
 
         if action.lower() == ACTION_TYPE.INIT:
@@ -288,6 +313,6 @@ class ContainerEventHandler(BaseEventHandler):
             else:
                 ret = False
                 log.debug(f"Action {action} requires container type. But no type "
-                         f"could be found in the handler options {handler_options}.")
+                          f"could be found in the handler options {handler_options}.")
 
         return ret
