@@ -366,12 +366,12 @@ The action is only triggered, if the token is or is not in a container.
 
 **container_state**
 
-The action is only triggered if the given value is one of the container states. The container can have other states
+The action is only triggered if the container is in all specified states. The container can have other states
 besides the given value.
 
-**container_single_state**
+**container_exact_state**
 
-The action is only triggered if the given value is the only state of the container.
+The action is only triggered if the container is exactly in all specified states. No additional states are allowed.
 
 **container_has_owner**
 

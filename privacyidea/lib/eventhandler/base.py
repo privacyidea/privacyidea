@@ -86,7 +86,7 @@ class CONDITION(object):
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
     CONTAINER_STATE = "container_state"
-    CONTAINER_SINGLE_STATE = "container_single_state"
+    CONTAINER_EXACT_STATE = "container_exact_state"
     CONTAINER_HAS_OWNER = "container_has_owner"
     CONTAINER_TYPE = "container_type"
     CONTAINER_HAS_TOKEN = "container_has_token"
@@ -153,7 +153,7 @@ class BaseEventHandler(object):
         """
         realms = get_realms()
         resolvers = get_resolver_list()
-        container_states = list(TokenContainerClass.get_state_types().keys())
+        container_states = [{"name": state} for state in TokenContainerClass.get_state_types().keys()]
         cond = {
             CONDITION.ROLLOUT_STATE: {
                 "type": "str",
@@ -341,14 +341,14 @@ class BaseEventHandler(object):
                 "group": GROUP.GENERAL
             },
             CONDITION.CONTAINER_STATE: {
-                "type": "str",
-                "desc": _("The container is in a specific state, but can additionally be in other states."),
+                "type": "multi",
+                "desc": _("The container is in the specified states, but can additionally be in other states."),
                 "value": container_states,
                 "group": GROUP.CONTAINER
             },
-            CONDITION.CONTAINER_SINGLE_STATE: {
-                "type": "str",
-                "desc": _("The container is only in the specified state."),
+            CONDITION.CONTAINER_EXACT_STATE: {
+                "type": "multi",
+                "desc": _("The container is only in the specified states."),
                 "value": container_states,
                 "group": GROUP.CONTAINER
             },
@@ -807,20 +807,27 @@ class BaseEventHandler(object):
         if container:
 
             if CONDITION.CONTAINER_STATE in conditions:
-                cond = conditions.get(CONDITION.CONTAINER_STATE)
+                cond = conditions.get(CONDITION.CONTAINER_STATE).split(',')
                 container_states = [token_container_states.state for token_container_states in container.get_states()]
-                if cond not in container_states:
-                    log.debug(f"Condition container_state {cond} for container {container.serial} "
-                              "not fulfilled.")
-                    return False
+                for cond_state in cond:
+                    if cond_state not in container_states:
+                        log.debug(f"Condition container_state {cond_state} for container {container.serial} "
+                                  "not fulfilled.")
+                        return False
 
-            if CONDITION.CONTAINER_SINGLE_STATE in conditions:
-                cond = conditions.get(CONDITION.CONTAINER_SINGLE_STATE)
+            if CONDITION.CONTAINER_EXACT_STATE in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_EXACT_STATE).split(',')
                 container_states = [token_container_states.state for token_container_states in container.get_states()]
-                if cond not in container_states or len(container_states) > 1:
+                if len(cond) != len(container_states):
                     log.debug(f"Condition container_single_state {cond} for container {container.serial} "
                               "not fulfilled.")
                     return False
+
+                for cond_state in cond:
+                    if cond_state not in container_states:
+                        log.debug(f"Condition container_state {cond_state} for container {container.serial} "
+                                  "not fulfilled.")
+                        return False
 
             if CONDITION.CONTAINER_HAS_OWNER in conditions:
                 has_container_owner = len(container.get_users()) > 0

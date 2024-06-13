@@ -824,7 +824,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Check if the condition does not match due to multiple states
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_SINGLE_STATE: "disabled"}},
+             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled"}},
              "request": req,
              "response": resp
              }
@@ -834,7 +834,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Check if the condition does not match due to wrong state
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_SINGLE_STATE: "active"}},
+             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}},
              "request": req,
              "response": resp
              }
@@ -842,10 +842,9 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Check if the condition match
-        container.set_states(["disabled"])
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_SINGLE_STATE: "disabled"}},
+             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled,lost"}},
              "request": req,
              "response": resp
              }
