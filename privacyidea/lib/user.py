@@ -69,7 +69,7 @@ class User(object):
     The user has the attributes
       login, realm and resolver.
     Usually a user can be found via "login@realm".
-    
+
     A user object with an empty login and realm should not exist,
     whereas a user object could have an empty resolver.
     """
@@ -188,15 +188,16 @@ class User(object):
         return not self.is_empty()
 
     __nonzero__ = __bool__
-    
+
     @log_with(log)
     def get_ordererd_resolvers(self):
         """
-        returns a list of resolvernames ordered by priority.
+        returns a list of resolver names ordered by priority.
         The resolver with the lowest priority is the first.
         If resolvers have the same priority, they are ordered alphabetically.
 
-        :return: list or resolvernames
+        :return: list of resolver names
+        :rtype: list
         """
         resolver_tuples = []
         realm_config = get_realms(self.realm)
@@ -205,10 +206,10 @@ class User(object):
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
-                             resolver.get("priority") or 1000))
+                                    resolver.get("priority") or 1000))
 
         # sort the resolvers by the 2nd entry in the tuple, the priority
-        resolvers = sorted(resolver_tuples, key=lambda resolver: resolver[1])
+        resolvers = sorted(resolver_tuples, key=lambda res: res[1])
         resolvers = [r[0] for r in resolvers]
         return resolvers
 
@@ -230,7 +231,7 @@ class User(object):
         """
         if self.resolver:
             return [self.resolver]
-        
+
         resolvers = []
         for resolvername in self.get_ordererd_resolvers():
             # test, if the user is contained in this resolver
@@ -353,14 +354,14 @@ class User(object):
     def get_user_phone(self, phone_type='phone', index=None):
         """
         Returns the phone number or a list of phone numbers of a user.
-    
+
         :param phone_type: The type of the phone, i.e. either mobile or
                            phone (land line)
         :type phone_type: string
         :param index: The index of the selected phone number of list of the phones of the user.
             If the index is given, this phone number as string is returned.
             If the index is omitted, all phone numbers are returned.
-    
+
         :returns: list with phone numbers of this user object
         """
         userinfo = self.info
@@ -388,7 +389,7 @@ class User(object):
         But if the user object has no realm but only a resolver,
         than all realms, containing this resolver are returned.
         This function is used for the policy module
-        
+
         :return: realms of the user
         :rtype: list
         """
@@ -413,12 +414,12 @@ class User(object):
                         log.debug("added realm %r to Realms due to "
                                   "resolver %r" % (key, self.resolver))
         return Realms
-    
+
     @log_with(log, log_entry=False)
     def check_password(self, password):
         """
         The password of the user is checked against the user source
-        
+
         :param password: The clear text password
         :return: the username of the authenticated user.
                  If unsuccessful, returns None
@@ -447,30 +448,30 @@ class User(object):
         except Exception as e:  # pragma: no cover
             log.error("Error checking password within module {0!r}".format(e))
             log.debug("{0!s}".format(traceback.format_exc()))
-    
+
         return success
-    
+
     @log_with(log)
     def get_search_fields(self):
         """
         Return the valid search fields of a user.
         The search fields are defined in the UserIdResolver class.
-        
+
         :return: searchFields with name (key) and type (value)
         :rtype: dict
         """
         searchFields = {}
-    
+
         for reso in self._get_resolvers():
             # try to load the UserIdResolver Class
             try:
                 y = get_resolver_object(reso)
                 sf = y.getSearchFields()
                 searchFields[reso] = sf
-    
+
             except Exception as e:  # pragma: no cover
                 log.warning("module {0!r}: {1!r}".format(reso, e))
-    
+
         return searchFields
 
     # If passwords should not be logged, we hide it from the log entry
@@ -599,7 +600,7 @@ def split_user(username):
     and the username and an empty realm will be returned.
 
     We can also split realm\\user to (user, realm)
-    
+
     :param username: the username to split
     :type username: string
     :return: username and realm
@@ -704,7 +705,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
     if user is not None:
         user_resolver = user.resolver
         user_realm = user.realm
-        
+
     # Append all possible resolvers
     if param_resolver:
         resolvers.append(param_resolver)
@@ -762,7 +763,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
 def get_username(userid, resolvername):
     """
     Determine the username for a given id and a resolvername.
-    
+
     :param userid: The id of the user in a resolver
     :type userid: string
     :param resolvername: The name of the resolver

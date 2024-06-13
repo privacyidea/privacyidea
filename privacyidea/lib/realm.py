@@ -35,8 +35,6 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 """
-import uuid
-
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp)
@@ -53,11 +51,30 @@ log = logging.getLogger(__name__)
 def get_realms(realmname=None):
     """
     Either return all defined realms or a specific realm.
+    The dictionary looks like this:
+
+    {
+      'realmname': {
+        'id': <id of the realm>,
+        'option': <>,
+        'default': <default realm>,
+        'resolver': [
+          {
+            'name': <resolver name>',
+            'type': <resolver type>,
+            'priority': <resolver priority>,
+            'node': <resolver node>
+          },
+          {
+            ...
+          }
+        ]
+    }
 
     :param realmname: the realm, that is of interest. If not given, all realms
                       are returned
     :type realmname: string
-    :return: a dict with realm description like
+    :return: a dictionary with the realm description
     :rtype: dict
     """
     config_object = get_config_object()
@@ -85,6 +102,7 @@ def get_realm(realmname):
 def get_realm_id(realmname):
     """
     Returns the realm_id for a realm name
+
     :param realmname: The name of the realm
     :return: The ID of the realm. If the realm does not exist, returns None.
     """
@@ -98,7 +116,6 @@ def realm_is_defined(realm):
 
     :param realm: the realm, that should be verified
     :type  realm: string
-
     :return: found or not found
     :rtype: boolean
     """
@@ -156,17 +173,17 @@ def delete_realm(realmname):
     :type  realmname: string
     """
     # Check if there is a default realm
-    defRealm = get_default_realm()
-    hadDefRealmBefore = (defRealm != "")
+    def_realm = get_default_realm()
+    had_def_realm_before = (def_realm != "")
 
     ret = fetch_one_resource(Realm, name=realmname).delete()
 
     # If there was a default realm before
     # and if there is only one realm left, we set the
     # remaining realm the default realm
-    if hadDefRealmBefore is True:
-        defRealm = get_default_realm()
-        if not defRealm:
+    if had_def_realm_before is True:
+        def_realm = get_default_realm()
+        if not def_realm:
             realms = get_realms()
             if len(realms) == 1:
                 for key in realms:
@@ -213,7 +230,8 @@ def set_realm(realm, resolvers=None):
     db_realm = Realm.query.filter_by(name=realm).first()
     if not db_realm:
         # create a new database entry for realm
-        db_realm = Realm(realm).save()
+        db_realm = Realm(realm)
+        db_realm.save()
         realm_created = True
 
     if not realm_created:

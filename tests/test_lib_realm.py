@@ -69,14 +69,17 @@ class RealmTestCase(MyTestCase):
                                     [
                                         {'name': self.resolvername1},
                                         {'name': self.resolvername2}])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 2)
+        self.assertEqual(0, len(failed))
+        self.assertEqual(2, len(added))
 
         # test the realms
         realms = get_realms()
         self.assertTrue(self.realm1 in realms, realms)
         self.assertTrue(realms.get("realm1").get("default"), realms)
         self.assertTrue(self.realm_dot in realms, realms)
+        # check that no node is set
+        self.assertEqual("", realms.get("realm1").get("resolver")[0].get("node"), realms)
+        self.assertEqual("", realms.get("realm1").get("resolver")[1].get("node"), realms)
 
         # delete dot realm
         delete_realm(self.realm_dot)
@@ -168,19 +171,51 @@ class RealmTestCase(MyTestCase):
         self.assertIn(uuid1, [x.get('node') for x in resolver_list], resolver_list)
         self.assertIn(uuid2, [x.get('node') for x in resolver_list], resolver_list)
 
-        # same rsolver with same node
+        # different resolvers, one with node, one without
         (added, failed) = set_realm("realm1",
                                     [
                                         {'name': self.resolvername1,
                                          'node': uuid.UUID(uuid1)},
-                                        {'name': self.resolvername1}])
+                                        {'name': self.resolvername2}])
         self.assertIn(self.resolvername1, added, added)
+        self.assertIn(self.resolvername2, added, added)
         self.assertEqual(len(failed), 0, failed)
         realms_dict = get_realms()
         self.assertIn("realm1", realms_dict, realms_dict)
         resolver_list = realms_dict["realm1"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
-        self.assertIn(uuid1, [x.get('node') for x in resolver_list], resolver_list)
+        self.assertEqual(
+            uuid1,
+            next(x.get('node') for x in resolver_list if x.get("name") == self.resolvername1),
+            resolver_list)
+        self.assertEqual(
+            "",
+            next(x.get('node') for x in resolver_list if x.get("name") == self.resolvername2),
+            resolver_list)
+
+        # different resolvers, different nodes
+        (added, failed) = set_realm("realm1",
+                                    [
+                                        {'name': self.resolvername1,
+                                         'node': uuid.UUID(uuid1)},
+                                        {'name': self.resolvername2,
+                                         'node': uuid.UUID(uuid2)}])
+        self.assertIn(self.resolvername1, added, added)
+        self.assertIn(self.resolvername2, added, added)
+        self.assertEqual(len(failed), 0, failed)
+        realms_dict = get_realms()
+        self.assertIn("realm1", realms_dict, realms_dict)
+        resolver_list = realms_dict["realm1"]["resolver"]
+        self.assertEqual(len(resolver_list), 2, realms_dict)
+        self.assertEqual(
+            uuid1,
+            next(x.get('node') for x in resolver_list if x.get("name") == self.resolvername1),
+            resolver_list)
+        self.assertEqual(
+            uuid2,
+            next(x.get('node') for x in resolver_list if x.get("name") == self.resolvername2),
+            resolver_list)
+
         delete_realm('realm1')
         NodeName.query.filter_by(id=uuid1).delete()
         NodeName.query.filter_by(id=uuid2).delete()
