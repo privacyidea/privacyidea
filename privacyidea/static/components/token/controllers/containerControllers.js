@@ -1,6 +1,6 @@
-myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
+myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state', 'ContainerFactory', '$stateParams',
     'AuthFactory', 'ConfigFactory', 'TokenFactory',
-    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
+    function createContainerController($scope, $http, $q, $state, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
                                        TokenFactory) {
         $scope.formData = {
             containerTypes: {},
@@ -106,7 +106,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
 
             ContainerFactory.createContainer(params, function (data) {
-                // TODO where to go after creation?
+                $state.go("token.containerdetails", {"containerSerial": data.result.value.serial});
             });
         };
     }]);
@@ -214,7 +214,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         // Get the container
         $scope.container = {};
         $scope.containerOwner = {};
-        $scope.get = function () {
+        $scope.showDialog = {};
+        $scope.getContainer = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 $scope.container = data.result.value.containers[0];
                 $scope.containerOwner = $scope.container.users[0];
@@ -224,9 +225,14 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 angular.forEach($scope.container.states, function (state) {
                     $scope.excludeStates(state);
                 });
+
+                angular.forEach($scope.container.tokens, function (token) {
+                    $scope.showDialog[token.serial] = false;
+                });
             });
+            // update token list for add
+            $scope.get();
         }
-        $scope.get();
 
         $scope.excludeStates = function (state) {
             // Deselect excluded states based on the selected state
@@ -253,7 +259,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 }
             });
             let params = {"serial": $scope.containerSerial, "states": states};
-            ContainerFactory.setStates(params, $scope.get);
+            ContainerFactory.setStates(params, $scope.getContainer);
             $scope.changed = false;
         }
 
@@ -273,7 +279,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.setDescription = function (description) {
-            ContainerFactory.setDescription($scope.containerSerial, description, $scope.get);
+            ContainerFactory.setDescription($scope.containerSerial, description, $scope.getContainer);
         };
 
         $scope.newUser = {user: "", realm: $scope.defaultRealm};
@@ -285,7 +291,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     realm: $scope.newUser.realm,
                     pin: $scope.newUser.pin
                 }
-                , $scope.get);
+                , $scope.getContainer);
         };
 
         $scope.unassignUser = function () {
@@ -296,7 +302,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     realm: $scope.containerOwner.realm,
                     pin: $scope.containerOwner.pin
                 }
-                , $scope.get);
+                , $scope.getContainer);
         };
 
         $scope.editContainernfo = false;
@@ -318,12 +324,49 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         }
 
-        ContainerFactory.updateLastSeen($scope.containerSerial);
-
         // listen to the reload broadcast
-        $scope.$on("piReload", $scope.get);
+        $scope.$on("piReload", $scope.getContainer);
 
         // ------------------- Token Actions -------------------------------
+        $scope.tokensPerPage = $scope.token_page_size;
+        $scope.tokenParams = {page: 1, sortdir: "asc"};
+        $scope.reverse = false;
+
+        $scope.activateAddTokens = function () {
+            $scope.addTokens = true;
+            $scope.get();
+        };
+
+        // Note: This function has to be named "get", since it is called by the pifilter directive
+        $scope.get = function (live_search) {
+            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
+                $scope.tokenParams.serial = "*" + ($scope.serialFilter || "") + "*";
+                $scope.tokenParams.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
+                $scope.tokenParams.type = "*" + ($scope.typeFilter || "") + "*";
+                $scope.tokenParams.description = "*" + ($scope.descriptionFilter || "") + "*";
+                $scope.tokenParams.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
+                $scope.tokenParams.userid = "*" + ($scope.userIdFilter || "") + "*";
+                $scope.tokenParams.resolver = "*" + ($scope.resolverFilter || "") + "*";
+                $scope.tokenParams.pagesize = $scope.token_page_size;
+                $scope.tokenParams.sortby = $scope.sortby;
+                if ($scope.reverse) {
+                    $scope.tokenParams.sortdir = "desc";
+                } else {
+                    $scope.tokenParams.sortdir = "asc";
+                }
+                TokenFactory.getTokens(function (data) {
+                    if (data) {
+                        $scope.tokendata = data.result.value;
+                    }
+                }, $scope.tokenParams);
+            }
+        };
+
+        // Change the pagination for the add token list
+        $scope.pageChanged = function () {
+            $scope.get(false);
+        };
+
         $scope.getAllTokenSerials = function () {
             let tokenSerials = [];
             angular.forEach($scope.container.tokens, function (token) {
@@ -349,15 +392,38 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             if (tokenSerialList.length > 0) {
-                TokenFactory.disableMultiple({'serial_list': tokenSerialList}, $scope.get);
+                TokenFactory.disableMultiple({'serial_list': tokenSerialList}, $scope.getContainer);
             }
         };
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             if (tokenSerialList.length > 0) {
-                TokenFactory.enableMultiple({'serial_list': tokenSerialList}, $scope.get);
+                TokenFactory.enableMultiple({'serial_list': tokenSerialList}, $scope.getContainer);
             }
+        };
+
+        $scope.removeAllTokens = function () {
+            let tokenSerialList = $scope.getAllTokenSerials();
+            if (tokenSerialList.length > 0) {
+                ContainerFactory.removeAllTokensFromContainer({
+                    'serial': $scope.containerSerial,
+                    'serial_list': tokenSerialList
+                }, $scope.getContainer);
+            }
+        };
+
+        $scope.showDialogAll = false;
+        $scope.deleteAllTokens = function () {
+            let tokenSerialList = $scope.getAllTokenSerials();
+            angular.forEach(tokenSerialList, function (token, index) {
+                if (index == tokenSerialList.length - 1) {
+                    // last token: update container with callback
+                    TokenFactory.delete(token, $scope.getContainer);
+                } else {
+                    TokenFactory.delete(token);
+                }
+            });
         };
 
         // Selection looks like this {"TOTP0001B29F":true, "OATH0002EB1F":false}
@@ -410,7 +476,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 ContainerFactory.removeAllTokensFromContainer({
                     'serial': $scope.containerSerial,
                     'serial_list': selectedTokens
-                }, $scope.get);
+                }, $scope.getContainer);
                 res = true;
             }
             return res;
@@ -423,7 +489,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 angular.forEach(selectedTokens, function (token, index) {
                     if (index == selectedTokens.length - 1) {
                         // last token: update container with callback
-                        TokenFactory.delete(token, $scope.get);
+                        TokenFactory.delete(token, $scope.getContainer);
                     } else {
                         TokenFactory.delete(token);
                     }
@@ -433,15 +499,46 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             return res;
         };
 
+        $scope.addTokens = false;
+        $scope.addTokensToContainer = function () {
+
+        }
+
         // single token function
         $scope.resetFailcount = function (serial) {
-            TokenFactory.reset(serial, $scope.get);
+            TokenFactory.reset(serial, $scope.getContainer);
         };
         $scope.disableToken = function (serial) {
-            TokenFactory.disable(serial, $scope.get);
+            TokenFactory.disable(serial, $scope.getContainer);
         };
         $scope.enableToken = function (serial) {
-            TokenFactory.enable(serial, $scope.get);
+            TokenFactory.enable(serial, $scope.getContainer);
+        };
+        $scope.removeOneToken = function (token_serial) {
+            let params = {
+                "serial": $scope.containerSerial,
+                "tokenSerial": token_serial
+            };
+            ContainerFactory.removeTokenFromContainer(params, $scope.getContainer);
+        }
+        $scope.deleteOneToken = function (token_serial, dialog) {
+            if (dialog) {
+                $scope.showDialog[token_serial] = true;
+            } else {
+                TokenFactory.delete(token_serial, $scope.getContainer);
+            }
+        }
+        $scope.addToken = function (token_serial) {
+            ContainerFactory.addTokenToContainer({
+                "serial": $scope.containerSerial,
+                "tokenSerial": token_serial
+            }, function(){
+                $scope.getContainer();
+                $scope.get();
+            });
         };
 
+        // ----------- Initial calls -------------
+        $scope.getContainer();
+        ContainerFactory.updateLastSeen($scope.containerSerial);
     }]);
