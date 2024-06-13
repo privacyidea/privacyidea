@@ -44,12 +44,20 @@
         <tr>
             <td translate> State</td>
             <td>
-                <span ng-repeat="(stateType, val) in stateTypes">
-                    <input type="checkbox" ng-model="containerStates[stateType]"
-                           ng-disabled="!checkRight('set')">
-                    <translate>{{ stateType }} </translate>
-                    <br>
-                </span>
+                <table class="table-transparent">
+                    <tr ng-repeat="(stateType, val) in stateTypes" ng-show="displayState[stateType]">
+                        <td>
+                            <input type="checkbox" ng-model="containerStates[stateType]"
+                                   ng-disabled="!checkRight('set')">
+                            <translate>{{ stateType }} </translate>
+                        </td>
+                        <td ng-repeat="exclusiveState in stateTypes[stateType]">
+                            <input type="checkbox" ng-model="containerStates[exclusiveState]"
+                                   ng-disabled="!checkRight('set')">
+                            <translate>{{ exclusiveState }} </translate>
+                        </td>
+                    </tr>
+                </table>
             </td>
             <td>
                 <button class="btn btn-primary"
