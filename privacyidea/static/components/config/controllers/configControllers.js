@@ -224,6 +224,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         //debug: console.log(actions);
         $scope.actions = [];
         $scope.actionGroups = [];
+        $scope.groupIsOpen = {};
         $scope.isActionValues = false;
 
         angular.forEach(actions, function(value, key) {
@@ -231,6 +232,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             if ($scope.actionGroups.indexOf(value.group) < 0) {
                 // build a list of all groups
                 $scope.actionGroups.push(value.group);
+                $scope.groupIsOpen[value.group] = false;
             }
             // Check the given policy actions
             var ticked = false;
@@ -254,7 +256,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // This scope contains action values. We need to create
             // a list of checkboxes and input fields.
             angular.forEach(actions, function(value, key) {
-                let val = []
+                let val = [];
                 // handle select with multiple options
                 if (value.multiple === true) {
                     value.value.forEach(function(entry) {
@@ -461,6 +463,26 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             });
         }
     };
+
+    $scope.openCloseAllGroups = function(open) {
+        angular.forEach($scope.actionGroups, function(group) {
+            $scope.groupIsOpen[group] = open;
+        });
+    };
+
+    $scope.groupsOpen = 0;
+    $scope.$watch('groupIsOpen', function(newVal, oldVal) {
+        angular.forEach(newVal, function(isOpen, group){
+            if(newVal[group] != oldVal[group]){
+                if (isOpen) {
+                    $scope.groupsOpen ++;
+                }
+                else if ($scope.groupsOpen > 0) {
+                    $scope.groupsOpen --;
+                }
+            }
+        })
+    }, true);
 
     // test if the accordion group should be open or closed
     $scope.checkOpenGroup = function(action, pattern) {
