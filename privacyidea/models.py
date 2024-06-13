@@ -3333,11 +3333,14 @@ class TokenContainer(MethodsMixin, db.Model):
     tokens = db.relationship('Token', secondary='tokencontainertoken',
                              back_populates='container')
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
-    owners = db.relationship('TokenContainerOwner', lazy='dynamic', backref='container')
+    owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
+                             cascade="all, delete-orphan")
     last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    states = db.relationship('TokenContainerStates', lazy='dynamic', backref='tokencontainer')
-    info_list = db.relationship('TokenContainerInfo', lazy='select', backref='tokencontainer')
+    states = db.relationship('TokenContainerStates', lazy='dynamic', back_populates='container',
+                             cascade="all, delete-orphan")
+    info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
+                                cascade="all, delete-orphan")
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
@@ -3393,6 +3396,7 @@ class TokenContainerOwner(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
+    container = db.relationship('TokenContainer', back_populates='owners')
     resolver = db.Column(db.Unicode(120), default='', index=True)
     user_id = db.Column(db.Unicode(320), default='', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
@@ -3451,6 +3455,7 @@ class TokenContainerStates(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
+    container = db.relationship("TokenContainer", back_populates="states")
     state = db.Column(db.Unicode(100), default='active', nullable=False)
 
     def __init__(self, container_id=None, state="active"):
@@ -3473,6 +3478,7 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     description = db.Column(db.Unicode(2000), default='')
     container_id = db.Column(db.Integer(),
                              db.ForeignKey('tokencontainer.id'), index=True)
+    container = db.relationship('TokenContainer', back_populates='info_list')
     __table_args__ = (db.UniqueConstraint('container_id',
                                           'key',
                                           name='container_id_constraint'),
