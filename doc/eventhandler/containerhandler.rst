@@ -6,7 +6,8 @@ Container Handler Module
 .. index:: Container Handler, Handler Modules
 
 The container event handler module is used to perform actions on containers in
-certain events.
+certain events. The container is either identified by the container serial from the request, response or from an
+identified token.
 
 This way you can define workflows to automatically modify containers, delete or
 even create new containers.
@@ -58,7 +59,7 @@ set description
 
 For the container identified in the request a new **description** will be set.
 
-remove tokens
+remove all tokens
 ..............
 
 For the container identified in the request all tokens will be removed.
@@ -85,6 +86,16 @@ delete container info
 
 For the container identified in the request the container info will be deleted. If a **key** is specified, only the
 entry of this key will be deleted. If no key is passed, all entries will be removed.
+
+enable all tokens
+.............
+
+For the container identified in the request all contained tokens will be enabled.
+
+disable all tokens
+..................
+
+For the container identified in the request all contained tokens will be disabled.
 
 Code
 ~~~~
