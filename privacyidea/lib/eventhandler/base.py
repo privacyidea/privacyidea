@@ -448,7 +448,6 @@ class BaseEventHandler(object):
 
         :param request: The request object
         :param content: The content of the response
-        :param g: The g object
         :return: The container serial or None if no serial could be found
         """
 
@@ -470,7 +469,7 @@ class BaseEventHandler(object):
     @classmethod
     def _get_container_serial_from_token(cls, request, content, g):
         """
-        Trys to get a token serial. If a token is found, it tries to get the container serial from this token.
+        Tries to get a token serial. If a token is found, it tries to get the container serial from this token.
 
         :param request: The request object
         :param content: The content of the response
@@ -511,7 +510,7 @@ class BaseEventHandler(object):
     @classmethod
     def _get_container_serial_from_token_serial(cls, token_serial):
         """
-        Trys to get the container serial from a token.
+        Tries to get the container serial from a token.
 
         :param token_serial: Serial of a token
         :return: container serial or None if the token is not part of a container or the token does not exist
