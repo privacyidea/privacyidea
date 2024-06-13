@@ -374,6 +374,6 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }, function (error) {
                         AuthFactory.authError(error.data)
                     });
-                }
+                },
             };
         }]);

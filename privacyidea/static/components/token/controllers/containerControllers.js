@@ -1,16 +1,53 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory',
-    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
+    'AuthFactory', 'ConfigFactory', 'TokenFactory',
+    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
+                                       TokenFactory) {
         $scope.formData = {
             containerTypes: {},
         };
         $scope.form = {
             containerType: "generic",
-            description: ""
-        };
+            description: "",
+            token_types: ""
+        }
+
+        $scope.$watch('form', function (newVal, oldVal) {
+            if (newVal) {
+                $scope.form.token_types = allContainerTypes[newVal.containerType]["token_types_display"];
+            }
+        }, true);
+
         ContainerFactory.getContainerTypes(function (data) {
             $scope.formData.containerTypes = data.result.value;
         });
+
+        // Get the supported token types for each container type once
+        let allContainerTypes = {};
+        ContainerFactory.getTokenTypes(function (data) {
+            allContainerTypes = data.result.value;
+
+            angular.forEach(allContainerTypes, function (_, containerType) {
+                if (containerType === 'generic') {
+                    allContainerTypes[containerType]["token_types_display"] = 'All';
+                } else {
+                    allContainerTypes[containerType]["token_types_display"] = $scope.tokenTypesToDisplayString(
+                        allContainerTypes[containerType].token_types);
+                }
+            });
+            $scope.form.token_types = allContainerTypes[$scope.form.containerType]["token_types_display"];
+        });
+
+        // converts the supported token types to a display string
+        $scope.tokenTypesToDisplayString = function (containerTokenTypes) {
+            let displayString = "";
+            // create comma separated list out of token names
+            angular.forEach(containerTokenTypes, function (type) {
+                displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
+            });
+            displayString = displayString.slice(0, -2);
+
+            return displayString;
+        };
 
         // User+Realm: Get the realms and fill the realm dropdown box
         if (AuthFactory.getRole() === 'admin') {
