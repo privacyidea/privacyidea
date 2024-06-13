@@ -801,54 +801,39 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp.data = """{"result": {"value": false}}"""
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "disabled"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "disabled"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "active"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "active"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         # ------------- Check condition container_single_state --------------
         # Check if the condition does not match due to multiple states
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         # Check if the condition does not match due to wrong state
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         # Check if the condition match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled,lost"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled,lost"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertTrue(r)
 
         container.delete()
@@ -878,46 +863,34 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp.data = """{"result": {"value": false}}"""
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         # Unassign user
         container.remove_user(test_user)
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         container.delete()
@@ -941,23 +914,18 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp.data = """{"result": {"value": false}}"""
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}},
+                                      "request": req,
+                                      "response": resp
+                                      })
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "generic"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition({"g": {},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "generic"}},
+                                      "request": req,
+                                      "response": resp})
         self.assertFalse(r)
 
         container.delete()
@@ -998,7 +966,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = uhandler.check_condition(options)
         self.assertFalse(r)
 
-        # cONTAINER HAS A TOKEN
+        # Container has a token
         add_tokens_to_container(container_serial, [token_serial])
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
@@ -1039,11 +1007,7 @@ class CounterEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {
-                       "options": {
-                           "counter_name": "hallo_counter"}
-                   }
-                   }
+                   "handler_def": {"options": {"counter_name": "hallo_counter"}}}
 
         t_handler = CounterEventHandler()
         res = t_handler.do("increase_counter", options=options)
@@ -1096,18 +1060,19 @@ class ScriptEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "options": {
-                           "user": "1",
-                           "realm": "1",
-                           "serial": "1",
-                           "logged_in_user": "1",
-                           "logged_in_role": "1"}
-                   }
-                   }
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def": {
+                "options": {
+                    "user": "1",
+                    "realm": "1",
+                    "serial": "1",
+                    "logged_in_user": "1",
+                    "logged_in_role": "1"}
+            }
+        }
 
         script_name = "ls.sh"
         d = os.getcwd()
@@ -1891,8 +1856,7 @@ class ContainerEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {}}
-                   }
+                   "handler_def": {"options": {}}}
 
         return options
 
@@ -2007,7 +1971,7 @@ class ContainerEventTestCase(MyTestCase):
         res = c_handler.do(C_ACTION_TYPE.DELETE, options=options)
         self.assertFalse(res)
 
-    def test_03_un_assign_container(self):
+    def test_03_assign_and_unassign_container(self):
         # create container
         container_serial = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)

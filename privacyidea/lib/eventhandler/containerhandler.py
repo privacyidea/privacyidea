@@ -161,8 +161,7 @@ class ContainerEventHandler(BaseEventHandler):
                               ACTION_TYPE.ADD_CONTAINER_INFO,
                               ACTION_TYPE.DELETE_CONTAINER_INFO,
                               ACTION_TYPE.DISABLE_TOKENS,
-                              ACTION_TYPE.ENABLE_TOKENS
-                              ]:
+                              ACTION_TYPE.ENABLE_TOKENS]:
             if container_serial:
                 log.info(f"{action} for container {container_serial}")
                 if action.lower() == ACTION_TYPE.DELETE:

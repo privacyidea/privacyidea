@@ -149,7 +149,7 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                 var events = data.result.value;
                 $scope.availableEvents = Array();
                 angular.forEach(events, function (event) {
-                    $scope.availableEvents.push({"name": event})
+                    $scope.availableEvents.push({"name": event});
                 });
                 //debug: console.log($scope.availableEvents);
             });
@@ -196,7 +196,7 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                                 multivalue.push(mval.name);
                             }
                         });
-                        $scope.form.conditions[value] = multivalue.join(",")
+                        $scope.form.conditions[value] = multivalue.join(",");
                     } else {
                         $scope.form.conditions[value] = $scope.conds[value];
                     }
@@ -299,7 +299,6 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
         $scope.getAvailableEvents();
         $scope.getHandlerModules();
-
 
         // Container - set_states: Handle excluded states
         $scope.container_set_states = function () {

@@ -804,7 +804,6 @@ class BaseEventHandler(object):
 
         # Container specific conditions
         if container:
-
             if CONDITION.CONTAINER_STATE in conditions:
                 cond = conditions.get(CONDITION.CONTAINER_STATE).split(',')
                 container_states = [token_container_states.state for token_container_states in container.get_states()]

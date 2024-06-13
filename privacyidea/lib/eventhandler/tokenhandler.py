@@ -220,9 +220,8 @@ class TokenEventHandler(BaseEventHandler):
                                              "enrolling MOTP tokens.")},
                         "container": {
                             "type": "bool",
-                            "description": _("Add token to container in "
-                                             "request.")
-                        }
+                            "description": _("Add the token to the container identified in the request.")
+                            }
                         },
                    ACTION_TYPE.SET_DESCRIPTION:
                        {"description":
