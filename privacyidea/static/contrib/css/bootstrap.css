@@ -3279,6 +3279,64 @@ fieldset[disabled] .btn-primary.focus {
   color: #337ab7;
   background-color: #fff;
 }
+.btn-transparent {
+  color: #000000;
+  background-color: transparent;
+  border-color: #ddd;
+  padding: 0.2em 0.6em 0.3em;
+  font-size: 90%;
+}
+.btn-transparent:focus,
+.btn-transparent.focus {
+  color: #fff;
+  background-color: #c9302c;
+  border-color: #761c19;
+}
+.btn-transparent:hover {
+  color: #fff;
+  background-color: #c9302c;
+  border-color: #ac2925;
+}
+.btn-transparent:active,
+.btn-transparent.active,
+.open > .dropdown-toggle.btn-transparent {
+  color: #fff;
+  background-color: #c9302c;
+  background-image: none;
+  border-color: #ac2925;
+}
+.btn-transparent:active:hover,
+.btn-transparent.active:hover,
+.open > .dropdown-toggle.btn-transparent:hover,
+.btn-transparent:active:focus,
+.btn-transparent.active:focus,
+.open > .dropdown-toggle.btn-transparent:focus,
+.btn-transparent:active.focus,
+.btn-transparent.active.focus,
+.open > .dropdown-toggle.btn-transparent.focus {
+  color: #fff;
+  background-color: #ac2925;
+  border-color: #761c19;
+}
+.btn-transparent.disabled:hover,
+.btn-transparent[disabled]:hover,
+fieldset[disabled] .btn-transparent:hover,
+.btn-transparent.disabled:focus,
+.btn-transparent[disabled]:focus,
+fieldset[disabled] .btn-transparent:focus,
+.btn-transparent.disabled.focus,
+.btn-transparent[disabled].focus,
+fieldset[disabled] .btn-transparent.focus {
+  background-color: #d9534f;
+  border-color: #d43f3a;
+}
+.btn-transparent .badge {
+  color: #d9534f;
+  background-color: #fff;
+}
+.btn-header {
+  font-weight: bold;
+}
 .btn-success {
   color: #fff;
   background-color: #5cb85c;
