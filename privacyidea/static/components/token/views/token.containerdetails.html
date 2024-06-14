@@ -9,8 +9,7 @@
             <td>
                 <!-- Delete container -->
                 <button class="btn btn-danger" ng-click="deleteContainerButton=true"
-                        id="deleteButton"
-                        ng-disabled="!checkRight('delete')"
+                        ng-disabled="!checkRight('container_delete')"
                         ng-hide="deleteContainerButton || (!checkRight('container_delete') && hide_buttons)">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
@@ -19,11 +18,15 @@
                 <fieldset ng-hide="!deleteContainerButton || (!checkRight('container_delete') && hide_buttons)"
                           ng-disabled="!checkRight('container_delete')">
                     <button class="btn btn-danger"
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=false)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
                     <button class="btn btn-danger"
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons">
                             ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
@@ -101,8 +104,8 @@
                 <div ng-hide="!checkRight('container_info') && hide_buttons">
                     <button class="btn btn-primary"
                             id="ciEditButton"
+                            ng-hide="editContainerInfo || (!checkRight('container_info') && hide_buttons)"
                             ng-disabled="!checkRight('container_info')"
-                            ng-hide="editContainernfo"
                             ng-click="startEditContainerInfo()"
                             translate>Edit
                     </button>

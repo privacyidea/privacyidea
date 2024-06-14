@@ -1,7 +1,7 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory', 'UserFactory',
+    'AuthFactory', 'ConfigFactory', 'UserFactory', 'TokenFactory',
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
-                                       AuthFactory, ConfigFactory, UserFactory) {
+                                       AuthFactory, ConfigFactory, UserFactory, TokenFactory) {
         $scope.formData = {
             containerTypes: {},
         };
@@ -263,6 +263,15 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.get();
         };
 
+        // Get possible container states
+        $scope.stateTypes = [];
+        $scope.containerStates = {};
+        ContainerFactory.getStateTypes(function (data) {
+            $scope.stateTypes = data.result.value;
+            angular.forEach($scope.stateTypes, function (state) {
+                $scope.containerStates[state] = false;
+            })
+        });
 
         $scope.excludeStates = function (state) {
             // Get possible container states
@@ -562,5 +571,4 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         // ----------- Initial calls -------------
         $scope.getContainer();
         ContainerFactory.updateLastSeen($scope.containerSerial);
-    }])
-;
+    }]);
