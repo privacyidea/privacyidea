@@ -186,10 +186,9 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $state, $rootScope) {
+        $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
-        $scope.newToken = {"serial": "", pin: ""};
-        $scope.tokenAction = "";
 
         // Get possible container states
         $scope.stateTypes = [];
@@ -198,9 +197,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         ContainerFactory.getStateTypes(function (data) {
             $scope.stateTypes = data.result.value;
             angular.forEach($scope.stateTypes, function (val, state) {
-                if (!$scope.containerStates[state]) {
-                    $scope.containerStates[state] = false;
-                }
+
                 // Set the state to false, if it is displayed next to states that exclude each other
                 if (!($scope.displayState[state] == false)) {
                     $scope.displayState[state] = true;
@@ -210,6 +207,15 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 }
             });
         });
+
+        // Get the supported token types of the container
+        $scope.supportedTokenTypes = [];
+        $scope.getSupportedTokenTypes = function () {
+            ContainerFactory.getTokenTypes(function (data) {
+                let allContainerTypes = data.result.value;
+                $scope.supportedTokenTypes = allContainerTypes[$scope.container.type]["token_types"];
+            });
+        };
 
         // Get the container
         $scope.container = {};
@@ -225,10 +231,15 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 angular.forEach($scope.container.states, function (state) {
                     $scope.excludeStates(state);
                 });
+                $scope.stateSelectionChanged = false;
 
                 angular.forEach($scope.container.tokens, function (token) {
                     $scope.showDialog[token.serial] = false;
                 });
+                if ($scope.supportedTokenTypes.length == 0) {
+                    // Get supported token types only once
+                    $scope.getSupportedTokenTypes();
+                }
             });
             // update token list for add
             $scope.get();
@@ -243,10 +254,10 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.$watch("containerStates", function (newValue, oldValue) {
+            $scope.stateSelectionChanged = true;
             for (let [key, value] of Object.entries(newValue)) {
                 if (value && !oldValue[key]) {
                     $scope.excludeStates(key);
-                    $scope.changed = true;
                 }
             }
         }, true); // true = deep watch
@@ -260,7 +271,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
             let params = {"serial": $scope.containerSerial, "states": states};
             ContainerFactory.setStates(params, $scope.getContainer);
-            $scope.changed = false;
+            $scope.stateSelectionChanged = false;
         }
 
         $scope.returnTo = function () {
@@ -332,40 +343,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.tokenParams = {page: 1, sortdir: "asc"};
         $scope.reverse = false;
 
-        $scope.activateAddTokens = function () {
-            $scope.addTokens = true;
-            $scope.get();
-        };
-
-        // Note: This function has to be named "get", since it is called by the pifilter directive
-        $scope.get = function (live_search) {
-            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
-                $scope.tokenParams.serial = "*" + ($scope.serialFilter || "") + "*";
-                $scope.tokenParams.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
-                $scope.tokenParams.type = "*" + ($scope.typeFilter || "") + "*";
-                $scope.tokenParams.description = "*" + ($scope.descriptionFilter || "") + "*";
-                $scope.tokenParams.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
-                $scope.tokenParams.userid = "*" + ($scope.userIdFilter || "") + "*";
-                $scope.tokenParams.resolver = "*" + ($scope.resolverFilter || "") + "*";
-                $scope.tokenParams.pagesize = $scope.token_page_size;
-                $scope.tokenParams.sortby = $scope.sortby;
-                if ($scope.reverse) {
-                    $scope.tokenParams.sortdir = "desc";
-                } else {
-                    $scope.tokenParams.sortdir = "asc";
-                }
-                TokenFactory.getTokens(function (data) {
-                    if (data) {
-                        $scope.tokendata = data.result.value;
-                    }
-                }, $scope.tokenParams);
-            }
-        };
-
-        // Change the pagination for the add token list
-        $scope.pageChanged = function () {
-            $scope.get(false);
-        };
+        // --- Actions for tokens in the container ---
 
         $scope.getAllTokenSerials = function () {
             let tokenSerials = [];
@@ -426,85 +404,58 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
-        // Selection looks like this {"TOTP0001B29F":true, "OATH0002EB1F":false}
-        $scope.tokenSelection = {};
-        $scope.getSelectedTokens = function () {
-            let selectedTokens = [];
-            for (let [key, value] of Object.entries($scope.tokenSelection)) {
-                if (value) {
-                    selectedTokens.push(key);
-                }
-            }
-            return selectedTokens;
-        };
-
-        $scope.allTokensSelected = false;
-        $scope.$watch("allTokensSelected", function (newValue, oldValue) {
-            $scope.selectAllTokens(newValue);
-        }, true); // true = deep watch
-
-        $scope.selectAllTokens = function (value) {
-            angular.forEach($scope.container.tokens, function (token) {
-                $scope.tokenSelection[token.serial] = value;
-            });
-        };
-
-        $scope.performTokenAction = function () {
-            let res = false;
-            if ($scope.tokenAction == 'remove') {
-                res = $scope.removeTokens();
-            } else if ($scope.tokenAction == 'delete') {
-                res = $scope.deleteTokens();
-            }
-
-            if (res) {
-                $scope.tokenAction = '';
-                $scope.tokenSelection = {};
-            }
-        };
-
-        $scope.cancelTokenAction = function () {
-            $scope.tokenAction = '';
-            $scope.tokenSelection = {};
-        };
-
-        $scope.removeTokens = function () {
-            // Remove the selected tokens
-            let res = false;
-            let selectedTokens = $scope.getSelectedTokens();
-            if (selectedTokens.length > 0) {
-                ContainerFactory.removeAllTokensFromContainer({
-                    'serial': $scope.containerSerial,
-                    'serial_list': selectedTokens
-                }, $scope.getContainer);
-                res = true;
-            }
-            return res;
-        };
-
-        $scope.deleteTokens = function () {
-            let res = false;
-            let selectedTokens = $scope.getSelectedTokens();
-            if (selectedTokens.length > 0) {
-                angular.forEach(selectedTokens, function (token, index) {
-                    if (index == selectedTokens.length - 1) {
-                        // last token: update container with callback
-                        TokenFactory.delete(token, $scope.getContainer);
-                    } else {
-                        TokenFactory.delete(token);
-                    }
-                });
-                res = true;
-            }
-            return res;
-        };
-
+        // --- Add token functions ---
         $scope.addTokens = false;
-        $scope.addTokensToContainer = function () {
+        $scope.showTokensWithoutContainer = true;
+        $scope.search_container_serial = "";
 
-        }
+        $scope.activateAddTokens = function () {
+            $scope.addTokens = true;
+            $scope.get();
+        };
 
-        // single token function
+        $scope.$watch('showTokensWithoutContainer', function (newVal, oldVal) {
+            if (newVal) {
+                $scope.search_container_serial = "";
+            } else {
+                $scope.search_container_serial = null;
+            }
+            $scope.get();
+        });
+
+        // Note: This function has to be named "get", since it is called by the pifilter directive
+        $scope.get = function (live_search) {
+            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
+                $scope.tokenParams.serial = "*" + ($scope.serialFilter || "") + "*";
+                $scope.tokenParams.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
+                $scope.tokenParams.type = "*" + ($scope.typeFilter || "") + "*";
+                $scope.tokenParams.type_list = $scope.supportedTokenTypes;
+                $scope.tokenParams.description = "*" + ($scope.descriptionFilter || "") + "*";
+                $scope.tokenParams.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
+                $scope.tokenParams.userid = "*" + ($scope.userIdFilter || "") + "*";
+                $scope.tokenParams.resolver = "*" + ($scope.resolverFilter || "") + "*";
+                $scope.tokenParams.pagesize = $scope.token_page_size;
+                $scope.tokenParams.sortby = $scope.sortby;
+                $scope.tokenParams.container_serial = $scope.search_container_serial;
+                if ($scope.reverse) {
+                    $scope.tokenParams.sortdir = "desc";
+                } else {
+                    $scope.tokenParams.sortdir = "asc";
+                }
+                TokenFactory.getTokens(function (data) {
+                    if (data) {
+                        $scope.tokendata = data.result.value;
+                    }
+                }, $scope.tokenParams);
+            }
+        };
+
+        // Change the pagination for the add token list
+        $scope.pageChanged = function () {
+            $scope.get(false);
+        };
+
+        // --- single token functions for token list ---
         $scope.resetFailcount = function (serial) {
             TokenFactory.reset(serial, $scope.getContainer);
         };
@@ -532,11 +483,23 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             ContainerFactory.addTokenToContainer({
                 "serial": $scope.containerSerial,
                 "tokenSerial": token_serial
-            }, function(){
+            }, function () {
                 $scope.getContainer();
                 $scope.get();
             });
         };
+        $scope.adminOrUserIsOwner = function (username, realm) {
+            let allow = false;
+            if ($scope.loggedInUser.role === 'admin') {
+                allow = true;
+            } else {
+                if (username == $scope.loggedInUser.username
+                    && realm == $scope.loggedInUser.realm) {
+                    allow = true;
+                }
+            }
+            return allow;
+        }
 
         // ----------- Initial calls -------------
         $scope.getContainer();
