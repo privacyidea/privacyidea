@@ -73,9 +73,9 @@ myApp.controller("eventController", ["$scope", "$stateParams", "$state",
     }]);
 
 myApp.controller("eventDetailController", ["$scope", "$stateParams",
-    "ConfigFactory", "$state",
+    "ConfigFactory", "$state", "ContainerFactory",
     function ($scope, $stateParams,
-              ConfigFactory, $state) {
+              ConfigFactory, $state, ContainerFactory) {
         // init
         $scope.form = {};
         $scope.eventid = $stateParams.eventid;
@@ -292,8 +292,36 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
         $scope.actionChanged = function () {
             $scope.options = $scope.handlerOptions[$scope.form.action];
+            if ($scope.form.action == "set states") {
+                $scope.container_set_states();
+            }
         };
 
         $scope.getAvailableEvents();
         $scope.getHandlerModules();
+
+        // Container - set_states: Handle excluded states
+        $scope.container_set_states = function () {
+            $scope.containerStates = {}
+            ContainerFactory.getStateTypes(function (data) {
+                $scope.containerStates = data.result.value;
+            })
+        }
+
+        $scope.$watch('opts', function (newVal, oldVal) {
+            if ($scope.form.action == "set states") {
+                for (let [key, value] of Object.entries(newVal)) {
+                    if (value && !oldVal[key]) {
+                        $scope.excludeStates(key);
+                    }
+                }
+            }
+        }, true); // true = deep watch
+
+        $scope.excludeStates = function (state) {
+            // Deselect excluded states based on the selected state
+            angular.forEach($scope.containerStates[state], function (disableType) {
+                $scope.opts[disableType] = false
+            })
+        }
     }]);

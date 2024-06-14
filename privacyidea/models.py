@@ -3373,7 +3373,7 @@ class TokenContainer(MethodsMixin, db.Model):
         for k, v in info.items():
             if not k.endswith(".type"):
                 TokenContainerInfo(self.id, k, v,
-                                   Type=types.get(k)).save(persistent=False)
+                                   type=types.get(k)).save(persistent=False)
         db.session.commit()
 
 

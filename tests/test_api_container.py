@@ -1,8 +1,5 @@
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
-from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
@@ -19,7 +16,7 @@ class APIContainer(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"])
-            cserial = result["value"]["serial"]
+            cserial = result["value"]["container_serial"]
             self.assertTrue(len(cserial) > 1)
         # Delete the container
         with self.app.test_request_context(f"container/{cserial}", method='DELETE', headers={'Authorization': self.at}):
@@ -53,7 +50,7 @@ class APIContainer(MyApiTestCase):
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": container_serials[3], "pagesize": 15},
+                                           data={"container_serial": container_serials[3], "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -110,7 +107,7 @@ class APIContainer(MyApiTestCase):
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": "wrong_serial", "pagesize": 15},
+                                           data={"container_serial": "wrong_serial", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]

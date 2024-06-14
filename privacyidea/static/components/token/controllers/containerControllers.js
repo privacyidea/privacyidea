@@ -214,6 +214,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         // Get the container
         $scope.container = {};
         $scope.containerOwner = {};
+
         $scope.get = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 $scope.container = data.result.value.containers[0];
@@ -226,6 +227,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 });
             });
         }
+
         $scope.get();
 
         $scope.excludeStates = function (state) {
@@ -251,8 +253,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 if (value) {
                     states.push(key);
                 }
-            });
-            let params = {"serial": $scope.containerSerial, "states": states};
+            })
+            let params = {"container_serial": $scope.containerSerial, "states": states}
             ContainerFactory.setStates(params, $scope.get);
             $scope.changed = false;
         }
@@ -280,7 +282,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.assignUser = function () {
             ContainerFactory.assignUser(
                 {
-                    serial: $scope.containerSerial,
+                    container_serial: $scope.containerSerial,
                     user: fixUser($scope.newUser.user),
                     realm: $scope.newUser.realm,
                     pin: $scope.newUser.pin
@@ -291,7 +293,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.unassignUser = function () {
             ContainerFactory.unassignUser(
                 {
-                    serial: $scope.containerSerial,
+                    container_serial: $scope.containerSerial,
                     user: fixUser($scope.containerOwner.user_name),
                     realm: $scope.containerOwner.realm,
                     pin: $scope.containerOwner.pin
@@ -408,8 +410,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let selectedTokens = $scope.getSelectedTokens();
             if (selectedTokens.length > 0) {
                 ContainerFactory.removeAllTokensFromContainer({
-                    'serial': $scope.containerSerial,
-                    'serial_list': selectedTokens
+                    'container_serial': $scope.containerSerial,
+                    'token_serial_list': selectedTokens
                 }, $scope.get);
                 res = true;
             }
