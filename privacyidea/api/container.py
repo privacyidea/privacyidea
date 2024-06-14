@@ -94,10 +94,10 @@ def list_containers():
     return send_result(result)
 
 
-@container_blueprint.route('assign', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
 @event('container_assign', request, g)
 @log_with(log)
-def assign():
+def assign(container_serial):
     """
     Assign a container to a user
 
@@ -106,16 +106,15 @@ def assign():
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
-    container = find_container_by_serial(serial)
+    container = find_container_by_serial(container_serial)
     res = container.add_user(user)
     return send_result(res)
 
 
-@container_blueprint.route('unassign', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
 @event('container_unassign', request, g)
 @log_with(log)
-def unassign():
+def unassign(container_serial):
     """
     Unassign a user from a container
 
@@ -124,8 +123,7 @@ def unassign():
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
-    container = find_container_by_serial(serial)
+    container = find_container_by_serial(container_serial)
     res = container.remove_user(user)
     return send_result(res)
 
@@ -206,7 +204,6 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('types', methods=['GET'])
-@container_blueprint.route('tokentypes', methods=['GET'])
 @log_with(log)
 def get_types():
     """
@@ -221,7 +218,7 @@ def get_types():
     return send_result(res)
 
 
-@container_blueprint.route('/description/<container_serial>', methods=['POST'])
+@container_blueprint.route('<container_serial>/description', methods=['POST'])
 @event('container_set_description', request, g)
 @log_with(log)
 def set_description(container_serial):
@@ -239,16 +236,15 @@ def set_description(container_serial):
     return send_result(res)
 
 
-@container_blueprint.route('/states', methods=['POST'])
+@container_blueprint.route('<container_serial>/states', methods=['POST'])
 @event('container_set_states', request, g)
 @log_with(log)
-def set_states():
+def set_states(container_serial):
     """
     Set the states of a container
     :jsonparam: serial: Serial of the container
     :jsonparam: states: string list
     """
-    container_serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
     states = getParam(request.all_data, "states", required, allow_empty=False)
     container = find_container_by_serial(container_serial)
 
@@ -272,7 +268,7 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('/lastseen/<container_serial>', methods=['POST'])
+@container_blueprint.route('<container_serial>/lastseen', methods=['POST'])
 @event('container_update_last_seen', request, g)
 @log_with(log)
 def update_last_seen(container_serial):
@@ -285,17 +281,7 @@ def update_last_seen(container_serial):
     return send_result(True)
 
 
-# @container_blueprint.route('tokentypes', methods=['GET'])
-# @log_with(log)
-# def get_token_types():
-#     """
-#     Get the supported token types for each container type
-#     """
-#     ttypes = get_container_token_types()
-#     return send_result(res)
-
-
-######################## vvv TEMPLATES vvv ##########################
+# TEMPLATES
 @container_blueprint.route('<string:container_type>/template', methods=['GET'])
 @log_with(log)
 def get_template(container_type):

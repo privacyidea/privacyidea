@@ -119,7 +119,7 @@ class TokenEventHandler(BaseEventHandler):
     description = "This event handler can trigger new actions on tokens."
 
     @property
-    def allowed_positions(cls):
+    def allowed_positions(self):
         """
         This returns the allowed positions of the event handler definition.
         :return: list of allowed positions
@@ -127,7 +127,7 @@ class TokenEventHandler(BaseEventHandler):
         return ["post", "pre"]
 
     @property
-    def actions(cls):
+    def actions(self):
         """
         This method returns a dictionary of allowed actions and possible
         options in this handler module.
@@ -135,82 +135,102 @@ class TokenEventHandler(BaseEventHandler):
         :return: dict with actions
         """
         realm_list = list(get_realms())
-        actions = {ACTION_TYPE.SET_TOKENREALM:
-                       {"realm":
-                            {"type": "str",
-                             "required": True,
-                             "description": _("set a new realm of the token"),
-                             "value": realm_list},
-                        "only_realm":
-                            {"type": "bool",
-                             "description": _("The new realm will be the only "
-                                              "realm of the token. I.e. all "
-                                              "other realms will be removed "
-                                              "from this token. If disabled, the "
-                                              "realm will be added to the token.")
-                             }
+        actions = {
+            ACTION_TYPE.SET_TOKENREALM:
+                {
+                    "realm":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("set a new realm of the token"),
+                            "value": realm_list
                         },
-                   ACTION_TYPE.DELETE: {},
-                   ACTION_TYPE.UNASSIGN: {},
-                   ACTION_TYPE.DISABLE: {},
-                   ACTION_TYPE.ENABLE: {},
-                   ACTION_TYPE.SET_RANDOM_PIN: {
-                       "length":
-                           {"type": "int",
+                    "only_realm":
+                        {
+                            "type": "bool",
+                            "description": _("The new realm will be the only "
+                                             "realm of the token. I.e. all "
+                                             "other realms will be removed "
+                                             "from this token. If disabled, the "
+                                             "realm will be added to the token.")
+                        }
+                },
+            ACTION_TYPE.DELETE: {},
+            ACTION_TYPE.UNASSIGN: {},
+            ACTION_TYPE.DISABLE: {},
+            ACTION_TYPE.ENABLE: {},
+            ACTION_TYPE.SET_RANDOM_PIN:
+                {
+                    "length":
+                        {
+                            "type": "int",
                             "required": True,
                             "description": _("set the PIN of the token to a random PIN of this length."),
-                            "value": list(range(1, 32))}
-                   },
-                   ACTION_TYPE.INIT:
-                       {"tokentype":
-                            {"type": "str",
-                             "required": True,
-                             "description": _("Token type to create"),
-                             "value": get_token_types()
-                             },
-                        "user":
-                            {"type": "bool",
-                             "description": _("Assign token to user in "
-                                              "request or to tokenowner.")},
-                        "realm":
-                            {"type": "str",
-                             "required": False,
-                             "description": _("Set the realm of the newly "
-                                              "created token."),
-                             "value": realm_list},
-                        "dynamic_phone": {
+                            "value": list(range(1, 32))
+                        }
+                },
+            ACTION_TYPE.INIT:
+                {
+                    "tokentype":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Token type to create"),
+                            "value": get_token_types()
+                        },
+                    "user":
+                        {
+                            "type": "bool",
+                            "description": _("Assign token to user in "
+                                             "request or to tokenowner.")
+                        },
+                    "realm":
+                        {
+                            "type": "str",
+                            "required": False,
+                            "description": _("Set the realm of the newly "
+                                             "created token."),
+                            "value": realm_list
+                        },
+                    "dynamic_phone":
+                        {
                             "type": "bool",
                             "visibleIf": "tokentype",
                             "visibleValue": "sms",
                             "description": _("Dynamically read the mobile number "
                                              "from the user store.")
                         },
-                        "dynamic_email": {
+                    "dynamic_email":
+                        {
                             "type": "bool",
                             "visibleIf": "tokentype",
                             "visibleValue": "email",
                             "description": _("Dynamically read the email address "
                                              "from the user store.")
                         },
-                        "smtp_identifier": {
+                    "smtp_identifier":
+                        {
                             "type": "str",
                             "visibleIf": "tokentype",
                             "visibleValue": "email",
                             "description": _("Use a specific SMTP server configuration for this token."),
                             "value": [server.config.identifier for server in get_smtpservers()]
                         },
-                        "sms_identifier": {
+                    "sms_identifier":
+                        {
                             "type": "str",
                             "visibleIf": "tokentype",
                             "visibleValue": "sms",
                             "description": _("Use a specific SMS gateway configuration for this token."),
                             "value": [gateway.identifier for gateway in get_smsgateway()]
                         },
-                        "additional_params": {
+                    "additional_params":
+                        {
                             "type": "str",
                             "description": _("A dictionary of additional init parameters.")
                         },
-                        "motppin": {
+                    "motppin":
+                        {
                             "type": "str",
                             "visibleIf": "tokentype",
                             "visibleValue": "motp",
@@ -218,179 +238,192 @@ class TokenEventHandler(BaseEventHandler):
                                              "token during enrollment. This "
                                              "is a required value for "
                                              "enrolling MOTP tokens.")},
-                        "container": {
+                    "container":
+                        {
                             "type": "bool",
-                            "description": _("Add the token to the container identified in the request.")
-                            }
+                            "description": _(
+                                "Add the token to the container if there is one identifiable in the request.")
+                        }
+                },
+            ACTION_TYPE.SET_DESCRIPTION:
+                {
+                    "description":
+                        {
+                            "type": "str",
+                            "description": _("The new description of the "
+                                             "token.")
+                        }
+                },
+            ACTION_TYPE.SET_VALIDITY:
+                {
+                    VALIDITY.START:
+                        {
+                            "type": "str",
+                            "description": _("The token will be valid starting "
+                                             "at the given date. Can be a fixed "
+                                             "date or an offset like +10m, "
+                                             "+24h, +7d.")
                         },
-                   ACTION_TYPE.SET_DESCRIPTION:
-                       {"description":
-                           {
-                               "type": "str",
-                               "description": _("The new description of the "
-                                                "token.")
-                           }
-                       },
-                   ACTION_TYPE.SET_VALIDITY:
-                       {VALIDITY.START: {
-                           "type": "str",
-                           "description": _("The token will be valid starting "
-                                            "at the given date. Can be a fixed "
-                                            "date or an offset like +10m, "
-                                            "+24h, +7d.")
-                       },
-                           VALIDITY.END: {
-                               "type": "str",
-                               "description": _("The token will be valid until "
-                                                "the given date. Can be a fixed "
-                                                "date or an offset like +10m, "
-                                                "+24h, +7d.")
-                           }
-                       },
-                   ACTION_TYPE.SET_COUNTWINDOW:
-                       {"count window":
-                           {
-                               # TODO: should be "int" but we do not support
-                               #  this at the moment.
-                               "type": "str",
-                               "required": True,
-                               "description": _("Set the new count window of "
-                                                "the token.")
-                           }
-                       },
-                   ACTION_TYPE.SET_FAILCOUNTER:
-                       {
-                           "fail counter":
-                               {
-                                   "type": "str",
-                                   "required": True,
-                                   "description": _("Set the failcounter of "
-                                                    "the token.")
-                               }
-                       },
-                   ACTION_TYPE.CHANGE_FAILCOUNTER:
-                       {
-                           "change fail counter":
-                               {
-                                   "type": "str",
-                                   "required": True,
-                                   "description": _("Increase or decrease the fail counter of the token. "
-                                                    "Values of +n, -n with n being an integer are accepted.")
-                               }
-                       },
-                   ACTION_TYPE.SET_MAXFAIL:
-                       {
-                           "max failcount":
-                               {
-                                   "type": "str",
-                                   "required": True,
-                                   "description": _("Set the maximum failcounter of the token.")
-                               }
-                       },
-                   ACTION_TYPE.SET_TOKENINFO:
-                       {"key":
-                           {
-                               "type": "str",
-                               "required": True,
-                               "description": _("Set this tokeninfo key.")
-                           },
-                           "value":
-                               {
-                                   "type": "str",
-                                   "description": _("Set the above key to this "
-                                                    "value.")
-                               }
-                       },
-                   ACTION_TYPE.DELETE_TOKENINFO:
-                       {"key":
-                           {
-                               "type": "str",
-                               "required": True,
-                               "description": _("Delete this tokeninfo key.")
-                           }
-                       },
-                   ACTION_TYPE.ADD_TOKENGROUP:
-                       {"tokengroup":
-                           {
-                               "type": "str",
-                               "required": True,
-                               "description": _("Add a tokengroup to the token."),
-                               "value": [tg.name for tg in get_tokengroups()]
-                           }
-                       },
-                   ACTION_TYPE.REMOVE_TOKENGROUP:
-                       {"tokengroup":
-                           {
-                               "type": "str",
-                               "required": True,
-                               "description": _("Remove a tokengroup from the token."),
-                               "value": [tg.name for tg in get_tokengroups()]
-                           }
-                       },
-                   ACTION_TYPE.ATTACH_APPLICATION:
-                       {"machine ID":
-                           {
-                               "type": "str",
-                               "required": False,
-                               "description": _("The ID of the machine you want to attach the token to")
+                    VALIDITY.END:
+                        {
+                            "type": "str",
+                            "description": _("The token will be valid until "
+                                             "the given date. Can be a fixed "
+                                             "date or an offset like +10m, "
+                                             "+24h, +7d.")
+                        }
+                },
+            ACTION_TYPE.SET_COUNTWINDOW:
+                {
+                    "count window":
+                    {
+                        # TODO: should be "int" but we do not support
+                        # this at the moment.
+                        "type": "str",
+                        "required": True,
+                        "description": _("Set the new count window of "
+                                         "the token.")
+                    }
+                },
+            ACTION_TYPE.SET_FAILCOUNTER:
+                {
+                    "fail counter":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Set the failcounter of "
+                                             "the token.")
+                        }
+                },
+            ACTION_TYPE.CHANGE_FAILCOUNTER:
+                {
+                    "change fail counter":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Increase or decrease the fail counter of the token. "
+                                             "Values of +n, -n with n being an integer are accepted.")
+                        }
+                },
+            ACTION_TYPE.SET_MAXFAIL:
+                {
+                    "max failcount":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Set the maximum failcounter of the token.")
+                        }
+                },
+            ACTION_TYPE.SET_TOKENINFO:
+                {
+                    "key":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Set this tokeninfo key.")
+                        },
+                    "value":
+                        {
+                            "type": "str",
+                            "description": _("Set the above key to this "
+                                             "value.")
+                        }
+                },
+            ACTION_TYPE.DELETE_TOKENINFO:
+                {
+                    "key":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Delete this tokeninfo key.")
+                        }
+                },
+            ACTION_TYPE.ADD_TOKENGROUP:
+                {
+                    "tokengroup":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Add a tokengroup to the token."),
+                            "value": [tg.name for tg in get_tokengroups()]
+                        }
+                },
+            ACTION_TYPE.REMOVE_TOKENGROUP:
+                {
+                    "tokengroup":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Remove a tokengroup from the token."),
+                            "value": [tg.name for tg in get_tokengroups()]
+                        }
+                },
+            ACTION_TYPE.ATTACH_APPLICATION:
+                {
+                    "machine ID":
+                        {
+                            "type": "str",
+                            "required": False,
+                            "description": _("The ID of the machine you want to attach the token to")
 
-                           },
-                           "service_id": {
-                               "type": "str",
-                               "required": False,
-                               "description": _("Set the service_id for an SSH application."),
-                               "visibleIf": "application",
-                               "visibleValue": TOKEN_APPLICATIONS.SSH
-                           },
-                           "application":
-                               {
-                                   "type": "str",
-                                   "required": True,
-                                   "description": _(
-                                       "Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
-                                       " work well with all applications!"),
-                                   "value": [TOKEN_APPLICATIONS.SSH, TOKEN_APPLICATIONS.OFFLINE,
-                                             TOKEN_APPLICATIONS.LUKS]
-                               },
-                           "count":
-                               {
-                                   "type": "str",
-                                   "visibleIf": "application",
-                                   "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
-                                   "description": _("The number of offline OTP values available"),
-                                   "required": False
-                               },
-                           "rounds":
-                               {
-                                   "type": "str",
-                                   "visibleIf": "application",
-                                   "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
-                                   "description": _("The number of rounds for password hashing"),
-                                   "required": False
-                               },
-                           "user":
-                               {
-                                   "type": "str",
-                                   "visibleIf": "application",
-                                   "visibleValue": TOKEN_APPLICATIONS.SSH,
-                                   "required": False
-                               },
-                           "slot":
-                               {
-                                   "type": "str",
-                                   "visibleIf": "application",
-                                   "visibleValue": TOKEN_APPLICATIONS.LUKS,
-                                   "required": False
-                               },
-                           "partition":
-                               {
-                                   "type": "str",
-                                   "visibleIf": "application",
-                                   "visibleValue": TOKEN_APPLICATIONS.LUKS,
-                                   "required": False
-                               },
-                       }
-                   }
+                        },
+                    "service_id":
+                        {
+                            "type": "str",
+                            "required": False,
+                            "description": _("Set the service_id for an SSH application."),
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.SSH
+                        },
+                    "application":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _(
+                                "Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
+                                " work well with all applications!"),
+                            "value": [TOKEN_APPLICATIONS.SSH, TOKEN_APPLICATIONS.OFFLINE,
+                                      TOKEN_APPLICATIONS.LUKS]
+                        },
+                    "count":
+                        {
+                            "type": "str",
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                            "description": _("The number of offline OTP values available"),
+                            "required": False
+                        },
+                    "rounds":
+                        {
+                            "type": "str",
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                            "description": _("The number of rounds for password hashing"),
+                            "required": False
+                        },
+                    "user":
+                        {
+                            "type": "str",
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.SSH,
+                            "required": False
+                        },
+                    "slot":
+                        {
+                            "type": "str",
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                            "required": False
+                        },
+                    "partition":
+                        {
+                            "type": "str",
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                            "required": False
+                        },
+                }
+        }
         return actions
 
     def do(self, action, options=None):

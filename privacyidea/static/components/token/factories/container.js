@@ -85,7 +85,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             assignUser: function (params, callback) {
-                $http.post(containerUrl + "/assign", params, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/assign", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
@@ -94,7 +94,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             unassignUser: function (params, callback) {
-                $http.post(containerUrl + "/unassign", params, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/unassign", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
@@ -122,7 +122,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             setDescription: function (serial, description, callback) {
-                $http.post(containerUrl + "/description/" + serial,
+                $http.post(containerUrl + "/" + serial + "/description",
                     {"description": description}, {
                         headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function (response) {
@@ -131,18 +131,17 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
-            updateLastSeen: function (serial, callback) {
-                $http.post(containerUrl + "/lastseen/" + serial,
+            updateLastSeen: function (serial) {
+                $http.post(containerUrl + "/" + serial + "/lastseen",
                     {}, {
                         headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function (response) {
-                    callback(response.data);
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
             },
             setStates: function (params, callback) {
-                $http.post(containerUrl + "/states", params, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/states", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);

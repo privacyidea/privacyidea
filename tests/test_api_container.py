@@ -1,8 +1,5 @@
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
-from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
