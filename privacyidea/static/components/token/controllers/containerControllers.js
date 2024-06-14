@@ -279,7 +279,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.containerStates[state] = true;
             angular.forEach($scope.stateTypes[state], function (disableType) {
                 $scope.containerStates[disableType] = false;
-            })
+            });
         };
 
         $scope.$watch("containerStates", function (newValue, oldValue) {
@@ -359,7 +359,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     container_serial: $scope.containerSerial,
                     user: fixUser($scope.newUser.user),
                     realm: $scope.newUser.realm,
-                    pin: $scope.newUser.pin
                 }
                 , $scope.getContainer);
         };

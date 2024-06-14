@@ -208,7 +208,7 @@ def create_container_class_object(db_container):
 
 def find_container_for_token(serial):
     """
-    Returns a TokenContainerClass objects for the given token
+    Returns a TokenContainerClass object for the given token
     """
     token_id = Token.query.filter(Token.serial == serial).one().id
     row = TokenContainerToken.query.filter(
