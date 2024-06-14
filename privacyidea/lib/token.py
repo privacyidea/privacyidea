@@ -325,11 +325,16 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
     if container_serial is not None:
-        container_id = TokenContainer.query.filter(TokenContainer.serial == container_serial).first().id
-        token_container_token = TokenContainerToken.query.filter(
-            TokenContainerToken.container_id == container_id).all()
-        token_ids = [token_id.token_id for token_id in token_container_token]
-        sql_query = sql_query.filter(Token.id.in_(token_ids))
+        if container_serial == "":
+            sql_query = sql_query.filter(Token.container == None)
+        else:
+            container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
+            if container is None:
+                raise privacyIDEAError(_(f"No container with the serial {container_serial} exists."))
+            token_container_token = TokenContainerToken.query.filter(
+                TokenContainerToken.container_id == container.id).all()
+            token_ids = [token_id.token_id for token_id in token_container_token]
+            sql_query = sql_query.filter(Token.id.in_(token_ids))
 
     return sql_query
 

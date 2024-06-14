@@ -421,6 +421,8 @@ def list_api():
     :query rollout_state: only list tokens with the given rollout_state
     :query infokey: only list tokens, where the infokey has the given infovalue
     :query infovalue: only list tokens, where the infokey has the given infovalue
+    :query container_serial: only list tokens, which are assigned to the container with the given serial
+                            or tokens without container if the value is an empty string ""
 
     :return: a json result with the data being a list of token dictionaries::
 
