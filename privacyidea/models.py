@@ -1294,8 +1294,7 @@ class TokenRealm(MethodsMixin, db.Model):
     many additional realms.
     """
     __tablename__ = 'tokenrealm'
-    id = db.Column(db.Integer(), Sequence("tokenrealm_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokenrealm_seq"), primary_key=True)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
     realm_id = db.Column(db.Integer(),
@@ -1541,7 +1540,6 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     __tablename__ = 'description'
     id = db.Column(db.Integer, Sequence("description_seq"), primary_key=True)
     object_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
-    name = db.Column(db.Unicode(64), unique=True, nullable=False)
     object_type = db.Column(db.Unicode(64), unique=False, nullable=False)
     last_update = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.UnicodeText())
@@ -3315,8 +3313,7 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
                                           'tokengroup_id',
                                           name='ttgix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
-    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
     tokengroup_id = db.Column(db.Integer(),
