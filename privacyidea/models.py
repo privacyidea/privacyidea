@@ -3330,8 +3330,7 @@ class TokenContainer(MethodsMixin, db.Model):
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     type = db.Column(db.Unicode(100), default='Generic', nullable=False)
     description = db.Column(db.Unicode(1024), default='')
-    tokens = db.relationship('Token', secondary='tokencontainertoken',
-                             back_populates='container')
+    tokens = db.relationship('Token', secondary='tokencontainertoken', back_populates='container')
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', backref='container')
     last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))

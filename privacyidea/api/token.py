@@ -316,7 +316,7 @@ def init():
     if tokenobject:
         g.audit_object.log({"success": True})
         # The token was created successfully, so we add token specific
-        # init details like the google URL to the response
+        # init details like the Google URL to the response
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
         # Check if a containerSerial is set and assign the token to the container

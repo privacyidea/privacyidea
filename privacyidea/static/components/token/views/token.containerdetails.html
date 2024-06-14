@@ -1,5 +1,5 @@
 <h3 name="Container Details">
-    <translate>Container details for {{ containerSerial }} </translate>
+    <translate>Container details for {{ containerSerial }}</translate>
 </h3>
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
@@ -9,36 +9,31 @@
             <td>
                 <div ng-hide="deleteContainerButton">
                     <button class="btn btn-danger" ng-click="deleteContainerButton=true"
-                            id="deleteButton"
-                            ng-disabled="!checkRight('delete')"
-                            ng-hide="!checkRight('delete') && hide_buttons">
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                     </button>
                 </div>
                 <div ng-show="deleteContainerButton">
                     <button class="btn btn-danger" ng-click="deleteContainerMode(deleteAllTokens=false)"
-                            id="deleteButton"
-                            ng-disabled="!checkRight('delete')"
-                            ng-hide="!checkRight('delete') && hide_buttons">
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
                     <button class="btn btn-danger" ng-click="deleteContainerMode(deleteAllTokens=true)"
-                            id="deleteButton"
-                            ng-disabled="!checkRight('delete')"
-                            ng-hide="!checkRight('delete') && hide_buttons">
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
                     </button>
                     <button class="btn btn-danger" ng-click="deleteContainerButton=false"
-                            id="deleteButton"
-                            ng-disabled="!checkRight('delete')"
-                            ng-hide="!checkRight('delete') && hide_buttons">
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons">
                         <span translate>Cancel</span>
                     </button>
                 </div>
-
             </td>
         </tr>
         <tr>
@@ -46,7 +41,7 @@
             <td>
                 <span ng-repeat="(stateType, val) in stateTypes">
                     <input type="checkbox" ng-model="containerStates[stateType]"
-                           ng-disabled="!checkRight('set')">
+                           ng-disabled="!checkRight('container_state')">
                     <translate>{{ stateType }} </translate>
                     <br>
                 </span>
@@ -54,18 +49,18 @@
             <td>
                 <button class="btn btn-primary"
                         id="saveStates" ng-click="saveStates()" ng-disabled="!changed"
-                        ng-show="checkRight('set')"
+                        ng-show="checkRight('container_state')"
                         translate> Save States
                 </button>
             </td>
         </tr>
         <tr ng-show="loggedInUser.role==='admin' &&
-                     checkRight('setdescription')"
+                     checkRight('container_description')"
             token-data-edit text="{{ 'Description'|translate }}"
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ container.description }}"
             hide-buttons="{{ hide_buttons }}"
-            set-right="{{ checkRight('setdescription') }}"
+            set-right="{{ checkRight('container_description') }}"
             editable-as-user=true
             token-key="description"
             callback-cancel="get()"
@@ -76,7 +71,7 @@
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ container.description }}"
             hide-buttons="{{ hide_buttons }}"
-            set-right="{{ checkRight('setdescription') }}"
+            set-right="{{ checkRight('container_description') }}"
             editable-as-user=true
             token-key="description"
             callback-cancel="get()"
@@ -95,21 +90,21 @@
                 <div ng-show="loggedInUser.role == 'admin'">
                     <button class="btn btn-primary"
                             id="ciEditButton"
-                            ng-hide="editContainernfo || (!checkRight('set') && hide_buttons)"
-                            ng-disabled="!checkRight('set')"
+                            ng-hide="editContainerInfo || (!checkRight('container_info') && hide_buttons)"
+                            ng-disabled="!checkRight('container_info')"
                             ng-click="startEditContainerInfo()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="ciSaveButton"
-                            ng-show="editContainernfo"
+                            ng-show="editContainerInfo"
                             ng-click="saveContainerInfo()"
                             translate>Save Container Info
                     </button>
                     <button class="btn btn-danger"
                             id="ciCancelButton"
-                            ng-show="editContainernfo"
-                            ng-click="editContainernfo=0"
+                            ng-show="editContainerInfo"
+                            ng-click="editContainerInfo=false"
                             translate>Cancel
                     </button>
                 </div>
@@ -129,8 +124,7 @@
 </div>
 
 <!-- =================== USER ASSIGN ================= -->
-
-<div ng-show="loggedInUser.role == 'admin'">
+<div>
     <h4 ng-show="containerOwner" translate>Assigned User</h4>
     <table ng-show="containerOwner"
            class="table table-striped table-bordered">
@@ -144,6 +138,7 @@
             <td>
                 <button id="unassignAdminButton"
                         ng-click="unassignUser()"
+                        ng-show="checkRight('container_unassign_user')"
                         class="btn btn-warning">
                     <span class="glyphicon glyphicon-resize-full"></span>
                     <span translate>Unassign User</span>
@@ -167,13 +162,13 @@
     </table>
 </div>
 
-<div ng-show="checkRight('assign')">
+<div ng-show="checkRight('container_assign_user')">
     <h4 ng-hide="containerOwner.user_id" translate>
         Assign User</h4>
     <form ng-hide="containerOwner.user_id"
           name="formAssignContainer"
           role="form" validate>
-        <div assign-user new-user-object="newUser" realms="realms"></div>
+        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false></div>
 
         <div class="text-center">
             <button type="button" ng-click="assignUser()"
@@ -243,7 +238,8 @@
             <td>{{ token.maxfail }}</td>
             <td>{{ token.otplen }}</td>
             <td>
-                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial }}</a>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial
+                    }}</a>
             </td>
         </tr>
         </tbody>

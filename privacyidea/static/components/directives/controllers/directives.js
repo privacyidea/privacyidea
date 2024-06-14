@@ -109,14 +109,22 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
      */
     return {
         scope: {
-            newUserObject: '=', realms: '='
+            newUserObject: '=',
+            realms: '=',
+            enableSetPin: '='
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
-            //debug: console.log("Entering assignUser directive");
-            //debug: console.log(scope.realms);
-            //debug: console.log(scope.newUserObject);
+            //console.log("Entering assignUser directive");
+            //console.log(scope.realms);
+            // Set the default realm selection to the first realm in the list
+            scope.$watch('realms', function (newVal, oldVal) {
+                if (newVal) {
+                    scope.newUserObject.realm = Object.keys(newVal)[0];
+                }
+            }, true);
 
+            //console.log(scope.newUserObject);
             // toggle enable/disable loadUsers calls
             scope.toggleLoadUsers = function ($toggle) {
                 // only trigger if the search_on_enter policy is active
@@ -465,8 +473,10 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.selectorcreatecontainer.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
-            // Default value for the checkbox
-            scope.assignUserToContainer = scope.checkUserAssignment === true;
+            scope.showUserAssignment = scope.enableUserAssignment && AuthFactory.checkRight("container_assign_user");
+            // if showUserAssignment is false, the user assignment will be disabled
+            scope.assignUserToContainer = scope.checkUserAssignment && scope.showUserAssignment;
+
             scope.newContainer = {
                 type: "generic", types: "", description: "",
             }
@@ -489,6 +499,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }).then(function (response) {
                     containerList = response.data.result.value.containers;
                     scope.setContainerSelection(containerList);
+                    scope.setDefaultSerialSelection();
                     scope.newContainer.types = scope.getContainerTypesForTokenType();
                 }, function (error) {
                     AuthFactory.authError(error.data);
@@ -496,11 +507,8 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
             };
 
             scope.getContainerTypesForTokenType = function () {
-                // console.log("getContainerTypesForTokenType: " + scope.tokenType);
                 let usableContainerTypes = {};
                 let includesAll = (arr, target) => target.every(element => arr.includes(element));
-                //console.log("scope.tokenTypes: " + scope.tokenTypes + ", typeof: " + typeof scope.tokenTypes + ", is array: " + Array.isArray(scope.tokenTypes));
-                //const selectedTypes = Array.from(scope.tokenTypes);
                 if (scope.tokenTypes && Array.isArray(scope.tokenTypes) && scope.tokenTypes.length > 0) {
                     Object.keys(allContainerTypes).forEach(function (ctype) {
                         if (includesAll(allContainerTypes[ctype]["token_types"], scope.tokenTypes)) {
@@ -541,19 +549,33 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         }
                     });
                 }
-
-                // Always add an extra container at the beginning to represent the creation of a new container
-                scope.containers.unshift({displayString: "Create new container", serial: "createnew"});
+                if (AuthFactory.checkRight("container_create") || AuthFactory.isAdmin()) {
+                    // Always add an extra container at the beginning to represent the creation of a new container
+                    scope.containers.unshift({displayString: "Create new container", serial: "createnew"});
+                }
             }
 
-            // Set the default to creating a new container if there is containerSerial set from outer scope
-            if (!scope.containerSerial) {
-                scope.containerSerial = "createnew";
-                scope.isCreateNew = true;
+            scope.setDefaultSerialSelection = function () {
+                if (!scope.containerSerial || scope.containerSerial === "createnew") {
+                    if (AuthFactory.checkRight("container_create") || AuthFactory.isAdmin()) {
+                        scope.containerSerial = "createnew";
+                        scope.isCreateNew = true;
+                    } else if (scope.containers && scope.containers.length > 0) {
+                        scope.containerSerial = scope.containers[0].serial;
+                        scope.isCreateNew = false;
+                    } else {
+                        scope.containerSerial = null;
+                        scope.isCreateNew = false;
+                    }
+                } else {
+                    scope.isCreateNew = false;
+                }
             }
+
+            // Set the default to creating a new container/the first container if there is containerSerial set from outer scope
+            scope.setDefaultSerialSelection();
 
             scope.$watch('tokenTypes', function (newVal, oldVal) {
-                //console.log("selectOrCreateDirective: tokentypes changed from " + oldVal + " to " + newVal);
                 if (newVal) {
                     scope.setContainerSelection();
                     scope.newContainer.types = scope.getContainerTypesForTokenType();
@@ -568,12 +590,14 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     scope.newContainer.type = "generic"
                 }
             });
+
             scope.$watch('containerSerial', function (newVal, oldVal) {
                 //console.log("selectOrCreateDirective: containerSerial changed from " + oldVal + " to " + newVal);
-                if (newVal === undefined || newVal === null) {
-                    scope.containerSerial = "createnew";
+                // setDefaultSerialSelection check for rights to create_container, so in case newVal is "createnew",
+                // double check that because it can be set from outside
+                if (newVal === undefined || newVal === null || newVal == "createnew") {
+                    scope.setDefaultSerialSelection();
                 }
-                scope.isCreateNew = newVal == "createnew";
             });
 
             scope.changeContainerSelection = function () {

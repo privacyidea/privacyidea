@@ -1447,7 +1447,7 @@ class TokenClass(object):
     def get_init_detail(self, params=None, user=None):
         """
         to complete the token initialization, the response of the initialization
-        should be build by this token specific method.
+        should be built by this token specific method.
         This method is called from api/token after the token is enrolled
 
         get_init_detail returns additional information after an admin/init

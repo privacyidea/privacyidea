@@ -561,7 +561,7 @@
     <form ng-hide="token.user_id || token.locked"
           name="formAssignToken"
           role="form" validate>
-        <div assign-user new-user-object="newUser" realms="realms"></div>
+        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=true></div>
 
         <div class="text-center">
             <button type="button" ng-click="assignUser()"
@@ -584,7 +584,7 @@
 <div select-or-create-container
      container-serial="containerSerial"
      disable-selection="tokenIsInContainer"
-     enable-user-assignment="token.user_id"
+     enable-user-assignment="token.user_id!=undefined"
      user-name="token.username"
      user-realm="token.user_realm"
      token-types="[token.tokentype]">

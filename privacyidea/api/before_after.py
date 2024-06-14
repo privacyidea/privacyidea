@@ -98,7 +98,7 @@ def teardown_request(exc):
     except AttributeError:
         # In certain error cases the before_request was not handled
         # completely so that we do not have an audit_object
-        # Also during calling webui, there is not audit_object, yet.
+        # Also during calling webui, there is no audit_object, yet.
         pass
     call_finalizers()
     log.debug("End handling of request {!r}".format(request.full_path))
@@ -117,7 +117,7 @@ def before_user_request():
 @user_required
 def before_userendpoint_request():
     before_request()
-    # DEL /user/ has no realm parameter and thus we need to create the user object this way.
+    # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
     if not request.User and request.method == "DELETE":
         resolvername = getParam(request.all_data, "resolvername")
         username = getParam(request.all_data, "username")
@@ -169,7 +169,7 @@ def before_request():
 
     try:
         request.User = get_user_from_param(request.all_data)
-        # overwrite or set the resolver parameter in case of a logged in user
+        # overwrite or set the resolver parameter in case of a logged-in user
         if g.logged_in_user.get("role") == "user":
             request.all_data["resolver"] = request.User.resolver
     except AttributeError:
@@ -184,7 +184,7 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
+    # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
@@ -192,7 +192,7 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and not "*" in serial:
+    if serial and "*" not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:

@@ -166,7 +166,6 @@
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked">
                     <li role="presentation"
-                        ng-show="checkEnroll() || loggedInUser.role === 'admin'"
                         ng-class="{active: $state.includes('token.containerlist')}">
                         <a ui-sref="token.containerlist">
                             <span class="glyphicon glyphicon-list"></span>
@@ -179,7 +178,7 @@
                         {{ $stateParams.containerSerial }}</a>
                     </li>
                     <li role="presentation"
-                        ng-show="checkEnroll() || loggedInUser.role === 'admin'"
+                        ng-show="checkRight('container_create') || loggedInUser.role === 'admin'"
                         ng-class="{active: $state.includes('token.containercreate')}">
                         <a ui-sref="token.containercreate">
                             <span class="glyphicon glyphicon-plus"></span>

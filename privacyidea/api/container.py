@@ -2,14 +2,18 @@ import logging
 
 from flask import Blueprint, jsonify, request, g
 
+from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container
+    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container, \
+    add_container_info
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_one_token, get_tokens, \
     convert_token_objects_to_dicts
 from privacyidea.lib.user import get_user_from_param, get_username
@@ -82,7 +86,7 @@ def list_containers():
         tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
 
         infos: dict = {}
-        for info in container.get_containerinfo():
+        for info in container.get_container_info():
             if info.type:
                 infos[info.key + ".type"] = info.type
             infos[info.key] = info.value
@@ -94,6 +98,7 @@ def list_containers():
 
 
 @container_blueprint.route('assign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
 @log_with(log)
 def assign():
     """
@@ -111,6 +116,7 @@ def assign():
 
 
 @container_blueprint.route('unassign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
 @log_with(log)
 def unassign():
     """
@@ -128,6 +134,7 @@ def unassign():
 
 
 @container_blueprint.route('init', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_CREATE)
 @log_with(log)
 def init():
     """
@@ -145,6 +152,7 @@ def init():
 
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DELETE)
 @log_with(log)
 def delete(container_serial):
     """
@@ -157,6 +165,7 @@ def delete(container_serial):
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @log_with(log)
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 # @event("container_add", request, g)
 def add_token(container_serial):
     """
@@ -178,6 +187,7 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @log_with(log)
 def remove_token(container_serial):
     """
@@ -216,6 +226,7 @@ def get_types():
 
 
 @container_blueprint.route('/description/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DESCRIPTION)
 @log_with(log)
 def set_description(serial):
     """
@@ -233,6 +244,7 @@ def set_description(serial):
 
 
 @container_blueprint.route('/states', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_STATE)
 @log_with(log)
 def set_states():
     """
@@ -276,14 +288,13 @@ def update_last_seen(serial):
     return send_result(True)
 
 
-# @container_blueprint.route('tokentypes', methods=['GET'])
-# @log_with(log)
-# def get_token_types():
-#     """
-#     Get the supported token types for each container type
-#     """
-#     ttypes = get_container_token_types()
-#     return send_result(res)
+@container_blueprint.route('info/<serial>/<key>', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
+@log_with(log)
+def set_container_info(serial, key):
+    value = getParam(request.all_data, "value", required)
+    add_container_info(serial, key, value)
 
 
 ######################## vvv TEMPLATES vvv ##########################
