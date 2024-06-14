@@ -117,7 +117,7 @@ def before_user_request():
 @user_required
 def before_userendpoint_request():
     before_request()
-    # DEL /user/ has no realm parameter and thus we need to create the user object this way.
+    # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
     if not request.User and request.method == "DELETE":
         resolvername = getParam(request.all_data, "resolvername")
         username = getParam(request.all_data, "username")
@@ -169,12 +169,12 @@ def before_request():
 
     try:
         request.User = get_user_from_param(request.all_data)
-        # overwrite or set the resolver parameter in case of a logged in user
+        # overwrite or set the resolver parameter in case of a logged-in user
         if g.logged_in_user.get("role") == "user":
             request.all_data["resolver"] = request.User.resolver
     except AttributeError:
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
-        # takes a list as the userobject
+        # takes a list as the user object
         request.User = None
     except UserError:
         # In cases like the policy API, the parameter "user" is part of the
@@ -192,7 +192,7 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and not "*" in serial:
+    if serial and "*" not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:
