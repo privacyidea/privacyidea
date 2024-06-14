@@ -434,6 +434,7 @@ def list_api():
     serial_list = request.args.getlist("serial_list")
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
+    token_type_list = request.args.getlist("type_list")
     description = getParam(param, "description", optional)
     sort = getParam(param, "sortby", optional, default="serial")
     sdir = getParam(param, "sortdir", optional, default="asc")
@@ -468,7 +469,7 @@ def list_api():
     tokens = get_tokens_paginate(serial=serial, serial_list=serial_list, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
                                  active=active, sortby=sort, sortdir=sdir,
-                                 tokentype=tokentype,
+                                 tokentype=tokentype, token_type_list=token_type_list,
                                  resolver=resolver,
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
