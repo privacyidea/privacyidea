@@ -165,8 +165,8 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
     return ("otpauth://pipush/{label!s}?"
             "url={url!s}&ttl={ttl!s}&"
             "issuer={issuer!s}{extra}".format(label=url_label, issuer=url_issuer,
-                                       url=url_url, ttl=ttl,
-                                       extra=_construct_extra_parameters(extra_data)))
+                                              url=url_url, ttl=ttl,
+                                              extra=_construct_extra_parameters(extra_data)))
 
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options):
@@ -330,89 +330,91 @@ class PushTokenClass(TokenClass):
         res = {'type': 'push',
                'title': _('PUSH Token'),
                'description':
-                    _('PUSH: Send a push notification to a smartphone.'),
+                   _('PUSH: Send a push notification to a smartphone.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       PUSH_ACTION.FIREBASE_CONFIG: {
-                           'type': 'str',
-                           'desc': _('The configuration of your Firebase application.'),
-                           'group': "PUSH",
-                           'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+               'policy':
+                   {
+                       SCOPE.ENROLL: {
+                           PUSH_ACTION.FIREBASE_CONFIG: {
+                               'type': 'str',
+                               'desc': _('The configuration of your Firebase application.'),
+                               'group': "PUSH",
+                               'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+                           },
+                           PUSH_ACTION.REGISTRATION_URL: {
+                               "required": True,
+                               'type': 'str',
+                               'group': "PUSH",
+                               'desc': _('The URL the Push App should contact in the second enrollment step.'
+                                         ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
+                           },
+                           PUSH_ACTION.TTL: {
+                               'type': 'int',
+                               'group': "PUSH",
+                               'desc': _('The second enrollment step must be completed within this time (in minutes).')
+                           },
+                           PUSH_ACTION.SSL_VERIFY: {
+                               'type': 'str',
+                               'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
+                               'group': "PUSH",
+                               'value': ["0", "1"]
+                           },
+                           ACTION.MAXTOKENUSER: {
+                               'type': 'int',
+                               'desc': _("The user may only have this maximum number of Push tokens assigned."),
+                               'group': GROUP.TOKEN
+                           },
+                           ACTION.MAXACTIVETOKENUSER: {
+                               'type': 'int',
+                               'desc': _("The user may only have this maximum number of active Push tokens assigned."),
+                               'group': GROUP.TOKEN
+                           },
+                           'push_' + ACTION.FORCE_APP_PIN: {
+                               'type': 'bool',
+                               'group': "PUSH",
+                               'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
+                           }
                        },
-                       PUSH_ACTION.REGISTRATION_URL: {
-                            "required": True,
-                            'type': 'str',
-                            'group': "PUSH",
-                            'desc': _('The URL the Push App should contact in the second enrollment step.'
-                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
-                       },
-                       PUSH_ACTION.TTL: {
-                           'type': 'int',
-                           'group': "PUSH",
-                           'desc': _('The second enrollment step must be completed within this time (in minutes).')
-                       },
-                       PUSH_ACTION.SSL_VERIFY: {
-                           'type': 'str',
-                           'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
-                           'group':  "PUSH",
-                           'value': ["0", "1"]
-                       },
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of Push tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active Push tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       'push_' + ACTION.FORCE_APP_PIN: {
-                           'type': 'bool',
-                           'group': "PUSH",
-                           'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
+                       SCOPE.AUTH: {
+                           PUSH_ACTION.MOBILE_TEXT: {
+                               'type': 'str',
+                               'desc': _(
+                                   'The question the user sees on his mobile phone. Several tags like {serial} and '
+                                   '{client_ip} can be used as parameters.'),
+                               'group': 'PUSH'
+                           },
+                           PUSH_ACTION.MOBILE_TITLE: {
+                               'type': 'str',
+                               'desc': _('The title of the notification, the user sees on his mobile phone.'),
+                               'group': 'PUSH'
+                           },
+                           PUSH_ACTION.SSL_VERIFY: {
+                               'type': 'str',
+                               'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
+                               'group': "PUSH",
+                               'value': ["0", "1"]
+                           },
+                           PUSH_ACTION.WAIT: {
+                               'type': 'int',
+                               'desc': _('Wait for number of seconds for the user '
+                                         'to confirm the challenge in the first request.'),
+                               'group': "PUSH"
+                           },
+                           PUSH_ACTION.ALLOW_POLLING: {
+                               'type': 'str',
+                               'desc': _('Configure whether to allow push tokens to poll for '
+                                         'challenges'),
+                               'group': 'PUSH',
+                               'value': [PushAllowPolling.ALLOW,
+                                         PushAllowPolling.DENY,
+                                         PushAllowPolling.TOKEN],
+                               'default': PushAllowPolling.ALLOW
+                           }
                        }
                    },
-                   SCOPE.AUTH: {
-                       PUSH_ACTION.MOBILE_TEXT: {
-                           'type': 'str',
-                           'desc': _('The question the user sees on his mobile phone. Several tags like {serial} and '
-                                     '{client_ip} can be used as parameters.'),
-                           'group': 'PUSH'
-                       },
-                       PUSH_ACTION.MOBILE_TITLE: {
-                           'type': 'str',
-                           'desc': _('The title of the notification, the user sees on his mobile phone.'),
-                           'group': 'PUSH'
-                       },
-                       PUSH_ACTION.SSL_VERIFY: {
-                           'type': 'str',
-                           'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
-                           'group': "PUSH",
-                           'value': ["0", "1"]
-                       },
-                       PUSH_ACTION.WAIT: {
-                           'type': 'int',
-                           'desc': _('Wait for number of seconds for the user '
-                                     'to confirm the challenge in the first request.'),
-                           'group': "PUSH"
-                       },
-                       PUSH_ACTION.ALLOW_POLLING: {
-                           'type': 'str',
-                           'desc': _('Configure whether to allow push tokens to poll for '
-                                     'challenges'),
-                           'group': 'PUSH',
-                           'value': [PushAllowPolling.ALLOW,
-                                     PushAllowPolling.DENY,
-                                     PushAllowPolling.TOKEN],
-                           'default': PushAllowPolling.ALLOW
-                       }
-                   }
-               },
-        }
+               }
 
         if key:
             ret = res.get(key, {})
@@ -942,7 +944,7 @@ class PushTokenClass(TokenClass):
         else:
             log.warning("The token {0!s} has no tokeninfo {1!s}. "
                         "The message could not be sent.".format(self.token.serial,
-                                                                 PUSH_ACTION.FIREBASE_CONFIG))
+                                                                PUSH_ACTION.FIREBASE_CONFIG))
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")

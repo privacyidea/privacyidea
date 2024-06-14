@@ -3,16 +3,15 @@ This is the directive for assigning users.
 -->
 <div class="form-group">
     <label for="realm" translate>Realm</label>
-    <select class="form-control"
+    <select class="form-control" id="realm"
             name="realm" ng-model="newUserObject.realm"
-            ng-options="realmname as realmname for (realmname, realm) in
-            realms">
+            ng-options="realmname as realmname for (realmname, realm) in realms">
     </select>
 </div>
 
 <div class="form-group">
     <label for="username" translate>Username</label>
-    <input name="username" type="text" ng-model="newUserObject.user"
+    <input name="username" id="username" type="text" ng-model="newUserObject.user"
            autocomplete="new-password"
            placeholder="{{ 'start typing a username'|translate }}"
            ng-keypress="toggleLoadUsers($event.which==13)"
@@ -28,13 +27,13 @@ This is the directive for assigning users.
         <i class="glyphicon glyphicon-remove"></i><span translate>No user found</span>
     </div>
 </div>
-<div class="form-group">
+<div class="form-group" ng-show="enableSetPin">
     <!-- we could add a checkRight("enrollpin") here,
         but this would not be quite accurate, since this directive is
         also used during assigning and not only during enrolling!
         -->
     <label for="otppin" translate>PIN/Password</label>
-    <input name="otppin" ng-model="newUserObject.pin"
+    <input name="otppin" id="otppin" ng-model="newUserObject.pin"
             autocomplete="new-password"
             type=password class="form-control"
             equals="{{pin2}}"

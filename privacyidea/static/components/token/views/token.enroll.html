@@ -45,8 +45,7 @@
         <div ng-if="loggedInUser.role == 'admin' && $state.includes('token.rollover') == false">
             <h4 translate>Assign token to user</h4>
 
-            <div assign-user new-user-object="newUser" realms="realms"
-                 default-realm="defaultRealm"></div>
+            <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=true></div>
 
             <div class="msg-block"
                  ng-show="formEnrollToken.otppin2.$error.passwordVerify">
