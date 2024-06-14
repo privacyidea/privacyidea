@@ -51,7 +51,7 @@ angular.module("privacyideaApp")
             $scope.checkEnroll = AuthFactory.checkEnroll;
             $scope.inputNamePatterns = resourceNamePatterns;
             $scope.startRoute = "/token";
-            let obj = angular.element(document.querySelector("#REMOTE_USER"));
+            var obj = angular.element(document.querySelector("#REMOTE_USER"));
             $scope.remoteUser = obj.val();
             if (!$scope.remoteUser) {
                 $scope.loginWithCredentials = true;
@@ -247,7 +247,7 @@ angular.module("privacyideaApp")
                         $scope.login = {username: "", password: ""};
                     } else if (data.detail && data.detail.transaction_id) {
                         // In case of error.detail.transaction_id is present, we
-                        // have a challenge response and we need to go to the state response
+                        // have a challenge response, and we need to go to the state response
                         if ($scope.unlocking === false) {
                             // If we are not unlocking, then we do a "login".
                             // For this we go to the response-state.
@@ -486,11 +486,11 @@ angular.module("privacyideaApp")
                 const timeout = data.result.value.logout_time;
                 PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
                 //debug: console.log(timeout);
-                let idle_start = timeout - 10;
-                if (idle_start <= 0) {
-                    idle_start = 1;
+                let idlestart = timeout - 10;
+                if (idlestart <= 0) {
+                    idlestart = 1;
                 }
-                Idle.setIdle(idle_start);
+                Idle.setIdle(idlestart);
                 Idle.watch();
                 //debug: console.log("successfully authenticated");
                 //debug: console.log($scope.loggedInUser);
@@ -682,4 +682,5 @@ angular.module("privacyideaApp")
                 $scope.pin_change_serial = null;
                 $scope.logout();
             }
+
         }]);

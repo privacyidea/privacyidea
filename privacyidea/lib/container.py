@@ -9,6 +9,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import Match
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -351,3 +352,11 @@ def remove_tokens_from_container(container_serial, token_serials):
         container.remove_token(token_serial)
         res = True
     return res
+
+
+def add_container_info(serial, ikey, ivalue):
+    """
+    Add the given info to the container with the given serial
+    """
+    container = find_container_by_serial(serial)
+    container.add_container_info(ikey, ivalue)

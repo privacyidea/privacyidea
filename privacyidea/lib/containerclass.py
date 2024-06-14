@@ -200,6 +200,10 @@ class TokenContainerClass:
 
     @classmethod
     def get_state_types(cls):
+        """
+        Returns the state types that are supported by this container class and the states that are exclusive
+        to each of these states.
+        """
         state_types_exclusions = {
             "active": ["disabled"],
             "disabled": ["active"],
@@ -208,7 +212,7 @@ class TokenContainerClass:
         }
         return state_types_exclusions
 
-    def set_containerinfo(self, info):
+    def set_container_info(self, info):
         """
         Set the containerinfo field in the DB. Old values will be deleted.
 
@@ -218,17 +222,16 @@ class TokenContainerClass:
         self.delete_container_info()
         self._db_container.set_info(info)
 
-    def add_containerinfo(self, key, value):
+    def add_container_info(self, key, value):
         """
         Add a key and a value to the DB tokencontainerinfo
 
-        :param key:
-        :param value:
+        :param key: key
+        :param value: value
         """
-        add_info = {key: value}
-        self._db_container.set_info(add_info)
+        self._db_container.set_info({key: value})
 
-    def get_containerinfo(self):
+    def get_container_info(self):
         """
         Return the tokencontainerinfo from the DB
 
