@@ -263,16 +263,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.get();
         };
 
-        // Get possible container states
-        $scope.stateTypes = [];
-        $scope.containerStates = {};
-        ContainerFactory.getStateTypes(function (data) {
-            $scope.stateTypes = data.result.value;
-            angular.forEach($scope.stateTypes, function (state) {
-                $scope.containerStates[state] = false;
-            })
-        });
-
         $scope.excludeStates = function (state) {
             // Get possible container states
             $scope.stateTypes = [];
@@ -290,7 +280,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.containerStates[disableType] = false;
             });
         };
-
+        $scope.excludeStates();
         $scope.$watch("containerStates", function (newValue, oldValue) {
             $scope.stateSelectionChanged = true;
             for (let [key, value] of Object.entries(newValue)) {
@@ -402,7 +392,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         }
 
-// listen to the reload broadcast
+        // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);
 
 // ------------------- Token Actions -------------------------------

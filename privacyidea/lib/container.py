@@ -361,3 +361,11 @@ def add_container_info(serial, ikey, ivalue):
     """
     container = find_container_by_serial(serial)
     container.add_container_info(ikey, ivalue)
+
+
+def add_container_info(serial, ikey, ivalue):
+    """
+    Add the given info to the container with the given serial
+    """
+    container = find_container_by_serial(serial)
+    container.add_container_info(ikey, ivalue)

@@ -140,8 +140,8 @@ def unassign(container_serial):
 
 
 @container_blueprint.route('init', methods=['POST'])
-@event('container_init', request, g)
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_CREATE)
+@event('container_init', request, g)
 @log_with(log)
 def init():
     """
