@@ -31,7 +31,6 @@ from ..models import Challenge
 
 log = logging.getLogger(__name__)
 
-CHALLENGE_DECLINED = "challenge_declined"
 
 
 @log_with(log)

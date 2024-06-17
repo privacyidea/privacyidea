@@ -124,6 +124,7 @@ log = logging.getLogger(__name__)
 
 class CHALLENGE_SESSION(object):
     ENROLLMENT = "enrollment"
+    DECLINED = "challenge_declined"
 
 
 class TOKENKIND(object):
