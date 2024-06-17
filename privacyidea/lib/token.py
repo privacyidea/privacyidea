@@ -326,7 +326,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
 
     if container_serial is not None:
         if container_serial == "":
-            sql_query = sql_query.filter(Token.container == None)
+            sql_query = sql_query.outerjoin(TokenContainerToken).filter(TokenContainerToken.container_id.is_(None))
         else:
             container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
             if container is None:
