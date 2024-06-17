@@ -47,6 +47,7 @@ from dateutil.tz import tzlocal
 import re
 import logging
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 
@@ -401,6 +402,7 @@ class BaseEventHandler(object):
         user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
+        transaction_id = request.all_data.get("transaction_id")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None
@@ -631,11 +633,8 @@ class BaseEventHandler(object):
             # We also put the challenge condition here. If we do not have a
             # token-obj we can not identify challenges.
             if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
-                # TODO check if we have the transaction_id available from the request
-                from privacyidea.lib.challenge import get_challenge
-                chals = get_challenge(serial=token_obj.token.serial)
+                chals = get_challenges(serial=token_obj.token.serial, transaction_id=transaction_id)
                 if len(chals) == 1:
-                    # TODO: What should we do, if there are more challenges. (transaction_id)
                     chal = chals[0]
                     if CONDITION.CHALLENGE_SESSION in conditions:
                         if not chal.session == conditions.get(CONDITION.CHALLENGE_SESSION):
@@ -644,6 +643,11 @@ class BaseEventHandler(object):
                         condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)
                         if is_true(condition_value) != chal.is_expired():
                             return False
+                elif len(chals) > 1:
+                    # If there is more than one challenge, the conditions seams awkward
+                    log.warning("There are more than one challenge for token {0!s} "
+                                "and transaction_id {1!s}".format(token_obj.token.serial, transaction_id))
+                    return False
 
         return True
 
