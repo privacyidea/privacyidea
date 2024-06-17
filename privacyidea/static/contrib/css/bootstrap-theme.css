@@ -309,6 +309,10 @@ fieldset[disabled] .btn-danger.active {
   background-color: #c12e2a;
   background-image: none;
 }
+.btn-transparent{
+  background-image: none;
+  border-color: #ddd;
+}
 .thumbnail,
 .img-thumbnail {
   -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.075);

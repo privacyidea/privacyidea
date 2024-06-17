@@ -227,13 +227,13 @@
             <th>
                 <div ng-show="loggedInUser.role=='admin'">
                     <button ng-click="removeAllTokens(token.serial)"
-                            class="btn btn-transparent btn-header"
+                            class="btn btn-transparent btn-danger btn-header"
                             id="removeButton"
                             ng-hide="showDialogAll">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove All</span>
                     </button>
-                    <button class="btn btn-transparent btn-header" ng-click="showDialogAll=true"
+                    <button class="btn btn-transparent btn-danger btn-header" ng-click="showDialogAll=true"
                             id="deleteButton"
                             ng-disabled="!checkRight('delete')"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialogAll">
@@ -301,14 +301,14 @@
             </td>
             <td>
                 <fieldset ng-disabled="!adminOrUserIsOwner(token.username, token.user_realm)">
-                    <button class="btn btn-transparent"
+                    <button class="btn btn-transparent btn-danger"
                             id="removeButton"
                             ng-hide="showDialog[token.serial]"
                             ng-click="removeOneToken(token.serial)">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove</span>
                     </button>
-                    <button class="btn btn-transparent" ng-click="deleteOneToken(token.serial, true)"
+                    <button class="btn btn-transparent btn-danger" ng-click="deleteOneToken(token.serial, true)"
                             id="deleteButton"
                             ng-disabled="!checkRight('delete')"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
@@ -514,7 +514,7 @@
                 </td>
                 <td>
                     <button ng-click="addToken(token_add.serial)"
-                            class="btn btn-transparent-default btn-transparent-primary"
+                            class="btn btn-transparent btn-primary"
                             ng-disabled="token_add.container_serial===containerSerial || !checkRight('set')"
                             ng-hide="(token_add.container_serial===containerSerial || !checkRight('set')) && hide_buttons">
                         <span class="glyphicon glyphicon-plus"></span>
