@@ -9,7 +9,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state'
             containerType: "generic",
             description: "",
             token_types: ""
-        }
+        };
 
         $scope.$watch('form', function (newVal, oldVal) {
             if (newVal) {
@@ -117,7 +117,7 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.containersPerPage = $scope.token_page_size;
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {sortdir: "asc"};
-        $scope.containerdata = []
+        $scope.containerdata = [];
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -197,7 +197,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         ContainerFactory.getStateTypes(function (data) {
             $scope.stateTypes = data.result.value;
             angular.forEach($scope.stateTypes, function (val, state) {
-
                 // Set the state to false, if it is displayed next to states that exclude each other
                 if (!($scope.displayState[state] == false)) {
                     $scope.displayState[state] = true;
@@ -243,7 +242,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
             // update token list for add
             $scope.get();
-        }
+        };
 
         $scope.excludeStates = function (state) {
             // Deselect excluded states based on the selected state
@@ -272,7 +271,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let params = {"serial": $scope.containerSerial, "states": states};
             ContainerFactory.setStates(params, $scope.getContainer);
             $scope.stateSelectionChanged = false;
-        }
+        };
 
         $scope.returnTo = function () {
             // After deleting the container, we return here.
@@ -344,7 +343,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.reverse = false;
 
         // --- Actions for tokens in the container ---
-
         $scope.getAllTokenSerials = function () {
             let tokenSerials = [];
             angular.forEach($scope.container.tokens, function (token) {
@@ -355,7 +353,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.enrollToken = function () {
             // go to token.enroll with the users data of the container owner
-            $scope.enrollParams = {}
+            $scope.enrollParams = {};
             if ($scope.containerOwner) {
                 $scope.enrollParams = {
                     realmname: $scope.containerOwner.user_realm,
