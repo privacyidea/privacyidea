@@ -79,6 +79,8 @@ class CONDITION(object):
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
+    CHALLENGE_SESSION = "challenge_session"
+    CHALLENGE_EXPIRED = "challenge_expired"
 
 
 class GROUP(object):
@@ -90,6 +92,7 @@ class GROUP(object):
     GENERAL = "general"
     USER = "user"
     COUNTER = "counter"
+    CHALLENGE = "challenge"
 
 
 class BaseEventHandler(object):
@@ -142,6 +145,17 @@ class BaseEventHandler(object):
         realms = get_realms()
         resolvers = get_resolver_list()
         cond = {
+            CONDITION.CHALLENGE_SESSION: {
+                "type": "str",
+                "desc": _("The challenge session matches the string (like 'challenge_declined' or 'enrollment'"),
+                "group": GROUP.CHALLENGE
+            },
+            CONDITION.CHALLENGE_EXPIRED: {
+                "type": "str",
+                "desc": _("The challenge is expired."),
+                "value": ("Expired", "Still valid"),
+                "group": GROUP.CHALLENGE
+            },
             CONDITION.ROLLOUT_STATE: {
                 "type": "str",
                 "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'."),
