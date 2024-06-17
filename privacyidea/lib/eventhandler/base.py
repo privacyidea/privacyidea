@@ -148,12 +148,14 @@ class BaseEventHandler(object):
         cond = {
             CONDITION.CHALLENGE_SESSION: {
                 "type": "str",
-                "desc": _("The challenge session matches the string (like 'challenge_declined' or 'enrollment'"),
+                "desc": _("The challenge session matches the string or regular "
+                          "expressoin (like 'challenge_declined' or 'enrollment')"),
                 "group": GROUP.CHALLENGE
             },
             CONDITION.CHALLENGE_EXPIRED: {
                 "type": "str",
-                "desc": _("The challenge is expired."),
+                "desc": _("The challenge of a token during the authentication process"
+                          " is expired."),
                 "value": ("True", "False"),
                 "group": GROUP.CHALLENGE
             },
@@ -637,7 +639,8 @@ class BaseEventHandler(object):
                 if len(chals) == 1:
                     chal = chals[0]
                     if CONDITION.CHALLENGE_SESSION in conditions:
-                        if not chal.session == conditions.get(CONDITION.CHALLENGE_SESSION):
+                        cond_match = conditions.get(CONDITION.CHALLENGE_SESSION)
+                        if not bool(re.match(cond_match, chal.session)):
                             return False
                     if CONDITION.CHALLENGE_EXPIRED in conditions:
                         condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)

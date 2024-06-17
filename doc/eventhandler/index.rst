@@ -368,6 +368,24 @@ value. Valid compares are::
 
 .. note:: A non-existing counter value will compare as 0 (zero).
 
+**challenge_session**
+
+The *challenge_session* condition can compare the value of the session attribute of
+a challenge against a regular expression. Usual values of the session are:
+
+*enrollment* during a multi challenge enrollment process and
+
+*challenge_declined* if the challenge of a PUSH token was declined by the user.
+
+This way the administrator can check for declined PUSH authentications and take
+according actions.
+
+**challenge_expired**
+
+This is a boolean check if the challenge has expired. Each challenge has an expiration
+date. If this exceeded this condition evaluates to *True*.
+
+
 Managing Events
 ---------------
 
