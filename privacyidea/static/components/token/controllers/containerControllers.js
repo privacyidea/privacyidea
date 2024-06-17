@@ -268,7 +268,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     states.push(key);
                 }
             });
-            let params = {"serial": $scope.containerSerial, "states": states};
+            let params = {"container_serial": $scope.containerSerial, "states": states};
             ContainerFactory.setStates(params, $scope.getContainer);
             $scope.stateSelectionChanged = false;
         };
@@ -296,7 +296,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.assignUser = function () {
             ContainerFactory.assignUser(
                 {
-                    serial: $scope.containerSerial,
+                    container_serial: $scope.containerSerial,
                     user: fixUser($scope.newUser.user),
                     realm: $scope.newUser.realm,
                     pin: $scope.newUser.pin
@@ -307,7 +307,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.unassignUser = function () {
             ContainerFactory.unassignUser(
                 {
-                    serial: $scope.containerSerial,
+                    container_serial: $scope.containerSerial,
                     user: fixUser($scope.containerOwner.user_name),
                     realm: $scope.containerOwner.realm,
                     pin: $scope.containerOwner.pin

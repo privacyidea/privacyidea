@@ -9,7 +9,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates
+from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates, TokenContainerInfo
 
 log = logging.getLogger(__name__)
 
@@ -137,6 +137,23 @@ class TokenContainerClass:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
         self.update_last_updated()
 
+    def add_states(self, value: List[str]):
+        # Add new states
+        state_types = self.get_state_types()
+        for state in value:
+            if state not in state_types.keys():
+                raise ParameterError(f"State {state} not supported. Supported states are {state_types}.")
+            else:
+                # Remove states that are excluded from the new state
+                for excluded_state in state_types[state]:
+                    TokenContainerStates.query.filter_by(container_id=self._db_container.id,
+                                                         state=excluded_state).delete()
+                    log.debug(
+                        f"Removed state {excluded_state} from container {self.serial} "
+                        f"because it is excluded by the new state {state}.")
+                TokenContainerStates(container_id=self._db_container.id, state=state).save()
+        self.update_last_updated()
+
     @classmethod
     def get_state_types(cls):
         state_types_exclusions = {
@@ -154,7 +171,7 @@ class TokenContainerClass:
         :param info: dictionary with key and value
         :type info: dict
         """
-        self._db_container.del_info()
+        self.delete_container_info()
         self._db_container.set_info(info)
 
     def add_containerinfo(self, key, value):
@@ -175,6 +192,19 @@ class TokenContainerClass:
         """
 
         return self._db_container.info_list
+
+    def delete_container_info(self, key=None):
+        """
+        Delete the tokencontainerinfo from the DB
+
+        :param key: key to delete, if None all keys are deleted
+        """
+        if key:
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, Key=key)
+        else:
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
+        for ci in container_infos:
+            ci.delete()
 
     @classmethod
     def get_class_type(cls):

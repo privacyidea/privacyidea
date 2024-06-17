@@ -52,7 +52,7 @@ enroll
 ......
 
 If all conditions are matched a new token will be enrolled. This new token
-can be assigned to a user, which was identified in the request.
+can be assigned to a user and added to a container, which were both identified in the request.
 
 The administrator can specify the **tokentype** and the **realms** of the new
 token. By default the generation of the token will use the parameter ``genkey``, to
