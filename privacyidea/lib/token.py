@@ -161,7 +161,7 @@ def create_tokenclass_object(db_token):
     return token_object
 
 
-def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
+def _create_token_query(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
                         serial_exact=None, serial_wildcard=None, serial_list=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
                         locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
@@ -185,6 +185,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             # exact match
             sql_query = sql_query.filter(func.lower(Token.tokentype) == tokentype.lower())
+
+    if token_type_list is not None and len(token_type_list) > 0:
+        # filter for all token types in the list
+        sql_query = sql_query.filter(Token.tokentype.in_([t.lower() for t in token_type_list]))
 
     if description is not None and description.strip("*"):
         # filter for Description
@@ -321,11 +325,16 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
     if container_serial is not None:
-        container_id = TokenContainer.query.filter(TokenContainer.serial == container_serial).first().id
-        token_container_token = TokenContainerToken.query.filter(
-            TokenContainerToken.container_id == container_id).all()
-        token_ids = [token_id.token_id for token_id in token_container_token]
-        sql_query = sql_query.filter(Token.id.in_(token_ids))
+        if container_serial == "":
+            sql_query = sql_query.outerjoin(TokenContainerToken).filter(TokenContainerToken.container_id.is_(None))
+        else:
+            container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
+            if container is None:
+                raise privacyIDEAError(_(f"No container with the serial {container_serial} exists."))
+            token_container_token = TokenContainerToken.query.filter(
+                TokenContainerToken.container_id == container.id).all()
+            token_ids = [token_id.token_id for token_id in token_container_token]
+            sql_query = sql_query.filter(Token.id.in_(token_ids))
 
     return sql_query
 
@@ -415,7 +424,7 @@ def convert_token_objects_to_dicts(tokens, hidden_tokeninfo=None):
 
 @log_with(log)
 # @cache.memoize(10)
-def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
+def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, serial_list=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
                maxfail=None):
@@ -432,6 +441,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
     :param tokentype: The type of the token. If None, all tokens are returned.
     :type tokentype: basestring
+    :param token_type_list: A list of token types. I None or empty, all token types are returned.
+    :type token_type_list: list
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens.
@@ -468,7 +479,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :rtype: list
     """
     token_list = []
-    sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
                                     active=active, resolver=resolver,
@@ -502,7 +513,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
 
 @log_with(log)
-def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
+def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
                         serial=None, serial_list=None, active=None, resolver=None, rollout_state=None,
                         sortby=Token.serial, sortdir="asc", psize=15,
                         page=1, description=None, userid=None, allowed_realms=None,
@@ -514,6 +525,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     the next or previous page. If either does not exist, it is None.
 
     :param tokentype:
+    :param token_type_list: A list of token types
     :param realm:
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
@@ -547,7 +559,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
-    sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_wildcard=serial, serial_list=serial_list, active=active,
                                     resolver=resolver, tokeninfo=tokeninfo,
