@@ -153,7 +153,7 @@ class BaseEventHandler(object):
             CONDITION.CHALLENGE_EXPIRED: {
                 "type": "str",
                 "desc": _("The challenge is expired."),
-                "value": ("Expired", "Still valid"),
+                "value": ("True", "False"),
                 "group": GROUP.CHALLENGE
             },
             CONDITION.ROLLOUT_STATE: {
@@ -627,6 +627,23 @@ class BaseEventHandler(object):
                 cond = conditions.get(CONDITION.ROLLOUT_STATE)
                 if not cond == token_obj.token.rollout_state:
                     return False
+
+            # We also put the challenge condition here. If we do not have a
+            # token-obj we can not identify challenges.
+            if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
+                # TODO check if we have the transaction_id available from the request
+                from privacyidea.lib.challenge import get_challenge
+                chals = get_challenge(serial=token_obj.token.serial)
+                if len(chals) == 1:
+                    # TODO: What should we do, if there are more challenges. (transaction_id)
+                    chal = chals[0]
+                    if CONDITION.CHALLENGE_SESSION in conditions:
+                        if not chal.session == conditions.get(CONDITION.CHALLENGE_SESSION):
+                            return False
+                    if CONDITION.CHALLENGE_EXPIRED in conditions:
+                        condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)
+                        if is_true(condition_value) != chal.is_expired():
+                            return False
 
         return True
 
