@@ -136,7 +136,9 @@ class TokenContainerClass:
                                 user_id=user_id,
                                 resolver=resolver_name,
                                 realm_id=user.realm_id).save()
-            self.realms = [user.realm_id]
+            # Add user realm to container realms
+            realm_db = Realm.query.filter_by(name=user.realm).first()
+            self._db_container.realms.append(realm_db)
             self.update_last_updated()
             return True
         return False
