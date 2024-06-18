@@ -123,6 +123,51 @@
             </td>
         </tr>
         <tr>
+            <td translate> Realms</td>
+            <td>
+                <span ng-hide="editContainerRealms">
+                    <ul ng-click="editContainerRealms=true">
+                        <li ng-repeat="realm in container.realms">{{ realm }}</li>
+                    </ul>
+                </span>
+                <span ng-show="editContainerRealms">
+                    <span ng-repeat="(realmname, realm) in realms">
+                        <label for="{{ realmname }}">
+                            <input type="checkbox"
+                                   ng-model="selectedRealms[realmname]"
+                                   name="group"
+                                   id="{{ realmname }}"
+                                   ng-checked="selectedRealms[realmname]">
+                            {{ realmname }}
+                        </label><br>
+                    </span>
+                </span>
+            </td>
+            <td>
+                <div ng-show="loggedInUser.role == 'admin'">
+                    <button class="btn btn-primary"
+                            id="cRealmsEditButton"
+                            ng-hide="editContainerRealms || (!checkRight('tokenrealms') && hide_buttons)"
+                            ng-disabled="!checkRight('tokenrealms')"
+                            ng-click="startEditRealms()"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            id="cRealmsSaveButton"
+                            ng-show="editContainerRealms"
+                            ng-click="saveRealms()"
+                            translate>Save realms
+                    </button>
+                    <button class="btn btn-danger"
+                            id="cRealmsCancelButton"
+                            ng-show="editContainerRealms"
+                            ng-click="cancelEditRealms();"
+                            translate>Cancel
+                    </button>
+                </div>
+            </td>
+        </tr>
+        <tr>
             <td translate> Last Seen</td>
             <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>

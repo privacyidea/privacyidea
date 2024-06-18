@@ -946,6 +946,7 @@ class Realm(TimestampMethodsMixin, db.Model):
     resolver_list = db.relationship('ResolverRealm',
                                     lazy='select',
                                     back_populates='realm')
+    container = db.relationship('TokenContainer', secondary='tokencontainerrealm', back_populates='realms')
 
     @log_with(log)
     def __init__(self, realm):
@@ -3330,8 +3331,7 @@ class TokenContainer(MethodsMixin, db.Model):
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     type = db.Column(db.Unicode(100), default='Generic', nullable=False)
     description = db.Column(db.Unicode(1024), default='')
-    tokens = db.relationship('Token', secondary='tokencontainertoken',
-                             back_populates='container')
+    tokens = db.relationship('Token', secondary='tokencontainertoken', back_populates='container')
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
@@ -3341,6 +3341,7 @@ class TokenContainer(MethodsMixin, db.Model):
                              cascade="all, delete-orphan")
     info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
                                 cascade="all, delete-orphan")
+    realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
@@ -3519,3 +3520,17 @@ class TokenContainerInfo(MethodsMixin, db.Model):
         if persistent:
             db.session.commit()
         return ret
+
+
+class TokenContainerRealm(MethodsMixin, db.Model):
+    """
+    This table stores to which realms a container is assigned. A container is in the
+    realm of the user it is assigned to. But a container can also be put into
+    many additional realms.
+    """
+    __tablename__ = 'tokencontainerrealm'
+    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"), primary_key=True)
+    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
+
+    __table_args__ = (db.UniqueConstraint('container_id', 'realm_id'),
+                      {'mysql_row_format': 'DYNAMIC'})

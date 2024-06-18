@@ -106,7 +106,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state'
             }
 
             ContainerFactory.createContainer(params, function (data) {
-                $state.go("token.containerdetails", {"containerSerial": data.result.value.serial});
+                $state.go("token.containerdetails", {"containerSerial": data.result.value.container_serial});
             });
         };
     }]);
@@ -292,6 +292,34 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             ContainerFactory.setDescription($scope.containerSerial, description, $scope.getContainer);
         };
 
+        $scope.editContainerRealms = false;
+        $scope.startEditRealms = function () {
+            // fill the selectedRealms with the realms of the token
+            $scope.selectedRealms = {};
+            $scope.editContainerRealms = true;
+            angular.forEach($scope.container.realms, function (realmname, _index) {
+                $scope.selectedRealms[realmname] = true;
+            });
+        };
+
+        $scope.saveRealms = function () {
+            let realms = "";
+            for (const realm in $scope.selectedRealms) {
+                if ($scope.selectedRealms[realm] === true) {
+                    realms += realm + ",";
+                }
+            }
+            realms = realms.slice(0, -1);
+            const realmParams = {"container_serial": $scope.containerSerial, "realms": realms};
+            ContainerFactory.setRealms(realmParams, $scope.getContainer);
+            $scope.cancelEditRealms();
+        };
+
+        $scope.cancelEditRealms = function () {
+            $scope.editContainerRealms = false;
+            $scope.selectedRealms = {};
+        };
+
         $scope.newUser = {user: "", realm: $scope.defaultRealm};
         $scope.assignUser = function () {
             ContainerFactory.assignUser(
@@ -383,7 +411,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             if (tokenSerialList.length > 0) {
                 ContainerFactory.removeAllTokensFromContainer({
-                    'serial': $scope.containerSerial,
+                    'container_serial': $scope.containerSerial,
                     'serial_list': tokenSerialList
                 }, $scope.getContainer);
             }
@@ -465,8 +493,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
         $scope.removeOneToken = function (token_serial) {
             let params = {
-                "serial": $scope.containerSerial,
-                "tokenSerial": token_serial
+                "container_serial": $scope.containerSerial,
+                "serial": token_serial
             };
             ContainerFactory.removeTokenFromContainer(params, $scope.getContainer);
         }
@@ -479,8 +507,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }
         $scope.addToken = function (token_serial) {
             ContainerFactory.addTokenToContainer({
-                "serial": $scope.containerSerial,
-                "tokenSerial": token_serial
+                "container_serial": $scope.containerSerial,
+                "serial": token_serial
             }, function () {
                 $scope.getContainer();
                 $scope.get();

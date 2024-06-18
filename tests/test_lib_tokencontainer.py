@@ -120,6 +120,67 @@ class TokenContainerManagementTestCase(MyTestCase):
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, containerdata["count"])
 
+    def test_05_set_realms(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        container_serial = init_container({"type": "generic", "description": "test container"})
+        container = find_container_by_serial(container_serial)
+
+        # Set existing realms
+        container.set_realms([self.realm1, self.realm2])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertIn(self.realm1, container_realms)
+        self.assertIn(self.realm2, container_realms)
+
+        # Set one non-existing realm
+        result = container.set_realms(["nonexisting", self.realm2])
+        self.assertTrue(result['deleted'])
+        self.assertFalse(result['nonexisting'])
+        self.assertTrue(result[self.realm2])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertNotIn("nonexisting", container_realms)
+        self.assertIn(self.realm2, container_realms)
+
+        # Set empty realm
+        result = container.set_realms([""])
+        self.assertTrue(result['deleted'])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertEqual(0, len(container_realms))
+
+        # Clean up
+        container.delete()
+
+    def test_06_add_realms(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        container_serial = init_container({"type": "generic", "description": "test container"})
+        container = find_container_by_serial(container_serial)
+
+        # Add existing realm
+        result = container.set_realms([self.realm1], add=True)
+        self.assertFalse(result['deleted'])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertIn(self.realm1, container_realms)
+
+        # Add one non-existing realm
+        result = container.set_realms(["nonexisting", self.realm2], add=True)
+        self.assertFalse(result['deleted'])
+        self.assertFalse(result['nonexisting'])
+        self.assertTrue(result[self.realm2])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertNotIn("nonexisting", container_realms)
+        self.assertIn(self.realm2, container_realms)
+        self.assertIn(self.realm1, container_realms)
+
+        # Add empty realm
+        result = container.set_realms([""], add=True)
+        self.assertFalse(result['deleted'])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertEqual(2, len(container_realms))
+
+        # Clean up
+        container.delete()
+
     def test_99_container_classes(self):
         classes = get_container_classes()
         policies = {}

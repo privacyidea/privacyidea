@@ -89,6 +89,11 @@ def list_containers():
             infos[info.key] = info.value
         tmp["info"] = infos
 
+        realms = []
+        for realm in container.realms:
+            realms.append(realm.name)
+        tmp["realms"] = realms
+
         res.append(tmp)
     result["containers"] = res
     return send_result(result)
@@ -101,7 +106,7 @@ def assign(container_serial):
     """
     Assign a container to a user
 
-    :jsonparam serial: Serial of the container
+    :param: container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Realm of the user
     """
@@ -118,7 +123,7 @@ def unassign(container_serial):
     """
     Unassign a user from a container
 
-    :jsonparam serial: Serial of the container
+    :param: container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Realm of the user
     """
@@ -152,6 +157,7 @@ def init():
 def delete(container_serial):
     """
     Delete a container.
+    :param: container_serial: serial of the container
     """
     container = find_container_by_serial(container_serial)
     container.delete()
@@ -163,7 +169,8 @@ def delete(container_serial):
 @event('container_add_token', request, g)
 def add_token(container_serial):
     """
-    Add a token to a container
+    Add one or multiple tokens to a container
+    :param: container_serial: serial of the container
     :jsonparam: serial: Serial of the token to add
     :jsonparam: serial_list: List of serials of the tokens to add. Comma separated.
     """
@@ -186,6 +193,7 @@ def add_token(container_serial):
 def remove_token(container_serial):
     """
     Remove a token from a container
+    :param: container_serial: serial of the container
     :jsonparam: serial: Serial of the token to remove
     :jsonparam: serial_list: List of serials of the tokens to remove. Comma separated.
     """
@@ -224,7 +232,7 @@ def get_types():
 def set_description(container_serial):
     """
     Set the description of a container
-    :jsonparam: serial: Serial of the container
+    :param: container_serial: Serial of the container
     :jsonparam: description: New description to be set
     """
     container = find_container_by_serial(container_serial)
@@ -242,7 +250,7 @@ def set_description(container_serial):
 def set_states(container_serial):
     """
     Set the states of a container
-    :jsonparam: serial: Serial of the container
+    :param: container_serial: Serial of the container
     :jsonparam: states: string list
     """
     states = getParam(request.all_data, "states", required, allow_empty=False)
@@ -268,13 +276,30 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
+@container_blueprint.route('<container_serial>/realms', methods=['POST'])
+@event('container_set_realms', request, g)
+@log_with(log)
+def set_realms(container_serial):
+    """
+    Set the realms of a container. Old realms will be deleted.
+    :param: container_serial: Serial of the container
+    :jsonparam: realms: comma separated string of realms, e.g. "realm1,realm2"
+    """
+    container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
+    realm_list = [r.strip() for r in container_realms.split(",")]
+    container = find_container_by_serial(container_serial)
+    result = container.set_realms(realm_list, add=False)
+
+    return send_result(result)
+
+
 @container_blueprint.route('<container_serial>/lastseen', methods=['POST'])
 @event('container_update_last_seen', request, g)
 @log_with(log)
 def update_last_seen(container_serial):
     """
     Updates the date and time for the last_seen property
-    :jsonparam: serial: Serial of the container
+    :param: container_serial: Serial of the container
     """
     container = find_container_by_serial(container_serial)
     container.update_last_seen()
