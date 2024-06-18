@@ -40,14 +40,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        # Create a container with tokens and users
+        # Create a container with tokens and user
         serial = init_container({"type": "generic", "description": "test container"})
         container = find_container_by_serial(serial)
         user_root = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        user_statd = User(login="statd", realm=self.realm1, resolver=self.resolvername1)
-        users = [user_root, user_statd]
-        for u in users:
-            container.add_user(u)
+        container.add_user(user_root)
         tokens = []
         params = {"genkey": "1"}
         for i in range(5):
@@ -58,7 +55,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         self.assertEqual(5, len(container.get_tokens()))
         self.assertEqual("test container", container.description)
-        self.assertEqual(2, len(container.get_users()))
+        self.assertEqual(1, len(container.get_users()))
 
         # Manipulate the tokens
         to_remove = [t for t in tokens[0:2]]
@@ -73,14 +70,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         for serial in [t.get_serial() for t in container.tokens]:
             self.assertTrue(serial in all_serials)
 
-        # Manipulate the users
+        # Manipulate the user
         cusers = container.get_users()
         for u in cusers:
             self.assertTrue(container.remove_user(u) > 0)
         self.assertEqual(0, len(container.get_users()))
-        for u in users:
-            container.add_user(u)
-        self.assertEqual(2, len(container.get_users()))
+        container.add_user(user_root)
+        self.assertEqual(1, len(container.get_users()))
 
     def test_04_get_all_containers_paginate(self):
         TokenContainer.query.delete()
