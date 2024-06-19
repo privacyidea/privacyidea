@@ -71,7 +71,9 @@ You can change the following token settings.
 **TokenDesc**
 
    The token description is also displayed in the tokenview. You can
-   set a description to make it easier to identify a token.
+   set a description to make it easier to identify a token. The token
+   description has a maximum of 80 characters, all additional characters
+   will be cut.
 
 .. _countwindow:
 

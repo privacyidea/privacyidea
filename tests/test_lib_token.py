@@ -589,6 +589,17 @@ class TokenTestCase(MyTestCase):
                         tokenobject.token.description)
         remove_token(serial)
 
+        # Check that description will be cut
+        serial = "t1"
+        tokenobject = init_token({"serial": serial, "genkey": 1})
+        r = set_description(serial, "The new and very long token description is more"
+                                    " than eighty characters long and is therefore cut")
+        self.assertTrue(r == 1, r)
+        self.assertTrue(tokenobject.token.description == "The new and very long token description is more"
+                                                         " than eighty characters long and ",
+                        tokenobject.token.description)
+        remove_token(serial)
+
     def test_29_get_multi_otp(self):
         r = get_multi_otp("hotptoken")
         self.assertTrue(r.get("error") == "No count specified", r)
