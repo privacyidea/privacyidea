@@ -320,8 +320,8 @@ def init():
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
         # Check if a containerSerial is set and assign the token to the container
-        if "containerSerial" in param:
-            container_serial = param.get("containerSerial")
+        if "container_serial" in param:
+            container_serial = param.get("container_serial")
             # TODO should this be caught here? The enrollment should not be blocked by the error?
             try:
                 find_container_by_serial(container_serial).add_token(tokenobject)
