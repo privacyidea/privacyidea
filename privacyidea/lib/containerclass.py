@@ -84,7 +84,7 @@ class TokenContainerClass:
                 realm_db = Realm.query.filter_by(name=realm).first()
                 if not realm_db:
                     result[realm] = False
-                    #raise ParameterError(f"Realm {realm} does not exist.")
+                    log.debug(f"Realm {realm} does not exist.")
                 else:
                     realm_id = realm_db.id
                     if not TokenContainerRealm.query.filter_by(container_id=self._db_container.id,

@@ -294,23 +294,23 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.editContainerRealms = false;
         $scope.startEditRealms = function () {
-            // fill the selectedRealms with the realms of the token
+            // fill the selectedRealms with the realms of the container
             $scope.selectedRealms = {};
             $scope.editContainerRealms = true;
-            angular.forEach($scope.container.realms, function (realmname, _index) {
-                $scope.selectedRealms[realmname] = true;
+            angular.forEach($scope.container.realms, function (realmName, _index) {
+                $scope.selectedRealms[realmName] = true;
             });
         };
 
         $scope.saveRealms = function () {
-            let realms = "";
+            let realmList = "";
             for (const realm in $scope.selectedRealms) {
                 if ($scope.selectedRealms[realm] === true) {
-                    realms += realm + ",";
+                    realmList += realm + ",";
                 }
             }
-            realms = realms.slice(0, -1);
-            const realmParams = {"container_serial": $scope.containerSerial, "realms": realms};
+            realmList = realmList.slice(0, -1);
+            const realmParams = {"container_serial": $scope.containerSerial, "realms": realmList};
             ContainerFactory.setRealms(realmParams, $scope.getContainer);
             $scope.cancelEditRealms();
         };

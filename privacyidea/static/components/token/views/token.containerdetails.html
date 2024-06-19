@@ -144,10 +144,10 @@
                 </span>
             </td>
             <td>
-                <div ng-show="loggedInUser.role == 'admin'">
+                <fieldset ng-disabled="loggedInUser.role == 'user'">
                     <button class="btn btn-primary"
                             id="cRealmsEditButton"
-                            ng-hide="editContainerRealms || (!checkRight('tokenrealms') && hide_buttons)"
+                            ng-hide="editContainerRealms || ((!checkRight('tokenrealms') || loggedInUser.role == 'user') && hide_buttons)"
                             ng-disabled="!checkRight('tokenrealms')"
                             ng-click="startEditRealms()"
                             translate>Edit
@@ -164,7 +164,7 @@
                             ng-click="cancelEditRealms();"
                             translate>Cancel
                     </button>
-                </div>
+                </fieldset>
             </td>
         </tr>
         <tr>

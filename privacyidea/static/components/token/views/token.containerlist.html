@@ -87,8 +87,10 @@
                 <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
-                <a ui-sref="config.realms.list" ng-repeat="c_realm in container.realms">
-                    {{ c_realm }}</a>&nbsp;
+                <span ng-repeat="c_realm in container.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ c_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
             </td>
         </tr>
         <!-- Tokens of each container -->

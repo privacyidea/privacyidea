@@ -131,8 +131,10 @@
             </td>
 
             <td ng-show="loggedInUser.role == 'admin'">
-                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
-                    {{ t_realm }}</a>&nbsp;
+                <span ng-repeat="t_realm in token.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ t_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
             </td>
 
             <td ng-show="loggedInUser.role == 'admin' &&
