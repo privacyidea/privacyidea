@@ -15,15 +15,19 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.create_table('tokencontainerrealm',
-                    sa.Column('container_id', sa.Integer(), nullable=True),
-                    sa.Column('realm_id', sa.Integer(), nullable=False),
-                    sa.ForeignKeyConstraint(['container_id'], ['tokencontainer.id'], ),
-                    sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
-                    sa.PrimaryKeyConstraint('container_id', 'realm_id'),
-                    sa.UniqueConstraint('container_id', 'realm_id'),
-                    mysql_row_format='DYNAMIC'
-                    )
+    try:
+        op.create_table('tokencontainerrealm',
+                        sa.Column('container_id', sa.Integer(), nullable=True),
+                        sa.Column('realm_id', sa.Integer(), nullable=False),
+                        sa.ForeignKeyConstraint(['container_id'], ['tokencontainer.id'], ),
+                        sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
+                        sa.PrimaryKeyConstraint('container_id', 'realm_id'),
+                        sa.UniqueConstraint('container_id', 'realm_id'),
+                        mysql_row_format='DYNAMIC'
+                        )
+    except Exception as e:
+        print("Could not add table 'tokencontainerrealm' - probably already exists!")
+        print(e)
 
 
 def downgrade():
