@@ -19,12 +19,12 @@
                 <fieldset ng-hide="!deleteContainerButton || (!checkRight('delete') && hide_buttons)"
                           ng-disabled="!checkRight('delete')">
                     <button class="btn btn-danger"
-                            ng-click="deleteContainerMode(deleteAllTokens=false)">
+                            ng-click="deleteContainerMode(deleteTokens=false)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="deleteContainerMode(deleteAllTokens=true)">
+                            ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
                     </button>
@@ -120,6 +120,51 @@
                             translate>Cancel
                     </button>
                 </div>
+            </td>
+        </tr>
+        <tr>
+            <td translate> Realms</td>
+            <td>
+                <span ng-hide="editContainerRealms">
+                    <ul ng-click="editContainerRealms=true">
+                        <li ng-repeat="realm in container.realms">{{ realm }}</li>
+                    </ul>
+                </span>
+                <span ng-show="editContainerRealms">
+                    <span ng-repeat="(realmname, realm) in realms">
+                        <label for="{{ realmname }}">
+                            <input type="checkbox"
+                                   ng-model="selectedRealms[realmname]"
+                                   name="group"
+                                   id="{{ realmname }}"
+                                   ng-checked="selectedRealms[realmname]">
+                            {{ realmname }}
+                        </label><br>
+                    </span>
+                </span>
+            </td>
+            <td>
+                <fieldset ng-disabled="loggedInUser.role == 'user'">
+                    <button class="btn btn-primary"
+                            id="cRealmsEditButton"
+                            ng-hide="editContainerRealms || ((!checkRight('tokenrealms') || loggedInUser.role == 'user') && hide_buttons)"
+                            ng-disabled="!checkRight('tokenrealms')"
+                            ng-click="startEditRealms()"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            id="cRealmsSaveButton"
+                            ng-show="editContainerRealms"
+                            ng-click="saveRealms()"
+                            translate>Save realms
+                    </button>
+                    <button class="btn btn-danger"
+                            id="cRealmsCancelButton"
+                            ng-show="editContainerRealms"
+                            ng-click="cancelEditRealms();"
+                            translate>Cancel
+                    </button>
+                </fieldset>
             </td>
         </tr>
         <tr>

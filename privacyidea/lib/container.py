@@ -285,8 +285,12 @@ def init_container(params):
     container = create_container_from_db_object(db_container)
     user = params.get("user")
     realm = params.get("realm")
-    if user and not realm or realm and not user:
+    realms = []
+    if user and not realm:
         log.error(f"Assigning a container to user on creation requires both user and realm parameters!")
+    elif realm and not user:
+        realms.append(realm)
+        container.set_realms(realms, add=True)
     elif user and realm:
         container.add_user(User(login=user, realm=realm))
 

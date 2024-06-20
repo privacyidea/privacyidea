@@ -9,7 +9,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates, TokenContainerInfo
+from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates, TokenContainerInfo, \
+    TokenContainerRealm
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +64,41 @@ class TokenContainerClass:
         self._db_container.save()
         self.update_last_seen()
 
+    @property
+    def realms(self):
+        return self._db_container.realms
+
+    def set_realms(self, realms, add=False):
+        result = {}
+
+        # delete all container realms
+        if not add:
+            TokenContainerRealm.query.filter_by(container_id=self._db_container.id).delete()
+            result["deleted"] = True
+            self._db_container.save()
+        else:
+            result["deleted"] = False
+
+        for realm in realms:
+            if realm:
+                realm_db = Realm.query.filter_by(name=realm).first()
+                if not realm_db:
+                    result[realm] = False
+                    log.debug(f"Realm {realm} does not exist.")
+                else:
+                    realm_id = realm_db.id
+                    if not TokenContainerRealm.query.filter_by(container_id=self._db_container.id,
+                                                               realm_id=realm_id).first():
+                        # Check if realm is already assigned to the container
+                        self._db_container.realms.append(realm_db)
+                        result[realm] = True
+                    else:
+                        result[realm] = False
+        self._db_container.save()
+        self.update_last_updated()
+
+        return result
+
     def remove_token(self, serial: str):
         token = Token.query.filter(Token.serial == serial).first()
         if token:
@@ -87,14 +123,22 @@ class TokenContainerClass:
         return self._db_container.delete()
 
     def add_user(self, user: User):
+        """
+        Assign a user to the container if the container does not have an owner yet.
+        Otherwise, the new user will not be assigned and the original owner will remain.
+
+        :param user: User object
+        :return: True if the user was assigned, False if the container already has an owner
+        """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
-        if not TokenContainerOwner.query.filter_by(container_id=self._db_container.id,
-                                                   user_id=user_id,
-                                                   resolver=resolver_name).first():
+        if not TokenContainerOwner.query.filter_by(container_id=self._db_container.id).first():
             TokenContainerOwner(container_id=self._db_container.id,
                                 user_id=user_id,
                                 resolver=resolver_name,
                                 realm_id=user.realm_id).save()
+            # Add user realm to container realms
+            realm_db = Realm.query.filter_by(name=user.realm).first()
+            self._db_container.realms.append(realm_db)
             self.update_last_updated()
             return True
         return False
