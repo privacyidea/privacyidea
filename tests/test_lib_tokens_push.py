@@ -833,7 +833,7 @@ class PushTokenTestCase(MyTestCase):
 
         # The challenge is still in the database, but it is marked as declined
         challenge = challengeobject_list[0]
-        self.assertEqual(CHALLENGE_SESSION.DECLINED , challenge.session)
+        self.assertEqual(CHALLENGE_SESSION.DECLINED, challenge.session)
 
         with self.app.test_request_context('/validate/polltransaction', method='GET',
                                            data={'transaction_id': transaction_id}):

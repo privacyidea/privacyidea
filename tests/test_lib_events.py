@@ -35,7 +35,8 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo)
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
+from privacyidea.models import Challenge
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import is_true
@@ -721,6 +722,129 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         # False if the resolver is incorrect
         self.assertEqual(r, False)
+
+        remove_token(serial)
+
+    def test_10_check_challenge_session(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tid = "1234567"
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        # Prepare a challenge
+        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal.save()
+        # One token with one declined challenge
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue",
+                                       "transaction_id": tid},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue",
+                        "transaction_id": tid}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.ENROLLMENT}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+        # We have two declined challenges, add a 2nd one.
+        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal.save()
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # We will receive a False and a log.warning
+        self.assertFalse(r)
+
+        remove_token(serial)
+
+    def test_11_check_challenge_expired(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tid = "1234567"
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        # Prepare a challenge, that is not yet expired
+        chal = Challenge(serial=serial, transaction_id=tid)
+        chal.save()
+        # One token with one declined challenge
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue",
+                                       "transaction_id": tid},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue",
+                        "transaction_id": tid}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "false"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Right, the challenge has not yet expired.
+        self.assertTrue(r)
+
+        # Check if the condition does not match, so we have an expired challenge
+        chal.delete()
+        chal = Challenge(serial=serial, transaction_id=tid, validitytime=-120)
+        chal.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "True"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Right, the challenge has expired.
+        self.assertTrue(r)
 
         remove_token(serial)
 

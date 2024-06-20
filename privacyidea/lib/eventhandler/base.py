@@ -644,7 +644,7 @@ class BaseEventHandler(object):
                             return False
                     if CONDITION.CHALLENGE_EXPIRED in conditions:
                         condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)
-                        if is_true(condition_value) != chal.is_expired():
+                        if is_true(condition_value) == chal.is_valid():
                             return False
                 elif len(chals) > 1:
                     # If there is more than one challenge, the conditions seams awkward
