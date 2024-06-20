@@ -120,7 +120,7 @@ def save_resolver(params):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None):
     """
@@ -173,7 +173,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a machine resolver
@@ -198,7 +198,7 @@ def get_resolver_config_description(resolver_type):
     return descriptor
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
@@ -219,7 +219,7 @@ def get_resolver_class(resolver_type):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -233,7 +233,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_object(resolvername):
     """
     return the resolver object for a given name
