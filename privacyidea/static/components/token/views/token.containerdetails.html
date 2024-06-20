@@ -19,12 +19,12 @@
                 <fieldset ng-hide="!deleteContainerButton || (!checkRight('delete') && hide_buttons)"
                           ng-disabled="!checkRight('delete')">
                     <button class="btn btn-danger"
-                            ng-click="deleteContainerMode(deleteAllTokens=false)">
+                            ng-click="deleteContainerMode(deleteTokens=false)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="deleteContainerMode(deleteAllTokens=true)">
+                            ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
                     </button>

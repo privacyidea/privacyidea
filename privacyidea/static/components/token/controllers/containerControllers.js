@@ -280,10 +280,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.deleteContainerButton = false;
-        $scope.deleteContainerMode = function (deleteAllTokens) {
-            if (deleteAllTokens) {
-                $scope.selectAllTokens(true);
-                $scope.deleteTokens();
+        $scope.deleteContainerMode = function (deleteTokens) {
+            if (deleteTokens) {
+                $scope.deleteAllTokens();
             }
             ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo);
         };
@@ -428,6 +427,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     TokenFactory.delete(token);
                 }
             });
+            $scope.showDialogAll = false;
         };
 
         // --- Add token functions ---
