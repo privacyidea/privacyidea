@@ -149,7 +149,7 @@ class BaseEventHandler(object):
             CONDITION.CHALLENGE_SESSION: {
                 "type": "str",
                 "desc": _("The challenge session matches the string or regular "
-                          "expressoin (like 'challenge_declined' or 'enrollment')"),
+                          "expression (like 'challenge_declined' or 'enrollment')"),
                 "group": GROUP.CHALLENGE
             },
             CONDITION.CHALLENGE_EXPIRED: {

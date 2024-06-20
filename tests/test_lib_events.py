@@ -1580,6 +1580,7 @@ class TokenEventTestCase(MyTestCase):
         # check actions
         actions = TokenEventHandler().actions
         self.assertTrue("set tokeninfo" in actions, actions)
+        self.assertTrue("increase tokeninfo" in actions, actions)
 
         # check positions
         pos = TokenEventHandler().allowed_positions
@@ -2272,6 +2273,37 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_tokeninfo("pastText", "key not found")
         self.assertEqual(tw, "key not found")
+
+        # Test 'increase tokeninfo'. Set a tokeninfo to 17.
+        tokeninfo_key = "pushMitigation"
+        t[0].add_tokeninfo(tokeninfo_key, "17")
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("17", ti)
+        # Now we run an event handler, that increases the tokeninfo by 3
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": tokeninfo_key,
+                                               "increment": "3"}
+                                   }
+                   }
+        res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("20", ti)
+
+        # Now, decrease the tokeninfo
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": tokeninfo_key,
+                                               "increment": "-10"}
+                                   }
+                   }
+        res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("10", ti)
 
         remove_token("SPASS01")
 

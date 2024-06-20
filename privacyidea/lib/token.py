@@ -1576,7 +1576,7 @@ def get_tokeninfo(serial, info):
     :type serial: basestring
     :param info: The key of the info in the dict
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=None)
 
     if len(tokenobject_list) == 1:
         return tokenobject_list[0].get_tokeninfo(info)

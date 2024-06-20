@@ -506,7 +506,7 @@ class TokenEventHandler(BaseEventHandler):
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
                         try:
                             # We assume that the tokeninfo is an integer
-                            increment = int(handler_options.get("increment"))
+                            increment = int(handler_options.get("increment") or 1)
                             current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
                             add_tokeninfo(serial, handler_options.get("key"),
                                           "{}".format(current_value + increment))

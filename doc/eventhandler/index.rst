@@ -378,7 +378,9 @@ a challenge against a regular expression. Usual values of the session are:
 *challenge_declined* if the challenge of a PUSH token was declined by the user.
 
 This way the administrator can check for declined PUSH authentications and take
-according actions.
+according actions to implement PUSH fatigue mitigations like
+notifying the helpdesk (see :ref:`usernotification`),
+disabling the token or increasing a counter in the tokeninfo (see :ref:`tokenhandler`).
 
 **challenge_expired**
 
