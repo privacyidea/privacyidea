@@ -9,7 +9,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             containerType: "generic",
             description: "",
             token_types: ""
-        }
+        };
 
         $scope.$watch('form', function (newVal, oldVal) {
             if (newVal) {
@@ -264,7 +264,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.containerStates[state] = true;
             angular.forEach($scope.stateTypes[state], function (disableType) {
                 $scope.containerStates[disableType] = false;
-            })
+            });
         };
 
         $scope.$watch("containerStates", function (newValue, oldValue) {
@@ -328,9 +328,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     container_serial: $scope.containerSerial,
                     user: fixUser($scope.containerOwner.user_name),
                     realm: $scope.containerOwner.realm,
-                    pin: $scope.containerOwner.pin
-                }
-                , $scope.get);
+                }, $scope.get);
         };
 
         $scope.editContainerInfo = false;
@@ -352,7 +350,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         }
 
-        ContainerFactory.updateLastSeen($scope.containerSerial);
+        ContainerFactory.updateLastSeen($scope.containerSerial, function (data) {
+        });
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.get);

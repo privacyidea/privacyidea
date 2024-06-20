@@ -587,7 +587,6 @@ angular.module("privacyideaApp")
                 } else {
                     $scope.welcomeStep = 0;
                 }
-
             };
 
             $scope.closeNoToken = function () {
@@ -648,7 +647,7 @@ angular.module("privacyideaApp")
                 $scope.$broadcast("piReload");
             };
 
-}]);
+        }]);
 
 angular.module("privacyideaApp")
     .controller("pinChangeController", ["Idle", "$scope", "$http", "$location",
@@ -682,5 +681,4 @@ angular.module("privacyideaApp")
                 $scope.pin_change_serial = null;
                 $scope.logout();
             }
-
         }]);
