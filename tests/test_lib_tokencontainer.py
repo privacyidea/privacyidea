@@ -37,24 +37,17 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_03_container_with_tokens_users(self):
         # Create users and tokens first
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": "tests/testdata/passwd"})
-        self.assertTrue(rid > 0, rid)
-
-        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 1)
+        self.setUp_user_realms()
 
         # Create a container with tokens and user
         serial = init_container({"type": "generic", "description": "test container"})
         container = find_container_by_serial(serial)
-        user_root = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        container.add_user(user_root)
+        user_hans = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
+        container.add_user(user_hans)
         tokens = []
         params = {"genkey": "1"}
         for i in range(5):
-            t = init_token(params, user=user_root)
+            t = init_token(params, user=user_hans)
             tokens.append(t)
             container.add_token(t)
         all_serials = [t.get_serial() for t in tokens]
@@ -81,7 +74,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         for u in cusers:
             self.assertTrue(container.remove_user(u) > 0)
         self.assertEqual(0, len(container.get_users()))
-        container.add_user(user_root)
+        container.add_user(user_hans)
         self.assertEqual(1, len(container.get_users()))
 
     def test_04_get_all_containers_paginate(self):
