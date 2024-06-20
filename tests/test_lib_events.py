@@ -2218,7 +2218,7 @@ class ContainerEventTestCase(MyTestCase):
 
         # check that the info is set
         container = find_container_by_serial(container_serial)
-        infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
+        infos = {container_info.key: container_info.value for container_info in container.get_container_info()}
         self.assertIn(key, infos)
         self.assertEqual(infos[key], value)
 
@@ -2231,7 +2231,7 @@ class ContainerEventTestCase(MyTestCase):
 
         # check that the info is set and the old one deleted
         container = find_container_by_serial(container_serial)
-        infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
+        infos = {container_info.key: container_info.value for container_info in container.get_container_info()}
         self.assertIn(new_key, infos)
         self.assertEqual(infos[new_key], new_value)
         self.assertNotIn(key, infos)
@@ -2245,7 +2245,7 @@ class ContainerEventTestCase(MyTestCase):
 
         # check that the info is added and the old ones still exists
         container = find_container_by_serial(container_serial)
-        infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
+        infos = {container_info.key: container_info.value for container_info in container.get_container_info()}
         self.assertIn(added_key, infos)
         self.assertEqual(infos[added_key], added_value)
         self.assertIn(new_key, infos)
@@ -2257,7 +2257,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(res)
 
         # check that all infos are deleted
-        infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
+        infos = {container_info.key: container_info.value for container_info in container.get_container_info()}
         self.assertEqual(0, len(infos))
 
         # Clean up
