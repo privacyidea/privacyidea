@@ -277,10 +277,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }, true); // true = deep watch
 
         $scope.saveStates = function () {
-            let states = [];
+            let states = "";
             angular.forEach($scope.containerStates, function (value, key) {
                 if (value) {
-                    states.push(key);
+                    if (states !== "") {
+                        states += ",";
+                    }
+                    states += key;
                 }
             })
             let params = {"container_serial": $scope.containerSerial, "states": states}

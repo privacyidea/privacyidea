@@ -64,21 +64,32 @@ class TokenContainerClass:
         self.update_last_seen()
 
     def remove_token(self, serial: str):
+        """
+        Remove a token from the container. Returns false if the token is not in the container.
+        """
         token = Token.query.filter(Token.serial == serial).first()
-        if token:
+        if token and token in self._db_container.tokens:
             self._db_container.tokens.remove(token)
             self._db_container.save()
             self.tokens = [t for t in self.tokens if t.get_serial() != serial]
             self.update_last_updated()
+            return True
+        return False
 
     def add_token(self, token: TokenClass):
+        """
+        Add a token to the container. Returns false if the token is already in the container.
+        """
         if not token.get_type() in self.get_supported_token_types():
             raise ParameterError(f"Token type {token.get_type()} not supported for container type {self.type}. "
                                  f"Supported types are {self.get_supported_token_types()}.")
-        self.tokens.append(token)
-        self._db_container.tokens = [t.token for t in self.tokens]
-        self._db_container.save()
-        self.update_last_updated()
+        if token.get_serial() not in [t.get_serial() for t in self.tokens]:
+            self.tokens.append(token)
+            self._db_container.tokens = [t.token for t in self.tokens]
+            self._db_container.save()
+            self.update_last_updated()
+            return True
+        return False
 
     def get_tokens(self):
         return self.tokens

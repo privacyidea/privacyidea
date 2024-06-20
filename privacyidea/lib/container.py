@@ -292,7 +292,6 @@ def init_container(params):
         container.add_user(User(login=user, realm=realm))
 
     container.set_states(['active'])
-
     return serial
 
 
@@ -303,9 +302,11 @@ def add_tokens_to_container(container_serial, token_serials):
     container = find_container_by_serial(container_serial)
     db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
     tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
+    ret = {}
     for token in tokens:
-        container.add_token(token)
-    return True
+        res = container.add_token(token)
+        ret[token.get_serial()] = res
+    return ret
 
 
 def get_container_classes_descriptions():
@@ -337,11 +338,11 @@ def remove_tokens_from_container(container_serial, token_serials):
     Remove the given tokens from the container with the given serial
     """
     container = find_container_by_serial(container_serial)
-    res = False
+    ret = {}
     for token_serial in token_serials:
-        container.remove_token(token_serial)
-        res = True
-    return res
+        res = container.remove_token(token_serial)
+        ret[token_serial] = res
+    return ret
 
 
 def add_container_info(serial, ikey, ivalue):
