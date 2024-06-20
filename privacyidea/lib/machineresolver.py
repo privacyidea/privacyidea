@@ -128,17 +128,15 @@ def get_resolver_list(filter_resolver_type=None,
 
     :param filter_resolver_type: Only resolvers of the given type are returned
     :type filter_resolver_type: string
+    :param filter_resolver_name: Only the resolver with the given name is returned
+    :type filter_resolver_name: string
     :rtype: Dictionary of the resolvers and their configuration
     """
-    Resolvers = {}
+    ret = {}
     if filter_resolver_name:
-        resolvers = MachineResolver.query \
-            .filter(func.lower(MachineResolver.name) ==
-                    filter_resolver_name.lower())
+        resolvers = MachineResolver.query.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
     elif filter_resolver_type:
-        resolvers = MachineResolver.query \
-            .filter(MachineResolver.rtype ==
-                    filter_resolver_type)
+        resolvers = MachineResolver.query.filter(MachineResolver.rtype == filter_resolver_type)
     else:
         resolvers = MachineResolver.query.all()
 
@@ -153,9 +151,9 @@ def get_resolver_list(filter_resolver_type=None,
                 value = decryptPassword(value)
             data[conf.Key] = value
         r["data"] = data
-        Resolvers[reso.name] = r
+        ret[reso.name] = r
 
-    return Resolvers
+    return ret
 
 
 @log_with(log)
