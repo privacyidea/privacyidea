@@ -12,6 +12,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.challenge import get_challenges
@@ -829,6 +830,10 @@ class PushTokenTestCase(MyTestCase):
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,
                                               transaction_id=transaction_id)
         self.assertEqual(1, len(challengeobject_list))
+
+        # The challenge is still in the database, but it is marked as declined
+        challenge = challengeobject_list[0]
+        self.assertEqual(CHALLENGE_SESSION.DECLINED , challenge.session)
 
         with self.app.test_request_context('/validate/polltransaction', method='GET',
                                            data={'transaction_id': transaction_id}):
