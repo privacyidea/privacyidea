@@ -421,6 +421,8 @@ def list_api():
     :query rollout_state: only list tokens with the given rollout_state
     :query infokey: only list tokens, where the infokey has the given infovalue
     :query infovalue: only list tokens, where the infokey has the given infovalue
+    :query container_serial: only list tokens, which are assigned to the container with the given serial
+                            or tokens without container if the value is an empty string ""
 
     :return: a json result with the data being a list of token dictionaries::
 
@@ -434,6 +436,7 @@ def list_api():
     serial_list = request.args.getlist("serial_list")
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
+    token_type_list = request.args.getlist("type_list")
     description = getParam(param, "description", optional)
     sort = getParam(param, "sortby", optional, default="serial")
     sdir = getParam(param, "sortdir", optional, default="asc")
@@ -468,7 +471,7 @@ def list_api():
     tokens = get_tokens_paginate(serial=serial, serial_list=serial_list, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
                                  active=active, sortby=sort, sortdir=sdir,
-                                 tokentype=tokentype,
+                                 tokentype=tokentype, token_type_list=token_type_list,
                                  resolver=resolver,
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,

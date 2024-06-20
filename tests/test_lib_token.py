@@ -142,6 +142,15 @@ class TokenTestCase(MyTestCase):
         # get tokens of type TOTP
         tokenobject_list = get_tokens(tokentype="totp")
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        # get tokens of type TOTP and HOTP
+        spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
+        hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
+        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        for token in tokenobject_list:
+            self.assertIn(token.type, ["hotp", "totp"], token)
+        spass_token.delete_token()
+        hotp_token.delete_token()
 
         # Search for tokens in realm
         db_token = Token("hotptoken",

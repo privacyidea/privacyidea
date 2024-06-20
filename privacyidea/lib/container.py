@@ -292,13 +292,19 @@ def init_container(params):
 
 def add_tokens_to_container(container_serial, token_serials):
     """
-    Add the given tokens to the container with the given serial
+    Add the given tokens to the container with the given serial.
+    If a token is already in a container it is removed from the old container.
     """
     container = find_container_by_serial(container_serial)
     db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
     tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
     ret = {}
     for token in tokens:
+        # check if the token is in a container
+        old_container = find_container_for_token(token.get_serial())
+        if old_container:
+            # remove token from old container
+            remove_tokens_from_container(old_container.serial, [token.get_serial()])
         res = container.add_token(token)
         ret[token.get_serial()] = res
     return ret

@@ -3552,6 +3552,29 @@ fieldset[disabled] .btn-link:focus {
 .btn-block + .btn-block {
   margin-top: 5px;
 }
+.btn-transparent {
+  color: #000000;
+  background-color: transparent;
+  border-color: #ddd;
+  padding: 0.2em 0.6em 0.3em;
+  font-size: 90%;
+}
+.btn-transparent.disabled:hover,
+.btn-transparent[disabled]:hover,
+fieldset[disabled] .btn-transparent:hover,
+.btn-transparent.disabled:focus,
+.btn-transparent[disabled]:focus,
+fieldset[disabled] .btn-transparent:focus,
+.btn-transparent.disabled.focus,
+.btn-transparent[disabled].focus,
+fieldset[disabled] .btn-transparent.focus {
+  color: #000000;
+  background-color: transparent;
+  border-color: #ddd;
+}
+.btn-header {
+  font-weight: bold;
+}
 input[type="submit"].btn-block,
 input[type="reset"].btn-block,
 input[type="button"].btn-block {
