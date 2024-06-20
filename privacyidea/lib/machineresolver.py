@@ -43,9 +43,7 @@ from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -134,16 +132,16 @@ def get_resolver_list(filter_resolver_type=None,
     """
     Resolvers = {}
     if filter_resolver_name:
-        resolvers = MachineResolver.query\
+        resolvers = MachineResolver.query \
             .filter(func.lower(MachineResolver.name) ==
                     filter_resolver_name.lower())
     elif filter_resolver_type:
-        resolvers = MachineResolver.query\
-                            .filter(MachineResolver.rtype ==
-                                    filter_resolver_type)
+        resolvers = MachineResolver.query \
+            .filter(MachineResolver.rtype ==
+                    filter_resolver_type)
     else:
         resolvers = MachineResolver.query.all()
-    
+
     for reso in resolvers:
         r = {"resolvername": reso.name,
              "type": reso.rtype}
@@ -209,7 +207,7 @@ def get_resolver_class(resolver_type):
     :return: resolver object class
     """
     ret = None
-    
+
     (resolver_clazzes, resolver_types) = get_machine_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -255,7 +253,7 @@ def get_resolver_object(resolvername):
             # This can only happen if a resolver class definition would be
             # removed.
             log.error("unknown resolver class for type {0!s} ".format(
-                      resolver.get("type")))
+                resolver.get("type")))
         else:
             # create the resolver instance and load the config
             r_obj = r_obj_class(resolvername, resolver.get("data"))

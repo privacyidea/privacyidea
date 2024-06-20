@@ -330,7 +330,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
-        # disableing an active token from a user from resolver1 should work
+        # disabling an active token from a user from resolver1 should work
         t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
                                                      resolver=self.resolvername1,
                                                      realm=self.realm1))
@@ -456,7 +456,7 @@ class APIAttestationTestCase(MyApiTestCase):
         set_policy("pol2", scope=SCOPE.ADMIN,
                    action="enrollCERTIFICATE")
 
-        # If the attestation certificate matches and it is trusted, then we succeed.
+        # If the attestation certificate matches, and it is trusted, then we succeed.
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "certificate",

@@ -237,7 +237,7 @@ def get_types():
     return send_result(res)
 
 
-@container_blueprint.route('/description/<serial>', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/description', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_DESCRIPTION)
 @event('container_set_description', request, g)
 @log_with(log)
@@ -256,17 +256,18 @@ def set_description(container_serial):
     return send_result(res)
 
 
-@container_blueprint.route('<container_serial>/states', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/states', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_STATE)
 @event('container_set_states', request, g)
 @log_with(log)
 def set_states(container_serial):
     """
     Set the states of a container
-    :param: container_serial: Serial of the container
-    :jsonparam: states: string list
+    :jsonparam: states: string of comma separated states
     """
-    states = getParam(request.all_data, "states", required, allow_empty=False)
+    states_string = getParam(request.all_data, "states", required, allow_empty=False)
+    states_string = states_string.replace(" ", "")
+    states = states_string.split(",")
     container = find_container_by_serial(container_serial)
 
     res = False
@@ -306,7 +307,7 @@ def set_realms(container_serial):
     return send_result(result)
 
 
-@container_blueprint.route('<container_serial>/lastseen', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/lastseen', methods=['POST'])
 @event('container_update_last_seen', request, g)
 @log_with(log)
 def update_last_seen(container_serial):
