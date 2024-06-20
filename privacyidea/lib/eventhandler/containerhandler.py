@@ -240,13 +240,13 @@ class ContainerEventHandler(BaseEventHandler):
                     value = handler_options.get("value") or ""
                     container = find_container_by_serial(container_serial)
                     info = {key: value}
-                    container.set_containerinfo(info)
+                    container.set_container_info(info)
 
                 elif action.lower() == ACTION_TYPE.ADD_CONTAINER_INFO:
                     key = handler_options.get("key")
                     value = handler_options.get("value") or ""
                     container = find_container_by_serial(container_serial)
-                    container.add_containerinfo(key, value)
+                    container.add_container_info(key, value)
 
                 elif action.lower() == ACTION_TYPE.DELETE_CONTAINER_INFO:
                     container = find_container_by_serial(container_serial)
