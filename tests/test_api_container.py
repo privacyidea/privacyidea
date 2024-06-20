@@ -1,5 +1,6 @@
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.token import init_token
+from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
@@ -95,6 +96,29 @@ class APIContainer(MyApiTestCase):
                 self.assertTrue(container["serial"] in container_serials[2:4])
                 count += 1
             self.assertEqual(containerdata["count"], count)
+
+        # Assign user and realm
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        test_user = User(login="cornelius", realm=self.realm1)
+        container = find_container_by_serial(container_serials[2])
+        container.set_realms([self.realm2])
+        container.add_user(test_user)
+
+        # Test output
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"container_serial": container_serials[2], "pagesize": 15, "page": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(1, containerdata["count"])
+            self.assertEqual(1, len(containerdata["containers"]))
+            res_container = containerdata["containers"][0]
+            self.assertEqual(3, len(res_container["tokens"]))
+            self.assertEqual(1, len(res_container["users"]))
+            self.assertEqual(test_user.login, res_container["users"][0]["user_name"])
+            self.assertIn(self.realm1, res_container["realms"])
 
     def test_05_get_all_containers_paginate_wrong_arguments(self):
         TokenContainer.query.delete()

@@ -21,6 +21,12 @@ class TokenContainerManagementTestCase(MyTestCase):
         rid = container.delete()
         self.assertTrue(rid > 0)
 
+        # Init container with realm
+        self.setUp_user_realms()
+        serial = init_container({"type": "Generic", "description": "test container", "realm": self.realm1})
+        container = find_container_by_serial(serial)
+        self.assertEqual(self.realm1, container.realms[0].name)
+
     def test_02_fails(self):
         self.assertRaises(ParameterError, delete_container_by_id, None)
         self.assertRaises(ResourceNotFoundError, delete_container_by_id, 11)
@@ -157,6 +163,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertFalse(result['deleted'])
         container_realms = [realm.name for realm in container.realms]
         self.assertIn(self.realm1, container_realms)
+
+        # Add same realm
+        result = container.set_realms([self.realm1], add=True)
+        self.assertFalse(result[self.realm1])
 
         # Add one non-existing realm
         result = container.set_realms(["nonexisting", self.realm2], add=True)
