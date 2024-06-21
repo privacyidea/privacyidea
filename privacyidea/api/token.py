@@ -327,7 +327,7 @@ def init():
                 container = find_container_by_serial(container_serial)
                 container.add_token(tokenobject)
                 g.audit_object.log({"container_serial": container_serial,
-                                    "container_type": container.type()})
+                                    "container_type": container.type})
             except ResourceNotFoundError:
                 log.error(f"Container with serial {container_serial} not found while enrolling token "
                           f"{tokenobject.get_serial()}.")

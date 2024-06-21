@@ -74,7 +74,7 @@ class APIAuditTestCase(MyApiTestCase):
             cols = json_response.get("result").get("value").get("auditcolumns")
             self.assertIn("number", cols)
             self.assertIn("serial", cols)
-            self.assertEqual(22, len(cols))
+            self.assertEqual(24, len(cols))
 
     def test_01_get_audit_csv(self):
         @contextmanager

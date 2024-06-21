@@ -926,7 +926,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 1, result)
+            self.assertTrue(result.get("value")["EToken"] == 1, result)
 
         # Check for the disabled token in the audit log, that also the user object is added
         with self.app.test_request_context('/audit/',
@@ -946,7 +946,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 0, result)
+            self.assertTrue(result.get("value")["EToken"] == 0, result)
 
         # enable the token again
         with self.app.test_request_context('/token/enable/EToken',
@@ -956,7 +956,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 1, result)
+            self.assertTrue(result.get("value")["EToken"] == 1, result)
 
         # try to enable an already enabled token returns value=0
         with self.app.test_request_context('/token/enable',
@@ -966,7 +966,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 0, result)
+            self.assertTrue(result.get("value")["EToken"] == 0, result)
 
     def test_07_reset_failcounter(self):
         serial = "RToken"
@@ -3260,7 +3260,7 @@ class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
             # One token disabled
-            self.assertEqual(1, result.get("value"))
+            self.assertEqual(1, result.get("value")[serial])
 
         enable_token(serial)
         # create a policy for realm1, the admin is allowed to disable the token
@@ -3274,7 +3274,7 @@ class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
             # One token disabled
-            self.assertEqual(1, result.get("value"))
+            self.assertEqual(1, result.get("value")[serial])
 
         enable_token(serial)
         # change the policy for realm2, the admin is NOT allowed to disable the token

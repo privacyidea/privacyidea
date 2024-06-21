@@ -384,15 +384,13 @@ class Audit(AuditBase):
         :rtype str
         """
         # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,c_serial=%s,ct=%s,u=%s,r=%s,adm=%s," \
+        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
             "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
                                                    le.action,
                                                    le.success,
                                                    le.serial,
                                                    le.token_type,
-                                                   le.container_serial,
-                                                   le.container_type,
                                                    le.user,
                                                    le.realm,
                                                    le.administrator,
