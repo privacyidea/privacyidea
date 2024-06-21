@@ -201,7 +201,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             type: $scope.default_tokentype,
             hashlib: "sha1",
             'radius.system_settings': true,
-            containerSerial: $stateParams.containerSerial,
+            container_serial: $stateParams.containerSerial,
         };
         if ($state.includes('token.rollover')) {
             $scope.form.serial = $stateParams.tokenSerial;
@@ -458,8 +458,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.webAuthnToken = {};
             $scope.enrolledToken = data.detail;
             $scope.click_wait = false;
-            if ($scope.form.containerSerial !== null && $scope.form.containerSerial !== "createnew") {
-                $scope.enrolledToken.containerSerial = $scope.form.containerSerial;
+            if ($scope.form.container_serial !== null && $scope.form.container_serial !== "createnew") {
+                $scope.enrolledToken.containerSerial = $scope.form.container_serial;
             }
             if ($scope.enrolledToken.otps) {
                 const otps_count = Object.keys($scope.enrolledToken.otps).length;
@@ -511,8 +511,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
             $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
 
-            if ($scope.form.containerSerial === "createnew") {
-                delete $scope.form.containerSerial
+            if ($scope.form.container_serial === "createnew") {
+                delete $scope.form.container_serial
             }
 
             TokenFactory.enroll($scope.newUser,

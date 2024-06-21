@@ -114,7 +114,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
 
             ContainerFactory.createContainer(params, function (data) {
-                $state.go("token.containerdetails", {"containerSerial": data.result.value.serial});
+                $state.go("token.containerdetails", {"containerSerial": data.result.value.container_serial});
             });
         };
     }]);
@@ -313,16 +313,43 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.deleteContainerButton = false;
-        $scope.deleteContainerMode = function (deleteAllTokens) {
-            if (deleteAllTokens) {
-                $scope.selectAllTokens(true);
-                $scope.deleteTokens();
+        $scope.deleteContainerMode = function (deleteTokens) {
+            if (deleteTokens) {
+                $scope.deleteAllTokens();
             }
             ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo);
         };
 
         $scope.setDescription = function (description) {
             ContainerFactory.setDescription($scope.containerSerial, description, $scope.getContainer);
+        };
+
+        $scope.editContainerRealms = false;
+        $scope.startEditRealms = function () {
+            // fill the selectedRealms with the realms of the container
+            $scope.selectedRealms = {};
+            $scope.editContainerRealms = true;
+            angular.forEach($scope.container.realms, function (realmName, _index) {
+                $scope.selectedRealms[realmName] = true;
+            });
+        };
+
+        $scope.saveRealms = function () {
+            let realmList = "";
+            for (const realm in $scope.selectedRealms) {
+                if ($scope.selectedRealms[realm] === true) {
+                    realmList += realm + ",";
+                }
+            }
+            realmList = realmList.slice(0, -1);
+            const realmParams = {"container_serial": $scope.containerSerial, "realms": realmList};
+            ContainerFactory.setRealms(realmParams, $scope.getContainer);
+            $scope.cancelEditRealms();
+        };
+
+        $scope.cancelEditRealms = function () {
+            $scope.editContainerRealms = false;
+            $scope.selectedRealms = {};
         };
 
         $scope.newUser = {user: "", realm: $scope.defaultRealm};
@@ -419,7 +446,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             if (tokenSerialList.length > 0) {
                 ContainerFactory.removeAllTokensFromContainer({
-                    'serial': $scope.containerSerial,
+                    'container_serial': $scope.containerSerial,
                     'serial_list': tokenSerialList
                 }, $scope.getContainer);
             }
@@ -436,6 +463,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     TokenFactory.delete(token);
                 }
             });
+            $scope.showDialogAll = false;
         };
 
         // --- Add token functions ---
@@ -501,8 +529,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
         $scope.removeOneToken = function (token_serial) {
             let params = {
-                "serial": $scope.containerSerial,
-                "tokenSerial": token_serial
+                "container_serial": $scope.containerSerial,
+                "serial": token_serial
             };
             ContainerFactory.removeTokenFromContainer(params, $scope.getContainer);
         }
@@ -515,8 +543,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }
         $scope.addToken = function (token_serial) {
             ContainerFactory.addTokenToContainer({
-                "serial": $scope.containerSerial,
-                "tokenSerial": token_serial
+                "container_serial": $scope.containerSerial,
+                "serial": token_serial
             }, function () {
                 $scope.getContainer();
                 $scope.get();

@@ -417,6 +417,29 @@ class APIContainer(MyApiTestCase):
                 count += 1
             self.assertEqual(containerdata["count"], count)
 
+        # Assign user and realm
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        test_user = User(login="cornelius", realm=self.realm1)
+        container = find_container_by_serial(container_serials[2])
+        container.set_realms([self.realm2])
+        container.add_user(test_user)
+
+        # Test output
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"container_serial": container_serials[2], "pagesize": 15, "page": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(1, containerdata["count"])
+            self.assertEqual(1, len(containerdata["containers"]))
+            res_container = containerdata["containers"][0]
+            self.assertEqual(3, len(res_container["tokens"]))
+            self.assertEqual(1, len(res_container["users"]))
+            self.assertEqual(test_user.login, res_container["users"][0]["user_name"])
+            self.assertIn(self.realm1, res_container["realms"])
+
     def test_05_get_all_containers_paginate_wrong_arguments(self):
         TokenContainer.query.delete()
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
@@ -463,6 +486,68 @@ class APIContainer(MyApiTestCase):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
             self.assertEqual(len(container_serials), containerdata["count"])
+
+    def test_06_set_realms(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        container_serial = init_container({"type": "generic", "description": "test container"})
+        payload = {"realms": self.realm1 + "," + self.realm2}
+
+        # Set existing realms
+        with self.app.test_request_context(f'/container/{container_serial}/realms',
+                                           method='POST',
+                                           data=payload,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+            self.assertTrue(result["value"])
+            self.assertTrue(result["value"]["deleted"])
+            self.assertTrue(result["value"][self.realm1])
+            self.assertTrue(result["value"][self.realm2])
+
+        # Set non-existing realm
+        payload = {"realms": "nonexistingrealm"}
+        with self.app.test_request_context(f'/container/{container_serial}/realms',
+                                           method='POST',
+                                           data=payload,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertFalse(result["value"]["nonexistingrealm"])
+
+        # Set no realm shall remove all realms for the container
+        payload = {"realms": ""}
+        with self.app.test_request_context(f'/container/{container_serial}/realms',
+                                           method='POST',
+                                           data=payload,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+            self.assertTrue(result["value"])
+            self.assertTrue(result["value"]["deleted"])
+
+        # Missing realm parameter
+        with self.app.test_request_context(f'/container/{container_serial}/realms',
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            error = res.json["result"]["error"]
+            error_code = error["code"]
+            error_msg = error["message"]
+            self.assertEqual(905, error_code)
+            self.assertEqual("ERR905: Missing parameter: 'realms'", error_msg)
+            self.assertFalse(res.json["result"]["status"])
+
+        # Clean up
+        container = find_container_by_serial(container_serial)
+        container.delete()
 
     """def test_03_token_in_container(self):
         rid = save_resolver({"resolver": self.resolvername1,

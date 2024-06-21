@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from privacyidea.lib.container import init_container
 from .base import MyApiTestCase, PWFILE2
 import json
 import os
@@ -539,13 +540,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
+        container_serial = init_container({"type": "generic"})
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "HOTP",
                                                  "otpkey": self.otpkey,
                                                  "pin": "1234",
                                                  "user": "cornelius",
-                                                 "realm": self.realm1},
+                                                 "realm": self.realm1,
+                                                 "container_serial": container_serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             data = res.json
