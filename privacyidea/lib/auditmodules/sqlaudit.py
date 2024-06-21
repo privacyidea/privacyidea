@@ -298,6 +298,8 @@ class Audit(AuditBase):
                           success=int(self.audit_data.get("success", 0)),
                           serial=self.audit_data.get("serial"),
                           token_type=self.audit_data.get("token_type"),
+                          container_serial=self.audit_data.get("container_serial"),
+                          container_type=self.audit_data.get("container_type"),
                           user=self.audit_data.get("user"),
                           realm=self.audit_data.get("realm"),
                           resolver=self.audit_data.get("resolver"),
@@ -382,13 +384,15 @@ class Audit(AuditBase):
         :rtype str
         """
         # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
+        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,c_serial=%s,ct=%s,u=%s,r=%s,adm=%s," \
             "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
                                                    le.action,
                                                    le.success,
                                                    le.serial,
                                                    le.token_type,
+                                                   le.container_serial,
+                                                   le.container_type,
                                                    le.user,
                                                    le.realm,
                                                    le.administrator,
@@ -428,7 +432,9 @@ class Audit(AuditBase):
                     'log_level': LogEntry.loglevel,
                     'policies': LogEntry.policies,
                     'clearance_level': LogEntry.clearance_level,
-                    'thread_id': LogEntry.thread_id}
+                    'thread_id': LogEntry.thread_id,
+                    'container_serial': LogEntry.container_serial,
+                    'container_type': LogEntry.container_type}
         return sortname.get(key)
 
     def csv_generator(self, param=None, user=None, timelimit=None):
@@ -582,6 +588,8 @@ class Audit(AuditBase):
         audit_dict['success'] = audit_entry.success
         audit_dict['serial'] = audit_entry.serial
         audit_dict['token_type'] = audit_entry.token_type
+        audit_dict['container_serial'] = audit_entry.container_serial
+        audit_dict['container_type'] = audit_entry.container_type
         audit_dict['user'] = audit_entry.user
         audit_dict['realm'] = audit_entry.realm
         audit_dict['resolver'] = audit_entry.resolver

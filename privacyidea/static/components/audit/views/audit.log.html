@@ -71,6 +71,20 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
+                <th ng-show="audit_columns.include('container_serial')
+                    class="piFilter">
+                    Container Serial
+                    <pi-filter ng-model="containerSerialFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
+                <th ng-show="audit_columns.include('container_type')
+                    class="piFilter">
+                    Container Type
+                    <pi-filter ng-model="containerTypeFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
                 <th ng-show="audit_columns.includes('administrator')"
                     class="pifilter"><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
@@ -141,6 +155,13 @@
                     {{ serial }}</a>
                 </td>
                 <td ng-if="audit_columns.includes('token_type')">{{ audit.token_type }}</td>
+                <td ng-if="audit_columns.includes('container_serial')">
+                    <a ui-sref="token.containerdetails({containerSerial:audit.container_serial})"
+                        ng-click="$rootScope.returnTo=audit;">
+                        {{ audit.container_serial }}
+                       </a>
+                </td>
+                <td ng-if="audit_columns.includes('container_type')">{{ audit.container_type }}</td>
                 <td ng-if="audit_columns.includes('administrator')">{{ audit.administrator }}</td>
                 <td ng-if="audit_columns.includes('user')">
                     <a ui-sref="user.details({username:audit.user,realmname:audit.realm})">
