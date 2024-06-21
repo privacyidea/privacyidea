@@ -289,7 +289,7 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('<string:container_serial>/lastseen', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):
