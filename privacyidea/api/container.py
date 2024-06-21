@@ -3,7 +3,7 @@ import logging
 from flask import Blueprint, jsonify, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
+from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
@@ -14,7 +14,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.token import get_one_token, get_tokens, \
+from privacyidea.lib.token import get_tokens, \
     convert_token_objects_to_dicts
 from privacyidea.lib.user import get_user_from_param, get_username
 
@@ -27,7 +27,6 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
-@event('container_list', request, g)
 @log_with(log)
 def list_containers():
     """
@@ -290,7 +289,7 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('<container_serial>/realms', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/lastseen', methods=['POST'])
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):
@@ -303,7 +302,6 @@ def set_realms(container_serial):
     realm_list = [r.strip() for r in container_realms.split(",")]
     container = find_container_by_serial(container_serial)
     result = container.set_realms(realm_list, add=False)
-
     return send_result(result)
 
 

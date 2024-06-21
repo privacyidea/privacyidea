@@ -481,36 +481,17 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 type: "generic", types: "", token_types: "", description: "",
             }
 
-                let allContainerTypes = {};
-                let containerList = {};
-                // Get the supported token types for each container type once
-                ContainerFactory.getTokenTypes(function (data) {
-                    allContainerTypes = data.result.value;
-
-                    angular.forEach(allContainerTypes, function (_, containerType) {
-                        if (containerType === 'generic') {
-                            allContainerTypes[containerType]["token_types_display"] = 'All';
-                        } else {
-                            allContainerTypes[containerType]["token_types_display"] = scope.tokenTypesToDisplayString(
-                                allContainerTypes[containerType].token_types);
-                        }
-                    });
-                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
-
-                    scope.getContainers();
-                });
-
-                // converts the supported token types to a display string
-                scope.tokenTypesToDisplayString = function (containerTokenTypes) {
-                    let displayString = "";
-                    // create comma separated list out of token names
-                    angular.forEach(containerTokenTypes, function (type) {
-                        displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
-                    });
-                    displayString = displayString.slice(0, -2);
-
-                    return displayString;
-                };
+            let allContainerTypes = {};
+            let containerList = {};
+            // Get the supported token types for each container type once
+            $http.get(containerUrl + "/types", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+            }).then(function (response) {
+                allContainerTypes = response.data.result.value;
+                scope.getContainers();
+            }, function (error) {
+                AuthFactory.authError(error.data);
+            });
 
             scope.getContainers = function () {
                 $http.get(containerUrl + "/?no_token=1", {
@@ -541,20 +522,20 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 return usableContainerTypes;
             };
 
-                // containerList is data.result.value of GET /container
-                scope.setContainerSelection = function () {
-                    const usableContainerTypes = scope.getContainerTypesForTokenType();
-                    scope.containers = [];
-                    // Filter the containers
-                    if (scope.tokenTypes && usableContainerTypes) {
-                        for (let i = 0; i < containerList.length; i++) {
-                            if (containerList[i].type in usableContainerTypes) {
-                                scope.containers.push(containerList[i]);
-                            }
+            // containerList is data.result.value of GET /container
+            scope.setContainerSelection = function () {
+                const usableContainerTypes = scope.getContainerTypesForTokenType();
+                scope.containers = [];
+                // Filter the containers
+                if (scope.tokenTypes && usableContainerTypes) {
+                    for (let i = 0; i < containerList.length; i++) {
+                        if (containerList[i].type in usableContainerTypes) {
+                            scope.containers.push(containerList[i]);
                         }
-                    } else {
-                        scope.containers = containerList;
                     }
+                } else {
+                    scope.containers = containerList;
+                }
 
                 // Add a display string to the containers
                 if (scope.containers && scope.containers.length > 0) {
@@ -601,14 +582,14 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }
             });
 
-                // Watch for changes in these variables so that can not be null/undefined. They might be set to null if
-                // the tokentypes change and therefore the selection changes. In that case, reset to createnew.
-                scope.$watch('newContainer.type', function (newVal, oldVal) {
-                    //console.log("newContainer.type changed from " + oldVal + " to " + newVal);
-                    if (newVal === undefined || newVal === null) {
-                        scope.newContainer.type = "generic"
-                    }
-                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+            // Watch for changes in these variables so that can not be null/undefined. They might be set to null if
+            // the tokentypes change and therefore the selection changes. In that case, reset to createnew.
+            scope.$watch('newContainer.type', function (newVal, oldVal) {
+                //console.log("newContainer.type changed from " + oldVal + " to " + newVal);
+                if (newVal === undefined || newVal === null) {
+                    scope.newContainer.type = "generic"
+                }
+                scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
 
                 });
                 scope.$watch('containerSerial', function (newVal, oldVal) {
@@ -620,30 +601,30 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     }
                 });
 
-                scope.changeContainerSelection = function () {
-                    scope.isCreateNew = scope.containerSerial === "createnew";
-                }
-
-                scope.createContainer = function () {
-                    let params = {
-                        type: scope.newContainer.type, description: scope.newContainer.description,
-                    }
-                    if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
-                        params["user"] = fixUser(scope.userName);
-                        params["realm"] = scope.userRealm;
-                    }
-                    $http.post(containerUrl + "/init", params, {
-                        headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    }).then(function (response) {
-                        const newSerial = response.data.result.value.serial;
-                        scope.getContainers();
-                        scope.containerSerial = newSerial;
-                        scope.isCreateNew = false;
-                        scope.newContainer.description = "";
-                    }, function (error) {
-                        AuthFactory.authError(error.data);
-                    });
-                }
+            scope.changeContainerSelection = function () {
+                scope.isCreateNew = scope.containerSerial === "createnew";
             }
-        };
-    }]);
+
+            scope.createContainer = function () {
+                let params = {
+                    type: scope.newContainer.type, description: scope.newContainer.description,
+                }
+                if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
+                    params["user"] = fixUser(scope.userName);
+                    params["realm"] = scope.userRealm;
+                }
+                $http.post(containerUrl + "/init", params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                }).then(function (response) {
+                    const newSerial = response.data.result.value.serial;
+                    scope.getContainers();
+                    scope.containerSerial = newSerial;
+                    scope.isCreateNew = false;
+                    scope.newContainer.description = "";
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            }
+        }
+    };
+}]);

@@ -9,8 +9,7 @@
             <td>
                 <!-- Delete container -->
                 <button class="btn btn-danger" ng-click="deleteContainerButton=true"
-                        id="deleteButton"
-                        ng-disabled="!checkRight('delete')"
+                        ng-disabled="!checkRight('container_delete')"
                         ng-hide="deleteContainerButton || (!checkRight('container_delete') && hide_buttons)">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>

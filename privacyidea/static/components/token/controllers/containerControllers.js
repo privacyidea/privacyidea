@@ -243,16 +243,16 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
                     angular.forEach($scope.container.states, function (state) {
                         $scope.excludeStates(state);
-                        $scope.stateSelectionChanged = false;
-
-                        angular.forEach($scope.container.tokens, function (token) {
-                            $scope.showDialog[token.serial] = false;
-                        });
-                        if ($scope.supportedTokenTypes.length === 0) {
-                            // Get supported token types only once
-                            $scope.getSupportedTokenTypes();
-                        }
                     });
+
+                    $scope.stateSelectionChanged = false;
+                    angular.forEach($scope.container.tokens, function (token) {
+                        $scope.showDialog[token.serial] = false;
+                    });
+                    if ($scope.supportedTokenTypes.length == 0) {
+                        // Get supported token types only once
+                        $scope.getSupportedTokenTypes();
+                    }
                 } else {
                     // If there is nothing returned, the user should not be on this page
                     // (the details page of a non-visible container)
@@ -262,7 +262,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
             $scope.get();
         };
-
 
         $scope.excludeStates = function (state) {
             // Get possible container states
@@ -393,7 +392,10 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         }
 
-// listen to the reload broadcast
+        ContainerFactory.updateLastSeen($scope.containerSerial, function (data) {
+        });
+
+        // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);
 
 // ------------------- Token Actions -------------------------------
