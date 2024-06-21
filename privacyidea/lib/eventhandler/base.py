@@ -477,6 +477,32 @@ class BaseEventHandler(object):
         return users
 
     @classmethod
+    def _get_token_serials(cls, request, content, g):
+        """
+        Extracts the token serials from the request, content or audit object.
+
+        :param request: The request object
+        :param content: The content of the response
+        :param g: The g object
+        :return: Comma separated string of token serials
+        """
+        serial_list = []
+        # Get single token serial
+        serial = request.all_data.get("serial") or \
+                 content.get("detail", {}).get("serial") or \
+                 g.audit_object.audit_data.get("serial")
+        if serial:
+            serial_list.append(serial)
+        else:
+            # If no single serial is found, search for a serial list
+            serials = request.all_data.get("serial_list")
+            if serials:
+                serial_list.extend(serials)
+        serial_str = ','.join(serial_list)
+
+        return serial_str
+
+    @classmethod
     def _get_container_serial(cls, request, content):
         """
         Get the container serial from the request, content or audit object.
@@ -511,16 +537,14 @@ class BaseEventHandler(object):
         :param g: The g object
         :return: The container serial or None if no serial could be found
         """
-        serial = request.all_data.get("serial")
-        container_serial = cls._get_container_serial_from_token_serial(serial)
+        serials = cls._get_token_serials(request, content, g)
 
-        if not container_serial:
-            serial = content.get("result", {}).get('serial', {})
+        if len(serials) == 1:
+            # Only if one token serial is provided a corresponding container can be found
+            serial = serials[0]
             container_serial = cls._get_container_serial_from_token_serial(serial)
-
-        if not container_serial:
-            serial = g.audit_object.audit_data.get("serial")
-            container_serial = cls._get_container_serial_from_token_serial(serial)
+        else:
+            container_serial = None
 
         return container_serial
 
