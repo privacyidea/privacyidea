@@ -171,9 +171,9 @@ and ``{ua_string}`` for information on the user agent and ``{username}`` and
 increase tokeninfo
 ...................
 
-Using the action ``increase tokeninfo`` you can increase the value of a tokeninfo key.
+Using the action ``increase tokeninfo``, you can increase the value of a tokeninfo key.
 The tokeninfo is interpreted as an integer value.
-As an *increment* you can use a positive or a negative value. An increment like "-7" will
+You can use a positive or a negative value as an *increment*. An increment like "-7" will
 decrease the current tokeninfo value by 7.
 If the tokeninfo does not exist, it will be created with the increment value.
 
