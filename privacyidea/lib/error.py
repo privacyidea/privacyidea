@@ -189,7 +189,6 @@ class SelfserviceException(privacyIDEAError):
 
 
 class ParameterError(privacyIDEAError):
-    USER_OR_SERIAL = lazy_gettext('You either need to provide user or serial')
 
     def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
         privacyIDEAError.__init__(self, description=description, id=id)
