@@ -71,14 +71,14 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-show="audit_columns.include('container_serial')
+                <th ng-show="audit_columns.includes('container_serial')"
                     class="piFilter">
                     Container Serial
                     <pi-filter ng-model="containerSerialFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-show="audit_columns.include('container_type')
+                <th ng-show="audit_columns.includes('container_type')"
                     class="piFilter">
                     Container Type
                     <pi-filter ng-model="containerTypeFilter"
