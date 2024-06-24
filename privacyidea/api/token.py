@@ -584,9 +584,7 @@ def enable_api(serial=None):
     """
     Enable a single token or all the tokens of a user.
 
-    :jsonparam basestring serial: the serial number of the single token to
-        enable
-    :jsonparam basestring serial_list: a list of serial numbers of the tokens to enable
+    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma separated
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of enabled
@@ -596,16 +594,7 @@ def enable_api(serial=None):
     user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
-    serial_list = getParam(request.all_data, "serial_list", optional)
-
-    if not serial and not serial_list:
-        raise ParameterError("Either serial or serial_list is required")
-
-    token_serials = []
-    if serial_list:
-        token_serials = serial_list
-    if serial:
-        token_serials.append(serial)
+    token_serials = serial.replace(' ', '').split(',')
 
     res = {}
     serial_str_list = ""
@@ -638,9 +627,7 @@ def disable_api(serial=None):
 
     Disabled tokens can not be used to authenticate but can be enabled again.
 
-    :jsonparam basestring serial: the serial number of the single token to
-        disable
-    :jsonparam basestring serial_list: a list of serial numbers of the tokens to enable
+    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma separated
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of disabled
@@ -649,17 +636,8 @@ def disable_api(serial=None):
     """
     user = request.User
     if not serial:
-        serial = getParam(request.all_data, "serial", optional)
-    serial_list = getParam(request.all_data, "serial_list", optional)
-
-    if not serial and not serial_list:
-        raise ParameterError("Either serial or serial_list is required")
-
-    token_serials = []
-    if serial_list:
-        token_serials = serial_list
-    if serial:
-        token_serials.append(serial)
+        serial = getParam(request.all_data, "serial", required)
+    token_serials = serial.replace(' ', '').split(',')
 
     res = {}
     serial_str_list = ""

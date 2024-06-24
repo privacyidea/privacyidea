@@ -461,10 +461,8 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.ADD_TOKENGROUP,
                               ACTION_TYPE.REMOVE_TOKENGROUP,
                               ACTION_TYPE.ATTACH_APPLICATION] and serial_list:
-            if ',' in serial_list:
-                serials = serial_list.replace(' ', '').split(',')
-            else:
-                serials = [serial_list]
+
+            serials = serial_list.replace(' ', '').split(',')
             for serial in serials:
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:

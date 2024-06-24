@@ -208,21 +208,10 @@ def add_token(container_serial):
     """
     Add one or multiple tokens to a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to add
-    :jsonparam: serial_list: List of serials of the tokens to add. Comma separated.
+    :jsonparam: serial: Serial of the token to add. Multiple serials can be passed comma separated.
     """
-    serial = getParam(request.all_data, "serial", True, allow_empty=True)
-    serials = getParam(request.all_data, "serial_list")
-    if not serial and not serials:
-        raise ParameterError("Either serial or serial_list is required")
-    token_serials = []
-    token_serial_str = ""
-    if serials:
-        token_serials = serials
-        token_serial_str = [t + "," for t in token_serials][:-1]
-    if serial:
-        token_serials.append(serial)
-        token_serial_str = serial
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
     res = add_tokens_to_container(container_serial, token_serials)
 
     # Audit log
@@ -234,7 +223,7 @@ def add_token(container_serial):
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
-                      "serial": token_serial_str,
+                      "serial": serial,
                       "success": res}
     g.audit_object.log(audit_log_data)
     return send_result(res)
@@ -247,20 +236,10 @@ def remove_token(container_serial):
     """
     Remove a token from a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to remove
-    :jsonparam: serial_list: List of serials of the tokens to remove. Comma separated.
+    :jsonparam: serial: Serial of the token to remove. Multiple serials can be passed comma separated.
     """
-    serial = getParam(request.all_data, "serial", optional=True, allow_empty=True)
-    serials = getParam(request.all_data, "serial_list", optional=True, allow_empty=True)
-    if not serial and not serials:
-        raise ParameterError("Either serial or serial_list is required")
-    token_serials = []
-    if serials:
-        token_serials = serials
-    if serial:
-        token_serials.append(serial)
-    token_serial_str = ','.join(token_serials)
-
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
     res = remove_tokens_from_container(container_serial, token_serials)
 
     # Audit log
@@ -272,7 +251,7 @@ def remove_token(container_serial):
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
-                      "serial": token_serial_str,
+                      "serial": serial,
                       "success": res}
     g.audit_object.log(audit_log_data)
     return send_result(res)
