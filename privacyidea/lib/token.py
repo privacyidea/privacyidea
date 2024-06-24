@@ -1721,7 +1721,6 @@ def set_description(serial, description, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    description = description[:80]
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:

@@ -458,6 +458,9 @@ class Token(MethodsMixin, db.Model):
     def set_description(self, desc):
         if desc is None:
             desc = ""
+        length = len(desc)
+        if length > Token.description.property.columns[0].type.length:
+            desc = desc[:Token.description.property.columns[0].type.length]
         self.description = convert_column_to_unicode(desc)
         return self.description
 
