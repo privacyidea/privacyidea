@@ -584,7 +584,8 @@ def enable_api(serial=None):
     """
     Enable a single token or all the tokens of a user.
 
-    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma separated
+    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma
+                                  separated
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of enabled
@@ -627,7 +628,8 @@ def disable_api(serial=None):
 
     Disabled tokens can not be used to authenticate but can be enabled again.
 
-    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma separated
+    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma
+                                  separated
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of disabled
