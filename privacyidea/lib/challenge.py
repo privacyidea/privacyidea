@@ -32,6 +32,7 @@ from ..models import Challenge
 log = logging.getLogger(__name__)
 
 
+
 @log_with(log)
 def get_challenges(serial=None, transaction_id=None, challenge=None):
     """

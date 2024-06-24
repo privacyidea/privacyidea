@@ -1568,6 +1568,22 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
 
 @log_with(log)
 @check_user_or_serial
+def get_tokeninfo(serial, info):
+    """
+    get a token info field in the database.
+
+    :param serial: The serial number of the token
+    :type serial: basestring
+    :param info: The key of the info in the dict
+    """
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=None)
+
+    if len(tokenobject_list) == 1:
+        return tokenobject_list[0].get_tokeninfo(info)
+
+
+@log_with(log)
+@check_user_or_serial
 def add_tokeninfo(serial, info, value=None,
                   value_type=None,
                   user=None):

@@ -112,6 +112,7 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 import json
 
 from ..lib.framework import get_app_config_value
@@ -647,7 +648,7 @@ def poll_transaction(transaction_id=None):
     else:
         result = False
         for challenge in matching_challenges:
-            if challenge.data == "challenge_declined":
+            if challenge.session == CHALLENGE_SESSION.DECLINED:
                 declined_challenges.append(challenge)
         if declined_challenges:
             log_challenges = declined_challenges

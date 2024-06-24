@@ -659,7 +659,7 @@ class PushTokenClass(TokenClass):
                         log.debug("Found matching challenge {0!s}.".format(chal))
                         result = True
                         if decline:
-                            chal.set_data("challenge_declined")
+                            chal.set_session(CHALLENGE_SESSION.DECLINED)
                         else:
                             # Verify the presence_answer. The correct choice is stored in the "data"
                             # field of the challenge.

@@ -47,6 +47,7 @@ from dateutil.tz import tzlocal
 import re
 import logging
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +80,8 @@ class CONDITION(object):
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
+    CHALLENGE_SESSION = "challenge_session"
+    CHALLENGE_EXPIRED = "challenge_expired"
 
 
 class GROUP(object):
@@ -90,6 +93,7 @@ class GROUP(object):
     GENERAL = "general"
     USER = "user"
     COUNTER = "counter"
+    CHALLENGE = "challenge"
 
 
 class BaseEventHandler(object):
@@ -142,6 +146,19 @@ class BaseEventHandler(object):
         realms = get_realms()
         resolvers = get_resolver_list()
         cond = {
+            CONDITION.CHALLENGE_SESSION: {
+                "type": "str",
+                "desc": _("The challenge session matches the string or regular "
+                          "expression (like 'challenge_declined' or 'enrollment')"),
+                "group": GROUP.CHALLENGE
+            },
+            CONDITION.CHALLENGE_EXPIRED: {
+                "type": "str",
+                "desc": _("The challenge of a token during the authentication process"
+                          " is expired."),
+                "value": ("True", "False"),
+                "group": GROUP.CHALLENGE
+            },
             CONDITION.ROLLOUT_STATE: {
                 "type": "str",
                 "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'."),
@@ -387,6 +404,7 @@ class BaseEventHandler(object):
         user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
+        transaction_id = request.all_data.get("transaction_id")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None
@@ -612,6 +630,26 @@ class BaseEventHandler(object):
             if CONDITION.ROLLOUT_STATE in conditions:
                 cond = conditions.get(CONDITION.ROLLOUT_STATE)
                 if not cond == token_obj.token.rollout_state:
+                    return False
+
+            # We also put the challenge condition here. If we do not have a
+            # token-obj we can not identify challenges.
+            if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
+                chals = get_challenges(serial=token_obj.token.serial, transaction_id=transaction_id)
+                if len(chals) == 1:
+                    chal = chals[0]
+                    if CONDITION.CHALLENGE_SESSION in conditions:
+                        cond_match = conditions.get(CONDITION.CHALLENGE_SESSION)
+                        if not bool(re.match(cond_match, chal.session)):
+                            return False
+                    if CONDITION.CHALLENGE_EXPIRED in conditions:
+                        condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)
+                        if is_true(condition_value) == chal.is_valid():
+                            return False
+                elif len(chals) > 1:
+                    # If there is more than one challenge, the conditions seams awkward
+                    log.warning("There are more than one challenge for token {0!s} "
+                                "and transaction_id {1!s}".format(token_obj.token.serial, transaction_id))
                     return False
 
         return True
