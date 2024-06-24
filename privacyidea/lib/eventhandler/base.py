@@ -538,6 +538,7 @@ class BaseEventHandler(object):
         :return: The container serial or None if no serial could be found
         """
         serials = cls._get_token_serials(request, content, g)
+        serials = serials.replace(' ', '').split(',')
 
         if len(serials) == 1:
             # Only if one token serial is provided a corresponding container can be found

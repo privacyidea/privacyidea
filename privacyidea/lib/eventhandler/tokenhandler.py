@@ -462,7 +462,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.REMOVE_TOKENGROUP,
                               ACTION_TYPE.ATTACH_APPLICATION] and serial_list:
             if ',' in serial_list:
-                serials = [t.strip() for t in serial_list.split(',')]
+                serials = serial_list.replace(' ', '').split(',')
             else:
                 serials = [serial_list]
             for serial in serials:
