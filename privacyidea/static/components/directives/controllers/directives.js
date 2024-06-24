@@ -614,7 +614,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     $http.post(containerUrl + "/init", params, {
                         headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     }).then(function (response) {
-                        const newSerial = response.data.result.value.serial;
+                        const newSerial = response.data.result.value.container_serial;
                         scope.getContainers();
                         scope.containerSerial = newSerial;
                         scope.isCreateNew = false;
