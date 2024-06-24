@@ -66,7 +66,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.addToContainer = function () {
             ContainerFactory.addTokenToContainer({
                 container_serial: $scope.containerSerial,
-                tokenSerial: $scope.tokenSerial
+                serial: $scope.tokenSerial
             }, function (data) {
                 if (data.result.value) {
                     $scope.tokenIsInContainer = true;
@@ -76,7 +76,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.removeFromContainer = function () {
             ContainerFactory.removeTokenFromContainer({
                 container_serial: $scope.containerSerial,
-                tokenSerial: $scope.tokenSerial
+                serial: $scope.tokenSerial
             }, function (data) {
                 if (data.result.value) {
                     $scope.tokenIsInContainer = false;

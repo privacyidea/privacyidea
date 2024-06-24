@@ -211,11 +211,15 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.stateTypes = data.result.value;
             angular.forEach($scope.stateTypes, function (val, state) {
                 // Set the state to false, if it is displayed next to states that exclude each other
-                if ($scope.displayState[state]) {
+                if (!(state in $scope.displayState)) {
                     $scope.displayState[state] = true;
                     angular.forEach($scope.stateTypes[state], function (excludedState) {
                         $scope.displayState[excludedState] = false;
                     });
+                }
+                // Set default value for the container states if it is not set yet
+                if (!$scope.containerStates[state]) {
+                    $scope.containerStates[state] = false;
                 }
             });
         });
@@ -264,16 +268,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.excludeStates = function (state) {
-            // Get possible container states
-            $scope.stateTypes = [];
-            $scope.containerStates = {};
-            ContainerFactory.getStateTypes(function (data) {
-                $scope.stateTypes = data.result.value;
-                angular.forEach($scope.stateTypes, function (state) {
-                    $scope.containerStates[state] = false;
-                })
-            });
-
             // Deselect excluded states based on the selected state
             $scope.containerStates[state] = true;
             angular.forEach($scope.stateTypes[state], function (disableType) {
@@ -375,11 +369,11 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.editContainerInfo = false;
         $scope.startEditContainerInfo = function () {
-            $scope.editContainernfo = true;
+            $scope.editContainerInfo = true;
         };
 
         $scope.saveContainerInfo = function () {
-            $scope.editContainernfo = false;
+            $scope.editContainerInfo = false;
         };
 
         if ($scope.loggedInUser.isAdmin) {
@@ -398,7 +392,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);
 
-// ------------------- Token Actions -------------------------------
+        // ------------------- Token Actions -------------------------------
         $scope.tokensPerPage = $scope.token_page_size;
         $scope.tokenParams = {page: 1, sortdir: "asc"};
         $scope.reverse = false;
