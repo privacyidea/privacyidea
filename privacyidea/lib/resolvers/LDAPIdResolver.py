@@ -344,7 +344,10 @@ class IdResolver (UserIdResolver):
                 return False
             # we need to check credentials with kerberos differently since we
             # can not use bind for every user
-            name = gssapi.Name(self.getUserInfo(uid).get('username'))
+            if self.getUserInfo(uid).get('upn') != None and self.getUserInfo(uid).get('upn') != "None" and  self.getUserInfo(uid).get('upn') != "":
+                name = gssapi.Name(self.getUserInfo(uid).get('upn').upper())
+            else:
+                name = gssapi.Name(self.getUserInfo(uid).get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
             except gssapi.exceptions.GSSError as e:
