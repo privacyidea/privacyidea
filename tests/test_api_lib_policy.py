@@ -1386,13 +1386,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
-        # This emails is allowed
+        # This email is allowed
         r = required_email(req)
         self.assertTrue(r)
 
         # This email is not allowed
         req.all_data = {"email": "user@otherdomain.net"}
-        # This emails is allowed
+        # This email is allowed
         self.assertRaises(RegistrationError, required_email, req)
 
         delete_policy("email1")

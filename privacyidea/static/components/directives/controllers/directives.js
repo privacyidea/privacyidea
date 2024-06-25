@@ -495,7 +495,9 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                             allContainerTypes[containerType].token_types);
                     }
                 });
-                scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+                if (allContainerTypes[scope.newContainer.type]) {
+                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+                }
 
                 scope.getContainers();
             });
@@ -568,7 +570,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         }
                     });
                 }
-                if (AuthFactory.checkRight("container_create") || AuthFactory.isAdmin()) {
+                if (AuthFactory.checkRight("container_create") || AuthFactory.getUser().isAdmin) {
                     // Always add an extra container at the beginning to represent the creation of a new container
                     scope.containers.unshift({displayString: "Create new container", serial: "createnew"});
                 }
@@ -576,7 +578,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
 
             scope.setDefaultSerialSelection = function () {
                 if (!scope.containerSerial || scope.containerSerial === "createnew") {
-                    if (AuthFactory.checkRight("container_create") || AuthFactory.isAdmin()) {
+                    if (AuthFactory.checkRight("container_create") || AuthFactory.getUser().isAdmin) {
                         scope.containerSerial = "createnew";
                     } else if (scope.containers && scope.containers.length > 0) {
                         scope.containerSerial = scope.containers[0].serial;
@@ -603,6 +605,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 if (newVal === undefined || newVal === null) {
                     scope.newContainer.type = "generic"
                 }
+                console.log("watch newContainer.type: " + allContainerTypes[scope.newContainer.type]);
                 scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
 
             });
@@ -614,10 +617,6 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     scope.setDefaultSerialSelection();
                 }
             });
-
-            scope.changeContainerSelection = function () {
-                scope.isCreateNew = scope.containerSerial === "createnew";
-            }
 
             scope.createContainer = function () {
                 let params = {

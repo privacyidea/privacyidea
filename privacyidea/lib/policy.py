@@ -536,13 +536,15 @@ class PolicyClass(object):
         value_found = False
         value_excluded = False
         for value in policy_attributes:
-            if value and value[0] in ["!", "-"] and searchvalue == value[1:]:
+            if value and value[0] in ["!", "-"] and \
+                    searchvalue == value[1:]:
                 value_excluded = True
-            elif searchvalue is list and value in searchvalue + ["*"]:
+            elif type(searchvalue) == list and value in \
+                    searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
-            elif searchvalue is not list:
+            elif type(searchvalue) != list:
                 # Do not do this search style for resolvers, which come as a list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1

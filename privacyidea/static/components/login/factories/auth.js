@@ -36,6 +36,7 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                     user.role = role;
                     user.rights = rights;
                     user.menus = menus;
+                    user.isAdmin = (role === "admin");
                 },
                 authError: function (error) {
                     const authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
@@ -74,12 +75,6 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 },
                 getRole: function () {
                     return user.role;
-                },
-                isAdmin: function () {
-                    return user.role === "admin";
-                },
-                isUser: function () {
-                    return user.role === "user";
                 },
                 checkRight: function (action) {
                     if (user.rights) {

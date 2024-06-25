@@ -103,17 +103,17 @@
             </td>
             <td>
                 <!-- Container info is an admin only action -->
-                <div ng-hide="(!loggedInUser.isAdmin() || !checkRight('container_info'))&& hide_buttons">
+                <div ng-hide="(!loggedInUser.isAdmin || !checkRight('container_info'))&& hide_buttons">
                     <button class="btn btn-primary"
                             id="ciEditButton"
-                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_info')"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
                             ng-hide="editContainerInfo"
                             ng-click="startEditContainerInfo()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="ciSaveButton"
-                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_info')"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
                             ng-show="editContainerInfo"
                             ng-click="saveContainerInfo()"
                             translate>Save Container Info
@@ -150,11 +150,11 @@
             </td>
             <td>
                 <!-- Container realms is an admin only action -->
-                <fieldset ng-disabled="!loggedInUser.isAdmin()">
+                <fieldset ng-disabled="!loggedInUser.isAdmin">
                     <button class="btn btn-primary"
                             id="cRealmsEditButton"
-                            ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin()) && hide_buttons)"
-                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_realms')"
+                            ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin) && hide_buttons)"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_realms')"
                             ng-click="startEditRealms()"
                             translate>Edit
                     </button>
@@ -276,7 +276,7 @@
             <th translate>otplen</th>
             <th>Container</th>
             <th>
-                <div ng-show="loggedInUser.isAdmin()">
+                <div ng-show="loggedInUser.isAdmin">
                     <button ng-click="removeAllTokens(token.serial)"
                             class="btn btn-transparent btn-danger btn-header"
                             ng-hide="showDialogAll">
@@ -550,11 +550,11 @@
                         {{ t_realm }}</a>&nbsp;
                 </td>
 
-                <td ng-show="loggedInUser.isAdmin() &&
+                <td ng-show="loggedInUser.isAdmin &&
             user_details_in_tokenlist">
                     {{ token_add.user_id }}
                 </td>
-                <td ng-show="loggedInUser.isAdmin() &&
+                <td ng-show="loggedInUser.isAdmin &&
             user_details_in_tokenlist">
                     <a ui-sref="config.resolvers.list">{{ token_add.resolver }}</a>
                 </td>

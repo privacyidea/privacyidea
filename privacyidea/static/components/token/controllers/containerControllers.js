@@ -1,7 +1,7 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory', 'UserFactory', 'TokenFactory',
+    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state',
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
-                                       AuthFactory, ConfigFactory, UserFactory, TokenFactory) {
+                                       AuthFactory, ConfigFactory, UserFactory, $state) {
         $scope.formData = {
             containerTypes: {},
         };
@@ -12,7 +12,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         };
 
         $scope.$watch('form', function (newVal, oldVal) {
-            if (newVal) {
+            if (newVal && allContainerTypes[newVal.containerType]) {
                 $scope.form.token_types = allContainerTypes[newVal.containerType]["token_types_display"];
             }
         }, true);
