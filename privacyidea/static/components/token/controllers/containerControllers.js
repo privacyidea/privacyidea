@@ -394,7 +394,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
-            let tokenSerialStr = tokenSerialList.join(',')
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
                 TokenFactory.disableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
             }
@@ -402,7 +402,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
-            let tokenSerialStr = tokenSerialList.join(',')
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
                 TokenFactory.enableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
             }
@@ -410,7 +410,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.removeAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
-            let tokenSerialStr = tokenSerialList.join(',')
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
                 ContainerFactory.removeTokenFromContainer({
                     'container_serial': $scope.containerSerial,
