@@ -590,16 +590,19 @@
      token-types="[token.tokentype]">
 </div>
 <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
-    <button type="button" class="btn btn-primary" ng-click="addToContainer()">
+    <button type="button" class="btn btn-primary"
+            ng-disabled="!checkRight('container_add_token')"
+            ng-click="addToContainer()">
         <span translate>Add to Container</span>
     </button>
 </div>
 <div class="text-center" ng-show="tokenIsInContainer">
-    <button type="button" class="btn btn-primary" ng-click="removeFromContainer()">
+    <button type="button" class="btn btn-primary"
+            ng-disabled="!checkRight('container_remove_token')"
+            ng-click="removeFromContainer()">
         <span translate>Remove from Container</span>
     </button>
 </div>
-
 <!-- ============ Machines ======================= -->
 
 <div ng-hide="formInit.application.length === 0">

@@ -145,7 +145,7 @@ class prepolicy(object):
         This decorates the given function. The prepolicy decorator is ment
         for API functions on the API level.
 
-        If some error occur the a PolicyException is raised.
+        If some error occurs, a PolicyException is raised.
 
         The decorator function can modify the request data.
 
@@ -299,7 +299,7 @@ def realmadmin(request=None, action=None):
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
-        if not "realm" in params:
+        if "realm" not in params:
             # add the realm to params
             po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
@@ -572,7 +572,7 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    In addition it adds the tokenissuer to the params like this:
+    In addition, it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
     It also checks if the force_app_pin policy is set and adds the corresponding

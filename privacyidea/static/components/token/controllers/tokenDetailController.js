@@ -60,7 +60,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
 
         // Container
         $scope.tokenIsInContainer = false;
-        $scope.$watch('containerSerial', function () {
+        $scope.$watch('containerSerial', function (newVal, oldVal) {
             $scope.showAddToContainer = ($scope.containerSerial && $scope.containerSerial !== "createnew");
         });
         $scope.addToContainer = function () {

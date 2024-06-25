@@ -401,6 +401,7 @@ class ACTION(object):
     CONTAINER_REMOVE_TOKEN = "container_remove_token"
     CONTAINER_ASSIGN_USER = "container_assign_user"
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
+    CONTAINER_REALMS = "container_realms"
 
 
 class TYPE(object):
@@ -535,17 +536,14 @@ class PolicyClass(object):
         value_found = False
         value_excluded = False
         for value in policy_attributes:
-            if value and value[0] in ["!", "-"] and \
-                    searchvalue == value[1:]:
+            if value and value[0] in ["!", "-"] and searchvalue == value[1:]:
                 value_excluded = True
-            elif type(searchvalue) == list and value in \
-                    searchvalue + ["*"]:
+            elif searchvalue is list and value in searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
-            elif type(searchvalue) != list:
-                # Do not do this search style for resolvers, which come as a
-                # list
+            elif searchvalue is not list:
+                # Do not do this search style for resolvers, which come as a list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
                 if re.search("^{0!s}$".format(value), searchvalue):
@@ -2081,6 +2079,10 @@ def get_static_policy_definitions(scope=None):
                                              'desc': _('Admin is allowed to unassign users from containers.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
                                              'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REALMS: {'type': 'bool',
+                                     'desc': _('Admin is allowed to set the realm of containers.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.CONTAINER},
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {

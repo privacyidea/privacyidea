@@ -324,6 +324,30 @@ class APIContainerAuthorization(MyApiTestCase):
                                        {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
+    def test_33_user_container_realms_denied(self):
+        # Editing the container realms is an admin action and therefore only ever allowed for admins
+        # But this returns a 401 from the @admin_required decorator
+        container_serial = self.create_container_for_user()
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+
+        with self.app.test_request_context(f"/container/{container_serial}/realms", method='POST',
+                                           data={"realms": "realm1"}, headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+        delete_policy("policy")
+
+    def test_34_admin_container_realms_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS)
+        container_serial = self.create_container_for_user()
+        self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
+        delete_policy("policy")
+
+    def test_35_admin_container_realms_denied(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
+        delete_policy("policy")
+
 
 class APIContainer(MyApiTestCase):
 

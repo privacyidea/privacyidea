@@ -186,7 +186,7 @@ def add_token(container_serial):
     serial = getParam(request.all_data, "serial", True, allow_empty=True)
     serials = getParam(request.all_data, "serial_list")
     if not serial and not serials:
-        raise ParameterError("Either serial or serial_list is required")
+        raise ParameterError("Either token serial or serial_list is required")
     token_serials = []
     if serials:
         token_serials = serials
@@ -291,6 +291,8 @@ def get_state_types():
 
 
 @container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REALMS)
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):

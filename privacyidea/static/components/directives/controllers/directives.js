@@ -578,16 +578,11 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 if (!scope.containerSerial || scope.containerSerial === "createnew") {
                     if (AuthFactory.checkRight("container_create") || AuthFactory.isAdmin()) {
                         scope.containerSerial = "createnew";
-                        scope.isCreateNew = true;
                     } else if (scope.containers && scope.containers.length > 0) {
                         scope.containerSerial = scope.containers[0].serial;
-                        scope.isCreateNew = false;
                     } else {
                         scope.containerSerial = null;
-                        scope.isCreateNew = false;
                     }
-                } else {
-                    scope.isCreateNew = false;
                 }
             }
 
@@ -624,26 +619,25 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     scope.isCreateNew = scope.containerSerial === "createnew";
                 }
 
-                scope.createContainer = function () {
-                    let params = {
-                        type: scope.newContainer.type, description: scope.newContainer.description,
-                    }
-                    if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
-                        params["user"] = fixUser(scope.userName);
-                        params["realm"] = scope.userRealm;
-                    }
-                    $http.post(containerUrl + "/init", params, {
-                        headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    }).then(function (response) {
-                        const newSerial = response.data.result.value.serial;
-                        scope.getContainers();
-                        scope.containerSerial = newSerial;
-                        scope.isCreateNew = false;
-                        scope.newContainer.description = "";
-                    }, function (error) {
-                        AuthFactory.authError(error.data);
-                    });
+            scope.createContainer = function () {
+                let params = {
+                    type: scope.newContainer.type, description: scope.newContainer.description,
                 }
+                if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
+                    params["user"] = fixUser(scope.userName);
+                    params["realm"] = scope.userRealm;
+                }
+                $http.post(containerUrl + "/init", params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                }).then(function (response) {
+                    const newSerial = response.data.result.value.container_serial;
+                    scope.getContainers();
+                    scope.containerSerial = newSerial;
+                    scope.newContainer.description = "";
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
             }
-        };
-    }]);
+        }
+    };
+}]);

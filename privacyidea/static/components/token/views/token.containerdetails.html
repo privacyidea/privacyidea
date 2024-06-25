@@ -24,8 +24,9 @@
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
+                    <!-- only allowed if delete token action is set -->
                     <button class="btn btn-danger"
-                            ng-disabled="!checkRight('container_delete')"
+                            ng-disabled="!checkRight('container_delete') || !checkRight('delete')"
                             ng-hide="!checkRight('container_delete') && hide_buttons">
                             ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
@@ -101,17 +102,18 @@
                 </ul>
             </td>
             <td>
-                <div ng-hide="!checkRight('container_info') && hide_buttons">
+                <!-- Container info is an admin only action -->
+                <div ng-hide="(!loggedInUser.isAdmin() || !checkRight('container_info'))&& hide_buttons">
                     <button class="btn btn-primary"
                             id="ciEditButton"
-                            ng-hide="editContainerInfo || (!checkRight('container_info') && hide_buttons)"
-                            ng-disabled="!checkRight('container_info')"
+                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_info')"
+                            ng-hide="editContainernfo"
                             ng-click="startEditContainerInfo()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="ciSaveButton"
-                            ng-disabled="!checkRight('container_info')"
+                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_info')"
                             ng-show="editContainerInfo"
                             ng-click="saveContainerInfo()"
                             translate>Save Container Info
@@ -147,11 +149,12 @@
                 </span>
             </td>
             <td>
-                <fieldset ng-disabled="loggedInUser.role == 'user'">
+                <!-- Container realms is an admin only action -->
+                <fieldset ng-disabled="!loggedInUser.isAdmin()">
                     <button class="btn btn-primary"
                             id="cRealmsEditButton"
-                            ng-hide="editContainerRealms || ((!checkRight('tokenrealms') || loggedInUser.role == 'user') && hide_buttons)"
-                            ng-disabled="!checkRight('tokenrealms')"
+                            ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin()) && hide_buttons)"
+                            ng-disabled="!loggedInUser.isAdmin() || !checkRight('container_realms')"
                             ng-click="startEditRealms()"
                             translate>Edit
                     </button>
@@ -273,7 +276,7 @@
             <th translate>otplen</th>
             <th>Container</th>
             <th>
-                <div ng-show="loggedInUser.role=='admin'">
+                <div ng-show="loggedInUser.isAdmin()">
                     <button ng-click="removeAllTokens(token.serial)"
                             class="btn btn-transparent btn-danger btn-header"
                             ng-hide="showDialogAll">
@@ -349,6 +352,7 @@
                 <fieldset ng-disabled="!adminOrUserIsOwner(token.username, token.user_realm)">
                     <button class="btn btn-transparent btn-danger"
                             ng-hide="showDialog[token.serial]"
+                            ng-disabled="!checkRight('container_remove_token')"
                             ng-click="removeOneToken(token.serial)">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove</span>
@@ -545,11 +549,11 @@
                         {{ t_realm }}</a>&nbsp;
                 </td>
 
-                <td ng-show="loggedInUser.role == 'admin' &&
+                <td ng-show="loggedInUser.isAdmin() &&
             user_details_in_tokenlist">
                     {{ token_add.user_id }}
                 </td>
-                <td ng-show="loggedInUser.role == 'admin' &&
+                <td ng-show="loggedInUser.isAdmin() &&
             user_details_in_tokenlist">
                     <a ui-sref="config.resolvers.list">{{ token_add.resolver }}</a>
                 </td>
@@ -559,8 +563,8 @@
                 <td>
                     <button ng-click="addToken(token_add.serial)"
                             class="btn btn-transparent btn-primary"
-                            ng-disabled="token_add.container_serial===containerSerial || !checkRight('set')"
-                            ng-hide="(token_add.container_serial===containerSerial || !checkRight('set')) && hide_buttons">
+                            ng-disabled="token_add.container_serial===containerSerial || !checkRight('container_add_token')"
+                            ng-hide="(token_add.container_serial===containerSerial || !checkRight('container_add_token')) && hide_buttons">
                         <span class="glyphicon glyphicon-plus"></span>
                         <span translate>Add</span>
                     </button>

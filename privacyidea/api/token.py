@@ -657,7 +657,6 @@ def disable_api(serial=None):
     return send_result(res)
 
 
-
 @token_blueprint.route('/<serial>', methods=['DELETE'])
 @prepolicy(check_base_action, request, action=ACTION.DELETE)
 @event("token_delete", request, g)
