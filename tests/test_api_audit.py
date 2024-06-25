@@ -262,7 +262,9 @@ class APIAuditTestCase(MyApiTestCase):
                                                  "sortorder": "desc",
                                                  "success": "**",
                                                  "tokentype": "**",
-                                                 "user": "**"},
+                                                 "user": "**",
+                                                 "container_serial": "**",
+                                                 "container_type": "**"},
                                            headers={'Authorization': helpdesk_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -341,7 +343,9 @@ class APIAuditTestCase(MyApiTestCase):
                                                  "sortorder": "desc",
                                                  "success": "**",
                                                  "tokentype": "**",
-                                                 "user": "**"},
+                                                 "user": "**",
+                                                 "container_serial": "**",
+                                                 "container_type": "**"},
                                            headers={'Authorization': user_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -374,7 +378,9 @@ class APIAuditTestCase(MyApiTestCase):
                                                  "sortorder": "desc",
                                                  "success": "**",
                                                  "tokentype": "**",
-                                                 "user": "**"},
+                                                 "user": "**",
+                                                 "container_serial": "**",
+                                                 "container_type": "**"},
                                            headers={'Authorization': user_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
