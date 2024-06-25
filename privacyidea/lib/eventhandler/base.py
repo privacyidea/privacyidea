@@ -477,6 +477,23 @@ class BaseEventHandler(object):
         return users
 
     @classmethod
+    def _get_token_serials(cls, request, content, g):
+        """
+        Extracts the token serials from the request, content or audit object.
+
+        :param request: The request object
+        :param content: The content of the response
+        :param g: The g object
+        :return: Comma separated string of token serials
+        """
+        # Get single token serial
+        serial = request.all_data.get("serial") or \
+                 content.get("detail", {}).get("serial") or \
+                 g.audit_object.audit_data.get("serial")
+
+        return serial
+
+    @classmethod
     def _get_container_serial(cls, request, content):
         """
         Get the container serial from the request, content or audit object.
@@ -511,16 +528,15 @@ class BaseEventHandler(object):
         :param g: The g object
         :return: The container serial or None if no serial could be found
         """
-        serial = request.all_data.get("serial")
-        container_serial = cls._get_container_serial_from_token_serial(serial)
+        container_serial = None
+        serials = cls._get_token_serials(request, content, g)
 
-        if not container_serial:
-            serial = content.get("result", {}).get('serial', {})
-            container_serial = cls._get_container_serial_from_token_serial(serial)
-
-        if not container_serial:
-            serial = g.audit_object.audit_data.get("serial")
-            container_serial = cls._get_container_serial_from_token_serial(serial)
+        if serials:
+            serial_list = serials.replace(' ', '').split(',')
+            if len(serial_list):
+                # Only if one token serial is provided a corresponding container can be found
+                serial = serial_list[0]
+                container_serial = cls._get_container_serial_from_token_serial(serial)
 
         return container_serial
 

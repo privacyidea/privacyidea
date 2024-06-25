@@ -2806,6 +2806,8 @@ class Audit(MethodsMixin, db.Model):
     success = db.Column(db.Integer)
     serial = db.Column(db.Unicode(audit_column_length.get("serial")))
     token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
+    container_serial = db.Column(db.Unicode(audit_column_length.get("container_serial")))
+    container_type = db.Column(db.Unicode(audit_column_length.get("container_type")))
     user = db.Column(db.Unicode(audit_column_length.get("user")), index=True)
     realm = db.Column(db.Unicode(audit_column_length.get("realm")))
     resolver = db.Column(db.Unicode(audit_column_length.get("resolver")))
@@ -2828,6 +2830,8 @@ class Audit(MethodsMixin, db.Model):
                  success=0,
                  serial="",
                  token_type="",
+                 container_serial="",
+                 container_type="",
                  user="",
                  realm="",
                  resolver="",
@@ -2851,6 +2855,8 @@ class Audit(MethodsMixin, db.Model):
         self.success = success
         self.serial = convert_column_to_unicode(serial)
         self.token_type = convert_column_to_unicode(token_type)
+        self.container_serial = convert_column_to_unicode(container_serial)
+        self.container_type = convert_column_to_unicode(container_type)
         self.user = convert_column_to_unicode(user)
         self.realm = convert_column_to_unicode(realm)
         self.resolver = convert_column_to_unicode(resolver)

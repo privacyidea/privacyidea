@@ -96,6 +96,8 @@ def list_containers():
 
         res.append(tmp)
     result["containers"] = res
+
+    g.audit_object.log({"success": True})
     return send_result(result)
 
 
@@ -113,6 +115,11 @@ def assign(container_serial):
     user = get_user_from_param(request.all_data, required)
     container = find_container_by_serial(container_serial)
     res = container.add_user(user)
+
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -130,6 +137,11 @@ def unassign(container_serial):
     user = get_user_from_param(request.all_data, required)
     container = find_container_by_serial(container_serial)
     res = container.remove_user(user)
+
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -148,6 +160,20 @@ def init():
     """
     serial = init_container(request.all_data)
     res = {"container_serial": serial}
+
+    # Audit log
+    container = find_container_by_serial(serial)
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": serial,
+                      "container_type": request.all_data.get("type") or "",
+                      "success": True}
+    if request.all_data.get("description"):
+        audit_log_data["action_detail"] = f"description={request.all_data.get('description')}"
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -161,6 +187,17 @@ def delete(container_serial):
     """
     container = find_container_by_serial(container_serial)
     container.delete()
+
+    # Audit log
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "success": True}
+    g.audit_object.log(audit_log_data)
     return send_result(True)
 
 
@@ -171,19 +208,24 @@ def add_token(container_serial):
     """
     Add one or multiple tokens to a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to add
-    :jsonparam: serial_list: List of serials of the tokens to add. Comma separated.
+    :jsonparam: serial: Serial of the token to add. Multiple serials can be passed comma separated.
     """
-    serial = getParam(request.all_data, "serial", True, allow_empty=True)
-    serials = getParam(request.all_data, "serial_list")
-    if not serial and not serials:
-        raise ParameterError("Either serial or serial_list is required")
-    token_serials = []
-    if serials:
-        token_serials = serials
-    if serial:
-        token_serials.append(serial)
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
     res = add_tokens_to_container(container_serial, token_serials)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "serial": serial,
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -194,20 +236,24 @@ def remove_token(container_serial):
     """
     Remove a token from a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to remove
-    :jsonparam: serial_list: List of serials of the tokens to remove. Comma separated.
+    :jsonparam: serial: Serial of the token to remove. Multiple serials can be passed comma separated.
     """
-    serial = getParam(request.all_data, "serial", optional=True, allow_empty=True)
-    serials = getParam(request.all_data, "serial_list", optional=True, allow_empty=True)
-    if not serial and not serials:
-        raise ParameterError("Either serial or serial_list is required")
-    token_serials = []
-    if serials:
-        token_serials = serials
-    if serial:
-        token_serials.append(serial)
-
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
     res = remove_tokens_from_container(container_serial, token_serials)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "serial": serial,
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -223,6 +269,7 @@ def get_types():
     descriptions = get_container_classes_descriptions()
     ttypes = get_container_token_types()
     res = {ctype: {"description": desc, "token_types": ttypes.get(ctype, [])} for ctype, desc in descriptions.items()}
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -241,6 +288,18 @@ def set_description(container_serial):
     if new_description:
         container.description = new_description
         res = True
+
+    # Audit log
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "action_detail": f"description={new_description}",
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -261,6 +320,17 @@ def set_states(container_serial):
         container.set_states(states)
         res = True
 
+    # Audit log
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "action_detail": f"states={states}",
+                      "success": res}
+    g.audit_object.log(audit_log_data)
     return send_result(res)
 
 
@@ -273,6 +343,7 @@ def get_state_types():
     selected
     """
     state_types_exclusions = TokenContainerClass.get_state_types()
+    g.audit_object.log({"success": True})
     return send_result(state_types_exclusions)
 
 
@@ -290,6 +361,22 @@ def set_realms(container_serial):
     container = find_container_by_serial(container_serial)
     result = container.set_realms(realm_list, add=False)
 
+    success = False not in result.values()
+
+    # Audit log
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "action_detail": f"realms={container_realms}",
+                      "success": success}
+    if not success:
+        result_str = ", ".join([f"{k}: {v}" for k, v in result.items() if not k == "deleted"])
+        audit_log_data["info"] = f"success = {result_str}"
+    g.audit_object.log(audit_log_data)
     return send_result(result)
 
 
@@ -303,6 +390,17 @@ def update_last_seen(container_serial):
     """
     container = find_container_by_serial(container_serial)
     container.update_last_seen()
+
+    # Audit log
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "success": True}
+    g.audit_object.log(audit_log_data)
     return send_result(True)
 
 
@@ -324,6 +422,7 @@ def get_template_options(container_type):
     """
     classes = get_container_classes()
     if classes and container_type.lower() in classes.keys():
+        g.audit_object.log({"success": True})
         return jsonify(classes[container_type.lower()].get_container_policy_info())
     else:
         raise ParameterError("Invalid container type")
@@ -341,6 +440,10 @@ def set_template(container_type):
     json = request.json
     template_id = json.get('template_id')
 
+    audit_log_data = {"container_type": container_type,
+                      "success": True}
+    g.audit_object.log(audit_log_data)
+
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
 @log_with(log)
@@ -350,4 +453,9 @@ def create_template_with_name(container_type, template_name):
     """
     json = request.json
     template_id = create_container_template(container_type, template_name, json)
+
+    audit_log_data = {"container_type": container_type,
+                      "action_detail": f"template_name={template_name}",
+                      "success": True}
+    g.audit_object.log(audit_log_data)
     return template_id
