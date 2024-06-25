@@ -598,22 +598,23 @@ def enable_api(serial=None):
     token_serials = serial.replace(' ', '').split(',')
 
     res = {}
-    serial_str_list = ""
     for serial in token_serials:
         res[serial] = enable_token(serial, enable=True, user=user)
-        serial_str_list += serial + ","
+
+    count = sum(res.values())
 
     # Audit log
-    if 0 not in res.values():
+    if count == len(token_serials):
         g.audit_object.log({"success": True})
     else:
         g.audit_object.log({"success": False})
-        result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
-        g.audit_object.log({"info": f"success = {result_str}"})
 
-    g.audit_object.log({"serial": serial_str_list[:-1]})
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    g.audit_object.log({"info": f"{result_str}"})
+    g.audit_object.log({"serial": token_serials})
 
-    return send_result(res)
+    return send_result(count)
 
 
 @token_blueprint.route('/disable', methods=['POST'])
@@ -642,21 +643,23 @@ def disable_api(serial=None):
     token_serials = serial.replace(' ', '').split(',')
 
     res = {}
-    serial_str_list = ""
     for serial in token_serials:
         res[serial] = enable_token(serial, enable=False, user=user)
-        serial_str_list += serial + ","
+
+    count = sum(res.values())
 
     # Audit log
-    if 0 not in res.values():
+    if count == len(token_serials):
         g.audit_object.log({"success": True})
     else:
         g.audit_object.log({"success": False})
-        result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
-        g.audit_object.log({"info": f"success = {result_str}"})
 
-    g.audit_object.log({"serial": serial_str_list[:-1]})
-    return send_result(res)
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    g.audit_object.log({"info": f"{result_str}"})
+    g.audit_object.log({"serial": token_serials})
+
+    return send_result(count)
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
