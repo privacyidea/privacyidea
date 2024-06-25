@@ -594,7 +594,8 @@ def enable_api(serial=None):
     """
     user = request.User
     if not serial:
-        serial = getParam(request.all_data, "serial", optional)
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
     token_serials = serial.replace(' ', '').split(',')
 
     res = {}
@@ -612,7 +613,6 @@ def enable_api(serial=None):
     map_to_bool = ["False", "True"]
     result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     g.audit_object.log({"info": f"{result_str}"})
-    g.audit_object.log({"serial": token_serials})
 
     return send_result(count)
 
@@ -640,6 +640,7 @@ def disable_api(serial=None):
     user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
     token_serials = serial.replace(' ', '').split(',')
 
     res = {}
@@ -657,7 +658,6 @@ def disable_api(serial=None):
     map_to_bool = ["False", "True"]
     result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     g.audit_object.log({"info": f"{result_str}"})
-    g.audit_object.log({"serial": token_serials})
 
     return send_result(count)
 

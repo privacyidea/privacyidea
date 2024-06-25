@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from privacyidea.lib.container import init_container
+from privacyidea.lib.container import init_container, add_tokens_to_container
 from .base import MyApiTestCase, PWFILE2
 import json
 import os
@@ -918,6 +918,8 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
+        container_serial = init_container({"type": "generic"})
+        add_tokens_to_container(container_serial, ["EToken"])
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
@@ -928,15 +930,17 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value") == 1, result)
 
-        # Check for the disabled token in the audit log, that also the user object is added
+        # Check for the disabled token in the audit log, that also the user object and container are added
         with self.app.test_request_context('/audit/',
                                            method='GET',
                                            data={'action': "*disable*", "serial": "EToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
-            jres = res.json
-            self.assertEqual(jres['result']['value']['auditdata'][0]['user'], "hans")
+            audit_data = res.json['result']['value']['auditdata'][0]
+            self.assertEqual(audit_data['user'], "hans")
+            self.assertEqual(audit_data['container_serial'], container_serial)
+            self.assertEqual(audit_data['container_type'], 'generic')
 
         # disable a disabled token will not count, so the value will be 0
         with self.app.test_request_context('/token/disable',
@@ -967,6 +971,76 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value") == 0, result)
+
+        # disable multiple tokens
+        self._create_temp_token("DToken")
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": "EToken,DToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") == 2, result)
+
+        # Check for the disabled token in the audit log, that no container and user are set, because they differ
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "*disable*", "serial": "EToken,DToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            audit_data = res.json['result']['value']['auditdata'][0]
+            self.assertIsNone(audit_data['user'])
+            self.assertIsNone(audit_data['container_serial'])
+            self.assertIsNone(audit_data['container_type'])
+            self.assertTrue(audit_data['success'])
+
+        # enable multiple tokens of the same container
+        add_tokens_to_container(container_serial, ["DToken"])
+        with self.app.test_request_context('/token/enable',
+                                           method='POST',
+                                           data={"serial": "EToken,DToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") == 2, result)
+
+        # Check for the enabled token in the audit log, that the container serial and type are set
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "*enable*", "serial": "EToken,DToken",
+                                                 "container_serial": container_serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            audit_data = res.json['result']['value']['auditdata'][0]
+            self.assertIsNone(audit_data['user'])
+            self.assertEqual(audit_data['container_serial'], container_serial)
+            self.assertEqual(audit_data['container_type'], 'generic')
+            self.assertTrue(audit_data['success'])
+
+        # Disable one token
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": "EToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # Disable both token fails for the already disabled token
+        self._create_temp_token("DToken")
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": "EToken,DToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
+        remove_token("DToken")
 
     def test_07_reset_failcounter(self):
         serial = "RToken"
