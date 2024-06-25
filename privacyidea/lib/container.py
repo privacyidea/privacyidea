@@ -1,17 +1,12 @@
 import importlib
-import inspect
 import logging
 import os
 
-from typing import List
-
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import create_tokenclass_object
-from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \

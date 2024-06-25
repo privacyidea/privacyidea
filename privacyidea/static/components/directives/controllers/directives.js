@@ -481,36 +481,36 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 type: "generic", types: "", token_types: "", description: "",
             }
 
-                let allContainerTypes = {};
-                let containerList = {};
-                // Get the supported token types for each container type once
-                ContainerFactory.getTokenTypes(function (data) {
-                    allContainerTypes = data.result.value;
+            let allContainerTypes = {};
+            let containerList = {};
+            // Get the supported token types for each container type once
+            ContainerFactory.getTokenTypes(function (data) {
+                allContainerTypes = data.result.value;
 
-                    angular.forEach(allContainerTypes, function (_, containerType) {
-                        if (containerType === 'generic') {
-                            allContainerTypes[containerType]["token_types_display"] = 'All';
-                        } else {
-                            allContainerTypes[containerType]["token_types_display"] = scope.tokenTypesToDisplayString(
-                                allContainerTypes[containerType].token_types);
-                        }
-                    });
-                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
-
-                    scope.getContainers();
+                angular.forEach(allContainerTypes, function (_, containerType) {
+                    if (containerType === 'generic') {
+                        allContainerTypes[containerType]["token_types_display"] = 'All';
+                    } else {
+                        allContainerTypes[containerType]["token_types_display"] = scope.tokenTypesToDisplayString(
+                            allContainerTypes[containerType].token_types);
+                    }
                 });
+                scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
 
-                // converts the supported token types to a display string
-                scope.tokenTypesToDisplayString = function (containerTokenTypes) {
-                    let displayString = "";
-                    // create comma separated list out of token names
-                    angular.forEach(containerTokenTypes, function (type) {
-                        displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
-                    });
-                    displayString = displayString.slice(0, -2);
+                scope.getContainers();
+            });
 
-                    return displayString;
-                };
+            // converts the supported token types to a display string
+            scope.tokenTypesToDisplayString = function (containerTokenTypes) {
+                let displayString = "";
+                // create comma separated list out of token names
+                angular.forEach(containerTokenTypes, function (type) {
+                    displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
+                });
+                displayString = displayString.slice(0, -2);
+
+                return displayString;
+            };
 
             scope.getContainers = function () {
                 $http.get(containerUrl + "/?no_token=1", {
@@ -541,20 +541,20 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 return usableContainerTypes;
             };
 
-                // containerList is data.result.value of GET /container
-                scope.setContainerSelection = function () {
-                    const usableContainerTypes = scope.getContainerTypesForTokenType();
-                    scope.containers = [];
-                    // Filter the containers
-                    if (scope.tokenTypes && usableContainerTypes) {
-                        for (let i = 0; i < containerList.length; i++) {
-                            if (containerList[i].type in usableContainerTypes) {
-                                scope.containers.push(containerList[i]);
-                            }
+            // containerList is data.result.value of GET /container
+            scope.setContainerSelection = function () {
+                const usableContainerTypes = scope.getContainerTypesForTokenType();
+                scope.containers = [];
+                // Filter the containers
+                if (scope.tokenTypes && usableContainerTypes) {
+                    for (let i = 0; i < containerList.length; i++) {
+                        if (containerList[i].type in usableContainerTypes) {
+                            scope.containers.push(containerList[i]);
                         }
-                    } else {
-                        scope.containers = containerList;
                     }
+                } else {
+                    scope.containers = containerList;
+                }
 
                 // Add a display string to the containers
                 if (scope.containers && scope.containers.length > 0) {
@@ -596,28 +596,28 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }
             });
 
-                // Watch for changes in these variables so that can not be null/undefined. They might be set to null if
-                // the tokentypes change and therefore the selection changes. In that case, reset to createnew.
-                scope.$watch('newContainer.type', function (newVal, oldVal) {
-                    //console.log("newContainer.type changed from " + oldVal + " to " + newVal);
-                    if (newVal === undefined || newVal === null) {
-                        scope.newContainer.type = "generic"
-                    }
-                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
-
-                });
-                scope.$watch('containerSerial', function (newVal, oldVal) {
-                    //console.log("selectOrCreateDirective: containerSerial changed from " + oldVal + " to " + newVal);
-                    // setDefaultSerialSelection check for rights to create_container, so in case newVal is "createnew",
-                    // double check that because it can be set from outside
-                    if (newVal === undefined || newVal === null) {
-                        scope.setDefaultSerialSelection();
-                    }
-                });
-
-                scope.changeContainerSelection = function () {
-                    scope.isCreateNew = scope.containerSerial === "createnew";
+            // Watch for changes in these variables so that can not be null/undefined. They might be set to null if
+            // the tokentypes change and therefore the selection changes. In that case, reset to createnew.
+            scope.$watch('newContainer.type', function (newVal, oldVal) {
+                //console.log("newContainer.type changed from " + oldVal + " to " + newVal);
+                if (newVal === undefined || newVal === null) {
+                    scope.newContainer.type = "generic"
                 }
+                scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+
+            });
+            scope.$watch('containerSerial', function (newVal, oldVal) {
+                //console.log("selectOrCreateDirective: containerSerial changed from " + oldVal + " to " + newVal);
+                // setDefaultSerialSelection check for rights to create_container, so in case newVal is "createnew",
+                // double check that because it can be set from outside
+                if (newVal === undefined || newVal === null) {
+                    scope.setDefaultSerialSelection();
+                }
+            });
+
+            scope.changeContainerSelection = function () {
+                scope.isCreateNew = scope.containerSerial === "createnew";
+            }
 
             scope.createContainer = function () {
                 let params = {
