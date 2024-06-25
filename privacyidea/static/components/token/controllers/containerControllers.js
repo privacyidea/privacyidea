@@ -422,24 +422,27 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.disableMultiple({'serial_list': tokenSerialList}, $scope.getContainer);
+                TokenFactory.disableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.enableMultiple({'serial_list': tokenSerialList}, $scope.getContainer);
+                TokenFactory.enableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 
         $scope.removeAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
+            let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                ContainerFactory.removeAllTokensFromContainer({
+                ContainerFactory.removeTokenFromContainer({
                     'container_serial': $scope.containerSerial,
-                    'serial_list': tokenSerialList
+                    'serial': tokenSerialStr
                 }, $scope.getContainer);
             }
         };

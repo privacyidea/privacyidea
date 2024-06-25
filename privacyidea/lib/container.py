@@ -205,13 +205,16 @@ def find_container_for_token(serial):
     """
     Returns a TokenContainerClass object for the given token
     """
-    token_id = Token.query.filter(Token.serial == serial).one().id
-    row = TokenContainerToken.query.filter(
-        TokenContainerToken.token_id == token_id).first()
-    if row:
-        container_id = row.container_id
-        return find_container_by_id(container_id)
-    return None
+    container = None
+    token = Token.query.filter(Token.serial == serial).first()
+    if token:
+        token_id = token.id
+        row = TokenContainerToken.query.filter(
+            TokenContainerToken.token_id == token_id).first()
+        if row:
+            container_id = row.container_id
+            container = find_container_by_id(container_id)
+    return container
 
 
 def get_container_classes():

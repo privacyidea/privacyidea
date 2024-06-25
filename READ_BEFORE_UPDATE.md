@@ -3,7 +3,9 @@
 ## Update from 3.9 to 3.10
 
 * The `PI_NODES` configuration option is not used anymore. The nodes will be added
-  to the database with a unique identifier for each installation
+  to the database with a unique identifier for each installation.
+* New columns ("container_serial", "container_type") are added to the audit table. Make sure to add these
+  columns to your external audit database.
 
 ## Update from 3.8 to 3.9
 
@@ -40,11 +42,11 @@ Be sure to run the schema update script!
   The enrollment policy action name `webauthn_public_key_credential_algorithm_preference`
   will be changed to `webauthn_public_key_credential_algorithms`.
   The values will also be adapted from
-  * `ecdsa_preferred` -> `ecdsa rsassa-pss`
-  * `ecdsa_only` -> `ecdsa`
-  * `rsassa-pss_preferred` -> `rsassa-pss ecdsa`
-  * `rsassa-pss_only` -> `rsassa-pss`
-  Existing policies are changed in the schema update script.
+    * `ecdsa_preferred` -> `ecdsa rsassa-pss`
+    * `ecdsa_only` -> `ecdsa`
+    * `rsassa-pss_preferred` -> `rsassa-pss ecdsa`
+    * `rsassa-pss_only` -> `rsassa-pss`
+      Existing policies are changed in the schema update script.
 
 Several database changes have been added. These are all *adds* without data migration.
 
@@ -134,11 +136,11 @@ The current database schema now is d5870fd2f2a4.
 
   Several HTML templates have changed and might render custom templates unusable.
   Please check your custom templates and compare to these changes:
-   - File upload component changed
-   - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
-   - Accordion component changed
-   - Pagination component changed
-   - Tooltip component changed
+    - File upload component changed
+    - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
+    - Accordion component changed
+    - Pagination component changed
+    - Tooltip component changed
 
 ## Update from 3.1 to 3.2
 
@@ -216,21 +218,21 @@ The current database schema now is d5870fd2f2a4.
   A lot of changes will be introduced in privacyIDEA 3.0, most notably the
   Python 3 compatibility.
 
-  * Removed packages:
-    * matplotlib
-    * pandas
-    * PyCrypto
-  * Added packages:
-    * cryptography (2.4.2)
-  * Updated packages:
-    * smpplib (0.1 -> 2.0)
-    * pytest (3.6.0 -> 3.6.1)
-    * requests (2.18.4 -> 2.20.0)
-    * PyYAML (3.12 -> 5.1)
+    * Removed packages:
+        * matplotlib
+        * pandas
+        * PyCrypto
+    * Added packages:
+        * cryptography (2.4.2)
+    * Updated packages:
+        * smpplib (0.1 -> 2.0)
+        * pytest (3.6.0 -> 3.6.1)
+        * requests (2.18.4 -> 2.20.0)
+        * PyYAML (3.12 -> 5.1)
 
 * Due to the switch from PyCrypto to cryptography, the calculation of signatures
   changed. In order to be able to verify old audit entry signatures,
-   PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
+  PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
 
 ## Update from 2.22 to 2.23
 
@@ -254,17 +256,17 @@ The current database schema now is d5870fd2f2a4.
   privacyIDEA depends on.
 
   **Our recommendations**:
-  * Use either **ldap3 2.1.1** and **pyasn1 0.1.9**
-    or **ldap3 2.1.1** and **pyasn1 0.4.2**.
-    * The Ubuntu installation comes with ldap3 2.1.1 and pyasn1 0.1.9.
-    * Virtualenv installation comes with ldap3 2.1.1 and pyasn1 0.4.2.
-      With ldap3 2.1.1 and pyasn1 0.4.2, StartTLS will not work! LDAPS will work.
-  * We added pull requests to ldap3 and also added workarounds in privacyIDEA 2.22. With the next
-    release of ldap3 all version conflicts should be solved.
-  * Here are some of the issues resulting from the version conflicts:
-    * ldap3 2.1.1, pyasn1 0.4.2: Attempts to use STARTTLS fail with an exception (Issue #885)
-    * ldap3 >= 2.4: User attributes are not retrieved properly (Issue #911)
-    * ldap3 == 2.4.1: UnicodeError on authentication, token view displays resolver errors (Issue #911)
-    * ldap3 == 2.4.1: Cannot search for non-ASCII characters in user view (#980)
+    * Use either **ldap3 2.1.1** and **pyasn1 0.1.9**
+      or **ldap3 2.1.1** and **pyasn1 0.4.2**.
+        * The Ubuntu installation comes with ldap3 2.1.1 and pyasn1 0.1.9.
+        * Virtualenv installation comes with ldap3 2.1.1 and pyasn1 0.4.2.
+          With ldap3 2.1.1 and pyasn1 0.4.2, StartTLS will not work! LDAPS will work.
+    * We added pull requests to ldap3 and also added workarounds in privacyIDEA 2.22. With the next
+      release of ldap3 all version conflicts should be solved.
+    * Here are some of the issues resulting from the version conflicts:
+        * ldap3 2.1.1, pyasn1 0.4.2: Attempts to use STARTTLS fail with an exception (Issue #885)
+        * ldap3 >= 2.4: User attributes are not retrieved properly (Issue #911)
+        * ldap3 == 2.4.1: UnicodeError on authentication, token view displays resolver errors (Issue #911)
+        * ldap3 == 2.4.1: Cannot search for non-ASCII characters in user view (#980)
 * The size of the ``serial`` column in the ``pidea_audit`` database table was increased from 20 to 40 characters.
   Please verify that your database can handle this increasing of the table size!

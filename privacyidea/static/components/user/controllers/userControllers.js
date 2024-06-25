@@ -354,12 +354,15 @@ angular.module("privacyideaApp")
             }
 
             $scope.addTokensToContainerAction = function () {
-                let selectedSerials = [];
+                let selectedSerials = "";
                 for (let [key, value] of Object.entries($scope.tokenSelection)) {
-                    selectedSerials.push(key);
+                    if (selectedSerials !== ""){
+                        selectedSerials += ","
+                    }
+                    selectedSerials += key;
                 }
-                let params = {serial_list: selectedSerials, container_serial: $scope.containerSerial};
-                ContainerFactory.addAllTokenToContainer(params, function (data) {
+                let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
+                ContainerFactory.addTokenToContainer(params, function (data) {
 
                 });
                 // Reload the token to show the container

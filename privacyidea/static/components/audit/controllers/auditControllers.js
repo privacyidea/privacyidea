@@ -47,7 +47,7 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
         $scope.params.user = "*" + ($scope.userFilter || "") + "*";
         $scope.params.administrator = "*" + ($scope.administratorFilter || "") + "*";
-        $scope.params.tokentype = "*" + ($scope.typeFilter || "") + "*";
+        $scope.params.token_type = "*" + ($scope.typeFilter || "") + "*";
         $scope.params.action = "*" + ($scope.actionFilter || "") + "*";
         $scope.params.success = "*" + ($scope.successFilter || "") + "*";
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
@@ -60,6 +60,8 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
         $scope.params.startdate = "*" + ($scope.startdateFilter || "") + "*";
         $scope.params.duration = "*" + ($scope.durationFilter || "") + "*";
+        $scope.params.container_serial = "*" + ($scope.containerSerialFilter || "") + "*";
+        $scope.params.container_type = "*" + ($scope.containerTypeFilter || "") + "*";
         //debug: console.log("Request Audit Trail with params");
         //debug: console.log($scope.params);
     };

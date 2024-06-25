@@ -618,9 +618,25 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }
             });
 
-            scope.createContainer = function () {
-                let params = {
-                    type: scope.newContainer.type, description: scope.newContainer.description,
+                scope.createContainer = function () {
+                    let params = {
+                        type: scope.newContainer.type, description: scope.newContainer.description,
+                    }
+                    if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
+                        params["user"] = fixUser(scope.userName);
+                        params["realm"] = scope.userRealm;
+                    }
+                    $http.post(containerUrl + "/init", params, {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    }).then(function (response) {
+                        const newSerial = response.data.result.value.container_serial;
+                        scope.getContainers();
+                        scope.containerSerial = newSerial;
+                        scope.isCreateNew = false;
+                        scope.newContainer.description = "";
+                    }, function (error) {
+                        AuthFactory.authError(error.data);
+                    });
                 }
                 if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
                     params["user"] = fixUser(scope.userName);

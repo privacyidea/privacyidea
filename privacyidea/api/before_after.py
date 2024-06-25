@@ -29,6 +29,7 @@ It also contains the error handlers.
 
 from .lib.utils import (send_error, get_all_params)
 from .container import container_blueprint
+from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
@@ -192,7 +193,7 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and "*" not in serial:
+    if serial and "*" not in serial and "," not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:
@@ -206,6 +207,36 @@ def before_request():
     else:
         g.serial = None
         tokentype = None
+
+    # Container info
+    container_serial = getParam(request.all_data, "container_serial")
+    container = None
+    container_type = None
+    if container_serial and "*" not in container_serial:
+        try:
+            container = find_container_by_serial(container_serial)
+        except ResourceNotFoundError:
+            # The container serial might not exist
+            pass
+    elif serial and "*" not in serial:
+        # Get container serial from token
+        # if a serial list is given, check if all tokens are in the same container
+        serial_list = serial.replace(" ", "").split(",")
+        for idx, t_serial in enumerate(serial_list):
+            try:
+                container = find_container_for_token(t_serial)
+            except ResourceNotFoundError:
+                # The container serial might not exist
+                pass
+            if container:
+                if idx == 0:
+                    container_serial = container.serial
+            if not container or container_serial != container.serial:
+                # If at least one token is in a different or no container, we do not set the container attributes.
+                container_serial = None
+                break
+    if container:
+        container_type = container.type
 
     if request.User:
         audit_username = request.User.login
@@ -222,6 +253,8 @@ def before_request():
                         "realm": audit_realm,
                         "resolver": audit_resolver,
                         "token_type": tokentype,
+                        "container_serial": container_serial,
+                        "container_type": container_type,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
