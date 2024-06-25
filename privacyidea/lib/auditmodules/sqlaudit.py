@@ -405,6 +405,10 @@ class Audit(AuditBase):
             s += ",{0!s}".format(le.startdate)
         if le.duration:
             s += ",{0!s}".format(le.duration)
+        if le.container_serial:
+            s += f",c_serial={le.container_serial}"
+        if le.container_type:
+            s += f",ct={le.container_type}"
         return s
 
     @staticmethod
