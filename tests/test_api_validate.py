@@ -5628,12 +5628,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         logging.getLogger('privacyidea').setLevel(logging.INFO)
         """
         Verify that the QR code was generated with SHA256, this is in the log file.
-        It will be indicated by this text:
-        
-              Entering create_google_authenticator_url with arguments () and keywords ... 'hash_algo': 'sha1'
+        It will be indicated by this text:        
+        Entering create_google_authenticator_url with arguments () and keywords ... 'hash_algo': 'sha1'
         """
-        sha256rebexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
-        self.assertTrue(sha256rebexp.search(log_msg), log_msg)
+        sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
+        self.assertTrue(sha256regexp.search(log_msg), log_msg)
 
         # Check SHA256 of the token.
         self.assertEqual("sha256", token_obj.get_tokeninfo("hashlib"))
@@ -5735,8 +5734,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
 
-        sha256rebexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
-        self.assertTrue(sha256rebexp.search(log_msg), log_msg)
+        sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
+        self.assertTrue(sha256regexp.search(log_msg), log_msg)
         # Check SHA256 of the token.
         self.assertEqual("sha256", token_obj.get_tokeninfo("hashlib"))
         # Cleanup

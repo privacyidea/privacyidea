@@ -365,7 +365,7 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     @classmethod
     def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
-                              adminuser=None, adminrealm=None ):
+                              adminuser=None, adminrealm=None):
         """
         This method returns a dictionary with default settings for token
         enrollment.
