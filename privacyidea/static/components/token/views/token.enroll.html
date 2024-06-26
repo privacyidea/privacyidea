@@ -34,6 +34,7 @@
             <label for="description" translate>Description</label>
             <input type="text" class="form-control" id="description"
                    autocomplete="new-password"
+                   maxlength="80"
                    placeholder="{{ 'Some nice words...'|translate }}"
                    ng-model="form.description"
                    ng-required="require_description.includes(form.type)" />
