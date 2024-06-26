@@ -1456,7 +1456,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         if d1:
             d1.description = description
         else:
-            PolicyDescription(object_id=ret, name=name, object_type="policy", description=description).save()
+            PolicyDescription(object_id=ret, object_type="policy", description=description).save()
     db.session.commit()
     return ret
 

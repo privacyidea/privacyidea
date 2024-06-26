@@ -1,4 +1,4 @@
-"""3.10: Add columns authentication, user_agent/version to Audit
+"""v3.10: Add columns authentication, user_agent/version to Audit
 
 Revision ID: 250931d82e51
 Revises: 5741e5dac477

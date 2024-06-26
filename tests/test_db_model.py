@@ -1,3 +1,23 @@
+# SPDX-FileCopyrightText: (C) 2024 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-FileCopyrightText: (C) 2015 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
+# This code is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation, either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+"""Test the models of the privacyIDEA database."""
 from mock import mock
 import os
 from sqlalchemy import func
@@ -14,7 +34,7 @@ from privacyidea.models import (Token,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
-                                EventHandler, SMSGatewayOption, SMSGateway,
+                                EventHandler, SMSGateway,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
@@ -71,8 +91,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(len(t.pin_hash) > 0)
         self.assertTrue(len(t.user_pin) > 0)
 
-        otpObj = t.get_otpkey()
-        self.assertTrue(otpObj.getKey() == otpkey.encode('utf8'))
+        otp_obj = t.get_otpkey()
+        self.assertTrue(otp_obj.getKey() == otpkey.encode('utf8'))
         count = t.count
         self.assertTrue(count == 0)
 
@@ -113,11 +133,11 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t is None)
 
     def test_01_create_a_token_with_a_realm(self):
-        '''
+        """
         Create a token with a user and a tokenrealm in the database
         When we create a token with a user, the tokenrealm is filled in
         automatically.
-        '''
+        """
         self.create_resolver_realm()
         # Now we have a user cornelius@realm1
         # userid=1009
@@ -126,11 +146,11 @@ class TokenModelTestCase(MyTestCase):
         otpkey = "123456"
 
         # create token and also assign the user and realm
-        tneu = Token(serial="serial2",
-                     otpkey=otpkey,
-                     userid=1009,
-                     resolver="resolver1",
-                     realm="realm1")
+        Token(serial="serial2",
+              otpkey=otpkey,
+              userid=1009,
+              resolver="resolver1",
+              realm="realm1")
         t2 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
@@ -177,7 +197,7 @@ class TokenModelTestCase(MyTestCase):
 
         # get token information
         token_dict = t2.get()
-        self.assertTrue(type(token_dict) == dict)
+        self.assertIsInstance(token_dict, dict)
         self.assertTrue(token_dict.get("resolver") == "resolver1")
         # THe realm list is contained in realms
         self.assertTrue("realm1" in token_dict.get("realms"))
@@ -202,12 +222,11 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t3.otplen == 8)
         self.assertTrue(t3.description == "De scription")
         self.assertTrue(t3.info_list[0].Value == "value")
-        t3info = t3.get_info()
         self.assertTrue(t3.get_info().get("info") == "value")
 
-        # test the string represenative
+        # test the string representation
         s = "{0!s}".format(t3)
-        self.assertTrue(s == "serial2")
+        self.assertEqual("serial2", s)
 
         # update token type
         t2.update_type("totp")
@@ -320,8 +339,8 @@ class TokenModelTestCase(MyTestCase):
         cacon.save()
 
         # try to create a CA connector, that already exist
-        #cacon = CAConnector(name="testCA", catype="localCA")
-        #self.assertRaises(Exception, cacon.save)
+        # cacon = CAConnector(name="testCA", catype="localCA")
+        # self.assertRaises(Exception, cacon.save)
 
         # add config entries to the CA connector
         CAConnectorConfig(caconnector_id=1, Key="Key1",
@@ -352,7 +371,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(r, 1)
         q = CAConnectorConfig.query.filter_by(Key="Key1").all()
         # FIXME: The last entry does not get deleted!
-        #self.assertEqual(q, [])
+        # self.assertEqual(q, [])
 
     def test_10_delete_resolver_realm(self):
         resolvername = "res1"
@@ -507,7 +526,7 @@ class TokenModelTestCase(MyTestCase):
                               Value="new value").save()
         # check if the value is updated.
         new_config = MachineResolverConfig.query.filter(
-            MachineResolverConfig.Key=="key2").first()
+            MachineResolverConfig.Key == "key2").first()
         self.assertTrue(new_config.Value == "new value", new_config.Value)
 
         # Connect a machine to a token
@@ -518,8 +537,8 @@ class TokenModelTestCase(MyTestCase):
         # Connect another machine to a token
         token_id = Token.query.filter_by(serial="serial1123").first().id
         mt_id2 = MachineToken(machineresolver="mr1", machine_id="client2",
-                             token_id=token_id,
-                             application="LUKS").save()
+                              token_id=token_id,
+                              application="LUKS").save()
         self.assertTrue(mt_id2 > mt_id, (mt_id2, mt_id))
         # get the token that contains the machines
         db_token = Token.query.filter_by(serial="serial1123").first()
@@ -587,9 +606,9 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(s2.server, "1.2.3.4")
 
         # Update the server
-        r = SMTPServer(identifier="myserver", server="100.2.3.4",
-                       username="user", password="password", tls=True,
-                       description="test", port=123).save()
+        SMTPServer(identifier="myserver", server="100.2.3.4",
+                   username="user", password="password", tls=True,
+                   description="test", port=123).save()
         modified_server = SMTPServer.query.filter_by(
             identifier="myserver").first()
 
@@ -605,8 +624,8 @@ class TokenModelTestCase(MyTestCase):
 
     def test_18_add_and_delete_password_reset(self):
         p1 = PasswordReset("recoverycode", "cornelius",
-                           "realm", expiration=datetime.now() + timedelta(
-                seconds=120))
+                           "realm",
+                           expiration=datetime.now() + timedelta(seconds=120))
         p1.save()
         p2 = PasswordReset.query.filter_by(username="cornelius",
                                            realm="realm").first()
@@ -638,29 +657,29 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(eh1.conditions[0].Key, "user_type")
         self.assertEqual(eh1.conditions[0].Value, "admin")
 
-        id = eh1.id
+        eh1_id = eh1.id
 
         # update eventhandler
-        eh2 = EventHandler("ev1", event_update, handlermodule=handlermodule,
-                           action=action, condition=condition,
-                           options=options, ordering=0, id=id)
+        EventHandler("ev1", event_update, handlermodule=handlermodule,
+                     action=action, condition=condition,
+                     options=options, ordering=0, id=eh1_id)
         self.assertEqual(eh1.event, event_update)
 
         # Update option value
-        EventHandlerOption(id, Key="mailserver", Value="mailserver")
+        EventHandlerOption(eh1_id, Key="mailserver", Value="mailserver")
         self.assertEqual(eh1.options[0].Value, "mailserver")
 
         # Add Option
-        EventHandlerOption(id, Key="option3", Value="value3")
+        EventHandlerOption(eh1_id, Key="option3", Value="value3")
         self.assertEqual(eh1.options[2].Key, "option3")
         self.assertEqual(eh1.options[2].Value, "value3")
 
         # Update condition value
-        EventHandlerCondition(id, Key="user_type", Value="user")
+        EventHandlerCondition(eh1_id, Key="user_type", Value="user")
         self.assertEqual(eh1.conditions[0].Value, "user")
 
         # Add condition
-        EventHandlerCondition(id, Key="result_value", Value="True")
+        EventHandlerCondition(eh1_id, Key="result_value", Value="True")
         self.assertEqual(eh1.conditions[0].Key, "result_value")
         self.assertEqual(eh1.conditions[0].Value, "True")
         self.assertEqual(eh1.conditions[1].Key, "user_type")
@@ -717,10 +736,10 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(c, None)
 
     def test_22_subscription(self):
-        sid = Subscription(application="otrs", for_name="customer",
-                           for_email="customer@example.com", for_phone="12345",
-                           by_name="provider", by_email="p@example.com",
-                           level="Gold").save()
+        Subscription(application="otrs", for_name="customer",
+                     for_email="customer@example.com", for_phone="12345",
+                     by_name="provider", by_email="p@example.com",
+                     level="Gold").save()
         s = Subscription.query.filter(Subscription.application == "otrs").first()
         self.assertEqual(s.application, "otrs")
         self.assertEqual(s.for_name, "customer")
@@ -731,9 +750,9 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(s.level, "Gold")
 
         # Update the entry
-        sid = Subscription(application="otrs", for_phone="11111",
-                           by_url="https://support.com",
-                           signature="1234567890", level="Silver").save()
+        Subscription(application="otrs", for_phone="11111",
+                     by_url="https://support.com",
+                     signature="1234567890", level="Silver").save()
         s = Subscription.query.filter(
             Subscription.application == "otrs").first()
         self.assertEqual(s.application, "otrs")
@@ -796,9 +815,9 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(pi2.tls)
 
         # Update the server
-        r = PrivacyIDEAServer(identifier="myserver",
-                              url="https://pi2.example.com", tls=True,
-                              description="test").save()
+        PrivacyIDEAServer(identifier="myserver",
+                          url="https://pi2.example.com", tls=True,
+                          description="test").save()
         modified_server = PrivacyIDEAServer.query.filter_by(
             identifier="myserver").first()
 
@@ -870,7 +889,6 @@ class TokenModelTestCase(MyTestCase):
             task2 = PeriodicTask("some other task", True, "0 6 * * *", ["localhost"], "some.other.module", 1, {
                 "foo": "bar"
             })
-
 
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
@@ -952,7 +970,8 @@ class TokenModelTestCase(MyTestCase):
                          })
 
         # remove "localhost", assert the last run is removed
-        PeriodicTask("task one", True, "0 8 * * *", ["otherhost"], "some.module", 4, {"foo": "bar"}, id=task1.id)
+        PeriodicTask("task one", True, "0 8 * * *", ["otherhost"],
+                     "some.module", 4, {"foo": "bar"}, id=task1.id)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id).count(), 1)
         self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().node, "otherhost")
         # naive timestamp in the database
@@ -963,7 +982,7 @@ class TokenModelTestCase(MyTestCase):
 
         # remove the tasks, everything is removed
         task1.delete()
-        self.assertEqual(PeriodicTaskOption.query.count(), 1) # from task2
+        self.assertEqual(PeriodicTaskOption.query.count(), 1)  # from task2
         self.assertEqual(PeriodicTaskLastRun.query.count(), 0)
         task2.delete()
         self.assertEqual(PeriodicTaskOption.query.count(), 0)
@@ -1061,7 +1080,7 @@ class TokengroupTestCase(MyTestCase):
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
         # It does not change anything, if we try to save the same assignment!
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
 
@@ -1126,22 +1145,34 @@ class ServiceidTestCase(MyTestCase):
 class ResolverRealmTestCase(MyTestCase):
 
     def test_01_resolver_realm_with_nodes(self):
-        NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1").save()
-        NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2").save()
+        nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
+        nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        NodeName(id=nd1_uuid, name="Node1").save()
+        NodeName(id=nd2_uuid, name="Node2").save()
 
         res = Resolver("resolver1", "passwdresolver")
         res.save()
         # Add configuration to the resolver
         ResolverConfig(res.id, "fileName", "tests/testdata/passwd").save()
 
-        re = Realm("realm1")
-        re.save()
+        re1 = Realm("realm1")
+        re1.save()
 
         # Put the resolver into the realm by name
         ResolverRealm(resolver_name="resolver1",
                       realm_name="realm1").save()
 
-        self.assertIn(res.id, [x.resolver.id for x in re.resolver_list])
+        self.assertIn(res.id, [x.resolver.id for x in re1.resolver_list])
+        self.assertEqual(re1.resolver_list[0].node_uuid, "", re1.resolver_list[0])
+        re1.delete()
+
+        re2 = Realm("realm2")
+        re2.save()
+        ResolverRealm(resolver_name="resolver1",
+                      realm_name="realm2", node_uuid=nd1_uuid).save()
+        self.assertIn(res.id, [x.resolver.id for x in re2.resolver_list])
+        self.assertEqual(re2.resolver_list[0].node_uuid, nd1_uuid, re1.resolver_list[0])
+        re2.delete()
 
     # TODO: add resolver realm config with ids and different nodes
     # TODO: same nodes with different timestamps
