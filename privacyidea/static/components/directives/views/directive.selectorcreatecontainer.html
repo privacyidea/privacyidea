@@ -9,7 +9,7 @@
         </select>
     </div>
     <!-- New container creation -->
-    <div ng-show="isCreateNew">
+    <div ng-show="containerSerial == 'createnew'">
         <!-- Type -->
         <label for="containerType" translate>New container type</label>
         <select class="form-control"
@@ -30,14 +30,17 @@
                ng-model="newContainer.description"/>
 
         <!-- User Assign (user provided from parent scope if available) -->
-        <div ng-show="enableUserAssignment">
+        <div ng-show="showUserAssignment">
             <input type="checkbox" ng-model="assignUserToContainer" id="checkboxAssignContainerToUser">
             <label for="checkboxAssignContainerToUser" translate>Assign the new container to {{ userName }} in
                 realm {{ userRealm }}</label>
         </div>
         <!-- Button -->
+        <p>{{checkRight('container_create')}}</p>
         <div class="text-center">
-            <button type="button" ng-click="createContainer()"
+            <button type="button"
+                    ng-click="createContainer()"
+                    ng-disabled="checkRight('container_create')"
                     class="btn btn-primary">
                 <span translate>Create Container</span>
             </button>

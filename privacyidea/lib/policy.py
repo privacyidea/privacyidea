@@ -213,7 +213,7 @@ class SCOPE(object):
     ADMIN = "admin"
     AUTH = "authentication"
     AUDIT = "audit"
-    USER = "user"   # was selfservice
+    USER = "user"  # was selfservice
     ENROLL = "enrollment"
     WEBUI = "webui"
     REGISTER = "register"
@@ -392,6 +392,16 @@ class ACTION(object):
     SERVICEID_DELETE = "serviceid_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"
+    CONTAINER_DESCRIPTION = "container_description"
+    CONTAINER_INFO = "container_info"
+    CONTAINER_STATE = "container_state"
+    CONTAINER_CREATE = "container_create"
+    CONTAINER_DELETE = "container_delete"
+    CONTAINER_ADD_TOKEN = "container_add_token"
+    CONTAINER_REMOVE_TOKEN = "container_remove_token"
+    CONTAINER_ASSIGN_USER = "container_assign_user"
+    CONTAINER_UNASSIGN_USER = "container_unassign_user"
+    CONTAINER_REALMS = "container_realms"
 
 
 class TYPE(object):
@@ -421,6 +431,7 @@ class GROUP(object):
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
+    CONTAINER = "container"
 
 
 class MAIN_MENU(object):
@@ -495,6 +506,7 @@ class PolicyClass(object):
 
     Hence, reloading the request-local config object also reloads the set of policies.
     """
+
     def __init__(self):
         pass
 
@@ -525,16 +537,15 @@ class PolicyClass(object):
         value_excluded = False
         for value in policy_attributes:
             if value and value[0] in ["!", "-"] and \
-                            searchvalue == value[1:]:
+                    searchvalue == value[1:]:
                 value_excluded = True
             elif type(searchvalue) == list and value in \
-                            searchvalue + ["*"]:
+                    searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
             elif type(searchvalue) != list:
-                # Do not do this search style for resolvers, which come as a
-                # list
+                # Do not do this search style for resolvers, which come as a list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
                 if re.search("^{0!s}$".format(value), searchvalue):
@@ -859,7 +870,7 @@ class PolicyClass(object):
                                 break
                         elif section == CONDITION_SECTION.HTTP_ENVIRONMENT:
                             if not self._policy_matches_request_environ_condition(policy, key, comparator, value,
-                                                                                 request_headers):
+                                                                                  request_headers):
                                 include_policy = False
                                 break
                         else:
@@ -899,7 +910,7 @@ class PolicyClass(object):
             log.error("Policy {!r} has conditions on HTTP environment, but HTTP environment"
                       " is not available. This should not happen - possible "
                       "programming error {!s}.".format(policy["name"],
-                                                        ''.join(traceback.format_stack())))
+                                                       ''.join(traceback.format_stack())))
             raise PolicyError("Policy {!r} has conditions on environment {!r}, but HTTP environment"
                               " is not available".format(policy["name"], key))
 
@@ -931,7 +942,7 @@ class PolicyClass(object):
             log.error("Policy {!r} has conditions on HTTP headers, but HTTP header"
                       " is not available. This should not happen - possible "
                       "programming error {!s}.".format(policy["name"],
-                                                        ''.join(traceback.format_stack())))
+                                                       ''.join(traceback.format_stack())))
             raise PolicyError("Policy {!r} has conditions on headers {!r}, but HTTP header"
                               " is not available".format(policy["name"], key))
 
@@ -1300,7 +1311,7 @@ class PolicyClass(object):
                                                realm=userrealm,
                                                user_object=user_object,
                                                active=True,
-                                               action="enroll"+tokentype.upper(),
+                                               action="enroll" + tokentype.upper(),
                                                adminrealm=adminrealm,
                                                adminuser=adminuser,
                                                extended_condition_check=extended_condition_check)
@@ -1311,6 +1322,7 @@ class PolicyClass(object):
             enroll_types = filtered_enroll_types
 
         return enroll_types
+
 
 # --------------------------------------------------------------------------
 #
@@ -1629,9 +1641,9 @@ def get_static_policy_definitions(scope=None):
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
             ACTION.SETTOKENINFO: {'type': 'bool',
-                               'desc': _('Admin is allowed to manually set and delete token info.'),
-                               'mainmenu': [MAIN_MENU.TOKENS],
-                               'group': GROUP.TOKEN},
+                                  'desc': _('Admin is allowed to manually set and delete token info.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("Admin is allowed to set the OTP "
                                          "PIN during enrollment."),
@@ -1783,9 +1795,9 @@ def get_static_policy_definitions(scope=None):
                                     "group": GROUP.SYSTEM,
                                     'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RESOLVERREAD: {'type': 'bool',
-                                   'desc': _("Admin is allowed to read resolvers."),
-                                   'group': GROUP.SYSTEM,
-                                '   mainmenu': [MAIN_MENU.CONFIG]},
+                                  'desc': _("Admin is allowed to read resolvers."),
+                                  'group': GROUP.SYSTEM,
+                                  '   mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
@@ -1857,10 +1869,10 @@ def get_static_policy_definitions(scope=None):
                                         "group": GROUP.SYSTEM,
                                         'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.AUDIT_DOWNLOAD: {'type': 'bool',
-                               "desc": _("The admin is allowed to download "
-                                         "the complete auditlog."),
-                               "group": GROUP.SYSTEM,
-                               'mainmenu': [MAIN_MENU.AUDIT]},
+                                    "desc": _("The admin is allowed to download "
+                                              "the complete auditlog."),
+                                    "group": GROUP.SYSTEM,
+                                    'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.ADDUSER: {'type': 'bool',
                              "desc": _("Admin is allowed to add users in a "
                                        "userstore/UserIdResolver."),
@@ -1924,8 +1936,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.PERIODICTASKWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "periodic task definitions."),
-                                            'mainmenu': [MAIN_MENU.CONFIG],
-                                            'group': GROUP.SYSTEM},
+                                       'mainmenu': [MAIN_MENU.CONFIG],
+                                       'group': GROUP.SYSTEM},
             ACTION.PERIODICTASKREAD: {'type': 'bool',
                                       'desc': _("Admin is allowed to read "
                                                 "periodic task definitions."),
@@ -1935,8 +1947,8 @@ def get_static_policy_definitions(scope=None):
                                     'desc': _("Admin is allowed to read statistics data."),
                                     'group': GROUP.SYSTEM},
             ACTION.STATISTICSDELETE: {'type': 'bool',
-                                    'desc': _("Admin is allowed to delete statistics data."),
-                                    'group': GROUP.SYSTEM},
+                                      'desc': _("Admin is allowed to delete statistics data."),
+                                      'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
@@ -2032,8 +2044,48 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
                 'group': GROUP.TOKEN},
+            # CONTAINER
+            ACTION.CONTAINER_INFO: {'type': 'bool',
+                                    'desc': _('Admin is allowed to edit the container info.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_STATE: {'type': 'bool',
+                                     'desc': _('Admin is allowed to edit the container state.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_DESCRIPTION: {'type': 'bool',
+                                           'desc': _('Admin is allowed to edit the container description.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_CREATE: {'type': 'bool',
+                                      'desc': _('Admin is allowed to create containers.'),
+                                      'mainmenu': [MAIN_MENU.TOKENS],
+                                      'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_DELETE: {'type': 'bool',
+                                      'desc': _('Admin is allowed to delete containers.'),
+                                      'mainmenu': [MAIN_MENU.TOKENS],
+                                      'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ADD_TOKEN: {'type': 'bool',
+                                         'desc': _('Admin is allowed to add token to containers.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
+                                            'desc': _('Admin is allowed to remove token from containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ASSIGN_USER: {'type': 'bool',
+                                           'desc': _('Admin is allowed to assign users to containers.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNASSIGN_USER: {'type': 'bool',
+                                             'desc': _('Admin is allowed to unassign users from containers.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REALMS: {'type': 'bool',
+                                     'desc': _('Admin is allowed to set the realm of containers.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.CONTAINER},
         },
-
         SCOPE.USER: {
             ACTION.ASSIGN: {
                 'type': 'bool',
@@ -2118,7 +2170,6 @@ def get_static_policy_definitions(scope=None):
                                               "(s)pecial. Use modifiers +/- or a list "
                                               "of allowed characters [1234567890]"),
                                     'group': GROUP.PIN},
-
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.'),
@@ -2167,7 +2218,40 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the user.'),
                 'group': GROUP.TOKEN
-            }
+            },
+            # CONTAINER
+            ACTION.CONTAINER_STATE: {'type': 'bool',
+                                     'desc': _('The user is allowed to edit the container state.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_DESCRIPTION: {'type': 'bool',
+                                           'desc': _('The user is allowed to edit the container description.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_CREATE: {'type': 'bool',
+                                      'desc': _('The user is allowed to create containers.'),
+                                      'mainmenu': [MAIN_MENU.TOKENS],
+                                      'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_DELETE: {'type': 'bool',
+                                      'desc': _('The user is allowed to delete containers.'),
+                                      'mainmenu': [MAIN_MENU.TOKENS],
+                                      'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ADD_TOKEN: {'type': 'bool',
+                                         'desc': _('The user is allowed to add token to containers.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
+                                            'desc': _('The user is allowed to remove token from containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ASSIGN_USER: {'type': 'bool',
+                                           'desc': _('The user is allowed to assign users to containers.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNASSIGN_USER: {'type': 'bool',
+                                             'desc': _('The user is allowed to unassign users from containers.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER},
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -2305,7 +2389,8 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('This is a whitespace separated list of tokentypes, '
                           'that can be used with challenge response.'),
                 'multiple': True,
-                'value': [token_obj.get_class_type() for token_obj in get_token_classes() if "challenge" in token_obj.mode and len(token_obj.mode) > 1]
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes() if
+                          "challenge" in token_obj.mode and len(token_obj.mode) > 1]
             },
             ACTION.CHALLENGETEXT: {
                 'type': 'str',
@@ -2577,9 +2662,9 @@ def get_static_policy_definitions(scope=None):
                           "policy-templates /master/templates/)")
             },
             ACTION.LOGOUT_REDIRECT: {
-              'type': 'str',
-              'desc': _("The URL of an SSO provider for redirect at logout."
-                        "(The URL must start with http:// or https://)")
+                'type': 'str',
+                'desc': _("The URL of an SSO provider for redirect at logout."
+                          "(The URL must start with http:// or https://)")
             },
             ACTION.TOKENWIZARD: {
                 'type': 'bool',
@@ -2661,7 +2746,6 @@ def get_static_policy_definitions(scope=None):
             }
         }
 
-
     }
     if scope:
         ret = pol.get(scope, {})
@@ -2683,7 +2767,7 @@ def get_action_values_from_options(scope, action, options):
     g = options.get("g")
     if g:
         user_object = options.get("user")
-        value = Match.user(g, scope=scope, action=action, user_object=user_object)\
+        value = Match.user(g, scope=scope, action=action, user_object=user_object) \
             .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]
@@ -2759,6 +2843,7 @@ class Match(object):
 
     In our case, this context object is usually the ``flask.g`` object.
     """
+
     def __init__(self, g, **kwargs):
         self._g = g
         self._match_kwargs = kwargs

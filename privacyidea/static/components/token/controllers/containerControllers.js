@@ -1,7 +1,7 @@
-myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory', 'TokenFactory',
-    function createContainerController($scope, $http, $q, $state, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
-                                       TokenFactory) {
+myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
+    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state',
+    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
+                                       AuthFactory, ConfigFactory, UserFactory, $state) {
         $scope.formData = {
             containerTypes: {},
         };
@@ -12,7 +12,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state'
         };
 
         $scope.$watch('form', function (newVal, oldVal) {
-            if (newVal) {
+            if (newVal && allContainerTypes[newVal.containerType]) {
                 $scope.form.token_types = allContainerTypes[newVal.containerType]["token_types_display"];
             }
         }, true);
@@ -67,7 +67,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state'
                         //debug: console.log($scope.newUser);
                     }
                 });
-                // init the user, if token.enroll was called from the user.details
+                // init the user, if token.containercreate was called from the user.details
                 if ($stateParams.realmname) {
                     $scope.newUser.realm = $stateParams.realmname;
                 }
@@ -84,12 +84,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', '$state'
                 }
             });
         } else if (AuthFactory.getRole() === 'user') {
-            // init the user, if token.enroll was called as a normal user
-            $scope.newUser.user = AuthFactory.getUser().username;
-            $scope.newUser.realm = AuthFactory.getUser().realm;
+            // init the user, if token.containercreate was called as a normal user
+            $scope.newUser = {user: AuthFactory.getUser().username, realm: AuthFactory.getUser().realm};
             if ($scope.checkRight('userlist')) {
                 UserFactory.getUserDetails({}, function (data) {
-                    $scope.User = $scope.get_user_infos(data);
+                    $scope.User = data.result.value[0];
+                    $scope.form.email = $scope.User.email;
+                    if (typeof $scope.User.mobile === "string") {
+                        $scope.form.phone = $scope.User.mobile;
+                    } else {
+                        $scope.phone_list = $scope.User.mobile;
+                        if ($scope.phone_list && $scope.phone_list.length === 1) {
+                            $scope.form.phone = $scope.phone_list[0];
+                        }
+                    }
                 });
             }
         }
@@ -140,7 +148,6 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
                 function (data) {
                     $scope.containerdata = data.result.value;
                 });
-
         };
         $scope.get();
 
@@ -190,6 +197,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
 
+        $scope.container = {
+            users: [],
+            last_seen: "",
+            last_updated: "",
+        };
+        $scope.containerOwner = {};
         // Get possible container states
         $scope.stateTypes = [];
         $scope.containerStates = {};
@@ -198,11 +211,15 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.stateTypes = data.result.value;
             angular.forEach($scope.stateTypes, function (val, state) {
                 // Set the state to false, if it is displayed next to states that exclude each other
-                if (!($scope.displayState[state] == false)) {
+                if (!(state in $scope.displayState)) {
                     $scope.displayState[state] = true;
                     angular.forEach($scope.stateTypes[state], function (excludedState) {
                         $scope.displayState[excludedState] = false;
                     });
+                }
+                // Set default value for the container states if it is not set yet
+                if (!$scope.containerStates[state]) {
+                    $scope.containerStates[state] = false;
                 }
             });
         });
@@ -222,25 +239,31 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.showDialog = {};
         $scope.getContainer = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
-                $scope.container = data.result.value.containers[0];
-                $scope.containerOwner = $scope.container.users[0];
-                $scope.container.last_seen = new Date($scope.container.last_seen);
-                $scope.container.last_updated = new Date($scope.container.last_updated);
+                if (data.result.value.containers.length > 0) {
+                    $scope.container = data.result.value.containers[0];
+                    $scope.containerOwner = $scope.container.users[0];
+                    $scope.container.last_seen = new Date($scope.container.last_seen);
+                    $scope.container.last_updated = new Date($scope.container.last_updated);
 
-                angular.forEach($scope.container.states, function (state) {
-                    $scope.excludeStates(state);
-                });
-                $scope.stateSelectionChanged = false;
+                    angular.forEach($scope.container.states, function (state) {
+                        $scope.excludeStates(state);
+                    });
 
-                angular.forEach($scope.container.tokens, function (token) {
-                    $scope.showDialog[token.serial] = false;
-                });
-                if ($scope.supportedTokenTypes.length == 0) {
-                    // Get supported token types only once
-                    $scope.getSupportedTokenTypes();
+                    $scope.stateSelectionChanged = false;
+                    angular.forEach($scope.container.tokens, function (token) {
+                        $scope.showDialog[token.serial] = false;
+                    });
+                    if ($scope.supportedTokenTypes.length == 0) {
+                        // Get supported token types only once
+                        $scope.getSupportedTokenTypes();
+                    }
+                } else {
+                    // If there is nothing returned, the user should not be on this page
+                    // (the details page of a non-visible container)
+                    $scope.containerOwner = null;
+                    $state.go("token.containerlist");
                 }
             });
-            // update token list for add
             $scope.get();
         };
 
@@ -249,9 +272,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.containerStates[state] = true;
             angular.forEach($scope.stateTypes[state], function (disableType) {
                 $scope.containerStates[disableType] = false;
-            })
+            });
         };
-
+        $scope.excludeStates();
         $scope.$watch("containerStates", function (newValue, oldValue) {
             $scope.stateSelectionChanged = true;
             for (let [key, value] of Object.entries(newValue)) {
@@ -262,10 +285,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }, true); // true = deep watch
 
         $scope.saveStates = function () {
-            let states = [];
+            let states = "";
             angular.forEach($scope.containerStates, function (value, key) {
                 if (value) {
-                    states.push(key);
+                    if (states !== "") {
+                        states += ",";
+                    }
+                    states += key;
                 }
             });
             let params = {"container_serial": $scope.containerSerial, "states": states};
@@ -326,7 +352,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     container_serial: $scope.containerSerial,
                     user: fixUser($scope.newUser.user),
                     realm: $scope.newUser.realm,
-                    pin: $scope.newUser.pin
                 }
                 , $scope.getContainer);
         };
@@ -342,16 +367,16 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 , $scope.getContainer);
         };
 
-        $scope.editContainernfo = false;
+        $scope.editContainerInfo = false;
         $scope.startEditContainerInfo = function () {
-            $scope.editContainernfo = true;
+            $scope.editContainerInfo = true;
         };
 
         $scope.saveContainerInfo = function () {
-            $scope.editContainernfo = false;
+            $scope.editContainerInfo = false;
         };
 
-        if ($scope.loggedInUser.role === "admin") {
+        if ($scope.loggedInUser.isAdmin) {
             // These are functions that can only be used by administrators.
             // If the user is admin, we can fetch all realms
             // If the loggedInUser is only a user, we do not need the realm list,
@@ -360,6 +385,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.realms = data.result.value;
             });
         }
+
+        ContainerFactory.updateLastSeen($scope.containerSerial, function (data) {
+        });
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);

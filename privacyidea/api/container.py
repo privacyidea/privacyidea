@@ -2,15 +2,19 @@ import logging
 
 from flask import Blueprint, jsonify, request, g
 
+from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container
+    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container, \
+    add_container_info
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import get_one_token, get_tokens, \
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.token import get_tokens, \
     convert_token_objects_to_dicts
 from privacyidea.lib.user import get_user_from_param, get_username
 
@@ -23,7 +27,6 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
-@event('container_list', request, g)
 @log_with(log)
 def list_containers():
     """
@@ -83,7 +86,7 @@ def list_containers():
         tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
 
         infos: dict = {}
-        for info in container.get_containerinfo():
+        for info in container.get_container_info():
             if info.type:
                 infos[info.key + ".type"] = info.type
             infos[info.key] = info.value
@@ -102,6 +105,7 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
 @event('container_assign', request, g)
 @log_with(log)
 def assign(container_serial):
@@ -124,6 +128,7 @@ def assign(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
 @event('container_unassign', request, g)
 @log_with(log)
 def unassign(container_serial):
@@ -146,6 +151,7 @@ def unassign(container_serial):
 
 
 @container_blueprint.route('init', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_CREATE)
 @event('container_init', request, g)
 @log_with(log)
 def init():
@@ -178,6 +184,7 @@ def init():
 
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DELETE)
 @event('container_delete', request, g)
 @log_with(log)
 def delete(container_serial):
@@ -202,8 +209,9 @@ def delete(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
-@log_with(log)
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
+@log_with(log)
 def add_token(container_serial):
     """
     Add one or multiple tokens to a container
@@ -212,6 +220,7 @@ def add_token(container_serial):
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
+
     res = add_tokens_to_container(container_serial, token_serials)
 
     # Audit log
@@ -230,6 +239,7 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
@@ -258,6 +268,7 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('types', methods=['GET'])
+@container_blueprint.route('tokentypes', methods=['GET'])
 @log_with(log)
 def get_types():
     """
@@ -273,7 +284,8 @@ def get_types():
     return send_result(res)
 
 
-@container_blueprint.route('<container_serial>/description', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/description', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DESCRIPTION)
 @event('container_set_description', request, g)
 @log_with(log)
 def set_description(container_serial):
@@ -303,16 +315,18 @@ def set_description(container_serial):
     return send_result(res)
 
 
-@container_blueprint.route('<container_serial>/states', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/states', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_STATE)
 @event('container_set_states', request, g)
 @log_with(log)
 def set_states(container_serial):
     """
     Set the states of a container
-    :param: container_serial: Serial of the container
-    :jsonparam: states: string list
+    :jsonparam: states: string of comma separated states
     """
-    states = getParam(request.all_data, "states", required, allow_empty=False)
+    states_string = getParam(request.all_data, "states", required, allow_empty=False)
+    states_string = states_string.replace(" ", "")
+    states = states_string.split(",")
     container = find_container_by_serial(container_serial)
 
     res = False
@@ -347,7 +361,9 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('<container_serial>/realms', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REALMS)
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):
@@ -360,7 +376,6 @@ def set_realms(container_serial):
     realm_list = [r.strip() for r in container_realms.split(",")]
     container = find_container_by_serial(container_serial)
     result = container.set_realms(realm_list, add=False)
-
     success = False not in result.values()
 
     # Audit log
@@ -380,7 +395,7 @@ def set_realms(container_serial):
     return send_result(result)
 
 
-@container_blueprint.route('<container_serial>/lastseen', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/lastseen', methods=['POST'])
 @event('container_update_last_seen', request, g)
 @log_with(log)
 def update_last_seen(container_serial):
@@ -402,6 +417,15 @@ def update_last_seen(container_serial):
                       "success": True}
     g.audit_object.log(audit_log_data)
     return send_result(True)
+
+
+@container_blueprint.route('info/<serial>/<key>', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
+@log_with(log)
+def set_container_info(serial, key):
+    value = getParam(request.all_data, "value", required)
+    add_container_info(serial, key, value)
 
 
 # TEMPLATES

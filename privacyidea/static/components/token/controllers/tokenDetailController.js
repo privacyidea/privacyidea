@@ -60,7 +60,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
 
         // Container
         $scope.tokenIsInContainer = false;
-        $scope.$watch('containerSerial', function () {
+        $scope.$watch('containerSerial', function (newVal, oldVal) {
             $scope.showAddToContainer = ($scope.containerSerial && $scope.containerSerial !== "createnew");
         });
         $scope.addToContainer = function () {
@@ -80,7 +80,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             }, function (data) {
                 if (data.result.value) {
                     $scope.tokenIsInContainer = false;
-                    $scope.containerSerial = "createnew";
+                    $scope.containerSerial = null; // the directive will set this to a value
                 }
             });
         };
@@ -142,7 +142,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                     blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
                     $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL(blob);
                 }
-                $scope.changeApplication();
+                if ($scope.loggedInUser.role === "admin") {
+                    $scope.changeApplication();
+                }
             });
         };
 

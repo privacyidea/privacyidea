@@ -860,9 +860,9 @@ def get_tokenclass_info(tokentype, section=None):
     :rtype:  dict
     """
     res = {}
-    Tokenclass = get_token_class(tokentype)
-    if Tokenclass:
-        res = Tokenclass.get_class_info(section)
+    tokenclass = get_token_class(tokentype)
+    if tokenclass:
+        res = tokenclass.get_class_info(section)
 
     return res
 
@@ -1646,9 +1646,7 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
 
 @log_with(log)
 @check_user_or_serial
-def add_tokeninfo(serial, info, value=None,
-                  value_type=None,
-                  user=None):
+def add_tokeninfo(serial, info, value=None, value_type=None, user=None):
     """
     Sets a token info field in the database. The info is a dict for each
     token of key/value pairs.

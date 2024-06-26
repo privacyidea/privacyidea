@@ -127,7 +127,6 @@ angular.module("privacyideaApp")
             $scope.containerParams = {page: 1};
             $scope.instanceUrl = instanceUrl;
             $scope.editUser = false;
-            $scope.hideUsernmae = true;// scroll to the top of the page
             document.body.scrollTop = document.documentElement.scrollTop = 0;
             $scope.enableAddTokenToContainer = false;
             $scope._getUserToken = function () {
@@ -150,7 +149,7 @@ angular.module("privacyideaApp")
                     pagesize: $scope.containersPerPage,
                     page: $scope.containerParams.page
                 }, function (data) {
-                    $scope.containerdata = data.result.value;
+                    $scope.containerdata = data.result.value.containers;
                 });
             };
 

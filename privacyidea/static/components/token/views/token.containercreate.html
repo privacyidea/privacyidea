@@ -1,7 +1,8 @@
 <div class="well" ng-controller="containerCreateController">
-    <form name="formCreateContainer" role="form">
+    <form name="formCreateContainer" role="form" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
         <!-- Container Type -->
         <div class="form-group">
+            <label for="containertype" translate>Container Type</label>
             <select class="form-control"
                 id="containertype"
                 ng-model="form.containerType"
@@ -14,7 +15,7 @@
         </div>
 
         <!-- Description -->
-        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('container_description')">
             <label for="description" translate>Description</label>
             <input type="text" class="form-control" id="description"
                    autocomplete="new-password"
@@ -23,14 +24,13 @@
         </div>
 
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
-        <h4 translate>Assign container to user</h4>
-        <div>
-            <div assign-user new-user-object="newUser" realms="realms"
-                 default-realm="defaultRealm">
+        <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container to user</h4>
+        <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
+            <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
             </div>
         </div>
         <!-- Submit Button -->
-        <div class="text-center">
+        <div class="text-center" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
             <button type="button" ng-click="createContainer()"
                     class="btn btn-primary">
                 <span>Create</span>

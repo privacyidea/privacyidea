@@ -36,12 +36,13 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                     user.role = role;
                     user.rights = rights;
                     user.menus = menus;
+                    user.isAdmin = (role === "admin");
                 },
                 authError: function (error) {
                     const authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
                     if (error === null) {
-                        console.warn('No error object available, maybe the request was aborted?')
-                        return
+                        console.warn('No error object available, maybe the request was aborted?');
+                        return;
                     }
                     if (typeof (error) === "string") {
                         inform.add(gettextCatalog.getString("Failed to get a valid JSON response from the privacyIDEA server."),

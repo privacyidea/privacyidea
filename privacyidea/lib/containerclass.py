@@ -100,21 +100,32 @@ class TokenContainerClass:
         return result
 
     def remove_token(self, serial: str):
+        """
+        Remove a token from the container. Returns false if the token is not in the container.
+        """
         token = Token.query.filter(Token.serial == serial).first()
-        if token:
+        if token and token in self._db_container.tokens:
             self._db_container.tokens.remove(token)
             self._db_container.save()
             self.tokens = [t for t in self.tokens if t.get_serial() != serial]
             self.update_last_updated()
+            return True
+        return False
 
     def add_token(self, token: TokenClass):
+        """
+        Add a token to the container. Returns false if the token is already in the container.
+        """
         if not token.get_type() in self.get_supported_token_types():
             raise ParameterError(f"Token type {token.get_type()} not supported for container type {self.type}. "
                                  f"Supported types are {self.get_supported_token_types()}.")
-        self.tokens.append(token)
-        self._db_container.tokens = [t.token for t in self.tokens]
-        self._db_container.save()
-        self.update_last_updated()
+        if token.get_serial() not in [t.get_serial() for t in self.tokens]:
+            self.tokens.append(token)
+            self._db_container.tokens = [t.token for t in self.tokens]
+            self._db_container.save()
+            self.update_last_updated()
+            return True
+        return False
 
     def get_tokens(self):
         return self.tokens
@@ -200,6 +211,10 @@ class TokenContainerClass:
 
     @classmethod
     def get_state_types(cls):
+        """
+        Returns the state types that are supported by this container class and the states that are exclusive
+        to each of these states.
+        """
         state_types_exclusions = {
             "active": ["disabled"],
             "disabled": ["active"],
@@ -208,7 +223,7 @@ class TokenContainerClass:
         }
         return state_types_exclusions
 
-    def set_containerinfo(self, info):
+    def set_container_info(self, info):
         """
         Set the containerinfo field in the DB. Old values will be deleted.
 
@@ -218,17 +233,16 @@ class TokenContainerClass:
         self.delete_container_info()
         self._db_container.set_info(info)
 
-    def add_containerinfo(self, key, value):
+    def add_container_info(self, key, value):
         """
         Add a key and a value to the DB tokencontainerinfo
 
-        :param key:
-        :param value:
+        :param key: key
+        :param value: value
         """
-        add_info = {key: value}
-        self._db_container.set_info(add_info)
+        self._db_container.set_info({key: value})
 
-    def get_containerinfo(self):
+    def get_container_info(self):
         """
         Return the tokencontainerinfo from the DB
 
