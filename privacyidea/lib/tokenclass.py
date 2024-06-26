@@ -1791,6 +1791,16 @@ class TokenClass(object):
         :type params: dict
         :return: default parameters
         """
+        return cls._get_default_settings(g)
+
+    @classmethod
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
+                                      adminuser=None, adminrealm=None):
+        """
+        Internal function that can be called either during enrollment via /token/init or during
+        enrollment via validate/check.
+        This way we have consistent policy handling.
+        """
         return {}
 
     def check_last_auth_newer(self, last_auth):

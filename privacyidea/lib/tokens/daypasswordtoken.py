@@ -364,7 +364,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
+                              adminuser=None, adminrealm=None ):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -374,17 +375,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
-
-        :param g: context object, see documentation of ``Match``
-        :param params: The call parameters
-        :type params: dict
-        :return: default parameters
         """
         ret = {}
-        if not g.logged_in_user:
-            return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
         hashlib_pol = Match.generic(g, scope=role,
                                     action="daypassword_hashlib",
                                     user=username,
