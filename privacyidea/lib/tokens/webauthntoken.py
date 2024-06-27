@@ -843,7 +843,7 @@ class WebAuthnTokenClass(TokenClass):
         transaction_id = getParam(param, "transaction_id", optional)
         reg_data = getParam(param, "regdata", optional)
         client_data = getParam(param, "clientdata", optional)
-        automatic_description = str(DEFAULT_DESCRIPTION)
+        automatic_description = DEFAULT_DESCRIPTION
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT

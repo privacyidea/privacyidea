@@ -694,7 +694,7 @@ def get_webui_settings(request, response):
                     subject = "Problem with {0!s}".format(version)
                     check_subscription("privacyidea")
                 except SubscriptionError:
-                    subject = str(EXPIRE_MESSAGE)
+                    subject = EXPIRE_MESSAGE
                 # Check policy, if the admin is allowed to save config
                 action_allowed = Match.generic(g, scope=role,
                                                action=ACTION.SYSTEMWRITE,
