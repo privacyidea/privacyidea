@@ -3,9 +3,8 @@ import logging
 import os
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import Match
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
@@ -18,7 +17,9 @@ log = logging.getLogger(__name__)
 def delete_container_by_id(container_id: int):
     """
     Delete the container with the given id. If it does not exist, raise a ResourceNotFoundError.
-    Returns the id of the deleted container on success
+
+    :param container_id: The id of the container to delete
+    :return: ID of the deleted container on success
     """
     if not container_id:
         raise ParameterError("Unable to delete container without id.")
@@ -30,13 +31,23 @@ def delete_container_by_id(container_id: int):
 def delete_container_by_serial(serial: str):
     """
     Delete the container with the given serial. If it does not exist, raise a ResourceNotFoundError.
-    Returns the id of the deleted container on success
+
+    :param serial: The serial of the container to delete
+    :return: ID of the deleted container on success
     """
+    if not serial:
+        raise ParameterError("Unable to delete container without serial.")
     container = find_container_by_serial(serial)
     return container.delete()
 
 
 def _gen_serial(container_type: str):
+    """
+    Generate a new serial for a container of the given type
+
+    :param container_type: The type of the container
+    :return: The generated serial
+    """
     serial_len = int(get_from_config("SerialLength") or 8)
     prefix = "CONT"
     for ctype, cls in get_container_classes().items():
@@ -59,7 +70,10 @@ def _gen_serial(container_type: str):
 
 def create_container_from_db_object(db_container: TokenContainer):
     """
-    Create a TokenContainerClass object from the given db object
+    Create a TokenContainerClass object from the given db object.
+
+    :param db_container: The db object to create the container from
+    :return: The created container object or None if the container type is not supported
     """
     for ctypes, cls in get_container_classes().items():
         if ctypes.lower() == db_container.type.lower():
@@ -75,7 +89,10 @@ def create_container_from_db_object(db_container: TokenContainer):
 @log_with(log)
 def find_container_by_id(container_id: int):
     """
-    Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError
+    Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
+
+    :param container_id: ID of the container
+    :return: container object
     """
     db_container = TokenContainer.query.filter(TokenContainer.id == container_id).first()
     if not db_container:
@@ -86,7 +103,10 @@ def find_container_by_id(container_id: int):
 
 def find_container_by_serial(serial: str):
     """
-    Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError
+    Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
+
+    :param serial: Serial of the container
+    :return: container object
     """
     db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
     if not db_container:
@@ -98,7 +118,15 @@ def find_container_by_serial(serial: str):
 def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
                             sortdir='asc'):
     """
-    Returns a sql query for getting containers
+    Generates a sql query to filter containers by the given parameters.
+
+    :param user: container owner, optional
+    :param serial: container serial, optional
+    :param ctype: container type, optional
+    :param token_serial: serial of a token which is assigned to the container, optional
+    :param sortby: column to sort by, default is the container serial
+    :param sortdir: sort direction, default is ascending
+    :return: sql query
     """
     sql_query = TokenContainer.query
     if user:
@@ -141,18 +169,17 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
     Each retrieved page will also contain a "next" and a "prev", indicating
-    the next or previous page. If either does not exist, it is None.
+    the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
+    The containers are filtered by the given parameters.
 
-    :param user: The user for which to retrieve the containers
-    :param serial: Filter by container serial
-    :param ctype: Filter by container type
-    :param token_serial: Filter by token serial
-    :param sortby: A Token column or a string. Default is "serial"
-    :param sortdir: "asc" or "desc". Default is "asc"
+    :param user: container owner, optional
+    :param serial: container serial, optional
+    :param ctype: container type, optional
+    :param token_serial: serial of a token which is assigned to the container, optional
+    :param sortby: column to sort by, default is the container serial
+    :param sortdir: sort direction, default is ascending
     :param page: The number of the page to view. Starts with 1 ;-)
-    :type page: int
     :param pagesize: The size of the page
-    :type pagesize: int
     """
     # TODO add user role policy
 
@@ -191,7 +218,10 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
 
 def create_container_class_object(db_container):
     """
-    Create a TokenContainerClass object from the given db object
+    Create a TokenContainerClass object from the given db object.
+
+    :param db_container: The db object to create the container from
+    :return: The created container object or None if the container type is not supported
     """
     container = None
     container_classes = get_container_classes()
@@ -203,17 +233,21 @@ def create_container_class_object(db_container):
 
 def find_container_for_token(serial):
     """
-    Returns a TokenContainerClass object for the given token
+    Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
+    if the token does not exist.
+
+    :param serial: Serial of the token
+    :return: container object or None if the token is not in a container
     """
     container = None
-    token = Token.query.filter(Token.serial == serial).first()
-    if token:
-        token_id = token.id
-        row = TokenContainerToken.query.filter(
-            TokenContainerToken.token_id == token_id).first()
-        if row:
-            container_id = row.container_id
-            container = find_container_by_id(container_id)
+    db_token = Token.query.filter(Token.serial == serial).first()
+    if not db_token:
+        raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
+    token_id = db_token.id
+    row = TokenContainerToken.query.filter(TokenContainerToken.token_id == token_id).first()
+    if row:
+        container_id = row.container_id
+        container = find_container_by_id(container_id)
     return container
 
 
@@ -244,7 +278,10 @@ def get_container_classes():
 
 def get_container_policy_info(container_type=None):
     """
-    Returns the policy info for the given container type or for all container types
+    Returns the policy info for the given container type or for all container types if no type is defined.
+
+    :param container_type: The type of the container, optional
+    :return: The policy info for the given container type or for all container types
     """
     classes = get_container_classes()
     if container_type:
@@ -261,7 +298,12 @@ def get_container_policy_info(container_type=None):
 
 def create_container_template(container_type, template_name, options):
     """
-    Create a new container template
+    Create a new container template.
+
+    :param container_type: The type of the container
+    :param template_name: The name of the template
+    :param options: The options for the template
+    :return: The created template object
     """
     return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
 
@@ -269,6 +311,13 @@ def create_container_template(container_type, template_name, options):
 def init_container(params):
     """
     Create a new container with the given parameters. Requires at least the type.
+
+    :jsonparam type: The type of the container
+    :jsonparam description: The description of the container, optional
+    :jsonparam container_serial: The serial of the container, optional
+    :jsonparam user: The user to assign the container to (requires the realm), optional
+    :jsonparam realm: The realm to assign the container to, optional
+    :return: The serial of the created container
     """
     ctype = params.get("type")
     if not ctype:
@@ -291,7 +340,10 @@ def init_container(params):
         realms.append(realm)
         container.set_realms(realms, add=True)
     elif user and realm:
-        container.add_user(User(login=user, realm=realm))
+        try:
+            container.add_user(User(login=user, realm=realm))
+        except UserError as ex:
+            log.error(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
     return serial
@@ -301,6 +353,10 @@ def add_tokens_to_container(container_serial, token_serials):
     """
     Add the given tokens to the container with the given serial.
     If a token is already in a container it is removed from the old container.
+
+    :param container_serial: The serial of the container
+    :param token_serials: A list of token serials to add
+    :return: A dictionary of type {token_serial: success}
     """
     container = find_container_by_serial(container_serial)
     db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
@@ -309,10 +365,16 @@ def add_tokens_to_container(container_serial, token_serials):
     for token in tokens:
         # check if the token is in a container
         old_container = find_container_for_token(token.get_serial())
-        if old_container:
+        try:
+            res = container.add_token(token)
+        except ParameterError as ex:
+            log.error(f"Error adding token {token.get_serial()} to container {container_serial}: {ex}")
+            res = False
+        if res and old_container:
             # remove token from old container
             remove_tokens_from_container(old_container.serial, [token.get_serial()])
-        res = container.add_token(token)
+            log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
+                     f"Token removed from previous container {old_container.serial}.")
         ret[token.get_serial()] = res
     return ret
 
@@ -343,27 +405,36 @@ def get_container_token_types():
 
 def remove_tokens_from_container(container_serial, token_serials):
     """
-    Remove the given tokens from the container with the given serial
+    Remove the given tokens from the container with the given serial.
+    Raises a ResourceNotFoundError if no container for the given serial exist.
+    Errors of removing tokens are caught and only logged, in order to be able to remove the remaining
+    tokens in the list.
+
+    :param container_serial: The serial of the container
+    :param token_serials: A list of token serials to remove
+    :return: A dictionary of type {token_serial: success}
     """
     container = find_container_by_serial(container_serial)
+    if not container:
+        raise ResourceNotFoundError(f"Container with serial {container_serial} does not exist.")
     ret = {}
     for token_serial in token_serials:
-        res = container.remove_token(token_serial)
+        try:
+            res = container.remove_token(token_serial)
+        except Exception as ex:
+            log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
+            res = False
         ret[token_serial] = res
     return ret
 
 
 def add_container_info(serial, ikey, ivalue):
     """
-    Add the given info to the container with the given serial
-    """
-    container = find_container_by_serial(serial)
-    container.add_container_info(ikey, ivalue)
+    Add the given info to the container with the given serial.
 
-
-def add_container_info(serial, ikey, ivalue):
-    """
-    Add the given info to the container with the given serial
+    :param serial: The serial of the container
+    :param ikey: The info key
+    :param ivalue: The info value
     """
     container = find_container_by_serial(serial)
     container.add_container_info(ikey, ivalue)
