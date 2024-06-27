@@ -47,6 +47,7 @@ import datetime
 import time
 import responses
 import mock
+import re
 from . import smtpmock, ldap3mock, radiusmock
 
 
@@ -5573,6 +5574,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Set force_app_pin
         set_policy("pol_forcepin", scope=SCOPE.ENROLL,
                    action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
+        # Set token default
+        set_privacyidea_config("hotp.hashlib", "sha256")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5623,23 +5626,37 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}',
                       log_msg, log_msg)
         logging.getLogger('privacyidea').setLevel(logging.INFO)
+        """
+        Verify that the QR code was generated with SHA256, this is in the log file.
+        It will be indicated by this text:
+        Entering create_google_authenticator_url with arguments () and keywords ... 'hash_algo': 'sha256'
+        """
+        sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
+        self.assertTrue(sha256regexp.search(log_msg), log_msg)
+
+        # Check SHA256 of the token.
+        self.assertEqual("sha256", token_obj.get_tokeninfo("hashlib"))
 
         # Cleanup
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
         delete_policy("pol_forcepin")
+        set_privacyidea_config("hotp.hashlib", "sha1")
         remove_token(serial)
 
     @ldap3mock.activate
-    def test_02_enroll_TOTP(self):
+    @log_capture(level=logging.DEBUG)
+    def test_02_enroll_TOTP(self, capture):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
+        logging.getLogger('privacyidea.lib.tokens.totptoken').setLevel(logging.DEBUG)
+        logging.getLogger('privacyidea.lib.apps').setLevel(logging.DEBUG)
         # create realm
         set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        # Policy scope:auth, action:enroll_via_multichallenge=hotp
+        # Policy scope:auth, action:enroll_via_multichallenge=totp
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
 
         # 2. authenticate user via passthru
@@ -5657,6 +5674,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=totp".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+
+        # Set totp_hashlib=sha256 user policy
+        set_policy("pol_sha256", scope=SCOPE.USER,
+                   action="totp_hashlib=sha256")
+
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5683,6 +5705,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         token_obj = get_tokens(serial=serial)[0]
         counter = int(time.time() / 30)
         otp = token_obj._calc_otp(counter)
+        # Capture the log for later hash validation
+        log_msg = str(capture)
 
         # 4a. fail to authenticate with a wrong OTP value
         with self.app.test_request_context('/validate/check',
@@ -5710,9 +5734,14 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
 
+        sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
+        self.assertTrue(sha256regexp.search(log_msg), log_msg)
+        # Check SHA256 of the token.
+        self.assertEqual("sha256", token_obj.get_tokeninfo("hashlib"))
         # Cleanup
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
+        delete_policy("pol_sha256")
         remove_token(serial)
 
     @ldap3mock.activate

@@ -718,6 +718,17 @@ class HotpTokenClass(TokenClass):
             return ret
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
+        return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
+
+    @classmethod
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
+                              adminuser=None, adminrealm=None):
+        """
+        Internal function that can be called either during enrollment via /token/init or during
+        enrollment via validate/check.
+        This way we have consistent policy handling.
+        """
+        ret = {}
         hashlib_pol = Match.generic(g, scope=role,
                                     action="hotp_hashlib",
                                     user=username,
@@ -735,7 +746,6 @@ class HotpTokenClass(TokenClass):
                                    adminuser=adminuser).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
-
         return ret
 
     def generate_symmetric_key(self, server_component, client_component,
@@ -829,8 +839,12 @@ class HotpTokenClass(TokenClass):
         :return: None, the content is modified
         """
         message = message or _("Please scan the QR code and enter the OTP value!")
-        token_obj = init_token({"type": cls.get_class_type(),
-                                "genkey": 1}, user=user_obj)
+
+        # Get the user policy token settings like otplen and hashlib
+        params = cls._get_default_settings(g, username=user_obj.login, userrealm=user_obj.realm)
+        params["type"] = cls.get_class_type()
+        params["genkey"] = 1
+        token_obj = init_token(params, user=user_obj)
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 
@@ -840,6 +854,13 @@ class HotpTokenClass(TokenClass):
         # get details of token
         enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
                                                        token_type=cls.get_class_type())
+        if "hashlib" not in enroll_params:
+            enroll_params["hashlib"] = token_obj.hashlib
+        if "otplen" not in enroll_params:
+            enroll_params["otplen"] = token_obj.token.otplen
+        if "timeStep" not in enroll_params and params.get("type").lower() == "totp":
+            enroll_params["timeStep"] = token_obj.get_tokeninfo("timeStep", 30)
+
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
