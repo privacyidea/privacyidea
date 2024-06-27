@@ -83,7 +83,7 @@ def list_containers():
                 tokens_dict_list = convert_token_objects_to_dicts(tokens)
             tmp["tokens"] = tokens_dict_list
 
-        tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
+        tmp["states"] = container.get_states()
 
         infos: dict = {}
         for info in container.get_container_info():

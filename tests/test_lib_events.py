@@ -2043,7 +2043,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check the state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), 2)
         self.assertTrue("disabled" in states)
         self.assertTrue("lost" in states)
@@ -2054,7 +2054,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check that active is the only state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), 1)
         self.assertTrue("active" in states)
         self.assertFalse("lost" in states)
@@ -2065,7 +2065,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertFalse(res)
 
         # Check the state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), 1)
         self.assertTrue("active" in states)
 
@@ -2075,7 +2075,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertFalse(res)
 
         # Check the state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), 1)
         self.assertTrue("active" in states)
 
@@ -2086,7 +2086,7 @@ class ContainerEventTestCase(MyTestCase):
         # create container
         container_serial = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
-        initial_states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        initial_states = container.get_states()
 
         # Setup request
         options = self.setup_request(container_serial=container_serial)
@@ -2099,7 +2099,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check the states of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), len(initial_states) + 1)
         self.assertTrue(initial_states[0] in states)
         self.assertTrue("lost" in states)
@@ -2110,7 +2110,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertFalse(res)
 
         # Check the state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), len(initial_states) + 1)
         self.assertTrue(initial_states[0] in states)
         self.assertTrue("lost" in states)
@@ -2121,7 +2121,7 @@ class ContainerEventTestCase(MyTestCase):
         self.assertFalse(res)
 
         # Check the state of the container
-        states = [tokenContainerState.state for tokenContainerState in container.get_states()]
+        states = container.get_states()
         self.assertEqual(len(states), len(initial_states) + 1)
         self.assertTrue(initial_states[0] in states)
         self.assertTrue("lost" in states)
