@@ -1,3 +1,13 @@
+Version 3.10dev3, 2024-06-27
+
+  Enhancements:
+  * Cleanup of expired challenges externally (#3920)
+
+  Fixes:
+  * Remove duplicate messages from response (#3989)
+  * Lazy translation evaluation for static strings (#3721)
+  * Truncate token description (#3747)
+
 Version 3.10dev2, 2024-05-07
 
   Enhancements:
