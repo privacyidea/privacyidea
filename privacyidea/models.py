@@ -3375,10 +3375,10 @@ class TokenContainer(MethodsMixin, db.Model):
             self.save()
         types = {}
         for k, v in info.items():
-            if k.endswith(".type"):
+            if k and k.endswith(".type"):
                 types[".".join(k.split(".")[:-1])] = v
         for k, v in info.items():
-            if not k.endswith(".type"):
+            if k and not k.endswith(".type"):
                 TokenContainerInfo(self.id, k, v,
                                    type=types.get(k)).save(persistent=False)
         db.session.commit()
