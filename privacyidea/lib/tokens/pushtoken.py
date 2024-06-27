@@ -44,7 +44,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.log import log_with
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 from privacyidea.lib.tokenclass import (TokenClass, AUTHENTICATIONMODE, CLIENTMODE,
                                         ROLLOUTSTATE, CHALLENGE_SESSION)
@@ -67,10 +67,10 @@ import time
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
-ERROR_CHALLENGE_TEXT = _("Use the polling feature of your privacyIDEA Authenticator App"
-                         " to check for a new Login request.")
-DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
+DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your mobile device!")
+ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
+                                    " to check for a new Login request.")
+DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
@@ -913,7 +913,7 @@ class PushTokenClass(TokenClass):
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
-                                                 options) or DEFAULT_CHALLENGE_TEXT
+                                                 options) or str(DEFAULT_CHALLENGE_TEXT)
 
         # Determine, if we require presence
         require_presence = get_action_values_from_options(SCOPE.AUTH,
@@ -984,7 +984,7 @@ class PushTokenClass(TokenClass):
         else:
             log.warning("The token {0!s} has no tokeninfo {1!s}. "
                         "The message could not be sent.".format(self.token.serial,
-                                                                 PUSH_ACTION.FIREBASE_CONFIG))
+                                                                PUSH_ACTION.FIREBASE_CONFIG))
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This is the implementation of an Indexed Secret-Token.
+"""This is the implementation of an Indexed Secret-Token.
 It is a challenge response token, that asks the user for certain positions
 of the secret string.
 The user must know the secret and return the characters from the requested positions.
@@ -37,7 +37,7 @@ from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import Challenge
@@ -46,7 +46,7 @@ from privacyidea.lib.error import ValidateError
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CHALLENGE_TEXT = _("Please enter the positions {0!s} from your secret.")
+DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please enter the positions {0!s} from your secret.")
 DEFAULT_POSITION_COUNT = 2
 
 
@@ -230,8 +230,7 @@ class IndexedSecretTokenClass(TokenClass):
             transactionid = transactionid or db_challenge.transaction_id
             return_message = return_message.format(position_str)
 
-        expiry_date = datetime.datetime.now() + \
-                                    datetime.timedelta(seconds=validity)
+        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
         attributes['valid_until'] = "{0!s}".format(expiry_date)
         reply_dict = {"attributes": attributes}
 

@@ -23,7 +23,7 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the DayPassword token. For example: "24h"')
+    desc_timestep = lazy_gettext('Specify the time step of the DayPassword token. For example: "24h"')
 
     @log_with(log)
     def __init__(self, db_token):

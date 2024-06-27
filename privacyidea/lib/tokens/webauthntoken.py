@@ -40,7 +40,7 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
@@ -422,7 +422,7 @@ device in the *assertion* and the *authenticatorData*, *clientDataJSON* and
 
 *clientDataJSON*, *authenticatorData* and *signature* should be encoded as
 web-safe base64 without padding. For more detailed instructions, refer to
-“2. Step” under “Enrollment” above. 
+“2. Step” under “Enrollment” above.
 
 The *userHandle* and *assertionClientExtensions* are optional and should be
 omitted, if not provided by the authenticator. The
@@ -455,7 +455,7 @@ from privacyidea.models import Challenge
 
 IMAGES = IMAGES
 
-DEFAULT_DESCRIPTION = _('Generic WebAuthn Token')
+DEFAULT_DESCRIPTION = lazy_gettext('Generic WebAuthn Token')
 
 # Policy defaults
 DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
@@ -465,8 +465,8 @@ DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
 DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
-DEFAULT_CHALLENGE_TEXT_AUTH = _('Please confirm with your WebAuthn token ({0!s})')
-DEFAULT_CHALLENGE_TEXT_ENROLL = _('Please confirm with your WebAuthn token')
+DEFAULT_CHALLENGE_TEXT_AUTH = lazy_gettext('Please confirm with your WebAuthn token ({0!s})')
+DEFAULT_CHALLENGE_TEXT_ENROLL = lazy_gettext('Please confirm with your WebAuthn token')
 
 PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
     'ecdsa': COSE_ALGORITHM.ES256,
@@ -593,7 +593,7 @@ class WebAuthnTokenClass(TokenClass):
         res = {
             'type': 'webauthn',
             'title': 'WebAuthn Token',
-            'description': 'WebAuthn: Enroll a Web Authentication token.',
+            'description': _('WebAuthn: Enroll a Web Authentication token.'),
             'init': {},
             'config': {},
             'user': ['enroll'],
@@ -608,7 +608,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
-                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. " 
+                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60")
                     },

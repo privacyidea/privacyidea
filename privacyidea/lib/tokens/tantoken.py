@@ -93,8 +93,7 @@ class TanTokenClass(PaperTokenClass):
         """
         res = {'type': 'tan',
                'title': 'TAN Token',
-               'description': 'TAN: TANs printed on a sheet '
-                              'of paper.',
+               'description': _('TAN: TANs printed on a sheet of paper.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],

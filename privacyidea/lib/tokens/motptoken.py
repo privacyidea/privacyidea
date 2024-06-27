@@ -32,7 +32,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This code implements the motp one time password algorithm
+"""This code implements the motp one time password algorithm
 described in motp.sourceforge.net.
 
 The code is tested in tests/test_lib_tokens_motp
@@ -53,7 +53,6 @@ from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 optional = True
 required = False
 log = logging.getLogger(__name__)
-
 
 
 class MotpTokenClass(TokenClass):
@@ -82,7 +81,7 @@ class MotpTokenClass(TokenClass):
 
         res = {'type': 'motp',
                'title': 'mOTP Token',
-               'description': 'mOTP: Classical mobile One Time Passwords.',
+               'description': _('mOTP: Classical mobile One Time Passwords.'),
                'init': {'page': {'html': 'motptoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'motptoken.mako',
@@ -125,30 +124,29 @@ class MotpTokenClass(TokenClass):
         """
         constructor - create a token object
 
-        :param a_token: instance of the orm db object
-        :type a_token:  orm object
+        :param db_token: instance of the orm db object
+        :type db_token:  orm object
         """
         TokenClass.__init__(self, db_token)
         self.set_type("motp")
         self.hKeyRequired = True
         return
-    
+
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
         to complete the token normalisation, the response of the initialization
-        should be build by the token specific method, the getInitDetails
+        should be built by the token specific method, the getInitDetails
         """
         response_detail = TokenClass.get_init_detail(self, params, user)
         otpkey = self.init_details.get('otpkey')
         if otpkey:
-            tok_type = self.type.lower()
             if user is not None:
                 try:
                     motp_url = create_motp_url(otpkey,
                                                user.login, user.realm,
                                                serial=self.get_serial())
-                    response_detail["motpurl"] = {"description": _("URL for MOTP "
+                    response_detail["motpurl"] = {"description": _("URL for mOTP "
                                                                    "token"),
                                                   "value": motp_url,
                                                   "img": create_img(motp_url)
@@ -156,7 +154,7 @@ class MotpTokenClass(TokenClass):
                 except Exception as ex:   # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
                     log.error('failed to set motp url: {0!r}'.format(ex))
-                    
+
         return response_detail
 
     @log_with(log)
@@ -182,7 +180,7 @@ class MotpTokenClass(TokenClass):
                 otpKey = getParam(param, "otpkey", required)
 
             param['otpkey'] = otpKey
-            
+
         # motp token specific
         mOTPPin = getParam(param, "motppin", required)
         self.token.set_user_pin(mOTPPin)

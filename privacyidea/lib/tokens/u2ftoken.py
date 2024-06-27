@@ -245,7 +245,7 @@ class U2fTokenClass(TokenClass):
         """
         res = {'type': 'u2f',
                'title': 'U2F Token',
-               'description': 'U2F: Enroll a U2F token.',
+               'description': _('U2F: Enroll a U2F token.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],
@@ -335,7 +335,7 @@ class U2fTokenClass(TokenClass):
         elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
                 signature, automatic_description = parse_registration_data(reg_data,
-                                                                 verify_cert=verify_cert)
+                                                                           verify_cert=verify_cert)
             client_data = getParam(param, "clientdata", required)
             client_data_str = url_decode(client_data)
             app_id = self.get_tokeninfo("appId", "")
@@ -386,8 +386,7 @@ class U2fTokenClass(TokenClass):
 
         elif self.token.rollout_state == "":
             # This is the second step of the init request, the clientwait rollout state has been reset
-            response_detail["u2fRegisterResponse"] = {"subject":
-                                                          self.token.description}
+            response_detail["u2fRegisterResponse"] = {"subject": self.token.description}
 
         return response_detail
 
@@ -439,7 +438,7 @@ class U2fTokenClass(TokenClass):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  "{0!s}_{1!s}".format(self.get_class_type(),
                                                                       ACTION.CHALLENGETEXT),
-                                                 options)or _('Please confirm with your U2F token ({0!s})').format(
+                                                 options) or _('Please confirm with your U2F token ({0!s})').format(
             self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
@@ -518,7 +517,7 @@ class U2fTokenClass(TokenClass):
                 return ret
             if clientdata_dict.get("typ") != "navigator.id.getAssertion":
                 raise ValidateError("Incorrect navigator.id")
-            #client_origin = clientdata_dict.get("origin")
+            # client_origin = clientdata_dict.get("origin")
             signaturedata = url_decode(signaturedata)
             signaturedata_hex = hexlify_and_unicode(signaturedata)
             user_presence, counter, signature = parse_response_data(
@@ -550,9 +549,8 @@ class U2fTokenClass(TokenClass):
                                   user_object=self.user if self.user else None)
                             .action_values(unique=False)
                     ):
-                        log.warning(
-                            "The U2F device {0!s} is not allowed to authenticate due to policy restriction"
-                                .format(self.token.serial))
+                        log.warning("The U2F device {0!s} is not allowed to authenticate "
+                                    "due to policy restriction".format(self.token.serial))
                         raise PolicyError("The U2F device is not allowed "
                                           "to authenticate due to policy "
                                           "restriction.")
@@ -589,7 +587,7 @@ class U2fTokenClass(TokenClass):
         facet_list.append(app_id)
 
         log.debug("Sending facets lists for appId {0!s}: {1!s}".format(app_id,
-                                                             facet_list))
+                                                                       facet_list))
         res = {"trustedFacets": [{"version": {"major": 1,
                                               "minor": 0},
                                   "ids": facet_list
