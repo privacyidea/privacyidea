@@ -27,7 +27,7 @@
                     <!-- only allowed if delete token action is set -->
                     <button class="btn btn-danger"
                             ng-disabled="!checkRight('container_delete') || !checkRight('delete')"
-                            ng-hide="!checkRight('container_delete') && hide_buttons">
+                            ng-hide="!checkRight('container_delete') && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>

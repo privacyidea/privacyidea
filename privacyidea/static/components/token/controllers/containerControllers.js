@@ -274,7 +274,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.containerStates[disableType] = false;
             });
         };
-        $scope.excludeStates();
+
         $scope.$watch("containerStates", function (newValue, oldValue) {
             $scope.stateSelectionChanged = true;
             for (let [key, value] of Object.entries(newValue)) {
