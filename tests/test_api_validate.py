@@ -5628,7 +5628,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         logging.getLogger('privacyidea').setLevel(logging.INFO)
         """
         Verify that the QR code was generated with SHA256, this is in the log file.
-        It will be indicated by this text:        
+        It will be indicated by this text:
         Entering create_google_authenticator_url with arguments () and keywords ... 'hash_algo': 'sha1'
         """
         sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
