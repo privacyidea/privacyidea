@@ -2099,8 +2099,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
-            if message not in message_list:
-                message_list.append(message)
+            message_list.append(message)
             if r_chal:
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
@@ -2125,7 +2124,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
     if message_list:
-        reply_dict["message"] = ", ".join(message_list)
+        unique_messages = set(message_list)
+        reply_dict["message"] = ", ".join(unique_messages)
     # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
