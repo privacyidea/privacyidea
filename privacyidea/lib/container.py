@@ -438,3 +438,4 @@ def add_container_info(serial, ikey, ivalue):
     """
     container = find_container_by_serial(serial)
     container.add_container_info(ikey, ivalue)
+    return True
