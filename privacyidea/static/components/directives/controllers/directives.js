@@ -117,9 +117,9 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
         link: function (scope, element, attr) {
             //console.log("Entering assignUser directive");
             //console.log(scope.realms);
-            // Set the default realm selection to the first realm in the list
+            // If the user is not set, set the default realm selection to the first realm in the list
             scope.$watch('realms', function (newVal, oldVal) {
-                if (newVal) {
+                if (newVal && !scope.newUserObject.user) {
                     scope.newUserObject.realm = Object.keys(newVal)[0];
                 }
             }, true);
