@@ -2,13 +2,13 @@
 # Copyright (C) 2017 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-# Paul Lettich <paul.lettich@netknights.it>, 2023.
+# Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-06-27 16:30+0200\n"
-"PO-Revision-Date: 2023-08-16 12:44+0000\n"
+"PO-Revision-Date: 2024-06-29 13:09+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.7-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:224
@@ -43,6 +43,15 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Bitte beschreiben Sie Ihr Problem detailliert --->\n"
+"\n"
+"<--- Bitte stellen Sie so viele zusätzliche Informationen wie möglich zur "
+"Verfügung --->\n"
+"\n"
+"privacyIDEA Version: {version}\n"
+"Kunde: {subscriber_name}\n"
+"Subskription: {subscriptions}\n"
 
 #: api/lib/prepolicy.py:2252
 msgid "Missing description for {} token."
@@ -898,6 +907,8 @@ msgstr ""
 #: lib/policy.py:2359
 msgid "Change the default text that is shown during enrolling a token."
 msgstr ""
+"Der Text der beim Ausrollen des Tokens mittels Multi-Challenge dem Benutzer "
+"angezeigt wird."
 
 #: lib/policy.py:2364
 msgid ""
@@ -1361,7 +1372,7 @@ msgstr "Das RADIUS Secret ist zu lang"
 
 #: lib/subscriptions.py:43
 msgid "My subscription has expired."
-msgstr ""
+msgstr "Meine Subskription ist abgelaufen."
 
 #: lib/token.py:152
 msgid "create_tokenclass_object failed:  {0!r}"
@@ -1376,8 +1387,6 @@ msgid "The requested token could not be found."
 msgstr "Der gesuchte Token wurde nicht gefunden."
 
 #: lib/token.py:575
-#, fuzzy
-#| msgid "More than one matching token were found."
 msgid "More than one matching token was found."
 msgstr "Es wurde mehr als ein passender Token gefunden."
 
@@ -1533,14 +1542,14 @@ msgstr ""
 
 #: lib/eventhandler/base.py:157
 msgid "The challenge of a token during the authentication process is expired."
-msgstr ""
+msgstr "Die Challenge des Tokens ist während der Authentifizierung abgelaufen."
 
 #: lib/eventhandler/base.py:164
 msgid ""
 "The rollout_state of the token has a certain value like 'clientwait' or "
 "'enrolled'."
 msgstr ""
-"Das attribute \"rollout_state\" des Tokens hat einen bestimmten Wert wie "
+"Das Attribut \"rollout_state\" des Tokens hat einen bestimmten Wert wie "
 "'clientwait' oder 'enrolled'."
 
 #: lib/eventhandler/base.py:169
@@ -1577,10 +1586,10 @@ msgstr ""
 "Der Wert von result.status der Antwort ist entweder \"True\" oder \"False\"."
 
 #: lib/eventhandler/base.py:221
-#, fuzzy
-#| msgid "The result.value within the response is True or False."
 msgid "The result.authentication within the response is the given value."
-msgstr "Das result.value in der Server-Antwort ist 'True' oder 'False'."
+msgstr ""
+"Das Attribut result.authentication in der Server-Antwort entspricht dem "
+"angegebenen Wert."
 
 #: lib/eventhandler/base.py:227
 msgid "Check if the max failcounter of the token is reached."
@@ -2217,11 +2226,6 @@ msgid "The timeout in seconds."
 msgstr "Timeout in Sekunden."
 
 #: lib/smsprovider/SMSProvider.py:74
-#, fuzzy
-#| msgid ""
-#| "Regular expression to modify the phone number to make it compatible with "
-#| "provider. For example to remove pluses and slashes enter something like '/"
-#| "[\\+/]//'."
 msgid ""
 "Regular expression to modify the phone number to make it compatible with the "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
@@ -2409,10 +2413,9 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/daypasswordtoken.py:34
-#, fuzzy
-#| msgid "Specify the time step of the DayPassword token."
 msgid "Specify the time step of the DayPassword token. For example: \"24h\""
-msgstr "Geben Sie den Zeitschritt für das DayPassword-Token an."
+msgstr ""
+"Geben Sie den Zeitschritt für das DayPassword-Token an (zum Beispiel \"24h\")"
 
 #: lib/tokens/daypasswordtoken.py:82
 msgid ""
@@ -2513,7 +2516,7 @@ msgstr "Bitte geben Sie Ihre neue Email-Adresse ein!"
 
 #: lib/tokens/emailtoken.py:589
 msgid "The email address is not valid!"
-msgstr ""
+msgstr "Die Email-Adresse ist nicht gültig!"
 
 #: lib/tokens/foureyestoken.py:130
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2600,10 +2603,8 @@ msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
 #: lib/tokens/hotptoken.py:840
-#, fuzzy
-#| msgid "Please scan the QR code!"
 msgid "Please scan the QR code and enter the OTP value!"
-msgstr "Bitte scannen Sie den QR-Code!"
+msgstr "Bitte scannen Sie den QR-Code und geben den OTP-Wert ein!"
 
 #: lib/tokens/indexedsecrettoken.py:49
 msgid "Please enter the positions {0!s} from your secret."
@@ -2658,10 +2659,8 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/motptoken.py:84
-#, fuzzy
-#| msgid "TOTP: Time based One Time Passwords."
 msgid "mOTP: Classical mobile One Time Passwords."
-msgstr "TOTP: Zeitbasiertes Einmalpasswort."
+msgstr "mOTP: mobiles Einmal-Passwort."
 
 #: lib/tokens/motptoken.py:102
 msgid "The user may only have this maximum number of mOTP tokens assigned."
@@ -2676,10 +2675,8 @@ msgstr ""
 "haben."
 
 #: lib/tokens/motptoken.py:149
-#, fuzzy
-#| msgid "URL for MOTP token"
 msgid "URL for mOTP token"
-msgstr "URL für MOTP Token"
+msgstr "URL für mOTP Token"
 
 #: lib/tokens/ocratoken.py:89
 msgid "OCRA: Enroll an OCRA token."
@@ -2699,7 +2696,7 @@ msgstr ""
 
 #: lib/tokens/papertoken.py:96
 msgid "PPR: One Time Passwords printed on a sheet of paper."
-msgstr ""
+msgstr "PPR: Einmal-Passwörter auf einem Blatt Papier ausgedruckt."
 
 #: lib/tokens/papertoken.py:107 lib/tokens/tantoken.py:106
 msgid "The number of OTP values, which are printed on the paper."
@@ -2812,6 +2809,8 @@ msgid ""
 "The question the user sees on his mobile phone. Several tags like {serial} "
 "and {client_ip} can be used as parameters."
 msgstr ""
+"Die Frage, die der Benutzer auf seinem Mobiltelefon sieht. Mehrere "
+"Platzhalter wie {serial} und {client_ip} können als Parameter genutzt werden."
 
 #: lib/tokens/pushtoken.py:396
 msgid "The title of the notification, the user sees on his mobile phone."
@@ -3042,7 +3041,7 @@ msgstr ""
 
 #: lib/tokens/tantoken.py:96
 msgid "TAN: TANs printed on a sheet of paper."
-msgstr ""
+msgstr "TAN: Transaktionsnummern auf einem Blatt Papier ausgedruckt."
 
 #: lib/tokens/tantoken.py:111
 msgid "The user may only have this maximum number of TAN tokens assigned."
@@ -3089,10 +3088,8 @@ msgid "TOTP: Time based One Time Passwords."
 msgstr "TOTP: Zeitbasiertes Einmalpasswort."
 
 #: lib/tokens/u2ftoken.py:248
-#, fuzzy
-#| msgid "TiQR: Enroll a TiQR token."
 msgid "U2F: Enroll a U2F token."
-msgstr "TiQR: Einen TiQR-Token ausrollen."
+msgstr "U2F: Einen U2F-Token ausrollen."
 
 #: lib/tokens/u2ftoken.py:258
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
@@ -3170,7 +3167,7 @@ msgstr "Bitte bestätigen Sie mit Ihrem WebAuthn Token"
 
 #: lib/tokens/webauthntoken.py:596
 msgid "WebAuthn: Enroll a Web Authentication token."
-msgstr ""
+msgstr "WebAuthn: Einen Web-Authentication Token ausrollen."
 
 #: lib/tokens/webauthntoken.py:606
 msgid ""
