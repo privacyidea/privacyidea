@@ -68,10 +68,10 @@ def list_containers():
         tmp_users: dict = {}
         users: list = []
         for user in container.get_users():
-            tmp_users["user_name"] = get_username(user.uid, user.resolver)
+            tmp_users["user_name"] = user.login
             tmp_users["user_realm"] = user.realm
             tmp_users["user_resolver"] = user.resolver
-            tmp_users["user_id"] = user.login
+            tmp_users["user_id"] = user.uid
             users.append(tmp_users)
         tmp["users"] = users
 
@@ -295,11 +295,8 @@ def set_description(container_serial):
     :jsonparam: description: New description to be set
     """
     container = find_container_by_serial(container_serial)
-    new_description = getParam(request.all_data, "description", optional=required, allow_empty=False)
-    res = False
-    if new_description:
-        container.description = new_description
-        res = True
+    new_description = getParam(request.all_data, "description", optional=required)
+    container.description = new_description
 
     # Audit log
     owners = container.get_users()
@@ -310,9 +307,9 @@ def set_description(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "action_detail": f"description={new_description}",
-                      "success": res}
+                      "success": True}
     g.audit_object.log(audit_log_data)
-    return send_result(res)
+    return send_result(True)
 
 
 @container_blueprint.route('<string:container_serial>/states', methods=['POST'])
@@ -331,8 +328,7 @@ def set_states(container_serial):
 
     res = False
     if states:
-        container.set_states(states)
-        res = True
+        res = container.set_states(states)
 
     # Audit log
     owners = container.get_users()
@@ -419,13 +415,20 @@ def update_last_seen(container_serial):
     return send_result(True)
 
 
-@container_blueprint.route('info/<serial>/<key>', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
 @admin_required
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
 @log_with(log)
-def set_container_info(serial, key):
+def set_container_info(container_serial, key):
     value = getParam(request.all_data, "value", required)
-    add_container_info(serial, key, value)
+    res = add_container_info(container_serial, key, value)
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "key": key,
+                        "value": value,
+                        "success": res})
+    return send_result(res)
 
 
 # TEMPLATES
@@ -447,7 +450,7 @@ def get_template_options(container_type):
     classes = get_container_classes()
     if classes and container_type.lower() in classes.keys():
         g.audit_object.log({"success": True})
-        return jsonify(classes[container_type.lower()].get_container_policy_info())
+        return send_result(classes[container_type.lower()].get_container_policy_info())
     else:
         raise ParameterError("Invalid container type")
 
@@ -476,10 +479,12 @@ def create_template_with_name(container_type, template_name):
     Set the template for the given container type
     """
     json = request.json
+    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
+        raise ParameterError("Invalid container type")
     template_id = create_container_template(container_type, template_name, json)
 
     audit_log_data = {"container_type": container_type,
                       "action_detail": f"template_name={template_name}",
                       "success": True}
     g.audit_object.log(audit_log_data)
-    return template_id
+    return send_result(template_id)
