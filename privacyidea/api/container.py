@@ -226,6 +226,9 @@ def add_token(container_serial):
     # Audit log
     container = find_container_by_serial(container_serial)
     owners = container.get_users()
+    success = False not in res.values()
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
@@ -233,7 +236,8 @@ def add_token(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "serial": serial,
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
@@ -255,6 +259,9 @@ def remove_token(container_serial):
     # Audit log
     container = find_container_by_serial(container_serial)
     owners = container.get_users()
+    success = False not in res.values()
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
@@ -262,7 +269,8 @@ def remove_token(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "serial": serial,
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
@@ -332,6 +340,9 @@ def set_states(container_serial):
 
     # Audit log
     owners = container.get_users()
+    success = False not in res.values()
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
@@ -339,7 +350,8 @@ def set_states(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "action_detail": f"states={states}",
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
