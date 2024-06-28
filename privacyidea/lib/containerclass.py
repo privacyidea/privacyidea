@@ -239,13 +239,17 @@ class TokenContainerClass:
 
         # Set new states
         state_types = self.get_state_types().keys()
+        res = {}
         for state in state_list:
             if state not in state_types:
                 # We do not raise an error here to allow following states to be set
                 log.error(f"State {state} not supported. Supported states are {state_types}.")
+                res[state] = False
             else:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
+                res[state] = True
         self.update_last_updated()
+        return res
 
     def add_states(self, state_list: List[str]):
         """
