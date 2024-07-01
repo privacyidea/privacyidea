@@ -101,10 +101,13 @@
                        ng-if="container.tokens.length > 0">
                     <tbody>
                     <tr ng-repeat="token in container.tokens">
-                        <td><a ui-sref="token.details({tokenSerial:token.serial,
-            currentToken:token})"
-                               ng-click="$rootScope.returnTo=token.list;">
+                        <td><a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
+                               ng-click="$rootScope.returnTo=token.list;"
+                               ng-show="adminOrUserIsOwner(token.username, token.user_realm)">
                             {{ "[" + token.tokentype + "] " + token.serial + ": " + token.description}}</a>
+                            <span ng-hide="adminOrUserIsOwner(token.username, token.user_realm)">
+                                {{ token.serial }}
+                            </span>
                         </td>
                     </tr>
                     </tbody>

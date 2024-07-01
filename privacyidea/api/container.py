@@ -53,6 +53,7 @@ def list_containers():
     psize = int(getParam(param, "pagesize", optional=True) or 0)
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
+    logged_in_user_role = g.logged_in_user.get("role")
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
                                 sortby=sortby, sortdir=sortdir,
@@ -80,7 +81,7 @@ def list_containers():
             tokens_dict_list = []
             if len(token_serials) > 0:
                 tokens = get_tokens(serial_list=token_serials)
-                tokens_dict_list = convert_token_objects_to_dicts(tokens)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role)
             tmp["tokens"] = tokens_dict_list
 
         tmp["states"] = container.get_states()

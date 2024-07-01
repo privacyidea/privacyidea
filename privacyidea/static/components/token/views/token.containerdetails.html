@@ -316,18 +316,18 @@
             </td>
             <td>{{ token.tokentype }}</td>
             <td>
-                    <span class="label label-success"
-                          ng-show="token.active"
-                          ng-click="adminOrUserIsOwner(token.username, token.user_realm) && disableToken(token.serial)"
-                          translate>
-                        active
-                    </span>
+                <span class="label label-success"
+                      ng-show="token.active"
+                      ng-click="adminOrUserIsOwner(token.username, token.user_realm) && disableToken(token.serial)"
+                      translate>
+                    active
+                </span>
                 <span class="label label-danger"
-                      ng-hide="token.active"
+                      ng-hide="token.active != false"
                       ng-click="adminOrUserIsOwner(token.username, token.user_realm) && enableToken(token.serial)"
                       translate>
-                        disabled
-                    </span>
+                    disabled
+                </span>
             </td>
             <td>{{ token.count_window }}</td>
             <td>{{ token.description }}</td>
