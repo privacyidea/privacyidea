@@ -123,20 +123,50 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_09_user_add_token_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
         container_serial = self.create_container_for_user()
+        container = find_container_by_serial(container_serial)
         token = init_token({"genkey": "1"})
+        token_serial = token.get_serial()
+
+        # The token has no owner and no container
+        json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
+                                       method='POST')
+        self.assertTrue(json["result"]["value"][token_serial])
+
+        # The user is the owner of the token
+        container_owner = container.get_users()[0]
+        token = init_token({"genkey": "1"}, user=container_owner)
         token_serial = token.get_serial()
         json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
         self.assertTrue(json["result"]["value"][token_serial])
+
         delete_policy("policy")
 
     def test_10_user_add_token_denied(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
-        token = init_token({"genkey": "1"})
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
+        token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
+        delete_policy("policy")
+
+        # User has 'add' rights but is not the owner of the token
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
+        json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
+                                       method='POST')
+        self.assertFalse(json["result"]["value"][token_serial])
+
+        # User has 'add' rights but the token is already in a container
+        another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
+        token_in_container = init_token({"genkey": "1", "container_serial": another_container_serial})
+        token_in_c_serial = token_in_container.get_serial()
+        json = self.request_assert_200(f"/container/{another_container_serial}/add", {"serial": token_in_c_serial},
+                                       self.at_user,
+                                       method='POST')
+        self.assertFalse(json["result"]["value"][token_in_c_serial])
+
         delete_policy("policy")
 
     def test_11_user_remove_token_allowed(self):

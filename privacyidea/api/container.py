@@ -221,8 +221,10 @@ def add_token(container_serial):
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
+    user = request.User
+    user_role = g.logged_in_user.get("role")
 
-    res = add_tokens_to_container(container_serial, token_serials)
+    res = add_tokens_to_container(container_serial, token_serials, user, user_role)
 
     # Audit log
     container = find_container_by_serial(container_serial)

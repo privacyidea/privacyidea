@@ -349,10 +349,14 @@ def init_container(params):
     return serial
 
 
-def add_tokens_to_container(container_serial, token_serials):
+def add_tokens_to_container(container_serial, token_serials, user, user_role="user"):
     """
     Add the given tokens to the container with the given serial.
     If a token is already in a container it is removed from the old container.
+    A user is only allowed to add a token to a container if one of the following conditions is met:
+    - The user is an admin
+    - The user is the owner of the token
+    - The token has no owner and is not in another container
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to add
@@ -365,6 +369,12 @@ def add_tokens_to_container(container_serial, token_serials):
     for token in tokens:
         # check if the token is in a container
         old_container = find_container_for_token(token.get_serial())
+        # Check if the user is allowed to add the token to the container
+        token_owner = token.user
+        if not user_role == "admin" and not user == token_owner and (token_owner or not old_container):
+            ret[token.get_serial()] = False
+            log.error(f"User {user} is not allowed to add token {token.get_serial()} to container {container_serial}.")
+            continue
         try:
             res = container.add_token(token)
         except ParameterError as ex:
