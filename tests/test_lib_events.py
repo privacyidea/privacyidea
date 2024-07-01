@@ -768,7 +768,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Token is in a container
-        add_tokens_to_container(container_serial, [token_serial])
+        add_tokens_to_container(container_serial, [token_serial], user=User(), user_role="admin")
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True"}}
         r = uhandler.check_condition(options)
@@ -967,7 +967,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Container has a token
-        add_tokens_to_container(container_serial, [token_serial])
+        add_tokens_to_container(container_serial, [token_serial], user=User(), user_role="admin")
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
         r = uhandler.check_condition(options)

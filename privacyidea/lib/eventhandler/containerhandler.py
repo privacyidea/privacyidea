@@ -305,7 +305,9 @@ class ContainerEventHandler(BaseEventHandler):
                                    content.get("detail", {}).get("serial") or \
                                    g.audit_object.audit_data.get("serial")
                     if token_serial:
-                        add_tokens_to_container(new_serial, [token_serial])
+                        user = request.User
+                        user_role = g.logged_in_user.get("role")
+                        add_tokens_to_container(new_serial, [token_serial], user=user, user_role=user_role)
                     else:
                         log.debug(f"No token found to add to container {new_serial}")
 

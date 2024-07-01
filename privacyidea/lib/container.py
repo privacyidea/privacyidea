@@ -360,6 +360,8 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to add
+    :param user: The user adding the tokens
+    :param user_role: The role of the user ('admin' or 'user')
     :return: A dictionary of type {token_serial: success}
     """
     container = find_container_by_serial(container_serial)
@@ -371,7 +373,7 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
         old_container = find_container_for_token(token.get_serial())
         # Check if the user is allowed to add the token to the container
         token_owner = token.user
-        if not user_role == "admin" and not user == token_owner and (token_owner or not old_container):
+        if not user_role == "admin" and not user == token_owner and (token_owner or old_container):
             ret[token.get_serial()] = False
             log.error(f"User {user} is not allowed to add token {token.get_serial()} to container {container_serial}.")
             continue

@@ -160,8 +160,9 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User has 'add' rights but the token is already in a container
         another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
-        token_in_container = init_token({"genkey": "1", "container_serial": another_container_serial})
+        token_in_container = init_token({"genkey": "1"})
         token_in_c_serial = token_in_container.get_serial()
+        add_tokens_to_container(another_container_serial, [token_in_c_serial], User(), 'admin')
         json = self.request_assert_200(f"/container/{another_container_serial}/add", {"serial": token_in_c_serial},
                                        self.at_user,
                                        method='POST')
@@ -805,7 +806,7 @@ class APIContainer(MyApiTestCase):
         container_serial = init_container({"type": "generic"})
         hotp_01 = init_token({"genkey": "1"})
         hotp_01_serial = hotp_01.get_serial()
-        add_tokens_to_container(container_serial, [hotp_01_serial])
+        add_tokens_to_container(container_serial, [hotp_01_serial], user=User(), user_role="admin")
 
         # Remove token without serial
         json = self.request_assert_error(400, f'/container/{container_serial}/remove',
@@ -877,7 +878,7 @@ class APIContainer(MyApiTestCase):
         container = find_container_by_serial(container_serials[1])
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
-        add_tokens_to_container(container_serials[1], [token_serial])
+        add_tokens_to_container(container_serials[1], [token_serial], user=User(), user_role="admin")
         # Assign user to container 1
         self.setUp_user_realms()
         user_hans = User(login="hans", realm=self.realm1)
