@@ -173,10 +173,11 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_11_user_remove_token_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REMOVE_TOKEN)
         container_serial = self.create_container_for_user()
-        token = init_token({"genkey": "1"})
-        token_serial = token.get_serial()
         container = find_container_by_serial(container_serial)
+        token = init_token({"genkey": "1"}, user=container.get_users()[0])
+        token_serial = token.get_serial()
         container.add_token(token)
+
         json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
         self.assertTrue(json["result"]["value"][token_serial])
@@ -189,8 +190,26 @@ class APIContainerAuthorization(MyApiTestCase):
         token_serial = token.get_serial()
         container = find_container_by_serial(container_serial)
         container.add_token(token)
+
+        # User has not 'remove' rights
         self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
+        delete_policy("policy")
+
+        # User has 'remove' rights but is not the owner of the token
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REMOVE_TOKEN)
+        json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
+                                        method='POST')
+        self.assertFalse(json["result"]["value"][token_serial])
+
+        # User has 'remove' rights but is not the owner of the container
+        another_container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        another_container = find_container_by_serial(another_container_serial)
+        another_container.add_token(token)
+        json = self.request_assert_200(f"/container/{another_container_serial}/remove", {"serial": token_serial}, self.at_user,
+                                       method='POST')
+        self.assertFalse(json["result"]["value"][token_serial])
+
         delete_policy("policy")
 
     def test_13_user_assign_user_allowed(self):

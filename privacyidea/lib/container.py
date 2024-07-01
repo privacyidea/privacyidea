@@ -5,7 +5,7 @@ import os
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import create_tokenclass_object
+from privacyidea.lib.token import create_tokenclass_object, get_token_owner
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \
@@ -415,26 +415,36 @@ def get_container_token_types():
     return ret
 
 
-def remove_tokens_from_container(container_serial, token_serials):
+def remove_tokens_from_container(container_serial, token_serials, user, user_role="user"):
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
     Errors of removing tokens are caught and only logged, in order to be able to remove the remaining
     tokens in the list.
+    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
+    the token and the container.
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to remove
+    :param user: The user adding the tokens
+    :param user_role: The role of the user ('admin' or 'user')
     :return: A dictionary of type {token_serial: success}
     """
     container = find_container_by_serial(container_serial)
+    container_owner = container.get_users()[0]
     if not container:
         raise ResourceNotFoundError(f"Container with serial {container_serial} does not exist.")
     ret = {}
     for token_serial in token_serials:
-        try:
-            res = container.remove_token(token_serial)
-        except Exception as ex:
-            log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
+        token_owner = get_token_owner(token_serial)
+        if user_role == "admin" or (user == container_owner and user == token_owner):
+            try:
+                res = container.remove_token(token_serial)
+            except Exception as ex:
+                log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
+                res = False
+        else:
+            log.error(f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
             res = False
         ret[token_serial] = res
     return ret
