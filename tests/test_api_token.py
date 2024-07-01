@@ -8,10 +8,10 @@ from mock import mock
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass, get_realms_of_token,
-                                   assign_token, token_exist, add_tokeninfo)
+                                   check_serial_pass,
+                                   assign_token, token_exist, add_tokeninfo, unassign_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -800,8 +800,7 @@ class APITokenTestCase(MyApiTestCase):
         # Now the user tries to assign a foreign token
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1039,7 +1038,54 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value") == 1, result)
 
+        # Disable token as user
+        self.authenticate_selfservice_user()
+        user = User(login="selfservice", realm="realm1")
+        user_token = init_token({"type": "hotp", "otpkey": "1"}, user=user)
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": user_token.get_serial()},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
+        # Enable token as user
+        with self.app.test_request_context('/token/enable',
+                                           method='POST',
+                                           data={"serial": user_token.get_serial()},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
+        # Disable token from another user fails
+        user_root = User(login="hans", realm=self.realm1)
+        unassign_token(user_token.get_serial())
+        assign_token(user_token.get_serial(), user_root)
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": user_token.get_serial()},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value") == 1, result)
+
+        # Enable token from another user fails
+        with self.app.test_request_context('/token/enable',
+                                           method='POST',
+                                           data={"serial": "DToken"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value") == 1, result)
+
         remove_token("DToken")
+        user_token.delete_token()
 
     def test_07_reset_failcounter(self):
         serial = "RToken"

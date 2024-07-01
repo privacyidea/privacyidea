@@ -73,7 +73,8 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups,
+                         get_token_owner)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError)
@@ -593,6 +594,7 @@ def enable_api(serial=None):
     :rtype: json object
     """
     user = request.User
+    user_role = g.logged_in_user.get("role")
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -600,7 +602,11 @@ def enable_api(serial=None):
 
     res = {}
     for serial in token_serials:
-        res[serial] = enable_token(serial, enable=True, user=user)
+        if user_role == "admin" or get_token_owner(serial) == user:
+            res[serial] = enable_token(serial, enable=True)
+        else:
+            res[serial] = False
+            log.debug(f"User {user} is not allowed to enable token {serial}.")
 
     count = sum(res.values())
 
@@ -638,6 +644,7 @@ def disable_api(serial=None):
     :rtype: json object
     """
     user = request.User
+    user_role = g.logged_in_user.get("role")
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -645,7 +652,11 @@ def disable_api(serial=None):
 
     res = {}
     for serial in token_serials:
-        res[serial] = enable_token(serial, enable=False, user=user)
+        if user_role == "admin" or get_token_owner(serial) == user:
+            res[serial] = enable_token(serial, enable=False)
+        else:
+            res[serial] = False
+            log.debug(f"User {user} is not allowed to disable token {serial}.")
 
     count = sum(res.values())
 
