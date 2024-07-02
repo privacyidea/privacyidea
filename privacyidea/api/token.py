@@ -99,7 +99,6 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
                                            sms_identifiers, pushtoken_add_config,
-                                           check_admin_tokenlist,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
@@ -594,7 +593,6 @@ def enable_api(serial=None):
     :rtype: json object
     """
     user = request.User
-    user_role = g.logged_in_user.get("role")
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -602,11 +600,7 @@ def enable_api(serial=None):
 
     res = {}
     for serial in token_serials:
-        if user_role == "admin" or get_token_owner(serial) == user:
-            res[serial] = enable_token(serial, enable=True)
-        else:
-            res[serial] = False
-            log.debug(f"User {user} is not allowed to enable token {serial}.")
+        res[serial] = enable_token(serial, enable=True, user=user)
 
     count = sum(res.values())
 
@@ -644,7 +638,6 @@ def disable_api(serial=None):
     :rtype: json object
     """
     user = request.User
-    user_role = g.logged_in_user.get("role")
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -652,11 +645,10 @@ def disable_api(serial=None):
 
     res = {}
     for serial in token_serials:
-        if user_role == "admin" or get_token_owner(serial) == user:
-            res[serial] = enable_token(serial, enable=False)
-        else:
+        try:
+            res[serial] = enable_token(serial, enable=False, user=user)
+        except RessourceNotFound as ex:
             res[serial] = False
-            log.debug(f"User {user} is not allowed to disable token {serial}.")
 
     count = sum(res.values())
 
