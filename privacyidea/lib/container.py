@@ -353,10 +353,8 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
     """
     Add the given tokens to the container with the given serial.
     If a token is already in a container it is removed from the old container.
-    A user is only allowed to add a token to a container if one of the following conditions is met:
-    - The user is an admin
-    - The user is the owner of the token
-    - The token has no owner and is not in another container
+    A user is only allowed to add a token to a container if the user is an admin or the owner of both. If the token is
+    already in a container, the user also has to be the owner of the old container.
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to add
@@ -371,9 +369,15 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
     for token in tokens:
         # check if the token is in a container
         old_container = find_container_for_token(token.get_serial())
+        user_is_owner_of_old_container = False
+        if old_container:
+            old_container_owners = old_container.get_users()
+            if len(old_container_owners) == 0 or user == old_container_owners[0]:
+                # Either the token is not in a container or the user is the owner of the old container
+                user_is_owner_of_old_container = True
         # Check if the user is allowed to add the token to the container
         token_owner = token.user
-        if not user_role == "admin" and not user == token_owner and (token_owner or old_container):
+        if not user_role == "admin" and not user == token_owner and not user_is_owner_of_old_container:
             ret[token.get_serial()] = False
             log.error(f"User {user} is not allowed to add token {token.get_serial()} to container {container_serial}.")
             continue
@@ -384,7 +388,7 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
             res = False
         if res and old_container:
             # remove token from old container
-            remove_tokens_from_container(old_container.serial, [token.get_serial()])
+            remove_tokens_from_container(old_container.serial, [token.get_serial()], user, user_role)
             log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
                      f"Token removed from previous container {old_container.serial}.")
         ret[token.get_serial()] = res
@@ -431,7 +435,9 @@ def remove_tokens_from_container(container_serial, token_serials, user, user_rol
     :return: A dictionary of type {token_serial: success}
     """
     container = find_container_by_serial(container_serial)
-    container_owner = container.get_users()[0]
+    container_owners = container.get_users()
+    if len(container_owners) == 1:
+        container_owner = container_owners[0]
     if not container:
         raise ResourceNotFoundError(f"Container with serial {container_serial} does not exist.")
     ret = {}

@@ -2,14 +2,12 @@ __doc__ = """This is the event handler module for container actions.
 """
 
 from privacyidea.lib.container import get_container_classes, delete_container_by_serial, init_container, \
-    find_container_by_serial, find_container_for_token, remove_tokens_from_container, get_all_containers, \
-    add_tokens_to_container
+    find_container_by_serial, remove_tokens_from_container, add_tokens_to_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import logging
-
-from privacyidea.lib.token import get_tokens, enable_token
+from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +143,8 @@ class ContainerEventHandler(BaseEventHandler):
         content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
+        user = User(login=g.logged_in_user.get("login"), realm=g.logged_in_user.get("realm"))
+        user_role = g.logged_in_user.get("role")
 
         container_serial = self._get_container_serial(request, content)
         if not container_serial:
@@ -231,7 +231,7 @@ class ContainerEventHandler(BaseEventHandler):
                     tokens = container.get_tokens()
                     token_serials = [t.get_serial() for t in tokens]
                     if len(token_serials) > 0:
-                        remove_tokens_from_container(container_serial, token_serials)
+                        remove_tokens_from_container(container_serial, token_serials, user, user_role)
                     else:
                         log.debug(f"No tokens found to remove from container {container_serial}")
 

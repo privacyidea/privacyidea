@@ -127,11 +127,6 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
 
-        # The token has no owner and no container
-        json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
-                                       method='POST')
-        self.assertTrue(json["result"]["value"][token_serial])
-
         # The user is the owner of the token
         container_owner = container.get_users()[0]
         token = init_token({"genkey": "1"}, user=container_owner)

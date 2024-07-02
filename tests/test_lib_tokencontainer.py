@@ -157,27 +157,27 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_08_remove_tokens_from_container_success(self):
         generic_token_serials = [self.totp_serial_gen, self.spass_serial_gen]
-        result = remove_tokens_from_container(self.generic_serial, generic_token_serials)
+        result = remove_tokens_from_container(self.generic_serial, generic_token_serials, User(), "admin")
         self.assertTrue(result[self.totp_serial_gen])
         self.assertTrue(result[self.spass_serial_gen])
 
     def test_09_remove_tokens_from_container_fails(self):
         # Remove non-existing token from container
-        result = remove_tokens_from_container(self.smartphone_serial, ["non_existing_token"])
-        self.assertFalse(result["non_existing_token"])
+        self.assertRaises(ResourceNotFoundError, remove_tokens_from_container, self.smartphone_serial,
+                          ["non_existing_token"], User(), "admin")
 
         # Remove tokens that are not in the container
-        result = remove_tokens_from_container(self.generic_serial, [self.hotp_serial_yubi])
+        result = remove_tokens_from_container(self.generic_serial, [self.hotp_serial_yubi], User(), "admin")
         self.assertFalse(result[self.hotp_serial_yubi])
 
         # Pass empty token serial list
-        result = remove_tokens_from_container(self.generic_serial, [])
+        result = remove_tokens_from_container(self.generic_serial, [], User(), "admin")
         self.assertFalse(result)
 
         # Pass non-existing container serial
         self.assertRaises(ResourceNotFoundError, remove_tokens_from_container,
                           container_serial="non_existing_container",
-                          token_serials=[self.hotp_serial_gen])
+                          token_serials=[self.hotp_serial_gen], user=User(), user_role="admin")
 
     def test_10_delete_token_remove_from_container(self):
         result = remove_token(self.totp_serial_smph)
