@@ -139,6 +139,7 @@
                     <span ng-repeat="(realmname, realm) in realms">
                         <label for="{{ realmname }}">
                             <input type="checkbox"
+                                   ng-disabled="userRealms.indexOf(realmname) >= 0"
                                    ng-model="selectedRealms[realmname]"
                                    name="group"
                                    id="{{ realmname }}"

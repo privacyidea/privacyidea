@@ -89,6 +89,13 @@ class TokenContainerClass:
             TokenContainerRealm.query.filter_by(container_id=self._db_container.id).delete()
             result["deleted"] = True
             self._db_container.save()
+
+            # Check that user realms are kept
+            user_realms = self._get_user_realms()
+            missing_realms = list(set(user_realms).difference(realms))
+            realms.extend(missing_realms)
+            for realm in missing_realms:
+                log.error(f"Realm {realm} is assigned to a user and cannot be removed from container {self.serial}.")
         else:
             result["deleted"] = False
 
@@ -112,6 +119,15 @@ class TokenContainerClass:
         self.update_last_updated()
 
         return result
+
+    def _get_user_realms(self):
+        """
+        Returns a list of the realms of the users that are assigned to the container.
+        """
+        owners = self.get_users()
+        realms = [owner.realm for owner in owners]
+        return realms
+
 
     def remove_token(self, serial: str):
         """
