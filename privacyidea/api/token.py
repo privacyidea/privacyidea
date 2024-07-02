@@ -645,10 +645,7 @@ def disable_api(serial=None):
 
     res = {}
     for serial in token_serials:
-        try:
-            res[serial] = enable_token(serial, enable=False, user=user)
-        except RessourceNotFound as ex:
-            res[serial] = False
+        res[serial] = enable_token(serial, enable=False, user=user)
 
     count = sum(res.values())
 
