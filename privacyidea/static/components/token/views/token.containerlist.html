@@ -11,7 +11,7 @@
 
 <span translate>Total Containers: {{ containerdata.count }}</span>
 
-<div class="row">
+<div class="form-group">
     <label>
         <button class="btn btn-default"
                 ng-disabled="expandedRows.length == containerdata.containers.length"
@@ -95,9 +95,9 @@
         </tr>
         <!-- Tokens of each container -->
         <tr ng-if="expandedRows.includes($index)" ng-repeat-end="">
-            <td colspan="5">
-                <span style="margin-left:20px" translate><b>Contained Tokens: </b></span>
-                <table class="table table-bordered table-striped" style="margin-left:20px"  id="tableContainerTokenList"
+            <td colspan="6">
+                <span translate><b>Contained Tokens: </b></span>
+                <table class="table table-bordered table-striped"  id="tableContainerTokenList"
                        ng-if="container.tokens.length > 0">
                     <tbody>
                     <tr ng-repeat="token in container.tokens">
