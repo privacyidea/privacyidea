@@ -179,9 +179,10 @@ class APIContainerAuthorization(MyApiTestCase):
         # User has 'add' rights but the token is already in a container from another user
         another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
         add_tokens_to_container(another_container_serial, [my_token_serial], User(), 'admin')
-        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial},
+        self.request_assert_200(f"/container/{container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
+        self.assertFalse(json["result"]["value"][token_serial])
         delete_policy("policy")
 
     def test_11_user_remove_token_allowed(self):

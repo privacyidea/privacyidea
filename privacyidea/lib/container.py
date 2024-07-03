@@ -391,23 +391,27 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
             if len(old_container_owners) == 0 or user == old_container_owners[0]:
                 # Either the token is not in a container or the user is the owner of the old container
                 user_is_owner_of_old_container = True
-        # Check if the user is allowed to add the token to the container
+        else:
+            user_is_owner_of_old_container = True
+        # User is allowed to add token to container if he is admin or owner of both,
+        # token and the old container of the token
         token_owner = token.user
-        if not user_role == "admin" and not user == token_owner and not user_is_owner_of_old_container:
+        if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
+            try:
+                res = container.add_token(token)
+            except ParameterError as ex:
+                log.error(f"Error adding token {token.get_serial()} to container {container_serial}: {ex}")
+                res = False
+            if res and old_container:
+                # remove token from old container
+                remove_tokens_from_container(old_container.serial, [token.get_serial()], user, user_role)
+                log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
+                         f"Token removed from previous container {old_container.serial}.")
+            ret[token.get_serial()] = res
+        else:
             ret[token.get_serial()] = False
             log.error(f"User {user} is not allowed to add token {token.get_serial()} to container {container_serial}.")
-            continue
-        try:
-            res = container.add_token(token)
-        except ParameterError as ex:
-            log.error(f"Error adding token {token.get_serial()} to container {container_serial}: {ex}")
-            res = False
-        if res and old_container:
-            # remove token from old container
-            remove_tokens_from_container(old_container.serial, [token.get_serial()], user, user_role)
-            log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
-                     f"Token removed from previous container {old_container.serial}.")
-        ret[token.get_serial()] = res
+
     return ret
 
 
