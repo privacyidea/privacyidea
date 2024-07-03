@@ -117,6 +117,8 @@ log = logging.getLogger(__name__)
 optional = True
 required = False
 
+DEFAULT_JWT_VALIDITY = 3600
+
 
 class prepolicy(object):
     """
@@ -2251,3 +2253,25 @@ def require_description(request=None, action=None):
         if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))
+
+
+def jwt_validity(request, action):
+    """
+    This is a decorator for the /auth endpoint to adapt the validity period of the issued JWT.
+    :param request:
+    :param action:
+    :return:
+    """
+    jwt_validity_pol = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
+                                   user_object=request.User if hasattr(request, 'User') else None)
+                        .action_values(unique=True))
+
+    jwt_validity = DEFAULT_JWT_VALIDITY
+    if len(jwt_validity_pol) == 1:
+        try:
+            jwt_validity = int(list(jwt_validity_pol)[0])
+        except ValueError:
+            log.warning("Invalid JWT validity period: {0!s}. Using the default of 1 hour.".format(jwt_validity_pol))
+    request.all_data[ACTION.JWTVALIDITY] = jwt_validity
+    return True
+

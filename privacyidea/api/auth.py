@@ -65,7 +65,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_
                                             get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
-                                           webauthntoken_auth, increase_failcounter_on_challenge)
+                                           webauthntoken_auth, increase_failcounter_on_challenge,
+                                           jwt_validity)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
@@ -131,6 +132,7 @@ def before_request():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(webauthntoken_auth, request=request)
+@prepolicy(jwt_validity, request)
 @postpolicy(get_webui_settings)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -212,7 +214,8 @@ def get_auth_token():
        }
 
     """
-    validity = timedelta(hours=1)
+    jwt_validaty = getParam(request.all_data, "jwt_validity")
+    validity = timedelta(seconds=int(jwt_validaty))
     username = getParam(request.all_data, "username")
     password = getParam(request.all_data, "password")
     realm_param = getParam(request.all_data, "realm")
