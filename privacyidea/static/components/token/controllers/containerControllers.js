@@ -250,6 +250,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.container = {};
         $scope.containerOwner = {};
         $scope.showDialog = {};
+        $scope.userRealms = [];
         $scope.getContainer = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 if (data.result.value.containers.length > 0) {
@@ -270,6 +271,10 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                         // Get supported token types only once
                         $scope.getSupportedTokenTypes();
                     }
+
+                    angular.forEach($scope.container.users, function (user) {
+                        $scope.userRealms.push(user.user_realm);
+                    });
                 } else {
                     // If there is nothing returned, the user should not be on this page
                     // (the details page of a non-visible container)
@@ -398,9 +403,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.realms = data.result.value;
             });
         }
-
-        ContainerFactory.updateLastSeen($scope.containerSerial, function (data) {
-        });
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);
