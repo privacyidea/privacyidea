@@ -459,8 +459,6 @@ def remove_tokens_from_container(container_serial, token_serials, user, user_rol
     # Check if user is admin or owner of container
     _check_user_access_on_container(container, user, user_role)
 
-    if not container:
-        raise ResourceNotFoundError(f"Container with serial {container_serial} does not exist.")
     ret = {}
     for token_serial in token_serials:
         token_owner = get_token_owner(token_serial)
@@ -697,6 +695,5 @@ def _check_user_access_on_container(container, user, user_role):
                 return True
 
         raise PolicyError(f"User {user} is not allowed to modify container {container.serial}.")
-
     else:
         raise ParameterError(f"Unknown user role {user_role}!")
