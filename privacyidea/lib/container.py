@@ -5,7 +5,7 @@ import os
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import create_tokenclass_object, get_token_owner
+from privacyidea.lib.token import create_tokenclass_object, get_token_owner, get_tokens_from_serial_or_user
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \
@@ -361,10 +361,55 @@ def init_container(params):
     return serial
 
 
-def add_tokens_to_container(container_serial, token_serials, user, user_role="user"):
+def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user"):
     """
-    Add the given tokens to the container with the given serial.
-    If a token is already in a container it is removed from the old container.
+    Add a single token to a container. If a token is already in a container it is removed from the old container.
+    Raises a ResourceNotFoundError if either the container or token does not exist.
+    Raises a PolicyError if the user is not allowed to add the token to the container.
+
+    :param container_serial: The serial of the container
+    :param token_serial: The serial of the token
+    :param user: The user adding the token
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
+    """
+    container = find_container_by_serial(container_serial)
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    # Get the token object
+    token = get_tokens_from_serial_or_user(token_serial, None)[0]
+
+    # check if the token is in a container
+    old_container = find_container_for_token(token_serial)
+    user_is_owner_of_old_container = False
+    if old_container:
+        old_container_owners = old_container.get_users()
+        if len(old_container_owners) == 0 or user == old_container_owners[0]:
+            # Either the token is not in a container or the user is the owner of the old container
+            user_is_owner_of_old_container = True
+    else:
+        user_is_owner_of_old_container = True
+    # User is allowed to add token to container if he is admin or owner of both,
+    # token and the old container of the token
+    token_owner = token.user
+    if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
+        res = container.add_token(token)
+        if res and old_container:
+            # remove token from old container
+            remove_token_from_container(old_container.serial, token_serial, user, user_role)
+            log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
+                     f"Token removed from previous container {old_container.serial}.")
+    else:
+        raise PolicyError(f"User {user} is not allowed to add token {token.get_serial()} "
+                          f"to container {container_serial}.")
+    return res
+
+
+def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user"):
+    """
+    Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
+    not exist. If a token is already in a container it is removed from the old container.
     A user is only allowed to add a token to a container if the user is an admin or the owner of both. If the token is
     already in a container, the user also has to be the owner of the old container.
 
@@ -374,43 +419,18 @@ def add_tokens_to_container(container_serial, token_serials, user, user_role="us
     :param user_role: The role of the user ('admin' or 'user')
     :return: A dictionary of type {token_serial: success}
     """
-    container = find_container_by_serial(container_serial)
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
+    # Raises ResourceNotFound if container does not exist
+    find_container_by_serial(container_serial)
 
-    # Get the token objects
-    db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
-    tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
     ret = {}
-    for token in tokens:
-        # check if the token is in a container
-        old_container = find_container_for_token(token.get_serial())
-        user_is_owner_of_old_container = False
-        if old_container:
-            old_container_owners = old_container.get_users()
-            if len(old_container_owners) == 0 or user == old_container_owners[0]:
-                # Either the token is not in a container or the user is the owner of the old container
-                user_is_owner_of_old_container = True
-        else:
-            user_is_owner_of_old_container = True
-        # User is allowed to add token to container if he is admin or owner of both,
-        # token and the old container of the token
-        token_owner = token.user
-        if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
-            try:
-                res = container.add_token(token)
-            except ParameterError as ex:
-                log.error(f"Error adding token {token.get_serial()} to container {container_serial}: {ex}")
-                res = False
-            if res and old_container:
-                # remove token from old container
-                remove_tokens_from_container(old_container.serial, [token.get_serial()], user, user_role)
-                log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
-                         f"Token removed from previous container {old_container.serial}.")
-            ret[token.get_serial()] = res
-        else:
-            ret[token.get_serial()] = False
-            log.error(f"User {user} is not allowed to add token {token.get_serial()} to container {container_serial}.")
+    for token_serial in token_serials:
+        try:
+            res = add_token_to_container(container_serial, token_serial, user, user_role)
+        except Exception as ex:
+            # We are catching the exception here to be able to add the remaining tokens
+            log.error(f"Error adding token {token_serial} to container {container_serial}: {ex}")
+            res = False
+        ret[token_serial] = res
 
     return ret
 
@@ -439,7 +459,35 @@ def get_container_token_types():
     return ret
 
 
-def remove_tokens_from_container(container_serial, token_serials, user, user_role="user"):
+def remove_token_from_container(container_serial, token_serial, user: User = None, user_role="user"):
+    """
+    Remove the given token from the container with the given serial.
+    Raises a ResourceNotFoundError if the container or token does not exist. Raises a PolicyError if the user is not
+    allowed to remove the token from the container.
+    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
+    the token and the container.
+
+    :param container_serial: The serial of the container
+    :param token_serial: the serial of the token to remove
+    :param user: The user adding the token
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
+    """
+    container = find_container_by_serial(container_serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    token_owner = get_token_owner(token_serial)
+    if user_role == "admin" or user == token_owner:
+        res = container.remove_token(token_serial)
+    else:
+        raise PolicyError(
+            f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
+    return res
+
+
+def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user"):
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
@@ -454,22 +502,16 @@ def remove_tokens_from_container(container_serial, token_serials, user, user_rol
     :param user_role: The role of the user ('admin' or 'user')
     :return: A dictionary of type {token_serial: success}
     """
-    container = find_container_by_serial(container_serial)
-
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
+    # Raises ResourceNotFound if container does not exist
+    find_container_by_serial(container_serial)
 
     ret = {}
     for token_serial in token_serials:
-        token_owner = get_token_owner(token_serial)
-        if user_role == "admin" or user == token_owner:
-            try:
-                res = container.remove_token(token_serial)
-            except Exception as ex:
-                log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
-                res = False
-        else:
-            log.error(f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
+        try:
+            res = remove_token_from_container(container_serial, token_serial, user, user_role)
+        except Exception as ex:
+            # We are catching the exception here to be able to remove the remaining tokens
+            log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
             res = False
         ret[token_serial] = res
     return ret

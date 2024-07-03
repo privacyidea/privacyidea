@@ -7,9 +7,10 @@ from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container, \
+    get_container_token_types, get_all_containers, \
     add_container_info, set_container_description, set_container_states, set_container_realms, \
-    delete_container_by_serial, assign_user, unassign_user
+    delete_container_by_serial, assign_user, unassign_user, add_token_to_container, \
+    add_multiple_tokens_to_container, remove_token_from_container, remove_multiple_tokens_from_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
@@ -225,16 +226,47 @@ def delete(container_serial):
 @log_with(log)
 def add_token(container_serial):
     """
-    Add one or multiple tokens to a container
+    Add a single token to a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to add. Multiple serials can be passed comma separated.
+    :jsonparam: serial: Serial of the token to add.
+    """
+    token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    success = add_token_to_container(container_serial, token_serial, user, user_role)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "serial": token_serial,
+                      "success": success}
+    g.audit_object.log(audit_log_data)
+    return send_result(success)
+
+
+@container_blueprint.route('<string:container_serial>/add_all', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@event('container_add_token', request, g)
+@log_with(log)
+def add_all_tokens(container_serial):
+    """
+    Add multiple tokens to a container
+    :param: container_serial: serial of the container
+    :jsonparam: serial: Comma separated list of token serials
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
 
-    res = add_tokens_to_container(container_serial, token_serials, user, user_role)
+    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -261,16 +293,47 @@ def add_token(container_serial):
 @log_with(log)
 def remove_token(container_serial):
     """
-    Remove a token from a container
+    Remove a single token from a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to remove. Multiple serials can be passed comma separated.
+    :jsonparam: serial: Serial of the token to remove.
+    """
+    token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    success = remove_token_from_container(container_serial, token_serial, user, user_role)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
+                      "serial": token_serial,
+                      "success": success}
+    g.audit_object.log(audit_log_data)
+    return send_result(success)
+
+
+@container_blueprint.route('<string:container_serial>/remove_all', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@event('container_remove_token', request, g)
+@log_with(log)
+def remove_all_tokens(container_serial):
+    """
+    Remove multiple tokens from a container
+    :param: container_serial: serial of the container
+    :jsonparam: serial: Comma separated list of token serials.
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
 
-    res = remove_tokens_from_container(container_serial, token_serials, user, user_role)
+    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role)
 
     # Audit log
     container = find_container_by_serial(container_serial)

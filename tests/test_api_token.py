@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from privacyidea.lib.container import init_container, add_tokens_to_container
+from privacyidea.lib.container import init_container, add_token_to_container
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -917,7 +917,7 @@ class APITokenTestCase(MyApiTestCase):
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
         container_serial = init_container({"type": "generic"})
-        add_tokens_to_container(container_serial, ["EToken"], user=User(), user_role="admin")
+        add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
@@ -995,7 +995,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(audit_data['success'])
 
         # enable multiple tokens of the same container
-        add_tokens_to_container(container_serial, ["DToken"], user=User(), user_role="admin")
+        add_token_to_container(container_serial, "DToken", user=User(), user_role="admin")
         with self.app.test_request_context('/token/enable',
                                            method='POST',
                                            data={"serial": "EToken,DToken"},

@@ -1,8 +1,4 @@
-import json
-
-from flask import Request
-
-from privacyidea.lib.container import init_container, add_tokens_to_container
+from privacyidea.lib.container import init_container, add_token_to_container
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.containerhandler import ContainerEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
@@ -588,8 +584,8 @@ class APIEventsTestCase(MyApiTestCase):
 
         # Get container serial from token
         token_serial = "SPASS0001"
-        token = init_token({"type": "spass", "serial": token_serial})
-        add_tokens_to_container(container_serial, [token_serial], user=User(), user_role="admin")
+        init_token({"type": "spass", "serial": token_serial})
+        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
 
         payload = {"serial": token_serial}
         request = self.app.test_request_context('/token/enable',

@@ -2,9 +2,9 @@ __doc__ = """This is the event handler module for container actions.
 """
 
 from privacyidea.lib.container import get_container_classes, delete_container_by_serial, init_container, \
-    find_container_by_serial, remove_tokens_from_container, add_tokens_to_container, set_container_states, \
+    find_container_by_serial, set_container_states, \
     add_container_states, set_container_description, add_container_info, delete_container_info, assign_user, \
-    unassign_user, set_container_info
+    unassign_user, set_container_info, remove_multiple_tokens_from_container, add_multiple_tokens_to_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
@@ -227,7 +227,7 @@ class ContainerEventHandler(BaseEventHandler):
                     tokens = container.get_tokens()
                     token_serials = [t.get_serial() for t in tokens]
                     if len(token_serials) > 0:
-                        remove_tokens_from_container(container_serial, token_serials, user, user_role)
+                        remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role)
                     else:
                         log.debug(f"No tokens found to remove from container {container_serial}")
 
@@ -298,7 +298,7 @@ class ContainerEventHandler(BaseEventHandler):
                     if token_serial:
                         user = request.User
                         user_role = g.logged_in_user.get("role")
-                        add_tokens_to_container(new_serial, [token_serial], user=user, user_role=user_role)
+                        add_multiple_tokens_to_container(new_serial, [token_serial], user=user, user_role=user_role)
                     else:
                         log.debug(f"No token found to add to container {new_serial}")
 

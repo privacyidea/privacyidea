@@ -455,7 +455,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                ContainerFactory.removeTokenFromContainer({
+                ContainerFactory.removeAllTokensFromContainer({
                     'container_serial': $scope.containerSerial,
                     'serial': tokenSerialStr
                 }, $scope.getContainer);

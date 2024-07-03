@@ -1,4 +1,4 @@
-from privacyidea.lib.container import init_container, find_container_by_serial, add_tokens_to_container, assign_user
+from privacyidea.lib.container import init_container, find_container_by_serial, assign_user, add_token_to_container
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -151,7 +151,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token_serial = token.get_serial()
         json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
-        self.assertTrue(json["result"]["value"][token_serial])
+        self.assertTrue(json["result"]["value"])
 
         delete_policy("policy")
 
@@ -172,17 +172,15 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
-        json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
-        self.assertFalse(json["result"]["value"][token_serial])
 
         # User has 'add' rights but the token is already in a container from another user
         another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
-        add_tokens_to_container(another_container_serial, [my_token_serial], User(), 'admin')
-        self.request_assert_200(f"/container/{container_serial}/add", {"serial": my_token_serial},
+        add_token_to_container(another_container_serial, my_token_serial, user_role='admin')
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
-        self.assertFalse(json["result"]["value"][token_serial])
         delete_policy("policy")
 
     def test_11_user_remove_token_allowed(self):
@@ -195,7 +193,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
-        self.assertTrue(json["result"]["value"][token_serial])
+        self.assertTrue(json["result"]["value"])
         delete_policy("policy")
 
     def test_12_user_remove_token_denied(self):
@@ -216,9 +214,8 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
         container.add_token(token)
-        json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
+        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
-        self.assertFalse(json["result"]["value"][token_serial])
 
         # User has 'remove' rights but is not the owner of the container
         another_container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
@@ -329,7 +326,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token_serial = token.get_serial()
         json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assertTrue(json["result"]["value"][token_serial])
+        self.assertTrue(json["result"]["value"])
         delete_policy("policy")
 
     def test_26_admin_add_token_denied(self):
@@ -350,7 +347,7 @@ class APIContainerAuthorization(MyApiTestCase):
         container.add_token(token)
         json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assertTrue(json["result"]["value"][token_serial])
+        self.assertTrue(json["result"]["value"])
         delete_policy("policy")
 
     def test_28_admin_remove_token_denied(self):
@@ -539,7 +536,7 @@ class APIContainer(MyApiTestCase):
         # Assign another user fails
         payload = {"user": "cornelius", "realm": self.realm1}
         json = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
+                                         payload, self.at, 'POST')
         error = json["result"]["error"]
         self.assertEqual(301, error["code"])
         self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
@@ -794,15 +791,15 @@ class APIContainer(MyApiTestCase):
         # Add single token
         json = self.request_assert_success(f'/container/{container_serial}/add',
                                            {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assertTrue(json["result"]["value"][hotp_01_serial])
+        self.assertTrue(json["result"]["value"])
 
         # Remove single token
         json = self.request_assert_success(f'/container/{container_serial}/remove',
                                            {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assertTrue(json["result"]["value"][hotp_01_serial])
+        self.assertTrue(json["result"]["value"])
 
         # Add multiple tokens
-        json = self.request_assert_success(f'/container/{container_serial}/add',
+        json = self.request_assert_success(f'/container/{container_serial}/add_all',
                                            {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
                                            self.at, 'POST')
         self.assertTrue(json["result"]["value"][hotp_01_serial])
@@ -810,7 +807,7 @@ class APIContainer(MyApiTestCase):
         self.assertTrue(json["result"]["value"][hotp_03_serial])
 
         # Remove multiple tokens with spaces in list
-        json = self.request_assert_success(f'/container/{container_serial}/remove',
+        json = self.request_assert_success(f'/container/{container_serial}/remove_all',
                                            {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
                                            self.at, 'POST')
         self.assertTrue(json["result"]["value"][hotp_01_serial])
@@ -818,7 +815,7 @@ class APIContainer(MyApiTestCase):
         self.assertTrue(json["result"]["value"][hotp_03_serial])
 
         # Add multiple tokens with spaces in list
-        json = self.request_assert_success(f'/container/{container_serial}/add',
+        json = self.request_assert_success(f'/container/{container_serial}/add_all',
                                            {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
                                            self.at, 'POST')
         self.assertTrue(json["result"]["value"][hotp_01_serial])
@@ -826,7 +823,7 @@ class APIContainer(MyApiTestCase):
         self.assertTrue(json["result"]["value"][hotp_03_serial])
 
         # Remove multiple tokens
-        json = self.request_assert_success(f'/container/{container_serial}/remove',
+        json = self.request_assert_success(f'/container/{container_serial}/remove_all',
                                            {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
                                            self.at, 'POST')
         self.assertTrue(json["result"]["value"][hotp_01_serial])
@@ -854,7 +851,7 @@ class APIContainer(MyApiTestCase):
         container_serial = init_container({"type": "generic"})
         hotp_01 = init_token({"genkey": "1"})
         hotp_01_serial = hotp_01.get_serial()
-        add_tokens_to_container(container_serial, [hotp_01_serial], user=User(), user_role="admin")
+        add_token_to_container(container_serial, hotp_01_serial, user_role="admin")
 
         # Remove token without serial
         json = self.request_assert_error(400, f'/container/{container_serial}/remove',
@@ -926,7 +923,7 @@ class APIContainer(MyApiTestCase):
         container = find_container_by_serial(container_serials[1])
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
-        add_tokens_to_container(container_serials[1], [token_serial], user=User(), user_role="admin")
+        add_token_to_container(container_serials[1], token_serial, user_role="admin")
         # Assign user to container 1
         self.setUp_user_realms()
         user_hans = User(login="hans", realm=self.realm1)

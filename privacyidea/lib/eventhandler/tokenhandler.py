@@ -39,7 +39,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * ...
 """
 
-from privacyidea.lib.container import add_tokens_to_container
+from privacyidea.lib.container import add_token_to_container
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -645,7 +645,7 @@ class TokenEventHandler(BaseEventHandler):
                 if container_serial:
                     user = request.User
                     user_role = g.logged_in_user.get("role")
-                    add_tokens_to_container(container_serial, [t.get_serial()], user=user,
+                    add_token_to_container(container_serial, t.get_serial(), user=user,
                                             user_role=user_role)
                 else:
                     log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")

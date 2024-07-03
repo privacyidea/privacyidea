@@ -14,7 +14,7 @@ import mock
 from mock import patch, MagicMock
 
 from privacyidea.lib.container import init_container, find_container_by_serial, get_all_containers, \
-    delete_container_by_serial, add_tokens_to_container
+    delete_container_by_serial, add_token_to_container
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
@@ -768,7 +768,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Token is in a container
-        add_tokens_to_container(container_serial, [token_serial], user=User(), user_role="admin")
+        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True"}}
         r = uhandler.check_condition(options)
@@ -967,7 +967,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Container has a token
-        add_tokens_to_container(container_serial, [token_serial], user=User(), user_role="admin")
+        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
         r = uhandler.check_condition(options)
