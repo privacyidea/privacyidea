@@ -95,7 +95,9 @@ class TokenContainerClass:
             missing_realms = list(set(user_realms).difference(realms))
             realms.extend(missing_realms)
             for realm in missing_realms:
-                log.error(f"Realm {realm} is assigned to a user and cannot be removed from container {self.serial}.")
+                log.error(
+                    f"Realm {realm} can not be removed from container {self.serial} "
+                    f"because a user from this realm is assigned th the container.")
         else:
             result["deleted"] = False
 
@@ -127,7 +129,6 @@ class TokenContainerClass:
         owners = self.get_users()
         realms = [owner.realm for owner in owners]
         return realms
-
 
     def remove_token(self, serial: str):
         """
@@ -182,9 +183,9 @@ class TokenContainerClass:
 
     def add_user(self, user: User):
         """
-        Assign a user to the container if the container does not have an owner yet.
-        Otherwise, the new user will not be assigned and the original owner will remain.
+        Assign a user to the container.
         Raises a UserError if the user does not exist.
+        Raises a TokenAdminError if the container already has an owner.
 
         :param user: User object
         :return: True if the user was assigned, False if the container already has an owner
