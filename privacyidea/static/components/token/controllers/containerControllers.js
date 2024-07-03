@@ -557,7 +557,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 "serial": token_serial
             }, function () {
                 $scope.getContainer();
-                $scope.get();
             });
         };
         $scope.adminOrUserIsOwner = function (username, realm) {
