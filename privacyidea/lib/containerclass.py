@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
@@ -201,6 +201,7 @@ class TokenContainerClass:
             self.update_last_updated()
             return True
         log.debug(f"Container {self.serial} already has an owner.")
+        raise TokenAdminError("This container is already assigned to another user.")
         return False
 
     def remove_user(self, user: User):
@@ -274,12 +275,14 @@ class TokenContainerClass:
         :param state_list: List of states as strings
         """
         if not state_list or len(state_list) == 0:
-            return
+            return {}
         # Add new states
+        res = {}
         state_types = self.get_state_types()
         for state in state_list:
             if state not in state_types.keys():
                 # We do not raise an error here to allow following states to be set
+                res[state] = False
                 log.error(f"State {state} not supported. Supported states are {state_types}.")
             else:
                 # Remove states that are excluded from the new state
@@ -290,7 +293,9 @@ class TokenContainerClass:
                         f"Removed state {excluded_state} from container {self.serial} "
                         f"because it is excluded by the new state {state}.")
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
+                res[state] = True
         self.update_last_updated()
+        return res
 
     @classmethod
     def get_state_types(cls):
@@ -341,14 +346,17 @@ class TokenContainerClass:
 
         :param key: key to delete, if None all keys are deleted
         """
+        res = {}
         if key:
             container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, key=key)
         else:
             container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
         for ci in container_infos:
             ci.delete()
+            res[ci.key] = True
         if container_infos.count() == 0:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
+        return res
 
     @classmethod
     def get_class_type(cls):
