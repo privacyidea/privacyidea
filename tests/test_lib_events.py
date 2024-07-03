@@ -780,7 +780,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial)
+        delete_container_by_serial(container_serial, User(), "admin")
         remove_token(token_serial)
 
     def test_11_check_container_state(self):
@@ -979,7 +979,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial)
+        delete_container_by_serial(container_serial, User(), "admin")
         remove_token(token_serial)
 
 
@@ -2008,9 +2008,8 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(len(container_owners) == 0)
 
         # Use token without user
-        options['request'].User = User(login='', realm='')
-
-        # no user can be assigned to the container
+        options = self.setup_request()
+        options['request'].all_data = {"serial": token_serial}
         unassign_token(token_serial)
         res = c_handler.do(C_ACTION_TYPE.ASSIGN, options=options)
         self.assertFalse(res)
@@ -2754,7 +2753,7 @@ class TokenEventTestCase(MyTestCase):
 
         # Clean up
         remove_token(tokens["tokens"][0]["serial"])
-        delete_container_by_serial(container_serial)
+        delete_container_by_serial(container_serial, User(), "admin")
 
         # Enroll token and assign to container without a container serial
         options['request'].all_data = {}

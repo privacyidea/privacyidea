@@ -1,10 +1,9 @@
-from privacyidea.lib.container import init_container, find_container_by_serial, add_tokens_to_container
+from privacyidea.lib.container import init_container, find_container_by_serial, add_tokens_to_container, assign_user
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
 
@@ -84,8 +83,15 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_04_user_delete_denied(self):
+        # user not has 'delete' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        delete_policy("policy")
+
+        # user is not the owner of the container
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
@@ -97,11 +103,19 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_06_user_description_denied(self):
+        # user not has 'description' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user,
                                        method='POST')
+        delete_policy("policy")
+
+        # user is not the owner of the container
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
+                                       self.at_user, method='POST')
         delete_policy("policy")
 
     def test_07_user_state_allowed(self):
@@ -113,6 +127,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_08_user_state_denied(self):
+        # user not has 'state' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
@@ -120,14 +135,17 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
         delete_policy("policy")
 
+        # user is not the owner of the container
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
+                                       self.at_user, method='POST')
+        delete_policy("policy")
+
     def test_09_user_add_token_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
         container_serial = self.create_container_for_user()
         container = find_container_by_serial(container_serial)
-        token = init_token({"genkey": "1"})
-        token_serial = token.get_serial()
-
-        # The user is the owner of the token
         container_owner = container.get_users()[0]
         token = init_token({"genkey": "1"}, user=container_owner)
         token_serial = token.get_serial()
@@ -138,31 +156,32 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_10_user_add_token_denied(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        # Arrange
         container_serial = self.create_container_for_user()
-        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        token = init_token({"genkey": "1"}, user=user)
-        token_serial = token.get_serial()
-        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
+        my_token = init_token({"genkey": "1"}, user=User("selfservice", self.realm1, self.resolvername1))
+        my_token_serial = my_token.get_serial()
+
+        # User has not 'add' rights
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial}, self.at_user,
                                        method='POST')
         delete_policy("policy")
 
         # User has 'add' rights but is not the owner of the token
+        user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
+        token = init_token({"genkey": "1"}, user=user)
+        token_serial = token.get_serial()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
         json = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
         self.assertFalse(json["result"]["value"][token_serial])
 
-        # User has 'add' rights but the token is already in a container
+        # User has 'add' rights but the token is already in a container from another user
         another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
-        token_in_container = init_token({"genkey": "1"})
-        token_in_c_serial = token_in_container.get_serial()
-        add_tokens_to_container(another_container_serial, [token_in_c_serial], User(), 'admin')
-        json = self.request_assert_200(f"/container/{another_container_serial}/add", {"serial": token_in_c_serial},
+        add_tokens_to_container(another_container_serial, [my_token_serial], User(), 'admin')
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
-        self.assertFalse(json["result"]["value"][token_in_c_serial])
-
         delete_policy("policy")
 
     def test_11_user_remove_token_allowed(self):
@@ -179,37 +198,39 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_12_user_remove_token_denied(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
-        container_serial = self.create_container_for_user()
-        token = init_token({"genkey": "1"})
-        token_serial = token.get_serial()
-        container = find_container_by_serial(container_serial)
-        container.add_token(token)
-
         # User has not 'remove' rights
-        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
-                                       method='POST')
+        container_serial = self.create_container_for_user()
+        my_token = init_token({"genkey": "1"}, user=User("selfservice", self.realm1, self.resolvername1))
+        my_token_serial = my_token.get_serial()
+        container = find_container_by_serial(container_serial)
+        container.add_token(my_token)
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": my_token_serial},
+                                       self.at_user, method='POST')
         delete_policy("policy")
 
         # User has 'remove' rights but is not the owner of the token
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REMOVE_TOKEN)
+        user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
+        token = init_token({"genkey": "1"}, user=user)
+        token_serial = token.get_serial()
+        container.add_token(token)
         json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
-                                        method='POST')
+                                       method='POST')
         self.assertFalse(json["result"]["value"][token_serial])
 
         # User has 'remove' rights but is not the owner of the container
         another_container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         another_container = find_container_by_serial(another_container_serial)
-        another_container.add_token(token)
-        json = self.request_assert_200(f"/container/{another_container_serial}/remove", {"serial": token_serial}, self.at_user,
-                                       method='POST')
-        self.assertFalse(json["result"]["value"][token_serial])
+        another_container.add_token(my_token)
+        self.request_denied_assert_403(f"/container/{another_container_serial}/remove", {"serial": my_token_serial},
+                                       self.at_user, method='POST')
 
         delete_policy("policy")
 
     def test_13_user_assign_user_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
-        container_serial = self.create_container_for_user()
+        container_serial = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
                                 self.at_user)
         delete_policy("policy")
@@ -217,24 +238,31 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_14_user_assign_user_denied(self):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
-        self.request_denied_assert_403(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
+        self.request_denied_assert_403(f"/container/{container_serial}/assign",
+                                       {"realm": "realm1", "user": "selfservice"},
                                        self.at_user)
         delete_policy("policy")
 
     def test_15_user_remove_user_allowed(self):
+        # user is allowed to unassign from its own container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
         container_serial = self.create_container_for_user()
-        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        container = find_container_by_serial(container_serial)
-        container.add_user(user)
         self.request_assert_200(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
                                 self.at_user)
         delete_policy("policy")
 
     def test_16_user_remove_user_denied(self):
+        # User has no 'unassign' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
-        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
+        self.request_denied_assert_403(f"/container/{container_serial}/unassign",
+                                       {"realm": "realm1", "user": "selfservice"}, self.at_user)
+        delete_policy("policy")
+
+        # User is not allowed to unassign users from a container that is not his own
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
+        container_serial = init_container({"type": "generic"})
+        user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         container = find_container_by_serial(container_serial)
         container.add_user(user)
         self.request_denied_assert_403(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
@@ -337,7 +365,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_29_admin_assign_user_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
-        container_serial = self.create_container_for_user()
+        container_serial = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign",
                                 {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
@@ -351,20 +379,14 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_31_admin_remove_user_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER)
-        container_serial = self.create_container_for_user()
-        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        container = find_container_by_serial(container_serial)
-        container.add_user(user)
+        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})
         self.request_assert_200(f"/container/{container_serial}/unassign",
                                 {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_32_admin_remove_user_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
-        container_serial = self.create_container_for_user()
-        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
-        container = find_container_by_serial(container_serial)
-        container.add_user(user)
+        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
@@ -515,9 +537,11 @@ class APIContainer(MyApiTestCase):
 
         # Assign another user fails
         payload = {"user": "cornelius", "realm": self.realm1}
-        json = self.request_assert_success(f'/container/{container_serial}/assign',
+        json = self.request_assert_error(400, f'/container/{container_serial}/assign',
                                            payload, self.at, 'POST')
-        self.assertFalse(json["result"]["value"])
+        error = json["result"]["error"]
+        self.assertEqual(301, error["code"])
+        self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
 
     def test_05_assign_unassign_user_success(self):
         # Arrange
@@ -600,7 +624,7 @@ class APIContainer(MyApiTestCase):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial = init_container({"type": "generic"})
 
         # Set existing realms
         payload = {"realms": self.realm1 + "," + self.realm2}
@@ -617,12 +641,21 @@ class APIContainer(MyApiTestCase):
         result = json["result"]
         self.assertTrue(result["value"])
         self.assertTrue(result["value"]["deleted"])
+        self.assertNotIn(self.realm1, result["value"].keys())
+        self.assertNotIn(self.realm2, result["value"].keys())
+
+        # Automatically add the user realms
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        payload = {"realms": self.realm2}
+        json = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
+        self.assertTrue(json["result"]["value"][self.realm1])
+        self.assertTrue(json["result"]["value"][self.realm2])
 
     def test_09_set_realms_fail(self):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial = init_container({"type": "generic"})
 
         # Missing realm parameter
         json = self.request_assert_error(400, f'/container/{container_serial}/realms',

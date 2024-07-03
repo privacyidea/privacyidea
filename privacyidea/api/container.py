@@ -8,7 +8,8 @@ from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
     get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container, \
-    add_container_info
+    add_container_info, set_container_description, set_container_states, set_container_realms, \
+    delete_container_by_serial, assign_user, unassign_user
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
@@ -118,9 +119,11 @@ def assign(container_serial):
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    container = find_container_by_serial(container_serial)
-    res = container.add_user(user)
+    logged_in_user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = assign_user(container_serial, user, logged_in_user, user_role)
 
+    container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "success": res}
@@ -141,9 +144,11 @@ def unassign(container_serial):
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    container = find_container_by_serial(container_serial)
-    res = container.remove_user(user)
+    logged_in_user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = unassign_user(container_serial, user, logged_in_user, user_role)
 
+    container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "success": res}
@@ -193,19 +198,24 @@ def delete(container_serial):
     Delete a container.
     :param: container_serial: serial of the container
     """
-    container = find_container_by_serial(container_serial)
-    container.delete()
+    # Get parameters
+    user = request.User
+    user_role = g.logged_in_user.get("role")
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
-                      "container_type": container.type,
-                      "success": True}
+                      "container_type": container.type}
     g.audit_object.log(audit_log_data)
+
+    # Delete container
+    res = delete_container_by_serial(container_serial, user, user_role)
+    g.audit_object.log({"success": res > 0})
     return send_result(True)
 
 
@@ -308,11 +318,13 @@ def set_description(container_serial):
     :param: container_serial: Serial of the container
     :jsonparam: description: New description to be set
     """
-    container = find_container_by_serial(container_serial)
     new_description = getParam(request.all_data, "description", optional=required)
-    container.description = new_description
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    set_container_description(container_serial, new_description, user, user_role)
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
@@ -338,13 +350,12 @@ def set_states(container_serial):
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
     states_string = states_string.replace(" ", "")
     states = states_string.split(",")
-    container = find_container_by_serial(container_serial)
-
-    res = False
-    if states:
-        res = container.set_states(states)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = set_container_states(container_serial, states, user, user_role)
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     success = False not in res.values()
     map_to_bool = ["False", "True"]
@@ -386,13 +397,18 @@ def set_realms(container_serial):
     :param: container_serial: Serial of the container
     :jsonparam: realms: comma separated string of realms, e.g. "realm1,realm2"
     """
+    # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
     realm_list = [r.strip() for r in container_realms.split(",")]
-    container = find_container_by_serial(container_serial)
-    result = container.set_realms(realm_list, add=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    # Set realms
+    result = set_container_realms(container_serial, realm_list, user, user_role)
     success = False not in result.values()
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
@@ -439,7 +455,9 @@ def update_last_seen(container_serial):
 @log_with(log)
 def set_container_info(container_serial, key):
     value = getParam(request.all_data, "value", required)
-    res = add_container_info(container_serial, key, value)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = add_container_info(container_serial, key, value, user, user_role)
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
