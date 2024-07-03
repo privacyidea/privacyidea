@@ -401,6 +401,22 @@ class TokenTestCase(MyTestCase):
         realms = get_realms_of_token(serial)
         self.assertTrue(realms == [], "{0!s}".format(realms))
 
+        # Testing that set_realm always sets the realm of the token owner
+        db_token = Token(serial, tokentype="totp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = TotpTokenClass(db_token)
+        token.set_realms(['realm1'])
+        self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
+        token.set_realms([''])
+        self.assertEqual(token.get_realms(), [], token.get_realms())
+
+        token.add_user(User(login="cornelius",
+                            realm=self.realm1))
+        token.set_realms(realms=[''])
+        self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
+        token.delete_token()
+
 
     def test_17_set_defaults(self):
         serial = "SETTOKEN"
