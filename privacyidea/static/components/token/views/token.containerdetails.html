@@ -27,7 +27,7 @@
                     <!-- only allowed if delete token action is set -->
                     <button class="btn btn-danger"
                             ng-disabled="!checkRight('container_delete') || !checkRight('delete')"
-                            ng-hide="!checkRight('container_delete') && hide_buttons">
+                            ng-hide="!checkRight('container_delete') && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
@@ -139,6 +139,7 @@
                     <span ng-repeat="(realmname, realm) in realms">
                         <label for="{{ realmname }}">
                             <input type="checkbox"
+                                   ng-disabled="userRealms.indexOf(realmname) >= 0"
                                    ng-model="selectedRealms[realmname]"
                                    name="group"
                                    id="{{ realmname }}"
@@ -316,18 +317,18 @@
             </td>
             <td>{{ token.tokentype }}</td>
             <td>
-                    <span class="label label-success"
-                          ng-show="token.active"
-                          ng-click="adminOrUserIsOwner(token.username, token.user_realm) && disableToken(token.serial)"
-                          translate>
-                        active
-                    </span>
+                <span class="label label-success"
+                      ng-show="token.active"
+                      ng-click="adminOrUserIsOwner(token.username, token.user_realm) && disableToken(token.serial)"
+                      translate>
+                    active
+                </span>
                 <span class="label label-danger"
-                      ng-hide="token.active"
+                      ng-hide="token.active != false"
                       ng-click="adminOrUserIsOwner(token.username, token.user_realm) && enableToken(token.serial)"
                       translate>
-                        disabled
-                    </span>
+                    disabled
+                </span>
             </td>
             <td>{{ token.count_window }}</td>
             <td>{{ token.description }}</td>

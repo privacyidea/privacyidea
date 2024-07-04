@@ -3,40 +3,62 @@ import logging
 import os
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import Match
-from privacyidea.lib.token import create_tokenclass_object
+from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \
-    TokenContainerToken
+from privacyidea.models import TokenContainer, TokenContainerOwner, Token, TokenContainerToken
 
 log = logging.getLogger(__name__)
 
 
-def delete_container_by_id(container_id: int):
+def delete_container_by_id(container_id: int, user: User, user_role="user"):
     """
     Delete the container with the given id. If it does not exist, raise a ResourceNotFoundError.
-    Returns the id of the deleted container on success
+
+    :param container_id: The id of the container to delete
+    :param user: The user deleting the container
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: ID of the deleted container on success
     """
     if not container_id:
         raise ParameterError("Unable to delete container without id.")
 
     container = find_container_by_id(container_id)
+
+    # Check user rights: Throws error if user is not allowed to modify the container
+    _check_user_access_on_container(container, user, user_role)
+
     return container.delete()
 
 
-def delete_container_by_serial(serial: str):
+def delete_container_by_serial(serial: str, user: User, user_role="user"):
     """
     Delete the container with the given serial. If it does not exist, raise a ResourceNotFoundError.
-    Returns the id of the deleted container on success
+
+    :param serial: The serial of the container to delete
+    :param user: The user deleting the container
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: ID of the deleted container on success
     """
+    if not serial:
+        raise ParameterError("Unable to delete container without serial.")
     container = find_container_by_serial(serial)
+
+    # Check user rights: Throws error if user is not allowed to modify the container
+    _check_user_access_on_container(container, user, user_role)
+
     return container.delete()
 
 
 def _gen_serial(container_type: str):
+    """
+    Generate a new serial for a container of the given type
+
+    :param container_type: The type of the container
+    :return: The generated serial
+    """
     serial_len = int(get_from_config("SerialLength") or 8)
     prefix = "CONT"
     for ctype, cls in get_container_classes().items():
@@ -59,7 +81,10 @@ def _gen_serial(container_type: str):
 
 def create_container_from_db_object(db_container: TokenContainer):
     """
-    Create a TokenContainerClass object from the given db object
+    Create a TokenContainerClass object from the given db object.
+
+    :param db_container: The db object to create the container from
+    :return: The created container object or None if the container type is not supported
     """
     for ctypes, cls in get_container_classes().items():
         if ctypes.lower() == db_container.type.lower():
@@ -75,7 +100,10 @@ def create_container_from_db_object(db_container: TokenContainer):
 @log_with(log)
 def find_container_by_id(container_id: int):
     """
-    Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError
+    Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
+
+    :param container_id: ID of the container
+    :return: container object
     """
     db_container = TokenContainer.query.filter(TokenContainer.id == container_id).first()
     if not db_container:
@@ -86,7 +114,10 @@ def find_container_by_id(container_id: int):
 
 def find_container_by_serial(serial: str):
     """
-    Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError
+    Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
+
+    :param serial: Serial of the container
+    :return: container object
     """
     db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
     if not db_container:
@@ -98,7 +129,15 @@ def find_container_by_serial(serial: str):
 def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
                             sortdir='asc'):
     """
-    Returns a sql query for getting containers
+    Generates a sql query to filter containers by the given parameters.
+
+    :param user: container owner, optional
+    :param serial: container serial, optional
+    :param ctype: container type, optional
+    :param token_serial: serial of a token which is assigned to the container, optional
+    :param sortby: column to sort by, default is the container serial
+    :param sortdir: sort direction, default is ascending
+    :return: sql query
     """
     sql_query = TokenContainer.query
     if user:
@@ -119,7 +158,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
             log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
 
     if isinstance(sortby, str):
-        # check that the sort column exists and convert it to a Token column
+        # Check that the sort column exists and convert it to a Token column
         cols = TokenContainer.__table__.columns
         if sortby in cols:
             sortby = cols.get(sortby)
@@ -141,25 +180,22 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
     Each retrieved page will also contain a "next" and a "prev", indicating
-    the next or previous page. If either does not exist, it is None.
+    the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
+    The containers are filtered by the given parameters.
 
-    :param user: The user for which to retrieve the containers
-    :param serial: Filter by container serial
-    :param ctype: Filter by container type
-    :param token_serial: Filter by token serial
-    :param sortby: A Token column or a string. Default is "serial"
-    :param sortdir: "asc" or "desc". Default is "asc"
+    :param user: container owner, optional
+    :param serial: container serial, optional
+    :param ctype: container type, optional
+    :param token_serial: serial of a token which is assigned to the container, optional
+    :param sortby: column to sort by, default is the container serial
+    :param sortdir: sort direction, default is ascending
     :param page: The number of the page to view. Starts with 1 ;-)
-    :type page: int
     :param pagesize: The size of the page
-    :type pagesize: int
     """
-    # TODO add user role policy
-
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
                                         sortby=sortby, sortdir=sortdir)
     ret = {}
-    # paginate if requested
+    # Paginate if requested
     if page > 0 or pagesize > 0:
         if page < 1:
             page = 1
@@ -180,7 +216,7 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
         ret["next"] = nxt
         ret["current"] = page
         ret["count"] = pagination.total
-    else:  # no pagination
+    else:  # No pagination
         db_containers = sql_query.all()
 
     container_list = [create_container_class_object(db_container) for db_container in db_containers]
@@ -191,7 +227,10 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
 
 def create_container_class_object(db_container):
     """
-    Create a TokenContainerClass object from the given db object
+    Create a TokenContainerClass object from the given db object.
+
+    :param db_container: The db object to create the container from
+    :return: The created container object or None if the container type is not supported
     """
     container = None
     container_classes = get_container_classes()
@@ -203,17 +242,21 @@ def create_container_class_object(db_container):
 
 def find_container_for_token(serial):
     """
-    Returns a TokenContainerClass object for the given token
+    Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
+    if the token does not exist.
+
+    :param serial: Serial of the token
+    :return: container object or None if the token is not in a container
     """
     container = None
-    token = Token.query.filter(Token.serial == serial).first()
-    if token:
-        token_id = token.id
-        row = TokenContainerToken.query.filter(
-            TokenContainerToken.token_id == token_id).first()
-        if row:
-            container_id = row.container_id
-            container = find_container_by_id(container_id)
+    db_token = Token.query.filter(Token.serial == serial).first()
+    if not db_token:
+        raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
+    token_id = db_token.id
+    row = TokenContainerToken.query.filter(TokenContainerToken.token_id == token_id).first()
+    if row:
+        container_id = row.container_id
+        container = find_container_by_id(container_id)
     return container
 
 
@@ -244,7 +287,10 @@ def get_container_classes():
 
 def get_container_policy_info(container_type=None):
     """
-    Returns the policy info for the given container type or for all container types
+    Returns the policy info for the given container type or for all container types if no type is defined.
+
+    :param container_type: The type of the container, optional
+    :return: The policy info for the given container type or for all container types
     """
     classes = get_container_classes()
     if container_type:
@@ -259,16 +305,16 @@ def get_container_policy_info(container_type=None):
         return ret
 
 
-def create_container_template(container_type, template_name, options):
-    """
-    Create a new container template
-    """
-    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
-
-
 def init_container(params):
     """
     Create a new container with the given parameters. Requires at least the type.
+
+    :jsonparam type: The type of the container
+    :jsonparam description: The description of the container, optional
+    :jsonparam container_serial: The serial of the container, optional
+    :jsonparam user: The user to assign the container to (requires the realm), optional
+    :jsonparam realm: The realm to assign the container to, optional
+    :return: The serial of the created container
     """
     ctype = params.get("type")
     if not ctype:
@@ -291,29 +337,86 @@ def init_container(params):
         realms.append(realm)
         container.set_realms(realms, add=True)
     elif user and realm:
-        container.add_user(User(login=user, realm=realm))
+        try:
+            container.add_user(User(login=user, realm=realm))
+        except UserError as ex:
+            log.error(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
     return serial
 
 
-def add_tokens_to_container(container_serial, token_serials):
+def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user"):
     """
-    Add the given tokens to the container with the given serial.
-    If a token is already in a container it is removed from the old container.
+    Add a single token to a container. If a token is already in a container it is removed from the old container.
+    Raises a ResourceNotFoundError if either the container or token does not exist.
+    Raises a PolicyError if the user is not allowed to add the token to the container.
+
+    :param container_serial: The serial of the container
+    :param token_serial: The serial of the token
+    :param user: The user adding the token
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
     """
     container = find_container_by_serial(container_serial)
-    db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
-    tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
-    ret = {}
-    for token in tokens:
-        # check if the token is in a container
-        old_container = find_container_for_token(token.get_serial())
-        if old_container:
-            # remove token from old container
-            remove_tokens_from_container(old_container.serial, [token.get_serial()])
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    # Get the token object
+    token = get_tokens_from_serial_or_user(token_serial, None)[0]
+
+    # Check if the token is in a container
+    old_container = find_container_for_token(token_serial)
+    user_is_owner_of_old_container = False
+    if old_container:
+        old_container_owners = old_container.get_users()
+        if len(old_container_owners) == 0 or user == old_container_owners[0]:
+            # Either the token is not in a container or the user is the owner of the old container
+            user_is_owner_of_old_container = True
+    else:
+        user_is_owner_of_old_container = True
+    # User is allowed to add token to container if he is admin or owner of both,
+    # token and the old container of the token
+    token_owner = token.user
+    if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
         res = container.add_token(token)
-        ret[token.get_serial()] = res
+        if res and old_container:
+            # Remove token from old container
+            remove_token_from_container(old_container.serial, token_serial, user, user_role)
+            log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
+                     f"Token removed from previous container {old_container.serial}.")
+    else:
+        raise PolicyError(f"User {user} is not allowed to add token {token.get_serial()} "
+                          f"to container {container_serial}.")
+    return res
+
+
+def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user"):
+    """
+    Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
+    not exist. If a token is already in a container it is removed from the old container.
+    A user is only allowed to add a token to a container if the user is an admin or the owner of both. If the token is
+    already in a container, the user also has to be the owner of the old container.
+
+    :param container_serial: The serial of the container
+    :param token_serials: A list of token serials to add
+    :param user: The user adding the tokens
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: A dictionary of type {token_serial: success}
+    """
+    # Raises ResourceNotFound if container does not exist
+    find_container_by_serial(container_serial)
+
+    ret = {}
+    for token_serial in token_serials:
+        try:
+            res = add_token_to_container(container_serial, token_serial, user, user_role)
+        except Exception as ex:
+            # We are catching the exception here to be able to add the remaining tokens
+            log.error(f"Error adding token {token_serial} to container {container_serial}: {ex}")
+            res = False
+        ret[token_serial] = res
+
     return ret
 
 
@@ -341,29 +444,283 @@ def get_container_token_types():
     return ret
 
 
-def remove_tokens_from_container(container_serial, token_serials):
+def remove_token_from_container(container_serial, token_serial, user: User = None, user_role="user"):
     """
-    Remove the given tokens from the container with the given serial
+    Remove the given token from the container with the given serial.
+    Raises a ResourceNotFoundError if the container or token does not exist. Raises a PolicyError if the user is not
+    allowed to remove the token from the container.
+    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
+    the token and the container.
+
+    :param container_serial: The serial of the container
+    :param token_serial: the serial of the token to remove
+    :param user: The user adding the token
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
     """
     container = find_container_by_serial(container_serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    token_owner = get_token_owner(token_serial)
+    if user_role == "admin" or user == token_owner:
+        res = container.remove_token(token_serial)
+    else:
+        raise PolicyError(
+            f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
+    return res
+
+
+def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user"):
+    """
+    Remove the given tokens from the container with the given serial.
+    Raises a ResourceNotFoundError if no container for the given serial exist.
+    Errors of removing tokens are caught and only logged, in order to be able to remove the remaining
+    tokens in the list.
+    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
+    the token and the container.
+
+    :param container_serial: The serial of the container
+    :param token_serials: A list of token serials to remove
+    :param user: The user adding the tokens
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: A dictionary of type {token_serial: success}
+    """
+    # Raises ResourceNotFound if container does not exist
+    find_container_by_serial(container_serial)
+
     ret = {}
     for token_serial in token_serials:
-        res = container.remove_token(token_serial)
+        try:
+            res = remove_token_from_container(container_serial, token_serial, user, user_role)
+        except Exception as ex:
+            # We are catching the exception here to be able to remove the remaining tokens
+            log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
+            res = False
         ret[token_serial] = res
     return ret
 
 
-def add_container_info(serial, ikey, ivalue):
+def add_container_info(serial, ikey, ivalue, user, user_role="user"):
     """
-    Add the given info to the container with the given serial
+    Add the given info to the container with the given serial.
+
+    :param serial: The serial of the container
+    :param ikey: The info key
+    :param ivalue: The info value
+    :param user: The user adding the info
+    :param user_role: The role of the user ('admin' or 'user')
     """
     container = find_container_by_serial(serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
     container.add_container_info(ikey, ivalue)
+    return True
 
 
-def add_container_info(serial, ikey, ivalue):
+def set_container_info(serial, info, user, user_role="user"):
     """
-    Add the given info to the container with the given serial
+    Set the given info to the container with the given serial.
+
+    :param serial: The serial of the container
+    :param info: The info dictionary of type {key: value}
+    :param user: The user adding the info
+    :param user_role: The role of the user ('admin' or 'user')
     """
     container = find_container_by_serial(serial)
-    container.add_container_info(ikey, ivalue)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    container.set_container_info(info)
+    return True
+
+
+def get_container_info_dict(serial, ikey=None, user=None, user_role="user"):
+    """
+    Returns the info of the given key or all infos if no key is given for the container with the given serial.
+
+    :param serial: The serial of the container
+    :param ikey: The info key or None to get all info keys
+    :param user: The user getting the info
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: The info dict
+    """
+    container = find_container_by_serial(serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    container_info = {container_info.key: container_info.value for container_info in container.get_container_info()}
+    if ikey:
+        if ikey in container_info.keys():
+            container_info = {ikey: container_info[ikey]}
+        else:
+            container_info = {ikey: None}
+            log.error(f"Info key {ikey} not found in container {serial}.")
+    return container_info
+
+
+def delete_container_info(serial, ikey=None, user=None, user_role="user"):
+    """
+    Delete the info of the given key or all infos if no key is given.
+
+    :param serial: The serial of the container
+    :param ikey: The info key or None to delete all info keys
+    :param user: The user adding the info
+    :param user_role: The role of the user ('admin' or 'user')
+    """
+    container = find_container_by_serial(serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = container.delete_container_info(ikey)
+    return res
+
+
+def assign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
+    """
+    Assign a user to a container.
+
+    :param serial: container serial
+    :param user: user to assign to the container
+    :param logged_in_user: user performing this action
+    :param user_role: role of the logged-in user ("admin" or "user")
+    :return:
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    if not user_role == "admin" and user != logged_in_user:
+        raise PolicyError(f"User {logged_in_user} is not allowed to assign user {user} to container {serial}!")
+
+    res = container.add_user(user)
+    return res
+
+
+def unassign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
+    """
+    Unassign a user from a container.
+
+    :param serial: container serial
+    :param user: user to unassign from the container
+    :param logged_in_user: user performing this action
+    :param user_role: role of the logged-in user ("admin" or "user")
+    :return:
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, logged_in_user, user_role)
+
+    res = container.remove_user(user)
+    return res
+
+
+def set_container_description(serial, description, user: User = None, user_role="user"):
+    """
+    Set the description of a container.
+    :param serial: serial of the container
+    :param description: new description
+    :param user: user setting the description
+    :param user_role: role of the logged-in user ("admin" or "user")
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, user, user_role)
+
+    container.description = description
+
+
+def set_container_states(serial, states, user: User = None, user_role="user"):
+    """
+    Set the states of a container.
+    :param serial: serial of the container
+    :param states: new states as list of str
+    :param user: user setting the states
+    :param user_role: role of the logged-in user ("admin" or "user")
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = container.set_states(states)
+    return res
+
+
+def add_container_states(serial, states, user: User = None, user_role="user"):
+    """
+    Add the states to a container.
+    :param serial: serial of the container
+    :param states: additional states as list of str
+    :param user: user setting the states
+    :param user_role: role of the logged-in user ("admin" or "user")
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = container.add_states(states)
+    return res
+
+
+def set_container_realms(serial, realms, user: User = None, user_role="user"):
+    """
+    Set the realms of a container.
+    :param serial: serial of the container
+    :param realms: new realms as list of str
+    :param user: user setting the realms
+    :param user_role: role of the logged-in user ("admin" or "user")
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = container.set_realms(realms, add=False)
+    return res
+
+
+def add_container_realms(serial, realms, user: User = None, user_role="user"):
+    """
+    Add the realms to the realms of a container.
+    :param serial: serial of the container
+    :param realms: new realms as list of str
+    :param user: user setting the realms
+    :param user_role: role of the logged-in user ("admin" or "user")
+    """
+    container = find_container_by_serial(serial)
+
+    # Check user rights on container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = container.set_realms(realms, add=True)
+    return res
+
+
+def _check_user_access_on_container(container, user, user_role):
+    """
+    Check if the given user is the owner of the given container or an admin.
+
+    :param container: The container object
+    :param user: The user object
+    :return: True if the user is the owner or admin, False otherwise
+    """
+    if user_role == "admin":
+        return True
+    elif user_role == "user":
+        owners = container.get_users()
+        for owner in owners:
+            if owner == user:
+                return True
+
+        raise PolicyError(f"User {user} is not allowed to modify container {container.serial}.")
+    else:
+        raise ParameterError(f"Unknown user role {user_role}!")

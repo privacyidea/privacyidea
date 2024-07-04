@@ -162,6 +162,19 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
             TokenFactory.enable(serial, $scope.get);
         };
 
+        $scope.adminOrUserIsOwner = function (username, realm) {
+            let allow = false;
+            if ($scope.loggedInUser.role === 'admin') {
+                allow = true;
+            } else {
+                if (username == $scope.loggedInUser.username
+                    && realm == $scope.loggedInUser.realm) {
+                    allow = true;
+                }
+            }
+            return allow;
+        }
+
         // Expand token view
         $scope.expandedRows = [];
         $scope.expandTokenView = function (containerRow) {
@@ -237,6 +250,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.container = {};
         $scope.containerOwner = {};
         $scope.showDialog = {};
+        $scope.userRealms = [];
         $scope.getContainer = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 if (data.result.value.containers.length > 0) {
@@ -257,6 +271,10 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                         // Get supported token types only once
                         $scope.getSupportedTokenTypes();
                     }
+
+                    angular.forEach($scope.container.users, function (user) {
+                        $scope.userRealms.push(user.user_realm);
+                    });
                 } else {
                     // If there is nothing returned, the user should not be on this page
                     // (the details page of a non-visible container)
@@ -274,7 +292,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.containerStates[disableType] = false;
             });
         };
-        $scope.excludeStates();
+
         $scope.$watch("containerStates", function (newValue, oldValue) {
             $scope.stateSelectionChanged = true;
             for (let [key, value] of Object.entries(newValue)) {
@@ -386,9 +404,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         }
 
-        ContainerFactory.updateLastSeen($scope.containerSerial, function (data) {
-        });
-
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getContainer);
 
@@ -424,7 +439,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.disableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
+                TokenFactory.disableAll({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 
@@ -432,7 +447,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.enableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
+                TokenFactory.enableAll({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 
@@ -440,7 +455,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                ContainerFactory.removeTokenFromContainer({
+                ContainerFactory.removeAllTokensFromContainer({
                     'container_serial': $scope.containerSerial,
                     'serial': tokenSerialStr
                 }, $scope.getContainer);
@@ -542,7 +557,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 "serial": token_serial
             }, function () {
                 $scope.getContainer();
-                $scope.get();
             });
         };
         $scope.adminOrUserIsOwner = function (username, realm) {

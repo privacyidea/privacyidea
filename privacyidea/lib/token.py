@@ -380,7 +380,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
-def convert_token_objects_to_dicts(tokens, hidden_tokeninfo=None):
+def convert_token_objects_to_dicts(tokens, user, user_role="user", hidden_tokeninfo=None):
     """
     Convert a list of token objects to a list of dictionaries.
 
@@ -416,6 +416,11 @@ def convert_token_objects_to_dicts(tokens, hidden_tokeninfo=None):
             container = find_container_for_token(tokenobject.get_serial())
             if container:
                 token_dict["container_serial"] = container.serial
+
+            # Reduce token info if the user is not the owner
+            if user_role != "admin":
+                if not user or user.login != token_dict["username"] or user.realm != token_dict["user_realm"]:
+                    token_dict = {"serial": token_dict["serial"]}
 
             token_dict_list.append(token_dict)
 

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
@@ -39,6 +39,8 @@ class TokenContainerClass:
 
     @description.setter
     def description(self, value: str):
+        if not value:
+            value = ""
         self._db_container.description = value
         self._db_container.save()
         self.update_last_updated()
@@ -69,13 +71,34 @@ class TokenContainerClass:
         return self._db_container.realms
 
     def set_realms(self, realms, add=False):
+        """
+        Set the realms of the container. If add is True, the realms will be added to the existing realms, otherwise the
+        existing realms will be removed.
+
+        :param realms: List of realm names
+        :param add: False if the existing realms shall be removed, True otherwise
+        :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
+                 deleted
+        """
         result = {}
+
+        if not realms:
+            realms = []
 
         # delete all container realms
         if not add:
             TokenContainerRealm.query.filter_by(container_id=self._db_container.id).delete()
             result["deleted"] = True
             self._db_container.save()
+
+            # Check that user realms are kept
+            user_realms = self._get_user_realms()
+            missing_realms = list(set(user_realms).difference(realms))
+            realms.extend(missing_realms)
+            for realm in missing_realms:
+                log.error(
+                    f"Realm {realm} can not be removed from container {self.serial} "
+                    f"because a user from this realm is assigned th the container.")
         else:
             result["deleted"] = False
 
@@ -84,37 +107,57 @@ class TokenContainerClass:
                 realm_db = Realm.query.filter_by(name=realm).first()
                 if not realm_db:
                     result[realm] = False
-                    log.debug(f"Realm {realm} does not exist.")
+                    log.error(f"Realm {realm} does not exist.")
                 else:
                     realm_id = realm_db.id
+                    # Check if realm is already assigned to the container
                     if not TokenContainerRealm.query.filter_by(container_id=self._db_container.id,
                                                                realm_id=realm_id).first():
-                        # Check if realm is already assigned to the container
                         self._db_container.realms.append(realm_db)
                         result[realm] = True
                     else:
+                        log.info(f"Realm {realm} is already assigned to container {self.serial}.")
                         result[realm] = False
         self._db_container.save()
         self.update_last_updated()
 
         return result
 
+    def _get_user_realms(self):
+        """
+        Returns a list of the realms of the users that are assigned to the container.
+        """
+        owners = self.get_users()
+        realms = [owner.realm for owner in owners]
+        return realms
+
     def remove_token(self, serial: str):
         """
-        Remove a token from the container. Returns false if the token is not in the container.
+        Remove a token from the container. Raises a ResourceNotFoundError if the token does not exist.
+
+        :param serial: Serial of the token
+        :return: True if the token was successfully removed, False if the token was not found in the container
         """
         token = Token.query.filter(Token.serial == serial).first()
-        if token and token in self._db_container.tokens:
-            self._db_container.tokens.remove(token)
-            self._db_container.save()
-            self.tokens = [t for t in self.tokens if t.get_serial() != serial]
-            self.update_last_updated()
-            return True
-        return False
+        if not token:
+            raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
+        if token not in self._db_container.tokens:
+            log.debug(f"Token with serial {serial} not found in container {self.serial}.")
+            return False
+
+        self._db_container.tokens.remove(token)
+        self._db_container.save()
+        self.tokens = [t for t in self.tokens if t.get_serial() != serial]
+        self.update_last_updated()
+        return True
 
     def add_token(self, token: TokenClass):
         """
-        Add a token to the container. Returns false if the token is already in the container.
+        Add a token to the container.
+        Raises a Parameter error if the token type is not supported by the container.
+
+        :param token: TokenClass object
+        :return: True if the token was successfully added, False if the token is already in the container
         """
         if not token.get_type() in self.get_supported_token_types():
             raise ParameterError(f"Token type {token.get_type()} not supported for container type {self.type}. "
@@ -128,15 +171,22 @@ class TokenContainerClass:
         return False
 
     def get_tokens(self):
+        """
+        Returns the tokens of the container as a list of TokenClass objects.
+        """
         return self.tokens
 
     def delete(self):
+        """
+        Deletes the container and all associated objects from the database.
+        """
         return self._db_container.delete()
 
     def add_user(self, user: User):
         """
-        Assign a user to the container if the container does not have an owner yet.
-        Otherwise, the new user will not be assigned and the original owner will remain.
+        Assign a user to the container.
+        Raises a UserError if the user does not exist.
+        Raises a TokenAdminError if the container already has an owner.
 
         :param user: User object
         :return: True if the user was assigned, False if the container already has an owner
@@ -152,9 +202,17 @@ class TokenContainerClass:
             self._db_container.realms.append(realm_db)
             self.update_last_updated()
             return True
+        log.debug(f"Container {self.serial} already has an owner.")
+        raise TokenAdminError("This container is already assigned to another user.")
         return False
 
     def remove_user(self, user: User):
+        """
+        Remove a user from the container. Raises a ResourceNotFoundError if the user does not exist.
+
+        :param user: User object to be removed
+        :return: True if the user was removed, False if the user was not found in the container
+        """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         count = TokenContainerOwner.query.filter_by(container_id=self._db_container.id,
                                                     user_id=user_id,
@@ -165,6 +223,9 @@ class TokenContainerClass:
         return count > 0
 
     def get_users(self):
+        """
+        Returns a list of users that are assigned to the container.
+        """
         db_container_owners: List[TokenContainerOwner] = TokenContainerOwner.query.filter_by(
             container_id=self._db_container.id).all()
 
@@ -177,29 +238,86 @@ class TokenContainerClass:
         return users
 
     def get_states(self):
-        return self._db_container.states
+        """
+        Returns the states of the container as a list of strings.
+        """
+        db_states = self._db_container.states
+        states = [state.state for state in db_states]
+        return states
 
-    def set_states(self, value: List[str]):
+    def _check_excluded_states(self, states):
+        """
+        Validates whether the state list contains states that excludes each other
+
+        :param states: list of states
+        :returns: True if the state list contains exclusive states, False otherwise
+        """
+        state_types = self.get_state_types()
+        for state in states:
+            if state in state_types:
+                excluded_states = state_types[state]
+                same_states = list(set(states).intersection(excluded_states))
+                if len(same_states) > 0:
+                    return True
+        return False
+
+    def set_states(self, state_list: List[str]):
+        """
+        Set the states of the container. Previous states will be removed.
+        Raises a ParameterError if the state list contains exclusive states.
+
+        :param state_list: List of states as strings
+        """
+        if not state_list:
+            state_list = []
+
+        # Check for exclusive states
+        exclusive_states = self._check_excluded_states(state_list)
+        if exclusive_states:
+            raise ParameterError(f"The state list {state_list} contains exclusive states!")
+
         # Remove old state entries
         TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
 
         # Set new states
         state_types = self.get_state_types().keys()
-        for state in value:
+        res = {}
+        for state in state_list:
             if state not in state_types:
-                raise ParameterError(f"State {state} not supported. Supported states are {state_types}.")
+                # We do not raise an error here to allow following states to be set
+                log.error(f"State {state} not supported. Supported states are {state_types}.")
+                res[state] = False
             else:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
+                res[state] = True
         self.update_last_updated()
+        return res
 
-    def add_states(self, value: List[str]):
+    def add_states(self, state_list: List[str]):
+        """
+        Add states to the container. Previous states are only removed if a new state excludes them.
+        Raises a ParameterError if the state list contains exclusive states.
+
+        :param state_list: List of states as strings
+        """
+        if not state_list or len(state_list) == 0:
+            return {}
+
+        # Check for exclusive states
+        exclusive_states = self._check_excluded_states(state_list)
+        if exclusive_states:
+            raise ParameterError(f"The state list {state_list} contains exclusive states!")
+
         # Add new states
+        res = {}
         state_types = self.get_state_types()
-        for state in value:
+        for state in state_list:
             if state not in state_types.keys():
-                raise ParameterError(f"State {state} not supported. Supported states are {state_types}.")
+                # We do not raise an error here to allow following states to be set
+                res[state] = False
+                log.error(f"State {state} not supported. Supported states are {state_types}.")
             else:
-                # Remove states that are excluded from the new state
+                # Remove old states that are excluded from the new state
                 for excluded_state in state_types[state]:
                     TokenContainerStates.query.filter_by(container_id=self._db_container.id,
                                                          state=excluded_state).delete()
@@ -207,13 +325,17 @@ class TokenContainerClass:
                         f"Removed state {excluded_state} from container {self.serial} "
                         f"because it is excluded by the new state {state}.")
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
+                res[state] = True
         self.update_last_updated()
+        return res
 
     @classmethod
     def get_state_types(cls):
         """
         Returns the state types that are supported by this container class and the states that are exclusive
         to each of these states.
+
+        :return: Dictionary in the format: {state: [excluded_states]}
         """
         state_types_exclusions = {
             "active": ["disabled"],
@@ -227,11 +349,11 @@ class TokenContainerClass:
         """
         Set the containerinfo field in the DB. Old values will be deleted.
 
-        :param info: dictionary with key and value
-        :type info: dict
+        :param info: dictionary in the format: {key: value}
         """
         self.delete_container_info()
-        self._db_container.set_info(info)
+        if info:
+            self._db_container.set_info(info)
 
     def add_container_info(self, key, value):
         """
@@ -248,7 +370,6 @@ class TokenContainerClass:
 
         :return: list of tokencontainerinfo objects
         """
-
         return self._db_container.info_list
 
     def delete_container_info(self, key=None):
@@ -257,12 +378,17 @@ class TokenContainerClass:
 
         :param key: key to delete, if None all keys are deleted
         """
+        res = {}
         if key:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, Key=key)
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, key=key)
         else:
             container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
         for ci in container_infos:
             ci.delete()
+            res[ci.key] = True
+        if container_infos.count() == 0:
+            log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
+        return res
 
     @classmethod
     def get_class_type(cls):

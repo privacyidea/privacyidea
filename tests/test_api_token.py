@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-from privacyidea.lib.container import init_container, add_tokens_to_container
+from privacyidea.lib.container import init_container, add_token_to_container
 from .base import MyApiTestCase, PWFILE2
 import json
-import os
 import datetime
 import codecs
 from mock import mock
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass, get_realms_of_token,
-                                   assign_token, token_exist, add_tokeninfo)
+                                   check_serial_pass,
+                                   assign_token, token_exist, add_tokeninfo, unassign_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -801,8 +800,7 @@ class APITokenTestCase(MyApiTestCase):
         # Now the user tries to assign a foreign token
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -919,7 +917,7 @@ class APITokenTestCase(MyApiTestCase):
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
         container_serial = init_container({"type": "generic"})
-        add_tokens_to_container(container_serial, ["EToken"])
+        add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
@@ -974,14 +972,14 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable multiple tokens
         self._create_temp_token("DToken")
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 2, result)
+            self.assertTrue(result.get("value")["DToken"])
+            self.assertTrue(result.get("value")["EToken"])
 
         # Check for the disabled token in the audit log, that no container and user are set, because they differ
         with self.app.test_request_context('/audit/',
@@ -997,15 +995,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(audit_data['success'])
 
         # enable multiple tokens of the same container
-        add_tokens_to_container(container_serial, ["DToken"])
-        with self.app.test_request_context('/token/enable',
+        add_token_to_container(container_serial, "DToken", user=User(), user_role="admin")
+        with self.app.test_request_context('/token/enableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 2, result)
+            self.assertTrue(result.get("value")["EToken"])
+            self.assertTrue(result.get("value")["DToken"])
 
         # Check for the enabled token in the audit log, that the container serial and type are set
         with self.app.test_request_context('/audit/',
@@ -1022,23 +1020,22 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(audit_data['success'])
 
         # Disable one token
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
-                                           data={"serial": "EToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
         # Disable both token fails for the already disabled token
         self._create_temp_token("DToken")
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 1, result)
+            self.assertTrue(result.get("value")["DToken"])
+            self.assertFalse(result.get("value")["EToken"])
 
         remove_token("DToken")
 

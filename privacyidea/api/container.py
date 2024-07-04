@@ -1,22 +1,22 @@
 import logging
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.api.lib.utils import send_result, getParam, required
-from privacyidea.lib.container import get_container_classes, create_container_template, \
-    find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container, \
-    add_container_info
+from privacyidea.lib.container import find_container_by_serial, init_container, get_container_classes_descriptions, \
+    get_container_token_types, get_all_containers, add_container_info, set_container_description, \
+    set_container_states, set_container_realms, delete_container_by_serial, assign_user, unassign_user, \
+    add_token_to_container, add_multiple_tokens_to_container, remove_token_from_container, \
+    remove_multiple_tokens_from_container
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens, \
     convert_token_objects_to_dicts
-from privacyidea.lib.user import get_user_from_param, get_username
+from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ def list_containers():
     psize = int(getParam(param, "pagesize", optional=True) or 0)
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
+    logged_in_user_role = g.logged_in_user.get("role")
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
                                 sortby=sortby, sortdir=sortdir,
@@ -68,10 +69,10 @@ def list_containers():
         tmp_users: dict = {}
         users: list = []
         for user in container.get_users():
-            tmp_users["user_name"] = get_username(user.uid, user.resolver)
+            tmp_users["user_name"] = user.login
             tmp_users["user_realm"] = user.realm
             tmp_users["user_resolver"] = user.resolver
-            tmp_users["user_id"] = user.login
+            tmp_users["user_id"] = user.uid
             users.append(tmp_users)
         tmp["users"] = users
 
@@ -80,10 +81,10 @@ def list_containers():
             tokens_dict_list = []
             if len(token_serials) > 0:
                 tokens = get_tokens(serial_list=token_serials)
-                tokens_dict_list = convert_token_objects_to_dicts(tokens)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role)
             tmp["tokens"] = tokens_dict_list
 
-        tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
+        tmp["states"] = container.get_states()
 
         infos: dict = {}
         for info in container.get_container_info():
@@ -117,9 +118,11 @@ def assign(container_serial):
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    container = find_container_by_serial(container_serial)
-    res = container.add_user(user)
+    logged_in_user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = assign_user(container_serial, user, logged_in_user, user_role)
 
+    container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "success": res}
@@ -140,9 +143,11 @@ def unassign(container_serial):
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    container = find_container_by_serial(container_serial)
-    res = container.remove_user(user)
+    logged_in_user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = unassign_user(container_serial, user, logged_in_user, user_role)
 
+    container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "success": res}
@@ -192,19 +197,24 @@ def delete(container_serial):
     Delete a container.
     :param: container_serial: serial of the container
     """
-    container = find_container_by_serial(container_serial)
-    container.delete()
+    # Get parameters
+    user = request.User
+    user_role = g.logged_in_user.get("role")
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
-                      "container_type": container.type,
-                      "success": True}
+                      "container_type": container.type}
     g.audit_object.log(audit_log_data)
+
+    # Delete container
+    res = delete_container_by_serial(container_serial, user, user_role)
+    g.audit_object.log({"success": res > 0})
     return send_result(True)
 
 
@@ -214,14 +224,15 @@ def delete(container_serial):
 @log_with(log)
 def add_token(container_serial):
     """
-    Add one or multiple tokens to a container
+    Add a single token to a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to add. Multiple serials can be passed comma separated.
+    :jsonparam: serial: Serial of the token to add.
     """
-    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
-    token_serials = serial.replace(' ', '').split(',')
+    token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
 
-    res = add_tokens_to_container(container_serial, token_serials)
+    success = add_token_to_container(container_serial, token_serial, user, user_role)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -232,8 +243,43 @@ def add_token(container_serial):
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
+                      "serial": token_serial,
+                      "success": success}
+    g.audit_object.log(audit_log_data)
+    return send_result(success)
+
+
+@container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@event('container_add_token', request, g)
+@log_with(log)
+def add_all_tokens(container_serial):
+    """
+    Add multiple tokens to a container
+    :param: container_serial: serial of the container
+    :jsonparam: serial: Comma separated list of token serials
+    """
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    success = False not in res.values()
+    result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
                       "serial": serial,
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
@@ -244,13 +290,15 @@ def add_token(container_serial):
 @log_with(log)
 def remove_token(container_serial):
     """
-    Remove a token from a container
+    Remove a single token from a container
     :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to remove. Multiple serials can be passed comma separated.
+    :jsonparam: serial: Serial of the token to remove.
     """
-    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
-    token_serials = serial.replace(' ', '').split(',')
-    res = remove_tokens_from_container(container_serial, token_serials)
+    token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    success = remove_token_from_container(container_serial, token_serial, user, user_role)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -261,8 +309,43 @@ def remove_token(container_serial):
                             "resolver": owners[0].resolver})
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
+                      "serial": token_serial,
+                      "success": success}
+    g.audit_object.log(audit_log_data)
+    return send_result(success)
+
+
+@container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@event('container_remove_token', request, g)
+@log_with(log)
+def remove_all_tokens(container_serial):
+    """
+    Remove multiple tokens from a container
+    :param: container_serial: serial of the container
+    :jsonparam: serial: Comma separated list of token serials.
+    """
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    token_serials = serial.replace(' ', '').split(',')
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role)
+
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    owners = container.get_users()
+    success = False not in res.values()
+    result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
+    if len(owners) == 1:
+        g.audit_object.log({"user": owners[0].login,
+                            "realm": owners[0].realm,
+                            "resolver": owners[0].resolver})
+    audit_log_data = {"container_serial": container_serial,
+                      "container_type": container.type,
                       "serial": serial,
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
@@ -294,14 +377,13 @@ def set_description(container_serial):
     :param: container_serial: Serial of the container
     :jsonparam: description: New description to be set
     """
-    container = find_container_by_serial(container_serial)
-    new_description = getParam(request.all_data, "description", optional=required, allow_empty=False)
-    res = False
-    if new_description:
-        container.description = new_description
-        res = True
+    new_description = getParam(request.all_data, "description", optional=required)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    set_container_description(container_serial, new_description, user, user_role)
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
@@ -310,9 +392,9 @@ def set_description(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "action_detail": f"description={new_description}",
-                      "success": res}
+                      "success": True}
     g.audit_object.log(audit_log_data)
-    return send_result(res)
+    return send_result(True)
 
 
 @container_blueprint.route('<string:container_serial>/states', methods=['POST'])
@@ -327,15 +409,16 @@ def set_states(container_serial):
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
     states_string = states_string.replace(" ", "")
     states = states_string.split(",")
-    container = find_container_by_serial(container_serial)
-
-    res = False
-    if states:
-        container.set_states(states)
-        res = True
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = set_container_states(container_serial, states, user, user_role)
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
+    success = False not in res.values()
+    map_to_bool = ["False", "True"]
+    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
@@ -343,7 +426,8 @@ def set_states(container_serial):
     audit_log_data = {"container_serial": container_serial,
                       "container_type": container.type,
                       "action_detail": f"states={states}",
-                      "success": res}
+                      "success": success,
+                      "info": result_str}
     g.audit_object.log(audit_log_data)
     return send_result(res)
 
@@ -372,13 +456,18 @@ def set_realms(container_serial):
     :param: container_serial: Serial of the container
     :jsonparam: realms: comma separated string of realms, e.g. "realm1,realm2"
     """
+    # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
     realm_list = [r.strip() for r in container_realms.split(",")]
-    container = find_container_by_serial(container_serial)
-    result = container.set_realms(realm_list, add=False)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    # Set realms
+    result = set_container_realms(container_serial, realm_list, user, user_role)
     success = False not in result.values()
 
     # Audit log
+    container = find_container_by_serial(container_serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
@@ -419,67 +508,19 @@ def update_last_seen(container_serial):
     return send_result(True)
 
 
-@container_blueprint.route('info/<serial>/<key>', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
 @admin_required
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
 @log_with(log)
-def set_container_info(serial, key):
+def set_container_info(container_serial, key):
     value = getParam(request.all_data, "value", required)
-    add_container_info(serial, key, value)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = add_container_info(container_serial, key, value, user, user_role)
 
-
-# TEMPLATES
-@container_blueprint.route('<string:container_type>/template', methods=['GET'])
-@log_with(log)
-def get_template(container_type):
-    """
-    Get the template for the given container type
-    """
-    return ""
-
-
-@container_blueprint.route('<string:container_type>/template/options', methods=['GET'])
-@log_with(log)
-def get_template_options(container_type):
-    """
-    Get the options for the given container type
-    """
-    classes = get_container_classes()
-    if classes and container_type.lower() in classes.keys():
-        g.audit_object.log({"success": True})
-        return jsonify(classes[container_type.lower()].get_container_policy_info())
-    else:
-        raise ParameterError("Invalid container type")
-
-
-@container_blueprint.route('<string:container_type>/template', methods=['POST'])
-@log_with(log)
-def set_template(container_type):
-    """
-    Set the template for the given container type
-    """
-    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
-        raise ParameterError("Invalid container type")
-
-    json = request.json
-    template_id = json.get('template_id')
-
-    audit_log_data = {"container_type": container_type,
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-
-
-@container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
-@log_with(log)
-def create_template_with_name(container_type, template_name):
-    """
-    Set the template for the given container type
-    """
-    json = request.json
-    template_id = create_container_template(container_type, template_name, json)
-
-    audit_log_data = {"container_type": container_type,
-                      "action_detail": f"template_name={template_name}",
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-    return template_id
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "key": key,
+                        "value": value,
+                        "success": res})
+    return send_result(res)

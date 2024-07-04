@@ -3375,27 +3375,13 @@ class TokenContainer(MethodsMixin, db.Model):
             self.save()
         types = {}
         for k, v in info.items():
-            if k.endswith(".type"):
+            if k and k.endswith(".type"):
                 types[".".join(k.split(".")[:-1])] = v
         for k, v in info.items():
-            if not k.endswith(".type"):
+            if k and not k.endswith(".type"):
                 TokenContainerInfo(self.id, k, v,
                                    type=types.get(k)).save(persistent=False)
         db.session.commit()
-
-
-class TokenContainerTemplate(MethodsMixin, db.Model):
-    __tablename__ = 'tokencontainertemplate'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    options = db.Column(db.Unicode(2000), default='')
-    name = db.Column(db.Unicode(200), default='')
-    container_type = db.Column(db.Unicode(100), default='Generic', nullable=False)
-
-    def __init__(self, name=None, container_type="Generic", options=None):
-        self.name = name
-        self.container_type = container_type
-        self.options = options
 
 
 class TokenContainerOwner(MethodsMixin, db.Model):

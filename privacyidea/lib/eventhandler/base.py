@@ -856,7 +856,7 @@ class BaseEventHandler(object):
         if container:
             if CONDITION.CONTAINER_STATE in conditions:
                 cond = conditions.get(CONDITION.CONTAINER_STATE).split(',')
-                container_states = [token_container_states.state for token_container_states in container.get_states()]
+                container_states = container.get_states()
                 for cond_state in cond:
                     if cond_state not in container_states:
                         log.debug(f"Condition container_state {cond_state} for container {container.serial} "
@@ -865,7 +865,7 @@ class BaseEventHandler(object):
 
             if CONDITION.CONTAINER_EXACT_STATE in conditions:
                 cond = conditions.get(CONDITION.CONTAINER_EXACT_STATE).split(',')
-                container_states = [token_container_states.state for token_container_states in container.get_states()]
+                container_states = container.get_states()
                 if len(cond) != len(container_states):
                     log.debug(f"Condition container_single_state {cond} for container {container.serial} "
                               "not fulfilled.")

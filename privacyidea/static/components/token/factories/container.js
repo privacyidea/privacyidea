@@ -49,7 +49,16 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             addTokenToContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["container_serial"] + "/add", {serial: params["tokenSerial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/add", {serial: params["serial"]}, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            addAllTokensToContainer: function (params, callback) {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/addall", {serial: params["serial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
@@ -58,7 +67,16 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             removeTokenFromContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["container_serial"] + "/remove", {serial: params["tokenSerial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/remove", {serial: params["serial"]}, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            removeAllTokensFromContainer: function (params, callback) {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/removeall", {serial: params["serial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
