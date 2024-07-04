@@ -12,29 +12,26 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         };
 
         $scope.$watch('form', function (newVal, oldVal) {
-            if (newVal && allContainerTypes[newVal.containerType]) {
-                $scope.form.token_types = allContainerTypes[newVal.containerType]["token_types_display"];
+            if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
+                $scope.form.token_types = $scope.formData.containerTypes[newVal.containerType]["token_types_display"];
             }
         }, true);
-
-        ContainerFactory.getContainerTypes(function (data) {
-            $scope.formData.containerTypes = data.result.value;
-        });
 
         // Get the supported token types for each container type once
         let allContainerTypes = {};
         ContainerFactory.getTokenTypes(function (data) {
             allContainerTypes = data.result.value;
+            $scope.formData.containerTypes = data.result.value;
 
-            angular.forEach(allContainerTypes, function (_, containerType) {
+            angular.forEach($scope.formData.containerTypes, function (_, containerType) {
                 if (containerType === 'generic') {
-                    allContainerTypes[containerType]["token_types_display"] = 'All';
+                    $scope.formData.containerTypes[containerType]["token_types_display"] = 'All';
                 } else {
-                    allContainerTypes[containerType]["token_types_display"] = $scope.tokenTypesToDisplayString(
-                        allContainerTypes[containerType].token_types);
+                    $scope.formData.containerTypes[containerType]["token_types_display"] = $scope.tokenTypesToDisplayString(
+                        $scope.formData.containerTypes[containerType].token_types);
                 }
             });
-            $scope.form.token_types = allContainerTypes[$scope.form.containerType]["token_types_display"];
+            $scope.form.token_types = $scope.formData.containerTypes[$scope.form.containerType]["token_types_display"];
         });
 
         // converts the supported token types to a display string
@@ -250,7 +247,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.container = {};
         $scope.containerOwner = {};
         $scope.showDialog = {};
-        $scope.userRealms = [];
         $scope.getContainer = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 if (data.result.value.containers.length > 0) {
@@ -272,6 +268,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                         $scope.getSupportedTokenTypes();
                     }
 
+                    $scope.userRealms = [];
                     angular.forEach($scope.container.users, function (user) {
                         $scope.userRealms.push(user.user_realm);
                     });
@@ -317,19 +314,20 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.stateSelectionChanged = false;
         };
 
-        $scope.returnTo = function () {
-            // After deleting the container, we return here.
-            $state.go($rootScope.previousState.state,
-                $rootScope.previousState.params);
-        };
-
         $scope.deleteContainerButton = false;
         $scope.deleteContainerMode = function (deleteTokens) {
             if (deleteTokens) {
-                $scope.deleteAllTokens();
+                // First all tokens have to be deleted, then the container
+                $scope.deleteAllTokens($scope.deleteContainer);
             }
-            ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo);
+            else{
+                $scope.deleteContainer();
+            }
         };
+
+        $scope.deleteContainer = function () {
+            ContainerFactory.deleteContainer($scope.containerSerial, $state.go("token.containerlist"));
+        }
 
         $scope.setDescription = function (description) {
             ContainerFactory.setDescription($scope.containerSerial, description, $scope.getContainer);
@@ -463,14 +461,14 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.showDialogAll = false;
-        $scope.deleteAllTokens = function () {
+        $scope.deleteAllTokens = function (callback) {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (token, index) {
                 if (index == tokenSerialList.length - 1) {
-                    // last token: update container with callback
-                    TokenFactory.delete(token, $scope.getContainer);
+                    // last token: pass callback function
+                    TokenFactory.delete(token, callback);
                 } else {
-                    TokenFactory.delete(token);
+                    TokenFactory.delete(token, function(){});
                 }
             });
             $scope.showDialogAll = false;

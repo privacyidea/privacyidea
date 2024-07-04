@@ -92,7 +92,8 @@
             callback-cancel="getContainer()"
             callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide container info since it is not yet used. -->
             <td translate> Info</td>
             <td>
                 <ul>
@@ -174,12 +175,14 @@
                 </fieldset>
             </td>
         </tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide last seen since it is not yet used with the planned functionality. -->
             <td translate> Last Seen</td>
             <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>
         </tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide last updated since it is not yet used with the planned functionality. -->
             <td translate> Last Updated</td>
             <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>
@@ -291,7 +294,7 @@
                         <span translate>Delete All</span>
                     </button>
                     <span ng-show="showDialogAll" translate> Delete all tokens? <br></span>
-                    <button class="btn btn-danger" ng-click="deleteAllTokens()"
+                    <button class="btn btn-danger" ng-click="deleteAllTokens(getContainer)"
                             ng-show="showDialogAll">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
