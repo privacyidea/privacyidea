@@ -30,11 +30,6 @@ class TokenContainerManagementTestCase(MyTestCase):
     totp_serial_smph = "TOTP000002"
     spass_serial_gen = "SPASS000001"
 
-    def get_container_with_user(self):
-        self.setUp_user_realms()
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
-        container = find_container_by_serial(container_serial)
-
     def test_01_create_empty_container(self):
         serial = init_container(
             {"type": "generic", "container_serial": self.empty_container_serial, "description": "test container"})
@@ -72,7 +67,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Empty container type raises exception
         self.assertRaises(EnrollmentError, init_container, {})
 
-    def test_03_create_container_wrong_parameters(self):
+    def test_03_create_container_wrong_user_parameters(self):
         # Init container with user: User shall not be assigned (realm required)
         serial = init_container({"type": "Generic", "user": "hans"})
         container = find_container_by_serial(serial)
@@ -90,9 +85,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         init_token({"type": "hotp", "genkey": "1", "serial": self.hotp_serial_gen})
         init_token({"type": "totp", "otpkey": "1", "serial": self.totp_serial_gen})
         init_token({"type": "spass", "serial": self.spass_serial_gen})
-
-        # Generic container
         gen_token_serials = [self.hotp_serial_gen, self.totp_serial_gen, self.spass_serial_gen]
+
+        # Add tokens to generic container
         res = add_multiple_tokens_to_container(self.generic_serial, gen_token_serials, user=User(), user_role="admin")
         self.assertTrue(res)
         # Check tokens
@@ -102,7 +97,7 @@ class TokenContainerManagementTestCase(MyTestCase):
             self.assertIn(t_serial, tokens)
         self.assertEqual(3, len(tokens))
 
-    def test_04b_add_token_to_container_success(self):
+    def test_05_add_token_to_container_success(self):
         # Smartphone
         init_token({"type": "totp", "otpkey": "1", "serial": self.totp_serial_smph})
         res = add_token_to_container(self.smartphone_serial, self.totp_serial_smph, user_role="admin")
@@ -123,16 +118,17 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(tokens))
         self.assertIn(self.hotp_serial_yubi, tokens[0].get_serial())
 
-    def test_05_add_token_to_another_container(self):
+    def test_06_add_token_to_another_container(self):
+        # Add HOTP token from the generic container to the smartphone
         res = add_token_to_container(self.smartphone_serial, self.hotp_serial_gen, user_role="admin")
         self.assertTrue(res)
-        # Check containers of the token
+        # Check containers: Token is only in smartphone container
         db_result = TokenContainer.query.join(Token.container).filter(Token.serial == self.hotp_serial_gen)
         container_serials = [row.serial for row in db_result]
         self.assertEqual(1, len(container_serials))
         self.assertEqual(self.smartphone_serial, container_serials[0])
 
-    def test_06_add_wrong_token_types_to_container(self):
+    def test_07_add_wrong_token_types_to_container(self):
         # Smartphone
         spass_token = init_token({"type": "spass"})
         self.assertRaises(ParameterError, add_token_to_container, self.smartphone_serial, spass_token.get_serial(),
@@ -152,7 +148,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertFalse(res[spass_token.get_serial()])
         self.assertTrue(res[hotp_token.get_serial()])
 
-    def test_07_add_token_to_container_fails(self):
+    def test_08_add_token_to_container_fails(self):
         # Single non-existing token
         self.assertRaises(ResourceNotFoundError, add_token_to_container, self.smartphone_serial, "non_existing_token",
                           user_role="admin")
@@ -175,19 +171,25 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertFalse(result[self.totp_serial_smph])
         self.assertTrue(result[self.hotp_serial_yubi])
 
-    def test_08_remove_multiple_tokens_from_container_success(self):
+    def test_09_remove_multiple_tokens_from_container_success(self):
         generic_token_serials = [self.totp_serial_gen, self.spass_serial_gen]
         result = remove_multiple_tokens_from_container(self.generic_serial, generic_token_serials, User(), "admin")
         self.assertTrue(result[self.totp_serial_gen])
         self.assertTrue(result[self.spass_serial_gen])
+        # Check tokens of container
+        container = find_container_by_serial(self.generic_serial)
+        generic_tokens = [token.get_serial() for token in container.get_tokens()]
+        self.assertNotIn(self.totp_serial_gen, generic_tokens)
+        self.assertNotIn(self.spass_serial_gen, generic_tokens)
 
-    def test_08b_remove_token_from_container_success(self):
+    def test_10_remove_token_from_container_success(self):
         result = remove_token_from_container(self.smartphone_serial, self.totp_serial_smph, User(), "admin")
         self.assertTrue(result)
         container = find_container_by_serial(self.smartphone_serial)
-        self.assertNotIn(self.totp_serial_smph, container.get_tokens())
+        smartphone_tokens = [token.get_serial() for token in container.get_tokens()]
+        self.assertNotIn(self.totp_serial_smph, smartphone_tokens)
 
-    def test_09_remove_token_from_container_fails(self):
+    def test_11_remove_token_from_container_fails(self):
         # Remove non-existing token from container
         self.assertRaises(ResourceNotFoundError, remove_token_from_container, self.smartphone_serial,
                           "non_existing_token", User(), "admin")
@@ -204,7 +206,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                           container_serial="non_existing_container",
                           token_serial=self.hotp_serial_gen, user=User(), user_role="admin")
 
-    def test_09_remove_multiple_tokens_from_container_fails(self):
+    def test_12_remove_multiple_tokens_from_container_fails(self):
         # Remove non-existing tokens from container
         result = remove_multiple_tokens_from_container(self.generic_serial, ["non_existing_token", "random"],
                                                        user_role="admin")
@@ -227,13 +229,14 @@ class TokenContainerManagementTestCase(MyTestCase):
                           container_serial="non_existing_container",
                           token_serials=[self.hotp_serial_gen], user=User(), user_role="admin")
 
-    def test_10_delete_token_remove_from_container(self):
+    def test_13_delete_token_remove_from_container(self):
         result = remove_token(self.totp_serial_smph)
         self.assertTrue(result)
         container = find_container_by_serial(self.smartphone_serial)
-        self.assertNotIn(self.totp_serial_smph, container.get_tokens())
+        token_serials = [token.get_serial() for token in container.get_tokens()]
+        self.assertNotIn(self.totp_serial_smph, token_serials)
 
-    def test_11_find_container_for_token(self):
+    def test_14_find_container_for_token(self):
         # Token without container
         token = init_token({"type": "hotp", "genkey": "1"})
         container_result = find_container_for_token(token.get_serial())
@@ -248,7 +251,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Call with non-existing token serial
         self.assertRaises(ResourceNotFoundError, find_container_for_token, "non_existing_token")
 
-    def test_12_delete_container_by_id(self):
+    def test_15_delete_container_by_id(self):
         # Fail
         self.assertRaises(ParameterError, delete_container_by_id, None, User(), "admin")
         self.assertRaises(ResourceNotFoundError, delete_container_by_id, 11, User(), "admin")
@@ -259,7 +262,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         result = delete_container_by_id(container_id, User(), "admin")
         self.assertEqual(container_id, result)
 
-    def test_13_delete_container_by_serial(self):
+    def test_16_delete_container_by_serial(self):
         # Fail
         self.assertRaises(ParameterError, delete_container_by_serial, None, User, "admin")
         self.assertRaises(ResourceNotFoundError, delete_container_by_serial, "non_existing_serial", User, "admin")
@@ -267,18 +270,20 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Success
         container_id = delete_container_by_serial(self.generic_serial, User, "admin")
         self.assertGreater(container_id, 0)
+        self.assertRaises(ResourceNotFoundError, find_container_by_serial, self.generic_serial)
         container_id = delete_container_by_serial(self.smartphone_serial, User, "admin")
         self.assertGreater(container_id, 0)
+        self.assertRaises(ResourceNotFoundError, find_container_by_serial, self.smartphone_serial)
 
-    def test_14_find_container_fails(self):
+    def test_17_find_container_fails(self):
         # Find by ID
-        self.assertRaises(ResourceNotFoundError, find_container_by_id, 11)
+        self.assertRaises(ResourceNotFoundError, find_container_by_id, 100)
         self.assertRaises(ResourceNotFoundError, find_container_by_id, None)
         # Find by serial
         self.assertRaises(ResourceNotFoundError, find_container_by_serial, "non_existing_serial")
         self.assertRaises(ResourceNotFoundError, find_container_by_serial, None)
 
-    def test_15_find_container_success(self):
+    def test_18_find_container_success(self):
         # Find by serial
         serial = init_container({"type": "generic", "description": "find container"})
         container = find_container_by_serial(serial)
@@ -288,7 +293,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container = find_container_by_id(container._db_container.id)
         self.assertEqual(serial, container.serial)
 
-    def test_16_set_realms(self):
+    def test_19_set_realms(self):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -323,7 +328,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(0, len(container_realms))
 
-    def test_17_add_realms(self):
+    def test_20_add_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         container_serial = init_container({"type": "generic", "description": "test container"})
@@ -366,7 +371,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(2, len(container_realms))
 
-    def test_18_assign_user(self):
+    def test_21_assign_user(self):
         # Arrange
         self.setUp_user_realms()
         container_serial = init_container({"type": "generic", "description": "assign user"})
@@ -389,7 +394,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assign an invalid user raises exception
         self.assertRaises(UserError, assign_user, container_serial, invalid_user, None, "admin")
 
-    def test_19_add_container_info(self):
+    def test_22_add_container_info(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "add container info"})
 
@@ -415,10 +420,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial, user_role="admin")
         self.assertEqual("", container_info["key"])
 
-    def test_20_set_container_info(self):
+    def test_23_set_container_info(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "add container info"})
-        container = find_container_by_serial(container_serial)
 
         # Set container info
         res = set_container_info(container_serial, {"key1": "value1"}, None, "admin")
@@ -451,7 +455,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial, user_role="admin")
         self.assertEqual(0, len(container_info))
 
-    def test_21_delete_container_info(self):
+    def test_24_delete_container_info(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "delete container info"})
         container = find_container_by_serial(container_serial)
@@ -478,7 +482,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial, user_role="admin")
         self.assertEqual(0, len(container_info))
 
-    def test_22_set_description(self):
+    def test_25_set_description(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "Initial description"})
         container = find_container_by_serial(container_serial)
@@ -495,7 +499,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         set_container_description(container_serial, description=None, user_role="admin")
         self.assertEqual("", container.description)
 
-    def test_23_set_states(self):
+    def test_26_set_states(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "Set states"})
         container = find_container_by_serial(container_serial)
@@ -535,16 +539,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(0, len(states))
 
         # Set excluded states
-        # TODO: Shall that be possible? And if not what would be expected?
-        res = set_container_states(container_serial, ["active", "disabled"], user_role="admin")
-        self.assertTrue(res["active"])
-        self.assertTrue(res["disabled"])
-        states = container.get_states()
-        self.assertEqual(2, len(states))
-        self.assertIn("disabled", states)
-        self.assertIn("active", states)
+        self.assertRaises(ParameterError, set_container_states, container_serial, ["active", "disabled"],
+                          user_role="admin")
 
-    def test_23_add_states(self):
+    def test_27_add_states(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "Set states"})
         container = find_container_by_serial(container_serial)
@@ -581,7 +579,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("active", states)
         self.assertIn("lost", states)
 
-        # Add excluding state: removes excluded state
+        # Add state that excludes old state: removes the old state
         res = add_container_states(container_serial, ["disabled"], user_role="admin")
         self.assertTrue(res["disabled"])
         states = container.get_states()
@@ -589,7 +587,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("disabled", states)
         self.assertIn("lost", states)
 
-    def test_24_get_all_containers_paginate(self):
+        # Add two states that excludes each other: raises parameter error
+        self.assertRaises(ParameterError, add_container_states, container_serial, ["active", "disabled"],
+                          user_role="admin")
+
+    def test_28_get_all_containers_paginate(self):
         # Removes all previously initialized containers
         TokenContainer.query.delete()
         # Arrange
@@ -675,7 +677,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("generic", container_data["containers"][0].type)
         self.assertEqual("yubikey", container_data["containers"][-1].type)
 
-    def test_25_gen_serial(self):
+    def test_29_gen_serial(self):
         # Test class prefix
         serial = _gen_serial(container_type="non_existing_type")
         self.assertEqual("CONT", serial[:4])
@@ -702,7 +704,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         set_privacyidea_config("SerialLength", 8)
 
-    def test_26_container_token_types(self):
+    def test_30_container_token_types(self):
         supported_token_types = get_container_token_types()
         container_types = supported_token_types.keys()
         # All classes are included
@@ -711,7 +713,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("yubikey", container_types)
         self.assertEqual(3, len(container_types))
 
-    def test_27_get_container_classes(self):
+    def test_31_get_container_classes(self):
         container_classes = get_container_classes()
         container_types = container_classes.keys()
         # All classes are included
@@ -720,7 +722,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("yubikey", container_types)
         self.assertEqual(3, len(container_types))
 
-    def test_28_get_container_classes_description(self):
+    def test_32_get_container_classes_description(self):
         container_classes = get_container_classes_descriptions()
         container_types = container_classes.keys()
         # All classes are included
@@ -729,7 +731,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("yubikey", container_types)
         self.assertEqual(3, len(container_types))
 
-    def test_29_get_container_policy_info(self):
+    def test_33_get_container_policy_info(self):
         # Test for generic
         policy_info = get_container_policy_info(container_type="generic")
         self.assertTrue(policy_info)
@@ -741,14 +743,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         policy_info = get_container_policy_info()
         self.assertIn("yubikey", policy_info.keys())
 
-    def test_30_container_classes(self):
+    def test_34_container_classes(self):
         classes = get_container_classes()
         policies = {}
         for k, v in classes.items():
             policies[k] = v.get_container_policy_info()
             self.assertTrue(policies[k])
 
-    def test_31_check_user_access_on_container(self):
+    def test_35_check_user_access_on_container(self):
         self.setUp_user_realms()
         user = User(login="hans", realm=self.realm1)
         container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})

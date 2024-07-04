@@ -244,14 +244,37 @@ class TokenContainerClass:
         states = [state.state for state in db_states]
         return states
 
+    def _check_excluded_states(self, states):
+        """
+        Validates whether the state list contains states that excludes each other
+
+        :param states: list of states
+        :returns: True if the state list contains exclusive states, False otherwise
+        """
+        state_types = self.get_state_types()
+        for state in states:
+            if state in state_types:
+                excluded_states = state_types[state]
+                same_states = list(set(states).intersection(excluded_states))
+                if len(same_states) > 0:
+                    return True
+        return False
+
     def set_states(self, state_list: List[str]):
         """
         Set the states of the container. Previous states will be removed.
+        Raises a ParameterError if the state list contains exclusive states.
 
         :param state_list: List of states as strings
         """
         if not state_list:
             state_list = []
+
+        # Check for exclusive states
+        exclusive_states = self._check_excluded_states(state_list)
+        if exclusive_states:
+            raise ParameterError(f"The state list {state_list} contains exclusive states!")
+
         # Remove old state entries
         TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
 
@@ -272,11 +295,18 @@ class TokenContainerClass:
     def add_states(self, state_list: List[str]):
         """
         Add states to the container. Previous states are only removed if a new state excludes them.
+        Raises a ParameterError if the state list contains exclusive states.
 
         :param state_list: List of states as strings
         """
         if not state_list or len(state_list) == 0:
             return {}
+
+        # Check for exclusive states
+        exclusive_states = self._check_excluded_states(state_list)
+        if exclusive_states:
+            raise ParameterError(f"The state list {state_list} contains exclusive states!")
+
         # Add new states
         res = {}
         state_types = self.get_state_types()
@@ -286,7 +316,7 @@ class TokenContainerClass:
                 res[state] = False
                 log.error(f"State {state} not supported. Supported states are {state_types}.")
             else:
-                # Remove states that are excluded from the new state
+                # Remove old states that are excluded from the new state
                 for excluded_state in state_types[state]:
                     TokenContainerStates.query.filter_by(container_id=self._db_container.id,
                                                          state=excluded_state).delete()

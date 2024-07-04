@@ -597,7 +597,7 @@ def delete_container_info(serial, ikey=None, user=None, user_role="user"):
     return res
 
 
-def assign_user(serial, user: User, logged_in_user, user_role="user"):
+def assign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
     """
     Assign a user to a container.
 
@@ -617,7 +617,7 @@ def assign_user(serial, user: User, logged_in_user, user_role="user"):
     return res
 
 
-def unassign_user(serial, user: User, logged_in_user: User, user_role="user"):
+def unassign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
     """
     Unassign a user from a container.
 
@@ -686,7 +686,7 @@ def add_container_states(serial, states, user: User = None, user_role="user"):
     return res
 
 
-def set_container_realms(serial, realms, user: User, user_role="user"):
+def set_container_realms(serial, realms, user: User = None, user_role="user"):
     """
     Set the realms of a container.
     :param serial: serial of the container
@@ -703,7 +703,7 @@ def set_container_realms(serial, realms, user: User, user_role="user"):
     return res
 
 
-def add_container_realms(serial, realms, user: User, user_role="user"):
+def add_container_realms(serial, realms, user: User = None, user_role="user"):
     """
     Add the realms to the realms of a container.
     :param serial: serial of the container
