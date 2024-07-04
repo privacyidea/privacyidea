@@ -1,10 +1,9 @@
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.container import delete_container_by_id, find_container_by_id, \
-    find_container_by_serial, init_container, get_all_containers, _gen_serial, find_container_for_token, \
-    get_container_policy_info, delete_container_by_serial, \
-    get_container_classes_descriptions, get_container_token_types, add_container_info, _check_user_access_on_container, \
-    assign_user, set_container_realms, add_container_realms, get_container_info_dict, set_container_info, \
-    delete_container_info, set_container_description, set_container_states, add_container_states, \
+from privacyidea.lib.container import delete_container_by_id, find_container_by_id, find_container_by_serial, \
+    init_container, get_all_containers, _gen_serial, find_container_for_token, get_container_policy_info, \
+    delete_container_by_serial, get_container_classes_descriptions, get_container_token_types, add_container_info, \
+    _check_user_access_on_container, assign_user, set_container_realms, add_container_realms, get_container_info_dict, \
+    set_container_info, delete_container_info, set_container_description, set_container_states, add_container_states, \
     remove_multiple_tokens_from_container, remove_token_from_container, add_multiple_tokens_to_container, \
     add_token_to_container
 from privacyidea.lib.container import get_container_classes
