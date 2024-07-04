@@ -58,7 +58,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             addAllTokensToContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["container_serial"] + "/add_all", {serial: params["serial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/addall", {serial: params["serial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
@@ -76,7 +76,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             removeAllTokensFromContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["container_serial"] + "/remove_all", {serial: params["serial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/removeall", {serial: params["serial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);

@@ -251,7 +251,7 @@ def add_token(container_serial):
     return send_result(success)
 
 
-@container_blueprint.route('<string:container_serial>/add_all', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
@@ -318,7 +318,7 @@ def remove_token(container_serial):
     return send_result(success)
 
 
-@container_blueprint.route('<string:container_serial>/remove_all', methods=['POST'])
+@container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
