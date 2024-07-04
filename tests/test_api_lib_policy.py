@@ -3459,7 +3459,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set policy
         set_policy(name="jwt_validity",
                    scope=SCOPE.WEBUI,
-                   action=["{0!s}=12".format(ACTION.JWTVALIDITY)])
+                   action=[f"{ACTION.JWTVALIDITY}=12"])
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
@@ -3472,7 +3472,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Now test a bogus policy
         set_policy(name="jwt_validity",
                    scope=SCOPE.WEBUI,
-                   action=["{0!s}=oneMinute".format(ACTION.JWTVALIDITY)])
+                   action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
@@ -3482,6 +3482,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(3600, req.all_data.get("jwt_validity"))
 
         delete_policy("jwt_validity")
+
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
