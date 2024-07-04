@@ -258,6 +258,7 @@ class ACTION(object):
     LOGINMODE = "login_mode"
     LOGOUT_REDIRECT = "logout_redirect"
     LOGOUTTIME = "logout_time"
+    JWTVALIDITY = "jwt_validity"
     LOSTTOKEN = 'losttoken'
     LOSTTOKENPWLEN = "losttoken_PW_length"
     LOSTTOKENPWCONTENTS = "losttoken_PW_contents"
@@ -2556,6 +2557,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
                           "be logged out from the WebUI. Default: 120")
+            },
+            ACTION.JWTVALIDITY: {
+                'type': 'int',
+                'desc': _("privacyIDEA issues a JWT when the user or admins logs in to the WebUI. "
+                          "The default validity is 1 hour. You can specify different validity times in seconds.")
             },
             ACTION.TOKENPAGESIZE: {
                 'type': 'int',
