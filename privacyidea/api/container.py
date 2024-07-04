@@ -272,8 +272,7 @@ def add_all_tokens(container_serial):
     container = find_container_by_serial(container_serial)
     owners = container.get_users()
     success = False not in res.values()
-    map_to_bool = ["False", "True"]
-    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
@@ -339,8 +338,7 @@ def remove_all_tokens(container_serial):
     container = find_container_by_serial(container_serial)
     owners = container.get_users()
     success = False not in res.values()
-    map_to_bool = ["False", "True"]
-    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    result_str = ", ".join([f"{k}: {v}" for k, v in res.items()])
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,

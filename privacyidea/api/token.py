@@ -622,7 +622,7 @@ def enable_all(serial):
         res[serial] = enable_token(serial, enable=True, user=user) > 0
 
     # Audit log
-    success = not False in res
+    success = False not in res.values()
     g.audit_object.log({"success": success})
     result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
     g.audit_object.log({"info": f"{result_str}"})
@@ -680,7 +680,7 @@ def disable_all(serial):
         res[serial] = enable_token(serial, enable=False, user=user) > 0
 
     # Audit log
-    success = not False in res
+    success = False not in res.values()
     g.audit_object.log({"success": success})
     result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
     g.audit_object.log({"info": f"{result_str}"})

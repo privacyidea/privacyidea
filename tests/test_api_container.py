@@ -810,7 +810,7 @@ class APIContainer(MyApiTestCase):
         self.assertTrue(json["result"]["value"][hotp_03_serial])
 
         # Remove multiple tokens with spaces in list
-        json = self.request_assert_success(f'/container/{container_serial}/remove_all',
+        json = self.request_assert_success(f'/container/{container_serial}/removeall',
                                            {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
                                            self.at, 'POST')
         self.assertTrue(json["result"]["value"][hotp_01_serial])
