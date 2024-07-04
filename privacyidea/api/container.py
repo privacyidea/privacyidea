@@ -1,24 +1,22 @@
 import logging
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.api.lib.utils import send_result, getParam, required
-from privacyidea.lib.container import get_container_classes, create_container_template, \
-    find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, \
-    add_container_info, set_container_description, set_container_states, set_container_realms, \
-    delete_container_by_serial, assign_user, unassign_user, add_token_to_container, \
-    add_multiple_tokens_to_container, remove_token_from_container, remove_multiple_tokens_from_container
+from privacyidea.lib.container import find_container_by_serial, init_container, get_container_classes_descriptions, \
+    get_container_token_types, get_all_containers, add_container_info, set_container_description, \
+    set_container_states, set_container_realms, delete_container_by_serial, assign_user, unassign_user, \
+    add_token_to_container, add_multiple_tokens_to_container, remove_token_from_container, \
+    remove_multiple_tokens_from_container
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens, \
     convert_token_objects_to_dicts
-from privacyidea.lib.user import get_user_from_param, get_username
+from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -526,62 +524,3 @@ def set_container_info(container_serial, key):
                         "value": value,
                         "success": res})
     return send_result(res)
-
-
-# TEMPLATES
-@container_blueprint.route('<string:container_type>/template', methods=['GET'])
-@log_with(log)
-def get_template(container_type):
-    """
-    Get the template for the given container type
-    """
-    return ""
-
-
-@container_blueprint.route('<string:container_type>/template/options', methods=['GET'])
-@log_with(log)
-def get_template_options(container_type):
-    """
-    Get the options for the given container type
-    """
-    classes = get_container_classes()
-    if classes and container_type.lower() in classes.keys():
-        g.audit_object.log({"success": True})
-        return send_result(classes[container_type.lower()].get_container_policy_info())
-    else:
-        raise ParameterError("Invalid container type")
-
-
-@container_blueprint.route('<string:container_type>/template', methods=['POST'])
-@log_with(log)
-def set_template(container_type):
-    """
-    Set the template for the given container type
-    """
-    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
-        raise ParameterError("Invalid container type")
-
-    json = request.json
-    template_id = json.get('template_id')
-
-    audit_log_data = {"container_type": container_type,
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-
-
-@container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
-@log_with(log)
-def create_template_with_name(container_type, template_name):
-    """
-    Set the template for the given container type
-    """
-    json = request.json
-    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
-        raise ParameterError("Invalid container type")
-    template_id = create_container_template(container_type, template_name, json)
-
-    audit_log_data = {"container_type": container_type,
-                      "action_detail": f"template_name={template_name}",
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-    return send_result(template_id)

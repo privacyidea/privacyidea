@@ -3384,20 +3384,6 @@ class TokenContainer(MethodsMixin, db.Model):
         db.session.commit()
 
 
-class TokenContainerTemplate(MethodsMixin, db.Model):
-    __tablename__ = 'tokencontainertemplate'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    options = db.Column(db.Unicode(2000), default='')
-    name = db.Column(db.Unicode(200), default='')
-    container_type = db.Column(db.Unicode(100), default='Generic', nullable=False)
-
-    def __init__(self, name=None, container_type="Generic", options=None):
-        self.name = name
-        self.container_type = container_type
-        self.options = options
-
-
 class TokenContainerOwner(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerowner'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}

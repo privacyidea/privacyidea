@@ -5,11 +5,10 @@ import os
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import create_tokenclass_object, get_token_owner, get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \
-    TokenContainerToken
+from privacyidea.models import TokenContainer, TokenContainerOwner, Token, TokenContainerToken
 
 log = logging.getLogger(__name__)
 
@@ -304,18 +303,6 @@ def get_container_policy_info(container_type=None):
         for container_type, container_class in classes.items():
             ret[container_type] = container_class.get_container_policy_info()
         return ret
-
-
-def create_container_template(container_type, template_name, options):
-    """
-    Create a new container template.
-
-    :param container_type: The type of the container
-    :param template_name: The name of the template
-    :param options: The options for the template
-    :return: The created template object
-    """
-    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
 
 
 def init_container(params):
