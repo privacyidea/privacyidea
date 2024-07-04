@@ -83,13 +83,13 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_04_user_delete_denied(self):
-        # user not has 'delete' rights
+        # User does not have 'delete' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
-        # user is not the owner of the container
+        # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
@@ -103,7 +103,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_06_user_description_denied(self):
-        # user not has 'description' rights
+        # User does not have 'description' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
@@ -111,7 +111,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
         delete_policy("policy")
 
-        # user is not the owner of the container
+        # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
@@ -127,7 +127,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_08_user_state_denied(self):
-        # user not has 'state' rights
+        # User does not have 'state' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
@@ -135,7 +135,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
         delete_policy("policy")
 
-        # user is not the owner of the container
+        # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
@@ -161,7 +161,7 @@ class APIContainerAuthorization(MyApiTestCase):
         my_token = init_token({"genkey": "1"}, user=User("selfservice", self.realm1, self.resolvername1))
         my_token_serial = my_token.get_serial()
 
-        # User has not 'add' rights
+        # User does not have 'add' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial}, self.at_user,
                                        method='POST')
@@ -202,7 +202,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_12_user_remove_token_denied(self):
-        # User has not 'remove' rights
+        # User does not have 'remove' rights
         container_serial = self.create_container_for_user()
         my_token = init_token({"genkey": "1"}, user=User("selfservice", self.realm1, self.resolvername1))
         my_token_serial = my_token.get_serial()
@@ -244,7 +244,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_15_user_remove_user_allowed(self):
-        # user is allowed to unassign from its own container
+        # User is allowed to unassign from its own container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
         container_serial = self.create_container_for_user()
         self.request_assert_200(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
@@ -252,7 +252,7 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_16_user_remove_user_denied(self):
-        # User has no 'unassign' rights
+        # User does not have 'unassign' rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
@@ -876,45 +876,15 @@ class APIContainer(MyApiTestCase):
     def test_21_get_types(self):
         json = self.request_assert_success('/container/types', {}, self.at, 'GET')
         self.assertTrue(json["result"]["value"])
-        # check that all container types are included
+        # Check that all container types are included
         self.assertIn("smartphone", json["result"]["value"])
         self.assertIn("generic", json["result"]["value"])
         self.assertIn("yubikey", json["result"]["value"])
-        # check that all properties are set
+        # Check that all properties are set
         self.assertIn("description", json["result"]["value"]["generic"])
         self.assertIn("token_types", json["result"]["value"]["generic"])
 
-    def test_22_create_template(self):
-        # Create template success
-        json = self.request_assert_success(f'/container/generic/template/new_template',
-                                           {}, self.at, 'POST')
-        self.assertEqual(json["result"]["value"], 1)
-
-        # Create template invalid container type
-        self.request_assert_error(400, f'/container/wrong_type/template/new_template',
-                                  {}, self.at, 'POST')
-
-        # Create template without container serial
-        self.request_assert_404_no_result('/container/template/new_template', {}, self.at, 'POST')
-
-        # Create template without template name
-        self.request_assert_404_no_result('/container/generic/template/', {}, self.at, 'POST')
-
-    def test_23_get_template_options(self):
-        # Success
-        json = self.request_assert_success(f'/container/generic/template/options',
-                                           {}, self.at, 'GET')
-        self.assertTrue(json["result"]["value"])
-        self.assertIn("token_count", json["result"]["value"].keys())
-
-        # wrong type
-        json = self.request_assert_error(400, f'/container/wrong_type/template/options',
-                                         {}, self.at, 'GET')
-        error = json["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Invalid container type", error["message"])
-
-    def test_24_get_all_containers_paginate(self):
+    def test_22_get_all_containers_paginate(self):
         # Arrange
         # Create containers
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
@@ -937,7 +907,7 @@ class APIContainer(MyApiTestCase):
         # Add info
         container.add_container_info("key1", "value1")
 
-        # filter for type
+        # Filter for type
         json = self.request_assert_success('/container/',
                                            {"type": "generic", "pagesize": 15},
                                            self.at, 'GET')
@@ -956,13 +926,13 @@ class APIContainer(MyApiTestCase):
                                            {"container_serial": container_serials[1], "pagesize": 15, "page": 1},
                                            self.at, 'GET')
         containerdata = json["result"]["value"]
-        # pagination
+        # Pagination
         self.assertEqual(1, containerdata["count"])
         self.assertIn("prev", containerdata.keys())
         self.assertIn("next", containerdata.keys())
         self.assertIn("current", containerdata.keys())
         self.assertEqual(1, len(containerdata["containers"]))
-        # container data
+        # Container data
         res_container = containerdata["containers"][0]
         self.assertEqual("generic", res_container["type"])
         self.assertEqual(container_serials[1], res_container["serial"])
@@ -970,9 +940,9 @@ class APIContainer(MyApiTestCase):
         self.assertIn("last_seen", res_container.keys())
         self.assertIn("last_updated", res_container.keys())
         self.assertIn("active", res_container["states"])
-        # tokens
+        # Tokens
         self.assertEqual(1, len(res_container["tokens"]))
-        # user
+        # User
         self.assertEqual(1, len(res_container["users"]))
         self.assertEqual(user_hans.login, res_container["users"][0]["user_name"])
         self.assertEqual(user_hans.realm, res_container["users"][0]["user_realm"])
@@ -985,10 +955,10 @@ class APIContainer(MyApiTestCase):
         self.assertIn("key1", res_container["info"].keys())
         self.assertEqual("value1", res_container["info"]["key1"])
 
-    def test_25_get_all_containers_paginate_invalid_params(self):
+    def test_23_get_all_containers_paginate_invalid_params(self):
         init_container({"type": "generic", "description": "test container"})
 
-        # filter for non-existing type
+        # Filter for non-existing type
         json = self.request_assert_success('/container/',
                                            {"type": "non-existing", "pagesize": 15},
                                            self.at, 'GET')

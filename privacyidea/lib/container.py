@@ -159,7 +159,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
             log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
 
     if isinstance(sortby, str):
-        # check that the sort column exists and convert it to a Token column
+        # Check that the sort column exists and convert it to a Token column
         cols = TokenContainer.__table__.columns
         if sortby in cols:
             sortby = cols.get(sortby)
@@ -193,12 +193,10 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :param page: The number of the page to view. Starts with 1 ;-)
     :param pagesize: The size of the page
     """
-    # TODO add user role policy
-
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
                                         sortby=sortby, sortdir=sortdir)
     ret = {}
-    # paginate if requested
+    # Paginate if requested
     if page > 0 or pagesize > 0:
         if page < 1:
             page = 1
@@ -219,7 +217,7 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
         ret["next"] = nxt
         ret["current"] = page
         ret["count"] = pagination.total
-    else:  # no pagination
+    else:  # No pagination
         db_containers = sql_query.all()
 
     container_list = [create_container_class_object(db_container) for db_container in db_containers]
@@ -380,7 +378,7 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
     # Get the token object
     token = get_tokens_from_serial_or_user(token_serial, None)[0]
 
-    # check if the token is in a container
+    # Check if the token is in a container
     old_container = find_container_for_token(token_serial)
     user_is_owner_of_old_container = False
     if old_container:
@@ -396,7 +394,7 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
     if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
         res = container.add_token(token)
         if res and old_container:
-            # remove token from old container
+            # Remove token from old container
             remove_token_from_container(old_container.serial, token_serial, user, user_role)
             log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
                      f"Token removed from previous container {old_container.serial}.")

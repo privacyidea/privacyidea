@@ -80,7 +80,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(0, len(container.get_users()))
 
     def test_04_add_multiple_tokens_to_container_success(self):
-        # create tokens
+        # Create tokens
         init_token({"type": "hotp", "genkey": "1", "serial": self.hotp_serial_gen})
         init_token({"type": "totp", "otpkey": "1", "serial": self.totp_serial_gen})
         init_token({"type": "spass", "serial": self.spass_serial_gen})
@@ -387,10 +387,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("hans", users[0].login)
         self.assertEqual(self.realm1, container.realms[0].name)
 
-        # Assign another user fails
+        # Assigning another user fails
         self.assertRaises(TokenAdminError, assign_user, container_serial, user_root, None, "admin")
 
-        # Assign an invalid user raises exception
+        # Assigning an invalid user raises exception
         self.assertRaises(UserError, assign_user, container_serial, invalid_user, None, "admin")
 
     def test_22_add_container_info(self):
@@ -546,7 +546,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_serial = init_container({"type": "generic", "description": "Set states"})
         container = find_container_by_serial(container_serial)
 
-        # check initial state
+        # Check initial state
         states = container.get_states()
         self.assertEqual(1, len(states))
         self.assertIn("active", states)
@@ -565,7 +565,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         states = container.get_states()
         self.assertEqual(2, len(states))
 
-        # Add none: Changes nothing
+        # Add None: Changes nothing
         container.add_states(None)
         states = container.get_states()
         self.assertEqual(2, len(states))
@@ -609,13 +609,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(serial="non_existing_serial")
         self.assertEqual(0, len(container_data["containers"]))
 
-        # filter for type
+        # Filter for type
         container_data = get_all_containers(ctype="generic", pagesize=15)
         for container in container_data["containers"]:
             self.assertEqual(container.type, "generic")
         self.assertEqual(2, container_data["count"])
 
-        # filter for non-existing type
+        # Filter for non-existing type
         container_data = get_all_containers(ctype="random_type")
         self.assertEqual(0, len(container_data["containers"]))
 
@@ -656,22 +656,22 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertNotIn("current", container_data)
         self.assertEqual(6, len(container_data["containers"]))
 
-        # sort by type ascending
+        # Sort by type ascending
         container_data = get_all_containers(sortby="type", sortdir="asc")
         self.assertEqual("generic", container_data["containers"][0].type)
         self.assertEqual("yubikey", container_data["containers"][-1].type)
 
-        # sort by serial descending
+        # Sort by serial descending
         container_data = get_all_containers(sortby="serial", sortdir="desc")
         self.assertEqual("YUBI", container_data["containers"][0].serial[:4])
         self.assertEqual("CONT", container_data["containers"][-1].serial[:4])
 
-        # sort for non-existing column: uses serial instead
+        # Sort for non-existing column: uses serial instead
         container_data = get_all_containers(sortby="random_column", sortdir="asc")
         self.assertEqual("CONT", container_data["containers"][0].serial[:4])
         self.assertEqual("YUBI", container_data["containers"][-1].serial[:4])
 
-        # non-existing sort direction: uses asc instead
+        # Non-existing sort direction: uses asc instead
         container_data = get_all_containers(sortby="type", sortdir="wrong_dir")
         self.assertEqual("generic", container_data["containers"][0].type)
         self.assertEqual("yubikey", container_data["containers"][-1].type)
@@ -690,7 +690,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         serial = _gen_serial(container_type="yubikey")
         self.assertEqual("YUBI", serial[:4])
 
-        # test length
+        # Test length
         self.assertEqual(8 + len("YUBI"), len(serial))
 
         set_privacyidea_config("SerialLength", 12)
@@ -759,11 +759,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = _check_user_access_on_container(container, User(), user_role="admin")
         self.assertTrue(res)
 
-        # user has access on own container
+        # User has access on own container
         res = _check_user_access_on_container(container, user, user_role="user")
         self.assertTrue(res)
 
-        # user has not access on another container
+        # User has not access on another container
         another_container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})
         another_container = find_container_by_serial(another_container_serial)
         self.assertRaises(PolicyError, _check_user_access_on_container, another_container, user, "user")

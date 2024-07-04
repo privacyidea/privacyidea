@@ -77,7 +77,8 @@ class TokenContainerClass:
 
         :param realms: List of realm names
         :param add: False if the existing realms shall be removed, True otherwise
-        :return: Dictionary of type {realm: success}, the entry 'deleted' indicates whether existing realms were deleted
+        :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
+                 deleted
         """
         result = {}
 
@@ -334,7 +335,7 @@ class TokenContainerClass:
         Returns the state types that are supported by this container class and the states that are exclusive
         to each of these states.
 
-        :return: Dictionary of type {state: [excluded_states]}
+        :return: Dictionary in the format: {state: [excluded_states]}
         """
         state_types_exclusions = {
             "active": ["disabled"],
@@ -348,7 +349,7 @@ class TokenContainerClass:
         """
         Set the containerinfo field in the DB. Old values will be deleted.
 
-        :param info: dictionary of type {key: value}
+        :param info: dictionary in the format: {key: value}
         """
         self.delete_container_info()
         if info:
