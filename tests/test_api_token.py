@@ -972,14 +972,14 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable multiple tokens
         self._create_temp_token("DToken")
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 2, result)
+            self.assertTrue(result.get("value")["DToken"])
+            self.assertTrue(result.get("value")["EToken"])
 
         # Check for the disabled token in the audit log, that no container and user are set, because they differ
         with self.app.test_request_context('/audit/',
@@ -996,14 +996,14 @@ class APITokenTestCase(MyApiTestCase):
 
         # enable multiple tokens of the same container
         add_token_to_container(container_serial, "DToken", user=User(), user_role="admin")
-        with self.app.test_request_context('/token/enable',
+        with self.app.test_request_context('/token/enableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 2, result)
+            self.assertTrue(result.get("value")["EToken"])
+            self.assertTrue(result.get("value")["DToken"])
 
         # Check for the enabled token in the audit log, that the container serial and type are set
         with self.app.test_request_context('/audit/',
@@ -1020,23 +1020,22 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(audit_data['success'])
 
         # Disable one token
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
-                                           data={"serial": "EToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
         # Disable both token fails for the already disabled token
         self._create_temp_token("DToken")
-        with self.app.test_request_context('/token/disable',
+        with self.app.test_request_context('/token/disableall/EToken,DToken',
                                            method='POST',
-                                           data={"serial": "EToken,DToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value") == 1, result)
+            self.assertTrue(result.get("value")["DToken"])
+            self.assertFalse(result.get("value")["EToken"])
 
         remove_token("DToken")
 

@@ -152,8 +152,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
-                disableMultiple: function (params, callback) {
-                    $http.post(tokenUrl + "/disable", {"serial": params["serial"]},
+                disableAll: function (params, callback) {
+                    $http.post(tokenUrl + "/disableall/" + params["serial"], {},
                         {
                             headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                         }).then(function (response) {
@@ -172,8 +172,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
-                enableMultiple: function (params, callback) {
-                    $http.post(tokenUrl + "/enable", {"serial": params["serial"]},
+                enableAll: function (params, callback) {
+                    $http.post(tokenUrl + "/enableall/" + params["serial"], {},
                         {
                             headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                         }).then(function (response) {

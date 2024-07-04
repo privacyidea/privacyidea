@@ -439,7 +439,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.disableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
+                TokenFactory.disableAll({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 
@@ -447,7 +447,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
             if (tokenSerialList.length > 0) {
-                TokenFactory.enableMultiple({'serial': tokenSerialStr}, $scope.getContainer);
+                TokenFactory.enableAll({'serial': tokenSerialStr}, $scope.getContainer);
             }
         };
 

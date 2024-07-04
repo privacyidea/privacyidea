@@ -584,37 +584,50 @@ def enable_api(serial=None):
     """
     Enable a single token or all the tokens of a user.
 
-    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma
-                                  separated
+    :jsonparam basestring serial: the serial number of the single token to enable
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns the number of enabled
-        tokens in "value".
+    :return: In case of success it returns the number of enabled tokens in "value".
     :rtype: json object
     """
     user = request.User
     if not serial:
-        serial = getParam(request.all_data, "serial", required)
+        serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
+
+    res = enable_token(serial, enable=True, user=user)
+    g.audit_object.log({"success": True})
+    return send_result(res)
+
+
+@token_blueprint.route('/enableall/<serial>', methods=['POST'])
+@prepolicy(check_max_token_user, request)
+@prepolicy(check_base_action, request, action=ACTION.ENABLE)
+@event("token_enable", request, g)
+@log_with(log)
+def enable_all(serial):
+    """
+    Enable multiple tokens.
+
+    :jsonparam basestring serial: comma separated list of token serials.
+    :return: Dictionary with the token serials as keys and the success status as values.
+    """
+    # Log serial before splitting it into a list
     g.audit_object.log({"serial": serial})
     token_serials = serial.replace(' ', '').split(',')
+    user = request.User
 
     res = {}
     for serial in token_serials:
-        res[serial] = enable_token(serial, enable=True, user=user)
-
-    count = sum(res.values())
+        res[serial] = enable_token(serial, enable=True, user=user) > 0
 
     # Audit log
-    if count == len(token_serials):
-        g.audit_object.log({"success": True})
-    else:
-        g.audit_object.log({"success": False})
-
-    map_to_bool = ["False", "True"]
-    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    success = not False in res
+    g.audit_object.log({"success": success})
+    result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
     g.audit_object.log({"info": f"{result_str}"})
 
-    return send_result(count)
+    return send_result(res)
 
 
 @token_blueprint.route('/disable', methods=['POST'])
@@ -629,37 +642,51 @@ def disable_api(serial=None):
 
     Disabled tokens can not be used to authenticate but can be enabled again.
 
-    :jsonparam basestring serial: the serial number of the token to disable. Multiple serials can be passed comma
-                                  separated
+    :jsonparam basestring serial: the serial number of the single token to disable
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns the number of disabled
-        tokens in "value".
+    :return: In case of success it returns the number of disabled tokens in "value".
     :rtype: json object
     """
     user = request.User
     if not serial:
-        serial = getParam(request.all_data, "serial", required)
+        serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
+
+    res = enable_token(serial, enable=False, user=user)
+    g.audit_object.log({"success": True})
+    return send_result(res)
+
+
+@token_blueprint.route('/disableall/<serial>', methods=['POST'])
+@prepolicy(check_max_token_user, request)
+@prepolicy(check_base_action, request, action=ACTION.ENABLE)
+@event("token_disable", request, g)
+@log_with(log)
+def disable_all(serial):
+    """
+    Disable multiple tokens.
+
+    :jsonparam basestring serial: comma separated list of token serials.
+    :return: Dictionary with the token serials as keys and the success status as values.
+    """
+    # Log serial before splitting it into a list
     g.audit_object.log({"serial": serial})
     token_serials = serial.replace(' ', '').split(',')
+    user = request.User
 
     res = {}
     for serial in token_serials:
-        res[serial] = enable_token(serial, enable=False, user=user)
-
-    count = sum(res.values())
+        res[serial] = enable_token(serial, enable=False, user=user) > 0
 
     # Audit log
-    if count == len(token_serials):
-        g.audit_object.log({"success": True})
-    else:
-        g.audit_object.log({"success": False})
-
-    map_to_bool = ["False", "True"]
-    result_str = ", ".join([f"{k}: {map_to_bool[v]}" for k, v in res.items()])
+    success = not False in res
+    g.audit_object.log({"success": success})
+    result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
     g.audit_object.log({"info": f"{result_str}"})
 
-    return send_result(count)
+    return send_result(res)
+
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
 @prepolicy(check_base_action, request, action=ACTION.DELETE)
