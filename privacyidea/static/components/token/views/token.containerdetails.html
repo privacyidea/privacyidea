@@ -278,6 +278,9 @@
             <th translate>failcounter</th>
             <th translate>maxfail</th>
             <th translate>otplen</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> User</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> Realm</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> Token Realms</th>
             <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">
@@ -347,6 +350,30 @@
             </td>
             <td>{{ token.maxfail }}</td>
             <td>{{ token.otplen }}</td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token_add.username,
+                            realmname: token_add.user_realm,
+                            resolvername: token_add.resolver,
+                            editable: token_add.user_editable})">
+                    {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                    {{ t_realm }}</a>&nbsp;
+            </td>
+
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                {{ token.user_id }}
+            </td>
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
             <td>
                 <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">
                     {{ token.container_serial }}
