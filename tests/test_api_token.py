@@ -690,8 +690,37 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             tokenlist = result.get("value").get("tokens")
             self.assertEqual(len(tokenlist), 1)
-
         remove_token("hw001")
+
+        # get tokens with specific serials
+        hotp_token = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+        totp_token = init_token({"otpkey": self.otpkey}, tokenkind="totp")
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={
+                                               "serial_list": f"{hotp_token.get_serial()},{totp_token.get_serial()}"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertEqual(2, result.get("value").get("count"))
+
+        # get tokens of specific types
+        spass_token = init_token({"type": "spass"})
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"type_list": "hotp,totp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            tokens = result.get("value").get("tokens")
+            for token in tokens:
+                self.assertIn(token["tokentype"], ["hotp", "totp"])
+        remove_token(hotp_token.get_serial())
+        remove_token(totp_token.get_serial())
+        remove_token(spass_token.get_serial())
+
 
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',

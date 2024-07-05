@@ -408,8 +408,10 @@ def list_api():
 
     :query serial: Display the token data of this single token. You can do a
         not strict matching by specifying a serial like "*OATH*".
+    :query serial_list: Comma separated list of token serial. Display the token data of all tokens in the list.
     :query type: Display only token of type. You ca do a non strict matching by
         specifying a tokentype like "*otp*", to file hotp and totp tokens.
+    :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
     :query user: display tokens of this user
     :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
@@ -436,10 +438,14 @@ def list_api():
     param = request.all_data
     user = request.User
     serial = getParam(param, "serial", optional)
-    serial_list = request.args.getlist("serial_list")
+    serial_list = getParam(param, "serial_list", optional)
+    if serial_list:
+        serial_list = serial_list.replace(" ", "").split(",")
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
-    token_type_list = request.args.getlist("type_list")
+    token_type_list = getParam(param, "type_list", optional)
+    if token_type_list:
+        token_type_list = token_type_list.replace(" ", "").split(",")
     description = getParam(param, "description", optional)
     sort = getParam(param, "sortby", optional, default="serial")
     sdir = getParam(param, "sortdir", optional, default="asc")
