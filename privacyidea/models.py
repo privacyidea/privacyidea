@@ -2573,7 +2573,7 @@ class SMTPServer(MethodsMixin, db.Model):
     This table can store configurations for SMTP servers.
     Each entry represents an SMTP server.
     EMail Token, SMS SMTP Gateways or Notifications like PIN handlers are
-    supposed to use a reference to to a server definition.
+    supposed to use a reference to a server definition.
     Each Machine Resolver can have multiple configuration entries.
     The config entries are referenced by the id of the machine resolver
     """

@@ -321,10 +321,11 @@ class HotpTokenClass(TokenClass):
 
         Do we really always need an otpkey?
         the otpKey is handled in the parent class
+
         :param param: dict of initialization parameters
         :type param: dict
-
-        :return: nothing
+        :param reset_failcount: reset the failcount
+        :type reset_failcount: bool
         """
         # In case am Immutable MultiDict:
         upd_param = {}
@@ -382,6 +383,7 @@ class HotpTokenClass(TokenClass):
     def _calc_otp(self, counter):
         """
         Helper function to calculate the OTP value for the given counter
+
         :param counter: The OTP counter
         :return: OTP value as string
         """
@@ -480,7 +482,6 @@ class HotpTokenClass(TokenClass):
         Check if the OTP values was previously used.
 
         :param otp:
-        :param window:
         :return:
         """
         counter = int(self.get_otp_count())
@@ -517,7 +518,7 @@ class HotpTokenClass(TokenClass):
 
         # if _autosync is not enabled
         if autosync is False:
-            log.debug("end. _autosync is not enabled : res {0!r}".format((res)))
+            log.debug("end. _autosync is not enabled : res {0!r}".format(res))
             return res
 
         info = self.get_tokeninfo()
@@ -589,7 +590,7 @@ class HotpTokenClass(TokenClass):
         counter = hmac2Otp.checkOtp(otp1, syncWindow)
 
         if counter == -1:
-            log.debug("exit. First counter (-1) not found  ret: {0!r}".format((ret)))
+            log.debug("exit. First counter (-1) not found  ret: {0!r}".format(ret))
             return ret
 
         nextOtp = hmac2Otp.generate(counter + 1)
@@ -602,7 +603,7 @@ class HotpTokenClass(TokenClass):
         ret = True
         self.inc_otp_counter(counter + 1, reset=True)
 
-        log.debug("end. resync was successful: ret: {0!r}".format((ret)))
+        log.debug("end. resync was successful: ret: {0!r}".format(ret))
         return ret
 
     @staticmethod
@@ -616,7 +617,7 @@ class HotpTokenClass(TokenClass):
         try:
             timeOut = int(get_from_config("AutoResyncTimeout", 5 * 60))
         except Exception as ex:
-            log.warning("AutoResyncTimeout: value error {0!r} - reset to 5*60".format((ex)))
+            log.warning("AutoResyncTimeout: value error {0!r} - reset to 5*60".format(ex))
             timeOut = 5 * 60
 
         return timeOut
@@ -626,7 +627,7 @@ class HotpTokenClass(TokenClass):
         """
         return the next otp value
 
-        :param curTime: Not Used in HOTP
+        :param current_time: Not Used in HOTP
         :return: next otp value and PIN if possible
         :rtype: tuple
         """
@@ -707,6 +708,7 @@ class HotpTokenClass(TokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
+
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
@@ -798,7 +800,7 @@ class HotpTokenClass(TokenClass):
             params["counter"] = int(l[4].strip())
         return params
 
-    def prepare_verify_enrollment(self):
+    def prepare_verify_enrollment(self, options=None):
         """
         This is called, if the token should be enrolled in a way, that the user
         needs to provide a proof, that the server can verify, that the token

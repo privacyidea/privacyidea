@@ -963,7 +963,8 @@ def check_verify_enrollment(request, response):
                     g.audit_object.add_policy(verify_pol_dict.get(toks))
             if do_verify_enrollment:
                 content = response.json
-                content["detail"]["verify"] = tokenobj.prepare_verify_enrollment()
+                options = {"g": g, "user": request.User, "exception": request.all_data.get("exception", 0)}
+                content["detail"]["verify"] = tokenobj.prepare_verify_enrollment(options=options)
                 content["detail"]["rollout_state"] = ROLLOUTSTATE.VERIFYPENDING
                 tokenobj.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
                 tokenobj.token.save()
