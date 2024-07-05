@@ -499,7 +499,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.tokenParams.serial = "*" + ($scope.serialFilter || "") + "*";
                 $scope.tokenParams.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
                 $scope.tokenParams.type = "*" + ($scope.typeFilter || "") + "*";
-                $scope.tokenParams.type_list = $scope.supportedTokenTypes;
+                $scope.tokenParams.type_list = $scope.supportedTokenTypes.join(",");
                 $scope.tokenParams.description = "*" + ($scope.descriptionFilter || "") + "*";
                 $scope.tokenParams.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
                 $scope.tokenParams.userid = "*" + ($scope.userIdFilter || "") + "*";
