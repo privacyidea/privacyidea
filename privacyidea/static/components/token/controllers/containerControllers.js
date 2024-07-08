@@ -18,9 +18,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         }, true);
 
         // Get the supported token types for each container type once
-        let allContainerTypes = {};
         ContainerFactory.getTokenTypes(function (data) {
-            allContainerTypes = data.result.value;
             $scope.formData.containerTypes = data.result.value;
 
             angular.forEach($scope.formData.containerTypes, function (_, containerType) {
