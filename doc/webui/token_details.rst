@@ -3,7 +3,7 @@
 .. _token_details:
 
 Functionality of the Tokens view
-===============================
+================================
 
 Selecting a token from the list presents a detailed overview on the properties
 of the token token and also let the administrator or a privileged user perform specific tasks for this token.
@@ -17,7 +17,7 @@ Below the token attributes you see the assigned user. You can click on the usern
 change to the :ref:`user_details`.
 
 Under the user assignment, the token can be added to or removed from a container. Clicking on the container serial
-redirects to the :ref:`container_details`.
+redirects to the container details (:ref:`container_functionality`).
 
 Lost token
 ----------
@@ -171,7 +171,7 @@ the token will be assigned.
 When enrolling a token, you can select the token type and according to the
 token type other necessary information.
 
-.. figure:: images/token-enroll.png
+.. figure:: images/token_enroll.png
    :width: 500
 
    *Token enrollment dialog*
@@ -193,13 +193,13 @@ can be assigned to a new user.
 Add to Container
 ----------------
 
-A token can be added to a container on the token details view and during the enrollment. Either a new container can be
-created or an existing container can be selected from a drop-down list.
+A token can be added to a container in the token details view and during the enrollment. You can either create a new
+container or select an existing container from a drop-down list.
 
 Remove from Container
 ---------------------
 
-A token can be removed from a container on the token details view. Afterward, the token can be added to a new container.
+A token can be removed from a container in the token details view. Afterward, the token can be added to a new container.
 
 Enable
 ------

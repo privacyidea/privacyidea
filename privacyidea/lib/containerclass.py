@@ -54,6 +54,9 @@ class TokenContainerClass:
         return self._db_container.last_seen
 
     def update_last_seen(self):
+        """
+        Updates the timestamp of the last seen field in the database.
+        """
         self._db_container.last_seen = datetime.now(timezone.utc)
         self._db_container.save()
 
@@ -62,6 +65,9 @@ class TokenContainerClass:
         return self._db_container.last_updated
 
     def update_last_updated(self):
+        """
+        Updates the timestamp of the last updated field in the database.
+        """
         self._db_container.last_updated = datetime.now(timezone.utc)
         self._db_container.save()
         self.update_last_seen()
@@ -72,13 +78,13 @@ class TokenContainerClass:
 
     def set_realms(self, realms, add=False):
         """
-        Set the realms of the container. If add is True, the realms will be added to the existing realms, otherwise the
+        Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise the
         existing realms will be removed.
 
         :param realms: List of realm names
         :param add: False if the existing realms shall be removed, True otherwise
         :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
-                 deleted
+                 deleted.
         """
         result = {}
 
@@ -154,7 +160,7 @@ class TokenContainerClass:
     def add_token(self, token: TokenClass):
         """
         Add a token to the container.
-        Raises a Parameter error if the token type is not supported by the container.
+        Raises a ParameterError if the token type is not supported by the container.
 
         :param token: TokenClass object
         :return: True if the token was successfully added, False if the token is already in the container
@@ -189,7 +195,7 @@ class TokenContainerClass:
         Raises a TokenAdminError if the container already has an owner.
 
         :param user: User object
-        :return: True if the user was assigned, False if the container already has an owner
+        :return: True if the user was assigned, False otherwise
         """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         if not TokenContainerOwner.query.filter_by(container_id=self._db_container.id).first():
@@ -267,6 +273,7 @@ class TokenContainerClass:
         Raises a ParameterError if the state list contains exclusive states.
 
         :param state_list: List of states as strings
+        :returns: Dictionary in the format {state: success}
         """
         if not state_list:
             state_list = []
@@ -299,6 +306,7 @@ class TokenContainerClass:
         Raises a ParameterError if the state list contains exclusive states.
 
         :param state_list: List of states as strings
+        :returns: Dictionary in the format {state: success}
         """
         if not state_list or len(state_list) == 0:
             return {}
@@ -392,14 +400,23 @@ class TokenContainerClass:
 
     @classmethod
     def get_class_type(cls):
+        """
+        Returns the type of the container class.
+        """
         return "generic"
 
     @classmethod
     def get_supported_token_types(cls):
+        """
+        Returns the token types that are supported by the container class.
+        """
         return get_token_types()
 
     @classmethod
     def get_container_policy_info(cls):
+        """
+        Returns the policy information of the container class.
+        """
         res = {
             "token_count": {"type": "int",
                             "value": "any",
@@ -416,8 +433,14 @@ class TokenContainerClass:
 
     @classmethod
     def get_class_prefix(cls):
+        """
+        Returns the container class specific prefix for the serial.
+        """
         return "CONT"
 
     @classmethod
     def get_class_description(cls):
+        """
+        Returns a description of the container class.
+        """
         return "General purpose container that can hold any type and any number of token."

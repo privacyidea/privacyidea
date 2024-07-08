@@ -34,7 +34,7 @@ def list_containers():
     at once.
 
     :query user: Username of a user assigned to the containers
-    :query serial: Serial of a single the container
+    :query serial: Serial of a single container
     :query type: Type of the containers to return
     :query token_serial: Serial of a token assigned to the container
     :query sortby: Sort by a container attribute (serial or type)
@@ -111,11 +111,11 @@ def list_containers():
 @log_with(log)
 def assign(container_serial):
     """
-    Assign a container to a user
+    Assign a container to a user.
 
     :param: container_serial: serial of the container
     :jsonparam user: Username of the user
-    :jsonparam realm: Realm of the user
+    :jsonparam realm: Name of the realm of the user
     """
     user = get_user_from_param(request.all_data, required)
     logged_in_user = request.User
@@ -161,7 +161,7 @@ def unassign(container_serial):
 @log_with(log)
 def init():
     """
-    Create a new container
+    Create a new container.
 
     :jsonparam: description: Description for the container
     :jsonparam: type: Type of the container. If the type is unknown, an error will be returned
@@ -195,6 +195,7 @@ def init():
 def delete(container_serial):
     """
     Delete a container.
+
     :param: container_serial: serial of the container
     """
     # Get parameters
@@ -224,7 +225,8 @@ def delete(container_serial):
 @log_with(log)
 def add_token(container_serial):
     """
-    Add a single token to a container
+    Add a single token to a container.
+
     :param: container_serial: serial of the container
     :jsonparam: serial: Serial of the token to add.
     """
@@ -255,7 +257,8 @@ def add_token(container_serial):
 @log_with(log)
 def add_all_tokens(container_serial):
     """
-    Add multiple tokens to a container
+    Add multiple tokens to a container.
+
     :param: container_serial: serial of the container
     :jsonparam: serial: Comma separated list of token serials
     """
@@ -290,7 +293,8 @@ def add_all_tokens(container_serial):
 @log_with(log)
 def remove_token(container_serial):
     """
-    Remove a single token from a container
+    Remove a single token from a container.
+
     :param: container_serial: serial of the container
     :jsonparam: serial: Serial of the token to remove.
     """
@@ -321,7 +325,8 @@ def remove_token(container_serial):
 @log_with(log)
 def remove_all_tokens(container_serial):
     """
-    Remove multiple tokens from a container
+    Remove multiple tokens from a container.
+
     :param: container_serial: serial of the container
     :jsonparam: serial: Comma separated list of token serials.
     """
@@ -373,7 +378,8 @@ def get_types():
 @log_with(log)
 def set_description(container_serial):
     """
-    Set the description of a container
+    Set the description of a container.
+
     :param: container_serial: Serial of the container
     :jsonparam: description: New description to be set
     """
@@ -403,7 +409,8 @@ def set_description(container_serial):
 @log_with(log)
 def set_states(container_serial):
     """
-    Set the states of a container
+    Set the states of a container.
+
     :jsonparam: states: string of comma separated states
     """
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
@@ -436,9 +443,9 @@ def set_states(container_serial):
 @log_with(log)
 def get_state_types():
     """
-    Get the supported state types as dictionary
+    Get the supported state types as dictionary.
     The types are the keys and the value is a list containing all states that are excluded when the key state is
-    selected
+    selected.
     """
     state_types_exclusions = TokenContainerClass.get_state_types()
     g.audit_object.log({"success": True})
@@ -453,6 +460,7 @@ def get_state_types():
 def set_realms(container_serial):
     """
     Set the realms of a container. Old realms will be deleted.
+
     :param: container_serial: Serial of the container
     :jsonparam: realms: comma separated string of realms, e.g. "realm1,realm2"
     """
@@ -489,7 +497,8 @@ def set_realms(container_serial):
 @log_with(log)
 def update_last_seen(container_serial):
     """
-    Updates the date and time for the last_seen property
+    Updates the date and time for the last_seen property.
+
     :param: container_serial: Serial of the container
     """
     container = find_container_by_serial(container_serial)
@@ -513,6 +522,13 @@ def update_last_seen(container_serial):
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
 @log_with(log)
 def set_container_info(container_serial, key):
+    """
+    Set the value of a container info key. Adds the key if it does not exist.
+
+    :param: container_serial: Serial of the container
+    :param: key: Key of the container info
+    :jsonparam: value: Value to set
+    """
     value = getParam(request.all_data, "value", required)
     user = request.User
     user_role = g.logged_in_user.get("role")

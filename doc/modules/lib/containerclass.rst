@@ -3,7 +3,7 @@ Container Class
 ...........
 
 The following container types are known to privacyIDEA. All are inherited from
-the generic tokenclass describe below.
+the generic tokenclass described below.
 
 .. toctree::
    :glob:

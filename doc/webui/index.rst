@@ -58,18 +58,17 @@ Containers
 
 .. index:: containerview
 
-The administrators can see all the containers of all realms he is allowed to manage in the container view. Each
-container can contain multiple tokens. A container can be in multiple realms but can only be assigned to one user.
-The administrator can see all the details of the container.
-The administrator can click on a container to show more details and perform actions on the container and the contained
-tokens.
+In the container view, administrators can see all the containers in all the realms they are allowed to manage. User can
+only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but can
+only be assigned to one user. You can click on a container to see more details and perform actions on the container and
+the tokens it contains.
 
 .. figure:: images/container_list.png
    :width: 500
 
    *Container List*
 
-More details about the container view can be found in :ref:`container_view`.
+More details about the container view can be found in :ref:`container_functionality`.
 
 .. _usersview:
 
