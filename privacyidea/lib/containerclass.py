@@ -78,8 +78,8 @@ class TokenContainerClass:
 
     def set_realms(self, realms, add=False):
         """
-        Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise the
-        existing realms will be removed.
+        Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
+        the existing realms will be removed.
 
         :param realms: List of realm names
         :param add: False if the existing realms shall be removed, True otherwise
