@@ -2305,9 +2305,13 @@ def get_static_policy_definitions(scope=None):
                 'value': list(get_email_validators().keys())},
             ACTION.VERIFY_ENROLLMENT: {
                 'type': 'str',
-                'desc': _("Specify a white space separated list of token types, "
-                          "that should be verified during enrollment."),
-                'group': GROUP.TOKEN}
+                'desc': _("Specify the list of token types, "
+                          "that must be verified during enrollment."),
+                'group': GROUP.TOKEN,
+                'multiple': True,
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes() if
+                          token_obj.can_verify_enrollment]
+            }
         },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {
@@ -2319,8 +2323,8 @@ def get_static_policy_definitions(scope=None):
                           'component.')},
             ACTION.CHALLENGERESPONSE: {
                 'type': 'str',
-                'desc': _('This is a whitespace separated list of tokentypes, '
-                          'that can be used with challenge response.'),
+                'desc': _('Specify the list of token types, '
+                          'that must be used with challenge response.'),
                 'multiple': True,
                 'value': [token_obj.get_class_type() for token_obj in get_token_classes() if "challenge" in token_obj.mode and len(token_obj.mode) > 1]
             },

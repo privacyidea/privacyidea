@@ -339,7 +339,7 @@ class IndexedSecretTokenClass(TokenClass):
 
         return False
 
-    def prepare_verify_enrollment(self):
+    def prepare_verify_enrollment(self, options=None):
         """
         This is called, if the token should be enrolled in a way, that the user
         needs to provide a proof, that the server can verify, that the token
@@ -350,7 +350,7 @@ class IndexedSecretTokenClass(TokenClass):
 
         :return: A dictionary with information that is needed to trigger the verification.
         """
-        _, return_message, transaction_id, reply_dict = self.create_challenge()
+        _, return_message, transaction_id, reply_dict = self.create_challenge(options=options)
         return {"message": return_message}
 
     def verify_enrollment(self, verify):
