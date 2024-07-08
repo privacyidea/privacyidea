@@ -375,6 +375,7 @@ class Token(MethodsMixin, db.Model):
         if self.first_owner:
             if self.first_owner.realm.name not in realms:
                 realms.append(self.first_owner.realm.name)
+                log.info("The realm of an assigned user cannot be removed.")
         for realm in set(realms):
             # Get the id of the realm to add
             r = Realm.query.filter_by(name=realm).first()
