@@ -12,12 +12,12 @@ jobs:
     name: Build Python sdist and wheel
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 2
     - run: mkdir -p dist
     - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Install build environment
@@ -32,13 +32,13 @@ jobs:
         path: dist/*
     - name: Create GitHub pre-release
       id: gh_pre_release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: contains(github.ref_name, 'dev')
       with:
         files: dist/*
         prerelease: True
     - name: Create GitHub release draft
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: steps.gh_pre_release.conclusion == 'skipped'
       with:
         files: dist/*
