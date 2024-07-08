@@ -1,4 +1,4 @@
-.. _rest_token:
+.. _rest_container:
 
 Container endpoints
 ...............
