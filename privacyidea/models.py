@@ -152,6 +152,9 @@ class TimestampMethodsMixin(object):
 #
 
 class TokenContainerToken(MethodsMixin, db.Model):
+    """
+    Association table to link tokens to containers.
+    """
     __tablename__ = 'tokencontainertoken'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     token_id = db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True)
@@ -3398,7 +3401,8 @@ class TokenContainerOwner(MethodsMixin, db.Model):
     def __init__(self, container_id=None, container_serial=None, resolver=None, user_id=None, realm_id=None,
                  realm_name=None):
         """
-        Create a new TokenContainerOwner assignment
+        Create a new TokenContainerOwner assignment.
+
         :param container_id:
         :param container_serial: alternative to container_id
         :param resolver:
@@ -3450,6 +3454,10 @@ class TokenContainerStates(MethodsMixin, db.Model):
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
     container = db.relationship("TokenContainer", back_populates="states")
     state = db.Column(db.Unicode(100), default='active', nullable=False)
+
+    """
+    The table "tokencontainerstates" is used to store the states of the container. A container can be in several states.
+    """
 
     def __init__(self, container_id=None, state="active"):
         self.container_id = container_id

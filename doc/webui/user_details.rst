@@ -28,7 +28,7 @@ Add tokens to container
 .......................
 
 You can also add tokens to a container from the users details view. Select the checkboxes for the tokens you want to add.
-Either create a new container or select one from the drop down list.
+Either create a new container or select one from the drop-down list.
 
 Assign tokens
 .............
