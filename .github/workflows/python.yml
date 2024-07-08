@@ -20,10 +20,10 @@ jobs:
     outputs:
       run_tests: ${{ steps.changes.outputs.python_test}}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 2
-    - uses: dorny/paths-filter@v2
+    - uses: dorny/paths-filter@v3
       id: changes
       with:
         filters: .github/filters.yml
@@ -42,18 +42,18 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         # clone submodules as well
         submodules: 'recursive'
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache pip installation
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: pip-cache
       with:
         path: ~/.cache/pip
@@ -79,6 +79,6 @@ jobs:
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' }}
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         files: ./coverage.xml
