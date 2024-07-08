@@ -6,16 +6,18 @@ Functionality of the Tokens view
 ===============================
 
 Selecting a token from the list presents a detailed overview on the properties
-of the token token and also let the
-administrator or a privileged user perform specific tasks for this token.
+of the token token and also let the administrator or a privileged user perform specific tasks for this token.
 
-.. figure:: images/token-detail.png
+.. figure:: images/token_details.png
    :width: 500
 
    *Token Detail*
 
-At the bottom you see the assigned user. You can click on the username and
+Below the token attributes you see the assigned user. You can click on the username and
 change to the :ref:`user_details`.
+
+Under the user assignment, the token can be added to or removed from a container. Clicking on the container serial
+redirects to the :ref:`container_details`.
 
 Lost token
 ----------
@@ -187,6 +189,17 @@ Unassign
 
 In the token details view you can unassign the token. After that, the token
 can be assigned to a new user.
+
+Add to Container
+----------------
+
+A token can be added to a container on the token details view and during the enrollment. Either a new container can be
+created or an existing container can be selected from a drop-down list.
+
+Remove from Container
+---------------------
+
+A token can be removed from a container on the token details view. Afterward, the token can be added to a new container.
 
 Enable
 ------

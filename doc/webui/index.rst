@@ -38,7 +38,7 @@ The administrator can see all the tokens of all realms he is allowed to manage i
 tokenview. Each token can be located in several realms and be assigned to one
 user. The administrator can see all the details of the token.
 
-.. figure:: images/tokensview.png
+.. figure:: images/token_view.png
    :width: 500
 
    *Tokens overview*
@@ -49,6 +49,27 @@ and to perform actions on this token. Read on in :ref:`token_details`.
 In the *Token Applications* the administrator can check for all SSH Keys attached to
 services and for HOTP tokens attached to machines for offline authentication.
 Also see :ref:`machines`.
+
+
+.. _container_view:
+
+Containers
+----------
+
+.. index:: containerview
+
+The administrators can see all the containers of all realms he is allowed to manage in the container view. Each
+container can contain multiple tokens. A container can be in multiple realms but can only be assigned to one user.
+The administrator can see all the details of the container.
+The administrator can click on a container to show more details and perform actions on the container and the contained
+tokens.
+
+.. figure:: images/container_list.png
+   :width: 500
+
+   *Container List*
+
+More details about the container view can be found in :ref:`container_view`.
 
 .. _usersview:
 
