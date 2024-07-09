@@ -323,8 +323,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             }
         };
 
+        $scope.returnTo = function () {
+            $state.go("token.containerlist");
+        }
+
         $scope.deleteContainer = function () {
-            ContainerFactory.deleteContainer($scope.containerSerial, $state.go("token.containerlist"));
+            ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo);
         }
 
         $scope.setDescription = function (description) {
