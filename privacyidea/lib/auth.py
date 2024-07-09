@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2015-11-03 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add check if an admin user exists
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org

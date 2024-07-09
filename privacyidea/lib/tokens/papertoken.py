@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-12-05 Cornelisu Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy papertoken_count
 #
@@ -95,8 +93,8 @@ class PaperTokenClass(HotpTokenClass):
         """
         res = {'type': 'paper',
                'title': 'Paper Token',
-               'description': 'PPR: One Time Passwords printed on a sheet '
-                              'of paper.',
+               'description': _('PPR: One Time Passwords printed on a sheet '
+                                'of paper.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],

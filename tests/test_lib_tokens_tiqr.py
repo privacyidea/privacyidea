@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass

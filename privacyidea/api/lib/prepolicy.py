@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #             Add WebAuthn token
 #  2019-02-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -118,6 +116,8 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
+
+DEFAULT_JWT_VALIDITY = 3600
 
 
 class prepolicy(object):
@@ -1463,10 +1463,11 @@ def pushtoken_disable_wait(request, action):
     request.all_data[PUSH_ACTION.WAIT] = False
 
 
-def pushtoken_wait(request, action):
+def pushtoken_validate(request, action):
     """
     This is a auth specific wrapper to decorate /validate/check
     According to the policy scope=SCOPE.AUTH, action=push_wait
+    and scope=SCOPE.AUTH, action=push_require_presence
 
     :param request:
     :param action:
@@ -1480,6 +1481,13 @@ def pushtoken_wait(request, action):
         request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
     else:
         request.all_data[PUSH_ACTION.WAIT] = False
+
+    require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
+                                  user_object=user_object if user_object else None).action_values(unique=True)
+    if len(require_presence) >= 1:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = list(require_presence)[0]
+    else:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = "0"
 
 
 def pushtoken_add_config(request, action):
@@ -2247,3 +2255,24 @@ def require_description(request=None, action=None):
         if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))
+
+
+def jwt_validity(request, action):
+    """
+    This is a decorator for the /auth endpoint to adapt the validity period of the issued JWT.
+    :param request:
+    :param action:
+    :return:
+    """
+    validity_time_pol = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
+                                    user_object=request.User if hasattr(request, 'User') else None)
+                         .action_values(unique=True))
+
+    validity_time = DEFAULT_JWT_VALIDITY
+    if len(validity_time_pol) == 1:
+        try:
+            validity_time = int(list(validity_time_pol)[0])
+        except ValueError:
+            log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
+    request.all_data[ACTION.JWTVALIDITY] = validity_time
+    return True

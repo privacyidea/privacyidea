@@ -177,6 +177,12 @@ is not set, the value from ``PI_NODE`` or ``localnode`` will be used.
 
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
+
+.. note:: If you run the Audit database on a different URI, the schema update script
+   will not update the Audit schema automatically during update. Then check the
+   READ_BEFORE_UPDATE.md, if the Audit data has been changed. Then you need to adapt
+   the Audit table manually.
+
 With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
@@ -303,6 +309,23 @@ you need to specify a list of your 3rd party token class modules
 in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
+
+.. _picfg_email_validators:
+
+3rd party email validators
+--------------------------
+
+privacyIDEA can use email validators while enrolling email tokens via validate/check.
+You can configure your own email validators in the `pi.cfg`::
+
+    PI_EMAIL_VALIDATOR_MODULES = [ "myproject.emailvalidator", "otherproject.nogmail" ]
+
+This module needs to provide a function `validate_email(email: str) -> bool` which returns True if the
+email is valid.
+
+The email validator module that comes with privacyIDEA is `privacyidea.lib.utils.emailvalidation`.
+You do not need to add this in the `pi.cfg` file, this is available by default.
+
 
 .. _custom_web_ui:
 

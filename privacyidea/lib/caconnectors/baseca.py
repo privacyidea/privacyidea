@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #

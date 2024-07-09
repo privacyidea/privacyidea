@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2021-02-04 Timo Sturm <timo.sturm@netknights.it>
 #             Fix import of yubikeys from yubico
 #  2020-11-11 Timo Sturm <timo.sturm@netknights.it>

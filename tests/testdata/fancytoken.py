@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """ Test module for a fancy token class """
 
 from privacyidea.lib.tokenclass import TokenClass

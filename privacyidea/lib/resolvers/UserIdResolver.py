@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2015-06-05   Cornelius Kölbel <cornelius@privacyidea.org>
 #              Add interface to edit and add users
 # Dec 01, 2014 Cornelius Kölbel <cornelius@privacyidea.org>

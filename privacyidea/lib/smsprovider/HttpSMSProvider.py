@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #

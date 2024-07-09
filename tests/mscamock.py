@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 2022-07-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
            Move all MS CA mocking into this file.

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-11-15   Friedrich Weber <friedrich.weber@netknights.it>
 #               Add a framework module to reduce the coupling to flask
 #

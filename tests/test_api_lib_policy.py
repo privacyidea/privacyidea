@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the api.lib.policy.py
 
@@ -23,6 +22,7 @@ from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
 
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED)
@@ -42,7 +42,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_wait,
+                                           pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait,
                                            webauthntoken_auth, webauthntoken_authz,
@@ -51,7 +51,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description)
+                                           require_description, jwt_validity)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -2006,14 +2006,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
         req.all_data = {"push_wait": "120"}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
         # Now we use the policy, to set the push_wait seconds
         set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
         req.all_data = {}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
 
         delete_policy("push1")
@@ -2033,6 +2033,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        delete_policy("push1")
+
+    def test_24c_push_require_presence(self):
+
+        # We send a fake require_presence, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       'pass': "pin",
+                                       'push_require_presence': "0"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"push_require_presence": "0"}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "0")
+
+        # Now we use the policy, to set the push_wait seconds
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        req.all_data = {}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "1")
 
         delete_policy("push1")
 
@@ -3422,6 +3450,39 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("require_description")
 
+    def test_62_jwt_validity(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set policy
+        set_policy(name="jwt_validity",
+                   scope=SCOPE.WEBUI,
+                   action=[f"{ACTION.JWTVALIDITY}=12"])
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+
+        # The validity of the JWT is set.
+        r = jwt_validity(req, None)
+        self.assertTrue(r)
+        self.assertEqual(12, req.all_data.get("jwt_validity"))
+
+        # Now test a bogus policy
+        set_policy(name="jwt_validity",
+                   scope=SCOPE.WEBUI,
+                   action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = jwt_validity(req, None)
+        self.assertTrue(r)
+        # We receive the default of 1 hour
+        self.assertEqual(3600, req.all_data.get("jwt_validity"))
+
+        delete_policy("jwt_validity")
+
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
@@ -3804,8 +3865,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3864,8 +3924,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception as e:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3929,8 +3988,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(mt.token.serial, serial)
         self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3978,8 +4036,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         serial = "offline01"
         # Do prepend_pin == False
         set_privacyidea_config(SYSCONF.PREPENDPIN, False)
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4071,8 +4128,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_get_webui_settings(self):
         self.setUp_user_realms()
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4224,8 +4280,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4279,8 +4334,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test admin_dashboard
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4313,6 +4367,51 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(jresult.get("result").get("value").get(ACTION.ADMIN_DASHBOARD))
 
         delete_policy("pol_dashboard")
+
+    def test_11_get_webui_settings_support_link(self):
+        # Test the link to the support
+        self.setUp_user_realms()
+
+        # The request with an OTP value and a PIN of a user, who has no token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "admin",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("supportmail", jresult.get("result").get("value"))
+
+        # Add a subscription
+        from privacyidea.models import Subscription
+        s = Subscription(application="privacyidea",
+                         for_name="testuser",
+                         for_email="admin@example.com",
+                         for_phone="0",
+                         by_name="privacyIDEA project",
+                         by_email="privacyidea@example.com",
+                         date_from=datetime.utcnow(),
+                         date_till=datetime.utcnow() + timedelta(days=365),
+                         num_users=100,
+                         num_tokens=100,
+                         num_clients=100
+                         ).save()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
+        self.assertIn(str(EXPIRE_MESSAGE), jresult.get("result").get("value").get("supportmail"))
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

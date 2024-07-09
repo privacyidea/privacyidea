@@ -168,6 +168,15 @@ and ``{ua_string}`` for information on the user agent and ``{username}`` and
 .. note:: You can use this to set the ``timeWindow`` of a TOTP token for
    :ref:`faq_initial_synchronization`.
 
+increase tokeninfo
+...................
+
+Using the action ``increase tokeninfo``, you can increase the value of a tokeninfo key.
+The tokeninfo is interpreted as an integer value.
+You can use a positive or a negative value as an *increment*. An increment like "-7" will
+decrease the current tokeninfo value by 7.
+If the tokeninfo does not exist, it will be created with the increment value.
+
 set failcounter
 ...............
 

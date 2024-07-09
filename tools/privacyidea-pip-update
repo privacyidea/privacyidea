@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import pipes
 from subprocess import call, check_output
 import getopt

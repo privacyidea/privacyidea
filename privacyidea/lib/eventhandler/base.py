@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add condition for detail->error->message
 #  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -52,7 +51,9 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (compare_condition, compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
-                                   check_ip_in_policy)
+                                   check_ip_in_policy, AUTH_RESPONSE)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ class CONDITION(object):
     DETAIL_MESSAGE = "detail_message"
     RESULT_VALUE = "result_value"
     RESULT_STATUS = "result_status"
+    RESULT_AUTHENTICATION = "result_authentication"
     TOKENREALM = "tokenrealm"
     TOKENRESOLVER = "tokenresolver"
     TOKEN_IS_IN_CONTAINER = "token_is_in_container"
@@ -86,6 +88,8 @@ class CONDITION(object):
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
+    CHALLENGE_SESSION = "challenge_session"
+    CHALLENGE_EXPIRED = "challenge_expired"
     CONTAINER_STATE = "container_state"
     CONTAINER_EXACT_STATE = "container_exact_state"
     CONTAINER_HAS_OWNER = "container_has_owner"
@@ -103,6 +107,7 @@ class GROUP(object):
     GENERAL = "general"
     USER = "user"
     COUNTER = "counter"
+    CHALLENGE = "challenge"
     CONTAINER = "container"
 
 
@@ -157,6 +162,21 @@ class BaseEventHandler(object):
         resolvers = get_resolver_list()
         container_states = [{"name": state} for state in TokenContainerClass.get_state_types().keys()]
         cond = {
+            CONDITION.CHALLENGE_SESSION:
+                {
+                    "type": "str",
+                    "desc": _("The challenge session matches the string or regular "
+                              "expression (like 'challenge_declined' or 'enrollment')"),
+                    "group": GROUP.CHALLENGE
+                },
+            CONDITION.CHALLENGE_EXPIRED:
+                {
+                    "type": "str",
+                    "desc": _("The challenge of a token during the authentication process"
+                              " is expired."),
+                    "value": ("True", "False"),
+                    "group": GROUP.CHALLENGE
+                },
             CONDITION.ROLLOUT_STATE:
                 {
                     "type": "str",
@@ -221,6 +241,14 @@ class BaseEventHandler(object):
                     "desc": _("The result.status within the response is "
                               "True or False."),
                     "value": ("True", "False"),
+                    "group": GROUP.GENERAL
+                },
+            CONDITION.RESULT_AUTHENTICATION:
+                {
+                    "type": "str",
+                    "desc": _("The result.authentication within the response is the given value."),
+                    "value": (
+                        AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.REJECT, AUTH_RESPONSE.CHALLENGE, AUTH_RESPONSE.DECLINED),
                     "group": GROUP.GENERAL
                 },
             "token_locked":
@@ -604,6 +632,7 @@ class BaseEventHandler(object):
         user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
+        transaction_id = request.all_data.get("transaction_id")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None
@@ -674,6 +703,12 @@ class BaseEventHandler(object):
             condition_value = conditions.get(CONDITION.RESULT_STATUS)
             result_status = content.get("result", {}).get("status")
             if is_true(condition_value) != is_true(result_status):
+                return False
+
+        if CONDITION.RESULT_AUTHENTICATION in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_AUTHENTICATION)
+            result_auth = content.get("result", {}).get("authentication")
+            if condition_value != result_auth:
                 return False
 
         # checking of max-failcounter state of the token
@@ -837,6 +872,26 @@ class BaseEventHandler(object):
             if CONDITION.ROLLOUT_STATE in conditions:
                 cond = conditions.get(CONDITION.ROLLOUT_STATE)
                 if not cond == token_obj.token.rollout_state:
+                    return False
+
+            # We also put the challenge condition here. If we do not have a
+            # token-obj we can not identify challenges.
+            if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
+                chals = get_challenges(serial=token_obj.token.serial, transaction_id=transaction_id)
+                if len(chals) == 1:
+                    chal = chals[0]
+                    if CONDITION.CHALLENGE_SESSION in conditions:
+                        cond_match = conditions.get(CONDITION.CHALLENGE_SESSION)
+                        if not bool(re.match(cond_match, chal.session)):
+                            return False
+                    if CONDITION.CHALLENGE_EXPIRED in conditions:
+                        condition_value = conditions.get(CONDITION.CHALLENGE_EXPIRED)
+                        if is_true(condition_value) == chal.is_valid():
+                            return False
+                elif len(chals) > 1:
+                    # If there is more than one challenge, the conditions seams awkward
+                    log.warning("There are more than one challenge for token {0!s} "
+                                "and transaction_id {1!s}".format(token_obj.token.serial, transaction_id))
                     return False
 
             if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:

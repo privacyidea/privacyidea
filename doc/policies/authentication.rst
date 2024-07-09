@@ -374,7 +374,7 @@ type: string
 
 This policy allows the rollout of tokens during the authentication via `/validate/check`.
 
-The policy action can take one of the followig token types: `hotp`, `totp`, `push`, `email`, `sms`.
+The policy action can take one of the following token types: `hotp`, `totp`, `push`, `email`, `sms`.
 
 The clients and plugins should make use of this policy in a transparent way and using multiple consecutive
 challenges.
@@ -417,6 +417,17 @@ there is no additional authentication step anymore during enrollment.
 
 .. note:: Enrolling multiple token types one after another is not supported. It is currently possible to
    enroll only one token type.
+
+
+.. _policy_enroll_via_multichallenge_text:
+
+enroll_via_multichallenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+There is a default text that is shown to the user, when a token via
+multichallenge is enrolled. The administrator can change this text using this policy.
 
 
 .. _policy_u2f_facets:
@@ -570,6 +581,30 @@ Sensible numbers might be 10 or 20 seconds.
    can block all available worker threads, which will cause privacyIDEA
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
+
+.. _policy_push_require_presence:
+
+push_require_presence
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: int
+
+If `require presence` is set to "1", then the login window will display a message like
+"Please confirm login by pressing Button 'C' on your smartphone".
+
+The push notification on the smartphone will show several buttons. One is labeled "C".
+
+The user then can confirm the login by pressing this button. All other buttons will decline the
+login request.
+
+.. note:: This mechanism allows login scenarios where the user in front of the login window and the
+   person owning the smartphone are two different persons. In this case they will have to communicate
+   for a successful login.
+
+If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
+
 
 
 .. _policy_auth_push_allow_poll:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 2020-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
            Add exception

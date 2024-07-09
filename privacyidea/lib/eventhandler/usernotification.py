@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use tags in email subject.
 #  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>

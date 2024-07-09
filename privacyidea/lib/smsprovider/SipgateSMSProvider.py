@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #   2016-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #              Add allowed parameters to the SMS Provider
 #

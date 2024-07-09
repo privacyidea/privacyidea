@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # privacyIDEA documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 13 07:31:01 2014.
 #
@@ -23,7 +21,7 @@ import functools
 # built documents.
 #
 # The short X.Y version.
-version = '3.10dev1'
+version = '3.10dev3'
 # The full version, including alpha/beta/rc tags.
 #release = '2.16dev5'
 release = version

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-09-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save and delete subscriptions
 #
@@ -34,6 +32,7 @@ from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib import _, lazy_gettext
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
@@ -41,6 +40,7 @@ import traceback
 from sqlalchemy import func
 
 
+EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
 {for_name}

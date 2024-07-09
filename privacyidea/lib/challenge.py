@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
 #  2014-12-07 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -31,6 +30,7 @@ from .log import log_with
 from ..models import Challenge
 
 log = logging.getLogger(__name__)
+
 
 
 @log_with(log)

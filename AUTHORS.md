@@ -143,7 +143,7 @@ Jens-U. Mozdzen <jmozdzen@nde.ag>
 Josef Wuebbels <josef.wuebbels@t-systems.com>
 Konstantin Burov <sad.2.shade@gmail.com>
 Lavesh Gupta <lavesh@Laveshs-MacBook-Pro.local>
-M. Maraun <maraun@web.de>
+Momme Maraun <maraun@web.de>
 Maksym Mohylko <maksym.mohylko@gmail.com>
 Maria Gimenez <m.gimenez@redlink.com.ar>
 Nathan <bonnemainsnathan@gmail.com>

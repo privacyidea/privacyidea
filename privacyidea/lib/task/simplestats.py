@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-08-06 Paul Lettich <paul.lettich@netknights.it>
 #
 #

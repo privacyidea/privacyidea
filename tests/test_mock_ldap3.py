@@ -1,4 +1,3 @@
-#-*- coding: utf-8 -*-
 """
 This test file tests the test.ldap3mock
 """

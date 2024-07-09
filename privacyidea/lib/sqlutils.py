@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-10-02 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add chunked deletions
 #

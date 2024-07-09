@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -54,11 +53,30 @@ log = logging.getLogger(__name__)
 def get_realms(realmname=None):
     """
     Either return all defined realms or a specific realm.
+    The dictionary looks like this:
+
+    {
+      'realmname': {
+        'id': <id of the realm>,
+        'option': <>,
+        'default': <default realm>,
+        'resolver': [
+          {
+            'name': <resolver name>',
+            'type': <resolver type>,
+            'priority': <resolver priority>,
+            'node': <resolver node>
+          },
+          {
+            ...
+          }
+        ]
+    }
 
     :param realmname: the realm, that is of interest. If not given, all realms
                       are returned
     :type realmname: string
-    :return: a dict with realm description like
+    :return: a dictionary with the realm description
     :rtype: dict
     """
     config_object = get_config_object()
@@ -86,6 +104,7 @@ def get_realm(realmname):
 def get_realm_id(realmname):
     """
     Returns the realm_id for a realm name
+
     :param realmname: The name of the realm
     :return: The ID of the realm. If the realm does not exist, returns None.
     """
@@ -99,7 +118,6 @@ def realm_is_defined(realm):
 
     :param realm: the realm, that should be verified
     :type  realm: string
-
     :return: found or not found
     :rtype: boolean
     """

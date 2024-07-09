@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-08-07   Friedrich Weber <friedrich.weber@netknights.it>
 #               Add a shared registry of SQLAlchemy engines to
 #               properly implement connection pooling for

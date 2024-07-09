@@ -184,7 +184,7 @@ def _validate_timelimit(_ctx, _param, value):
                    "(i.e. '5d' or '3h' for the entries from the last five days "
                    "or three hours. By default all audit entries will be dumped.")
 @click.option('-f', '--filename', type=click.File('w'), default=sys.stdout,
-              help="Name of the 'csv' file to dump the audit entries into. "
+              help="Name of the file to dump the audit entries into. "
                    "By default write to stdout.")
 def dump_audit(filename, timelimit):
     """Dump the audit log in csv format."""

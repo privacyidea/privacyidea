@@ -1,4 +1,4 @@
-Version 3.10dev3
+Version 3.10dev4
 
   Features:
   * Add token containers (#1291)
@@ -19,6 +19,33 @@ Version 3.10dev3
   * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
 
 
+Version 3.10dev3, 2024-06-27
+
+  Enhancements:
+  * Cleanup of expired challenges externally (#3920)
+
+  Fixes:
+  * Remove duplicate messages from response (#3989)
+  * Lazy translation evaluation for static strings (#3721)
+  * Truncate token description (#3747)
+
+Version 3.10dev2, 2024-05-07
+
+  Enhancements:
+  * Migration of several tools to the click framework
+  * Offline token: Allow to post-pend the PIN
+  * Dump token data to JSON
+  * Allow case-insensitive usernames in policies
+  * Allow extended notes on policies
+  * WebAuthn: Allow offline usage
+  * Add user-agent to audit log
+  * Check secret length for Yubikey token during enrollment
+
+  Fixes:
+  * Verify enrollment for indexed secret token
+  * Verify enrollment for paper token and TAN token
+  * WebUI: cancel poll-transaction in case another token is used
+
 Version 3.10dev1, 2023-11-29
 
   Enhancements:
@@ -29,17 +56,21 @@ Version 3.10dev1, 2023-11-29
   Fixes:
   * Use uppercase hash name for google-authenticator URLs (#3812)
 
+Version 3.9.3, 2024-04-04
+
+  Fixes:
+  * Fix creation of database tables with galera cluster (#3863)
+
 Version 3.9.2, 2023-12-20
 
   Fixes:
   * Allow verify-enroll for paper token and TAN token (#3809)
   * Fix offline data, when PIN is behind the OTP value (#3831)
 
-
 Version 3.9.1, 2023-11-06
 
   Fixes:
-  * Set correct start sequence for empty tables 
+  * Set correct start sequence for empty tables
   * Fix pi-manage backup
   * Add privacyIDEA CP to list of clients, that do not
     need to be unquoted. (#3770)

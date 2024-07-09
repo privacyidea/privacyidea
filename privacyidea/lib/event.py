@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-08-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow Pre-Handling events
 #  2016-05-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>

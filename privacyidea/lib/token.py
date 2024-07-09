@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
 #  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -1651,6 +1650,22 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
 
 @log_with(log)
 @check_user_or_serial
+def get_tokeninfo(serial, info):
+    """
+    get a token info field in the database.
+
+    :param serial: The serial number of the token
+    :type serial: basestring
+    :param info: The key of the info in the dict
+    """
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=None)
+
+    if len(tokenobject_list) == 1:
+        return tokenobject_list[0].get_tokeninfo(info)
+
+
+@log_with(log)
+@check_user_or_serial
 def add_tokeninfo(serial, info, value=None, value_type=None, user=None):
     """
     Sets a token info field in the database. The info is a dict for each
@@ -2088,7 +2103,6 @@ def check_serial_pass(serial, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    reply_dict = {}
     tokenobject = get_one_token(serial=serial)
     res, reply_dict = check_token_list([tokenobject], passw,
                                        user=tokenobject.user,
@@ -2187,9 +2201,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["type"] = token_obj.get_tokentype()
                 challenge_info["client_mode"] = token_obj.client_mode
                 challenge_info["message"] = message
-                # If exist, add next pin and next password change
-                next_pin = token_obj.get_tokeninfo(
-                    "next_pin_change")
+                # If they exist, add next pin and next password change
+                next_pin = token_obj.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
                     challenge_info["pin_change"] = \
@@ -2205,7 +2218,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
     if message_list:
-        reply_dict["message"] = ", ".join(message_list)
+        unique_messages = set(message_list)
+        reply_dict["message"] = ", ".join(unique_messages)
     # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
@@ -2388,7 +2402,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             reply_dict["serial"] = valid_token_list[0].token.serial
             reply_dict["type"] = valid_token_list[0].token.tokentype
             reply_dict["otplen"] = valid_token_list[0].token.otplen
-            # If exist, add next pin and next password change
+            # If they exist, add next pin and next password change
             next_pin = valid_token_list[0].get_tokeninfo("next_pin_change")
             if next_pin:
                 reply_dict["next_pin_change"] = next_pin
@@ -2424,7 +2438,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
-                    # If exist, add next pin and next password change
+                    # If they exist, add next pin and next password change
                     next_pin = tokenobject.get_tokeninfo("next_pin_change")
                     if next_pin:
                         reply_dict["next_pin_change"] = next_pin

@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import os
 import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.10dev1"
+VERSION = "3.10dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -110,7 +109,13 @@ setup(
     entry_points={
         'console_scripts': [
             'privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli',
-            'pi-manage = privacyidea.cli.pimanage:cli'
+            'pi-manage = privacyidea.cli.pimanage:cli',
+            'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
+            'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call',
+            'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:delete_call',
+            'privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli',
+            'privacyidea-expired-users = privacyidea.cli.tools.expired_users:expire_call',
+            'privacyidea-cron = privacyidea.cli.tools.cron:cli'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-23-09 Paul Lettich <paul.lettich@netknights.it>
 #             Add decrease and reset counter actions
 #  2018-02-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>

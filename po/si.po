@@ -1,15 +1,17 @@
+# "HelaBasa Group (හෙළබස සමූහය)" <weblate-helabasa@yalu.lk>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-07-21 13:33+0000\n"
-"Last-Translator: HelaBasa <R45XvezA@protonmail.ch>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: \"HelaBasa Group (හෙළබස සමූහය)\" <weblate-helabasa@yalu.lk>"
+"\n"
 "Language-Team: Sinhala <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/si/>\n"
+"privacyidea-webui/si/>\n"
 "Language: si\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.7.2-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27

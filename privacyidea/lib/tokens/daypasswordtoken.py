@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -21,11 +19,11 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +31,7 @@ log = logging.getLogger(__name__)
 class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the DayPassword token. For example: "24h"')
+    desc_timestep = lazy_gettext('Specify the time step of the DayPassword token. For example: "24h"')
 
     @log_with(log)
     def __init__(self, db_token):
@@ -201,6 +199,7 @@ class DayPasswordTokenClass(TotpTokenClass):
             self.inc_otp_counter(res)
         return res
 
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, options=None):
         """
@@ -365,7 +364,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
+                              adminuser=None, adminrealm=None):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -375,17 +375,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
-
-        :param g: context object, see documentation of ``Match``
-        :param params: The call parameters
-        :type params: dict
-        :return: default parameters
         """
         ret = {}
-        if not g.logged_in_user:
-            return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
         hashlib_pol = Match.generic(g, scope=role,
                                     action="daypassword_hashlib",
                                     user=username,

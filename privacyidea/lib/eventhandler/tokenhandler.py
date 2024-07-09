@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-06-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add dynamic email
 #  2018-04-14 Paul Lettich <paul.lettich@netknights.it>
@@ -48,7 +46,7 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo,
+                                   set_count_window, add_tokeninfo, get_tokeninfo,
                                    set_failcounter, delete_tokeninfo,
                                    get_one_token, set_max_failcount,
                                    assign_tokengroup, unassign_tokengroup)
@@ -82,6 +80,7 @@ class ACTION_TYPE(object):
     SET_VALIDITY = "set validity"
     SET_COUNTWINDOW = "set countwindow"
     SET_TOKENINFO = "set tokeninfo"
+    INCREASE_TOKENINFO = "increase tokeninfo"
     SET_FAILCOUNTER = "set failcounter"
     SET_MAXFAIL = "set max failcount"
     CHANGE_FAILCOUNTER = "change failcounter"
@@ -329,6 +328,22 @@ class TokenEventHandler(BaseEventHandler):
                                              "value.")
                         }
                 },
+            ACTION_TYPE.INCREASE_TOKENINFO:
+                {
+                    "key":
+                        {
+                            "type": "str",
+                            "required": True,
+                            "description": _("Interpret the tokeninfo as 'int' and increase the tokeninfo value "
+                                             "by the given offset.")
+                        },
+                    "increment":
+                        {
+                            "type": "str",
+                            "description": _("The increment the tokeninfo key should be increased. "
+                                             "Can be positive or negative, s.th. like +1 or -7.")
+                        }
+                },
             ACTION_TYPE.DELETE_TOKENINFO:
                 {
                     "key":
@@ -453,6 +468,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_VALIDITY,
                               ACTION_TYPE.SET_COUNTWINDOW,
                               ACTION_TYPE.SET_TOKENINFO,
+                              ACTION_TYPE.INCREASE_TOKENINFO,
                               ACTION_TYPE.SET_FAILCOUNTER,
                               ACTION_TYPE.SET_MAXFAIL,
                               ACTION_TYPE.CHANGE_FAILCOUNTER,
@@ -524,6 +540,15 @@ class TokenEventHandler(BaseEventHandler):
                                       realm=realm,
                                       ua_browser=request.user_agent.browser,
                                       ua_string=request.user_agent.string))
+                elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
+                    try:
+                        # We assume that the tokeninfo is an integer
+                        increment = int(handler_options.get("increment") or 1)
+                        current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
+                        add_tokeninfo(serial, handler_options.get("key"),
+                                      "{}".format(current_value + increment))
+                    except ValueError:
+                        log.warning("Can not increase the tokeninfo {0!s}".format(handler_options.get("key")))
                 elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
                     delete_tokeninfo(serial, handler_options.get("key"))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
@@ -646,7 +671,7 @@ class TokenEventHandler(BaseEventHandler):
                     user = request.User
                     user_role = g.logged_in_user.get("role")
                     add_token_to_container(container_serial, t.get_serial(), user=user,
-                                            user_role=user_role)
+                                           user_role=user_role)
                 else:
                     log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
 

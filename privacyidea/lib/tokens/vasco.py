@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2018-01-15 friedrich.weber@netknights.it
 #            Remove unused routines, redesign serialization step,
 #            adapt to privacyIDEA, refactoring

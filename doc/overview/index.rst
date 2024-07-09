@@ -57,6 +57,8 @@ to consider the following aspects:
 * Configure your DNS and ensure to use **FQDN**.
   Avoid static IP addresses.
 
+* Ensure a correct time. User **NTP**.
+
 * Setup a reliable **database**. If you are planning a redundant setup
   the redundancy is done via the database cluster.  Manage your database
   and think about sizing - especially when it comes to collecting

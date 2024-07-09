@@ -1,5 +1,4 @@
 
-# -*- coding: utf-8 -*-
 __doc__ = """
 This test file tests the modules:
  lib.smsprovider.httpsmsprovider

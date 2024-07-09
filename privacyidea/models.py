@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-06-20 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add PeriodicTask, PeriodicTaskOption, PeriodicTaskLastRun
 #  2018-25-09 Paul Lettich <paul.lettich@netknights.it>
@@ -53,7 +51,7 @@ from privacyidea.lib.crypto import (encrypt,
                                     SecretObj,
                                     get_rand_digit_str)
 from sqlalchemy import and_, desc
-from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import Sequence, CreateSequence
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.exc import IntegrityError
 from .lib.log import log_with
@@ -81,6 +79,16 @@ db = SQLAlchemy()
 @compiles(db.DateTime, "mysql")
 def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
     return "DATETIME(6)"
+
+
+# Fix creation of sequences on MariaDB (and MySQL, which does not support
+# sequences anyway) with galera by adding INCREMENT BY 0 to CREATE SEQUENCE
+@compiles(CreateSequence, 'mysql')
+@compiles(CreateSequence, 'mariadb')
+def increment_by_zero(element, compiler, **kw):  # pragma: no cover
+    text = compiler.visit_create_sequence(element, **kw)
+    text = text + " INCREMENT BY 0"
+    return text
 
 
 class MethodsMixin(object):
@@ -472,6 +480,9 @@ class Token(MethodsMixin, db.Model):
     def set_description(self, desc):
         if desc is None:
             desc = ""
+        length = len(desc)
+        if length > Token.description.property.columns[0].type.length:
+            desc = desc[:Token.description.property.columns[0].type.length]
         self.description = convert_column_to_unicode(desc)
         return self.description
 
@@ -1074,7 +1085,7 @@ class NodeName(db.Model, TimestampMethodsMixin):
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
     id = db.Column(db.Unicode(36), primary_key=True)
     name = db.Column(db.Unicode(100), index=True)
-    lastseen = db.Column(db.DateTime(False), index=True, default=datetime.now(tz=tzutc()))
+    lastseen = db.Column(db.DateTime(), index=True, default=datetime.now(tz=tzutc()))
 
 
 class Resolver(TimestampMethodsMixin, db.Model):
@@ -1189,15 +1200,13 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
     # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
-    node_uuid = db.Column(db.Unicode(36), db.ForeignKey("nodename.id"), default='')
+    node_uuid = db.Column(db.Unicode(36), default='')
     resolver = db.relationship(Resolver,
                                lazy="joined",
                                back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
                             back_populates="resolver_list")
-    node = db.relationship(NodeName,
-                           lazy="joined")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           'node_uuid',
@@ -1227,12 +1236,19 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                 .filter_by(name=realm_name) \
                 .first().id
         if node_uuid:
-            self.node_uuid = node_uuid
+            # Check if the node is already defined in the NodeName table
+            if db.session.scalar(db.select(db.func.count(NodeName.id)).filter(NodeName.id == node_uuid)) > 0:
+                self.node_uuid = node_uuid
+            else:
+                # Did not find a NodeName entry, adding a new one only if node_name is set
+                if node_name:
+                    self.node_uuid = NodeName(node_uuid, node_name).save().id
+
         elif node_name:
             # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = NodeName.query.filter_by(name=node_name) \
-                .order_by(desc(NodeName.lastseen)) \
-                .first().id
+            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)
+                                               .order_by(desc(NodeName.lastseen))
+                                               .first()).id
 
 
 class TokenOwner(MethodsMixin, db.Model):
@@ -1304,8 +1320,7 @@ class TokenRealm(MethodsMixin, db.Model):
     many additional realms.
     """
     __tablename__ = 'tokenrealm'
-    id = db.Column(db.Integer(), Sequence("tokenrealm_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokenrealm_seq"), primary_key=True)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
     realm_id = db.Column(db.Integer(),
@@ -1414,7 +1429,7 @@ class Challenge(MethodsMixin, db.Model):
     # The token serial number
     serial = db.Column(db.Unicode(40), default='', index=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow(), index=True)
-    expiration = db.Column(db.DateTime)
+    expiration = db.Column(db.DateTime, index=True)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
 
@@ -1527,15 +1542,43 @@ class Challenge(MethodsMixin, db.Model):
         return "{0!s}".format(descr)
 
 
-def cleanup_challenges():
+def cleanup_challenges(serial):
     """
     Delete all challenges, that have expired.
 
     :return: None
     """
     c_now = datetime.utcnow()
-    Challenge.query.filter(Challenge.expiration < c_now).delete()
+    Challenge.query.filter(Challenge.expiration < c_now, Challenge.serial == serial).delete()
     db.session.commit()
+
+
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#
+
+
+class PolicyDescription(TimestampMethodsMixin, db.Model):
+    """
+    The description table is used to store the description of policy
+    """
+    __tablename__ = 'description'
+    id = db.Column(db.Integer, Sequence("description_seq"), primary_key=True)
+    object_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    object_type = db.Column(db.Unicode(64), unique=False, nullable=False)
+    last_update = db.Column(db.DateTime, default=datetime.utcnow)
+    description = db.Column(db.UnicodeText())
+
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+
+    def __init__(self, object_id, name="", object_type="", description=""):
+
+        self.name = name
+        self.object_type = object_type
+        self.object_id = object_id
+        self.last_update = datetime.now()
+        self.description = description
 
 
 # -----------------------------------------------------------------------------
@@ -1585,6 +1628,8 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
+    description = db.relationship('PolicyDescription', backref='policy',
+                                  cascade="save-update, merge, delete, delete-orphan")
 
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
@@ -1631,6 +1676,16 @@ class Policy(TimestampMethodsMixin, db.Model):
         """
         return [condition.as_tuple() for condition in self.conditions]
 
+    def get_policy_description(self):
+        """
+
+        """
+        if self.description:
+            ret = self.description[0].description
+        else:
+            ret = None
+        return ret
+
     @staticmethod
     def _split_string(value):
         """
@@ -1669,7 +1724,8 @@ class Policy(TimestampMethodsMixin, db.Model):
              "client": self._split_string(self.client),
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
-             "priority": self.priority}
+             "priority": self.priority,
+             "description": self.get_policy_description()}
         action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
             ",")]
         action_dict = {}
@@ -2541,7 +2597,7 @@ class SMTPServer(MethodsMixin, db.Model):
     This table can store configurations for SMTP servers.
     Each entry represents an SMTP server.
     EMail Token, SMS SMTP Gateways or Notifications like PIN handlers are
-    supposed to use a reference to to a server definition.
+    supposed to use a reference to a server definition.
     Each Machine Resolver can have multiple configuration entries.
     The config entries are referenced by the id of the machine resolver
     """
@@ -2790,6 +2846,9 @@ audit_column_length = {"signature": 620,
                        "loglevel": 12,
                        "clearance_level": 12,
                        "thread_id": 20,
+                       "authentication": 12,
+                       "user_agent": 20,
+                       "user_agent_version": 20,
                        "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
@@ -2807,6 +2866,7 @@ class Audit(MethodsMixin, db.Model):
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
     action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
+    authentication = db.Column(db.Unicode(audit_column_length.get("authentication")))
     serial = db.Column(db.Unicode(audit_column_length.get("serial")))
     token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
     container_serial = db.Column(db.Unicode(audit_column_length.get("container_serial")))
@@ -2822,6 +2882,8 @@ class Audit(MethodsMixin, db.Model):
     privacyidea_server = db.Column(
         db.Unicode(audit_column_length.get("privacyidea_server")))
     client = db.Column(db.Unicode(audit_column_length.get("client")))
+    user_agent = db.Column(db.Unicode(audit_column_length.get("user_agent")))
+    user_agent_version = db.Column(db.Unicode(audit_column_length.get("user_agent_version")))
     loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
@@ -2831,6 +2893,7 @@ class Audit(MethodsMixin, db.Model):
     def __init__(self,
                  action="",
                  success=0,
+                 authentication="",
                  serial="",
                  token_type="",
                  container_serial="",
@@ -2843,6 +2906,8 @@ class Audit(MethodsMixin, db.Model):
                  info="",
                  privacyidea_server="",
                  client="",
+                 user_agent="",
+                 user_agent_version="",
                  loglevel="default",
                  clearance_level="default",
                  thread_id="0",
@@ -2856,6 +2921,7 @@ class Audit(MethodsMixin, db.Model):
         self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
+        self.authentication = convert_column_to_unicode(authentication)
         self.serial = convert_column_to_unicode(serial)
         self.token_type = convert_column_to_unicode(token_type)
         self.container_serial = convert_column_to_unicode(container_serial)
@@ -2872,6 +2938,8 @@ class Audit(MethodsMixin, db.Model):
         self.clearance_level = convert_column_to_unicode(clearance_level)
         self.thread_id = convert_column_to_unicode(thread_id)
         self.policies = convert_column_to_unicode(policies)
+        self.user_agent = convert_column_to_unicode(user_agent)
+        self.user_agent_version = convert_column_to_unicode(user_agent_version)
 
 
 ### User Cache
@@ -3278,8 +3346,7 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
                                           'tokengroup_id',
                                           name='ttgix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
-    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
     tokengroup_id = db.Column(db.Integer(),

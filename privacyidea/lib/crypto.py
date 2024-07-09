@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-12-19 Paul Lettich <paul.lettich@netknights.it>
 #             Change public functions to accept and return unicode
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>

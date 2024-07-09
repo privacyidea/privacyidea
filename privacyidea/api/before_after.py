@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
@@ -74,7 +72,7 @@ from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -247,6 +245,7 @@ def before_request():
         audit_resolver = getParam(request.all_data, "resolver")
         audit_username = getParam(request.all_data, "user")
 
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "user": audit_username,
@@ -256,7 +255,8 @@ def before_request():
                         "container_serial": container_serial,
                         "container_type": container_type,
                         "client": g.client_ip,
-                        "client_user_agent": request.user_agent.browser,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",

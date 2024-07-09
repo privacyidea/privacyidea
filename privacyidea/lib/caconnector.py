@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add certificate templates to the list of CA connector
 #  2015-04-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-26-09 Paul Lettich <paul.lettich@netknights.it>
 #             Add decrease/reset functions
 #  2018-03-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>

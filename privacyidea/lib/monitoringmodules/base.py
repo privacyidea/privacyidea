@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-11-22 Initial create
 #             Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #

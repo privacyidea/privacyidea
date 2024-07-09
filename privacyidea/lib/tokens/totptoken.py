@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
 #  2017-12-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,10 +40,10 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.utils import determine_logged_in_userparams
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 optional = True
 required = False
@@ -59,7 +57,7 @@ class TotpTokenClass(HotpTokenClass):
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the time-based OTP token.')
+    desc_timestep = lazy_gettext('Specify the time step of the time-based OTP token.')
 
     @log_with(log)
     def __init__(self, db_token):
@@ -294,6 +292,7 @@ class TotpTokenClass(HotpTokenClass):
         # return the current timestamp
         return datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -635,26 +634,15 @@ class TotpTokenClass(HotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
+                              adminuser=None, adminrealm=None):
         """
-        This method returns a dictionary with default settings for token
-        enrollment.
-        These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
-        totp_hashlib, totp_timestep and totp_otplen.
-        If these are set, the user or admin will only be able to enroll tokens
-        with these values.
+        Internal function that can be called either during enrollment via /token/init or during
+        enrollment via validate/check.
+        This way we have consistent policy handling.
+        """
 
-        The returned dictionary is added to the parameters of the API call.
-        :param g: context object, see documentation of ``Match``
-        :param params: The call parameters
-        :type params: dict
-        :return: default parameters
-        """
         ret = {}
-        if not g.logged_in_user:
-            return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
         hashlib_pol = Match.generic(g, scope=role,
                                     action="totp_hashlib",
                                     user=username,
@@ -683,6 +671,7 @@ class TotpTokenClass(HotpTokenClass):
             ret["otplen"] = list(otplen_pol)[0]
 
         return ret
+
 
     @staticmethod
     def get_import_csv(l):

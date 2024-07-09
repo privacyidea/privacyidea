@@ -849,3 +849,15 @@ To prevent tokens from becoming unidentifiable after a device loss, a descriptio
 be enforced with the "require_description policy". The desired token-types can be
 selected here. After setting up the policy, the selected token types can only be
 enrolled if a description is set during enrollment.
+
+.. _policy_email_validate:
+
+email_validation
+~~~~~~~~~~~~~~~~
+
+type: string
+
+This action can be used to validate the email address of the user during enrollment.
+The administrator specifies the Python module, that should be used to validate the email address.
+The modules can be defined in the `pi.cfg` file.
+See :ref:`picfg_email_validators` for more information.

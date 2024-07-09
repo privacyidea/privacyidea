@@ -262,3 +262,5 @@ The challenge validity time
 This setting defines the timeout for a challenge response
 authentication. If the response is received after the given time interval, the
 response is not accepted anymore.
+
+To clean up expired challenges read the :ref:`pimanage_challenge` section.

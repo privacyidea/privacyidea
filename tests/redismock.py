@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 2015-06-04 Create REDIS mock
            Cornelius Kölbel <cornelius@privacyidea.org>

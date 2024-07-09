@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-08-12 Sebastian Plattner
 #             Allow hostname and machine ID being the same
 #             LDAP attribute.

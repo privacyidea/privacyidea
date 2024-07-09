@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
 import logging
 

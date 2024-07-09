@@ -287,7 +287,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                                 if (value.multiple === true) {
                                     let vals = $scope.actions.find(x => x.name === key).allowedValues;
                                     policyActions[key].split(' ').forEach(function (n) {
-                                        vals.find(x => x.name === n).ticked = true;
+                                        (vals.find(x => x.name === n) || {}).ticked = true;
                                     })
                                 }
                             }
@@ -312,6 +312,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             user_case_insensitive: false,
             client: "",
             time: "",
+            description: "",
             priority: 1,
             conditions: [],
             pinode: []
@@ -419,6 +420,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
+            $scope.params.description = policy.description;
             // we need to deep-copy the policy conditions to ensure that we're working on our own copy
             $scope.params.conditions = angular.copy(policy.conditions);
             // tick the realms and the resolvers

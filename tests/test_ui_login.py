@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This file tests the web UI Login
 

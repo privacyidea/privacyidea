@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add passthru_assign policy
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>

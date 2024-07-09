@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-02-25 Cornelius Kölbeb <cornelius.koelbel@netknights.it>
 #             Add template functionality
 #  2015-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>

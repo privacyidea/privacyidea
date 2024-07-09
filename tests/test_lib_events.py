@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This file contains the event handlers tests. It tests:
 
@@ -41,7 +39,8 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
+from privacyidea.models import Challenge
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import is_true
@@ -733,7 +732,130 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         remove_token(serial)
 
-    def test_10_check_token_is_in_container(self):
+    def test_10_check_challenge_session(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tid = "1234567"
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        # Prepare a challenge
+        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal.save()
+        # One token with one declined challenge
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue",
+                                       "transaction_id": tid},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue",
+                        "transaction_id": tid}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.ENROLLMENT}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+        # We have two declined challenges, add a 2nd one.
+        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal.save()
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # We will receive a False and a log.warning
+        self.assertFalse(r)
+
+        remove_token(serial)
+
+    def test_11_check_challenge_expired(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tid = "1234567"
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        # Prepare a challenge, that is not yet expired
+        chal = Challenge(serial=serial, transaction_id=tid)
+        chal.save()
+        # One token with one declined challenge
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue",
+                                       "transaction_id": tid},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue",
+                        "transaction_id": tid}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "false"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Right, the challenge has not yet expired.
+        self.assertTrue(r)
+
+        # Check if the condition does not match, so we have an expired challenge
+        chal.delete()
+        chal = Challenge(serial=serial, transaction_id=tid, validitytime=-120)
+        chal.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "True"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Right, the challenge has expired.
+        self.assertTrue(r)
+
+        remove_token(serial)
+
+    def test_12_check_token_is_in_container(self):
         # Prepare the container and token
         container_serial = init_container({"type": "generic"})
         token_serial = "SPASS01"
@@ -783,7 +905,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         delete_container_by_serial(container_serial, User(), "admin")
         remove_token(token_serial)
 
-    def test_11_check_container_state(self):
+    def test_13_check_container_state(self):
         # Prepare the container
         container_serial = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
@@ -838,7 +960,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
-    def test_12_check_container_has_owner(self):
+    def test_14_check_container_has_owner(self):
         # create user
         self.setUp_user_realms()
         test_user = User(login="cornelius",
@@ -895,7 +1017,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
-    def test_13_check_container_type(self):
+    def test_15_check_container_type(self):
         # Init container
         container_serial = init_container({"type": "smartphone"})
         container = find_container_by_serial(container_serial)
@@ -930,7 +1052,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
-    def test_14_check_container_has_token(self):
+    def test_16_check_container_has_token(self):
         # Init container
         container_serial = init_container({"type": "generic"})
 
@@ -2314,6 +2436,7 @@ class TokenEventTestCase(MyTestCase):
         # check actions
         actions = TokenEventHandler().actions
         self.assertTrue("set tokeninfo" in actions, actions)
+        self.assertTrue("increase tokeninfo" in actions, actions)
 
         # check positions
         pos = TokenEventHandler().allowed_positions
@@ -3039,6 +3162,37 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_tokeninfo("pastText", "key not found")
         self.assertEqual(tw, "key not found")
+
+        # Test 'increase tokeninfo'. Set a tokeninfo to 17.
+        tokeninfo_key = "pushMitigation"
+        t[0].add_tokeninfo(tokeninfo_key, "17")
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("17", ti)
+        # Now we run an event handler, that increases the tokeninfo by 3
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": tokeninfo_key,
+                                               "increment": "3"}
+                                   }
+                   }
+        res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("20", ti)
+
+        # Now, decrease the tokeninfo
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": tokeninfo_key,
+                                               "increment": "-10"}
+                                   }
+                   }
+        res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        ti = t[0].get_tokeninfo(tokeninfo_key)
+        self.assertEqual("10", ti)
 
         remove_token("SPASS01")
 

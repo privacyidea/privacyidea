@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the lib/machine.py for attaching and detaching tokens
 """

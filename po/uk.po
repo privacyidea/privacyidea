@@ -1,18 +1,21 @@
+# Maksym Mohylko <maksym.mohylko@gmail.com>, 2024.
+# Dan <jonweblin2205@protonmail.com>, 2024.
+# Artem <artem@molotov.work>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-05-20 13:53+0000\n"
-"Last-Translator: Dan <denqwerta@gmail.com>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: Artem <artem@molotov.work>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -256,8 +259,8 @@ msgstr ""
 "                <p>PrivacyIDEA - система багатофакторної "
 "автентифікації<b>корпоративного рівня</b>.\n"
 "                    Вона з відкритим кодом.\n"
-"                    Основні розробники працюють в NetKnights GmbH, "
-"Німеччина.\n"
+"                    Основні розробники працюють в NetKnights GmbH, Німеччина."
+"\n"
 "                    NetKnights постачає\n"
 "                    <a target=\"netknights\" href=\"https://netknights.it/en/"
 "produkte/privacyidea/\">PrivacyIDEA Enterprise Edition</a>\n"

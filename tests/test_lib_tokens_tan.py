@@ -2,10 +2,12 @@
 This test file tests the lib.tokens.papertoken
 This depends on lib.tokenclass
 """
+import logging
 
+from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.tantoken import TanTokenClass
-from privacyidea.lib.token import init_token, get_tokens_paginate, import_token
+from privacyidea.lib.token import init_token, import_token
 from privacyidea.models import Token
 
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -15,7 +17,7 @@ class TanTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="tan")
         db_token.save()
@@ -67,6 +69,17 @@ class TanTokenTestCase(MyTestCase):
         # previous OTP
         r = token.check_otp("755224")
         self.assertEqual(r, -1)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp("12345"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (5 != 6)'))
+            self.assertEqual(-1, token.check_otp("1234567"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (7 != 6)'))
 
     def test_05_import(self):
         params = TanTokenClass.get_import_csv(["se1", "121212", "tan",
@@ -107,7 +120,7 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(tok.token.otplen, 4)
 
     def test_10_import_tan(self):
-        # This are example values that are imported from a file and end up at
+        # These are example values that are imported from a file and end up at
         # lib/token.import_token
         serial = "ABC123"
         params = {'hashlib': 'sha1',

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -28,7 +26,7 @@
 contains Errors and Exceptions
 """
 
-from privacyidea.lib import _
+from privacyidea.lib import lazy_gettext
 import logging
 
 log = logging.getLogger(__name__)
@@ -191,7 +189,6 @@ class SelfserviceException(privacyIDEAError):
 
 
 class ParameterError(privacyIDEAError):
-    USER_OR_SERIAL = _('You either need to provide user or serial')
 
     def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
         privacyIDEAError.__init__(self, description=description, id=id)

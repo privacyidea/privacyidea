@@ -18,8 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import click
-from flask.cli import FlaskGroup
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.lib.utils import get_version_number
 from .findtokens import findtokens
 from .loadtokens import loadtokens
@@ -29,11 +28,19 @@ from .updatetokens import updatetokens
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(cls=FlaskGroup, create_app=create_app, context_settings=CONTEXT_SETTINGS,
+@click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
              add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
-    """Management script for tokens of privacyIDEA."""
+    """
+\b
+             _                    _______  _______
+   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+ / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
+/_/                       /___/
+
+   Management script for tokens of privacyIDEA."""
     click.echo(r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |

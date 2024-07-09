@@ -1,10 +1,10 @@
 """
 This test file tests the lib.tokens.daypasswordtoken.py
 """
-import datetime
 import binascii
 import logging
 import time
+from testfixtures import LogCapture
 from unittest import mock
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
@@ -281,13 +281,26 @@ class DayPasswordTokenTestCase(MyTestCase):
         with mock.patch('time.time') as MockTime:
             MockTime.return_value = 1692662723.0  # 2023-08-22T00:55:23+00:00
             # The previous OTP does not work
-            self.assertEqual(token.check_otp_exist("819480"), -1)
+            self.assertEqual(token.check_otp("819480"), -1)
             # The next OTP does not work
-            self.assertEqual(token.check_otp_exist("795010"), -1)
+            self.assertEqual(token.check_otp("795010"), -1)
             # Current OTP works
-            res = token.check_otp_exist("079551")
-            # Found the counter 47251645
-            self.assertEqual(res, 470184)
+            # Found the counter 470184
+            self.assertEqual(470184, token.check_otp("079551"))
+            # Test wrong otp lengths
+            with LogCapture(level=logging.INFO) as lc:
+                self.assertEqual(token.check_otp("07955"), -1)
+                lc.check(
+                    ('privacyidea.lib.decorators', 'INFO',
+                     f'OTP value for token {db_token.serial} (type: {token.type}) '
+                     f'has wrong length (5 != 6)')
+                )
+                self.assertEqual(token.check_otp("0795512"), -1)
+                lc.check_present(
+                    ('privacyidea.lib.decorators', 'INFO',
+                     f'OTP value for token {db_token.serial} (type: {token.type}) '
+                     f'has wrong length (7 != 6)')
+                )
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -469,9 +482,9 @@ class DayPasswordTokenTestCase(MyTestCase):
                 self.assertEqual(res[2].get("otp").get(count).get('otpval'), value, res[2].get("otp"))
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("705493", counter=47251648) == -1, res)
+        token.token.otplen = 6
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

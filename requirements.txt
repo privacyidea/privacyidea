@@ -25,7 +25,7 @@ cachetools==5.3.2
 cbor2==5.4.6; python_version == "3.7"
 cbor2==5.5.0; python_version > "3.7"
     # via privacyIDEA (setup.py)
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
 cffi==1.15.1; python_version == "3.7"
 cffi==1.16.0; python_version > "3.7"
@@ -58,8 +58,6 @@ flask-babel==2.0.0
     # via privacyIDEA (setup.py)
 flask-migrate==2.7.0
     # via privacyIDEA (setup.py)
-flask-script==2.0.6
-    # via privacyIDEA (setup.py)
 flask-sqlalchemy==2.5.1
     # via
     #   flask-migrate
@@ -76,7 +74,7 @@ huey[redis]==2.5.0
     # via
     #   huey
     #   privacyIDEA (setup.py)
-idna==3.4
+idna==3.7
     # via requests
 importlib-metadata==6.7.0 ; python_version == "3.7"
 importlib-metadata==6.8.0 ; python_version == "3.8"
@@ -124,7 +122,7 @@ pydash==7.0.6
     # via privacyIDEA (setup.py)
 pyjwt==2.8.0
     # via privacyIDEA (setup.py)
-pymysql==1.1.0
+pymysql==1.1.1
     # via privacyIDEA (setup.py)
 pyopenssl==24.0.0
     # via privacyIDEA (setup.py)

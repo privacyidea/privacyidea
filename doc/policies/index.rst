@@ -10,8 +10,8 @@ Policies
 
 Policies can be used to define the reaction and behaviour of the system.
 
-Each policy defines the behaviour in a certain area, called scope. 
-privacyIDEA knows the scopes:
+Each policy defines the behaviour in a certain area, called scope.
+privacyIDEA knows these scopes:
 
 .. toctree::
    :maxdepth: 1
@@ -56,11 +56,14 @@ Each policy can contain the following attributes:
 
   The scope of the policy as described above.
 
+**description**
+    Use this to describe your policy in more detail.
+
 **action**
 
-  This is the important part of the policy. 
+  This is the important part of the policy.
   Each scope provides its own
-  set of actions. 
+  set of actions.
   An action describes that something is `allowed` or
   that some behaviour is configured.
   A policy can contain several actions.

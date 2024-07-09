@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-02-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Initial writup
 #
@@ -204,7 +202,7 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     :param mtid: The specific id of a specific machinetoken
     :param filter_params: additional machinetoken options to filter the detachment
     :type filter_params: dict
-    :return: the new MachineToken Object
+    :return: the number of deleted MachineToken objects
     """
     r = None
     if mtid:
@@ -215,7 +213,7 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     else:
         filter_params = filter_params or {}
         if machine_id == ANY_MACHINE and resolver_name == NO_RESOLVER:
-            # For later handling we need to reset the machine_id and the resovler_name:
+            # For later handling we need to reset the machine_id and the resolver_name:
             machine_id = None
             resolver_name = None
 
@@ -289,7 +287,7 @@ def delete_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     :param application: the application
     """
     if machinetoken_id:
-        machinetoken_ids = [ int(machinetoken_id) ]
+        machinetoken_ids = [int(machinetoken_id)]
     else:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
@@ -440,20 +438,23 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
 
 
 def get_auth_items(hostname=None, ip=None, application=None,
-                   serial=None, challenge=None, filter_param=None):
+                   serial=None, challenge=None, filter_param=None, user_agent=None):
     """
     Return the authentication items for a given hostname and the application.
     The hostname is used to identify the machine object. Then all attached
-    tokens to this machines and its applications are searched.
+    tokens to this machine and its applications are searched.
 
     :param hostname:
     :param ip:
     :param application:
+    :param serial:
     :param challenge: A challenge for the authitem
     :type challenge: basestring
     :param filter_param: Additional application specific parameter to filter
         the return value
     :type filter_param: dict
+    :param user_agent: The user agent header of the request
+    :type user_agent: str
     :return: dictionary of lists of the application auth items
 
     **Example response**:
@@ -472,24 +473,25 @@ def get_auth_items(hostname=None, ip=None, application=None,
                  ] }
     """
     auth_items = {}
-    machinetokens = list_machine_tokens(hostname=hostname,
-                                        serial=serial,
-                                        application=application,
-                                        filter_params=filter_param)
+    machine_tokens = list_machine_tokens(hostname=hostname,
+                                         serial=serial,
+                                         application=application,
+                                         filter_params=filter_param)
 
-    for mtoken in machinetokens:
+    for mtoken in machine_tokens:
         auth_item = get_auth_item(mtoken.get("application"),
                                   mtoken.get("type"),
                                   mtoken.get("serial"),
                                   challenge,
                                   options=mtoken.get("options"),
-                                  filter_param=filter_param)
+                                  filter_param=filter_param,
+                                  user_agent=user_agent)
         if auth_item:
             if mtoken.get("application") not in auth_items:
                 # we create a new empty list for the new application type
                 auth_items[mtoken.get("application")] = []
 
-            # Add the options the the auth_item
+            # Add the options to auth_item
             for k, v in mtoken.get("options", {}).items():
                 auth_item[k] = v
             auth_item["serial"] = serial

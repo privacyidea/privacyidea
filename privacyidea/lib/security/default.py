@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  product:  privacyIDEA is a fork of LinOTP
 #  May, 08 2014 Cornelius Kölbel
 #  http://www.privacyidea.org
