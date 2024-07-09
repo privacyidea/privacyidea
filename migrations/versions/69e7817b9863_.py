@@ -11,7 +11,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '69e7817b9863'
-down_revision = 'db6b2ef8100f'
+down_revision = '2100d1fad908'
 
 from alembic import op
 import sqlalchemy as sa
