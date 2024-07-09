@@ -174,7 +174,7 @@ urllib3==2.0.7
 werkzeug==1.0.1
     # via flask
 zipp==3.15.0 ; python_version == "3.7"
-zipp==3.17.0 ; python_version == "3.8"
+zipp==3.19.1 ; python_version == "3.8"
     # via
     #   importlib-metadata
     #   importlib-resources
