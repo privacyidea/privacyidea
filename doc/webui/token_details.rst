@@ -5,7 +5,7 @@
 Functionality of the Tokens view
 ================================
 
-Selecting a token from the list presents a detailed overview on the properties
+Selecting a token from the list presents a detailed overview of the properties
 of the token token and also let the administrator or a privileged user perform specific tasks for this token.
 
 .. figure:: images/token_details.png

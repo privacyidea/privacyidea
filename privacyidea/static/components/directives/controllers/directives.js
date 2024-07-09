@@ -610,7 +610,6 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         scope.newContainer.type = "generic"
                     }
                     if (allContainerTypes[scope.newContainer.type] !== undefined) {
-                        console.log("watch newContainer.type: " + allContainerTypes[scope.newContainer.type]);
                         scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
                     }
                 });

@@ -523,7 +523,7 @@ def update_last_seen(container_serial):
 @log_with(log)
 def set_container_info(container_serial, key):
     """
-    Set the value of a container info key. Adds the key if it does not exist.
+    Set the value of a container info key. Overwrites the old value if the key already exists.
 
     :param: container_serial: Serial of the container
     :param: key: Key of the container info

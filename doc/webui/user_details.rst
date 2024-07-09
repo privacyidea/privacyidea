@@ -13,7 +13,7 @@ several actions on the user.
    *User Details.*
 
 You see a list of the users tokens and change to the :ref:`token_details`.
-On the bottom a list of the users containers is displayed. You can click on the serial to change to the container
+On the bottom, a list of the user's containers is displayed. You can click on the serial to change to the container
 details (:ref:`container_view`).
 
 

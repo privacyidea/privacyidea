@@ -70,7 +70,7 @@ set container info
 
 For the container identified in the request the container info will be set. All previous entries will be removed.
 
-It requires the specification of a **key** and optionally a **value**. If no value is defined it is set to an empty
+It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
 
 add container info
@@ -79,7 +79,7 @@ add container info
 For the container identified in the request the container info will be added. Previous entries will be kept. Only if
 the given key already exists, an old entry will be overwritten.
 
-It requires the specification of a **key** and a optionally **value**. If no value is defined it is set to an empty
+It requires the specification of a **key** and a optionally **value**. If no value is defined, it is set to an empty
 string "".
 
 delete container info

@@ -53,9 +53,9 @@ is automatically in the realm of the user. This realm can not be removed without
 User
 ----
 
-To assign a user select a realm and start typing the users name. Select one of the suggested users and assign it to the
+To assign a user, select a realm and start typing the users name. Select one of the suggested users and assign it to the
 container by clicking on the 'Assign User' button. Clicking on the assigned users name, redirects to the
-:ref:'user_details'  page.
+:ref:'user_details' page.
 
 Tokens
 ------
