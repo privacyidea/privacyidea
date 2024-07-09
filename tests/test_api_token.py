@@ -12,7 +12,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
 from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass,
-                                   assign_token, token_exist, add_tokeninfo, unassign_token)
+                                   assign_token, token_exist, add_tokeninfo, unassign_token, init_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
