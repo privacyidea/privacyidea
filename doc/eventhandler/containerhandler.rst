@@ -5,12 +5,12 @@ Container Handler Module
 
 .. index:: Container Handler, Handler Modules
 
-The container event handler module is used to perform actions on containers in
+The container event handler module is used to perform actions on containers and their tokens in
 certain events. The container is either identified by the container serial from the request, response or from an
 identified token.
 
 This way you can define workflows to automatically modify containers, delete or
-even create new containers.
+even create new containers. Additionally, the tokens in the container can be modified.
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
@@ -37,6 +37,7 @@ assign
 ........
 
 The container which was identified in the request will be assigned to a user which was identified in the request.
+If the logged in user performing this action has the role 'user' it is always himself.
 
 set states
 ..........
@@ -44,7 +45,7 @@ set states
 The administrator can specify states that will be set on the container identified in the request. All other states
 will be removed.
 
-The administrator can select the new **states**. If no states is selected, all states will be removed.
+The administrator can select the new **states**. If no state is selected, all states will be removed.
 
 add states
 ..........
@@ -69,7 +70,7 @@ set container info
 
 For the container identified in the request the container info will be set. All previous entries will be removed.
 
-It requires the specification of a **key** and a optionally a **value**. If no value is defined it is set to an empty
+It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
 
 add container info
@@ -78,7 +79,7 @@ add container info
 For the container identified in the request the container info will be added. Previous entries will be kept. Only if
 the given key already exists, an old entry will be overwritten.
 
-It requires the specification of a **key** and a optionally a **value**. If no value is defined it is set to an empty
+It requires the specification of a **key** and a optionally **value**. If no value is defined, it is set to an empty
 string "".
 
 delete container info

@@ -12,14 +12,23 @@ class SmartphoneContainer(TokenContainerClass):
 
     @classmethod
     def get_class_type(cls):
+        """
+        Returns the type of the container class.
+        """
         return "smartphone"
 
     @classmethod
     def get_supported_token_types(cls):
+        """
+        Returns the token types that are supported by the container class.
+        """
         return ["hotp", "totp", "push", "daypassword", "sms"]
 
     @classmethod
     def get_container_policy_info(cls):
+        """
+        Returns the policy information of the container class.
+        """
         res = {
             "token_count": {"type": "int",
                             "value": "any",
@@ -36,8 +45,14 @@ class SmartphoneContainer(TokenContainerClass):
 
     @classmethod
     def get_class_prefix(cls):
+        """
+        Returns the container class specific prefix for the serial.
+        """
         return "SMPH"
 
     @classmethod
     def get_class_description(cls):
+        """
+        Returns a description of the container class.
+        """
         return "A smartphone that uses an authenticator app."

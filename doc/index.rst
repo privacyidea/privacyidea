@@ -43,6 +43,7 @@ Table of Contents
    webui/index
    configuration/index
    tokens/index
+   container/index
    policies/index
    eventhandler/index
    periodictask/index

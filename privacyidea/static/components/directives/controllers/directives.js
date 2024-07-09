@@ -532,15 +532,17 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 scope.getContainerTypesForTokenType = function () {
                     let usableContainerTypes = {};
                     let includesAll = (arr, target) => target.every(element => arr.includes(element));
-                    if (scope.tokenTypes && Array.isArray(scope.tokenTypes) && scope.tokenTypes.length > 0) {
-                        Object.keys(allContainerTypes).forEach(function (ctype) {
-                            if (includesAll(allContainerTypes[ctype]["token_types"], scope.tokenTypes)) {
-                                usableContainerTypes[ctype] = allContainerTypes[ctype];
-                            }
-                        });
-                    } else {
-                        // No tokenType selected, show all container types
-                        usableContainerTypes = allContainerTypes;
+                    if (allContainerTypes !== undefined) {
+                        if (scope.tokenTypes && Array.isArray(scope.tokenTypes) && scope.tokenTypes.length > 0) {
+                            Object.keys(allContainerTypes).forEach(function (ctype) {
+                                if (includesAll(allContainerTypes[ctype]["token_types"], scope.tokenTypes)) {
+                                    usableContainerTypes[ctype] = allContainerTypes[ctype];
+                                }
+                            });
+                        } else {
+                            // No tokenType selected, show all container types
+                            usableContainerTypes = allContainerTypes;
+                        }
                     }
                     return usableContainerTypes;
                 };
@@ -607,9 +609,9 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     if (newVal === undefined || newVal === null) {
                         scope.newContainer.type = "generic"
                     }
-                    console.log("watch newContainer.type: " + allContainerTypes[scope.newContainer.type]);
-                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
-
+                    if (allContainerTypes[scope.newContainer.type] !== undefined) {
+                        scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+                    }
                 });
                 scope.$watch('containerSerial', function (newVal, oldVal) {
                     //console.log("selectOrCreateDirective: containerSerial changed from " + oldVal + " to " + newVal);
@@ -636,24 +638,14 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         scope.containerSerial = newSerial;
                         scope.isCreateNew = false;
                         scope.newContainer.description = "";
+                        if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
+                            params["user"] = fixUser(scope.userName);
+                            params["realm"] = scope.userRealm;
+                        }
                     }, function (error) {
                         AuthFactory.authError(error.data);
                     });
                 }
-                if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
-                    params["user"] = fixUser(scope.userName);
-                    params["realm"] = scope.userRealm;
-                }
-                $http.post(containerUrl + "/init", params, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                }).then(function (response) {
-                    const newSerial = response.data.result.value.container_serial;
-                    scope.getContainers();
-                    scope.containerSerial = newSerial;
-                    scope.newContainer.description = "";
-                }, function (error) {
-                    AuthFactory.authError(error.data);
-                });
             }
         };
     }]);

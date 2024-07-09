@@ -92,7 +92,8 @@
             callback-cancel="getContainer()"
             callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide container info since it is not yet used. -->
             <td translate> Info</td>
             <td>
                 <ul>
@@ -174,12 +175,14 @@
                 </fieldset>
             </td>
         </tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide last seen since it is not yet used with the planned functionality. -->
             <td translate> Last Seen</td>
             <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>
         </tr>
-        <tr>
+        <tr ng-hide="true">
+            <!-- Hide last updated since it is not yet used with the planned functionality. -->
             <td translate> Last Updated</td>
             <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>
@@ -275,6 +278,9 @@
             <th translate>failcounter</th>
             <th translate>maxfail</th>
             <th translate>otplen</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> User</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> Realm</th>
+            <th ng-show="loggedInUser.role=='admin'"translate> Token Realms</th>
             <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">
@@ -291,7 +297,7 @@
                         <span translate>Delete All</span>
                     </button>
                     <span ng-show="showDialogAll" translate> Delete all tokens? <br></span>
-                    <button class="btn btn-danger" ng-click="deleteAllTokens()"
+                    <button class="btn btn-danger" ng-click="deleteAllTokens(getContainer)"
                             ng-show="showDialogAll">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
@@ -344,6 +350,30 @@
             </td>
             <td>{{ token.maxfail }}</td>
             <td>{{ token.otplen }}</td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token_add.username,
+                            realmname: token_add.user_realm,
+                            resolvername: token_add.resolver,
+                            editable: token_add.user_editable})">
+                    {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                    {{ t_realm }}</a>&nbsp;
+            </td>
+
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                {{ token.user_id }}
+            </td>
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
             <td>
                 <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">
                     {{ token.container_serial }}

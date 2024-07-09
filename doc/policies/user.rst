@@ -410,3 +410,75 @@ It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attr
    Use with CAUTION!
 
 New in version 3.6
+
+container_state
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to edit the states of their own containers.
+
+New in version 3.10
+
+container_description
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to edit the description of their own containers.
+
+New in version 3.10
+
+container_create
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to create new containers.
+
+New in version 3.10
+
+container_delete
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to delete their own containers.
+
+New in version 3.10
+
+container_add_token
+~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to add their own tokens to their own containers.
+
+New in version 3.10
+
+container_remove_token
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the users to remove their own tokens from their own containers.
+
+New in version 3.10
+
+container_assign_user
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to assign themselves to containers without an owner.
+
+New in version 3.10
+
+container_unassign_user
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to unassign themselves from containers.
+
+New in version 3.10

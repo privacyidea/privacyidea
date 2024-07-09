@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def delete_container_by_id(container_id: int, user: User, user_role="user"):
     """
-    Delete the container with the given id. If it does not exist, raise a ResourceNotFoundError.
+    Delete the container with the given id. If it does not exist, raises a ResourceNotFoundError.
 
     :param container_id: The id of the container to delete
     :param user: The user deleting the container
@@ -35,7 +35,7 @@ def delete_container_by_id(container_id: int, user: User, user_role="user"):
 
 def delete_container_by_serial(serial: str, user: User, user_role="user"):
     """
-    Delete the container with the given serial. If it does not exist, raise a ResourceNotFoundError.
+    Delete the container with the given serial. If it does not exist, raises a ResourceNotFoundError.
 
     :param serial: The serial of the container to delete
     :param user: The user deleting the container
@@ -191,6 +191,8 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :param sortdir: sort direction, default is ascending
     :param page: The number of the page to view. Starts with 1 ;-)
     :param pagesize: The size of the page
+    :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
+              'next', 'current', 'count')
     """
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
                                         sortby=sortby, sortdir=sortdir)
@@ -219,25 +221,10 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     else:  # No pagination
         db_containers = sql_query.all()
 
-    container_list = [create_container_class_object(db_container) for db_container in db_containers]
+    container_list = [create_container_from_db_object(db_container) for db_container in db_containers]
     ret["containers"] = container_list
 
     return ret
-
-
-def create_container_class_object(db_container):
-    """
-    Create a TokenContainerClass object from the given db object.
-
-    :param db_container: The db object to create the container from
-    :return: The created container object or None if the container type is not supported
-    """
-    container = None
-    container_classes = get_container_classes()
-    for ctype, cls in container_classes.items():
-        if ctype.lower() == db_container.type.lower():
-            container = cls(db_container)
-    return container
 
 
 def find_container_for_token(serial):
@@ -262,8 +249,7 @@ def find_container_for_token(serial):
 
 def get_container_classes():
     """
-    Returns a dictionary of all available container classes in the format:
-    { type: class }
+    Returns a dictionary of all available container classes in the format: { type: class }.
     New container types have to be added here.
     """
     # className: module
@@ -402,7 +388,7 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
     :param token_serials: A list of token serials to add
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
-    :return: A dictionary of type {token_serial: success}
+    :return: A dictionary in the format {token_serial: success}
     """
     # Raises ResourceNotFound if container does not exist
     find_container_by_serial(container_serial)
@@ -434,7 +420,7 @@ def get_container_classes_descriptions():
 
 def get_container_token_types():
     """
-    Returns a dictionary of {"type": ["tokentype0, tokentype1, ..."]} entries for all container types.
+    Returns a dictionary of {"type": ["tokentype0", "tokentype1", ...]} entries for all container types.
     Used to list the supported token types for each container type.
     """
     ret = {}
@@ -485,7 +471,7 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
     :param token_serials: A list of token serials to remove
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
-    :return: A dictionary of type {token_serial: success}
+    :return: A dictionary in the format {token_serial: success}
     """
     # Raises ResourceNotFound if container does not exist
     find_container_by_serial(container_serial)
@@ -511,6 +497,7 @@ def add_container_info(serial, ikey, ivalue, user, user_role="user"):
     :param ivalue: The info value
     :param user: The user adding the info
     :param user_role: The role of the user ('admin' or 'user')
+    :returns: True on success
     """
     container = find_container_by_serial(serial)
 
@@ -526,9 +513,10 @@ def set_container_info(serial, info, user, user_role="user"):
     Set the given info to the container with the given serial.
 
     :param serial: The serial of the container
-    :param info: The info dictionary of type {key: value}
+    :param info: The info dictionary in the format {key: value}
     :param user: The user adding the info
     :param user_role: The role of the user ('admin' or 'user')
+    :returns: True on success
     """
     container = find_container_by_serial(serial)
 
@@ -572,6 +560,7 @@ def delete_container_info(serial, ikey=None, user=None, user_role="user"):
     :param ikey: The info key or None to delete all info keys
     :param user: The user adding the info
     :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success, False otherwise
     """
     container = find_container_by_serial(serial)
 
@@ -590,7 +579,7 @@ def assign_user(serial, user: User, logged_in_user: User = None, user_role="user
     :param user: user to assign to the container
     :param logged_in_user: user performing this action
     :param user_role: role of the logged-in user ("admin" or "user")
-    :return:
+    :return: True on success, False otherwise
     """
     container = find_container_by_serial(serial)
 
@@ -610,7 +599,7 @@ def unassign_user(serial, user: User, logged_in_user: User = None, user_role="us
     :param user: user to unassign from the container
     :param logged_in_user: user performing this action
     :param user_role: role of the logged-in user ("admin" or "user")
-    :return:
+    :return: True on success, False otherwise
     """
     container = find_container_by_serial(serial)
 
@@ -624,6 +613,7 @@ def unassign_user(serial, user: User, logged_in_user: User = None, user_role="us
 def set_container_description(serial, description, user: User = None, user_role="user"):
     """
     Set the description of a container.
+
     :param serial: serial of the container
     :param description: new description
     :param user: user setting the description
@@ -640,10 +630,12 @@ def set_container_description(serial, description, user: User = None, user_role=
 def set_container_states(serial, states, user: User = None, user_role="user"):
     """
     Set the states of a container.
+
     :param serial: serial of the container
     :param states: new states as list of str
     :param user: user setting the states
     :param user_role: role of the logged-in user ("admin" or "user")
+    :returns: Dictionary in the format {state: success}
     """
     container = find_container_by_serial(serial)
 
@@ -657,10 +649,12 @@ def set_container_states(serial, states, user: User = None, user_role="user"):
 def add_container_states(serial, states, user: User = None, user_role="user"):
     """
     Add the states to a container.
+
     :param serial: serial of the container
     :param states: additional states as list of str
     :param user: user setting the states
     :param user_role: role of the logged-in user ("admin" or "user")
+    :returns: Dictionary in the format {state: success}
     """
     container = find_container_by_serial(serial)
 
@@ -674,10 +668,13 @@ def add_container_states(serial, states, user: User = None, user_role="user"):
 def set_container_realms(serial, realms, user: User = None, user_role="user"):
     """
     Set the realms of a container.
+
     :param serial: serial of the container
     :param realms: new realms as list of str
     :param user: user setting the realms
     :param user_role: role of the logged-in user ("admin" or "user")
+    :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
+              deleted.
     """
     container = find_container_by_serial(serial)
 
@@ -690,11 +687,14 @@ def set_container_realms(serial, realms, user: User = None, user_role="user"):
 
 def add_container_realms(serial, realms, user: User = None, user_role="user"):
     """
-    Add the realms to the realms of a container.
+    Add the realms to the container realms.
+
     :param serial: serial of the container
     :param realms: new realms as list of str
     :param user: user setting the realms
     :param user_role: role of the logged-in user ("admin" or "user")
+    :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
+              deleted.
     """
     container = find_container_by_serial(serial)
 
