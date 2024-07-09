@@ -264,15 +264,17 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
         $scope.groupsOpen = 0;
         $scope.$watch('groupIsOpen', function (newVal, oldVal) {
-            angular.forEach(newVal, function (isOpen, group) {
-                if (newVal[group] != oldVal[group]) {
-                    if (isOpen) {
-                        $scope.groupsOpen++;
-                    } else if ($scope.groupsOpen > 0) {
-                        $scope.groupsOpen--;
+            if (newVal !== undefined && oldVal !== undefined) {
+                angular.forEach(newVal, function (isOpen, group) {
+                    if (newVal[group] != oldVal[group]) {
+                        if (isOpen) {
+                            $scope.groupsOpen++;
+                        } else if ($scope.groupsOpen > 0) {
+                            $scope.groupsOpen--;
+                        }
                     }
-                }
-            })
+                })
+            }
         }, true);
 
         // test if the accordion group should be open or closed
