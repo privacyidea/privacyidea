@@ -960,6 +960,7 @@ class PushTokenClass(TokenClass):
                 # If the user has more than one token and more than one challenge is created, we need to ensure, that
                 # all challenge data is the same.
                 data = get_challenges(transaction_id=transactionid)[0].data
+                current_presence_options = data.split(",")[:-1] # The correct option is the last one so we remove it
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
