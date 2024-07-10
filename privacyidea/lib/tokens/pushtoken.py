@@ -173,7 +173,6 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
                            presence_options=None):
-    print('Building smartphone data')
     """
     Create the dictionary to be sent to the smartphone as challenge
 
@@ -934,7 +933,7 @@ class PushTokenClass(TokenClass):
 
         data = None
         
-        current_presence_options = []
+        current_presence_options = None
         if is_true(require_presence):
             # The challenge having data indicates, that this a require_presence.
             if transactionid is None: 
