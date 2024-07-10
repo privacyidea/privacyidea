@@ -382,7 +382,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
             chal = get_challenges(serial=tokenobj.token.serial)[0]
             # Check in the challenge for a require_presence value, this indicates, that the challenges was created
-            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+            self.assertIn(chal.data.split(',').pop(), AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
             chal.delete()
 
         remove_token(serial=serial)
