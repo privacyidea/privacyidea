@@ -10,7 +10,7 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS,
+                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
@@ -382,7 +382,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
             chal = get_challenges(serial=tokenobj.token.serial)[0]
             # Check in the challenge for a require_presence value, this indicates, that the challenges was created
-            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS)
+            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
             chal.delete()
 
         remove_token(serial=serial)

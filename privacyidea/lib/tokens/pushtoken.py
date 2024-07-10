@@ -83,8 +83,8 @@ DELAY = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
-AVAILABLE_PRESENCE_OPTIONS = ["A", "B", "C"]
-
+AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",]
+AVAILABLE_PRESENCE_OPTIONS_NUMERIC = ["01", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"]
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -96,6 +96,7 @@ class PUSH_ACTION(object):
     WAIT = "push_wait"
     ALLOW_POLLING = "push_allow_polling"
     REQUIRE_PRESENCE = "push_require_presence"
+    PRESENCE_OPTIONS = "push_presence_options"
 
 
 class PushAllowPolling(object):
@@ -171,7 +172,8 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
 
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
-                           require_presence="0"):
+                           presence_options=None):
+    print('Building smartphone data')
     """
     Create the dictionary to be sent to the smartphone as challenge
 
@@ -183,8 +185,8 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     :type registration_url: str
     :param options: the options dictionary
     :type options: dict
-    :param require_presence: Require the user to confirm with the correct button from a list of options.
-    :type require_presence: str
+    :param presence_options: Require the user to confirm with the correct button from the list of options.
+    :type presence_options: list
     :return: the created smartphone_data dictionary
     :rtype: dict
     """
@@ -235,8 +237,8 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     # Create the signature.
     # value to string
     sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
-    if is_true(require_presence):
-        smartphone_data["require_presence"] = ",".join(AVAILABLE_PRESENCE_OPTIONS)
+    if presence_options != None:
+        smartphone_data["require_presence"] = ",".join(presence_options)
         smartphone_data["version"] = "2"
         sign_string += "|{0!s}".format(smartphone_data["require_presence"])
 
@@ -408,6 +410,13 @@ class PushTokenClass(TokenClass):
                                      'This ensures that the user has access to the login window and the smartphone.'),
                            'group': 'PUSH',
                            'value': ["0", "1"]
+                       },
+                       PUSH_ACTION.PRESENCE_OPTIONS: {
+                            'type': 'str',
+                            'desc': _('The list of options the user can choose from to confirm the login. '
+                                         'ALPHABETIC: A-Z, NUMERIC: 01-99'),
+                            'group': 'PUSH',
+                            'value': ["ALPHABETIC", "NUMERIC"]
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
@@ -661,9 +670,9 @@ class PushTokenClass(TokenClass):
                         if decline:
                             chal.set_session(CHALLENGE_SESSION.DECLINED)
                         else:
-                            # Verify the presence_answer. The correct choice is stored in the "data"
-                            # field of the challenge.
-                            if presence_answer and presence_answer != chal.get_data():
+                            # Verify the presence_answer. The correct choice is stored as last entry
+                            # in the data separated by a comma.
+                            if presence_answer and presence_answer != chal.get_data().split(",").pop():
                                 result = False
                                 # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
                             else:
@@ -703,6 +712,7 @@ class PushTokenClass(TokenClass):
 
     @classmethod
     def _api_endpoint_get(cls, g, request_data):
+        print("Handling the GET request.")
         """ Handle all GET requests to the api endpoint.
 
         Currently, this is only used for polling.
@@ -764,9 +774,10 @@ class PushTokenClass(TokenClass):
                 if not answered and chal.is_valid():
                     # Ensure, if we require presence, that the user has to confirm with the correct button
                     require_presence = "1" if chal.get_data() else "0"
+                    current_presence_options = chal.get_data().split(",") if require_presence == "1" else None
                     # then return the necessary smartphone data to answer the challenge
                     sp_data = _build_smartphone_data(tok, chal.challenge,
-                                                     registration_url, pem_privkey, options, require_presence)
+                                                     registration_url, pem_privkey, options, current_presence_options)
                     challenges.append(sp_data)
             # return the challenges as a list in the result value
             result = challenges
@@ -782,7 +793,7 @@ class PushTokenClass(TokenClass):
         return result
 
     @classmethod
-    def api_endpoint(cls, request, g):
+    def api_endpoint(cls, request, g): 
         """
         This provides a function which is called by the API endpoint
         ``/ttype/push`` which is defined in :doc:`../../api/ttype`
@@ -922,11 +933,29 @@ class PushTokenClass(TokenClass):
                                     allowed_values=["0", "1"], default="0")
 
         data = None
+        
+        current_presence_options = []
         if is_true(require_presence):
             # The challenge having data indicates, that this a require_presence.
-            if transactionid is None:
+            if transactionid is None: 
                 # Create a new challenge data
-                data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS))
+                
+  
+                push_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
+                push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
+                                                 allowed_values=["ALPHABETIC", "NUMERIC"], default="ALPHABETIC")
+                if push_presence_options == "ALPHABETIC":
+                    available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+                elif push_presence_options == "NUMERIC":
+                    available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
+                 
+                for _ in range(min(len(available_presence_options), 3)): # In case we have less options than we want
+                    selected_option = secrets.choice(available_presence_options) 
+                    available_presence_options.remove(selected_option)
+                    current_presence_options.append(selected_option) 
+                correct_option = secrets.choice(current_presence_options) 
+                # The data contains all selected options and the correct option at the end.
+                data = ",".join(current_presence_options + [correct_option]) 
             else:
                 # If the user has more than one token and more than one challenge is created, we need to ensure, that
                 # all challenge data is the same.
@@ -945,7 +974,7 @@ class PushTokenClass(TokenClass):
                     pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
-                                                             pem_privkey, options, require_presence)
+                                                             pem_privkey, options, current_presence_options)
                     log.debug("Sending to firebase the smartphone_data: {0!s}".format(smartphone_data))
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
@@ -995,9 +1024,9 @@ class PushTokenClass(TokenClass):
             # If the message contains {} we replace it with the data
             # otherwise we add a new text
             if "{}" in message:
-                message = message.format(data)
+                message = message.format(data.split(",").pop()) # The correct presence option is the last one
             else:
-                message += " Please press: {0!s}".format(data)
+                message += " Please press: {0!s}".format(data.split(",").pop()) # The correct presence option is the last one
         return True, message, transactionid, reply_dict
 
     @check_token_locked
