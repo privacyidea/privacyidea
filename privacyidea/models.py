@@ -2849,7 +2849,9 @@ audit_column_length = {"signature": 620,
                        "authentication": 12,
                        "user_agent": 20,
                        "user_agent_version": 20,
-                       "policies": 255}
+                       "policies": 255,
+                       "container_serial": 20,
+                       "container_type": 20}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 

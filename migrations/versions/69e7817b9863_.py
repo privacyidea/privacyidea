@@ -131,8 +131,8 @@ def upgrade():
             print(exx)
 
     try:
-        op.add_column('pidea_audit', sa.Column('container_serial', sa.Unicode(), nullable=True))
-        op.add_column('pidea_audit', sa.Column('container_type', sa.Unicode(), nullable=True))
+        op.add_column('pidea_audit', sa.Column('container_serial', sa.Unicode(20), nullable=True))
+        op.add_column('pidea_audit', sa.Column('container_type', sa.Unicode(20), nullable=True))
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower():
             print("Columns 'container_serial' and/or 'container_type' already exist.")
