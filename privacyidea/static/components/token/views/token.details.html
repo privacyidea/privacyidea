@@ -321,6 +321,7 @@
                                ng-model="selectedRealms[realmname]"
                                name="group"
                                id="{{ realmname }}"
+                               ng-disabled="token.user_realm === realmname"
                                ng-checked="selectedRealms[realmname]">
                         {{ realmname }}
                     </label><br>
@@ -515,7 +516,7 @@
                     {{ token.username }}
                 </a></td>
                 <td>
-                    <button ng-hide="token.locked || 
+                    <button ng-hide="token.locked ||
 			    !checkRight('unassign') && hide_buttons"
                             ng-disable="!checkRight('unassign')"
                             id="unassignAdminButton"

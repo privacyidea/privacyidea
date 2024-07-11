@@ -31,6 +31,7 @@ from dateutil import parser
 import hashlib
 import binascii
 import warnings
+import mock
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -400,6 +401,25 @@ class TokenTestCase(MyTestCase):
         remove_token(serial=serial)
         realms = get_realms_of_token(serial)
         self.assertTrue(realms == [], "{0!s}".format(realms))
+
+        # Testing that set_realm always sets the realm of the token owner
+        with mock.patch("logging.Logger.info") as mock_log:
+            db_token = Token(serial, tokentype="totp")
+            db_token.update_otpkey(self.otpkey)
+            db_token.save()
+            token = TotpTokenClass(db_token)
+            token.set_realms(['realm1'])
+            self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
+            token.set_realms([''])
+            self.assertEqual(token.get_realms(), [], token.get_realms())
+
+            token.add_user(User(login="cornelius",
+                                realm=self.realm1))
+            token.set_realms(realms=[''])
+            self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
+            mock_log.assert_called_with('The realm of an assigned user cannot be removed from'
+                                        ' token {0!s} (realm: {1!s})'.format(serial, 'realm1'))
+            token.delete_token()
 
 
     def test_17_set_defaults(self):

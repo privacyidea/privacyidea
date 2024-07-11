@@ -372,6 +372,12 @@ class Token(MethodsMixin, db.Model):
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
+        if self.first_owner:
+            if self.first_owner.realm.name not in realms:
+                realms.append(self.first_owner.realm.name)
+                log.info(f"The realm of an assigned user cannot be removed from "
+                         f"token {self.first_owner.token.serial} "
+                         f"(realm: {self.first_owner.realm.name})")
         for realm in set(realms):
             # Get the id of the realm to add
             r = Realm.query.filter_by(name=realm).first()
