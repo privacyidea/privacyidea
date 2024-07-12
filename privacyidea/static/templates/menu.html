@@ -29,7 +29,7 @@
         </button>
 
         <div class="navbar-collapse collapse myMainNavbar">
-            <ul class="nav navbar-nav" ng-hide="token_wizard">
+            <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard">
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
@@ -94,7 +94,7 @@
                     </a>
                 </li>
             </ul>
-            <ul class="nav navbar-nav navbar-right">
+            <ul class="nav navbar-nav navbar-right nav-capitalize">
                 <li ng-show="show_node">
                     <a>
                         <b>{{ show_node }}</b>

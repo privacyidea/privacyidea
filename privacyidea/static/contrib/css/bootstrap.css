@@ -2388,7 +2388,6 @@ th {
 .table > thead > tr > th {
   vertical-align: bottom;
   border-bottom: 2px solid #ddd;
-  text-transform: capitalize;
 }
 .table > caption + thead > tr:first-child > th,
 .table > colgroup + thead > tr:first-child > th,
@@ -2411,14 +2410,6 @@ th {
 .table-condensed > tbody > tr > td,
 .table-condensed > tfoot > tr > td {
   padding: 5px;
-}
-.table-transparent > thead > tr > th,
-.table-transparent > tbody > tr > th,
-.table-transparent > tfoot > tr > th,
-.table-transparent > thead > tr > td,
-.table-transparent > tbody > tr > td,
-.table-transparent > tfoot > tr > td {
-  padding: 0px 5px 0px 0px;
 }
 .table-bordered {
   border: 1px solid #ddd;
@@ -2545,10 +2536,6 @@ th {
 .table-hover > tbody > tr:hover > .danger,
 .table-hover > tbody > tr.danger:hover > th {
   background-color: #ebcccc;
-}
-.table > thead > tr > th.capitalize,
-.table > tbody > tr > td.capitalize{
-    text-transform: capitalize;
 }
 .table-responsive {
   min-height: 0.01%;
@@ -3135,9 +3122,6 @@ select[multiple].input-lg {
   -ms-user-select: none;
   user-select: none;
 }
-.btn-capitalize {
-    text-transform: capitalize;
-}
 .btn:focus,
 .btn:active:focus,
 .btn.active:focus,
@@ -3551,29 +3535,6 @@ fieldset[disabled] .btn-link:focus {
 }
 .btn-block + .btn-block {
   margin-top: 5px;
-}
-.btn-transparent {
-  color: #000000;
-  background-color: transparent;
-  border-color: #ddd;
-  padding: 0.2em 0.6em 0.3em;
-  font-size: 90%;
-}
-.btn-transparent.disabled:hover,
-.btn-transparent[disabled]:hover,
-fieldset[disabled] .btn-transparent:hover,
-.btn-transparent.disabled:focus,
-.btn-transparent[disabled]:focus,
-fieldset[disabled] .btn-transparent:focus,
-.btn-transparent.disabled.focus,
-.btn-transparent[disabled].focus,
-fieldset[disabled] .btn-transparent.focus {
-  color: #000000;
-  background-color: transparent;
-  border-color: #ddd;
-}
-.btn-header {
-  font-weight: bold;
 }
 input[type="submit"].btn-block,
 input[type="reset"].btn-block,
@@ -4090,7 +4051,6 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   padding-left: 0;
   margin-bottom: 0;
   list-style: none;
-  text-transform: capitalize;
 }
 .nav > li {
   position: relative;
