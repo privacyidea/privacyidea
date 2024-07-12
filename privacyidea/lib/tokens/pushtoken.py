@@ -97,6 +97,7 @@ class PUSH_ACTION(object):
     ALLOW_POLLING = "push_allow_polling"
     REQUIRE_PRESENCE = "push_require_presence"
     PRESENCE_OPTIONS = "push_presence_options"
+    PRESENCE_NUM_OPTIONS = "push_presence_num_options"
 
 
 class PushAllowPolling(object):
@@ -412,10 +413,17 @@ class PushTokenClass(TokenClass):
                        },
                        PUSH_ACTION.PRESENCE_OPTIONS: {
                             'type': 'str',
-                            'desc': _('The list of options the user can choose from to confirm the login. '
-                                         'ALPHABETIC: A-Z, NUMERIC: 01-99'),
+                            'desc': _('The options that can be presented to the user to confirm the login. '
+                                         'ALPHABETIC: A-Z, NUMERIC: 01-99 '
+                                         'Does not apply if require_presence is "0" or not set.'),
                             'group': 'PUSH',
                             'value': ["ALPHABETIC", "NUMERIC"]
+                       },
+                       PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
+                            'type': 'int',
+                            'desc': _('The number of options the user is presented with to confirm the login. '
+                                        'Does not apply if require_presence is "0" or not set.'),
+                            'group': 'PUSH', 
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
@@ -711,7 +719,6 @@ class PushTokenClass(TokenClass):
 
     @classmethod
     def _api_endpoint_get(cls, g, request_data):
-        print("Handling the GET request.")
         """ Handle all GET requests to the api endpoint.
 
         Currently, this is only used for polling.
@@ -747,7 +754,6 @@ class PushTokenClass(TokenClass):
                     log.debug('Polling not allowed for pushtoken {0!s} due to '
                               'tokeninfo.'.format(serial))
                     raise PolicyError('Polling not allowed!')
-
             pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{serial}|{timestamp}".format(**request_data)
             pubkey_obj.verify(b32decode(signature),
@@ -773,7 +779,7 @@ class PushTokenClass(TokenClass):
                 if not answered and chal.is_valid():
                     # Ensure, if we require presence, that the user has to confirm with the correct button
                     require_presence = "1" if chal.get_data() else "0"
-                    current_presence_options = chal.get_data().split(",") if require_presence == "1" else None
+                    current_presence_options = chal.get_data().split(",")[:-1] if require_presence == "1" else None
                     # then return the necessary smartphone data to answer the challenge
                     sp_data = _build_smartphone_data(tok, chal.challenge,
                                                      registration_url, pem_privkey, options, current_presence_options)
@@ -930,15 +936,13 @@ class PushTokenClass(TokenClass):
                                                           PUSH_ACTION.REQUIRE_PRESENCE, options) or "0"
         require_presence = getParam({"require_presence": require_presence}, "require_presence",
                                     allowed_values=["0", "1"], default="0")
-
         data = None
-        
         current_presence_options = None
         if is_true(require_presence):
             # The challenge having data indicates, that this a require_presence.
             if transactionid is None: 
                 # Create a new challenge data
-                
+                current_presence_options = []
   
                 push_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
                 push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
@@ -947,8 +951,9 @@ class PushTokenClass(TokenClass):
                     available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
                 elif push_presence_options == "NUMERIC":
                     available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
-                 
-                for _ in range(min(len(available_presence_options), 3)): # In case we have less options than we want
+                num_options = int(get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options) or 3)
+                num_options = max(2, min(num_options, int(len(available_presence_options))))  # In case the user wants more or less options than possible we clamp.
+                for _ in range(num_options):
                     selected_option = secrets.choice(available_presence_options) 
                     available_presence_options.remove(selected_option)
                     current_presence_options.append(selected_option) 
