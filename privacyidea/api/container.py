@@ -27,6 +27,7 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def list_containers():
     """

@@ -414,6 +414,16 @@ class APIContainerAuthorization(MyApiTestCase):
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
         delete_policy("policy")
 
+    def test_26_admin_container_list_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST)
+        self.request_assert_200('/container/', {}, self.at, 'GET')
+        delete_policy("policy")
+
+    def test_27_admin_container_list_denied(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        self.request_denied_assert_403('/container/', {}, self.at, 'GET')
+        delete_policy("policy")
+
 
 class APIContainer(MyApiTestCase):
 

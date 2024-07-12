@@ -1,5 +1,5 @@
 <div class="well" ng-controller="tokenMenuController">
-    <nav class="navbar navbar-default">
+    <nav class="navbar navbar-default" ng-show="checkRight('container_list')">
         <div class="container">
             <!-- Hide menu bar on small screens, show button to toggle instead -->
             <button type="button" class="navbar-toggle"
@@ -166,7 +166,8 @@
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked">
                     <li role="presentation"
-                        ng-class="{active: $state.includes('token.containerlist')}">
+                        ng-class="{active: $state.includes('token.containerlist')}"
+                        ng-show="checkRight('container_list')">
                         <a ui-sref="token.containerlist">
                             <span class="glyphicon glyphicon-list"></span>
                             List Containers
@@ -178,7 +179,7 @@
                         {{ $stateParams.containerSerial }}</a>
                     </li>
                     <li role="presentation"
-                        ng-show="checkRight('container_create') || loggedInUser.role === 'admin'"
+                        ng-show="checkRight('container_create')"
                         ng-class="{active: $state.includes('token.containercreate')}">
                         <a ui-sref="token.containercreate">
                             <span class="glyphicon glyphicon-plus"></span>

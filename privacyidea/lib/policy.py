@@ -404,6 +404,7 @@ class ACTION(object):
     CONTAINER_ASSIGN_USER = "container_assign_user"
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
+    CONTAINER_LIST = "container_list"
 
 
 class TYPE(object):
@@ -2096,6 +2097,10 @@ def get_static_policy_definitions(scope=None):
                                       'desc': _('Admin is allowed to set the realm of containers.'),
                                       'mainmenu': [MAIN_MENU.TOKENS],
                                       'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_LIST: {'type': 'bool',
+                                    'desc': _('Admin is allowed to list containers.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
