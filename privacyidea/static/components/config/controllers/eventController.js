@@ -232,6 +232,8 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                 function (conditions) {
                     $scope.handlerConditions = conditions.result.value;
                     $scope.conditionGroups = [];
+                    // Reset for open/close all groups if new handler is loaded
+                    $scope.groupsOpen = 0;
                     $scope.groupIsOpen = {};
 
                     // tick selected handlerConditions, if type===multi

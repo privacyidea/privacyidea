@@ -226,8 +226,10 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             //debug: console.log(actions);
             $scope.actions = [];
             $scope.actionGroups = [];
-            $scope.groupIsOpen = {};
             $scope.isActionValues = false;
+            // Reset number of opened action groups
+            $scope.groupsOpen = 0;
+            $scope.groupIsOpen = {};
 
             angular.forEach(actions, function (value, key) {
                 // we might evaluate value.group and group the actions
