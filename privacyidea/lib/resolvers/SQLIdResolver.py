@@ -490,15 +490,16 @@ class IdResolver (UserIdResolver):
         register_finalizer(self.session.close)
         self.session._model_changes = {}
 
-        metadata = MetaData()
         table_parts = self.table.split(".")
         schema = table_parts[0] if len(table_parts) > 1 else None
         self.table = table_parts[-1]
         log.debug("Loading table {0!s} from schema {1!s}".format(self.table, schema))
+        metadata = MetaData()
         if schema is not None:
-            metadata.schema = schema
-        self.TABLE = Table(self.table, metadata, autoload_with=self.engine)
-
+            self.TABLE = Table(self.table, metadata, autoload_with=self.engine, schema=schema)
+        else:
+            self.TABLE = Table(self.table, metadata, autoload_with=self.engine)
+        
         return self
 
     def _create_engine(self):
@@ -602,16 +603,17 @@ class IdResolver (UserIdResolver):
         # create a configured "Session" class
         session = scoped_session(sessionmaker(bind=engine))()
 
-        metadata = MetaData()
         table_parts = param.get("Table").split(".")
         schema = table_parts[0] if len(table_parts) > 1 else None
         table_name = table_parts[-1]
         log.debug("Loading table {0!s} from schema {1!s}".format(table_name, schema))
-        if schema is not None:
-            metadata.schema = schema
+        metadata = MetaData()
 
         try:
-            TABLE = Table(table_name, metadata, autoload_with=engine)
+            if schema is not None:
+                TABLE = Table(table_name, metadata, autoload_with=engine, schema=schema)
+            else:
+                TABLE = Table(table_name, metadata, autoload_with=engine)
             conditions = cls._append_where_filter([], TABLE,
                                                   param.get("Where"))
             filter_condition = and_(*conditions)
