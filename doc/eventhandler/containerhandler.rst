@@ -25,19 +25,20 @@ delete
 ......
 
 The container which was identified in the request will be deleted if all
-conditions are matched.
+conditions are matched. The tokens in the container will not be deleted.
 
 unassign
 ........
 
 The container which was identified in the request will be unassign from all users
-if all conditions are matched.
+if all conditions are matched. The tokens in the container will not be changed.
 
 assign
 ........
 
 The container which was identified in the request will be assigned to a user which was identified in the request.
-If the logged in user performing this action has the role 'user' it is always himself.
+If the logged in user performing this action has the role 'user' it is always himself. The user is not assigned to the
+tokens in the container.
 
 set states
 ..........
@@ -63,7 +64,7 @@ For the container identified in the request a new **description** will be set.
 remove all tokens
 ..............
 
-For the container identified in the request all tokens will be removed.
+All tokens will be removed from the container identified in the request.
 
 set container info
 ..................
