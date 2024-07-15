@@ -620,7 +620,7 @@ This policy configures the buttons that are displayed in the push notification o
 
 The following options are available:
 
-``ALPHABETICAL``
+``ALPHABETIC``
 
     The buttons are labeled with the letters A to Z.
 
@@ -631,9 +631,9 @@ The following options are available:
 ``CUSTOM``
 
     The buttons are labeled with the characters defined in the policy :ref:`policy_push_presence_custom_options`.
-    If the :ref:`policy_push_presence_custom_options` policy is not set, the fallback is to use the ``ALPHABETICAL`` options.
+    If the :ref:`policy_push_presence_custom_options` policy is not set, the fallback is to use the ``ALPHABETIC`` options.
 
-The default is to use the ``ALPHABETICAL`` options.
+The default is to use the ``ALPHABETIC`` options.
 
 .. _policy_push_presence_custom_options:
 
