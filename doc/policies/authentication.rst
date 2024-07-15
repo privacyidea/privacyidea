@@ -605,7 +605,65 @@ login request.
 
 If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
 
+.. _policy_push_presence_options:
 
+push_presence_options
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: string
+
+Takes only effect if :ref:`policy_push_require_presence` is set to "1".
+This policy configures the buttons that are displayed in the push notification on the smartphone.
+
+The following options are available:
+
+``ALPHABETICAL``
+
+    The buttons are labeled with the letters A to Z.
+
+``NUMERIC``
+
+    The buttons are labeled with the numbers 0 to 9.
+
+``CUSTOM``
+
+    The buttons are labeled with the characters defined in the policy :ref:`policy_push_presence_custom_options`.
+    If the :ref:`policy_push_presence_custom_options` policy is not set, the fallback is to use the default.
+
+The default is to use the ``ALPHABETICAL`` options.
+
+.. _policy_push_presence_custom_options:
+
+push_presence_custom_options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: string
+
+Takes only effect if :ref:`policy_push_presence_options` is set to "CUSTOM".
+This policy configures the buttons that can be displayed in the push notification on the smartphone.
+To set the number of buttons, see :ref:`push_presence_num_options`.
+
+The string must contain at least 2 options and should be unique.
+The options are separated by ":".
+e.g.: 01:02:03:1A:1B:1C
+
+.. _push_presence_num_options:
+
+push_presence_num_options
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: int
+
+Takes only effect if :ref:`policy_push_require_presence` is set to "1".
+This policy configures the number of buttons that are displayed in the push notification on the smartphone.
+
+The default is 3 buttons. If the configured number of buttons is not possible, it will be clamped to the next possible value.
 
 .. _policy_auth_push_allow_poll:
 

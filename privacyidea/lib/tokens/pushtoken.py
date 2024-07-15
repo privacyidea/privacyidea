@@ -97,6 +97,7 @@ class PUSH_ACTION(object):
     ALLOW_POLLING = "push_allow_polling"
     REQUIRE_PRESENCE = "push_require_presence"
     PRESENCE_OPTIONS = "push_presence_options"
+    PRESENCE_CUSTOM_OPTIONS = "push_presence_custom_options"
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"
 
 
@@ -414,15 +415,24 @@ class PushTokenClass(TokenClass):
                        PUSH_ACTION.PRESENCE_OPTIONS: {
                             'type': 'str',
                             'desc': _('The options that can be presented to the user to confirm the login. '
-                                         'ALPHABETIC: A-Z, NUMERIC: 01-99 '
-                                         'Does not apply if require_presence is "0" or not set.'),
+                                         'ALPHABETIC: A-Z, NUMERIC: 01-99, CUSTOM: user defined.'
+                                         f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
                             'group': 'PUSH',
-                            'value': ["ALPHABETIC", "NUMERIC"]
+                            'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
+                       },
+                       PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
+                            'type': 'str',
+                            'desc': _('Custom options that can be presented to the user to confirm the login. '
+                                      'The string must contain at least 2 options and should be unique. '
+                                      'The options are separated by ":". '
+                                      'e.g.: "01:02:03:1A:1B:1C" without the " ". '
+                                         f'Does only apply if "{PUSH_ACTION.PRESENCE_OPTIONS}" is set to "CUSTOM".'),
+                            'group': 'PUSH' 
                        },
                        PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
                             'type': 'int',
                             'desc': _('The number of options the user is presented with to confirm the login. '
-                                        'Does not apply if require_presence is "0" or not set.'),
+                                         f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
                             'group': 'PUSH', 
                        },
                        PUSH_ACTION.WAIT: {
@@ -946,11 +956,14 @@ class PushTokenClass(TokenClass):
   
                 push_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
                 push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
-                                                 allowed_values=["ALPHABETIC", "NUMERIC"], default="ALPHABETIC")
+                                                 allowed_values=["ALPHABETIC", "NUMERIC", "CUSTOM"], default="ALPHABETIC")
                 if push_presence_options == "ALPHABETIC":
                     available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
                 elif push_presence_options == "NUMERIC":
                     available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
+                elif push_presence_options == "CUSTOM":
+                    custom_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
+                    available_presence_options = custom_presence_options.split(":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
                 num_options = int(get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options) or 3)
                 num_options = max(2, min(num_options, int(len(available_presence_options))))  # In case the user wants more or less options than possible we clamp.
                 for _ in range(num_options):
