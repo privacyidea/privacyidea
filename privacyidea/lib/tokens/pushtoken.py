@@ -83,8 +83,11 @@ DELAY = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
-AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",]
-AVAILABLE_PRESENCE_OPTIONS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"]
+AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I",
+                                         "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",]
+AVAILABLE_PRESENCE_OPTIONS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12",
+                                      "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47",
+                                      "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99",]
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -427,13 +430,13 @@ class PushTokenClass(TokenClass):
                                       'The options are separated by ":". '
                                       'e.g.: "01:02:03:1A:1B:1C" without the " ". '
                                          f'Does only apply if "{PUSH_ACTION.PRESENCE_OPTIONS}" is set to "CUSTOM".'),
-                            'group': 'PUSH' 
+                            'group': 'PUSH'
                        },
                        PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
                             'type': 'int',
                             'desc': _('The number of options the user is presented with to confirm the login. '
                                          f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
-                            'group': 'PUSH', 
+                            'group': 'PUSH',
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
@@ -808,7 +811,7 @@ class PushTokenClass(TokenClass):
         return result
 
     @classmethod
-    def api_endpoint(cls, request, g): 
+    def api_endpoint(cls, request, g):
         """
         This provides a function which is called by the API endpoint
         ``/ttype/push`` which is defined in :doc:`../../api/ttype`
@@ -950,10 +953,10 @@ class PushTokenClass(TokenClass):
         current_presence_options = None
         if is_true(require_presence):
             # The challenge having data indicates, that this a require_presence.
-            if transactionid is None: 
+            if transactionid is None:
                 # Create a new challenge data
                 current_presence_options = []
-  
+
                 push_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
                 push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
                                                  allowed_values=["ALPHABETIC", "NUMERIC", "CUSTOM"], default="ALPHABETIC")
@@ -967,12 +970,12 @@ class PushTokenClass(TokenClass):
                 num_options = int(get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options) or 3)
                 num_options = max(2, min(num_options, int(len(available_presence_options))))  # In case the user wants more or less options than possible we clamp.
                 for _ in range(num_options):
-                    selected_option = secrets.choice(available_presence_options) 
+                    selected_option = secrets.choice(available_presence_options)
                     available_presence_options.remove(selected_option)
-                    current_presence_options.append(selected_option) 
-                correct_option = secrets.choice(current_presence_options) 
+                    current_presence_options.append(selected_option)
+                correct_option = secrets.choice(current_presence_options)
                 # The data contains all selected options and the correct option at the end.
-                data = ",".join(current_presence_options + [correct_option]) 
+                data = ",".join(current_presence_options + [correct_option])
             else:
                 # If the user has more than one token and more than one challenge is created, we need to ensure, that
                 # all challenge data is the same.

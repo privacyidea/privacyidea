@@ -572,7 +572,7 @@ class PushTokenTestCase(MyTestCase):
             delete_policy("push1")
         delete_policy('push_config')
         remove_token(serial=serial)
-        
+
 
     def _mark_challenge_as_accepted(self):
         # We simply mark all challenges as successfully answered!
@@ -586,7 +586,7 @@ class PushTokenTestCase(MyTestCase):
     def test_04_api_authenticate_smartphone(self):
         # Test the /validate/check endpoints and the smartphone endpoint /ttype/push
         # for authentication
-        
+
         ## Create rolled out push token
         self.setUp_user_realms()
         # create FireBase Service and policies
@@ -612,7 +612,7 @@ class PushTokenTestCase(MyTestCase):
                                           '/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
- 
+
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -772,7 +772,7 @@ class PushTokenTestCase(MyTestCase):
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
         remove_token(serial=serial)
-        
+
     def test_04_decline_auth_request(self):
         self.setUp_user_realms()
         # create FireBase Service and policies
@@ -1028,7 +1028,7 @@ class PushTokenTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
                         # Get the challenge from the database
-               
+
                 jsonresp = res.json
                 self.assertTrue(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
@@ -1040,8 +1040,8 @@ class PushTokenTestCase(MyTestCase):
                 chal = challengeobject_list[0] # TODO: Why is challenge a string?
                 challenge = chal.challenge
                 presence_answer = chal.get_data().split(',').pop() # The correct answer is always appended to the available options
-                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}" 
-                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text) 
+                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
+                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
 
         self.assertTrue(presence_answer != None)
         self.assertTrue(presence_answer in AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
