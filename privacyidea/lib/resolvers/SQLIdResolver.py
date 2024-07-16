@@ -499,7 +499,6 @@ class IdResolver (UserIdResolver):
             self.TABLE = Table(self.table, metadata, autoload_with=self.engine, schema=schema)
         else:
             self.TABLE = Table(self.table, metadata, autoload_with=self.engine)
-        
         return self
 
     def _create_engine(self):
