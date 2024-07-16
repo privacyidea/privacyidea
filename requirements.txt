@@ -181,5 +181,5 @@ zipp==3.19.1 ; python_version == "3.8"
 
 # The following packages are considered to be unsafe in a requirements file:
 setuptools==68.0.0 ; python_version == "3.7"
-setuptools==68.2.2 ; python_version > "3.7"
+setuptools==70.0.0 ; python_version > "3.7"
     # via flask-versioned
