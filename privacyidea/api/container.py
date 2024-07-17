@@ -3,13 +3,15 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
+from privacyidea.api.lib.prepolicy import check_base_action, prepolicy, check_admin_tokenlist, \
+    check_container_action
 from privacyidea.api.lib.utils import send_result, getParam, required
-from privacyidea.lib.container import find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, add_container_info, set_container_description, \
-    set_container_states, set_container_realms, delete_container_by_serial, assign_user, unassign_user, \
-    add_token_to_container, add_multiple_tokens_to_container, remove_token_from_container, \
-    remove_multiple_tokens_from_container
+from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
+                                       get_container_token_types, get_all_containers, add_container_info,
+                                       set_container_description, set_container_states, set_container_realms,
+                                       delete_container_by_serial, assign_user, unassign_user, add_token_to_container,
+                                       add_multiple_tokens_to_container, remove_token_from_container,
+                                       remove_multiple_tokens_from_container)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
@@ -27,6 +29,8 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def list_containers():
@@ -55,8 +59,11 @@ def list_containers():
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
     logged_in_user_role = g.logged_in_user.get("role")
+    allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
+    allowed_token_realms = getattr(request, "pi_allowed_realms", None)
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
+                                realms=allowed_container_realms,
                                 sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
@@ -82,7 +89,8 @@ def list_containers():
             tokens_dict_list = []
             if len(token_serials) > 0:
                 tokens = get_tokens(serial_list=token_serials)
-                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
+                                                                  allowed_realms=allowed_token_realms)
             tmp["tokens"] = tokens_dict_list
 
         tmp["states"] = container.get_states()
@@ -107,7 +115,7 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
 @event('container_assign', request, g)
 @log_with(log)
 def assign(container_serial):
@@ -132,7 +140,7 @@ def assign(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
 @event('container_unassign', request, g)
 @log_with(log)
 def unassign(container_serial):
@@ -157,7 +165,7 @@ def unassign(container_serial):
 
 
 @container_blueprint.route('init', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_CREATE)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_CREATE)
 @event('container_init', request, g)
 @log_with(log)
 def init():
@@ -170,6 +178,14 @@ def init():
     :jsonparam: user: Optional username to assign the container to. Requires realm param to be present as well.
     :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
     """
+    user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
+    if user_role == "admin" and allowed_realms:
+        req_realm = getParam(request.all_data, "realm", optional=True)
+        if not req_realm or req_realm == "":
+            # The container has to be in one realm the admin is allowed to manage
+            request.all_data["realm"] = allowed_realms[0]
+
     serial = init_container(request.all_data)
     res = {"container_serial": serial}
 
@@ -190,7 +206,7 @@ def init():
 
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DELETE)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_DELETE)
 @event('container_delete', request, g)
 @log_with(log)
 def delete(container_serial):
@@ -221,7 +237,7 @@ def delete(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_token(container_serial):
@@ -253,7 +269,7 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -267,8 +283,9 @@ def add_all_tokens(container_serial):
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role)
+    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role, allowed_realms)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -289,7 +306,7 @@ def add_all_tokens(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
@@ -321,7 +338,7 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
@@ -335,8 +352,9 @@ def remove_all_tokens(container_serial):
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role)
+    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role, allowed_realms)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -374,7 +392,7 @@ def get_types():
 
 
 @container_blueprint.route('<string:container_serial>/description', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_DESCRIPTION)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_DESCRIPTION)
 @event('container_set_description', request, g)
 @log_with(log)
 def set_description(container_serial):
@@ -405,7 +423,7 @@ def set_description(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/states', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_STATE)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_STATE)
 @event('container_set_states', request, g)
 @log_with(log)
 def set_states(container_serial):
@@ -455,7 +473,7 @@ def get_state_types():
 
 @container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_REALMS)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REALMS)
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):
@@ -468,11 +486,10 @@ def set_realms(container_serial):
     # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
     realm_list = [r.strip() for r in container_realms.split(",")]
-    user = request.User
-    user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     # Set realms
-    result = set_container_realms(container_serial, realm_list, user, user_role)
+    result = set_container_realms(container_serial, realm_list, allowed_realms)
     success = False not in result.values()
 
     # Audit log
@@ -520,7 +537,7 @@ def update_last_seen(container_serial):
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_INFO)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_INFO)
 @log_with(log)
 def set_container_info(container_serial, key):
     """

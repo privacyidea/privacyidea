@@ -1,4 +1,5 @@
-from privacyidea.lib.container import init_container, find_container_by_serial, add_token_to_container, assign_user
+from privacyidea.lib.container import init_container, find_container_by_serial, add_token_to_container, assign_user, \
+    add_container_realms
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -363,17 +364,18 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_29_admin_assign_user_allowed(self):
+        self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
         container_serial = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign",
-                                {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_30_admin_assign_user_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
         container_serial = init_container({"type": "generic"})
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
-                                       {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_31_admin_remove_user_allowed(self):
@@ -414,14 +416,276 @@ class APIContainerAuthorization(MyApiTestCase):
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
         delete_policy("policy")
 
-    def test_26_admin_container_list_allowed(self):
+    def test_36_admin_container_list_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST)
         self.request_assert_200('/container/', {}, self.at, 'GET')
         delete_policy("policy")
 
-    def test_27_admin_container_list_denied(self):
+    def test_37_admin_container_list_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
         self.request_denied_assert_403('/container/', {}, self.at, 'GET')
+        delete_policy("policy")
+
+    def test_38_helpdesk_create_allowed(self):
+        self.setUp_user_realms()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm1)
+        json = self.request_assert_200('/container/init', {"type": "generic", "realm": self.realm1}, self.at)
+        self.assertGreater(len(json["result"]["value"]["container_serial"]), 0)
+        delete_policy("policy")
+
+    def test_39_helpdesk_create_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm1)
+        self.request_denied_assert_403('/container/init', {"type": "Smartphone", "realm": self.realm2},
+                                       self.at)
+        delete_policy("policy")
+
+    def test_40_helpdesk_delete_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm1)
+        container_serial = self.create_container_for_user()
+        self.request_assert_200(f"/container/{container_serial}", {}, self.at, method='DELETE')
+        delete_policy("policy")
+
+    def test_41_helpdesk_delete_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at, method='DELETE')
+        delete_policy("policy")
+
+    def test_42_helpdesk_description_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm1)
+        container_serial = self.create_container_for_user()
+        self.request_assert_200(f"/container/{container_serial}/description", {"description": "test"}, self.at,
+                                method='POST')
+        delete_policy("policy")
+
+    def test_43_helpdesk_description_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
+                                       self.at, method='POST')
+        delete_policy("policy")
+
+    def test_44_helpdesk_state_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, realm=self.realm1)
+        container_serial = self.create_container_for_user()
+        self.request_assert_200(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
+                                self.at, method='POST')
+        delete_policy("policy")
+
+    def test_45_helpdesk_state_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
+                                       self.at, method='POST')
+        delete_policy("policy")
+
+    def test_46_helpdesk_add_token_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm1)
+        container_serial = self.create_container_for_user()
+
+        # Add single token
+        token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+        self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
+                                       method='POST')
+
+        # add multiple tokens
+        token2 = init_token({"genkey": "1", "realm": self.realm1})
+        token3 = init_token({"genkey": "1", "realm": self.realm1})
+        token_serials = ','.join([token2.get_serial(), token3.get_serial()])
+        json = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
+                                method='POST')
+        self.assertTrue(json["result"]["value"][token2.get_serial()])
+        self.assertTrue(json["result"]["value"][token3.get_serial()])
+        delete_policy("policy")
+
+    def test_47_helpdesk_add_token_denied(self):
+        self.setUp_user_realm2()
+        # helpdesk of user realm realm2: container and token are both in realm1
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+        # helpdesk of userealm realm1: only token is in realm2
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm1)
+        token = init_token({"genkey": "1", "realm": self.realm2})
+        token_serial = token.get_serial()
+        self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
+                                       method='POST')
+
+        # same for adding multiple tokens
+        token2 = init_token({"genkey": "1", "realm": self.realm2})
+        token3 = init_token({"genkey": "1", "realm": self.realm1})
+        token_serials = ','.join([token2.get_serial(), token3.get_serial()])
+        json = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
+                                        method='POST')
+        self.assertFalse(json["result"]["value"][token2.get_serial()])
+        self.assertTrue(json["result"]["value"][token3.get_serial()])
+
+        delete_policy("policy")
+
+    def test_48_helpdesk_remove_token_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
+        container_serial = self.create_container_for_user()
+        token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+
+        # single token
+        add_token_to_container(container_serial, token_serial, user_role='admin')
+        json = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
+                                       method='POST')
+        self.assertTrue(json["result"]["value"])
+
+        # multiple tokens
+        add_token_to_container(container_serial, token_serial, user_role='admin')
+        token2 = init_token({"genkey": "1", "realm": self.realm1})
+        add_token_to_container(container_serial, token2.get_serial(), user_role='admin')
+        token_serials = ','.join([token_serial, token2.get_serial()])
+        json = self.request_assert_200(f"/container/{container_serial}/removeall", {"serial": token_serials}, self.at,
+                                       method='POST')
+        self.assertTrue(json["result"]["value"][token_serial])
+        self.assertTrue(json["result"]["value"][token2.get_serial()])
+        delete_policy("policy")
+
+    def test_49_helpdesk_remove_token_denied(self):
+        self.setUp_user_realm2()
+
+        # helpdesk of user realm realm2: container and token are both in realm1
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+        add_token_to_container(container_serial, token_serial, user_role='admin')
+        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
+                                       method='POST')
+
+        # helpdesk of userealm realm2: container in realm1 and token in realm 2
+        token = init_token({"genkey": "1", "realm": self.realm2})
+        token_serial = token.get_serial()
+        add_token_to_container(container_serial, token_serial, user_role='admin')
+        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+        # helpdesk of userealm realm1: container in realm1 and token in realm 2
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
+        self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
+                                       method='POST')
+
+        # Same for multiple tokens
+        token2 = init_token({"genkey": "1", "realm": self.realm2})
+        add_token_to_container(container_serial, token2.get_serial(), user_role='admin')
+        token3 = init_token({"genkey": "1", "realm": self.realm1})
+        add_token_to_container(container_serial, token3.get_serial(), user_role='admin')
+        token_serials = ','.join([token2.get_serial(), token3.get_serial()])
+        json = self.request_assert_200(f"/container/{container_serial}/removeall", {"serial": token_serials}, self.at,
+                                       method='POST')
+        self.assertFalse(json["result"]["value"][token2.get_serial()])
+        self.assertTrue(json["result"]["value"][token3.get_serial()])
+        delete_policy("policy")
+
+    def test_50_helpdesk_assign_user_allowed(self):
+        # Allow to assign a user to a container without any realm
+        self.setUp_user_realms()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm1)
+        container_serial = init_container({"type": "generic"})
+        self.request_assert_200(f"/container/{container_serial}/assign",
+                                {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+        delete_policy("policy")
+
+    def test_51_helpdesk_assign_user_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+
+        # helpdesk of user realm realm2: container in realm2, but user from realm1
+        container_serial = init_container({"type": "generic", "realm": self.realm2})
+        self.request_denied_assert_403(f"/container/{container_serial}/assign",
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+
+        # helpdesk of user realm realm2: user from realm2, but container in realm1
+        container_serial = init_container({"type": "generic", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}/assign",
+                                       {"realm": "realm2", "user": "root", "resolver": self.resolvername1}, self.at)
+        delete_policy("policy")
+
+    def test_52_helpdesk_remove_user_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm1)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_assert_200(f"/container/{container_serial}/unassign",
+                                {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+        delete_policy("policy")
+
+    def test_53_helpdesk_remove_user_denied(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}/unassign",
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+
+        # container is additionally in realm2, but user is still from realm1
+        add_container_realms(container_serial, ["realm2"], allowed_realms=None)
+        self.request_denied_assert_403(f"/container/{container_serial}/unassign",
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+        delete_policy("policy")
+
+    def test_54_helpdesk_container_realms_allowed(self):
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=[self.realm1, self.realm2])
+        container_serial = self.create_container_for_user()
+        self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
+
+        # Set realm for container without any realm
+        container_serial = init_container({"type": "generic"})
+        self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
+        delete_policy("policy")
+
+    def test_55_helpdesk_container_realms_denied(self):
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+        # helpdesk of user realm realm2: container in realm1
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=self.realm2)
+        container_serial = self.create_container_for_user()
+        self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
+
+        # helpdesk of user realm realm2: container in realm1, set realm3
+        self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm3"}, self.at)
+        delete_policy("policy")
+
+        # helpdesk of user realm realm1: container in realm1, set realm2
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=self.realm1)
+        json = self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
+        self.assertFalse(json["result"]["value"]["realm2"])
+        container = find_container_by_serial(container_serial)
+        realms = [realm.name for realm in container.realms]
+        self.assertEqual(1, len(realms))
+        self.assertEqual("realm1", realms[0])
+
+        json = self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"}, self.at)
+        self.assertFalse(json["result"]["value"]["realm2"])
+        self.assertTrue(json["result"]["value"]["realm1"])
+
+        # helpdesk of user realm realm1: container in realm1 and realm2, set realm1 (removes realm2)
+        add_container_realms(container_serial, ["realm1", "realm2"], allowed_realms=None)
+        self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
+        container = find_container_by_serial(container_serial)
+        realms = [realm.name for realm in container.realms]
+        self.assertEqual(2, len(realms))
+        self.assertIn("realm1", realms)
+        self.assertIn("realm2", realms)
+        delete_policy("policy")
+
+    def test_56_helpdesk_container_list_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
+        self.request_assert_200('/container/', {}, self.at, 'GET')
         delete_policy("policy")
 
 

@@ -157,19 +157,6 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
             TokenFactory.enable(serial, $scope.get);
         };
 
-        $scope.adminOrUserIsOwner = function (username, realm) {
-            let allow = false;
-            if ($scope.loggedInUser.role === 'admin') {
-                allow = true;
-            } else {
-                if (username == $scope.loggedInUser.username
-                    && realm == $scope.loggedInUser.realm) {
-                    allow = true;
-                }
-            }
-            return allow;
-        }
-
         // Expand token view
         $scope.expandedRows = [];
         $scope.expandTokenView = function (containerRow) {
@@ -559,18 +546,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.getContainer();
             });
         };
-        $scope.adminOrUserIsOwner = function (username, realm) {
-            let allow = false;
-            if ($scope.loggedInUser.role === 'admin') {
-                allow = true;
-            } else {
-                if (username == $scope.loggedInUser.username
-                    && realm == $scope.loggedInUser.realm) {
-                    allow = true;
-                }
-            }
-            return allow;
-        }
 
         // ----------- Initial calls -------------
         $scope.getContainer();

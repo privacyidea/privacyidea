@@ -225,7 +225,7 @@ def before_request():
                 container = find_container_for_token(t_serial)
             except ResourceNotFoundError:
                 # The container serial might not exist
-                pass
+                continue
             if container:
                 if idx == 0:
                     container_serial = container.serial

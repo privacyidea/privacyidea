@@ -145,6 +145,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 if ($scope.loggedInUser.role === "admin") {
                     $scope.changeApplication();
                 }
+                if (!$scope.token.container_serial || $scope.token.container_serial !== "") {
+                    $scope.tokenIsInContainer = true;
+                }
             });
         };
 

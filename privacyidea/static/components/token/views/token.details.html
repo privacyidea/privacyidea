@@ -581,29 +581,34 @@
 <h4 translate>Assign Container</h4>
 <div ng-show="tokenIsInContainer" translate>
     The token is currently assigned to container
-    <a ui-sref="token.containerdetails({containerSerial: containerSerial})">{{ containerSerial}}</a>.
+    <a ui-sref="token.containerdetails({containerSerial: containerSerial})">{{ containerSerial }}</a>.
 </div>
-<div select-or-create-container
-     container-serial="containerSerial"
-     disable-selection="tokenIsInContainer"
-     enable-user-assignment="token.user_id!=undefined"
-     user-name="token.username"
-     user-realm="token.user_realm"
-     token-types="[token.tokentype]">
+<div ng-show="!tokenIsInContainer" translate>
+    The token is currently in no container.
 </div>
-<div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
-    <button type="button" class="btn btn-primary"
-            ng-disabled="!checkRight('container_add_token')"
-            ng-click="addToContainer()">
-        <span translate>Add to Container</span>
-    </button>
-</div>
-<div class="text-center" ng-show="tokenIsInContainer">
-    <button type="button" class="btn btn-primary"
-            ng-disabled="!checkRight('container_remove_token')"
-            ng-click="removeFromContainer()">
-        <span translate>Remove from Container</span>
-    </button>
+<div ng-show="checkRight('container_add_token')">
+    <div select-or-create-container
+         container-serial="containerSerial"
+         disable-selection="tokenIsInContainer"
+         enable-user-assignment="token.user_id!=undefined"
+         user-name="token.username"
+         user-realm="token.user_realm"
+         token-types="[token.tokentype]">
+    </div>
+    <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
+        <button type="button" class="btn btn-primary"
+                ng-disabled="!checkRight('container_add_token')"
+                ng-click="addToContainer()">
+            <span translate>Add to Container</span>
+        </button>
+    </div>
+    <div class="text-center" ng-show="tokenIsInContainer">
+        <button type="button" class="btn btn-primary"
+                ng-disabled="!checkRight('container_remove_token')"
+                ng-click="removeFromContainer()">
+            <span translate>Remove from Container</span>
+        </button>
+    </div>
 </div>
 <!-- ============ Machines ======================= -->
 

@@ -2272,6 +2272,10 @@ def get_static_policy_definitions(scope=None):
                                              'desc': _('Users are allowed to unassign themselves from containers.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
                                              'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_LIST: {'type': 'bool',
+                                    'desc': _('Users are allowed to list their own containers.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {

@@ -103,9 +103,9 @@
                     <tr ng-repeat="token in container.tokens">
                         <td><a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
                                ng-click="$rootScope.returnTo=token.list;"
-                               ng-show="adminOrUserIsOwner(token.username, token.user_realm)">
+                               ng-show="token.tokentype">
                             {{ "[" + token.tokentype + "] " + token.serial + ": " + token.description}}</a>
-                            <span ng-hide="adminOrUserIsOwner(token.username, token.user_realm)">
+                            <span ng-hide="token.tokentype">
                                 {{ token.serial }}
                             </span>
                         </td>

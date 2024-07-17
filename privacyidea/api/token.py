@@ -56,7 +56,7 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.container import find_container_by_serial
+from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.user import get_user_from_param
@@ -71,11 +71,10 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups,
-                         get_token_owner)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError)
+from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -102,7 +101,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description)
+                                           init_subject_components, require_description,
+                                           check_container_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -320,15 +320,25 @@ def init():
         # Check if a containerSerial is set and assign the token to the container
         if "container_serial" in param:
             container_serial = param.get("container_serial")
-            # TODO should this be caught here? The enrollment should not be blocked by the error?
+            # check if user is allowed to add tokens to containers
             try:
-                container = find_container_by_serial(container_serial)
-                container.add_token(tokenobject)
-                g.audit_object.log({"container_serial": container_serial,
-                                    "container_type": container.type})
-            except ResourceNotFoundError:
-                log.error(f"Container with serial {container_serial} not found while enrolling token "
-                          f"{tokenobject.get_serial()}.")
+                container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
+            except PolicyError:
+                container_add_token_right = False
+                log.error(f"User {user.login} is not allowed to add token {tokenobject.get_serial()} to container "
+                          f"{container_serial}.")
+            if container_add_token_right:
+                # TODO should this be caught here? The enrollment should not be blocked by the error?
+                try:
+                    logged_in_user_role = g.logged_in_user.get("role")
+                    add_token_to_container(container_serial, tokenobject.get_serial(), user, logged_in_user_role)
+                    response_details.update({"container_serial": container_serial})
+                    container = find_container_by_serial(container_serial)
+                    g.audit_object.log({"container_serial": container_serial,
+                                        "container_type": container.type})
+                except ResourceNotFoundError:
+                    log.error(f"Container with serial {container_serial} not found while enrolling token "
+                              f"{tokenobject.get_serial()}.")
 
     g.audit_object.log({'user': user.login,
                         'realm': user.realm,
@@ -394,7 +404,7 @@ def get_challenges_api(serial=None):
 
 
 @token_blueprint.route('/', methods=['GET'])
-@prepolicy(check_admin_tokenlist, request)
+@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
 @prepolicy(hide_tokeninfo, request)
 @event("token_list", request, g)
 @log_with(log)

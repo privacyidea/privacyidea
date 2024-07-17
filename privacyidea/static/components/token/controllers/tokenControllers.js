@@ -21,6 +21,7 @@
 
 myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'AuthFactory', 'ConfigFactory',
     function ($scope, $location, $rootScope, AuthFactory, ConfigFactory) {
+        $scope.loggedInUser = AuthFactory.getUser();
 
         // set default path
         if ($location.path() === "/token") {
@@ -458,9 +459,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.webAuthnToken = {};
             $scope.enrolledToken = data.detail;
             $scope.click_wait = false;
-            if ($scope.form.container_serial !== null && $scope.form.container_serial !== "createnew") {
-                $scope.enrolledToken.containerSerial = $scope.form.container_serial;
-            }
             if ($scope.enrolledToken.otps) {
                 const otps_count = Object.keys($scope.enrolledToken.otps).length;
                 $scope.otp_row_count = parseInt(otps_count / 5 + 0.5);

@@ -71,7 +71,7 @@ from sqlalchemy.sql.expression import FunctionElement
 
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
@@ -379,12 +379,20 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
-def convert_token_objects_to_dicts(tokens, user, user_role="user", hidden_tokeninfo=None):
+def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None):
     """
     Convert a list of token objects to a list of dictionaries.
+    Additionally, checks whether the requesting user is allowed to see the token information.
+    If not it is reduced to the tokens serial.
 
     :param tokens: A list of token objects
     :type tokens: list
+    :param user: The user object performing the request
+    :type user: User object
+    :param user_role: The role of the logged-in user
+    :type user_role: str
+    :param allowed_realms: A list of the realms the admin is allowed to see, None if the admin is allowed to see all
+                           realms
     :return: A list of dictionaries
     :rtype: list
     """
@@ -419,6 +427,11 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", hidden_tokeni
             # Reduce token info if the user is not the owner
             if user_role != "admin":
                 if not user or user.login != token_dict["username"] or user.realm != token_dict["user_realm"]:
+                    token_dict = {"serial": token_dict["serial"]}
+            elif user_role == "admin" and allowed_realms is not None:
+                same_realms = list(set(token_dict["realms"]).intersection(allowed_realms))
+                if len(same_realms) == 0:
+                    # The token is in no realm the admin is allowed to see
                     token_dict = {"serial": token_dict["serial"]}
 
             token_dict_list.append(token_dict)

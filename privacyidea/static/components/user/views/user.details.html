@@ -254,14 +254,14 @@
         <button class="btn btn-primary"
                 ng-click="addTokensToContainerMode()"
                 ng-show="showTokenOfUser"
-                ng-disabled="!enableAddTokenToContainer"
+                ng-disabled="!enableAddTokenToContainer || !checkRight('container_add_token')"
                 id="putInContainerButton"
                 translate>Add Tokens to Container
         </button>
         <button class="btn btn-success"
                 ng-click="addTokensToContainerAction()"
                 ng-show="!showTokenOfUser"
-                ng-disabled="!containerSelected"
+                ng-disabled="!containerSelected || !checkRight('container_add_token')"
                 translate>Add Tokens
         </button>
         <button class="btn btn-danger"

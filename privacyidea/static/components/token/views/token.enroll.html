@@ -70,19 +70,23 @@
         </div>
 
         <!-- ============ Container ====================== -->
-        <h4>Assign Container</h4>
-        <div select-or-create-container container-serial="form.container_serial" disable-selection="tokenIsInContainer"
-             enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm" token-types="[form.type]">
-        </div>
-        <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
-            <button type="button" class="btn btn-primary" ng-click="addToContainer()">
-                <span translate>Add to Container</span>
-            </button>
-        </div>
-        <div class="text-center" ng-show="tokenIsInContainer">
-            <button type="button" class="btn btn-primary" ng-click="removeFromContainer()">
-                <span translate>Remove from Container</span>
-            </button>
+        <div ng-show="checkRight('container_add_token')">
+            <h4 translate>Assign Container</h4>
+            <div select-or-create-container container-serial="form.container_serial"
+                 disable-selection="tokenIsInContainer"
+                 enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm"
+                 token-types="[form.type]">
+            </div>
+            <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
+                <button type="button" class="btn btn-primary" ng-click="addToContainer()">
+                    <span translate>Add to Container</span>
+                </button>
+            </div>
+            <div class="text-center" ng-show="tokenIsInContainer">
+                <button type="button" class="btn btn-primary" ng-click="removeFromContainer()">
+                    <span translate>Remove from Container</span>
+                </button>
+            </div>
         </div>
 
         <!-- Extended attributes -->
@@ -189,9 +193,11 @@
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
                 {{ enrolledToken.serial }}</a>.
         </span>
-        <span ng-show="enrolledToken.containerSerial" translate>
+        <span ng-show="enrolledToken.container_serial" translate>
             The token has been enrolled in the container
-            <a ui-sref="token.containerdetails({containerSerial: enrolledToken.containerSerial})">{{ enrolledToken.containerSerial}}</a>.
+            <a ui-sref="token.containerdetails({containerSerial: enrolledToken.container_serial})">
+                {{ enrolledToken.container_serial }}
+            </a>.
         </span>
     </p>
 

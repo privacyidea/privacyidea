@@ -314,10 +314,10 @@
         <tr ng-repeat="token in container.tokens">
             <td>
                 <a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
-                   ng-show="adminOrUserIsOwner(token.username, token.user_realm)">
+                   ng-show="token.tokentype">
                     {{ token.serial }}
                 </a>
-                <span ng-hide="adminOrUserIsOwner(token.username, token.user_realm)">
+                <span ng-hide="token.tokentype">
                     {{ token.serial }}
                 </span>
             </td>
@@ -325,13 +325,13 @@
             <td>
                 <span class="label label-success"
                       ng-show="token.active"
-                      ng-click="adminOrUserIsOwner(token.username, token.user_realm) && disableToken(token.serial)"
+                      ng-click="disableToken(token.serial)"
                       translate>
                     active
                 </span>
                 <span class="label label-danger"
                       ng-hide="token.active != false"
-                      ng-click="adminOrUserIsOwner(token.username, token.user_realm) && enableToken(token.serial)"
+                      ng-click="enableToken(token.serial)"
                       translate>
                     disabled
                 </span>
@@ -340,7 +340,7 @@
             <td>{{ token.description }}</td>
             <td>
                 <span class="label"
-                      ng-click="adminOrUserIsOwner(token.username, token.user_realm) && checkRight('reset')
+                      ng-click="checkRight('reset')
                                 && resetFailcount(token.serial)"
                       ng-class="{'label-success': token.failcount<=0,
                                     'label-warning': token.failcount>0,
@@ -380,7 +380,7 @@
                 </a>
             </td>
             <td>
-                <fieldset ng-disabled="!adminOrUserIsOwner(token.username, token.user_realm)">
+                <fieldset ng-disabled="!token.tokentype">
                     <button class="btn btn-transparent btn-danger"
                             ng-hide="showDialog[token.serial]"
                             ng-disabled="!checkRight('container_remove_token')"
@@ -535,8 +535,7 @@
             </thead>
             <tbody>
             <tr ng-repeat="token_add in tokendata.tokens">
-                <td><a ui-sref="token.details({tokenSerial:token_add.serial,
-            currentToken:token_add})">
+                <td><a ui-sref="token.details({tokenSerial:token_add.serial, currentToken:token_add})">
                     {{ token_add.serial }}</a></td>
                 <td>{{ token_add.tokentype }}</td>
                 <td>

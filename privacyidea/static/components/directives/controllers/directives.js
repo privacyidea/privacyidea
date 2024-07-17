@@ -517,16 +517,18 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 };
 
                 scope.getContainers = function () {
-                    $http.get(containerUrl + "/?no_token=1", {
-                        headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    }).then(function (response) {
-                        containerList = response.data.result.value.containers;
-                        scope.setContainerSelection(containerList);
-                        scope.setDefaultSerialSelection();
-                        scope.newContainer.types = scope.getContainerTypesForTokenType();
-                    }, function (error) {
-                        AuthFactory.authError(error.data);
-                    });
+                    if (AuthFactory.checkRight("container_list")){
+                        $http.get(containerUrl + "/?no_token=1", {
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                        }).then(function (response) {
+                            containerList = response.data.result.value.containers;
+                            scope.setContainerSelection(containerList);
+                            scope.setDefaultSerialSelection();
+                            scope.newContainer.types = scope.getContainerTypesForTokenType();
+                        }, function (error) {
+                            AuthFactory.authError(error.data);
+                        });
+                    }
                 };
 
                 scope.getContainerTypesForTokenType = function () {
@@ -574,7 +576,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                             }
                         });
                     }
-                    if (AuthFactory.checkRight("container_create") || AuthFactory.getUser().isAdmin) {
+                    if (AuthFactory.checkRight("container_create")) {
                         // Always add an extra container at the beginning to represent the creation of a new container
                         scope.containers.unshift({displayString: "Create new container", serial: "createnew"});
                     }
@@ -582,10 +584,8 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
 
                 scope.setDefaultSerialSelection = function () {
                     if (!scope.containerSerial || scope.containerSerial === "createnew") {
-                        if (AuthFactory.checkRight("container_create") || AuthFactory.getUser().isAdmin) {
+                        if (AuthFactory.checkRight("container_create")) {
                             scope.containerSerial = "createnew";
-                        } else if (scope.containers && scope.containers.length > 0) {
-                            scope.containerSerial = scope.containers[0].serial;
                         } else {
                             scope.containerSerial = null;
                         }

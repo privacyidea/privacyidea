@@ -5,10 +5,11 @@ import os
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import TokenContainer, TokenContainerOwner, Token, TokenContainerToken
+from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
+                                Realm)
 
 log = logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ def find_container_by_serial(serial: str):
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
+def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
                             sortdir='asc'):
     """
     Generates a sql query to filter containers by the given parameters.
@@ -135,6 +136,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     :param serial: container serial, optional
     :param ctype: container type, optional
     :param token_serial: serial of a token which is assigned to the container, optional
+    :param realms: list of realms to filter by, optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :return: sql query
@@ -157,6 +159,12 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
         else:
             log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
 
+    if realms:
+        realm_ids = [realm.id for realm in Realm.query.filter(Realm.name.in_(realms)).all()]
+        container_realms = TokenContainerRealm.query.filter(TokenContainerRealm.realm_id.in_(realm_ids)).all()
+        container_ids = [r.container_id for r in container_realms]
+        sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+
     if isinstance(sortby, str):
         # Check that the sort column exists and convert it to a Token column
         cols = TokenContainer.__table__.columns
@@ -174,7 +182,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     return sql_query
 
 
-def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
+def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
                        sortdir='asc', page=0, pagesize=0):
     """
     This function is used to retrieve a container list, that can be displayed in
@@ -187,6 +195,7 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :param serial: container serial, optional
     :param ctype: container type, optional
     :param token_serial: serial of a token which is assigned to the container, optional
+    :param realms: list of realms the container is assigned to, optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :param page: The number of the page to view. Starts with 1 ;-)
@@ -194,7 +203,7 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realms=realms,
                                         sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
@@ -336,7 +345,8 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
     """
     Add a single token to a container. If a token is already in a container it is removed from the old container.
     Raises a ResourceNotFoundError if either the container or token does not exist.
-    Raises a PolicyError if the user is not allowed to add the token to the container.
+    Raises a PolicyError if the user is not allowed to add the token to the container. The user/admin needs the rights
+    to edit the container, the token and if the token is already in a container, also the rights for this container.
 
     :param container_serial: The serial of the container
     :param token_serial: The serial of the token
@@ -353,31 +363,24 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
 
     # Check if the token is in a container
     old_container = find_container_for_token(token_serial)
-    user_is_owner_of_old_container = False
-    if old_container:
-        old_container_owners = old_container.get_users()
-        if len(old_container_owners) == 0 or user == old_container_owners[0]:
-            # Either the token is not in a container or the user is the owner of the old container
-            user_is_owner_of_old_container = True
-    else:
-        user_is_owner_of_old_container = True
-    # User is allowed to add token to container if he is admin or owner of both,
-    # token and the old container of the token
-    token_owner = token.user
-    if user_role == "admin" or (user == token_owner and user_is_owner_of_old_container):
-        res = container.add_token(token)
-        if res and old_container:
-            # Remove token from old container
+
+    # Check if admin/user is allowed to add the token to the container
+    if user_role == "admin" or token.user == user:
+        if old_container:
+            # Remove token from old container (raises PolicyError if user is not allowed to edit the old container)
             remove_token_from_container(old_container.serial, token_serial, user, user_role)
             log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
                      f"Token removed from previous container {old_container.serial}.")
+        res = container.add_token(token)
+
     else:
         raise PolicyError(f"User {user} is not allowed to add token {token.get_serial()} "
                           f"to container {container_serial}.")
     return res
 
 
-def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user"):
+def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user",
+                                     allowed_realms=[]):
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
@@ -388,6 +391,7 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
     :param token_serials: A list of token serials to add
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
+    :param allowed_realms: A list of realms the admin is allowed to add tokens to, optional
     :return: A dictionary in the format {token_serial: success}
     """
     # Raises ResourceNotFound if container does not exist
@@ -395,6 +399,15 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
 
     ret = {}
     for token_serial in token_serials:
+        # Check if admin is allowed to add the token to the container
+        if user_role == "admin" and allowed_realms:
+            token_realms = get_realms_of_token(token_serial)
+            matching_realms = list(set(token_realms).intersection(allowed_realms))
+            if len(matching_realms) == 0:
+                ret[token_serial] = False
+                log.error(
+                    f"User {user} is not allowed to add token {token_serial} to container {container_serial}.")
+                continue
         try:
             res = add_token_to_container(container_serial, token_serial, user, user_role)
         except Exception as ex:
@@ -434,9 +447,8 @@ def remove_token_from_container(container_serial, token_serial, user: User = Non
     """
     Remove the given token from the container with the given serial.
     Raises a ResourceNotFoundError if the container or token does not exist. Raises a PolicyError if the user is not
-    allowed to remove the token from the container.
-    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
-    the token and the container.
+    allowed to remove the token from the container. The user/admin needs the rights to edit the container, the token and
+    if the token is already in a container, also the rights for this container.
 
     :param container_serial: The serial of the container
     :param token_serial: the serial of the token to remove
@@ -458,7 +470,8 @@ def remove_token_from_container(container_serial, token_serial, user: User = Non
     return res
 
 
-def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user"):
+def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user",
+                                          allowed_realms=[]):
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
@@ -471,6 +484,7 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
     :param token_serials: A list of token serials to remove
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
+    :param allowed_realms: A list of realms the user is allowed to remove tokens from (only for admins), optional
     :return: A dictionary in the format {token_serial: success}
     """
     # Raises ResourceNotFound if container does not exist
@@ -478,6 +492,15 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
 
     ret = {}
     for token_serial in token_serials:
+        # Check if admin is allowed to remove the token from the container
+        if user_role == "admin" and allowed_realms:
+            token_realms = get_realms_of_token(token_serial)
+            matching_realms = list(set(token_realms).intersection(allowed_realms))
+            if len(matching_realms) == 0:
+                ret[token_serial] = False
+                log.error(
+                    f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
+                continue
         try:
             res = remove_token_from_container(container_serial, token_serial, user, user_role)
         except Exception as ex:
@@ -665,44 +688,77 @@ def add_container_states(serial, states, user: User = None, user_role="user"):
     return res
 
 
-def set_container_realms(serial, realms, user: User = None, user_role="user"):
+def set_container_realms(serial, realms, allowed_realms=[]):
     """
     Set the realms of a container.
 
     :param serial: serial of the container
     :param realms: new realms as list of str
-    :param user: user setting the realms
-    :param user_role: role of the logged-in user ("admin" or "user")
+    :param allowed_realms: A list of realms the admin is allowed to set (None if all realms are allowed), optional
     :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
               deleted.
     """
     container = find_container_by_serial(serial)
+    old_realms = [realm.name for realm in container.realms]
 
-    # Check user rights on container
-    _check_user_access_on_container(container, user, user_role)
+    # Check if admin is allowed to set the realms
+    matching_realms = realms
+    res_failed = {}
+    if allowed_realms:
+        matching_realms = list(set(realms).intersection(allowed_realms))
+        excluded_realms = list(set(realms) - set(matching_realms))
+        if len(excluded_realms) > 0:
+            log.error(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
+            res_failed = {realm: False for realm in excluded_realms}
 
-    res = container.set_realms(realms, add=False)
+        # Check if admin is allowed to remove the old realms
+        not_allowed_realms = set(old_realms) - set(allowed_realms)
+        # Add realms that are not allowed to be removed to the set list
+        matching_realms = list(set(matching_realms).union(not_allowed_realms))
+
+    # Set realms
+    res = container.set_realms(matching_realms, add=False)
+    res.update(res_failed)
     return res
 
 
-def add_container_realms(serial, realms, user: User = None, user_role="user"):
+def add_container_realms(serial, realms, allowed_realms):
     """
     Add the realms to the container realms.
 
     :param serial: serial of the container
     :param realms: new realms as list of str
-    :param user: user setting the realms
-    :param user_role: role of the logged-in user ("admin" or "user")
+    :param allowed_realms: A list of realms the admin is allowed to set, optional
     :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
               deleted.
     """
     container = find_container_by_serial(serial)
 
-    # Check user rights on container
-    _check_user_access_on_container(container, user, user_role)
+    # Check if admin is allowed to set the realms
+    matching_realms = realms
+    res_failed = {}
+    if allowed_realms:
+        matching_realms = list(set(realms).intersection(allowed_realms))
+        excluded_realms = list(set(realms) - set(matching_realms))
+        if len(excluded_realms) > 0:
+            log.error(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
+            res_failed = {realm: False for realm in excluded_realms}
 
-    res = container.set_realms(realms, add=True)
+    # Add realms
+    res = container.set_realms(matching_realms, add=True)
+    res.update(res_failed)
     return res
+
+
+def get_container_realms(serial):
+    """
+    Get the realms of the container.
+
+    :param serial: serial of the container
+    :returns: List of realm names
+    """
+    container = find_container_by_serial(serial)
+    return [realm.name for realm in container.realms]
 
 
 def _check_user_access_on_container(container, user, user_role):

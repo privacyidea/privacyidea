@@ -108,18 +108,11 @@ angular.module("privacyideaApp")
         }]);
 
 angular.module("privacyideaApp")
-    .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl',
-        'tokenUrl', '$rootScope',
-        'TokenFactory', 'UserFactory', 'ContainerFactory',
-        '$state', 'ConfigFactory',
-        'instanceUrl', '$location', 'inform',
-        'gettextCatalog',
-        function ($scope, userUrl, realmUrl,
-                  tokenUrl, $rootScope,
-                  TokenFactory, UserFactory, ContainerFactory,
-                  $state, ConfigFactory,
-                  instanceUrl, $location,
-                  inform, gettextCatalog) {
+    .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl', 'tokenUrl', '$rootScope', 'TokenFactory',
+        'UserFactory', 'ContainerFactory', 'AuthFactory', '$state', 'ConfigFactory', 'instanceUrl', '$location',
+        'inform', 'gettextCatalog',
+        function ($scope, userUrl, realmUrl, tokenUrl, $rootScope, TokenFactory, UserFactory, ContainerFactory,
+                  AuthFactory, $state, ConfigFactory, instanceUrl, $location, inform, gettextCatalog) {
             $scope.tokensPerPage = 5;
             $scope.containersPerPage = 5;
             $scope.newToken = {"serial": "", pin: ""};
@@ -143,14 +136,18 @@ angular.module("privacyideaApp")
             };
 
             $scope.getUserContainer = function () {
-                ContainerFactory.getContainerForUser({
-                    user: $scope.username,
-                    realm: $scope.realmname,
-                    pagesize: $scope.containersPerPage,
-                    page: $scope.containerParams.page
-                }, function (data) {
-                    $scope.containerdata = data.result.value.containers;
-                });
+                if (AuthFactory.checkRight("container_list")) {
+                    ContainerFactory.getContainerForUser({
+                        user: $scope.username,
+                        realm: $scope.realmname,
+                        pagesize: $scope.containersPerPage,
+                        page: $scope.containerParams.page
+                    }, function (data) {
+                        $scope.containerdata = data.result.value.containers;
+                    });
+                } else {
+                    $scope.containerdata = [];
+                }
             };
 
             // Change the pagination
@@ -356,7 +353,7 @@ angular.module("privacyideaApp")
             $scope.addTokensToContainerAction = function () {
                 let selectedSerials = "";
                 for (let [key, value] of Object.entries($scope.tokenSelection)) {
-                    if (selectedSerials !== ""){
+                    if (selectedSerials !== "") {
                         selectedSerials += ","
                     }
                     selectedSerials += key;
