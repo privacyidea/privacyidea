@@ -494,11 +494,7 @@ class IdResolver (UserIdResolver):
         schema = table_parts[0] if len(table_parts) > 1 else None
         self.table = table_parts[-1]
         log.debug("Loading table {0!s} from schema {1!s}".format(self.table, schema))
-        metadata = MetaData()
-        if schema is not None:
-            self.TABLE = Table(self.table, metadata, autoload_with=self.engine, schema=schema)
-        else:
-            self.TABLE = Table(self.table, metadata, autoload_with=self.engine)
+        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
         return self
 
     def _create_engine(self):
@@ -606,13 +602,9 @@ class IdResolver (UserIdResolver):
         schema = table_parts[0] if len(table_parts) > 1 else None
         table_name = table_parts[-1]
         log.debug("Loading table {0!s} from schema {1!s}".format(table_name, schema))
-        metadata = MetaData()
 
         try:
-            if schema is not None:
-                TABLE = Table(table_name, metadata, autoload_with=engine, schema=schema)
-            else:
-                TABLE = Table(table_name, metadata, autoload_with=engine)
+            TABLE = Table(table_name, MetaData(), autoload_with=engine, schema=schema)
             conditions = cls._append_where_filter([], TABLE,
                                                   param.get("Where"))
             filter_condition = and_(*conditions)
