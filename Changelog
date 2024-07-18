@@ -12,6 +12,7 @@ Version 3.10dev4
 
   Enhancements:
   * UI: Capitalize headings
+  * UI user details: enabl/disable tokens, reset the fail counter, delete tokens and unassign user form token
 
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages

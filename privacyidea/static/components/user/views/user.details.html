@@ -162,6 +162,7 @@
                 <th translate>Maxfail</th>
                 <th translate>Otplen</th>
                 <th>Container</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
@@ -172,21 +173,28 @@
                     {{ token.serial }}</a></td>
                 <td>{{ token.tokentype }}</td>
                 <td>
-                <span class="label label-success" ng-show="token.active" translate>
-                    active
-                </span>
-                    <span class="label label-danger" ng-hide="token.active" translate>
-                    disabled
-                </span>
+                    <span class="label label-success" ng-show="token.active"
+                          ng-click="disable(token.serial)"
+                          title="{{ 'Disable token'|translate }}"
+                          translate>active
+                    </span>
+                    <span class="label label-danger" ng-hide="token.active"
+                          ng-click="enable(token.serial)"
+                          title="{{ 'Enable token'|translate }}"
+                          translate>disabled
+                    </span>
                 </td>
                 <td>{{ token.count_window }}</td>
                 <td>{{ token.description }}</td>
-                <td><span class="label"
+                <td>
+                    <span class="label"
+                          title="{{ 'Reset Failcounter'|translate }}"
+                          ng-click="reset(token.serial)"
                           ng-class="{'label-success': token.failcount<=0,
-                                    'label-warning': token.failcount>0,
-                                    'label-danger': token.failcount>=token.maxfail}">
-                    {{ token.failcount }}
-                </span>
+                           'label-warning': token.failcount>0,
+                           'label-danger': token.failcount>=token.maxfail}">
+                        {{ token.failcount }}
+                    </span>
                 </td>
                 <td>{{ token.maxfail }}</td>
                 <td>{{ token.otplen }}</td>
@@ -195,9 +203,38 @@
                        ng-show="checkRight('container_list')">
                         {{ token.container_serial }}
                     </a>
-                    <span ng-hide="checkRight('container_serial')">
+                    <span ng-hide="checkRight('container_list')">
                         {{ token.container_serial }}
                     </span>
+                </td>
+                <td>
+                    <fieldset ng-disabled="!token.tokentype">
+                        <button class="btn btn-transparent btn-danger"
+                                ng-hide="showDialog[token.serial]"
+                                ng-disabled="!checkRight('unassign')"
+                                ng-click="unassign(token.serial)">
+                            <span class="glyphicon glyphicon-remove"></span>
+                            <span translate>Unassign</span>
+                        </button>
+                        <button class="btn btn-transparent btn-danger" ng-click="deleteToken(token.serial, true)"
+                                ng-disabled="!checkRight('delete')"
+                                ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Delete</span>
+                        </button>
+                        <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
+                        <button class="btn btn-danger"
+                                ng-click="deleteToken(token.serial, false)"
+                                ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                                ng-disabled="!checkRight('delete')">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Delete</span>
+                        </button>
+                        <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
+                                ng-show="showDialog[token.serial]">
+                            <span translate>Cancel</span>
+                        </button>
+                    </fieldset>
                 </td>
             </tr>
             </tbody>
@@ -205,7 +242,7 @@
     </div>
 
     <div class="table-responsive form-group" ng-show="!showTokenOfUser">
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped table-capitalize-header">
             <thead>
             <tr>
                 <th translate>Selection</th>
@@ -314,7 +351,7 @@
                 <thead>
                 <tr>
                     <th translate>
-                        serial
+                        Serial
                     </th>
                     <th translate>
                         Type

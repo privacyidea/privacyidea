@@ -590,7 +590,7 @@
 <div ng-show="!tokenIsInContainer" translate>
     The token is currently in no container.
 </div>
-<div ng-show="checkRight('container_add_token')">
+<div ng-show="checkRight('container_add_token') && checkRight('container_list')">
     <div select-or-create-container
          container-serial="containerSerial"
          disable-selection="tokenIsInContainer"
@@ -601,7 +601,7 @@
     </div>
     <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
         <button type="button" class="btn btn-primary"
-                ng-disabled="!checkRight('container_add_token')"
+                ng-disabled="!checkRight('container_add_token') || containerSerial === 'none'"
                 ng-click="addToContainer()">
             <span translate>Add to Container</span>
         </button>

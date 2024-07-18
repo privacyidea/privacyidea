@@ -295,6 +295,28 @@ angular.module("privacyideaApp")
                 $rootScope.returnTo = "user.details({realmname:$scope.realmname, username:$scope.username})";
             };
 
+            // single token function
+            $scope.reset = function (serial) {
+                TokenFactory.reset(serial, $scope._getUserToken);
+            };
+            $scope.disable = function (serial) {
+                TokenFactory.disable(serial, $scope._getUserToken);
+            };
+            $scope.enable = function (serial) {
+                TokenFactory.enable(serial, $scope._getUserToken);
+            };
+            $scope.showDialog = {};
+            $scope.deleteToken = function (token_serial, dialog) {
+                if (dialog) {
+                    $scope.showDialog[token_serial] = true;
+                } else {
+                    TokenFactory.delete(token_serial, $scope._getUserToken);
+                }
+            };
+            $scope.unassign = function (serial) {
+                TokenFactory.unassign(serial, $scope._getUserToken);
+            };
+
             $scope.getUserDetails();
             $scope._getUserToken();
             $scope.getEditableAttributes();

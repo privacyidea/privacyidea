@@ -12,7 +12,7 @@
             </button>
 
             <div class="navbar-collapse collapse myTokenNavbar">
-                <ul class="nav navbar-nav">
+                <ul class="nav navbar-nav nav-capitalize">
                     <li ng-class="{active: $state.includes('token.list')
                     || $state.includes('token.enroll') || $state.includes('token.import')
                     || $state.includes('token.challenges') || $state.includes('token.applications')
@@ -44,7 +44,7 @@
         <!-- Token sidebar panel -->
         <div class="col-lg-3 sticky" ng-hide="token_wizard || !tokenMenu">
             <div class="pa-sidebar panel">
-                <ul class="nav nav-pills nav-stacked">
+                <ul class="nav nav-pills nav-stacked nav-capitalize">
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.list')}">
                         <a ui-sref="token.list">
@@ -164,7 +164,7 @@
         <!-- Container sidebar panel -->
         <div class="col-lg-3 sticky" ng-show="!tokenMenu">
             <div class="pa-sidebar panel">
-                <ul class="nav nav-pills nav-stacked">
+                <ul class="nav nav-pills nav-stacked nav-capitalize">
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.containerlist')}"
                         ng-show="checkRight('container_list')">

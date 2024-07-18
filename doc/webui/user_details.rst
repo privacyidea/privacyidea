@@ -16,6 +16,26 @@ You see a list of the users tokens and change to the :ref:`token_details`.
 On the bottom, a list of the user's containers is displayed. You can click on the serial to change to the container
 details (:ref:`container_view`).
 
+Enable and Disable Tokens
+..........................
+
+A token can be enabled or disabled by clicking on the active or rather disable label.
+
+Reset Failcounter
+..................
+
+To reset the failcounter of a token, click on the number in the failcounter column.
+
+Unassign Tokens
+...............
+
+To unassign the user from a token click on the `unassign` button in the token's row.
+
+Delete Tokens
+..............
+
+A token can be deleted by clicking on the `delete` button in the token's row. You will be asked if you are
+sure you want to delete the token. Confirm and the token will be deleted.
 
 Enroll tokens
 .............

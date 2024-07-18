@@ -64,14 +64,16 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.showAddToContainer = ($scope.containerSerial && $scope.containerSerial !== "createnew");
         });
         $scope.addToContainer = function () {
-            ContainerFactory.addTokenToContainer({
-                container_serial: $scope.containerSerial,
-                serial: $scope.tokenSerial
-            }, function (data) {
-                if (data.result.value) {
-                    $scope.tokenIsInContainer = true;
-                }
-            });
+            if ($scope.containerSerial !== "none" && $scope.containerSerial !== "createnew") {
+                ContainerFactory.addTokenToContainer({
+                    container_serial: $scope.containerSerial,
+                    serial: $scope.tokenSerial
+                }, function (data) {
+                    if (data.result.value) {
+                        $scope.tokenIsInContainer = true;
+                    }
+                });
+            }
         };
         $scope.removeFromContainer = function () {
             ContainerFactory.removeTokenFromContainer({

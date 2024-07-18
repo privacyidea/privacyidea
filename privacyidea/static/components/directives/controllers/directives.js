@@ -580,6 +580,8 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         // Always add an extra container at the beginning to represent the creation of a new container
                         scope.containers.unshift({displayString: "Create new container", serial: "createnew"});
                     }
+                    // Placeholder for no container selected
+                    scope.containers.unshift({displayString: "No Container", serial: "none"});
                 }
 
                 scope.setDefaultSerialSelection = function () {
@@ -587,7 +589,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         if (AuthFactory.checkRight("container_create")) {
                             scope.containerSerial = "createnew";
                         } else {
-                            scope.containerSerial = null;
+                            scope.containerSerial = "none";
                         }
                     }
                 }

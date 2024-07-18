@@ -70,7 +70,7 @@
         </div>
 
         <!-- ============ Container ====================== -->
-        <div ng-show="checkRight('container_add_token')">
+        <div ng-show="checkRight('container_add_token') && checkRight('container_list')">
             <h4 translate>Assign Container</h4>
             <div select-or-create-container container-serial="form.container_serial"
                  disable-selection="tokenIsInContainer"
