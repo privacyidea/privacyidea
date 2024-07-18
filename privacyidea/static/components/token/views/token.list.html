@@ -146,7 +146,13 @@
                 <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
             </td>
             <td>
-                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial}}</a>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
+                   ng-show="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </a>
+                <span ng-hide="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </span>
             </td>
         </tr>
         </tbody>

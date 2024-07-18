@@ -26,7 +26,8 @@
                     </button>
                     <!-- only allowed if delete token action is set -->
                     <button class="btn btn-danger"
-                            ng-disabled="!checkRight('container_delete') || !checkRight('delete')"
+                            ng-disabled="!checkRight('container_delete') || !checkRight('delete') ||
+                                         getAllTokenSerials().length === 0"
                             ng-hide="!checkRight('container_delete') && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=true)">
                         <span class="glyphicon glyphicon-trash"></span>
@@ -278,20 +279,21 @@
             <th translate>failcounter</th>
             <th translate>maxfail</th>
             <th translate>otplen</th>
-            <th ng-show="loggedInUser.role=='admin'"translate> User</th>
-            <th ng-show="loggedInUser.role=='admin'"translate> Realm</th>
-            <th ng-show="loggedInUser.role=='admin'"translate> Token Realms</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> User</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Realm</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Token Realms</th>
             <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">
                     <button ng-click="removeAllTokens(token.serial)"
                             class="btn btn-transparent btn-danger btn-header"
-                            ng-hide="showDialogAll">
+                            ng-hide="showDialogAll"
+                            ng-disabled="!checkRight('container_remove_token') || getAllTokenSerials().length === 0">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove All</span>
                     </button>
                     <button class="btn btn-transparent btn-danger btn-header" ng-click="showDialogAll=true"
-                            ng-disabled="!checkRight('delete')"
+                            ng-disabled="!checkRight('delete') || getAllTokenSerials().length === 0"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialogAll">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete All</span>
