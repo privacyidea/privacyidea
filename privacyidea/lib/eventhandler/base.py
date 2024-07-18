@@ -40,14 +40,13 @@ from dateutil.tz import tzlocal
 from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.container import find_container_by_serial, find_container_for_token, get_all_containers, \
-    get_container_classes
+from privacyidea.lib.container import (find_container_by_serial, find_container_for_token, get_all_containers,
+                                       get_container_classes)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_token_owner, get_tokens
-from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (compare_condition, compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
@@ -133,6 +132,7 @@ class BaseEventHandler(object):
         """
         This returns the allowed positions of the event handler definition.
         This can be "post" or "pre" or both.
+
         :return: list of allowed positions
         """
         return ["post"]
@@ -142,6 +142,7 @@ class BaseEventHandler(object):
         """
         This method returns a list of available actions, that are provided
         by this event handler.
+
         :return: dictionary of actions.
         """
         actions = ["sample_action_1", "sample_action_2"]
@@ -444,13 +445,14 @@ class BaseEventHandler(object):
 
         An eventhandler may return an asterisk ["*"] indicating, that it can
         be used in all events.
+
         :return: list of events
         """
         events = ["*"]
         return events
 
-    @classmethod
-    def _get_tokenowner(cls, request):
+    @staticmethod
+    def _get_tokenowner(request):
         user = User()
         if hasattr(request, "User"):
             user = request.User
@@ -472,8 +474,8 @@ class BaseEventHandler(object):
 
         return user
 
-    @classmethod
-    def _get_container_owners(cls, request):
+    @staticmethod
+    def _get_container_owners(request):
         users = []
         user = User(login='', realm='')
         if hasattr(request, "User"):
@@ -617,6 +619,7 @@ class BaseEventHandler(object):
         """
         Check if all conditions are met and if the action should be executed.
         If the conditions are met, we return "True"
+
         :return: True
         """
         g = options.get("g")
