@@ -40,7 +40,7 @@ def upgrade():
 
     try:
         op.create_table('tokencontainerinfo',
-                        sa.Column('id', sa.Integer(), nullable=False),
+                        sa.Column('id', sa.Integer(), sa.Identity(always=False), nullable=False),
                         sa.Column('key', sa.Unicode(length=255), nullable=False),
                         sa.Column('value', sa.UnicodeText(), nullable=True),
                         sa.Column('type', sa.Unicode(length=100), nullable=True),

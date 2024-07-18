@@ -3541,7 +3541,7 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     The tokencontainerinfo is reference by the foreign key to the "tokencontainer" table.
     """
     __tablename__ = 'tokencontainerinfo'
-    id = db.Column(db.Integer, Sequence("containerinfo_seq"), primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     key = db.Column(db.Unicode(255), nullable=False)
     value = db.Column(db.UnicodeText(), default='')
     type = db.Column(db.Unicode(100), default='')

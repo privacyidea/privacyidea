@@ -191,8 +191,13 @@
                 <td>{{ token.maxfail }}</td>
                 <td>{{ token.otplen }}</td>
                 <td>
-                    <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial
-                        }}</a>
+                    <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
+                       ng-show="checkRight('container_list')">
+                        {{ token.container_serial }}
+                    </a>
+                    <span ng-hide="checkRight('container_serial')">
+                        {{ token.container_serial }}
+                    </span>
                 </td>
             </tr>
             </tbody>
@@ -322,8 +327,12 @@
                 <tbody>
                 <tr ng-repeat="container in containerdata">
                     <td>
-                        <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial
-                            }}</a>
+                        <a ui-sref="token.containerdetails({containerSerial: container.serial})"
+                           ng-show="checkRight('container_list')">
+                            {{ container.serial }}</a>
+                        <span ng-hide="checkRight('container_list')">
+                            container.serial
+                        </span>
                     </td>
                     <td class="capitalize">
                         {{ container.type }}
