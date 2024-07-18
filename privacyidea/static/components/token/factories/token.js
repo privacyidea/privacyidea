@@ -152,28 +152,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
-                disableAll: function (params, callback) {
-                    $http.post(tokenUrl + "/disableall/" + params["serial"], {},
-                        {
-                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                        }).then(function (response) {
-                        callback(response.data)
-                    }, function (error) {
-                        AuthFactory.authError(error.data)
-                    });
-                },
                 enable: function (serial, callback) {
                     $http.post(tokenUrl + "/enable", {"serial": serial},
-                        {
-                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                        }).then(function (response) {
-                        callback(response.data)
-                    }, function (error) {
-                        AuthFactory.authError(error.data)
-                    });
-                },
-                enableAll: function (params, callback) {
-                    $http.post(tokenUrl + "/enableall/" + params["serial"], {},
                         {
                             headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                         }).then(function (response) {

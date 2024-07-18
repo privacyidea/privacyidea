@@ -85,10 +85,10 @@ def list_containers():
         tmp["users"] = users
 
         if not no_token:
-            token_serials = [token.get_serial() for token in container.get_tokens()]
+            token_serials = ",".join([token.get_serial() for token in container.get_tokens()])
             tokens_dict_list = []
             if len(token_serials) > 0:
-                tokens = get_tokens(serial_list=token_serials)
+                tokens = get_tokens(serial=token_serials)
                 tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
                                                                   allowed_realms=allowed_token_realms)
             tmp["tokens"] = tokens_dict_list

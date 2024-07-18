@@ -168,6 +168,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
+
     :return: An SQLAlchemy sql query
     """
     sql_query = Token.query
@@ -271,7 +272,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            if uid is int:
+            if isinstance(uid, int):
                 uid = str(uid)
             sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
             sql_query = sql_query.filter(TokenOwner.user_id == uid)
@@ -442,7 +443,7 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
 @log_with(log)
 # @cache.memoize(10)
 def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
-               serial=None, serial_wildcard=None, serial_list=None, active=None, resolver=None, rollout_state=None,
+               serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
                maxfail=None):
     """
@@ -496,6 +497,10 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     :rtype: list
     """
     token_list = []
+    serial_list = None
+    if serial and "*" not in serial and "," in serial:
+        serial_list = serial.replace(" ", "").split(",")
+        serial = None
     sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
@@ -531,7 +536,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
 
 @log_with(log)
 def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
-                        serial=None, serial_list=None, active=None, resolver=None, rollout_state=None,
+                        serial=None, active=None, resolver=None, rollout_state=None,
                         sortby=Token.serial, sortdir="asc", psize=15,
                         page=1, description=None, userid=None, allowed_realms=None,
                         tokeninfo=None, hidden_tokeninfo=None, container_serial=None):
@@ -548,9 +553,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     :type assigned: bool
     :param user: The user, whose token should be displayed
     :type user: User object
-    :param serial: a pattern for matching the serial
-    :param serial_list: a list of serial numbers of the tokens
-    :type serial_list: list of strings
+    :param serial: a pattern for matching the serial or a comma separated list of exact serials
     :param active: Returns active (True) or inactive (False) tokens
     :param resolver: A resolver name, which may contain "*" for filtering.
     :type resolver: basestring
@@ -576,6 +579,10 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
+    serial_list = None
+    if serial and "*" not in serial and "," in serial:
+        serial_list = serial.replace(" ", "").split(",")
+        serial = None
     sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_wildcard=serial, serial_list=serial_list, active=active,

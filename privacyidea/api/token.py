@@ -414,9 +414,8 @@ def list_api():
     which tokens you want to get and also in which format you want to get the
     information (*outform*).
 
-    :query serial: Display the token data of this single token. You can do a
-        not strict matching by specifying a serial like "*OATH*".
-    :query serial_list: Comma separated list of token serial. Display the token data of all tokens in the list.
+    :query serial: Display the token data of this single token. You can do a not strict matching by specifying a serial
+        like "*OATH*". Multiple serials can be passed as comma separated list.
     :query type: Display only token of type. You ca do a non strict matching by
         specifying a tokentype like "*otp*", to file hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
@@ -446,9 +445,6 @@ def list_api():
     param = request.all_data
     user = request.User
     serial = getParam(param, "serial", optional)
-    serial_list = getParam(param, "serial_list", optional)
-    if serial_list:
-        serial_list = serial_list.replace(" ", "").split(",")
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
     token_type_list = getParam(param, "type_list", optional)
@@ -485,15 +481,13 @@ def list_api():
     hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
 
     # get list of tokens as a dictionary
-    tokens = get_tokens_paginate(serial=serial, serial_list=serial_list, realm=realm, page=page,
+    tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
                                  active=active, sortby=sort, sortdir=sdir,
-                                 tokentype=tokentype, token_type_list=token_type_list,
-                                 resolver=resolver,
+                                 tokentype=tokentype, token_type_list=token_type_list, resolver=resolver,
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
-                                 tokeninfo=tokeninfo,
-                                 rollout_state=rollout_state,
+                                 tokeninfo=tokeninfo, rollout_state=rollout_state,
                                  hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial)
     g.audit_object.log({"success": True})
     if output_format == "csv":
@@ -614,36 +608,6 @@ def enable_api(serial=None):
     return send_result(res)
 
 
-@token_blueprint.route('/enableall/<serial>', methods=['POST'])
-@prepolicy(check_max_token_user, request)
-@prepolicy(check_base_action, request, action=ACTION.ENABLE)
-@event("token_enable", request, g)
-@log_with(log)
-def enable_all(serial):
-    """
-    Enable multiple tokens.
-
-    :jsonparam basestring serial: comma separated list of token serials.
-    :return: Dictionary with the token serials as keys and the success status as values.
-    """
-    # Log serial before splitting it into a list
-    g.audit_object.log({"serial": serial})
-    token_serials = serial.replace(' ', '').split(',')
-    user = request.User
-
-    res = {}
-    for serial in token_serials:
-        res[serial] = enable_token(serial, enable=True, user=user) > 0
-
-    # Audit log
-    success = False not in res.values()
-    g.audit_object.log({"success": success})
-    result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
-    g.audit_object.log({"info": f"{result_str}"})
-
-    return send_result(res)
-
-
 @token_blueprint.route('/disable', methods=['POST'])
 @token_blueprint.route('/disable/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.DISABLE)
@@ -669,36 +633,6 @@ def disable_api(serial=None):
 
     res = enable_token(serial, enable=False, user=user)
     g.audit_object.log({"success": True})
-    return send_result(res)
-
-
-@token_blueprint.route('/disableall/<serial>', methods=['POST'])
-@prepolicy(check_max_token_user, request)
-@prepolicy(check_base_action, request, action=ACTION.ENABLE)
-@event("token_disable", request, g)
-@log_with(log)
-def disable_all(serial):
-    """
-    Disable multiple tokens.
-
-    :jsonparam basestring serial: comma separated list of token serials.
-    :return: Dictionary with the token serials as keys and the success status as values.
-    """
-    # Log serial before splitting it into a list
-    g.audit_object.log({"serial": serial})
-    token_serials = serial.replace(' ', '').split(',')
-    user = request.User
-
-    res = {}
-    for serial in token_serials:
-        res[serial] = enable_token(serial, enable=False, user=user) > 0
-
-    # Audit log
-    success = False not in res.values()
-    g.audit_object.log({"success": success})
-    result_str = ", ".join([f"{serial}: {succ}" for serial, succ in res.items()])
-    g.audit_object.log({"info": f"{result_str}"})
-
     return send_result(res)
 
 

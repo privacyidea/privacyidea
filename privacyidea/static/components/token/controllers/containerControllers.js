@@ -304,8 +304,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             if (deleteTokens) {
                 // First all tokens have to be deleted, then the container
                 $scope.deleteAllTokens($scope.deleteContainer);
-            }
-            else{
+            } else {
                 $scope.deleteContainer();
             }
         };
@@ -401,9 +400,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         // --- Actions for tokens in the container ---
         $scope.getAllTokenSerials = function () {
+            // list all token serials the user is allowed to manage
             let tokenSerials = [];
             angular.forEach($scope.container.tokens, function (token) {
-                tokenSerials.push(token.serial);
+                if (token.tokentype) {
+                    // If the user is allowed to manage a token, the token type is provided (otherwise only the serial)
+                    tokenSerials.push(token.serial);
+                }
             });
             return tokenSerials;
         };
@@ -424,18 +427,16 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
-            let tokenSerialStr = tokenSerialList.join(',');
-            if (tokenSerialList.length > 0) {
-                TokenFactory.disableAll({'serial': tokenSerialStr}, $scope.getContainer);
-            }
+            angular.forEach(tokenSerialList, function (serial) {
+               $scope.disableToken(serial);
+            });
         };
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
-            let tokenSerialStr = tokenSerialList.join(',');
-            if (tokenSerialList.length > 0) {
-                TokenFactory.enableAll({'serial': tokenSerialStr}, $scope.getContainer);
-            }
+            angular.forEach(tokenSerialList, function (serial) {
+               $scope.enableToken(serial);
+            });
         };
 
         $scope.removeAllTokens = function () {

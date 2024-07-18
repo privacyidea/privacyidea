@@ -972,6 +972,40 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(len(tokens.get("tokens")) == 1,
                         len(tokens.get("tokens")))
 
+        # filter by exact serial
+        hotp_token = init_token({"type": "hotp", "genkey": 1})
+        totp_token = init_token({"type": "totp", "genkey": 1})
+        init_token({"type": "spass"})
+        tokens_pag = get_tokens_paginate(serial=hotp_token.get_serial())
+        tokens = tokens_pag["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(hotp_token.get_serial(), tokens[0]["serial"])
+
+        # filter by type list
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["spass", "totp"])
+
+        # type wildcard
+        tokens_pag = get_tokens_paginate(tokentype="*otp*")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["hotp", "totp"])
+
+        # filter by type list and wildcard
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="*otp*")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["totp"])
+
+        # filter by type list and type
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="totp")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["totp"])
+
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
