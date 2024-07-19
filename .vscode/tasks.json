@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "test",
+			"path": "privacyidea/static",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "npm: test - privacyidea/static",
+			"detail": "echo \"Error: no test specified\" && exit 1"
+		}
+	]
+}
