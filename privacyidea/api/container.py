@@ -3,8 +3,8 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import check_base_action, prepolicy, check_admin_tokenlist, \
-    check_container_action
+from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
+                                           check_admin_tokenlist, check_container_action)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -16,8 +16,7 @@ from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.token import get_tokens, \
-    convert_token_objects_to_dicts
+from privacyidea.lib.token import get_tokens, convert_token_objects_to_dicts
 from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)

@@ -416,8 +416,8 @@ def list_api():
 
     :query serial: Display the token data of this single token. You can do a not strict matching by specifying a serial
         like "*OATH*". Multiple serials can be passed as comma separated list.
-    :query type: Display only token of type. You ca do a non strict matching by
-        specifying a tokentype like "*otp*", to file hotp and totp tokens.
+    :query type: Display only token of type. You can do a not strict matching by
+        specifying a tokentype like "*otp*", to find hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
     :query user: display tokens of this user
     :query tokenrealm: takes a realm, only the tokens in this realm will be

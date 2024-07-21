@@ -34,7 +34,7 @@ The container which was identified in the request will be unassign from all user
 if all conditions are matched. The tokens in the container will not be changed.
 
 assign
-........
+......
 
 The container which was identified in the request will be assigned to a user which was identified in the request.
 If the logged in user performing this action has the role 'user' it is always himself. The user is not assigned to the
@@ -62,7 +62,7 @@ set description
 For the container identified in the request a new **description** will be set.
 
 remove all tokens
-..............
+.................
 
 All tokens will be removed from the container identified in the request.
 
@@ -90,7 +90,7 @@ For the container identified in the request the container info will be deleted. 
 entry of this key will be deleted. If no key is passed, all entries will be removed.
 
 enable all tokens
-.............
+.................
 
 For the container identified in the request all contained tokens will be enabled.
 

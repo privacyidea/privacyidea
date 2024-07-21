@@ -1310,12 +1310,12 @@ def check_container_action(request=None, action=None):
 
     # Check action for (container) realm
     match = Match.generic(g, scope=role,
-                                   action=action,
-                                   user=username,
-                                   resolver=resolver,
-                                   realm=realm,
-                                   adminrealm=adminrealm,
-                                   adminuser=adminuser)
+                          action=action,
+                          user=username,
+                          resolver=resolver,
+                          realm=realm,
+                          adminrealm=adminrealm,
+                          adminuser=adminuser)
     action_allowed = match.allowed()
 
     # Get allowed realms
