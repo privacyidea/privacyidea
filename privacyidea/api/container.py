@@ -378,10 +378,14 @@ def remove_all_tokens(container_serial):
 @log_with(log)
 def get_types():
     """
-    {
-        type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
-        type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
-    }
+    Returns a dictionary with the container types as keys and their descriptions and supported token types as values.
+
+    ::
+
+        {
+            type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
+            type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
+        }
     """
     descriptions = get_container_classes_descriptions()
     ttypes = get_container_token_types()

@@ -1317,8 +1317,9 @@ def check_container_action(request=None, action=None):
             allowed_realms.extend(pol.get("realm"))
     request.pi_allowed_realms = allowed_realms
 
-    # get the realm by the container serial:
-    token_realms = None
+    # get the realm by the container serial
+    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
+    # TODO: Refactor Match.generic() to support multiple realms
     if params.get("container_serial"):
         container_realms = get_container_realms(params.get("container_serial"))
 
@@ -1328,6 +1329,7 @@ def check_container_action(request=None, action=None):
             action_allowed = len(matching_realms) > 0
 
         # get the realm by the token serial:
+        token_realms = None
         if params.get("serial"):
             serial = params.get("serial")
             if not any(c in serial for c in [",", " ", "*"]):
