@@ -175,7 +175,7 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        extra=_construct_extra_parameters(extra_data)))
 
 
-def _get_presence_options(options: dict) -> list[str]:
+def _get_presence_options(options):
     """
     Get the available presence options for the user to confirm the login based on the push policy configurations.
     :param options: the request context parameters / data
