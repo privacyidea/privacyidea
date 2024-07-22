@@ -85,7 +85,7 @@ UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
                                          "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
-AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(99)]
+AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -432,10 +432,11 @@ class PushTokenClass(TokenClass):
                             'group': 'PUSH'
                        },
                        PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
-                            'type': 'int',
+                           'type': 'str',
                             'desc': _('The number of options the user is presented with to confirm the login. '
                                          f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
                             'group': 'PUSH',
+                            'value': [f"{i}" for i in range(2, 11)]
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
@@ -964,7 +965,8 @@ class PushTokenClass(TokenClass):
                     custom_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
                     available_presence_options = custom_presence_options.split(":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
                 num_options = int(get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options) or 3)
-                num_options = max(2, min(num_options, int(len(available_presence_options))))  # In case the user wants more or less options than possible we clamp.
+                # In case the user wants more options than possible we clamp.
+                num_options = min(num_options, int(len(available_presence_options)))
                 for _ in range(num_options):
                     selected_option = secrets.choice(available_presence_options)
                     available_presence_options.remove(selected_option)
