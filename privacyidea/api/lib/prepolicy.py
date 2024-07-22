@@ -1295,19 +1295,6 @@ def check_container_action(request=None, action=None):
         realm = realm[0]
     resolver = resolver or params.get("resolver")
 
-    # get the realm by the container serial:
-    token_realms = None
-    if not realm and params.get("container_serial"):
-        container_realms = get_container_realms(params.get("container_serial"))
-        realm = container_realms[0] if container_realms else None
-
-        # get the realm by the token serial:
-        if params.get("serial"):
-            serial = params.get("serial")
-            if not any(c in serial for c in [",", " ", "*"]):
-                # single serial, no list
-                token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
-
     # Check action for (container) realm
     match = Match.generic(g, scope=role,
                           action=action,
@@ -1330,10 +1317,27 @@ def check_container_action(request=None, action=None):
             allowed_realms.extend(pol.get("realm"))
     request.pi_allowed_realms = allowed_realms
 
-    # Check if at least one token realm is allowed
-    if action_allowed and allowed_realms and token_realms:
-        matching_realms = list(set(token_realms).intersection(allowed_realms))
-        action_allowed = len(matching_realms) > 0
+    # get the realm by the container serial:
+    token_realms = None
+    if params.get("container_serial"):
+        container_realms = get_container_realms(params.get("container_serial"))
+
+        # Check if at least one container realm is allowed
+        if action_allowed and allowed_realms and container_realms:
+            matching_realms = list(set(container_realms).intersection(allowed_realms))
+            action_allowed = len(matching_realms) > 0
+
+        # get the realm by the token serial:
+        if params.get("serial"):
+            serial = params.get("serial")
+            if not any(c in serial for c in [",", " ", "*"]):
+                # single serial, no list
+                token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
+
+            # Check if at least one token realm is allowed
+            if action_allowed and allowed_realms and token_realms:
+                matching_realms = list(set(token_realms).intersection(allowed_realms))
+                action_allowed = len(matching_realms) > 0
 
     if not action_allowed:
         raise PolicyError(ERROR.get(role))

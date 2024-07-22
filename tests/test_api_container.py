@@ -441,7 +441,8 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_40_helpdesk_delete_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm1)
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=[self.realm2, self.realm1])
         container_serial = self.create_container_for_user()
         self.request_assert_200(f"/container/{container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")
@@ -454,8 +455,9 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_42_helpdesk_description_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm1)
-        container_serial = self.create_container_for_user()
+        self.setUp_user_realm2()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1, self.realm2])
+        container_serial = init_container({"type": "generic", "realm": self.realm1})
         self.request_assert_200(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                 method='POST')
         delete_policy("policy")
