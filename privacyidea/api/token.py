@@ -325,8 +325,8 @@ def init():
                 container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
-                log.error(f"User {user.login} is not allowed to add token {tokenobject.get_serial()} to container "
-                          f"{container_serial}.")
+                log.info(f"User {user.login} is not allowed to add token {tokenobject.get_serial()} to container "
+                         f"{container_serial}.")
             if container_add_token_right:
                 # TODO should this be caught here? The enrollment should not be blocked by the error?
                 try:
@@ -337,8 +337,8 @@ def init():
                     g.audit_object.log({"container_serial": container_serial,
                                         "container_type": container.type})
                 except ResourceNotFoundError:
-                    log.error(f"Container with serial {container_serial} not found while enrolling token "
-                              f"{tokenobject.get_serial()}.")
+                    log.warning(f"Container with serial {container_serial} not found while enrolling token "
+                                f"{tokenobject.get_serial()}.")
 
     g.audit_object.log({'user': user.login,
                         'realm': user.realm,

@@ -412,30 +412,6 @@ The action is only triggered if the container is of the given type.
 
 The action is only triggered if the container has or has not at least one token.
 
-**token_is_in_container**
-
-The action is only triggered, if the token is or is not in a container.
-
-**container_state**
-
-The action is only triggered if the container is in all specified states. The container can have other states
-besides the given value.
-
-**container_exact_state**
-
-The action is only triggered if the container is exactly in all specified states. No additional states are allowed.
-
-**container_has_owner**
-
-The action is only triggered if the container is or is not assigned to a user.
-
-**container_type**
-
-The action is only triggered if the container is of the given type.
-
-**container_has_token**
-
-The action is only triggered if the container has or has not at least one token.
 
 Managing Events
 ---------------

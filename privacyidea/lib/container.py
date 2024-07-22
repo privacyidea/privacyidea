@@ -304,11 +304,20 @@ def init_container(params):
     """
     Create a new container with the given parameters. Requires at least the type.
 
-    :jsonparam type: The type of the container
-    :jsonparam description: The description of the container, optional
-    :jsonparam container_serial: The serial of the container, optional
-    :jsonparam user: The user to assign the container to (requires the realm), optional
-    :jsonparam realm: The realm to assign the container to, optional
+    :param params: The parameters for the new container as dictionary like
+
+        ::
+
+            {
+                "type":...,
+                "description": ..., (optional)
+                "container_serial": ..., (optional)
+                "user": ..., Name of the user (optional)
+                "realm": ... Name of the realm (optional)
+            }
+
+        To assign a user to the container, the user and realm are required.
+
     :return: The serial of the created container
     """
     ctype = params.get("type")
@@ -327,7 +336,7 @@ def init_container(params):
     realm = params.get("realm")
     realms = []
     if user and not realm:
-        log.error(f"Assigning a container to user on creation requires both user and realm parameters!")
+        log.info(f"Assigning a container to user on creation requires both user and realm parameters!")
     elif realm and not user:
         realms.append(realm)
         container.set_realms(realms, add=True)
@@ -335,7 +344,7 @@ def init_container(params):
         try:
             container.add_user(User(login=user, realm=realm))
         except UserError as ex:
-            log.error(f"Error setting user for container {serial}: {ex}")
+            log.warning(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
     return serial
@@ -405,14 +414,14 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
             matching_realms = list(set(token_realms).intersection(allowed_realms))
             if len(matching_realms) == 0:
                 ret[token_serial] = False
-                log.error(
+                log.info(
                     f"User {user} is not allowed to add token {token_serial} to container {container_serial}.")
                 continue
         try:
             res = add_token_to_container(container_serial, token_serial, user, user_role)
         except Exception as ex:
             # We are catching the exception here to be able to add the remaining tokens
-            log.error(f"Error adding token {token_serial} to container {container_serial}: {ex}")
+            log.warning(f"Error adding token {token_serial} to container {container_serial}: {ex}")
             res = False
         ret[token_serial] = res
 
@@ -498,14 +507,14 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
             matching_realms = list(set(token_realms).intersection(allowed_realms))
             if len(matching_realms) == 0:
                 ret[token_serial] = False
-                log.error(
+                log.info(
                     f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
                 continue
         try:
             res = remove_token_from_container(container_serial, token_serial, user, user_role)
         except Exception as ex:
             # We are catching the exception here to be able to remove the remaining tokens
-            log.error(f"Error removing token {token_serial} from container {container_serial}: {ex}")
+            log.warning(f"Error removing token {token_serial} from container {container_serial}: {ex}")
             res = False
         ret[token_serial] = res
     return ret
@@ -571,7 +580,7 @@ def get_container_info_dict(serial, ikey=None, user=None, user_role="user"):
             container_info = {ikey: container_info[ikey]}
         else:
             container_info = {ikey: None}
-            log.error(f"Info key {ikey} not found in container {serial}.")
+            log.warning(f"Info key {ikey} not found in container {serial}.")
     return container_info
 
 
@@ -708,7 +717,7 @@ def set_container_realms(serial, realms, allowed_realms=[]):
         matching_realms = list(set(realms).intersection(allowed_realms))
         excluded_realms = list(set(realms) - set(matching_realms))
         if len(excluded_realms) > 0:
-            log.error(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
+            log.info(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
             res_failed = {realm: False for realm in excluded_realms}
 
         # Check if admin is allowed to remove the old realms
@@ -741,7 +750,7 @@ def add_container_realms(serial, realms, allowed_realms):
         matching_realms = list(set(realms).intersection(allowed_realms))
         excluded_realms = list(set(realms) - set(matching_realms))
         if len(excluded_realms) > 0:
-            log.error(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
+            log.info(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
             res_failed = {realm: False for realm in excluded_realms}
 
     # Add realms
