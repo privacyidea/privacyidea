@@ -86,6 +86,7 @@ POLL_ONLY = "poll only"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
                                          "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
+ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -173,6 +174,28 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        url=url_url, ttl=ttl,
                                        extra=_construct_extra_parameters(extra_data)))
 
+
+def _get_presence_options(options: dict) -> list[str]:
+    """
+    Get the available presence options for the user to confirm the login based on the push policy configurations.
+    :param options: the request context parameters / data
+    :type options: dict
+    """
+    push_presence_options = get_action_values_from_options(
+        SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
+    push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
+                                     allowed_values=["ALPHABETIC", "NUMERIC", "CUSTOM"], default="ALPHABETIC")
+    push_presence_options
+    if push_presence_options == "ALPHABETIC":
+        available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+    elif push_presence_options == "NUMERIC":
+        available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
+    elif push_presence_options == "CUSTOM":
+        custom_presence_options = get_action_values_from_options(
+            SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
+        available_presence_options = custom_presence_options.split(
+            ":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+    return available_presence_options
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
                            presence_options=None):
@@ -436,7 +459,7 @@ class PushTokenClass(TokenClass):
                             'desc': _('The number of options the user is presented with to confirm the login. '
                                          f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
                             'group': 'PUSH',
-                            'value': [f"{i}" for i in range(2, 11)]
+                            'value': ALLOWED_NUMBER_OF_OPTIONS
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
@@ -954,20 +977,12 @@ class PushTokenClass(TokenClass):
                 # Create a new challenge data
                 current_presence_options = []
 
-                push_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
-                push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
-                                                 allowed_values=["ALPHABETIC", "NUMERIC", "CUSTOM"], default="ALPHABETIC")
-                if push_presence_options == "ALPHABETIC":
-                    available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
-                elif push_presence_options == "NUMERIC":
-                    available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
-                elif push_presence_options == "CUSTOM":
-                    custom_presence_options = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
-                    available_presence_options = custom_presence_options.split(":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
-                num_options = int(get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options) or 3)
-                # In case the user wants more options than possible we clamp.
-                num_options = min(num_options, int(len(available_presence_options)))
-                for _ in range(num_options):
+                available_presence_options = _get_presence_options(options)
+                num_options = get_action_values_from_options(
+                    SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options)
+                num_options = getParam({"num_options": num_options}, "num_options",
+                                       allowed_values=ALLOWED_NUMBER_OF_OPTIONS, default="3")
+                for _ in range(int(num_options)):
                     selected_option = secrets.choice(available_presence_options)
                     available_presence_options.remove(selected_option)
                     current_presence_options.append(selected_option)
