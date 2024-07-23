@@ -195,7 +195,7 @@ class TokenContainerClass:
         Raises a TokenAdminError if the container already has an owner.
 
         :param user: User object
-        :return: True if the user was assigned, False otherwise
+        :return: True if the user was assigned
         """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         if not TokenContainerOwner.query.filter_by(container_id=self._db_container.id).first():
@@ -210,7 +210,6 @@ class TokenContainerClass:
             return True
         log.debug(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
-        return False
 
     def remove_user(self, user: User):
         """

@@ -456,6 +456,8 @@ class BaseEventHandler(object):
         user = User()
         if hasattr(request, "User"):
             user = request.User
+            if user is None:
+                user = User()
             serial = request.all_data.get("serial")
             if user.is_empty() and serial:
                 # maybe the user is empty, but a serial was passed.
@@ -480,9 +482,10 @@ class BaseEventHandler(object):
         user = User(login='', realm='')
         if hasattr(request, "User"):
             user = request.User
-            users.append(user)
+            if user:
+                users.append(user)
         serial = request.all_data.get("container_serial")
-        if user.is_empty() and serial:
+        if (user is None or user.is_empty()) and serial:
             # maybe the user is empty, but a serial was passed.
             # Then we determine the user by the serial
             container = find_container_by_serial(serial)
@@ -753,15 +756,13 @@ class BaseEventHandler(object):
 
         if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
-            if num_tokens != int(conditions.get(
-                    CONDITION.USER_TOKEN_NUMBER)):
+            if num_tokens != int(conditions.get(CONDITION.USER_TOKEN_NUMBER)):
                 return False
 
         if CONDITION.USER_CONTAINER_NUMBER in conditions and user:
             container_list = get_all_containers(user=user, page=1, pagesize=1)
             num_containers = container_list['count']
-            if num_containers != int(conditions.get(
-                    CONDITION.USER_CONTAINER_NUMBER)):
+            if num_containers != int(conditions.get(CONDITION.USER_CONTAINER_NUMBER)):
                 return False
 
         if CONDITION.DETAIL_ERROR_MESSAGE in conditions:
@@ -829,8 +830,7 @@ class BaseEventHandler(object):
                     return False
 
             if CONDITION.LAST_AUTH in conditions:
-                if token_obj.check_last_auth_newer(conditions.get(
-                        CONDITION.LAST_AUTH)):
+                if token_obj.check_last_auth_newer(conditions.get(CONDITION.LAST_AUTH)):
                     return False
 
             if CONDITION.COUNT_AUTH in conditions:

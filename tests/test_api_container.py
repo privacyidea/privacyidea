@@ -1,9 +1,9 @@
 from privacyidea.lib.container import init_container, find_container_by_serial, add_token_to_container, assign_user, \
-    add_container_realms
+    add_container_realms, get_container_realms
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_tokens_paginate
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase
 
@@ -230,6 +230,8 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_13_user_assign_user_allowed(self):
+        # Note: This will not set the user root but the user selfservice, because the user attribute is changed in
+        # before_request()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
         container_serial = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
@@ -431,6 +433,12 @@ class APIContainerAuthorization(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm1)
         json = self.request_assert_200('/container/init', {"type": "generic", "realm": self.realm1}, self.at)
         self.assertGreater(len(json["result"]["value"]["container_serial"]), 0)
+
+        # If no realm is given, the container is created in the realm of the helpdesk user
+        json = self.request_assert_200('/container/init', {"type": "generic"}, self.at)
+        self.assertGreater(len(json["result"]["value"]["container_serial"]), 0)
+        container_realms = get_container_realms(json["result"]["value"]["container_serial"])
+        self.assertEqual(self.realm1, container_realms[0])
         delete_policy("policy")
 
     def test_39_helpdesk_create_denied(self):
@@ -493,17 +501,25 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
         self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
-                                       method='POST')
+                                method='POST')
 
         # add multiple tokens
         token2 = init_token({"genkey": "1", "realm": self.realm1})
         token3 = init_token({"genkey": "1", "realm": self.realm1})
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         json = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
-                                method='POST')
+                                       method='POST')
         self.assertTrue(json["result"]["value"][token2.get_serial()])
         self.assertTrue(json["result"]["value"][token3.get_serial()])
         delete_policy("policy")
+
+        # Add token to container during enrollment fails
+        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
+        json = self.request_assert_200("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
+                                                       "container_serial": container_serial}, self.at, method='POST')
+        token_serial = json["detail"]["serial"]
+        tokens = get_tokens_paginate(serial=token_serial)
+        self.assertEqual(container_serial, tokens["tokens"][0]["container_serial"])
 
     def test_47_helpdesk_add_token_denied(self):
         self.setUp_user_realm2()
@@ -528,11 +544,21 @@ class APIContainerAuthorization(MyApiTestCase):
         token3 = init_token({"genkey": "1", "realm": self.realm1})
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         json = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
-                                        method='POST')
+                                       method='POST')
         self.assertFalse(json["result"]["value"][token2.get_serial()])
         self.assertTrue(json["result"]["value"][token3.get_serial()])
 
         delete_policy("policy")
+
+        # Add token to container during enrollment fails
+        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
+        container_serial = init_container({"type": "generic", "realm": self.realm2})
+        json = self.request_assert_200("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
+                                                       "container_serial": container_serial}, self.at,
+                                       method='POST')
+        token_serial = json["detail"]["serial"]
+        tokens = get_tokens_paginate(serial=token_serial)
+        self.assertEqual("", tokens["tokens"][0]["container_serial"])
 
     def test_48_helpdesk_remove_token_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
@@ -671,11 +697,12 @@ class APIContainerAuthorization(MyApiTestCase):
         self.assertEqual(1, len(realms))
         self.assertEqual("realm1", realms[0])
 
+        # helpdesk of user realm realm1: container in realm1, set realm2 and realm1 (only realm1 allowed)
         json = self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"}, self.at)
         self.assertFalse(json["result"]["value"]["realm2"])
         self.assertTrue(json["result"]["value"]["realm1"])
 
-        # helpdesk of user realm realm1: container in realm1 and realm2, set realm1 (removes realm2)
+        # helpdesk of user realm realm1: container in realm1 and realm2, set realm1 (removes realm2 not allowed)
         add_container_realms(container_serial, ["realm1", "realm2"], allowed_realms=None)
         self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
         container = find_container_by_serial(container_serial)
@@ -688,7 +715,26 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_56_helpdesk_container_list_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
         self.request_assert_200('/container/', {}, self.at, 'GET')
+
+        # container with token from another realm: reduce token info
+        set_policy("policy2", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+        container_serial = init_container({"type": "generic", "realm": self.realm1})
+        token_1 = init_token({"genkey": 1, "realm": self.realm1})
+        token_2 = init_token({"genkey": 1, "realm": self.realm2})
+        add_token_to_container(container_serial, token_1.get_serial(), user_role='admin')
+        add_token_to_container(container_serial, token_2.get_serial(), user_role='admin')
+        json = self.request_assert_200('/container/', {"container_serial": container_serial}, self.at, 'GET')
+        tokens = json["result"]["value"]["containers"][0]["tokens"]
+        # first token: all information
+        self.assertEqual(token_1.get_serial(), tokens[0]["serial"])
+        self.assertEqual("hotp", tokens[0]["tokentype"])
+        # second token: only serial
+        self.assertEqual(token_2.get_serial(), tokens[1]["serial"])
+        self.assertEqual(1, len(tokens[1].keys()))
+        self.assertNotIn("tokentype", tokens[1].keys())
+
         delete_policy("policy")
+        delete_policy("policy2")
 
 
 class APIContainer(MyApiTestCase):

@@ -12,6 +12,7 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+from privacyidea.lib.container import init_container, add_token_to_container
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -1004,6 +1005,21 @@ class TokenTestCase(MyTestCase):
         tokens = tokens_pag["tokens"]
         for token in tokens:
             self.assertIn(token["tokentype"], ["totp"])
+
+        # Filter by container_serial
+        container_serial = init_container({"type": "generic"})
+        token = init_token({"type": "hotp", "genkey": 1})
+        add_token_to_container(container_serial, token.get_serial(), user_role="admin")
+        tokens_pag = get_tokens_paginate(container_serial=container_serial)
+        self.assertEqual(1, len(tokens_pag["tokens"]))
+
+        # Filter tokens that are not in a container
+        tokens_pag = get_tokens_paginate(container_serial="")
+        self.assertGreater(tokens_pag["count"], 0)
+        token_serials = [t["serial"] for t in tokens_pag["tokens"]]
+        self.assertNotIn(token.get_serial(), token_serials)
+        for token in tokens_pag["tokens"]:
+            self.assertEqual("", token["container_serial"])
 
 
     def test_42_sort_tokens(self):

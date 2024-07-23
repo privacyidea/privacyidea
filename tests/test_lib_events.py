@@ -1045,7 +1045,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         # Check if the condition does not match
         r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "generic"}},
+                                      "handler_def": {"conditions": {CONDITION.CONTAINER_TYPE: "generic"}},
                                       "request": req,
                                       "response": resp})
         self.assertFalse(r)
@@ -2016,7 +2016,6 @@ class ContainerEventTestCase(MyTestCase):
         # Init container only with type
         res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
-
         # Check if the container was created
         containers = get_all_containers(ctype="smartphone")['containers']
         self.assertTrue(len(containers) == 1)
@@ -2025,14 +2024,24 @@ class ContainerEventTestCase(MyTestCase):
         options["handler_def"]["options"] = {"type": "yubikey", "user": True}
         res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
-
         # Check if the container was created
         containers = get_all_containers(ctype="yubikey")['containers']
         self.assertTrue(len(containers) == 1)
-
         # Check if the user is set
         owners = containers[0].get_users()
         self.assertIn(user_obj, owners)
+        containers[0].delete()
+
+        # Init container with type and user, but no user is provided
+        options['request'].User = None
+        res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the container was created
+        containers = get_all_containers(ctype="yubikey")['containers']
+        self.assertTrue(len(containers) == 1)
+        # Check that no user is set
+        owners = containers[0].get_users()
+        self.assertEqual(0, len(owners))
 
         # Init container with type and token
         token_serial = "SPASS01"
@@ -2067,6 +2076,17 @@ class ContainerEventTestCase(MyTestCase):
         for container in containers:
             container.delete()
         token.delete_token()
+
+        # Init container with tokens, but no token is provided
+        options = self.setup_request()
+        options["handler_def"]["options"] = {"type": "generic", "token": True}
+        res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check that container is created without tokens
+        containers = get_all_containers()['containers']
+        self.assertEqual(1, len(containers))
+        self.assertEqual(0, len(containers[0].get_tokens()))
+
 
     def test_02_delete_container(self):
         # create container
@@ -2108,8 +2128,7 @@ class ContainerEventTestCase(MyTestCase):
         # Setup request
         options = self.setup_request()
         options['request'].all_data = {"serial": token_serial}
-        user_obj = User("cornelius", self.realm1)
-        options['request'].User = user_obj
+        options['request'].User = User()
 
         c_handler = ContainerEventHandler()
 
@@ -2397,11 +2416,14 @@ class ContainerEventTestCase(MyTestCase):
 
         # Setup request and options
         options = self.setup_request(container_serial=container_serial)
-
         c_handler = ContainerEventHandler()
 
         # Disable all tokens if container does not have any token
         res = c_handler.do(C_ACTION_TYPE.DISABLE_TOKENS, options=options)
+        self.assertTrue(res)
+
+        # Enable all tokens if container does not have any token
+        res = c_handler.do(C_ACTION_TYPE.ENABLE_TOKENS, options=options)
         self.assertTrue(res)
 
         # Add tokens to container

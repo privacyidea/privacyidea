@@ -1291,8 +1291,6 @@ def check_container_action(request=None, action=None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     realm = params.get("realm")
-    if isinstance(realm, list) and len(realm) == 1:
-        realm = realm[0]
     resolver = resolver or params.get("resolver")
 
     # Check action for (container) realm

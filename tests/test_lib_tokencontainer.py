@@ -431,6 +431,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(res)
         container_info = get_container_info_dict(container_serial, user_role="admin")
         self.assertEqual("value1", container_info["key1"])
+        container_info = get_container_info_dict(container_serial, ikey="key1", user_role="admin")
+        self.assertEqual("value1", container_info["key1"])
 
         # Set second info overwrites first info
         res = set_container_info(container_serial, {"key2": "value2"}, None, "admin")
@@ -438,6 +440,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial, user_role="admin")
         self.assertEqual("value2", container_info["key2"])
         self.assertNotIn("key1", container_info.keys())
+        container_info = get_container_info_dict(container_serial, ikey="key1", user_role="admin")
+        self.assertIsNone(container_info["key1"])
 
         # Pass no info only deletes old entries
         res = set_container_info(container_serial, None, None, "admin")
@@ -653,6 +657,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(4, len(container_data["containers"]))
         for container in container_data["containers"]:
             self.assertEqual("realm1", container.realms[0].name)
+
+        # Filter by user
+        user_hans = User(login="hans", realm=self.realm1)
+        assign_user(container_serials[1], user_hans, None, "admin")
+        container_data = get_all_containers(user=user_hans, pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(1, len(container_data["containers"][0].get_users()))
+        self.assertEqual("hans", container_data["containers"][0].get_users()[0].login)
 
         # Test pagination
         container_data = get_all_containers(page=2, pagesize=2)
