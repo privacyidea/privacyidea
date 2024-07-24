@@ -71,6 +71,7 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
                 inform.add(gettextCatalog.getString("Service ID saved."),
                                 {type: "info"});
                 $state.go('config.serviceid.list');
+                $scope.reload();
             }
         });
     };

@@ -1,5 +1,5 @@
 
-<div class="well" ng-controller="configController">
+<div class="well">
     <nav class="navbar navbar-default">
     <div class="container">
         <button type="button" class="navbar-toggle"
@@ -18,7 +18,7 @@
                 || $state.includes('config.privacyideaserver') || $state.includes('config.smsgateway')
                 || $state.includes('config.tokengroup') || $state.includes('config.caconnectors')
                 }">
-                    <a ui-sref="config.system">
+                    <a ui-sref="config.system.edit">
                     <span class="glyphicon glyphicon-briefcase"
                           aria-hidden="true"></span>
                     <span translate>System</span></a></li>

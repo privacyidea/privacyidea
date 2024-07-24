@@ -89,6 +89,7 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                 inform.add(gettextCatalog.getString("SMTP Config saved."),
                                 {type: "info"});
                 $state.go('config.smtp.list');
+                $scope.reload();
             }
         });
     };

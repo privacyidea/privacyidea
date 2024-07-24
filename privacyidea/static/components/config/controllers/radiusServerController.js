@@ -89,6 +89,7 @@ myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
                 inform.add(gettextCatalog.getString("RADIUS Config saved."),
                                 {type: "info"});
                 $state.go('config.radius.list');
+                $scope.reload();
             }
         });
     };

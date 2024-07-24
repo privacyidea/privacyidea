@@ -71,6 +71,7 @@ myApp.controller("tokengroupController", ["$scope", "$stateParams", "inform",
                 inform.add(gettextCatalog.getString("Tokengroup saved."),
                                 {type: "info"});
                 $state.go('config.tokengroup.list');
+                $scope.reload();
             }
         });
     };

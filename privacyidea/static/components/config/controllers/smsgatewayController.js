@@ -96,6 +96,7 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
         ConfigFactory.setSMSGateway($scope.form, function() {
             $state.go("config.smsgateway.list");
             $('html,body').scrollTop(0);
+            $scope.reload();
         });
     };
 

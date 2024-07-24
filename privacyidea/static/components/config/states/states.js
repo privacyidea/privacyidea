@@ -35,7 +35,8 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
             $stateProvider
                 .state('config', {
                     url: "/config",
-                    templateUrl: configpath + "config.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "configController"
                 })
                 .state('config.resolvers', {
                     url: "/resolvers",
@@ -95,27 +96,22 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 .state('config.caconnectors.list', {
                     url: "/list",
                     templateUrl: configpath + "config.caconnectors.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.addlocal', {
                     url: "/local",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "CAConnectorController"
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.caconnectors.editlocal', {
                     url: "/local/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "CAConnectorController"
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.caconnectors.addmicrosoft', {
                     url: "/microsoft",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "CAConnectorController"
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.caconnectors.editmicrosoft', {
                     url: "/microsoft/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "CAConnectorController"
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
@@ -159,7 +155,8 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.policies', {
                     url: "/policies",
-                    templateUrl: configpath + "config.policies.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.policies.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "policyListController"
                 })
                 .state('config.policies.list', {
                     url: "/list",
@@ -201,18 +198,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.smtp.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.smtp.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smtpServerController"
+                    templateUrl: configpath + "config.smtp.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.smtp.edit', {
                     url: "/edit/:identifier",
                     templateUrl: configpath + "config.smtp.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smtpServerController"
                 })
                 .state('config.smtp.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.smtp.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smtpServerController"
+                    templateUrl: configpath + "config.smtp.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.smsgateway', {
                     url: "/smsgateway",
@@ -221,18 +215,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.smsgateway.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.smsgateway.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smsgatewayController"
+                    templateUrl: configpath + "config.smsgateway.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.smsgateway.edit', {
                     url: "/edit/:gateway_id",
-                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smsgatewayController"
+                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.smsgateway.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "smsgatewayController"
+                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.radius', {
                     url: "/radius",
@@ -241,18 +232,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.radius.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.radius.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "radiusServerController"
+                    templateUrl: configpath + "config.radius.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.radius.edit', {
                     url: "/edit/:identifier",
-                    templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "radiusServerController"
+                    templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.radius.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "radiusServerController"
+                    templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.tokengroup', {
                     url: "/tokengroup",
@@ -261,18 +249,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.tokengroup.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.tokengroup.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokengroupController"
+                    templateUrl: configpath + "config.tokengroup.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.tokengroup.edit', {
                     url: "/edit/:groupname",
-                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokengroupController"
+                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.tokengroup.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokengroupController"
+                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.serviceid', {
                     url: "/serviceid",
@@ -281,18 +266,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.serviceid.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.serviceid.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "serviceidController"
+                    templateUrl: configpath + "config.serviceid.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.serviceid.edit', {
                     url: "/edit/:servicename",
-                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "serviceidController"
+                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.serviceid.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "serviceidController"
+                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",
@@ -302,17 +284,14 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 .state('config.privacyideaserver.list', {
                     url: "/list",
                     templateUrl: configpath + "config.privacyideaserver.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "privacyideaServerController"
                 })
                 .state('config.privacyideaserver.edit', {
                     url: "/edit/:identifier",
                     templateUrl: configpath + "config.privacyideaserver.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "privacyideaServerController"
                 })
                 .state('config.privacyideaserver.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.privacyideaserver.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "privacyideaServerController"
+                    templateUrl: configpath + "config.privacyideaserver.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.events', {
                     url: "/events",
@@ -331,8 +310,7 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.events.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.events.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "eventController"
+                    templateUrl: configpath + "config.events.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.periodictasks', {
                     url: "/periodictasks",
@@ -341,8 +319,7 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.periodictasks.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.periodictasks.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "periodicTaskController"
+                    templateUrl: configpath + "config.periodictasks.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.periodictasks.details', {
                     url: "/details/:ptaskid",
