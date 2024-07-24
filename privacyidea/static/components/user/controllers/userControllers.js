@@ -24,13 +24,9 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("userAddController", ['$scope', 'userUrl', '$state',
-        '$location', 'ConfigFactory',
-        'UserFactory', 'inform', 'gettextCatalog',
-        function ($scope, userUrl, $state,
-                  $location, ConfigFactory,
-                  UserFactory, inform,
-                  gettextCatalog) {
+    .controller("userAddController", ['$scope', 'userUrl', '$state', '$location', 'ConfigFactory', 'UserFactory',
+        'inform', 'gettextCatalog',
+        function ($scope, userUrl, $state, $location, ConfigFactory, UserFactory, inform, gettextCatalog) {
 
             $scope.formInit = {};
             $scope.User = {};
@@ -73,11 +69,8 @@ angular.module("privacyideaApp")
         }]);
 
 angular.module("privacyideaApp")
-    .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory',
-        'inform', 'gettextCatalog',
-        function ($scope, userUrl,
-                  UserFactory, inform,
-                  gettextCatalog) {
+    .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory', 'inform', 'gettextCatalog',
+        function ($scope, userUrl, UserFactory, inform, gettextCatalog) {
 
             // The user can fetch his own information.
             $scope.getUserDetails = function () {
@@ -108,18 +101,11 @@ angular.module("privacyideaApp")
         }]);
 
 angular.module("privacyideaApp")
-    .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl',
-        'tokenUrl', '$rootScope',
-        'TokenFactory', 'UserFactory',
-        '$state', 'ConfigFactory',
-        'instanceUrl', '$location', 'inform',
-        'gettextCatalog', '$stateParams',
-        function ($scope, userUrl, realmUrl,
-                  tokenUrl, $rootScope,
-                  TokenFactory, UserFactory,
-                  $state, ConfigFactory,
-                  instanceUrl, $location,
-                  inform, gettextCatalog, $stateParams) {
+    .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl', 'tokenUrl', '$rootScope', 'TokenFactory',
+        'UserFactory', '$state', 'ConfigFactory', 'instanceUrl', '$location', 'inform', 'gettextCatalog',
+        '$stateParams',
+        function ($scope, userUrl, realmUrl, tokenUrl, $rootScope, TokenFactory, UserFactory, $state, ConfigFactory,
+                  instanceUrl, $location, inform, gettextCatalog, $stateParams) {
             $scope.username = $stateParams.username;
             $scope.realmname = $stateParams.realmname;
             $scope.resolvername = $stateParams.resolvername;
@@ -303,11 +289,8 @@ angular.module("privacyideaApp")
 
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
-        '$rootScope', 'ConfigFactory', 'UserFactory',
-        'gettextCatalog', 'AuthFactory',
-        function ($scope, $location, userUrl,
-                  realmUrl, $rootScope, ConfigFactory,
-                  UserFactory, gettextCatalog,
+        '$rootScope', 'ConfigFactory', 'UserFactory', 'gettextCatalog', 'AuthFactory',
+        function ($scope, $location, userUrl, realmUrl, $rootScope, ConfigFactory, UserFactory, gettextCatalog,
                   AuthFactory) {
 
             $scope.usersPerPage = $scope.user_page_size;
@@ -366,7 +349,7 @@ angular.module("privacyideaApp")
             $scope.getRealms = function () {
                 ConfigFactory.getRealms(function (data) {
                     $scope.realms = data.result.value;
-                    num_realms = Object.keys($scope.realms).length;
+                    let num_realms = Object.keys($scope.realms).length;
                     angular.forEach($scope.realms, function (realm, realmname) {
                         if (num_realms === 1) {
                             // If the admin is allowed to see only one realm, we make this the
