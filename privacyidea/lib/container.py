@@ -3,6 +3,7 @@ import logging
 import os
 
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
@@ -92,7 +93,7 @@ def create_container_from_db_object(db_container: TokenContainer):
             try:
                 container = cls(db_container)
             except Exception as ex:  # pragma: no cover
-                log.error(f"Error creating container from db object: {ex}")
+                log.warning(f"Error creating container from db object: {ex}")
                 return None
             return container
     return None
@@ -119,6 +120,7 @@ def find_container_by_serial(serial: str):
 
     :param serial: Serial of the container
     :return: container object
+    :rtype: privacyidea.lib.containerclass.TokenContainerClass
     """
     db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
     if not db_container:
@@ -157,7 +159,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
             container_ids = [t.container_id for t in token_container_token]
             sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
         else:
-            log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
+            log.info(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
 
     if realms:
         realm_ids = [realm.id for realm in Realm.query.filter(Realm.name.in_(realms)).all()]
@@ -171,7 +173,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
         if sortby in cols:
             sortby = cols.get(sortby)
         else:
-            log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
+            log.info(f'Unknown sort column "{sortby}". Using "serial" instead.')
             sortby = TokenContainer.serial
 
     if sortdir == "desc":
@@ -275,7 +277,7 @@ def get_container_classes():
             c = getattr(m, cls)
             ret[c.get_class_type().lower()] = c
         except Exception as ex:  # pragma: no cover
-            log.error(f"Error importing module {cls}: {ex}")
+            log.warning(f"Error importing module {cls}: {ex}")
 
     return ret
 
@@ -336,7 +338,8 @@ def init_container(params):
     realm = params.get("realm")
     realms = []
     if user and not realm:
-        log.info(f"Assigning a container to user on creation requires both user and realm parameters!")
+        log.info(f"Assigning container {container.serial} to user {user} on "
+                 f"creation requires both user and realm parameters!")
     elif realm and not user:
         realms.append(realm)
         container.set_realms(realms, add=True)

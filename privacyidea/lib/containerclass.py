@@ -9,8 +9,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates, TokenContainerInfo, \
-    TokenContainerRealm
+from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
+                                TokenContainerInfo, TokenContainerRealm)
 
 log = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class TokenContainerClass:
             missing_realms = list(set(user_realms).difference(realms))
             realms.extend(missing_realms)
             for realm in missing_realms:
-                log.error(
+                log.warning(
                     f"Realm {realm} can not be removed from container {self.serial} "
                     f"because a user from this realm is assigned th the container.")
         else:
@@ -113,7 +113,7 @@ class TokenContainerClass:
                 realm_db = Realm.query.filter_by(name=realm).first()
                 if not realm_db:
                     result[realm] = False
-                    log.error(f"Realm {realm} does not exist.")
+                    log.warning(f"Realm {realm} does not exist.")
                 else:
                     realm_id = realm_db.id
                     # Check if realm is already assigned to the container
@@ -148,7 +148,7 @@ class TokenContainerClass:
         if not token:
             raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
         if token not in self._db_container.tokens:
-            log.debug(f"Token with serial {serial} not found in container {self.serial}.")
+            log.info(f"Token with serial {serial} not found in container {self.serial}.")
             return False
 
         self._db_container.tokens.remove(token)
@@ -165,7 +165,7 @@ class TokenContainerClass:
         :param token: TokenClass object
         :return: True if the token was successfully added, False if the token is already in the container
         """
-        if not token.get_type() in self.get_supported_token_types():
+        if token.get_type() not in self.get_supported_token_types():
             raise ParameterError(f"Token type {token.get_type()} not supported for container type {self.type}. "
                                  f"Supported types are {self.get_supported_token_types()}.")
         if token.get_serial() not in [t.get_serial() for t in self.tokens]:
@@ -208,7 +208,7 @@ class TokenContainerClass:
             self._db_container.realms.append(realm_db)
             self.update_last_updated()
             return True
-        log.debug(f"Container {self.serial} already has an owner.")
+        log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
 
     def remove_user(self, user: User):
@@ -291,7 +291,7 @@ class TokenContainerClass:
         for state in state_list:
             if state not in state_types:
                 # We do not raise an error here to allow following states to be set
-                log.error(f"State {state} not supported. Supported states are {state_types}.")
+                log.warning(f"State {state} not supported. Supported states are {state_types}.")
                 res[state] = False
             else:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
@@ -322,7 +322,7 @@ class TokenContainerClass:
             if state not in state_types.keys():
                 # We do not raise an error here to allow following states to be set
                 res[state] = False
-                log.error(f"State {state} not supported. Supported states are {state_types}.")
+                log.warning(f"State {state} not supported. Supported states are {state_types}.")
             else:
                 # Remove old states that are excluded from the new state
                 for excluded_state in state_types[state]:
