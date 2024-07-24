@@ -32,7 +32,8 @@ angular.module('privacyideaApp.machineStates', ['ui.router', 'privacyideaApp.ver
             $stateProvider
                 .state('machine', {
                     url: "/machine",
-                    templateUrl: machinepath + "machine.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: machinepath + "machine.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "machineController"
                 })
                 .state('machine.list', {
                     url: "/list?resolver",
@@ -41,11 +42,7 @@ angular.module('privacyideaApp.machineStates', ['ui.router', 'privacyideaApp.ver
                 .state('machine.details', {
                     url: "/details/{machineid:.*}/{machineresolver:.*}",
                     templateUrl: machinepath + "machine.details.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: ['$scope', '$stateParams',
-                        function ($scope, $stateParams) {
-                            $scope.machineid = $stateParams.machineid;
-                            $scope.machineresolver = $stateParams.machineresolver;
-                        }]
+                    controller: "machineDetailsController"
                 });
 
         }]);

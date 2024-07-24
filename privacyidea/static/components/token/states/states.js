@@ -35,12 +35,12 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
             $stateProvider
                 .state('token', {
                     url: "/token",
-                    templateUrl: tokenpath + "token.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: tokenpath + "token.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokenController"
                 })
                 .state('token.list', {
                     url: "/list",
-                    templateUrl: tokenpath + "token.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokenController"
+                    templateUrl: tokenpath + "token.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('token.assign', {
                     url: "/assign",

@@ -40,7 +40,6 @@ angular.module('privacyideaApp.auditStates', ['ui.router', 'privacyideaApp.versi
                 })
                 .state('audit.log', {
                     url: "/log?serial&user",
-                    templateUrl: auditpath + "audit.log.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "auditController"
+                    templateUrl: auditpath + "audit.log.html" + versioningSuffixProviderProvider.$get().$get()
                 });
         }]);
