@@ -754,26 +754,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("yubikey", container_types)
         self.assertEqual(3, len(container_types))
 
-    def test_33_get_container_policy_info(self):
-        # Test for generic
-        policy_info = get_container_policy_info(container_type="generic")
-        self.assertTrue(policy_info)
-
-        # Test for non-existing type
-        self.assertRaises(ResourceNotFoundError, get_container_policy_info, container_type="wrong_type")
-
-        # Get policy info for all container types
-        policy_info = get_container_policy_info()
-        self.assertIn("yubikey", policy_info.keys())
-
-    def test_34_container_classes(self):
-        classes = get_container_classes()
-        policies = {}
-        for k, v in classes.items():
-            policies[k] = v.get_container_policy_info()
-            self.assertTrue(policies[k])
-
-    def test_35_check_user_access_on_container(self):
+    def test_33_check_user_access_on_container(self):
         self.setUp_user_realms()
         user = User(login="hans", realm=self.realm1)
         container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})

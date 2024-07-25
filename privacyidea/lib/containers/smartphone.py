@@ -25,25 +25,6 @@ class SmartphoneContainer(TokenContainerClass):
         return ["hotp", "totp", "push", "daypassword", "sms"]
 
     @classmethod
-    def get_container_policy_info(cls):
-        """
-        Returns the policy information of the container class.
-        """
-        res = {
-            "token_count": {"type": "int",
-                            "value": "any",
-                            "desc": "The maximum number of tokens in this container"},
-            "token_types": {"type": "list",
-                            "value": cls.get_supported_token_types(),
-                            "desc": "The token types that can be stored in this container"},
-            "user_modifiable": {"type": "bool",
-                                "value": ["true", "false"],
-                                "desc": "Whether the user can modify the tokens in this container"}
-        }
-
-        return res
-
-    @classmethod
     def get_class_prefix(cls):
         """
         Returns the container class specific prefix for the serial.

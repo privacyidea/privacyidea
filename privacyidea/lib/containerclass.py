@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from typing import List
 
+from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
@@ -198,7 +199,7 @@ class TokenContainerClass:
         :return: True if the user was assigned
         """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
-        if not TokenContainerOwner.query.filter_by(container_id=self._db_container.id).first():
+        if not self._db_container.owners.first():
             TokenContainerOwner(container_id=self._db_container.id,
                                 user_id=user_id,
                                 resolver=resolver_name,
@@ -412,25 +413,6 @@ class TokenContainerClass:
         return get_token_types()
 
     @classmethod
-    def get_container_policy_info(cls):
-        """
-        Returns the policy information of the container class.
-        """
-        res = {
-            "token_count": {"type": "int",
-                            "value": "any",
-                            "desc": "The maximum number of tokens in this container"},
-            "token_types": {"type": "list",
-                            "value": cls.get_supported_token_types(),
-                            "desc": "The token types that can be stored in this container"},
-            "user_modifiable": {"type": "bool",
-                                "value": ["true", "false"],
-                                "desc": "Whether the user can modify the tokens in this container"}
-        }
-
-        return res
-
-    @classmethod
     def get_class_prefix(cls):
         """
         Returns the container class specific prefix for the serial.
@@ -442,4 +424,4 @@ class TokenContainerClass:
         """
         Returns a description of the container class.
         """
-        return "General purpose container that can hold any type and any number of token."
+        return _("General purpose container that can hold any type and any number of token.")
