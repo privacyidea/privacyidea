@@ -118,7 +118,6 @@ angular.module("privacyideaApp")
             $scope.containerParams = {page: 1};
             $scope.instanceUrl = instanceUrl;
             $scope.editUser = false;
-            $scope.hideUsernmae = true;
             document.body.scrollTop = document.documentElement.scrollTop = 0;
             $scope.enableAddTokenToContainer = false;
             $scope._getUserToken = function () {
