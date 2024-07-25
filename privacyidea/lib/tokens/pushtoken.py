@@ -171,8 +171,8 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
     return ("otpauth://pipush/{label!s}?"
             "url={url!s}&ttl={ttl!s}&"
             "issuer={issuer!s}{extra}".format(label=url_label, issuer=url_issuer,
-                                       url=url_url, ttl=ttl,
-                                       extra=_construct_extra_parameters(extra_data)))
+                                              url=url_url, ttl=ttl,
+                                              extra=_construct_extra_parameters(extra_data)))
 
 
 def _get_presence_options(options):
@@ -366,120 +366,115 @@ class PushTokenClass(TokenClass):
         res = {'type': 'push',
                'title': _('PUSH Token'),
                'description':
-                    _('PUSH: Send a push notification to a smartphone.'),
+                   _('PUSH: Send a push notification to a smartphone.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       PUSH_ACTION.FIREBASE_CONFIG: {
-                           'type': 'str',
-                           'desc': _('The configuration of your Firebase application.'),
-                           'group': "PUSH",
-                           'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+               'policy':
+                   {
+                       SCOPE.ENROLL: {
+                           PUSH_ACTION.FIREBASE_CONFIG: {
+                               'type': 'str',
+                               'desc': _('The configuration of your Firebase application.'),
+                               'group': "PUSH",
+                               'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+                           },
+                           PUSH_ACTION.REGISTRATION_URL: {
+                               "required": True,
+                               'type': 'str',
+                               'group': "PUSH",
+                               'desc': _('The URL the Push App should contact in the second enrollment step.'
+                                         ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
+                           },
+                           PUSH_ACTION.TTL: {
+                               'type': 'int',
+                               'group': "PUSH",
+                               'desc': _('The second enrollment step must be completed within this time (in minutes).')
+                           },
+                           PUSH_ACTION.SSL_VERIFY: {
+                               'type': 'str',
+                               'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
+                               'group': "PUSH",
+                               'value': ["0", "1"]
+                           },
+                           ACTION.MAXTOKENUSER: {
+                               'type': 'int',
+                               'desc': _("The user may only have this maximum number of Push tokens assigned."),
+                               'group': GROUP.TOKEN
+                           },
+                           ACTION.MAXACTIVETOKENUSER: {
+                               'type': 'int',
+                               'desc': _("The user may only have this maximum number of active Push tokens assigned."),
+                               'group': GROUP.TOKEN
+                           },
+                           'push_' + ACTION.FORCE_APP_PIN: {
+                               'type': 'bool',
+                               'group': "PUSH",
+                               'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
+                           }
                        },
-                       PUSH_ACTION.REGISTRATION_URL: {
-                            "required": True,
-                            'type': 'str',
-                            'group': "PUSH",
-                            'desc': _('The URL the Push App should contact in the second enrollment step.'
-                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
-                       },
-                       PUSH_ACTION.TTL: {
-                           'type': 'int',
-                           'group': "PUSH",
-                           'desc': _('The second enrollment step must be completed within this time (in minutes).')
-                       },
-                       PUSH_ACTION.SSL_VERIFY: {
-                           'type': 'str',
-                           'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
-                           'group':  "PUSH",
-                           'value': ["0", "1"]
-                       },
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of Push tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active Push tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       'push_' + ACTION.FORCE_APP_PIN: {
-                           'type': 'bool',
-                           'group': "PUSH",
-                           'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
-                       }
-                   },
-                   SCOPE.AUTH: {
-                       PUSH_ACTION.MOBILE_TEXT: {
-                           'type': 'str',
-                           'desc': _('The question the user sees on his mobile phone. Several tags like {serial} and '
-                                     '{client_ip} can be used as parameters.'),
-                           'group': 'PUSH'
-                       },
-                       PUSH_ACTION.MOBILE_TITLE: {
-                           'type': 'str',
-                           'desc': _('The title of the notification, the user sees on his mobile phone.'),
-                           'group': 'PUSH'
-                       },
-                       PUSH_ACTION.SSL_VERIFY: {
-                           'type': 'str',
-                           'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
-                           'group': "PUSH",
-                           'value': ["0", "1"]
-                       },
-                       PUSH_ACTION.REQUIRE_PRESENCE: {
-                           'type': 'str',
-                           'desc': _('Require the user to confirm with the correct button from a list of options. '
-                                     'This ensures that the user has access to the login window and the smartphone.'),
-                           'group': 'PUSH',
-                           'value': ["0", "1"]
-                       },
-                       PUSH_ACTION.PRESENCE_OPTIONS: {
-                            'type': 'str',
-                            'desc': _('The options that can be presented to the user to confirm the login. '
-                                         'ALPHABETIC: A-Z, NUMERIC: 01-99, CUSTOM: user defined.'
-                                         f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
-                            'group': 'PUSH',
-                            'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
-                       },
-                       PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
-                            'type': 'str',
-                            'desc': _('Custom options that can be presented to the user to confirm the login. '
-                                      'The string must contain at least 2 options and should be unique. '
-                                      'The options are separated by ":". '
-                                      'e.g.: "01:02:03:1A:1B:1C" without the " ". '
-                                         f'Does only apply if "{PUSH_ACTION.PRESENCE_OPTIONS}" is set to "CUSTOM".'),
-                            'group': 'PUSH'
-                       },
-                       PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
+                       SCOPE.AUTH: {
+                           PUSH_ACTION.MOBILE_TEXT: {
+                               'type': 'str',
+                               'desc': _(
+                                   'The question the user sees on his mobile phone. Several tags like {serial} and '
+                                   '{client_ip} can be used as parameters.'),
+                               'group': 'PUSH'
+                           },
+                           PUSH_ACTION.MOBILE_TITLE: {
+                               'type': 'str',
+                               'desc': _('The title of the notification, the user sees on his mobile phone.'),
+                               'group': 'PUSH'
+                           },
+                           PUSH_ACTION.SSL_VERIFY: {
+                               'type': 'str',
+                               'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
+                               'group': "PUSH",
+                               'value': ["0", "1"]
+                           },
+                           PUSH_ACTION.PRESENCE_OPTIONS: {
+                                'type': 'str',
+                                'desc': _('The options that can be presented to the user to confirm the login. '
+                                             'ALPHABETIC: A-Z, NUMERIC: 01-99, CUSTOM: user defined.'
+                                             f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
+                                'group': 'PUSH',
+                                'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
+                           },
+                           PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
+                                'type': 'str',
+                                'desc': _('Custom options that can be presented to the user to confirm the login. '
+                                          'The string must contain at least 2 options and should be unique. '
+                                          'The options are separated by ":". '
+                                          'e.g.: "01:02:03:1A:1B:1C" without the " ". '
+                                             f'Does only apply if "{PUSH_ACTION.PRESENCE_OPTIONS}" is set to "CUSTOM".'),
+                                'group': 'PUSH'
+                           },
+                           PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
                            'type': 'str',
                             'desc': _('The number of options the user is presented with to confirm the login. '
                                          f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
                             'group': 'PUSH',
                             'value': ALLOWED_NUMBER_OF_OPTIONS
-                       },
-                       PUSH_ACTION.WAIT: {
-                           'type': 'int',
-                           'desc': _('Wait for number of seconds for the user '
-                                     'to confirm the challenge in the first request.'),
-                           'group': "PUSH"
-                       },
-                       PUSH_ACTION.ALLOW_POLLING: {
-                           'type': 'str',
-                           'desc': _('Configure whether to allow push tokens to poll for '
-                                     'challenges'),
-                           'group': 'PUSH',
-                           'value': [PushAllowPolling.ALLOW,
-                                     PushAllowPolling.DENY,
-                                     PushAllowPolling.TOKEN],
-                           'default': PushAllowPolling.ALLOW
+                           },
+                           PUSH_ACTION.WAIT: {
+                               'type': 'int',
+                               'desc': _('Wait for number of seconds for the user '
+                                         'to confirm the challenge in the first request.'),
+                               'group': "PUSH"
+                           },
+                           PUSH_ACTION.ALLOW_POLLING: {
+                               'type': 'str',
+                               'desc': _('Configure whether to allow push tokens to poll for '
+                                         'challenges'),
+                               'group': 'PUSH',
+                               'value': [PushAllowPolling.ALLOW,
+                                         PushAllowPolling.DENY,
+                                         PushAllowPolling.TOKEN],
+                               'default': PushAllowPolling.ALLOW
+                           }
                        }
-                   }
-               },
-        }
+                   },
+               }
 
         if key:
             ret = res.get(key, {})

@@ -81,6 +81,7 @@ class SharedConfigClass(object):
     Instead, it must use ``reload_and_clone()`` to retrieve
     a ``LocalConfigClass`` object which holds a local configuration snapshot.
     """
+
     def __init__(self):
         self._config_lock = threading.Lock()
         self.config = {}
@@ -100,7 +101,7 @@ class SharedConfigClass(object):
         """
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
-            self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
+                self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 log.debug("Reloading shared config from database")
@@ -211,6 +212,7 @@ class LocalConfigClass(object):
     It will be cloned from the shared config object at the beginning of the
     request and is supposed to stay alive and unchanged during the request.
     """
+
     def __init__(self, config, resolver, realm, default_realm, policies, events, caconnectors, timestamp):
         self.config = config
         self.resolver = resolver
@@ -286,7 +288,7 @@ class SYSCONF(object):
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
-#@cache.cached(key_prefix="allConfig")
+# @cache.cached(key_prefix="allConfig")
 def get_privacyidea_config():
     # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
     return get_from_config()
@@ -351,7 +353,7 @@ def get_config_object():
 
 
 @log_with(log)
-#@cache.cached(key_prefix="singleConfig")
+# @cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
     """
     :param key: A key to retrieve
@@ -371,7 +373,7 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
                                     return_bool=return_bool)
 
 
-#@cache.cached(key_prefix="resolver")
+# @cache.cached(key_prefix="resolver")
 def get_resolver_types():
     """
     Return a simple list of the type names of the resolvers.
@@ -397,7 +399,7 @@ def get_caconnector_types():
     return caconnector_types
 
 
-#@cache.cached(key_prefix="classes")
+# @cache.cached(key_prefix="classes")
 def get_resolver_classes():
     """
     Returns a list of the available resolver classes like:
@@ -416,7 +418,7 @@ def get_resolver_classes():
     return list(this.config["pi_resolver_classes"].values())
 
 
-#@cache.cached(key_prefix="classes")
+# @cache.cached(key_prefix="classes")
 def get_token_class_dict():
     """
     get a dictionary of the token classes and a dictionary of the
@@ -444,7 +446,7 @@ def get_token_class_dict():
             obj = getattr(module, name)
             # We must not process imported classes!
             if (inspect.isclass(obj) and issubclass(obj, TokenClass) and
-                        obj.__module__ == module.__name__):
+                    obj.__module__ == module.__name__):
                 try:
                     class_name = "{0!s}.{1!s}".format(module.__name__, obj.__name__)
                     tokenclass_dict[class_name] = obj
@@ -456,7 +458,7 @@ def get_token_class_dict():
     return tokenclass_dict, tokentype_dict
 
 
-#@cache.cached(key_prefix="classes")
+# @cache.cached(key_prefix="classes")
 def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
@@ -477,7 +479,7 @@ def get_token_class(tokentype):
     return tokenclass
 
 
-#@cache.cached(key_prefix="types")
+# @cache.cached(key_prefix="types")
 def get_token_types():
     """
     Return a simple list of the type names of the tokens.
@@ -492,7 +494,7 @@ def get_token_types():
     return list(this.config["pi_token_types"].values())
 
 
-#@cache.cached(key_prefix="prefix")
+# @cache.cached(key_prefix="prefix")
 def get_token_prefix(tokentype=None, default=None):
     """
     Return the token prefix for a tokentype as it is defined in the
@@ -516,7 +518,7 @@ def get_token_prefix(tokentype=None, default=None):
     return ret
 
 
-#@cache.cached(key_prefix="classes")
+# @cache.cached(key_prefix="classes")
 def get_token_classes():
     """
     Returns a list of the available token classes like:
@@ -604,7 +606,7 @@ def get_caconnector_class_dict():
     return class_dict, type_dict
 
 
-#@cache.cached(key_prefix="resolver")
+# @cache.cached(key_prefix="resolver")
 def get_resolver_class_dict():
     """
     get a dictionary of the resolver classes and a dictionary
@@ -633,7 +635,7 @@ def get_resolver_class_dict():
             # There are other classes like HMAC in the lib.tokens module,
             # which we do not want to load.
             if inspect.isclass(obj) and (issubclass(obj, UserIdResolver) or
-                                             obj == UserIdResolver):
+                                         obj == UserIdResolver):
                 # We must not process imported classes!
                 # if obj.__module__ == module.__name__:
                 try:
@@ -653,7 +655,7 @@ def get_resolver_class_dict():
 
 
 @log_with(log)
-#@cache.cached(key_prefix="resolver")
+# @cache.cached(key_prefix="resolver")
 def get_resolver_list():
     """
     get the list of the module names of the resolvers like
@@ -690,7 +692,7 @@ def get_resolver_list():
 
 
 @log_with(log)
-#@cache.memoize(1)
+# @cache.memoize(1)
 def get_machine_resolver_class_list():
     """
     get the list of the class names of the machine resolvers like
@@ -709,7 +711,7 @@ def get_machine_resolver_class_list():
 
 
 @log_with(log)
-#@cache.cached(key_prefix="token")
+# @cache.cached(key_prefix="token")
 def get_token_list():
     """
     get the list of the tokens
@@ -791,7 +793,7 @@ def get_email_validators():
 
 
 @log_with(log)
-#@cache.cached(key_prefix="modules")
+# @cache.cached(key_prefix="modules")
 def get_token_module_list():
     """
     return the list of modules of the available token classes
@@ -808,11 +810,11 @@ def get_token_module_list():
             continue
 
         # load all token class implementations
-        #if mod_name in sys.modules:
+        # if mod_name in sys.modules:
         #    module = sys.modules[mod_name]
         #    log.debug('module %s loaded' % (mod_name))
         #    modules.append(module)
-        #else:
+        # else:
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)
@@ -824,7 +826,7 @@ def get_token_module_list():
     return modules
 
 
-#@cache.cached(key_prefix="modules")
+# @cache.cached(key_prefix="modules")
 def get_resolver_module_list():
     """
     return the list of modules of the available resolver classes
@@ -856,7 +858,7 @@ def get_resolver_module_list():
     return modules
 
 
-#@cache.cached(key_prefix="module")
+# @cache.cached(key_prefix="module")
 def get_caconnector_module_list():
     """
     return the list of modules of the available CA connector classes
@@ -884,7 +886,7 @@ def get_caconnector_module_list():
     return modules
 
 
-#@cache.cached(key_prefix="module")
+# @cache.cached(key_prefix="module")
 def get_machine_resolver_module_list():
     """
     return the list of modules of the available machines resolver classes
@@ -944,14 +946,14 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         db.session.commit()
         ret = "update"
     else:
-        #new_entry = Config(key, value, typ, desc)
+        # new_entry = Config(key, value, typ, desc)
         # ``save`` will call ``save_config_timestamp`` for us
         Config(key, value, typ, desc).save()
-        #db.session.add(new_entry)
+        # db.session.add(new_entry)
         ret = "insert"
 
-    #save_config_timestamp()
-    #db.session.commit()
+    # save_config_timestamp()
+    # db.session.commit()
     return ret
 
 
@@ -963,7 +965,7 @@ def delete_privacyidea_config(key):
     # We need to check, if the value already exist
     if Config.query.filter_by(Key=key).first().delete():
         ret = True
-    #if q:
+    # if q:
     #    db.session.delete(q)
     #    db.session.commit()
     #    ret = True
@@ -971,7 +973,7 @@ def delete_privacyidea_config(key):
     return ret
 
 
-#@cache.cached(key_prefix="pin")
+# @cache.cached(key_prefix="pin")
 def get_inc_fail_count_on_false_pin():
     """
     Return if the Failcounter should be increased if only tokens
@@ -984,7 +986,7 @@ def get_inc_fail_count_on_false_pin():
     return r
 
 
-#@cache.cached(key_prefix="pin")
+# @cache.cached(key_prefix="pin")
 def get_prepend_pin():
     """
     Get the status of the "PrependPin" Config

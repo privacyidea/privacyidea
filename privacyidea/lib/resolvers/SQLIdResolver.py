@@ -489,8 +489,12 @@ class IdResolver (UserIdResolver):
         # Session should be closed on teardown
         register_finalizer(self.session.close)
         self.session._model_changes = {}
-        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine)
 
+        table_parts = self.table.split(".")
+        schema = table_parts[0] if len(table_parts) > 1 else None
+        self.table = table_parts[-1]
+        log.debug("Loading table {0!s} from schema {1!s}".format(self.table, schema))
+        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
         return self
 
     def _create_engine(self):
@@ -593,8 +597,14 @@ class IdResolver (UserIdResolver):
         engine = create_engine(connect_string)
         # create a configured "Session" class
         session = scoped_session(sessionmaker(bind=engine))()
+
+        table_parts = param.get("Table").split(".")
+        schema = table_parts[0] if len(table_parts) > 1 else None
+        table_name = table_parts[-1]
+        log.debug("Loading table {0!s} from schema {1!s}".format(table_name, schema))
+
         try:
-            TABLE = Table(param.get("Table"), MetaData(), autoload_with=engine)
+            TABLE = Table(table_name, MetaData(), autoload_with=engine, schema=schema)
             conditions = cls._append_where_filter([], TABLE,
                                                   param.get("Where"))
             filter_condition = and_(*conditions)

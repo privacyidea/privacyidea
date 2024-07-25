@@ -161,7 +161,6 @@ class ROLLOUTSTATE(object):
 
 
 class TokenClass(object):
-
     # Class properties
     using_pin = True
     hKeyRequired = False
@@ -242,9 +241,9 @@ class TokenClass(object):
 
         if not self.user:
             # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
-            r = TokenOwner(token_id=self.token.id,
-                           user_id=uid, resolver=resolvername,
-                           realmname=user.realm).save()
+            TokenOwner(token_id=self.token.id,
+                       user_id=uid, resolver=resolvername,
+                       realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 
@@ -1355,7 +1354,7 @@ class TokenClass(object):
             reset_counter = True
 
         if (reset_counter and self.token.active and self.token.failcount <
-            self.token.maxfail):
+                self.token.maxfail):
             self.set_failcount(0)
 
         # make DB persistent immediately, to avoid the re-usage of the counter
@@ -1739,7 +1738,7 @@ class TokenClass(object):
         :return: Flask Response or text
         """
         raise ParameterError("{0!s} does not support the API endpoint".format(
-                             cls.get_tokentype()))
+            cls.get_tokentype()))
 
     @staticmethod
     def test_config(params=None):
