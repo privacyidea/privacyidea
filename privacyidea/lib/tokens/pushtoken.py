@@ -28,6 +28,7 @@ This code is tested in tests/test_lib_tokens_push
 import secrets
 from base64 import b32decode
 from binascii import Error as BinasciiError
+import string
 from urllib.parse import quote
 from datetime import datetime, timedelta
 from pytz import utc
@@ -83,8 +84,7 @@ DELAY = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
-AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-                                         "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = [f"{x}" for x in string.ascii_uppercase]
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
 
