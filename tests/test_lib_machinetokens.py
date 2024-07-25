@@ -1,6 +1,7 @@
 """
 This test file tests the lib/machine.py for attaching and detaching tokens
 """
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError
 
 HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
@@ -56,6 +57,17 @@ class MachineTokenTestCase(MyTestCase):
         #  resolver)
         self.assertRaises(Exception, attach_token, self.serial, "luks",
                           machine_id="192.168.0.1")
+
+        # attach token with non-existing serial
+        self.assertRaises(ResourceNotFoundError, attach_token, "nonexisting", "luks")
+
+        # attach token with non-existing application
+        test_token = init_token({"type": "spass"})
+        self.assertRaises(ParameterError, attach_token, test_token.get_serial(), "nonexisting")
+        # look at token, if we do not see the machine
+        tok = get_tokens(serial=test_token.get_serial())[0]
+        machine_list = tok.token.machine_list
+        self.assertEqual(len(machine_list), 0)
 
     def test_02_detach_token(self):
         detach_token(self.serial, "luks", hostname="gandalf")
