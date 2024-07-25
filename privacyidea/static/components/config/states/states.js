@@ -49,44 +49,54 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 .state('config.resolvers.addpasswdresolver', {
                     // Create a new resolver
                     url: "/passwd",
-                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "PasswdResolverController"
                 })
                 .state('config.resolvers.editpasswdresolver', {
                     // edit an existing resolver
                     url: "/passwd/:resolvername",
-                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "PasswdResolverController"
                 })
                 .state('config.resolvers.addhttpresolver', {
                     url: "/httpresolver",
-                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
                 })
                 .state('config.resolvers.edithttpresolver', {
                     url: "/httpresolver/:resolvername",
-                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
                 })
                 .state('config.resolvers.addldapresolver', {
                     url: "/ldap",
-                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "LdapResolverController"
                 })
                 .state('config.resolvers.editldapresolver', {
                     url: "/ldap/:resolvername",
-                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "LdapResolverController"
                 })
                 .state('config.resolvers.addscimresolver', {
                     url: "/scim",
-                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "ScimResolverController"
                 })
                 .state('config.resolvers.editscimresolver', {
                     url: "/scim/:resolvername",
-                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "ScimResolverController"
                 })
                 .state('config.resolvers.addsqlresolver', {
                     url: "/ldap",
-                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "SqlResolverController"
                 })
                 .state('config.resolvers.editsqlresolver', {
                     url: "/ldap/:resolvername",
-                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "SqlResolverController"
                 })
                 .state('config.caconnectors', {
                     url: "/caconnectors",
@@ -99,23 +109,28 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.caconnectors.addlocal', {
                     url: "/local",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "LocalCAConnectorController"
                 })
                 .state('config.caconnectors.editlocal', {
                     url: "/local/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "LocalCAConnectorController"
                 })
                 .state('config.caconnectors.addmicrosoft', {
                     url: "/microsoft",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "MicrosoftCAConnectorController"
                 })
                 .state('config.caconnectors.editmicrosoft', {
                     url: "/microsoft/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "MicrosoftCAConnectorController"
                 })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
-                    templateUrl: configpath + "config.machineresolvers.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.machineresolvers.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "machineResolverController"
                 })
                 .state('config.mresolvers.list', {
                     url: "/list",
@@ -124,22 +139,26 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 .state('config.mresolvers.addhosts', {
                     // Create a new resolver
                     url: "/hosts",
-                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "hostsResolverController"
                 })
                 .state('config.mresolvers.edithosts', {
                     // edit an existing resolver
                     url: "/hosts/:resolvername",
-                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "hostsResolverController"
                 })
                 .state('config.mresolvers.addldap', {
                     // Create a new resolver
                     url: "/ldap",
-                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "ldapMachineResolverController"
                 })
                 .state('config.mresolvers.editldap', {
                     // edit an existing resolver
                     url: "/ldap/:resolvername",
-                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "ldapMachineResolverController"
                 })
                 .state('config.system', {
                     url: "/system",
