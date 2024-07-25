@@ -17,6 +17,7 @@ Version 3.10dev4
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages
   * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
+  * Evaluate input parameter for attaching a token to a machine (#4019)
 
 
 Version 3.10dev3, 2024-06-27
