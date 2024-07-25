@@ -36,7 +36,7 @@ myApp.controller("tokenGetSerialController", ['$scope', 'TokenFactory',
         if ($scope.assigned === "unassigned") {
             $scope.params.unassigned = 1;
         }
-        TokenFactory.getserial($scope.otp, $scope.params, function (data) {
+        TokenFactory.getSerial($scope.otp, $scope.params, function (data) {
             $scope.serial = data.result.value.serial;
             $scope.count = data.result.value["count"];
             if ($scope.step==="searching") {

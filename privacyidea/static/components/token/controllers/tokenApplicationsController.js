@@ -37,7 +37,7 @@ myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'Mach
         if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
             $scope.params = {};
             $scope.params.application = $scope.currentApplication;
-            for (kf in $scope.form.filter) {
+            for (let kf in $scope.form.filter) {
                 $scope.params[kf] = "*" + ($scope.form.filter[kf] || "") + "*";
             }
             $scope.params.pagesize = 15;
@@ -55,7 +55,7 @@ myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'Mach
     };
 
     // Change the pagination
-    $scope.machinetokenPageChanged = function () {
+    $scope.machineTokenPageChanged = function () {
         //debug: console.log('Page changed to: ' + $scope.params.page);
         $scope.get();
     };

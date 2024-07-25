@@ -1,3 +1,24 @@
+Version 3.10dev4
+
+  Features:
+  * Add token containers (#1291)
+    * There are three container types (generic, smartphone, and yubikey) which can contain different token types
+    * A container can have one owner and multiple tokens
+    * Tokens can be added to a container on the fly during the enrollment, on the token, user and container page
+    * Perform actions on all tokens of a container (enable, disable, delete)
+    * Event Handler
+    * Admin and user policies (similar to tokens)
+    * Added container serial and type as columns to the audit log
+
+  Enhancements:
+  * UI: Capitalize headings
+  * UI user details: enabl/disable tokens, reset the fail counter, delete tokens and unassign user form token
+
+  Fixes:
+  * UI: Added translation for page navigation in the user details and list pages
+  * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
+
+
 Version 3.10dev3, 2024-06-27
 
   Enhancements:

@@ -18,6 +18,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'AuthFactory', 'ConfigFactory',
+    function ($scope, $location, $rootScope, AuthFactory, ConfigFactory) {
+        $scope.loggedInUser = AuthFactory.getUser();
+
+        // set default path
+        if ($location.path() === "/token") {
+            $location.path("/token/list");
+            $scope.tokenMenu = true;
+        }
+
+        // watch the location to change the side menu from token to container
+        $rootScope.$on('$locationChangeSuccess', function () {
+            if ($location.path().includes("container"))  {
+                $scope.tokenMenu = false;
+            }
+            else{
+                $scope.tokenMenu = true;
+            }
+        })
+    }]);
+
 myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
     '$location', 'AuthFactory', 'instanceUrl', '$rootScope',
     function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope) {
@@ -166,7 +188,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             genkey: true,
             type: $scope.default_tokentype,
             hashlib: "sha1",
-            'radius.system_settings': true
+            'radius.system_settings': true,
+            container_serial: $stateParams.containerSerial,
         };
         if ($state.includes('token.rollover')) {
             $scope.form.serial = $stateParams.tokenSerial;
@@ -200,11 +223,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 //console.log('DEBUG: got 496 hexlify otpkey, check vasco serialnumber!');
 
                 // convert hexlified input blob to ascii and use the serialnumber (first 10 chars)
-                let vasco_hex = $scope.form.otpkey.toString();//force conversion
+                const vasco_hex = $scope.form.otpkey.toString();//force conversion
                 let vasco_otpstr = '';
                 for (let i = 0; i < vasco_hex.length; i += 2)
                     vasco_otpstr += String.fromCharCode(parseInt(vasco_hex.substr(i, 2), 16));
-                let vasco_serial = vasco_otpstr.slice(0, 10);
+                const vasco_serial = vasco_otpstr.slice(0, 10);
                 //console.log(vasco_serial);
                 $scope.vascoSerial = vasco_serial;
                 if ($scope.vasco.useIt) {
@@ -224,11 +247,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         // TODO: This is also contained in the tokentype class!
         $scope.changeTokenType = function () {
             //debug: console.log("Token Type Changed.");
-            if (["sshkey", "certificate"].indexOf($scope.form.type) >= 0) {
-                $scope.hidePin = true;
-            } else {
-                $scope.hidePin = false;
-            }
+            $scope.hidePin = ["sshkey", "certificate"].indexOf($scope.form.type) >= 0;
             if ($scope.form.type === "hotp") {
                 // preset HOTP hashlib
                 $scope.form.hashlib = $scope.systemDefault['hotp.hashlib'] || 'sha1';
@@ -241,11 +260,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 $scope.form.hashlib = $scope.systemDefault['daypassword.hashlib'] || 'sha1';
                 $scope.form.timeStep = parseInt($scope.systemDefault['daypassword.timeStep'] || '60');
             }
-            if ($scope.form.type === "vasco") {
-                $scope.form.genkey = false;
-            } else {
-                $scope.form.genkey = true;
-            }
+            $scope.form.genkey = $scope.form.type !== "vasco";
             if ($scope.form.type === "applspec") {
                 $scope.loadAvailableServiceIDs();
             }
@@ -298,7 +313,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                     }
                     UserFactory.getUsers(params,
                         function (data) {
-                            let userObject = data.result.value[0];
+                            const userObject = data.result.value[0];
                             // preset for indexedsecret token
                             $scope.form.otpkey = userObject[$scope.tokensettings.indexedsecret.preset_attribute];
                         });
@@ -341,7 +356,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // Helper function to populate user information
         $scope.get_user_infos = function (data) {
-            let userObject = data.result.value[0];
+            const userObject = data.result.value[0];
             $scope.form.email = userObject.email;
             if (typeof userObject.mobile === "string") {
                 $scope.form.phone = userObject.mobile;
@@ -359,7 +374,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
                 // Set the default realm
-                let size = Object.keys($scope.realms).length;
+                const size = Object.keys($scope.realms).length;
                 angular.forEach($scope.realms, function (realm, realmname) {
                     if (size === 1) {
                         // if there is only one realm, preset it
@@ -401,14 +416,14 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // Read the tokentypes from the server
         TokenFactory.getEnrollTokens(function (data) {
-            //debug: console.log("getEnrollTokens");
-            //debug: console.log(data);
+            //console.log("getEnrollTokens");
+            //console.log(data);
             $scope.formInit["tokenTypes"] = data.result.value;
             // set the default tokentype
             if (!$scope.formInit.tokenTypes.hasOwnProperty(
                 $scope.default_tokentype)) {
                 // if HOTP does not exist, we set another default type
-                for (let tkey in $scope.formInit.tokenTypes) {
+                for (const tkey in $scope.formInit.tokenTypes) {
                     // set the first key to be the default tokentype
                     $scope.form.type = tkey;
                     // Set the 2step enrollment value
@@ -426,30 +441,31 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // default enrollment callback
         $scope.callback = function (data) {
+            let blob;
             $scope.U2FToken = {};
             $scope.webAuthnToken = {};
             $scope.enrolledToken = data.detail;
             $scope.click_wait = false;
             if ($scope.enrolledToken.otps) {
-                let otps_count = Object.keys($scope.enrolledToken.otps).length;
+                const otps_count = Object.keys($scope.enrolledToken.otps).length;
                 $scope.otp_row_count = parseInt(otps_count / 5 + 0.5);
                 $scope.otp_rows = Object.keys($scope.enrolledToken.otps).slice(0, $scope.otp_row_count);
             } else {
                 $scope.otp_rows = null;
             }
             if ($scope.enrolledToken.certificate) {
-                let blob = new Blob([$scope.enrolledToken.certificate],
+                blob = new Blob([$scope.enrolledToken.certificate],
                     {type: 'text/plain'});
                 $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL(blob);
             }
             if ($scope.enrolledToken.pkcs12) {
-                let bytechars = atob($scope.enrolledToken.pkcs12);
-                let byteNumbers = new Array(bytechars.length);
+                const bytechars = atob($scope.enrolledToken.pkcs12);
+                const byteNumbers = new Array(bytechars.length);
                 for (let i = 0; i < bytechars.length; i++) {
                     byteNumbers[i] = bytechars.charCodeAt(i);
                 }
-                let byteArray = new Uint8Array(byteNumbers);
-                let blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
+                const byteArray = new Uint8Array(byteNumbers);
+                blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
                 $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL(blob);
             }
             if ($scope.enrolledToken.u2fRegisterRequest) {
@@ -479,6 +495,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             // convert the date object to a string
             $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
             $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
+
+            if ($scope.form.container_serial === "createnew" || $scope.form.container_serial === "none") {
+                delete $scope.form.container_serial
+            }
+
             TokenFactory.enroll($scope.newUser,
                 $scope.form, $scope.callback,
                 function (data) {
@@ -498,13 +519,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
 
         $scope.regenerateToken = function () {
-            let params = $scope.form;
+            const params = $scope.form;
             params.serial = $scope.enrolledToken.serial;
             TokenFactory.enroll($scope.newUser, params, $scope.callback);
         };
 
         $scope.sendClientPart = function () {
-            let params = {
+            const params = {
                 "otpkey": $scope.clientpart.replace(/ /g, ""),
                 "otpkeyformat": "base32check",
                 "serial": $scope.enrolledToken.serial,
@@ -517,7 +538,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
 
         $scope.sendVerifyResponse = function () {
-            let params = {
+            const params = {
                 "serial": $scope.enrolledToken.serial,
                 "verify": $scope.verifyResponse,
                 "type": $scope.form.type
@@ -535,7 +556,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // Special Token functions
         $scope.sshkeyChanged = function () {
-            var keyArr = $scope.form.sshkey.split(" ");
+            const keyArr = $scope.form.sshkey.split(" ");
             $scope.form.description = keyArr.slice(2).join(" ");
         };
 
@@ -580,7 +601,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         // get the list of configured CA connectors
         $scope.getCAConnectors = function () {
             ConfigFactory.getCAConnectorNames(function (data) {
-                let CAConnectors = data.result.value;
+                const CAConnectors = data.result.value;
                 angular.forEach(CAConnectors, function (value, key) {
                     $scope.CAConnectors.push(value.connectorname);
                     $scope.form.ca = value.connectorname;
@@ -600,8 +621,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             //debug: console.log("system default config");
             //debug: console.log(systemDefault);
             // TODO: The entries should be handled automatically.
-            let entries = ["radius.server", "radius.secret", "remote.server", "radius.identifier",
-                "email.mailserver", "email.mailfrom", "yubico.id", "tiqr.regServer"];
+            const entries = ["radius.server", "radius.secret", "remote.server",
+                "radius.identifier", "email.mailserver",
+                "email.mailfrom", "yubico.id", "tiqr.regServer"];
             entries.forEach(function (entry) {
                 if (!$scope.form[entry]) {
                     // preset the UI
@@ -623,11 +645,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // open the window to generate the key pair
         $scope.openCertificateWindow = function () {
-            let params = {
+            const params = {
                 authtoken: AuthFactory.getAuthToken(),
                 ca: $scope.form.ca
             };
-            let tabWindowId = window.open('about:blank', '_blank');
+            const tabWindowId = window.open('about:blank', '_blank');
             $http.post(instanceUrl + '/certificate', params).then(
                 function (response) {
                     //debug: console.log(response);
@@ -638,20 +660,20 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // print the paper token
         $scope.printOtp = function () {
-            let serial = $scope.enrolledToken.serial;
-            let mywindow = window.open('', 'otpPrintingWindow', 'height=400,width=600');
-            let css = '<link' +
+            const serial = $scope.enrolledToken.serial;
+            const myWindow = window.open('', 'otpPrintingWindow', 'height=400,width=600');
+            const css = '<link' +
                 ' href="' + instanceUrl +
                 '/static/css/papertoken.css"' +
                 ' rel="stylesheet">';
-            mywindow.document.write('<html><head><title>' + serial + '</title>');
-            mywindow.document.write(css);
-            mywindow.document.write('</head>' +
+            myWindow.document.write('<html><head><title>' + serial + '</title>');
+            myWindow.document.write(css);
+            myWindow.document.write('</head>' +
                 '<body onload="window.print(); window.close()">');
-            mywindow.document.write($('#paperOtpTable').html());
-            mywindow.document.write('</body></html>');
-            mywindow.document.close(); // necessary for IE >= 10
-            mywindow.focus(); // necessary for IE >= 10
+            myWindow.document.write($('#paperOtpTable').html());
+            myWindow.document.write('</body></html>');
+            myWindow.document.close(); // necessary for IE >= 10
+            myWindow.focus(); // necessary for IE >= 10
             return true;
         };
 
@@ -669,7 +691,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             formatYear: 'yy',
             startingDay: 1
         };
-
     }]);
 
 

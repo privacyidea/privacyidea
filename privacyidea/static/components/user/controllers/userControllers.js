@@ -102,24 +102,25 @@ angular.module("privacyideaApp")
 
 angular.module("privacyideaApp")
     .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl', 'tokenUrl', '$rootScope', 'TokenFactory',
-        'UserFactory', '$state', 'ConfigFactory', 'instanceUrl', '$location', 'inform', 'gettextCatalog',
-        '$stateParams',
-        function ($scope, userUrl, realmUrl, tokenUrl, $rootScope, TokenFactory, UserFactory, $state, ConfigFactory,
-                  instanceUrl, $location, inform, gettextCatalog, $stateParams) {
+        'UserFactory', 'ContainerFactory', 'AuthFactory', '$state', 'ConfigFactory', 'instanceUrl', '$location',
+        'inform', 'gettextCatalog', '$stateParams',
+        function ($scope, userUrl, realmUrl, tokenUrl, $rootScope, TokenFactory, UserFactory, ContainerFactory,
+                  AuthFactory, $state, ConfigFactory, instanceUrl, $location, inform, gettextCatalog, $stateParams) {
             $scope.username = $stateParams.username;
             $scope.realmname = $stateParams.realmname;
             $scope.resolvername = $stateParams.resolvername;
             $scope.editable = $stateParams.editable;
-
             $scope.tokensPerPage = 5;
+
+            $scope.containersPerPage = 5;
             $scope.newToken = {"serial": "", pin: ""};
             $scope.params = {page: 1};
+            $scope.containerParams = {page: 1};
             $scope.instanceUrl = instanceUrl;
             $scope.editUser = false;
             $scope.hideUsernmae = true;
-            // scroll to the top of the page
             document.body.scrollTop = document.documentElement.scrollTop = 0;
-
+            $scope.enableAddTokenToContainer = false;
             $scope._getUserToken = function () {
                 TokenFactory.getTokenForUser({
                     user: $scope.username,
@@ -129,20 +130,37 @@ angular.module("privacyideaApp")
                 }, function (data) {
                     $scope.tokendata = data.result.value;
                     //debug: console.log("Token for user " + $scope.username);
+                    $scope.enableAddTokenToContainer = $scope.tokendata.tokens.length > 0;
                 });
+            };
+
+            $scope.getUserContainer = function () {
+                if (AuthFactory.checkRight("container_list")) {
+                    ContainerFactory.getContainerForUser({
+                        user: $scope.username,
+                        realm: $scope.realmname,
+                        pagesize: $scope.containersPerPage,
+                        page: $scope.containerParams.page
+                    }, function (data) {
+                        $scope.containerdata = data.result.value.containers;
+                    });
+                } else {
+                    $scope.containerdata = [];
+                }
             };
 
             // Change the pagination
             $scope.pageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope._getUserToken();
+                $scope.getUserContainer();
             };
 
-            $scope.getResolverDetails = function (resolvername) {
-                ConfigFactory.getResolver(resolvername, function (data) {
-                    let resolvers = data.result.value;
+            $scope.getResolverDetails = function (resolverName) {
+                ConfigFactory.getResolver(resolverName, function (data) {
+                    const resolvers = data.result.value;
                     $scope.userAttributes = $scope.getUserAttributes(resolvers);
-                    $scope.getUserAttributesView(resolvername, $scope.userAttributes);
+                    $scope.getUserAttributesView(resolverName, $scope.userAttributes);
                 });
             };
 
@@ -163,18 +181,18 @@ angular.module("privacyideaApp")
                     resolver: $scope.resolver,
                     realm: $scope.realmname
                 }, function (data) {
-                    $scope.allowed_custom_attributes = data.result.value;
+                    $scope.allowedCustomAttributes = data.result.value;
                 });
             };
 
             $scope.addCustomAttribute = function () {
-                let key = $scope.selected_attr_key;
-                let value = $scope.selected_attr_value;
-                if ($scope.selected_attr_key === '*') {
-                    key = $scope.new_custom_attribute_key;
+                let key = $scope.selectedAttrKey;
+                let value = $scope.selectedAttrValue;
+                if ($scope.selectedAttrKey === '*') {
+                    key = $scope.newCustomAttributeKey;
                 }
-                if ($scope.selected_attr_value === '*') {
-                    value = $scope.new_custom_attribute_value;
+                if ($scope.selectedAttrValue === '*') {
+                    value = $scope.newCustomAttributeValue;
                 }
                 UserFactory.setCustomAttribute($scope.username, $scope.realmname, key, value,
                     function (data) {
@@ -199,9 +217,9 @@ angular.module("privacyideaApp")
             }
 
             $scope.onCustomAttributeKeyChange = function () {
-                $scope.new_custom_attribute_value = "";
-                $scope.selected_attr_value = "";
-                $scope.allowed_values = $scope.allowed_custom_attributes['set'][$scope.selected_attr_key]
+                $scope.newCustomAttributeValue = "";
+                $scope.selectedAttrValue = "";
+                $scope.allowed_values = $scope.allowedCustomAttributes['set'][$scope.selected_attr_key]
                 $scope.customAttributeValueSelectVisible = true;
                 if ($scope.allowed_values.length === 1) {
                     // If there is only one value, set it!
@@ -214,7 +232,7 @@ angular.module("privacyideaApp")
             $scope.updateUser = function () {
                 UserFactory.updateUser($scope.resolvername, $scope.User,
                     function (data) {
-                        if (data.result.value == true) {
+                        if (data.result.value) {
                             inform.add(gettextCatalog.getString("User updated " +
                                     "successfully."),
                                 {type: "info"});
@@ -228,6 +246,7 @@ angular.module("privacyideaApp")
                             $scope._getUsers();
                             // ...and update the user details
                             $scope.getUserDetails();
+                            $scope.getUserContainer()
                         } else {
                             inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
                         }
@@ -237,10 +256,11 @@ angular.module("privacyideaApp")
             $scope.deleteUserAsk = function () {
                 $('#dialogUserDelete').modal();
             };
+
             $scope.deleteUser = function () {
                 UserFactory.deleteUser($scope.resolvername, $scope.User.username,
                     function (data) {
-                        if (data.result.value == true) {
+                        if (data.result.value) {
                             inform.add(gettextCatalog.getString("User deleted " +
                                     "successfully."),
                                 {type: "info"});
@@ -274,18 +294,102 @@ angular.module("privacyideaApp")
                 $rootScope.returnTo = "user.details({realmname:$scope.realmname, username:$scope.username})";
             };
 
+            // single token function
+            $scope.reset = function (serial) {
+                TokenFactory.reset(serial, $scope._getUserToken);
+            };
+            $scope.disable = function (serial) {
+                TokenFactory.disable(serial, $scope._getUserToken);
+            };
+            $scope.enable = function (serial) {
+                TokenFactory.enable(serial, $scope._getUserToken);
+            };
+            $scope.showDialog = {};
+            $scope.deleteToken = function (token_serial, dialog) {
+                if (dialog) {
+                    $scope.showDialog[token_serial] = true;
+                } else {
+                    TokenFactory.delete(token_serial, $scope._getUserToken);
+                }
+            };
+            $scope.unassign = function (serial) {
+                TokenFactory.unassign(serial, $scope._getUserToken);
+            };
+
             $scope.getUserDetails();
             $scope._getUserToken();
             $scope.getEditableAttributes();
             $scope.getCustomAttributes();
+            $scope.getUserContainer();
 
             // listen to the reload broadcast
             $scope.$on("piReload", function () {
                 $scope.getUserDetails();
                 $scope._getUserToken();
                 $scope.getCustomAttributes();
+                $scope.getUserContainer();
             });
-        }]);
+
+            // Container
+            $scope.containerSerial = "";
+            $scope.showTokenOfUser = true;
+            $scope.containerSelected = false;
+            // Enable the button only if a container is selected
+            $scope.$watch('containerSerial', function (newValue, oldValue) {
+                $scope.containerSelected = (newValue != null && newValue != undefined && newValue != "createnew");
+            });
+
+            // Selection looks like this {"TOTP0001B29F":{"totp":true}, "OATH0002EB1F":{"hotp":false}}
+            $scope.tokenSelection = {};
+            $scope.selectedTokenTypes = [];
+            $scope.$watch("tokenSelection", function (newValue, oldValue) {
+                // Convert the selection data to an array of tokentypes to pass to the select-or-create-token directive
+                let selectedTypes = [];
+                for (let [key, value] of Object.entries(newValue)) {
+                    const type = Object.keys(value)[0];
+                    if (value[type] && !selectedTypes.includes(type)) {
+                        selectedTypes.push(type);
+                    }
+                }
+                $scope.selectedTokenTypes = selectedTypes;
+            }, true); // true = deep watch
+
+            // Button actions
+            $scope.addTokensToContainerMode = function () {
+                $scope.showTokenOfUser = false;
+                $scope.tokenWithoutContainer = [];
+                for (let token of $scope.tokendata.tokens) {
+                    if (!token.container_serial) {
+                        $scope.tokenWithoutContainer.push(token);
+                    }
+                }
+            };
+
+            $scope.cancelAddTokensToContainerMode = function () {
+                $scope.showTokenOfUser = true;
+                $scope.tokenSelection = {};
+                $scope.containerSerial = null;
+            }
+
+            $scope.addTokensToContainerAction = function () {
+                let selectedSerials = "";
+                for (let [key, value] of Object.entries($scope.tokenSelection)) {
+                    if (selectedSerials !== "") {
+                        selectedSerials += ","
+                    }
+                    selectedSerials += key;
+                }
+                let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
+                ContainerFactory.addTokenToContainer(params, function (data) {
+
+                });
+                // Reload the token to show the container
+                $scope._getUserToken();
+                $scope.showTokenOfUser = true;
+                $scope.containerSerial = null;
+            };
+        }
+    ]);
 
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
@@ -313,7 +417,7 @@ angular.module("privacyideaApp")
                 if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
                     // We shall only search, if either we do not search on enter or
                     // if we search_on_enter and the enter key is pressed.
-                    let params = {realm: $scope.selectedRealm};
+                    const params = {realm: $scope.selectedRealm};
                     if ($scope.params.usernameFilter) {
                         params.username = "*" + $scope.params.usernameFilter + "*";
                     }
@@ -329,12 +433,12 @@ angular.module("privacyideaApp")
                     UserFactory.getUsers(params,
                         function (data) {
                             //debug: console.log("success");
-                            let userlist = data.result.value;
-                            // The userlist is the complete list of the users.
-                            $scope.usercount = userlist.length;
-                            let start = ($scope.params.page - 1) * $scope.usersPerPage;
-                            let stop = start + $scope.usersPerPage;
-                            $scope.userlist = userlist.slice(start, stop);
+                            const userList = data.result.value;
+                            // The userList is the complete list of the users.
+                            $scope.userCount = userList.length;
+                            const start = ($scope.params.page - 1) * $scope.usersPerPage;
+                            const stop = start + $scope.usersPerPage;
+                            $scope.userlist = userList.slice(start, stop);
                             //debug: console.log($scope.userlist);
                         });
                 }
@@ -349,9 +453,9 @@ angular.module("privacyideaApp")
             $scope.getRealms = function () {
                 ConfigFactory.getRealms(function (data) {
                     $scope.realms = data.result.value;
-                    let num_realms = Object.keys($scope.realms).length;
+                    let realmCount = Object.keys($scope.realms).length;
                     angular.forEach($scope.realms, function (realm, realmname) {
-                        if (num_realms === 1) {
+                        if (realmCount === 1) {
                             // If the admin is allowed to see only one realm, we make this the
                             // default realm in the UI
                             realm.default = true;
@@ -378,17 +482,17 @@ angular.module("privacyideaApp")
                 $scope._getUsers();
             };
 
+            /*
+            This function returns a list with all possible user attributes
+            in these resolvers. Possible attributes are a dictionary with
+            the keys data, label, name, required, type.
+            */
             $scope.getUserAttributes = function (resolvers) {
-                /*
-                 This function returns a list with all possible user attributes
-                 in these resolvers. Possible attributes are a dictionary with
-                  the keys data, label, name, required, type.
-                */
-                let allResolverAttributes = [];
+                let userinfo;
+                const allResolverAttributes = [];
 
-                for (let rname in resolvers) {
-                    let resolver = resolvers[rname];
-                    let userinfo = {};
+                for (const rname in resolvers) {
+                    const resolver = resolvers[rname];
                     switch (resolver.type) {
                         case "ldapresolver":
                             userinfo = JSON.parse(resolver.data.USERINFO);
@@ -398,10 +502,10 @@ angular.module("privacyideaApp")
                             delete userinfo["userid"];
                             break;
                     }
-                    let fields = [];
-                    let r = {};
+                    const fields = [];
+                    const r = {};
                     angular.forEach(userinfo, function (value, key) {
-                        field = {
+                        let field = {
                             "type": "text",
                             "name": key,
                             "label": gettextCatalog.getString(key),
@@ -444,9 +548,9 @@ angular.module("privacyideaApp")
                     }
                 });
 
-                let start = 0;
-                let middle = Math.ceil(userFields.length / 2);
-                let end = userFields.length + 1;
+                const start = 0;
+                const middle = Math.ceil(userFields.length / 2);
+                const end = userFields.length + 1;
                 $scope.leftColumn = userFields.slice(start, middle);
                 $scope.rightColumn = userFields.slice(middle, end);
             };
@@ -454,5 +558,4 @@ angular.module("privacyideaApp")
             $scope.$on("piReload", function () {
                 $scope._getUsers(false);
             });
-
         }]);

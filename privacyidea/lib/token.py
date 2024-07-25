@@ -68,9 +68,10 @@ import logging
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
+
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
@@ -78,7 +79,8 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
+                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
+                                TokenContainerToken)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -128,6 +130,7 @@ def fn_clob_to_varchar_default(element, compiler, **kw):
 def fn_clob_to_varchar_oracle(element, compiler, **kw):
     return "to_char(%s)" % compiler.process(element.clauses, **kw)
 
+
 @log_with(log)
 def create_tokenclass_object(db_token):
     """
@@ -157,13 +160,15 @@ def create_tokenclass_object(db_token):
     return token_object
 
 
-def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
-                        serial_exact=None, serial_wildcard=None, active=None, resolver=None,
+def _create_token_query(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
+                        serial_exact=None, serial_wildcard=None, serial_list=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
+                        container_serial=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
+
     :return: An SQLAlchemy sql query
     """
     sql_query = Token.query
@@ -180,6 +185,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             # exact match
             sql_query = sql_query.filter(func.lower(Token.tokentype) == tokentype.lower())
+
+    if token_type_list is not None and len(token_type_list) > 0:
+        # filter for all token types in the list
+        sql_query = sql_query.filter(Token.tokentype.in_([t.lower() for t in token_type_list]))
 
     if description is not None and description.strip("*"):
         # filter for Description
@@ -252,6 +261,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # exact match for serial
         sql_query = sql_query.filter(Token.serial == serial_exact)
 
+    if serial_list is not None and len(serial_list) > 0:
+        # filter for all serials in the list
+        sql_query = sql_query.filter(Token.serial.in_(serial_list))
+
     if user is not None and not user.is_empty():
         # filter for the rest of the user.
         if user.resolver:
@@ -259,7 +272,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            if type(uid) == int:
+            if isinstance(uid, int):
                 uid = str(uid)
             sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
             sql_query = sql_query.filter(TokenOwner.user_id == uid)
@@ -306,10 +319,22 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # Filter for tokens with token token.info.<key> and token.info.<value>
         if len(tokeninfo) != 1:
             raise privacyIDEAError(_("I can only create SQL filters from "
-                                   "tokeninfo of length 1."))
+                                     "tokeninfo of length 1."))
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
         sql_query = sql_query.filter(clob_to_varchar(TokenInfo.Value) == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
+
+    if container_serial is not None:
+        if container_serial == "":
+            sql_query = sql_query.outerjoin(TokenContainerToken).filter(TokenContainerToken.container_id.is_(None))
+        else:
+            container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
+            if container is None:
+                raise privacyIDEAError(_(f"No container with the serial {container_serial} exists."))
+            token_container_token = TokenContainerToken.query.filter(
+                TokenContainerToken.container_id == container.id).all()
+            token_ids = [token_id.token_id for token_id in token_container_token]
+            sql_query = sql_query.filter(Token.id.in_(token_ids))
 
     return sql_query
 
@@ -354,9 +379,70 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
         else:
             break
 
+
+def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None):
+    """
+    Convert a list of token objects to a list of dictionaries.
+    Additionally, checks whether the requesting user is allowed to see the token information.
+    If not it is reduced to the tokens serial.
+
+    :param tokens: A list of token objects
+    :type tokens: list
+    :param user: The user object performing the request
+    :type user: User object
+    :param user_role: The role of the logged-in user
+    :type user_role: str
+    :param allowed_realms: A list of the realms the admin is allowed to see, None if the admin is allowed to see all
+                           realms
+    :return: A list of dictionaries
+    :rtype: list
+    """
+    token_dict_list = []
+    for tokenobject in tokens:
+        if isinstance(tokenobject, TokenClass):
+            token_dict = tokenobject.get_as_dict()
+            # add user information
+            # In certain cases the LDAP or SQL server might not be reachable.
+            # Then an exception is raised
+            token_dict["username"] = ""
+            token_dict["user_realm"] = ""
+            try:
+                userobject = tokenobject.user
+                if userobject:
+                    token_dict["username"] = userobject.login
+                    token_dict["user_realm"] = userobject.realm
+                    token_dict["user_editable"] = get_resolver_object(
+                        userobject.resolver).editable
+            except Exception as exx:
+                log.error("User information can not be retrieved: {0!s}".format(exx))
+                log.debug(traceback.format_exc())
+                token_dict["username"] = "**resolver error**"
+
+            # check if token is in a container
+            token_dict["container_serial"] = ""
+            from privacyidea.lib.container import find_container_for_token
+            container = find_container_for_token(tokenobject.get_serial())
+            if container:
+                token_dict["container_serial"] = container.serial
+
+            # Reduce token info if the user is not the owner
+            if user_role != "admin":
+                if not user or user.login != token_dict["username"] or user.realm != token_dict["user_realm"]:
+                    token_dict = {"serial": token_dict["serial"]}
+            elif user_role == "admin" and allowed_realms is not None:
+                same_realms = list(set(token_dict["realms"]).intersection(allowed_realms))
+                if len(same_realms) == 0:
+                    # The token is in no realm the admin is allowed to see
+                    token_dict = {"serial": token_dict["serial"]}
+
+            token_dict_list.append(token_dict)
+
+    return token_dict_list
+
+
 @log_with(log)
-#@cache.memoize(10)
-def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
+# @cache.memoize(10)
+def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
                maxfail=None):
@@ -373,6 +459,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
     :param tokentype: The type of the token. If None, all tokens are returned.
     :type tokentype: basestring
+    :param token_type_list: A list of token types. I None or empty, all token types are returned.
+    :type token_type_list: list
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens.
@@ -405,13 +493,17 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
-    :return: A list of tokenclasses (lib.tokenclass).
+    :return: A list of lib.tokenclass objects.
     :rtype: list
     """
     token_list = []
-    sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+    serial_list = None
+    if serial and "*" not in serial and "," in serial:
+        serial_list = serial.replace(" ", "").split(",")
+        serial = None
+    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
-                                    serial_exact=serial, serial_wildcard=serial_wildcard,
+                                    serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
                                     active=active, resolver=resolver,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
@@ -430,11 +522,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():
-            # the token is the database object, but we want an instance of the
-            # tokenclass!
+            # the token is the database object, but we want an instance of the tokenclass!
             tokenobject = create_tokenclass_object(token)
             if isinstance(tokenobject, TokenClass):
-                # A database token, that has a non existing type, will
+                # A database token, that has a non-existing type, will
                 # return None, and not a TokenClass. We do not want to
                 # add None to our list
                 token_list.append(tokenobject)
@@ -444,11 +535,11 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
 
 @log_with(log)
-def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
+def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None, rollout_state=None,
                         sortby=Token.serial, sortdir="asc", psize=15,
                         page=1, description=None, userid=None, allowed_realms=None,
-                        tokeninfo=None, hidden_tokeninfo=None):
+                        tokeninfo=None, hidden_tokeninfo=None, container_serial=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -456,12 +547,13 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     the next or previous page. If either does not exist, it is None.
 
     :param tokentype:
+    :param token_type_list: A list of token types
     :param realm:
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
     :param user: The user, whose token should be displayed
     :type user: User object
-    :param serial: a pattern for matching the serial
+    :param serial: a pattern for matching the serial or a comma separated list of exact serials
     :param active: Returns active (True) or inactive (False) tokens
     :param resolver: A resolver name, which may contain "*" for filtering.
     :type resolver: basestring
@@ -482,16 +574,22 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type allowed_realms: list
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
+    :param container_serial: The serial number of a container
+    :type container_serial: basestring
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
-    sql_query = _create_token_query(tokentype=tokentype, realm=realm,
-                                assigned=assigned, user=user,
-                                serial_wildcard=serial, active=active,
-                                resolver=resolver, tokeninfo=tokeninfo,
-                                rollout_state=rollout_state,
-                                description=description, userid=userid,
-                                allowed_realms=allowed_realms)
+    serial_list = None
+    if serial and "*" not in serial and "," in serial:
+        serial_list = serial.replace(" ", "").split(",")
+        serial = None
+    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
+                                    assigned=assigned, user=user,
+                                    serial_wildcard=serial, serial_list=serial_list, active=active,
+                                    resolver=resolver, tokeninfo=tokeninfo,
+                                    rollout_state=rollout_state,
+                                    description=description, userid=userid,
+                                    allowed_realms=allowed_realms, container_serial=container_serial)
 
     if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
@@ -513,7 +611,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     tokens = pagination.items
     prev = None
     if pagination.has_prev:
-        prev = page-1
+        prev = page - 1
     next = None
     if pagination.has_next:
         next = page + 1
@@ -543,6 +641,13 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 for key in list(token_dict['info']):
                     if key in hidden_tokeninfo:
                         token_dict['info'].pop(key)
+
+            # check if token is in a container
+            token_dict["container_serial"] = ""
+            from privacyidea.lib.container import find_container_for_token
+            container = find_container_for_token(tokenobject.get_serial())
+            if container:
+                token_dict["container_serial"] = container.serial
 
             token_list.append(token_dict)
 
@@ -779,9 +884,9 @@ def get_tokenclass_info(tokentype, section=None):
     :rtype:  dict
     """
     res = {}
-    Tokenclass = get_token_class(tokentype)
-    if Tokenclass:
-        res = Tokenclass.get_class_info(section)
+    tokenclass = get_token_class(tokentype)
+    if tokenclass:
+        res = tokenclass.get_class_info(section)
 
     return res
 
@@ -804,11 +909,10 @@ def get_otp(serial, current_time=None):
     return tokenobject.get_otp(current_time=current_time)
 
 
-
 @log_with(log)
 def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
-                    curTime=None,
-                    timestamp=None):
+                  curTime=None,
+                  timestamp=None):
     """
     This function returns a list of OTP values for the given Token.
     Please note, that the tokentype needs to support this function.
@@ -831,14 +935,14 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     tokenobject = get_one_token(serial=serial)
     log.debug("getting multiple otp values for token {0!r}. curTime={1!r}".format(tokenobject, curTime))
 
-    res, error, otp_dict = tokenobject.\
+    res, error, otp_dict = tokenobject. \
         get_multi_otp(count=count,
                       epoch_start=epoch_start,
                       epoch_end=epoch_end,
                       curTime=curTime,
                       timestamp=timestamp)
     log.debug("received {0!r}, {1!r}, and {2!r} otp values".format(res, error,
-                                                      len(otp_dict)))
+                                                                   len(otp_dict)))
 
     if res is True:
         ret = otp_dict
@@ -847,8 +951,6 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
         ret["error"] = error
 
     return ret
-
-
 
 
 @log_with(log)
@@ -1037,16 +1139,16 @@ def init_token(param, user=None, tokenrealms=None,
     db_token = None
     tokenobject = None
 
-    tokentype = param.get("type") or "hotp"
-    serial = param.get("serial") or gen_serial(tokentype, param.get("prefix"))
+    token_type = param.get("type") or "hotp"
+    serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
     check_serial_valid(serial)
     realms = []
 
-    # unsupported tokentype
-    tokentypes = get_token_types()
-    if tokentype.lower() not in tokentypes:
-        log.error('type {0!r} not found in tokentypes: {1!r}'.format(tokentype, tokentypes))
-        raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(tokentype), id=1610)
+    # unsupported token type
+    token_types = get_token_types()
+    if token_type.lower() not in token_types:
+        log.error('type {0!r} not found in tokentypes: {1!r}'.format(token_type, token_types))
+        raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(token_type), id=1610)
 
     # Check, if a token with this serial already exist
     # create a list of the found tokens
@@ -1054,18 +1156,18 @@ def init_token(param, user=None, tokenrealms=None,
     token_count = len(tokenobject_list)
     if token_count == 0:
         # A token with the serial was not found, so we create a new one
-        db_token = Token(serial, tokentype=tokentype.lower())
+        db_token = Token(serial, tokentype=token_type.lower())
 
     else:
         # The token already exist, so we update the token
         db_token = tokenobject_list[0].token
         # prevent from changing the token type
-        old_typ = db_token.tokentype
-        if old_typ.lower() != tokentype.lower():
+        old_type = db_token.tokentype
+        if old_type.lower() != token_type.lower():
             msg = ('token %r already exist with type %r. '
                    'Can not initialize token with new type %r' % (serial,
-                                                                  old_typ,
-                                                                  tokentype))
+                                                                  old_type,
+                                                                  token_type))
             log.error(msg)
             raise TokenAdminError(_("initToken failed: {0!s}").format(msg))
 
@@ -1346,7 +1448,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))
         raise ParameterError(_("Parameter user must not be a string: {0!r}").format(
-                             user), id=1212)
+            user), id=1212)
 
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
@@ -1584,9 +1686,7 @@ def get_tokeninfo(serial, info):
 
 @log_with(log)
 @check_user_or_serial
-def add_tokeninfo(serial, info, value=None,
-                  value_type=None,
-                  user=None):
+def add_tokeninfo(serial, info, value=None, value_type=None, user=None):
     """
     Sets a token info field in the database. The info is a dict for each
     token of key/value pairs.
@@ -1905,7 +2005,7 @@ def lost_token(serial, new_serial=None, password=None,
         raise TokenAdminError(err, id=2012)
 
     character_pool = "{0!s}{1!s}{2!s}".format(string.ascii_lowercase,
-                                 string.ascii_uppercase, string.digits)
+                                              string.ascii_uppercase, string.digits)
     if contents != "":
         character_pool = ""
         if "c" in contents:
@@ -1927,7 +2027,7 @@ def lost_token(serial, new_serial=None, password=None,
     tokenobject = init_token({"otpkey": password, "serial": new_serial,
                               "type": "pw",
                               "description": _("temporary replacement for {0!s}").format(
-                                             serial)})
+                                  serial)})
 
     res['init'] = tokenobject is not None
     if res['init']:
@@ -2128,7 +2228,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                     challenge_info["pin_change"] = \
                         token_obj.is_pin_change()
                 next_passw = token_obj.get_tokeninfo(
-                        "next_password_change")
+                    "next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
                     challenge_info["password_change"] = \
@@ -2225,7 +2325,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             # Avoid a SQL query triggered by ``tokenobject.user`` in case
             # the log level is not DEBUG
             log.debug("Found user with loginId {0!r}: {1!r}".format(
-                      tokenobject.user, tokenobject.get_serial()))
+                tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response and it still has a challenge DB entry

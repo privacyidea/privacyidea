@@ -1003,3 +1003,94 @@ set_hsm_password
 
 The administrator is able to set the password of the hardware security module.
 It grants access to the `/system/hsm` endpoint (see :ref:`rest_system`).
+
+
+container_info
+~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to edit the container information.
+
+New in version 3.10
+
+container_state
+~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to edit the container states.
+
+New in version 3.10
+
+container_description
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to edit the container description.
+
+New in version 3.10
+
+container_create
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to create a containers.
+
+New in version 3.10
+
+container_delete
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to delete containers.
+
+New in version 3.10
+
+container_add_token
+~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to add tokens to a container.
+
+New in version 3.10
+
+container_remove_token
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to remove tokens from containers.
+
+New in version 3.10
+
+container_assign_user
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to assign users to containers.
+
+New in version 3.10
+
+container_unassign_user
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to unassign users from containers.
+
+New in version 3.10
+
+container_realms
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to edit the container realms.
+
+New in version 3.10

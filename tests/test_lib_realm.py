@@ -1,26 +1,11 @@
-# SPDX-FileCopyrightText: (C) 2024 Paul Lettich <paul.lettich@netknights.it>
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# Info: https://privacyidea.org
-#
-# This code is free software: you can redistribute it and/or
-# modify it under the terms of the GNU Affero General Public License
-# as published by the Free Software Foundation, either
-# version 3 of the License, or any later version.
-#
-# This code is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public
-# License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 """
-This test file tests the lib/realm.py
+This test file tests the lib.resolvers.py
+
+The lib.resolvers.py only depends on the database model.
 """
 import uuid
+
+from privacyidea.models import NodeName
 from .base import MyTestCase
 
 from privacyidea.lib.resolver import (save_resolver,
@@ -31,16 +16,12 @@ from privacyidea.lib.realm import (set_realm,
                                    get_default_realm,
                                    realm_is_defined,
                                    set_default_realm,
-                                   delete_realm,
-                                   export_realms,
-                                   import_realms)
-
-from privacyidea.models import NodeName
+                                   delete_realm, export_realms, import_realms)
 
 
-class RealmTestCase(MyTestCase):
+class ResolverTestCase(MyTestCase):
     """
-    Test the realm library level
+    Test the token on the database level
     """
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
@@ -59,16 +40,14 @@ class RealmTestCase(MyTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': self.resolvername2}])
-        self.assertEqual(len(failed), 0, failed)
-        self.assertEqual(len(added), 2, added)
+                                    [{"name": self.resolvername1},
+                                     {"name": self.resolvername2}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 2)
 
         (added, failed) = set_realm(self.realm_dot,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': self.resolvername2}])
+                                    [{"name": self.resolvername1},
+                                     {"name": self.resolvername2}])
         self.assertEqual(0, len(failed))
         self.assertEqual(2, len(added))
 
@@ -89,9 +68,8 @@ class RealmTestCase(MyTestCase):
 
         # update the resolver list:
         (added, failed) = set_realm(self.realm1,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': "non exiting"}])
+                                    [{'name': self.resolvername1},
+                                     {'name': "non exiting"}])
         self.assertTrue(len(failed) == 1)
         self.assertTrue(len(added) == 1)
 
@@ -105,8 +83,7 @@ class RealmTestCase(MyTestCase):
 
     def test_02_set_default_realm(self):
         (added, failed) = set_realm("realm2",
-                                    [
-                                        {'name': self.resolvername2}])
+                                    [{'name': self.resolvername2}])
         self.assertTrue(len(added) == 1)
         self.assertTrue(len(failed) == 0)
 

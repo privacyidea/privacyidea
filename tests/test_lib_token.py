@@ -12,6 +12,7 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+from privacyidea.lib.container import init_container, add_token_to_container
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -143,6 +144,15 @@ class TokenTestCase(MyTestCase):
         # get tokens of type TOTP
         tokenobject_list = get_tokens(tokentype="totp")
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        # get tokens of type TOTP and HOTP
+        spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
+        hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
+        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        for token in tokenobject_list:
+            self.assertIn(token.type, ["hotp", "totp"], token)
+        spass_token.delete_token()
+        hotp_token.delete_token()
 
         # Search for tokens in realm
         db_token = Token("hotptoken",
@@ -982,6 +992,55 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(serial="hotp*")
         self.assertTrue(len(tokens.get("tokens")) == 1,
                         len(tokens.get("tokens")))
+
+        # filter by exact serial
+        hotp_token = init_token({"type": "hotp", "genkey": 1})
+        totp_token = init_token({"type": "totp", "genkey": 1})
+        init_token({"type": "spass"})
+        tokens_pag = get_tokens_paginate(serial=hotp_token.get_serial())
+        tokens = tokens_pag["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(hotp_token.get_serial(), tokens[0]["serial"])
+
+        # filter by type list
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["spass", "totp"])
+
+        # type wildcard
+        tokens_pag = get_tokens_paginate(tokentype="*otp*")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["hotp", "totp"])
+
+        # filter by type list and wildcard
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="*otp*")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["totp"])
+
+        # filter by type list and type
+        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="totp")
+        tokens = tokens_pag["tokens"]
+        for token in tokens:
+            self.assertIn(token["tokentype"], ["totp"])
+
+        # Filter by container_serial
+        container_serial = init_container({"type": "generic"})
+        token = init_token({"type": "hotp", "genkey": 1})
+        add_token_to_container(container_serial, token.get_serial(), user_role="admin")
+        tokens_pag = get_tokens_paginate(container_serial=container_serial)
+        self.assertEqual(1, len(tokens_pag["tokens"]))
+
+        # Filter tokens that are not in a container
+        tokens_pag = get_tokens_paginate(container_serial="")
+        self.assertGreater(tokens_pag["count"], 0)
+        token_serials = [t["serial"] for t in tokens_pag["tokens"]]
+        self.assertNotIn(token.get_serial(), token_serials)
+        for token in tokens_pag["tokens"]:
+            self.assertEqual("", token["container_serial"])
+
 
     def test_42_sort_tokens(self):
         # return pagination

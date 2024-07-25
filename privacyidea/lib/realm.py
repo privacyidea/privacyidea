@@ -35,6 +35,7 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 """
+
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp)
@@ -43,6 +44,7 @@ from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+
 log = logging.getLogger(__name__)
 
 
