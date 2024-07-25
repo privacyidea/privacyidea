@@ -1,4 +1,4 @@
-<div class="well" ng-controller="tokenMenuController">
+<div class="well">
     <nav class="navbar navbar-default" ng-show="checkRight('container_list')">
         <div class="container">
             <!-- Hide menu bar on small screens, show button to toggle instead -->
@@ -170,7 +170,7 @@
                         ng-show="checkRight('container_list')">
                         <a ui-sref="token.containerlist">
                             <span class="glyphicon glyphicon-list"></span>
-                            List Containers
+                            <span translate> List Containers </span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -183,7 +183,7 @@
                         ng-class="{active: $state.includes('token.containercreate')}">
                         <a ui-sref="token.containercreate">
                             <span class="glyphicon glyphicon-plus"></span>
-                            <span>Create Container</span>
+                            <span translate>Create Container</span>
                         </a>
                     </li>
                 </ul>

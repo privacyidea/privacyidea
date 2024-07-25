@@ -15,14 +15,16 @@
     <label>
         <button class="btn btn-default"
                 ng-disabled="expandedRows.length == containerdata.containers.length"
-                ng-click="expandTokenView(-1)">
+                ng-click="expandTokenView(-1)"
+                translate>
             Open all containers
         </button>
     </label>
     <label class="col">
         <button class="btn btn-default"
                 ng-disabled="expandedRows.length == 0"
-                ng-click="collapseTokenView(-1)">
+                ng-click="collapseTokenView(-1)"
+                translate>
             Close all containers
         </button>
     </label>
@@ -39,19 +41,19 @@
                         translate>Serial
                 </button>
             </th>
-            <th>
+            <th translate>
                 Type
             </th>
-            <th>
+            <th translate>
                 Description
             </th>
-            <th ng-show="loggedInUser.role == 'admin'">
+            <th ng-show="loggedInUser.role == 'admin'" translate>
                 User
             </th>
-            <th ng-show="loggedInUser.role == 'admin'">
+            <th ng-show="loggedInUser.role == 'admin'" translate>
                 Realm
             </th>
-            <th ng-show="loggedInUser.role == 'admin'">
+            <th ng-show="loggedInUser.role == 'admin'" translate>
                 Container Realms
             </th>
         </tr>
@@ -70,7 +72,7 @@
                 </button>
                 <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
             </td>
-            <td class="capitalize">
+            <td class="table-capitalize">
                 {{ container.type }}
             </td>
             <td>

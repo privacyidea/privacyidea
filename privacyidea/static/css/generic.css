@@ -9,6 +9,9 @@
 .table-capitalize-header > thead > tr > th {
     text-transform: capitalize;
 }
+.table-capitalize {
+    text-transform: capitalize;
+}
 .nav-capitalize {
     text-transform: capitalize;
 }
