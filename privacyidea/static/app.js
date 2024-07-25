@@ -25,6 +25,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.auditStates',
         'privacyideaApp.configStates',
         'privacyideaApp.tokenStates',
+        //'privacyideaApp.containerStates',
         'privacyideaApp.dashboardStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
@@ -43,12 +44,12 @@ myApp.config(['$urlRouterProvider', function ($urlRouterProvider) {
 
 myApp.config(['KeepaliveProvider', 'IdleProvider',
     function (KeepaliveProvider, IdleProvider) {
-    // Logout configuration.
-    // Default to 120 seconds
-    IdleProvider.idle(110);
-    IdleProvider.timeout(10);
-    KeepaliveProvider.interval(3);
-}]);
+        // Logout configuration.
+        // Default to 120 seconds
+        IdleProvider.idle(110);
+        IdleProvider.timeout(10);
+        KeepaliveProvider.interval(3);
+    }]);
 
 var instance = window.location.pathname;
 if (instance === "/") {
@@ -58,6 +59,7 @@ var backendUrl = "";
 myApp.constant("instanceUrl", instance);
 myApp.constant("authUrl", backendUrl + instance + "/auth");
 myApp.constant("tokenUrl", backendUrl + instance + "/token");
+myApp.constant("containerUrl", backendUrl + instance + "/container")
 myApp.constant("userUrl", backendUrl + instance + "/user");
 myApp.constant("resolverUrl", backendUrl + instance + "/resolver");
 myApp.constant("machineResolverUrl", backendUrl + instance + "/machineresolver");
@@ -83,18 +85,27 @@ myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
 myApp.constant("resourceNamePatterns", {
-    simple: {pattern: "^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$",
-        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")},
-/* we have to ignore "test" and "test_request" as a resource name explicitly */
-    withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
+    simple: {
+        pattern: "^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")
+    },
+    /* we have to ignore "test" and "test_request" as a resource name explicitly */
+    withoutTest: {
+        pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
         title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
-            "and must not be the word 'test'")},
-    withoutTestEmail: {pattern: "^(?!send_test_email$)([A-Za-z0-9_.-]+)$",
+            "and must not be the word 'test'")
+    },
+    withoutTestEmail: {
+        pattern: "^(?!send_test_email$)([A-Za-z0-9_.-]+)$",
         title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
-            "and must not be the word 'send_test_email'")},
-    withoutTestRequest: {pattern: "^(?!test_request$)([a-zA-Z0-9_.-]+)$",
+            "and must not be the word 'send_test_email'")
+    },
+    withoutTestRequest: {
+        pattern: "^(?!test_request$)([a-zA-Z0-9_.-]+)$",
         title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
-            "and must not be the word 'test_request'")}});
+            "and must not be the word 'test_request'")
+    }
+});
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {
 
@@ -117,13 +128,13 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
 myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
     $httpProvider.interceptors.push(function ($rootScope, $q, inform, gettext) {
         return {
-            request: function(config) {
+            request: function (config) {
                 $rootScope.$broadcast('spinnerEvent', {
                     action: 'increment'
                 });
                 return config || $q.when(config);
             },
-            response: function(response) {
+            response: function (response) {
                 $rootScope.$broadcast('spinnerEvent', {
                     action: 'decrement'
                 });
@@ -134,14 +145,14 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
                 $rootScope.$broadcast('spinnerEvent', {
                     action: 'decrement'
                 });
-                if(rejection.status === 0) {
+                if (rejection.status === 0) {
                     if (rejection.config.timeout) {
                         // The Request was canceled on purpose (getUsers)
                         //debug: console.log("user canceled");
                     } else {
                         // The API is offline, not reachable
                         inform.add(gettext("The privacyIDEA system seems to be" +
-                        " offline. The API is not reachable!"),
+                                " offline. The API is not reachable!"),
                             {type: "danger", ttl: 10000});
                     }
                     return;
@@ -159,7 +170,7 @@ myApp.config(['$compileProvider',
         // allow only links to our readthedocs documentation, netknights homepage and "otpauth:" links
         let url_re = /^\s*(https:\/\/(privacyidea.readthedocs.io|netknights.it)\/|otpauth:|mailto:|file:|blob:)/;
         $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
-}]);
+    }]);
 
 // disable debug info: https://docs.angularjs.org/guide/production#disabling-debug-data
 myApp.config(['$compileProvider', function ($compileProvider) {
@@ -178,6 +189,6 @@ isTrue = function (value) {
 
 // this is for the translation of the constants (see
 // https://github.com/rubenv/angular-gettext/issues/67 )
-function gettext (string) {
-  return string;
+function gettext(string) {
+    return string;
 }

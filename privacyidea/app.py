@@ -35,6 +35,7 @@ import sqlalchemy as sa
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
+from privacyidea.api.container import container_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -182,6 +183,7 @@ def create_app(config_name="development",
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+    app.register_blueprint(container_blueprint, url_prefix='/container')
 
     # Set up Plug-Ins
     db.init_app(app)

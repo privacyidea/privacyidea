@@ -41,9 +41,7 @@ from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -120,7 +118,7 @@ def save_resolver(params):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None):
     """
@@ -128,20 +126,18 @@ def get_resolver_list(filter_resolver_type=None,
 
     :param filter_resolver_type: Only resolvers of the given type are returned
     :type filter_resolver_type: string
+    :param filter_resolver_name: Only the resolver with the given name is returned
+    :type filter_resolver_name: string
     :rtype: Dictionary of the resolvers and their configuration
     """
-    Resolvers = {}
+    ret = {}
     if filter_resolver_name:
-        resolvers = MachineResolver.query\
-            .filter(func.lower(MachineResolver.name) ==
-                    filter_resolver_name.lower())
+        resolvers = MachineResolver.query.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
     elif filter_resolver_type:
-        resolvers = MachineResolver.query\
-                            .filter(MachineResolver.rtype ==
-                                    filter_resolver_type)
+        resolvers = MachineResolver.query.filter(MachineResolver.rtype == filter_resolver_type)
     else:
         resolvers = MachineResolver.query.all()
-    
+
     for reso in resolvers:
         r = {"resolvername": reso.name,
              "type": reso.rtype}
@@ -153,9 +149,9 @@ def get_resolver_list(filter_resolver_type=None,
                 value = decryptPassword(value)
             data[conf.Key] = value
         r["data"] = data
-        Resolvers[reso.name] = r
+        ret[reso.name] = r
 
-    return Resolvers
+    return ret
 
 
 @log_with(log)
@@ -173,7 +169,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a machine resolver
@@ -198,7 +194,7 @@ def get_resolver_config_description(resolver_type):
     return descriptor
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
@@ -207,7 +203,7 @@ def get_resolver_class(resolver_type):
     :return: resolver object class
     """
     ret = None
-    
+
     (resolver_clazzes, resolver_types) = get_machine_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -219,7 +215,7 @@ def get_resolver_class(resolver_type):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -233,7 +229,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_object(resolvername):
     """
     return the resolver object for a given name
@@ -253,7 +249,7 @@ def get_resolver_object(resolvername):
             # This can only happen if a resolver class definition would be
             # removed.
             log.error("unknown resolver class for type {0!s} ".format(
-                      resolver.get("type")))
+                resolver.get("type")))
         else:
             # create the resolver instance and load the config
             r_obj = r_obj_class(resolvername, resolver.get("data"))

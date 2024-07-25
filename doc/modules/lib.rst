@@ -16,6 +16,8 @@ For further details see the following modules:
    lib/users
    lib/tokenclass
    lib/tokenfunction
+   lib/containerclass
+   lib/containerfunction
    lib/applicationclass
    lib/policy
    lib/jobqueue

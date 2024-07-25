@@ -12,11 +12,11 @@
 <span translate>total tokens: {{ tokendata.count }}</span>
 
 <div class="table-responsive">
-    <table class="table table-bordered table-striped" id="tabletokenlist">
+    <table class="table table-bordered table-striped table-capitalize-header" id="tabletokenlist">
         <thead>
         <tr>
             <th class="pifilter">
-                <button class="btn btn-default unsorted"
+                <button class="btn btn-default unsorted btn-capitalize"
                         pi-sort-by="serial"
                         translate>serial
                 </button>
@@ -26,7 +26,7 @@
                 ></pi-filter>
             </th>
             <th class="pifilter">
-                <button class="btn btn-default unsorted"
+                <button class="btn btn-default unsorted btn-capitalize"
                         pi-sort-by="tokentype"
                         translate>type
                 </button>
@@ -38,14 +38,14 @@
             <th>
                 <button pi-sort-by="active"
                         class="btn btn-default
-                            unsorted"
+                            unsorted btn-capitalize"
                         translate>active
                 </button>
             </th>
             <th class="pifilter">
                 <button pi-sort-by="description"
                         class="btn btn-default
-                       unsorted"
+                       unsorted btn-capitalize"
                         translate>description
                 </button>
                 <pi-filter ng-model="descriptionFilter"
@@ -56,14 +56,14 @@
             <th>
                 <button pi-sort-by="failcount"
                         class="btn btn-default
-                         unsorted"
+                         unsorted btn-capitalize"
                         translate>failcounter
                 </button>
             </th>
             <th class="pifilter">
                 <button pi-sort-by="rollout_state"
                         class="btn btn-default
-                       unsorted"
+                       unsorted btn-capitalize"
                         translate>rollout state
                 </button>
                 <pi-filter ng-model="rolloutStateFilter"
@@ -83,6 +83,7 @@
                 translate>UserId</th>
             <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
                 translate>Resolver</th>
+            <th>Container</th>
         </tr>
         </thead>
         <tbody>
@@ -130,8 +131,10 @@
             </td>
 
             <td ng-show="loggedInUser.role == 'admin'">
-                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
-                    {{ t_realm }}</a>&nbsp;
+                <span ng-repeat="t_realm in token.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ t_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
             </td>
 
             <td ng-show="loggedInUser.role == 'admin' &&
@@ -141,6 +144,15 @@
             <td ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
                 <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
+                   ng-show="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </a>
+                <span ng-hide="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </span>
             </td>
         </tr>
         </tbody>

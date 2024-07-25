@@ -67,6 +67,7 @@ import logging
 
 from OpenSSL import crypto
 from privacyidea.lib import _
+from privacyidea.lib.container import get_container_realms
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -145,7 +146,7 @@ class prepolicy(object):
         This decorates the given function. The prepolicy decorator is ment
         for API functions on the API level.
 
-        If some error occur the a PolicyException is raised.
+        If some error occurs, a PolicyException is raised.
 
         The decorator function can modify the request data.
 
@@ -299,7 +300,7 @@ def realmadmin(request=None, action=None):
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
-        if not "realm" in params:
+        if "realm" not in params:
             # add the realm to params
             po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
@@ -572,7 +573,7 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    In addition it adds the tokenissuer to the params like this:
+    In addition, it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
     It also checks if the force_app_pin policy is set and adds the corresponding
@@ -1175,7 +1176,7 @@ def check_anonymous_user(request=None, action=None):
     return True
 
 
-def check_admin_tokenlist(request=None, action=None):
+def check_admin_tokenlist(request=None, action=ACTION.TOKENLIST):
     """
     Depending on the policy scope=admin, action=tokenlist, the
     allowed_realms parameter is set to define, the token of which
@@ -1187,6 +1188,7 @@ def check_admin_tokenlist(request=None, action=None):
     ["realm1", "realm2"...]: the admin can see these realms
 
     :param request:
+    :param action: The action to be checked (tokenlist or container_list)
     :return:
     """
     allowed_realms = None
@@ -1196,14 +1198,14 @@ def check_admin_tokenlist(request=None, action=None):
         return True
 
     policy_object = g.policy_object
-    pols = Match.admin(g, action=ACTION.TOKENLIST).policies()
+    pols = Match.admin(g, action=action).policies()
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
         allowed_realms = []
         for pol in pols:
             if not pol.get("realm"):
-                # if there is no realm set in a tokenlist policy, then this is a wildcard!
+                # if there is no realm set in a tokenlist/container_list policy, then this is a wildcard!
                 wildcard = True
             else:
                 allowed_realms.extend(pol.get("realm"))
@@ -1211,7 +1213,10 @@ def check_admin_tokenlist(request=None, action=None):
         if wildcard:
             allowed_realms = None
 
-    request.pi_allowed_realms = allowed_realms
+    if action == ACTION.CONTAINER_LIST:
+        request.pi_allowed_container_realms = allowed_realms
+    else:
+        request.pi_allowed_realms = allowed_realms
     return True
 
 
@@ -1244,10 +1249,10 @@ def check_base_action(request=None, action=None, anonymous=False):
         realm = username = resolver = None
     else:
         realm = params.get("realm")
-        if type(realm) == list and len(realm) == 1:
+        if isinstance(realm, list) and len(realm) == 1:
             realm = realm[0]
         resolver = resolver or params.get("resolver")
-        # get the realm by the serial:
+        # get the realm by the token serial:
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
                                         only_first_realm=True)
@@ -1266,12 +1271,86 @@ def check_base_action(request=None, action=None, anonymous=False):
     return True
 
 
+def check_container_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    is used for api calls that perform actions on container. If a token serial is passed, it also checks the policy
+    for the token realm.
+
+    :param request:
+    :param action:
+    :return: True if action is allowed, otherwise raises an Exception
+    """
+    ERROR = {"user": "User actions are defined, but the action %s is not "
+                     "allowed!" % action,
+             "admin": "Admin actions are defined, but the action %s is not "
+                      "allowed!" % action}
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    realm = params.get("realm")
+    resolver = resolver or params.get("resolver")
+
+    # Check action for (container) realm
+    match = Match.generic(g, scope=role,
+                          action=action,
+                          user=username,
+                          resolver=resolver,
+                          realm=realm,
+                          adminrealm=adminrealm,
+                          adminuser=adminuser)
+    action_allowed = match.allowed()
+
+    # Get allowed realms
+    allowed_realms = []
+    policies = match.policies()
+    for pol in policies:
+        if not pol.get("realm"):
+            # if there is no realm set in a policy, then this is a wildcard!
+            allowed_realms = None
+            break
+        else:
+            allowed_realms.extend(pol.get("realm"))
+    request.pi_allowed_realms = allowed_realms
+
+    # get the realm by the container serial
+    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
+    # TODO: Refactor Match.generic() to support multiple realms
+    if params.get("container_serial"):
+        container_realms = get_container_realms(params.get("container_serial"))
+
+        # Check if at least one container realm is allowed
+        if action_allowed and allowed_realms and container_realms:
+            matching_realms = list(set(container_realms).intersection(allowed_realms))
+            action_allowed = len(matching_realms) > 0
+
+        # get the realm by the token serial:
+        token_realms = None
+        if params.get("serial"):
+            serial = params.get("serial")
+            if serial.isalnum():
+                # single serial, no list
+                token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
+
+            # Check if at least one token realm is allowed
+            if action_allowed and allowed_realms and token_realms:
+                matching_realms = list(set(token_realms).intersection(allowed_realms))
+                action_allowed = len(matching_realms) > 0
+
+    if not action_allowed:
+        raise PolicyError(ERROR.get(role))
+    return True
+
+
 def check_token_upload(request=None, action=None):
     """
     This decorator function takes the request and verifies the given action
     for scope ADMIN
-    :param req:
-    :param filename:
+
+    :param request:
+    :param action:
     :return:
     """
     tokenrealms = request.all_data.get("tokenrealms")
@@ -1296,6 +1375,7 @@ def check_token_init(request=None, action=None):
     This decorator function takes the request and verifies
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
+
     :param request:
     :param action:
     :return: True or an Exception is raised

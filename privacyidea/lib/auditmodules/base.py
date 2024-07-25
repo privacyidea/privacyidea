@@ -142,7 +142,7 @@ class Audit(object):  # pragma: no cover
                 'action_detail', 'info', 'privacyidea_server', 'client',
                 'user_agent', 'user_agent_version',
                 'log_level', 'policies', 'clearance_level', 'sig_check',
-                'missing_line', 'resolver', 'thread_id']
+                'missing_line', 'resolver', 'thread_id', 'container_serial', 'container_type']
 
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """

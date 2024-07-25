@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from privacyidea.lib.container import init_container, add_token_to_container
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -7,10 +9,10 @@ import requests
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass,
-                                   assign_token, token_exist, add_tokeninfo)
+                                   assign_token, token_exist, add_tokeninfo, unassign_token, init_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -76,7 +78,6 @@ WYx05kOaYFFvb1u8ub+qSExyHGX9Lh6w32RCoM8kJP7F6YCepKJRboka1/BY3GbF
 17qsUVtb+0YLznMdHEFtWc51SpzA0h3a7w==
 -----END CERTIFICATE-----"""
 
-
 CERTIFICATE = """-----BEGIN CERTIFICATE-----
 MIIHdTCCBV2gAwIBAgITMAAAAHozruIlHyAQtAAAAAAAejANBgkqhkiG9w0BAQsF
 ADBGMRMwEQYKCZImiZPyLGQBGRYDY29tMRYwFAYKCZImiZPyLGQBGRYGbmlsc2Nh
@@ -120,12 +121,10 @@ ub8B4Q4BtcXwyX1IjkSRVGhpmBKc+cykTR1GGR0L0JihMK85qWF/8vyYiwBq3z08
 TdIfRtrzkM5Zw/U/p2/LWzbe/fCkqSC6SheI+/FDR7Bjz7xNxIZHonk=
 -----END CERTIFICATE-----"""
 
-
 CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.PORT: 50061,
         MS_ATTR.HTTP_PROXY: "0",
         MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
-
 
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE_GPG = "tests/testdata/import.oath.asc"
@@ -332,7 +331,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
-        # disableing an active token from a user from resolver1 should work
+        # disabling an active token from a user from resolver1 should work
         t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
                                                      resolver=self.resolvername1,
                                                      realm=self.realm1))
@@ -458,7 +457,7 @@ class APIAttestationTestCase(MyApiTestCase):
         set_policy("pol2", scope=SCOPE.ADMIN,
                    action="enrollCERTIFICATE")
 
-        # If the attestation certificate matches and it is trusted, then we succeed.
+        # If the attestation certificate matches, and it is trusted, then we succeed.
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "certificate",
@@ -542,13 +541,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
+        container_serial = init_container({"type": "generic"})
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "HOTP",
                                                  "otpkey": self.otpkey,
                                                  "pin": "1234",
                                                  "user": "cornelius",
-                                                 "realm": self.realm1},
+                                                 "realm": self.realm1,
+                                                 "container_serial": container_serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             data = res.json
@@ -683,8 +684,37 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             tokenlist = result.get("value").get("tokens")
             self.assertEqual(len(tokenlist), 1)
-
         remove_token("hw001")
+
+        # get tokens with specific serials
+        hotp_token = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+        totp_token = init_token({"otpkey": self.otpkey}, tokenkind="totp")
+        token_serials = ",".join([hotp_token.get_serial(), totp_token.get_serial()])
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={
+                                               "serial": token_serials},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertEqual(2, result.get("value").get("count"))
+
+        # get tokens of specific types
+        spass_token = init_token({"type": "spass"})
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"type_list": "hotp,totp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            tokens = result.get("value").get("tokens")
+            for token in tokens:
+                self.assertIn(token["tokentype"], ["hotp", "totp"])
+        remove_token(hotp_token.get_serial())
+        remove_token(totp_token.get_serial())
+        remove_token(spass_token.get_serial())
 
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
@@ -773,10 +803,10 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             result = res.json.get("result")
             error = result.get("error")
-#            self.assertEqual(error.get("message"),
-#                             "ERR1103: Token already assigned to user "
-#                             "User(login='cornelius', realm='realm1', "
-#                             "resolver='resolver1')")
+            #            self.assertEqual(error.get("message"),
+            #                             "ERR1103: Token already assigned to user "
+            #                             "User(login='cornelius', realm='realm1', "
+            #                             "resolver='resolver1')")
             self.assertRegex(error.get('message'),
                              r"ERR1103: Token already assigned to user "
                              r"User\(login=u?'cornelius', "
@@ -901,6 +931,8 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
+        container_serial = init_container({"type": "generic"})
+        add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
@@ -911,15 +943,17 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value") == 1, result)
 
-        # Check for the disabled token in the audit log, that also the user object is added
+        # Check for the disabled token in the audit log, that also the user object and container are added
         with self.app.test_request_context('/audit/',
                                            method='GET',
                                            data={'action': "*disable*", "serial": "EToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
-            jres = res.json
-            self.assertEqual(jres['result']['value']['auditdata'][0]['user'], "hans")
+            audit_data = res.json['result']['value']['auditdata'][0]
+            self.assertEqual(audit_data['user'], "hans")
+            self.assertEqual(audit_data['container_serial'], container_serial)
+            self.assertEqual(audit_data['container_type'], 'generic')
 
         # disable a disabled token will not count, so the value will be 0
         with self.app.test_request_context('/token/disable',
@@ -1206,7 +1240,7 @@ class APITokenTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/',
                                            method="GET",
                                            query_string=urlencode(
-                                                   {"serial": "SET001"}),
+                                               {"serial": "SET001"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1680,7 +1714,7 @@ class APITokenTestCase(MyApiTestCase):
             with self.app.test_request_context('/token/init',
                                                data={"type": "totp",
                                                      "serial": "totp{0!s}".format(
-                                                             timestep),
+                                                         timestep),
                                                      "timeStep": timestep,
                                                      "genkey": "1"},
                                                method="POST",
@@ -1996,7 +2030,6 @@ class APITokenTestCase(MyApiTestCase):
                                                method='POST',
                                                data={"otppin": "1234"},
                                                headers={'Authorization': self.at}):
-
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
 
@@ -2030,7 +2063,7 @@ class APITokenTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/',
                                            method="GET",
                                            query_string=urlencode(
-                                                   {"serial": "INF001"}),
+                                               {"serial": "INF001"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -2056,7 +2089,7 @@ class APITokenTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/',
                                            method="GET",
                                            query_string=urlencode(
-                                                   {"serial": "INF001"}),
+                                               {"serial": "INF001"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -2759,7 +2792,7 @@ class APITokenTestCase(MyApiTestCase):
         # Now run the second step: verify enrollment and test again
         otp = ""
         for x in positions:
-            otp += secret[x-1]
+            otp += secret[x - 1]
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"serial": serial,
@@ -2971,7 +3004,6 @@ class APITokenTestCase(MyApiTestCase):
 
 
 class API00TokenPerformance(MyApiTestCase):
-
     token_count = 21
 
     def test_00_create_some_tokens(self):
