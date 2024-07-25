@@ -1330,7 +1330,7 @@ def check_container_action(request=None, action=None):
         token_realms = None
         if params.get("serial"):
             serial = params.get("serial")
-            if not any(c in serial for c in [",", " ", "*"]):
+            if serial.isalnum():
                 # single serial, no list
                 token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
 

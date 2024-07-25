@@ -485,7 +485,7 @@ class BaseEventHandler(object):
             if user:
                 users.append(user)
         serial = request.all_data.get("container_serial")
-        if (user is None or user.is_empty()) and serial:
+        if not user and serial:
             # maybe the user is empty, but a serial was passed.
             # Then we determine the user by the serial
             container = find_container_by_serial(serial)
