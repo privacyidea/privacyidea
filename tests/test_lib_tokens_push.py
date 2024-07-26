@@ -10,7 +10,7 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS,
+                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
@@ -382,7 +382,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
             chal = get_challenges(serial=tokenobj.token.serial)[0]
             # Check in the challenge for a require_presence value, this indicates, that the challenges was created
-            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS)
+            self.assertIn(chal.data.split(',').pop(), AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
             chal.delete()
 
         remove_token(serial=serial)
@@ -520,7 +520,7 @@ class PushTokenTestCase(MyTestCase):
                               content_type="application/json")
 
                 # In two seconds we need to run an update on the challenge table.
-                Timer(2, self.mark_challenge_as_accepted).start()
+                Timer(2, self._mark_challenge_as_accepted).start()
 
                 set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
                 # Send the first authentication request to trigger the challenge
@@ -571,8 +571,10 @@ class PushTokenTestCase(MyTestCase):
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
             delete_policy("push1")
         delete_policy('push_config')
+        remove_token(serial=serial)
 
-    def mark_challenge_as_accepted(self):
+
+    def _mark_challenge_as_accepted(self):
         # We simply mark all challenges as successfully answered!
         with self.app.test_request_context():
             challenges = get_challenges()
@@ -585,10 +587,32 @@ class PushTokenTestCase(MyTestCase):
         # Test the /validate/check endpoints and the smartphone endpoint /ttype/push
         # for authentication
 
-        # get enrolled push token
-        toks = get_tokens(tokentype="push")
-        self.assertEqual(len(toks), 1)
-        tokenobj = toks[0]
+        ## Create rolled out push token
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        cached_fbtoken = {
+            'firebase_token': {
+                FB_CONFIG_VALS[FIREBASE_CONFIG.JSON_CONFIG]: _create_credential_mock()}}
+        self.app.config.setdefault('_app_local_store', {}).update(cached_fbtoken)
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account'
+                        '.Credentials.from_service_account_file') as mySA:
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects'
+                                          '/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -747,12 +771,20 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
+        remove_token(serial=serial)
 
     def test_04_decline_auth_request(self):
-        # get enrolled push token
-        toks = get_tokens(tokentype="push")
-        self.assertEqual(len(toks), 1)
-        tokenobj = toks[0]
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -842,9 +874,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
             self.assertEqual(res.json["detail"]["challenge_status"], "declined", res.json["detail"]["challenge_status"])
-
-
-
+        remove_token(serial=serial)
 
     def test_05_strip_key(self):
         stripped_pubkey = strip_key(self.smartphone_public_key_pem)
@@ -855,13 +885,18 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(strip_key("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
 
     @responses.activate
-    def test_06_api_auth(self):
+    def test_06a_api_auth(self):
         self.setUp_user_realms()
-
-        # get enrolled push token
-        toks = get_tokens(tokentype="push")
-        self.assertEqual(len(toks), 1)
-        tokenobj = toks[0]
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -944,9 +979,342 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
 
-        remove_token(tokenobj.get_serial())
         delete_policy("push1")
         delete_policy("webui")
+        remove_token(serial=serial)
+
+    @responses.activate
+    def test_06b_api_auth_presence(self):
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Set a loginmode policy
+        set_policy("webui", scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        # Set a policy to require presence
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        presence_answer = None
+        challenge = None
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     PUSH_ACTION.WAIT: "10",
+                                                     "password": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                        # Get the challenge from the database
+
+                jsonresp = res.json
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertIn("transaction_id", jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+                challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                                      transaction_id=transaction_id)
+                chal = challengeobject_list[0] # TODO: Why is challenge a string?
+                challenge = chal.challenge
+                presence_answer = chal.get_data().split(',').pop() # The correct answer is always appended to the available options
+                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
+                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
+
+        self.assertTrue(presence_answer != None)
+        self.assertTrue(presence_answer in AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = f"{challenge}|{tokenobj.token.serial}|{presence_answer}"
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # We still cannot log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            self.assertFalse(res.json['result']['status'])
+
+        # Answer the challenge
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature,
+                                                 "presence_answer": presence_answer}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+
+        # We can now log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json['result']['status'])
+
+        remove_token(tokenobj.get_serial())
+        delete_policy("webui")
+        delete_policy("push_require_presence")
+
+    @responses.activate
+    def test_06c_api_auth_presence_numeric(self):
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        set_policy("push_numeric", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=NUMERIC".format(PUSH_ACTION.PRESENCE_OPTIONS))
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Set a loginmode policy
+        set_policy("webui", scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        # Set a policy to require presence
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        presence_answer = None
+        challenge = None
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     PUSH_ACTION.WAIT: "10",
+                                                     "password": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                # Get the challenge from the database
+
+                jsonresp = res.json
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertIn("transaction_id", jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+                challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                                      transaction_id=transaction_id)
+                chal = challengeobject_list[0]  # TODO: Why is challenge a string?
+                challenge = chal.challenge
+                presence_answer = chal.get_data().split(',').pop()  # The correct answer is always appended to the available options
+                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
+                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
+
+        self.assertTrue(presence_answer != None)
+        self.assertTrue(presence_answer in AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = f"{challenge}|{tokenobj.token.serial}|{presence_answer}"
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # We still cannot log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            self.assertFalse(res.json['result']['status'])
+
+        # Answer the challenge
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature,
+                                                 "presence_answer": presence_answer}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+
+        # We can now log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json['result']['status'])
+
+        remove_token(tokenobj.get_serial())
+        delete_policy("webui")
+        delete_policy("push_require_presence")
+        delete_policy("push_numeric")
+
+    @responses.activate
+    def test_06d_api_auth_presence_custom(self):
+        self.setUp_user_realms()
+        custom_presence_options = "0A:1B:2C:3D:4E:5F:6G:7H:8I:9J"
+        custom_options_list = custom_presence_options.split(":")
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        set_policy("push_custom", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=CUSTOM".format(PUSH_ACTION.PRESENCE_OPTIONS))
+        set_policy("push_custom_options", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}".format(PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS))
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Set a loginmode policy
+        set_policy("webui", scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        # Set a policy to require presence
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        presence_answer = None
+        challenge = None
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     PUSH_ACTION.WAIT: "10",
+                                                     "password": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                # Get the challenge from the database
+
+                jsonresp = res.json
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertIn("transaction_id", jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+                challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                                      transaction_id=transaction_id)
+                chal = challengeobject_list[0]  # TODO: Why is challenge a string?
+                challenge = chal.challenge
+                presence_answer = chal.get_data().split(',').pop()  # The correct answer is always appended to the available options
+                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
+                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
+
+        self.assertTrue(presence_answer != None)
+        self.assertTrue(presence_answer in custom_options_list)
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = f"{challenge}|{tokenobj.token.serial}|{presence_answer}"
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # We still cannot log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            self.assertFalse(res.json['result']['status'])
+
+        # Answer the challenge
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature,
+                                                 "presence_answer": presence_answer}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+
+        # We can now log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json['result']['status'])
+
+        remove_token(tokenobj.get_serial())
+        delete_policy("webui")
+        delete_policy("push_require_presence")
 
     def test_07_check_timestamp(self):
         timestamp_fmt = 'broken_timestamp_010203'
