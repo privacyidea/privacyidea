@@ -601,14 +601,14 @@
          token-types="[token.tokentype]">
     </div>
     <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
-        <button type="button" class="btn btn-primary"
+        <button type="button" class="btn btn-default"
                 ng-disabled="!checkRight('container_add_token') || containerSerial === 'none'"
                 ng-click="addToContainer()">
             <span translate>Add to Container</span>
         </button>
     </div>
     <div class="text-center" ng-show="tokenIsInContainer">
-        <button type="button" class="btn btn-primary"
+        <button type="button" class="btn btn-default"
                 ng-disabled="!checkRight('container_remove_token')"
                 ng-click="removeFromContainer()">
             <span translate>Remove from Container</span>
