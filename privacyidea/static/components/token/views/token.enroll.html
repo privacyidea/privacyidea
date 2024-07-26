@@ -72,7 +72,7 @@
         <!-- ============ Container ====================== -->
         <div ng-show="checkRight('container_add_token') && checkRight('container_list')">
             <h4 translate>Assign Container</h4>
-            <div select-or-create-container container-serial="form.container_serial"
+            <div select-or-create-container container-serial="containerSerial"
                  disable-selection="tokenIsInContainer"
                  enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm"
                  token-types="[form.type]">
