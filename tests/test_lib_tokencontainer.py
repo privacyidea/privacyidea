@@ -599,7 +599,10 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_28_get_all_containers_paginate(self):
         # Removes all previously initialized containers
-        TokenContainer.query.delete()
+        old_test_containers = TokenContainer.query.all()
+        for container in old_test_containers:
+            container.delete()
+
         # Arrange
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         self.setUp_user_realms()
