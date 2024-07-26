@@ -41,11 +41,8 @@ myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'A
     }]);
 
 myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
-    '$location', 'AuthFactory', 'instanceUrl',
-    '$rootScope',
-    function (TokenFactory, ConfigFactory,
-              $scope, $location, AuthFactory,
-              instanceUrl, $rootScope) {
+    '$location', 'AuthFactory', 'instanceUrl', '$rootScope',
+    function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope) {
         $scope.tokensPerPage = $scope.token_page_size;
         $scope.params = {page: 1, sortdir: "asc"};
         $scope.reverse = false;
@@ -95,13 +92,12 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
             TokenFactory.enable(serial, $scope.get);
         };
 
-        if ($location.path() === "/token/list") {
-            $scope.get();
-        }
-
         // go to the list view by default
         if ($location.path() === "/token") {
             $location.path("/token/list");
+        }
+        if ($location.path() === "/token/list") {
+            $scope.get();
         }
         // go to token.wizard, if the wizard is defined
         if ($scope.token_wizard) {
@@ -127,10 +123,8 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
 
 
 myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
-    '$stateParams', 'AuthFactory',
-    'UserFactory', '$state',
-    function tokenAssignController($scope, TokenFactory, $stateParams,
-                                   AuthFactory, UserFactory, $state) {
+    '$stateParams', 'AuthFactory', 'UserFactory', '$state',
+    function tokenAssignController($scope, TokenFactory, $stateParams, AuthFactory, UserFactory, $state) {
         $scope.assignToken = function () {
             TokenFactory.assign({
                 serial: fixSerial($scope.newToken.serial),
@@ -141,18 +135,11 @@ myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
         };
     }]);
 
-myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
-    "$stateParams", "AuthFactory",
-    "UserFactory", "$state",
-    "ConfigFactory", "instanceUrl",
-    "$http", "hotkeys", "gettextCatalog",
-    "inform", "U2fFactory",
-    "webAuthnToken",
-    "versioningSuffixProvider",
-    function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams,
-                                   AuthFactory, UserFactory, $state,
-                                   ConfigFactory, instanceUrl, $http, hotkeys,
-                                   gettextCatalog, inform, U2fFactory,
+myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout", "$stateParams", "AuthFactory",
+    "UserFactory", "$state", "ConfigFactory", "instanceUrl", "$http", "hotkeys", "gettextCatalog", "inform",
+    "U2fFactory", "webAuthnToken", "versioningSuffixProvider",
+    function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams, AuthFactory, UserFactory, $state,
+                                   ConfigFactory, instanceUrl, $http, hotkeys, gettextCatalog, inform, U2fFactory,
                                    webAuthnToken, versioningSuffixProvider) {
 
         hotkeys.bindTo($scope).add({
@@ -347,7 +334,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 return scope.newUser.email;
             },
             function (newValue, oldValue) {
-                if (newValue != '') {
+                if (newValue !== '') {
                     $scope.form.email = newValue;
                 }
             });
@@ -355,7 +342,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 return scope.newUser.mobile;
             },
             function (newValue, oldValue) {
-                if (newValue != '') {
+                if (newValue !== '') {
                     $scope.form.phone = newValue;
                 }
             });
@@ -706,13 +693,10 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
     }]);
 
-myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory',
-    'tokenUrl', 'ConfigFactory', 'inform',
+
+myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory', 'tokenUrl', 'ConfigFactory', 'inform',
     'gettextCatalog',
-    function ($scope, Upload,
-              AuthFactory, tokenUrl,
-              ConfigFactory, inform,
-              gettextCatalog) {
+    function ($scope, Upload, AuthFactory, tokenUrl, ConfigFactory, inform, gettextCatalog) {
         $scope.formInit = {
             fileTypes: ["aladdin-xml", "OATH CSV", "Yubikey CSV", "pskc"]
         };

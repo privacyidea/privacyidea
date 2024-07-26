@@ -85,10 +85,9 @@ myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "info
     $scope.savePrivacyideaServer= function() {
         ConfigFactory.addPrivacyidea($scope.params, function(data){
             if (data.result.status === true) {
-                inform.add(gettextCatalog.getString("privacyIDEA Server" +
-                        " Config saved."),
-                                {type: "info"});
+                inform.add(gettextCatalog.getString("privacyIDEA Server" + " Config saved."), {type: "info"});
                 $state.go('config.privacyideaserver.list');
+                $scope.reload();
             }
         });
     };

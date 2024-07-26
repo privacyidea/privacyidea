@@ -12,12 +12,13 @@ Version 3.10dev4
 
   Enhancements:
   * UI: Capitalize headings
-  * UI user details: enabl/disable tokens, reset the fail counter, delete tokens and unassign user form token
+  * UI user details: enable/disable tokens, reset the fail counter, delete tokens and unassign user form token
 
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages
   * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
-  * Evaluate input parameter for attaching a token to a machine (#4019)
+  * When attaching a token to a machine, validate the serial and the application (#4019)
+  * UI: Removed duplicated controller calls resulting in duplicated API calls (#3421)
 
 
 Version 3.10dev3, 2024-06-27

@@ -31,25 +31,19 @@ angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versio
             $stateProvider
                 .state('user', {
                     url: "/user",
-                    templateUrl: userpath + "user.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: userpath + "user.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "userController"
                 })
                 .state('user.list', {
                     url: "/list",
-                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "userController"
+                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",
                     templateUrl: userpath + "user.details.html" + versioningSuffixProviderProvider.$get().$get(),
                     params: {resolvername: null,
                              editable: null},
-                    controller: ['$scope', '$stateParams',
-                        function ($scope, $stateParams) {
-                            $scope.username = $stateParams.username;
-                            $scope.realmname = $stateParams.realmname;
-                            $scope.resolvername = $stateParams.resolvername;
-                            $scope.editable = $stateParams.editable;
-                        }]
+                    controller: "userDetailsController"
                 })
                 .state('user.password', {
                     url: "/password",
@@ -58,6 +52,7 @@ angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versio
                 })
                 .state('user.add', {
                     url: "/add",
-                    templateUrl: userpath + "user.add.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: userpath + "user.add.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "userAddController"
                 });
         }]);

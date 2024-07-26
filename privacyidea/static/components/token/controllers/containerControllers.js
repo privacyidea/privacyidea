@@ -264,7 +264,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     $state.go("token.containerlist");
                 }
             });
-            $scope.get();
+            if ($scope.addTokens) {
+                $scope.get();
+            }
         };
 
         $scope.excludeStates = function (state) {

@@ -19,85 +19,85 @@
  *
  */
 myApp.controller("componentController", ["ComponentFactory", "$scope",
-                                         "$stateParams", "$http", "AuthFactory",
-                                         "instanceUrl", "SubscriptionFactory",
-                                         "subscriptionsUrl", "$location",
-                                         "Upload", "inform",
-                                         function (ComponentFactory, $scope,
-                                                   $stateParams, $http,
-                                                   AuthFactory, instanceUrl,
-                                                   SubscriptionFactory,
-                                                   subscriptionsUrl, $location,
-                                                   Upload, inform) {
-    $scope.instanceUrl = instanceUrl;
+    "$stateParams", "$http", "AuthFactory",
+    "instanceUrl", "SubscriptionFactory",
+    "subscriptionsUrl", "$location",
+    "Upload", "inform",
+    function (ComponentFactory, $scope,
+              $stateParams, $http,
+              AuthFactory, instanceUrl,
+              SubscriptionFactory,
+              subscriptionsUrl, $location,
+              Upload, inform) {
+        $scope.instanceUrl = instanceUrl;
 
-    $scope.getClientType = function () {
-        //debug: console.log("Requesting client application types.");
-        ComponentFactory.getClientType(function (data) {
-            $scope.clientdata = data.result.value;
-            //debug: console.log($scope.clientdata);
-        });
-    };
+        $scope.getClientType = function () {
+            //debug: console.log("Requesting client application types.");
+            ComponentFactory.getClientType(function (data) {
+                $scope.clientdata = data.result.value;
+                //debug: console.log($scope.clientdata);
+            });
+        };
 
-    if ($location.path() === "/component/clienttype") {
-        $scope.getClientType();
-    }
-
-
-    if ($location.path() === "/component") {
-        $location.path("/component/clienttype");
-    }
-
-
-    /*
-    Functions for subscriptions
-     */
-     $scope.upload = function (files) {
-        if (files && files.length) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                Upload.upload({
-                    url: subscriptionsUrl + "/",
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    data: {file: file},
-                }).then(function (resp) {
-                    inform.add("File uploaded successfully.",
-                        {type: "success", ttl: 3000});
-                    $scope.getSubscriptions();
-                }, function (error) {
-                    if (error.data.result.error.code === -401) {
-                        $state.go('login');
-                    } else {
-                        inform.add(error.data.result.error.message,
-                                {type: "danger", ttl: 10000});
-                    }
-                });
-            }
+        if ($location.path() === "/component/clienttype") {
+            $scope.getClientType();
         }
-     };
 
-     $scope.getSubscriptions = function() {
-        SubscriptionFactory.get(function (data) {
-            $scope.subscriptions = data.result.value;
-            //debug: console.log($scope.subscriptions);
-        });
-     };
 
-     $scope.deleteSubscription = function(application) {
-         SubscriptionFactory.delete(application, function(data){
-             //debug: console.log(data);
-             inform.add("Subscription deleted successfully.",
-                 {type: "info", ttl: 3000});
-             $scope.getSubscriptions();
-         });
+        if ($location.path() === "/component") {
+            $location.path("/component/clienttype");
+        }
 
-     };
 
-    $scope.getSubscriptions();
+        /*
+        Functions for subscriptions
+         */
+        $scope.upload = function (files) {
+            if (files && files.length) {
+                for (let i = 0; i < files.length; i++) {
+                    let file = files[i];
+                    Upload.upload({
+                        url: subscriptionsUrl + "/",
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                        data: {file: file},
+                    }).then(function (resp) {
+                        inform.add("File uploaded successfully.",
+                            {type: "success", ttl: 3000});
+                        $scope.getSubscriptions();
+                    }, function (error) {
+                        if (error.data.result.error.code === -401) {
+                            $state.go('login');
+                        } else {
+                            inform.add(error.data.result.error.message,
+                                {type: "danger", ttl: 10000});
+                        }
+                    });
+                }
+            }
+        };
 
-    // listen to the reload broadcast
-    $scope.$on("piReload", function () {
+        $scope.getSubscriptions = function () {
+            SubscriptionFactory.get(function (data) {
+                $scope.subscriptions = data.result.value;
+                //debug: console.log($scope.subscriptions);
+            });
+        };
+
+        $scope.deleteSubscription = function (application) {
+            SubscriptionFactory.delete(application, function (data) {
+                //debug: console.log(data);
+                inform.add("Subscription deleted successfully.",
+                    {type: "info", ttl: 3000});
+                $scope.getSubscriptions();
+            });
+
+        };
+
         $scope.getSubscriptions();
-        ComponentFactory.getClientType();
-    });
-}]);
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", function () {
+            $scope.getSubscriptions();
+            $scope.getClientType();
+        });
+    }]);
