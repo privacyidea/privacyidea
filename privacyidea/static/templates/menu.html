@@ -40,7 +40,7 @@
 
                 <li ng-class="{ 'active': $state.includes('token')}"
                     ng-show="loggedInUser.role && checkMainMenu('tokens')">
-                    <a ui-sref="token">
+                    <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         <translate>Tokens</translate>
@@ -71,7 +71,7 @@
                     </a></li>
                 <li ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')"
                     ng-class="{ 'active': $state.includes('config')}">
-                    <a ui-sref="config.system">
+                    <a ui-sref="config.system.edit">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
                         <translate>Config</translate>

@@ -37,13 +37,11 @@ angular.module('privacyideaApp.componentStates', ['ui.router', 'privacyideaApp.v
                 })
                 .state('component.clienttype', {
                     url: "/clienttype",
-                    templateUrl: auditpath + "component.clienttype.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "componentController"
+                    templateUrl: auditpath + "component.clienttype.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('component.subscriptions', {
                     url: "/subscriptions",
-                    templateUrl: auditpath + "component.subscriptions.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "componentController"
+                    templateUrl: auditpath + "component.subscriptions.html" + versioningSuffixProviderProvider.$get().$get()
                 })
             ;
         }]);

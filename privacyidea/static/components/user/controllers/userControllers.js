@@ -24,25 +24,21 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("userAddController", ['$scope', 'userUrl', '$state',
-        '$location', 'ConfigFactory',
-        'UserFactory', 'inform', 'gettextCatalog',
-        function ($scope, userUrl, $state,
-                  $location, ConfigFactory,
-                  UserFactory, inform,
-                  gettextCatalog) {
+    .controller("userAddController", ['$scope', 'userUrl', '$state', '$location', 'ConfigFactory', 'UserFactory',
+        'inform', 'gettextCatalog',
+        function ($scope, userUrl, $state, $location, ConfigFactory, UserFactory, inform, gettextCatalog) {
 
             $scope.formInit = {};
             $scope.User = {};
             $scope.editUser = true;
 
             /// Translation in dynamic user creation
-            var myString = gettextCatalog.getString("password");
+            const myString = gettextCatalog.getString("password");
 
             ConfigFactory.getEditableResolvers(function (data) {
-                var resolvers = data.result.value;
-                var resolvernames = [];
-                for (var rname in resolvers) {
+                let resolvers = data.result.value;
+                let resolvernames = [];
+                for (let rname in resolvers) {
                     resolvernames.push(rname);
                 }
                 $scope.formInit.resolvernames = resolvernames;
@@ -73,11 +69,8 @@ angular.module("privacyideaApp")
         }]);
 
 angular.module("privacyideaApp")
-    .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory',
-        'inform', 'gettextCatalog',
-        function ($scope, userUrl,
-                  UserFactory, inform,
-                  gettextCatalog) {
+    .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory', 'inform', 'gettextCatalog',
+        function ($scope, userUrl, UserFactory, inform, gettextCatalog) {
 
             // The user can fetch his own information.
             $scope.getUserDetails = function () {
@@ -110,10 +103,15 @@ angular.module("privacyideaApp")
 angular.module("privacyideaApp")
     .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl', 'tokenUrl', '$rootScope', 'TokenFactory',
         'UserFactory', 'ContainerFactory', 'AuthFactory', '$state', 'ConfigFactory', 'instanceUrl', '$location',
-        'inform', 'gettextCatalog',
+        'inform', 'gettextCatalog', '$stateParams',
         function ($scope, userUrl, realmUrl, tokenUrl, $rootScope, TokenFactory, UserFactory, ContainerFactory,
-                  AuthFactory, $state, ConfigFactory, instanceUrl, $location, inform, gettextCatalog) {
+                  AuthFactory, $state, ConfigFactory, instanceUrl, $location, inform, gettextCatalog, $stateParams) {
+            $scope.username = $stateParams.username;
+            $scope.realmname = $stateParams.realmname;
+            $scope.resolvername = $stateParams.resolvername;
+            $scope.editable = $stateParams.editable;
             $scope.tokensPerPage = 5;
+
             $scope.containersPerPage = 5;
             $scope.newToken = {"serial": "", pin: ""};
             $scope.params = {page: 1};
@@ -394,11 +392,8 @@ angular.module("privacyideaApp")
 
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
-        '$rootScope', 'ConfigFactory', 'UserFactory',
-        'gettextCatalog', 'AuthFactory',
-        function ($scope, $location, userUrl,
-                  realmUrl, $rootScope, ConfigFactory,
-                  UserFactory, gettextCatalog,
+        '$rootScope', 'ConfigFactory', 'UserFactory', 'gettextCatalog', 'AuthFactory',
+        function ($scope, $location, userUrl, realmUrl, $rootScope, ConfigFactory, UserFactory, gettextCatalog,
                   AuthFactory) {
 
             $scope.usersPerPage = $scope.user_page_size;
@@ -413,7 +408,7 @@ angular.module("privacyideaApp")
             // scroll to the top of the page
             document.body.scrollTop = document.documentElement.scrollTop = 0;
             // go to the list view by default
-            if ($location.path() == "/user") {
+            if ($location.path() === "/user") {
                 $location.path("/user/list");
             }
 

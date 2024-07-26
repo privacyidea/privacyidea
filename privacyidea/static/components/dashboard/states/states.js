@@ -30,6 +30,7 @@ angular.module('privacyideaApp.dashboardStates', ['ui.router', 'privacyideaApp.v
             $stateProvider
                 .state('dashboard', {
                     url: "/dashboard",
-                    templateUrl: dashboardpath + "dashboard.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: dashboardpath + "dashboard.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "dashboardController"
                 });
         }]);
