@@ -26,6 +26,7 @@ It depends on the database model models.py and on the machineresolver
 lib/machineresolver.py, so this can be tested standalone without realms,
 tokens and webservice!
 """
+from .error import ResourceNotFoundError, ParameterError
 from .machineresolver import get_resolver_list, get_resolver_object
 from privacyidea.models import Token
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
@@ -38,9 +39,11 @@ from sqlalchemy import and_
 import logging
 import re
 
+from .token import token_exist
+
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.applications.base import get_auth_item
+from privacyidea.lib.applications.base import get_auth_item, get_machine_application_class_dict
 
 ANY_MACHINE = "any machine"
 NO_RESOLVER = "no resolver"
@@ -162,6 +165,16 @@ def attach_token(serial, application, hostname=None, machine_id=None,
     :param options: additional options
     :return: the new MachineToken Object
     """
+    # Check for valid serial
+    if not token_exist(serial):
+        raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
+
+    # Check for valid application
+    valid_applications = get_machine_application_class_dict().keys()
+    if application not in valid_applications:
+        raise ParameterError(
+            f"Application {application} is not supported. Valid applications are {valid_applications}.")
+
     if hostname or machine_id or resolver_name:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)

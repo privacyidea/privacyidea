@@ -17,6 +17,7 @@ Version 3.10dev4
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages
   * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
+  * When attaching a token to a machine, validate the serial and the application (#4019)
   * UI: Removed duplicated controller calls resulting in duplicated API calls (#3421)
 
 
