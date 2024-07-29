@@ -222,6 +222,7 @@ def set_realm(realm, resolvers=None):
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     :rtype: tuple
+    .. versionchanged:: 3.10 accept a node in the resolver configuration
     """
     if resolvers is None:
         resolvers = []

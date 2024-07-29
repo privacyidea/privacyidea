@@ -43,7 +43,7 @@ from flask import Blueprint, request, current_app, g
 from .lib.utils import (getParam,
                         required,
                         send_result,
-                        get_prefix_key_from_param)
+                        get_priority_from_param)
 from ..lib.log import log_with
 from ..lib.realm import (set_default_realm,
                          get_default_realm,
@@ -87,8 +87,6 @@ def set_realm_api(realm=None):
         names or a list object
     :<json integer priority: Additional priority parameters ``priority.<resolvername>``
         to define the priority of the resolvers within this realm
-    :<json string node: Additional node parameters ``node.<resolvername>`` with the
-        node UUID on which this resolver should be used
     :>json bool status: Status of the request
     :>json value: object with a list of added and failed resolvers
     :reqheader PI-Authorization: The authorization token
@@ -108,7 +106,6 @@ def set_realm_api(realm=None):
        "resolvers": "reso1_with_realm, reso2_with_realm"
        "priority.reso1_with_realm": 1
        "priority.reso2_with_realm": 2
-       "node.reso1_with_realm": "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
 
     **Example response**:
 
@@ -132,16 +129,15 @@ def set_realm_api(realm=None):
     """
     param = request.all_data
     resolvers = getParam(param, "resolvers", required)
-    priority = get_prefix_key_from_param(param, "priority")
-    nodes = get_prefix_key_from_param(param, "node")
+    priority = get_priority_from_param(param)
 
     if isinstance(resolvers, list):
         resolver_list = resolvers
     else:
         resolver_list = resolvers.split(',')
     resolvers = [{'name': res,
-                  'priority': priority.get(res, None),
-                  "node": nodes.get(res, "")} for res in resolver_list]
+                  'priority': priority.get(res, None)
+                  } for res in resolver_list]
     (added, failed) = set_realm(realm, resolvers=resolvers)
     g.audit_object.log({'success': not failed,
                         'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
@@ -196,6 +192,8 @@ def get_realms_api():
           },
           "version": "privacyIDEA unknown"
         }
+
+    .. versionchanged:: 3.10 The response contains the node and priority of the resolver
     """
     all_realms = get_realms()
     g.audit_object.log({"success": True})
@@ -507,6 +505,8 @@ def set_realm_node_api(realm, nodeid):
           }
           "version": "privacyIDEA unknown"
        }
+
+    .. versionadded:: 3.10 Node specific realm configuration
     """
     if not check_node_uuid_exists(nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
@@ -525,7 +525,7 @@ def set_realm_node_api(realm, nodeid):
 
     (added, failed) = set_realm(realm, resolvers=resolvers)
     g.audit_object.log({'success': not failed,
-                        'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
-                                                                         resolvers)})
+                        'info': "realm: {0!r}, resolvers: {1!r}".format(realm,
+                                                                        resolvers)})
     return send_result({"added": added,
                         "failed": failed})

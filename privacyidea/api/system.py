@@ -480,6 +480,7 @@ def list_nodes():
           },
           "version": "privacyIDEA unknown"
         }
+    .. versionadded:: 3.10 Return node information with names and UUIDs
     """
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})
