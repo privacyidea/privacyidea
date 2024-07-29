@@ -1249,12 +1249,12 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                 # Did not find a NodeName entry, adding a new one only if node_name is set
                 if node_name:
                     self.node_uuid = NodeName(node_uuid, node_name).save().id
+                else:
+                    log.warning(f"No NodeName entry found for UUID {node_uuid}")
 
         elif node_name:
-            # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)
-                                               .order_by(desc(NodeName.lastseen))
-                                               .first()).id
+            # Get the UUID for the corresponding node name
+            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)).id
 
 
 class TokenOwner(MethodsMixin, db.Model):

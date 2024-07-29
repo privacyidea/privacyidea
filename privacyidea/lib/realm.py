@@ -139,16 +139,20 @@ def set_default_realm(default_realm=None):
     :return: db ID of the realm set as default
     :rtype: int
     """
+    res = 0
     r = Realm.query.filter_by(default=True).first()
     if r:
         # delete the old entry
         r.default = False
+        r.save()
+        res = r.id
     if default_realm:
         # set the new realm as default realm
         r = fetch_one_resource(Realm, name=default_realm)
         r.default = True
-    r.save()
-    return r.id
+        r.save()
+        res = r.id
+    return res
 
 
 @log_with(log)

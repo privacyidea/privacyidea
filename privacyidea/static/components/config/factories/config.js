@@ -185,7 +185,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
             ).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },
         getNodes: function(callback) {
-            $http.get(periodicTaskUrl + "/nodes/", {
+            $http.get(systemUrl + "/nodes", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },
@@ -234,7 +234,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
         },
         getPINodes: function (callback) {
             // Return the definitions for policy conditions
-            $http.get(policyUrl + "/defs/pinodes", {
+            $http.get(systemUrl + "/nodes", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },

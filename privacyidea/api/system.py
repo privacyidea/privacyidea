@@ -55,14 +55,14 @@ from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
-                          get_from_config)
+                          get_from_config,
+                          get_privacyidea_nodes)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.error import ParameterError
 
 from .auth import admin_required
 from flask import (g, current_app, render_template)
 import logging
-import json
 import datetime
 import re
 import socket
@@ -116,8 +116,8 @@ def get_config_documentation():
 def get_gpg_keys():
     """
     Returns the GPG keys in the config directory specified by PI_GNUPG_HOME.
-    
-    :return: A json list of the public GPG keys 
+
+    :return: A json list of the public GPG keys
     """
     GPG = GPGImport(current_app.config)
     keys = GPG.get_publickeys()
@@ -136,9 +136,67 @@ def get_config(key=None):
     user, so that the normal user gets necessary information about the system
     config
 
-    :param key: The key to return.
-    :return: A json response or a single value, when queried with a key.
-    :rtype: json or scalar
+    :param key: (optional) The key to return
+    :>json bool status: Status of the request
+    :>json value: JSON object with a key-value pair of the config entries or
+    :>json value: The value of the specified config entry
+    :reqheader PI-Authorization: The authorization token
+
+    **Example request 1**:
+
+    .. sourcecode:: http
+
+       GET /system/ HTTP/1.1
+       Host: example.com
+       Content-Type: application/json
+
+    **Example response 1**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": {
+              "AutoResync": "False",
+              "splitAtSign": "True",
+              "PrependPin": "True",
+              "DefaultCountWindow": "10"
+            }
+          },
+          "version": "privacyIDEA unknown"
+        }
+
+    **Example request 2**:
+    Querying a specific system-configuration value
+
+    .. sourcecode:: http
+
+       GET /system/totp.hashlib HTTP/1.1
+       Host: example.com
+       Content-Type: application/json
+
+    **Example response 2**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": "sha1"
+          },
+          "version": "privacyIDEA unknown"
+        }
     """
     if not key:
         result = get_from_config(role=g.logged_in_user.get("role"))
@@ -157,48 +215,53 @@ def set_config():
     """
     set a configuration key or a set of configuration entries
 
-    parameter are generic keyname=value pairs.
+    parameter are generic ``keyname=value`` pairs.
 
     **remark** In case of key-value pairs the type information could be
         provided by an additional parameter with same keyname with the
         postfix ".type". Value could then be 'password' to trigger the
         storing of the value in an encrypted form
 
-    :jsonparam key: configuration entry name
-    :jsonparam value: configuration value
-    :jsonparam type: type of the value: int or string/text or password.
-             password will trigger to store the encrypted value
-    :jsonparam description: additional information for this config entry
+    :<json key-value-pairs: a list of ``keyname=value`` pairs
+    :<json <keyname>.type: type of the value: int or string/text or password.
+        password will trigger to store the encrypted value
+    :<json <keyname>.desc: additional information for this config entry
+    :>json bool status: Status of the request
+    :>json value: JSON object with a list of key-value pairs of the requested
+        config entry changes with the value of ``update`` or ``insert``
+    :reqheader PI-Authorization: The authorization token
 
-    **or**
-
-    :jsonparam key-value pairs: pair of &keyname=value pairs
-    :return: a json result with a boolean "result": true
-
-    **Example request 1**:
+    **Example request**:
 
     .. sourcecode:: http
 
-       POST /system/setConfig
-       key=splitAtSign
-       value=true
+        POST /system/setConfig HTTP/1.1
+        Host: example.com
+        Content-Type: application/json
 
-       Host: example.com
-       Accept: application/json
+        "splitAtSign": true
+        "totp.hashlib": "sha1"
+        "totp.hashlib.desc": "The hash algorithm used for TOTP tokens"
 
-    **Example request 2**:
+    **Example response**:
 
     .. sourcecode:: http
 
-       POST /system/setConfig
-       BINDDN=myName
-       BINDPW=mySecretPassword
-       BINDPW.type=password
+        HTTP/1.1 200 OK
+        Content-Type: application/json
 
-       Host: example.com
-       Accept: application/json
-
-
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": {
+              "splitAtSign": "update",
+              "totp.hashlib": "update"
+            }
+          },
+          "version": "privacyIDEA unknown"
+        }
     """
     param = request.all_data
     result = {}
@@ -241,7 +304,7 @@ def set_default():
             "DefaultCountWindow",
             "DefaultOtpLen",
             "DefaultResetFailCount"]
-    
+
     description = "parameters are: {0!s}".format(", ".join(keys))
     param = getLowerParams(request.all_data)
     result = {}
@@ -258,7 +321,7 @@ def set_default():
                     "known parameter. %s"
                     % description)
         raise ParameterError("Usage: {0!s}".format(description), id=77)
-    
+
     return send_result(result)
 
 
@@ -270,7 +333,7 @@ def delete_config(key=None):
     """
     delete a configuration key
 
-    :jsonparam key: configuration key name
+    :param string key: configuration key name
     :returns: a json result with the deleted value
 
     """
@@ -382,3 +445,13 @@ def list_ca_connectors():
     ca_list = get_caconnector_list(return_config=False)
     g.audit_object.log({"success": True})
     return send_result(ca_list)
+
+
+@system_blueprint.route("/nodes", methods=['GET'])
+def list_nodes():
+    """
+    Return a list of nodes, that are known to the system.
+    """
+    nodes = get_privacyidea_nodes()
+    g.audit_object.log({"success": True})
+    return send_result(nodes)

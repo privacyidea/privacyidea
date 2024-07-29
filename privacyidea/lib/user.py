@@ -58,6 +58,7 @@ from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
                     get_realm, get_realm_id)
 from .config import get_from_config, SYSCONF
+from .framework import get_app_config_value
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 from privacyidea.models import CustomUserAttribute, db
 
@@ -202,15 +203,18 @@ class User(object):
         resolver_tuples = []
         realm_config = get_realms(self.realm)
         resolvers_in_realm = realm_config.get(self.realm, {})\
-                                         .get("resolver", {})
+                                         .get("resolver", [])
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
-                                    resolver.get("priority") or 1000))
+                                    resolver.get("priority") or 1000,
+                                    resolver.get("node")))
 
         # sort the resolvers by the 2nd entry in the tuple, the priority
         resolvers = sorted(resolver_tuples, key=lambda res: res[1])
-        resolvers = [r[0] for r in resolvers]
+        # if the resolver contains a node setting, we only add it if it is on the correct node
+        local_node_uuid = get_app_config_value("NODE_UUID")
+        resolvers = [r[0] for r in resolvers if not r[2] or r[2] == local_node_uuid]
         return resolvers
 
     def _get_resolvers(self, all_resolvers=False):

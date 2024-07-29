@@ -327,6 +327,15 @@ def get_priority_from_param(param):
     return priority
 
 
+def get_prefix_key_from_param(param, prefix):
+    """Return all keys with a given prefix."""
+    keys = {}
+    for k, v in param.items():
+        if k.startswith(prefix + "."):
+            keys[k[len(prefix + "."):]] = v
+    return keys
+
+
 def verify_auth_token(auth_token, required_role=None):
     """
     Check if a given auth token is valid.

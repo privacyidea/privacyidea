@@ -21,12 +21,11 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#    
+#
 """
 contains Errors and Exceptions
 """
 
-from privacyidea.lib import lazy_gettext
 import logging
 
 log = logging.getLogger(__name__)

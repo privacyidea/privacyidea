@@ -94,7 +94,8 @@ myApp.controller("periodicTaskDetailController", ["$scope", "$stateParams",
             $scope.availableNodes = [];
             angular.forEach(response.result.value, function (node) {
                 $scope.availableNodes.push({
-                    "name": node,
+                    "name": node.name,
+                    "uuid": node.uuid,
                     "ticked": false,
                 });
             });

@@ -1032,19 +1032,32 @@ def get_privacyidea_node(default='localnode'):
     return node_name
 
 
-def get_privacyidea_nodes():
+def get_privacyidea_nodes() -> list:
     """
-    This returns the list of the nodes, including the own local node name
+    This returns the list of the node names known to privacyIDEA.
+    It includes the own local node name.
 
-    :return: list of nodes
+    :return: list of node names as strings
     :rtype: list
     """
     node_names = []
     nodes = db.session.query(NodeName).all()
     for node in nodes:
-        node_names.append(node.name)
+        node_names.append({
+            "uuid": node.id,
+            "name": node.name})
 
     return node_names
+
+
+def check_node_uuid_exists(node_uuid) -> bool:
+    """
+    Check if a node with the given UUID exists in the database.
+
+    :param node_uuid: the UUID of the node
+    :return: True if the node exists in the database, False otherwise
+    """
+    return db.session.query(NodeName).filter_by(id=node_uuid).first() is not None
 
 
 @register_export()
