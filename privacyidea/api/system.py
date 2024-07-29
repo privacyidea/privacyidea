@@ -451,6 +451,35 @@ def list_ca_connectors():
 def list_nodes():
     """
     Return a list of nodes, that are known to the system.
+
+    :>json list nodes: A list of JSON objects with the node name and uuid
+    :reqheader PI-Authorization: The authorization token
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": [
+                {
+                    "name": "node1",
+                    "uuid": "12345678-1234-1234-1234-1234567890ab"
+                },
+                {
+                    "name": "node2",
+                    "uuid": "12345678-4321-1234-1234-1234567890ac"
+                }
+            ]
+          },
+          "version": "privacyIDEA unknown"
+        }
     """
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})

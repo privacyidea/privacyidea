@@ -432,7 +432,7 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(added), 4)
 
         root = User("root", "sort_node_realm")
-        r = root.get_ordererd_resolvers()
+        r = root.get_ordered_resolvers()
         self.assertEqual(r[0], "reso4")
         self.assertEqual(r[1], "resolver2")
         self.assertEqual(r[2], "reso3")

@@ -552,7 +552,7 @@ def get_policy_defs(scope=None):
             "comparators": comparator_descriptions,
         }
     elif scope == 'pinodes':
-        result = get_privacyidea_nodes()
+        result = get_privacyidea_nodes(names_only=True)
     else:
         static_pol = get_static_policy_definitions()
         dynamic_pol = get_dynamic_policy_definitions()

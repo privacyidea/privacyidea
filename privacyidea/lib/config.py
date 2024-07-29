@@ -1019,7 +1019,7 @@ def return_saml_attributes_on_fail():
     return r
 
 
-def get_privacyidea_node(default='localnode'):
+def get_privacyidea_node(default='localnode') -> str:
     """
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
@@ -1032,20 +1032,27 @@ def get_privacyidea_node(default='localnode'):
     return node_name
 
 
-def get_privacyidea_nodes() -> list:
+def get_privacyidea_nodes(names_only: bool = False) -> list:
     """
     This returns the list of the node names known to privacyIDEA.
     It includes the own local node name.
 
+    :param names_only: if True, only the node names are returned, otherwise the
+      names with corresponding uuids are returned
     :return: list of node names as strings
     :rtype: list
     """
     node_names = []
     nodes = db.session.query(NodeName).all()
-    for node in nodes:
-        node_names.append({
-            "uuid": node.id,
-            "name": node.name})
+
+    if names_only:
+        for node in nodes:
+            node_names.append(node.name)
+    else:
+        for node in nodes:
+            node_names.append({
+                "uuid": node.id,
+                "name": node.name})
 
     return node_names
 

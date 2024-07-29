@@ -940,7 +940,10 @@ class APIConfigTestCase(MyApiTestCase):
             # We probably have no keys in here
             # But value returns a dictionary with the KeyID and "armor" and
             # "fingerprint"
-            pass
+            self.assertIn("2F25BAF8645350BB", value, value)
+            key_obj = value.get("2F25BAF8645350BB")
+            self.assertIn("-----BEGIN PGP PUBLIC KEY BLOCK-----", key_obj.get("armor"), key_obj)
+            self.assertEqual("6630FE8C6866433020D39FA02F25BAF8645350BB", key_obj.get("fingerprint"), value)
 
     @ldap3mock.activate
     def test_20_multiple_test_resolvers(self):

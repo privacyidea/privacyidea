@@ -72,7 +72,7 @@ def list_nodes():
     """
     Return a list of available nodes
     """
-    nodes = get_privacyidea_nodes()
+    nodes = get_privacyidea_nodes(names_only=True)
     g.audit_object.log({"success": True})
     return send_result(nodes)
 
