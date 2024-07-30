@@ -2,7 +2,7 @@
 #  contact:  corny@cornelinux.de
 #
 #  2024-06-25 Raphael Topel <raphael.topel@esh.essen.de>
-#             Change AUTHTYPE.SASL_KERBEROS behaviour if upn ist present in userinfo values for multidomain support
+#             Change AUTHTYPE.SASL_KERBEROS behaviour if upn is present in userinfo values for multidomain support
 #  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add censored password functionality
 #  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
