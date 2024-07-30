@@ -288,27 +288,26 @@ class IdResolver (UserIdResolver):
         :return: True if the password matches the stored procedure result, False otherwise
         :rtype: bool
         """
-        
         params = {}
         outputkey = None
         fieldname = None
         for key in self.password_map.keys():
             value = self.password_map.get(key)
             if key[0] == '@':
-                #skip keys that begin with '@' character and store the key/value pair
+                # skip keys that begin with '@' character and store the key/value pair
                 (outputkey, fieldname) = (key[1:], value)
                 continue
-                
+
             if value == 'password':
                 # use the password passed into the function
                 params[key] = password
-            elif userinfo.get(value) != None:
+            elif userinfo.get(value) is not None:
                 params[key] = userinfo.get(value)
             else:
                 params[key] = value
         res = self.session.execute(text(self.password_stored_procedure), params)
 
-        #extract the returned result from the results by matching the output key
+        # extract the returned result from the results by matching the output key
         resultkey = -1
         for i, column in enumerate(res.keys()):
             if column == outputkey:
@@ -316,7 +315,7 @@ class IdResolver (UserIdResolver):
                 break
 
         res = res.fetchall()
-        if outputkey != None and len(res) == 1 and resultkey != -1:
+        if outputkey is not None and len(res) == 1 and resultkey != -1:
             res = str(res[0][resultkey]) == str(userinfo.get(fieldname))
         return res
 
