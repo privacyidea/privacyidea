@@ -257,7 +257,7 @@ class IdResolver (UserIdResolver):
             try:
                 res = self._execute_password_stored_procedure(password, userinfo)
             except Exception as exx:
-                # if the hash could not be identified / verified, just return False
+                # if the stored procedure fails, just return false
                 pass
         else:
             database_pw = userinfo.get("password", "XXXXXXX")
@@ -281,7 +281,7 @@ class IdResolver (UserIdResolver):
         """
         This function will execute the configured stored procedure to check
         a users password and determine if the results are successful by comparing
-        the ouput parameter from the stored procedure.
+        the otuput parameter from the stored procedure.
 
         :param password: The password to check with the stored procedure
         :type password: string
