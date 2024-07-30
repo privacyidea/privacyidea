@@ -1197,6 +1197,7 @@ myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
                 $scope.params = resolver.data;
                 $scope.params.type = 'sqlresolver';
                 $scope.params.Editable = isTrue($scope.params.Editable);
+                $scope.params.UsePasswordStoredProcedure = isTrue($scope.params.UsePasswordStoredProcedure);
             });
         }
 

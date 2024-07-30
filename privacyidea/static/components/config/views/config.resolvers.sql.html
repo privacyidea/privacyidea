@@ -173,9 +173,43 @@
             </div>
 
             <div class="form-group">
-                <label for="where"
-                       class="col-sm-3 control-label"
-                        translate>Where statement</label>
+                <label for="usepasswordstoredprocedure" class="col-sm-3 control-label" translate>
+                    Use Stored Procedure to check Password
+                </label>
+                <div class="col-sm-9">
+                    <input name="usepasswordstoredprocedure" id="usepasswordstoredprocedure"
+                        ng-model="params.UsePasswordStoredProcedure" type="checkbox" />
+                    <p class="help-block" translate>
+                        Use a Stored Procedure to check the Password.
+                    </p>
+                </div>
+            </div>
+            <div ng-show="params.UsePasswordStoredProcedure">
+                <div class="form-group">
+                    <label for="passwordstoredprocedure" class="col-sm-3 control-label" translate>
+                        Stored Procedure
+                    </label>
+                    <div class="col-sm-9">
+                        <input id="passwordstoredprocedure" class="form-control"
+                            ng-model="params.PasswordStoredProcedure" required
+                            placeholder="DECLARE @OUT int; EXEC PasswordStoredProcedure @username = :username, @password = :password, @out OUTPUT; SELECT @out" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="passwordstoredproceduremapping" class="col-sm-3 control-label" translate>
+                        Stored Procedure Map
+                    </label>
+                    <div class="col-sm-9">
+                        <input id="passwordstoredproceduremapping" class="form-control"
+                            ng-model="params.PasswordStoredProcedureMap" required
+                            placeholder='{"username": "username", "password": "password"}' />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="where" class="col-sm-3 control-label" translate>Where statement</label>
 
                 <div class="col-sm-9">
                     <input id="where" class="form-control"

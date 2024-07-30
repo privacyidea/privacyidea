@@ -36,7 +36,7 @@ import re
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
-                        create_engine, select, insert, delete)
+                        create_engine, select, insert, delete, text)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -204,6 +204,9 @@ class IdResolver (UserIdResolver):
         self.engine = None
         self._editable = False
         self.password_hash_type = None
+        self.use_password_stored_procedure = False
+        self.password_stored_procedure = None
+        self.password_map = {}
         return
 
     def getSearchFields(self):
@@ -250,22 +253,71 @@ class IdResolver (UserIdResolver):
         res = False
         userinfo = self.getUserInfo(uid)
 
-        database_pw = userinfo.get("password", "XXXXXXX")
+        if self.use_password_stored_procedure:
+            try:
+                res = self._execute_password_stored_procedure(password, userinfo)
+            except Exception as exx:
+                # if the hash could not be identified / verified, just return False
+                pass
+        else:
+            database_pw = userinfo.get("password", "XXXXXXX")
 
-        # remove owncloud hash format identifier (currently only version 1)
-        database_pw = re.sub(r'^1\|', '', database_pw)
+            # remove owncloud hash format identifier (currently only version 1)
+            database_pw = re.sub(r'^1\|', '', database_pw)
 
-        # translate lower case hash identifier to uppercase
-        database_pw = re.sub(r'^{([a-z0-9]+)}',
-                             lambda match: '{{{}}}'.format(match.group(1).upper()),
-                             database_pw)
+            # translate lower case hash identifier to uppercase
+            database_pw = re.sub(r'^{([a-z0-9]+)}',
+                                lambda match: '{{{}}}'.format(match.group(1).upper()),
+                                database_pw)
+            try:
+                res = pw_ctx.verify(password, database_pw)
+            except ValueError as _e:
+                # if the hash could not be identified / verified, just return False
+                pass
 
-        try:
-            res = pw_ctx.verify(password, database_pw)
-        except ValueError as _e:
-            # if the hash could not be identified / verified, just return False
-            pass
+        return res
 
+    def _execute_password_stored_procedure(self, password, userinfo):
+        """
+        This function will execute the configured stored procedure to check
+        a users password and determine if the results are successful by comparing
+        the ouput parameter from the stored procedure.
+
+        :param password: The password to check with the stored procedure
+        :type password: string
+        :return: True if the password matches the stored procedure result, False otherwise
+        :rtype: bool
+        """
+        
+        params = {}
+        outputkey = None
+        fieldname = None
+        for key in self.password_map.keys():
+            value = self.password_map.get(key)
+            if key[0] == '@':
+                #skip keys that begin with '@' character and store the key/value pair
+                (outputkey, fieldname) = (key[1:], value)
+                continue
+                
+            if value == 'password':
+                # use the password passed into the function
+                params[key] = password
+            elif userinfo.get(value) != None:
+                params[key] = userinfo.get(value)
+            else:
+                params[key] = value
+        res = self.session.execute(text(self.password_stored_procedure), params)
+
+        #extract the returned result from the results by matching the output key
+        resultkey = -1
+        for i, column in enumerate(res.keys()):
+            if column == outputkey:
+                resultkey = i
+                break
+
+        res = res.fetchall()
+        if outputkey != None and len(res) == 1 and resultkey != -1:
+            res = str(res[0][resultkey]) == str(userinfo.get(fieldname))
         return res
 
     def getUserInfo(self, userId):
@@ -459,6 +511,10 @@ class IdResolver (UserIdResolver):
         self.table = config.get('Table', "")
         self._editable = config.get("Editable", False)
         self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
+        self.use_password_stored_procedure = config.get("UsePasswordStoredProcedure", False)
+        self.password_stored_procedure = config.get("PasswordStoredProcedure", "")
+        passwordmap = config.get("PasswordStoredProcedureMap", "")
+        self.password_map = yaml.safe_load(passwordmap)
         usermap = config.get('Map', {})
         self.map = yaml.safe_load(usermap)
         self.reverse_map = {v: k for k, v in self.map.items()}
@@ -538,7 +594,10 @@ class IdResolver (UserIdResolver):
                                 'poolSize': 'int',
                                 'poolRecycle': 'int',
                                 'Encoding': 'string',
-                                'conParams': 'string'}
+                                'conParams': 'string',
+                                'UsePasswordStoredProcedure': 'int',
+                                'PasswordStoredProcedure': 'string',
+                                'PasswordStoredProcedureMap': 'string'}
         return {typ: descriptor}
 
     @staticmethod
