@@ -47,16 +47,16 @@
                     <tr ng-repeat="(stateType, val) in stateTypes"
                         ng-show="displayState[stateType]">
                         <td>
-                            <input type="checkbox"
+                            <input type="checkbox" id="state_type_cb"
                                    ng-model="containerStates[stateType]"
                                    ng-disabled="!checkRight('container_state')">
-                            <translate> {{ stateType }} </translate>
+                            <label for="state_type_cb">{{ stateType }}</label>
                         </td>
                         <td ng-repeat="exclusiveState in stateTypes[stateType]">
-                            <input type="checkbox"
+                            <input type="checkbox" id="state_exclusive_cb"
                                    ng-model="containerStates[exclusiveState]"
                                    ng-disabled="!checkRight('container_state')">
-                            <translate> {{ exclusiveState }} </translate>
+                            <label for="state_exclusive_cb">{{ exclusiveState }}</label>
                         </td>
                     </tr>
                 </table>
@@ -274,14 +274,14 @@
                     Disable All
                 </span>
             </th>
-            <th translate>window</th>
-            <th translate>description</th>
-            <th translate>failcounter</th>
-            <th translate>maxfail</th>
-            <th translate>otplen</th>
+            <th translate>Window</th>
+            <th translate>Description</th>
+            <th translate>Failcounter</th>
+            <th translate>Maxfail</th>
+            <th translate>Otplen</th>
             <th ng-show="loggedInUser.role=='admin'" translate> User</th>
             <th ng-show="loggedInUser.role=='admin'" translate> Realm</th>
-            <th ng-show="loggedInUser.role=='admin'" translate> Token Realms</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Token realms</th>
             <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">
@@ -298,7 +298,7 @@
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete All</span>
                     </button>
-                    <span ng-show="showDialogAll" translate> Delete all tokens? <br></span>
+                    <span ng-show="showDialogAll" translate> Delete all tokens?</span><br>
                     <button class="btn btn-danger" ng-click="deleteAllTokens(getContainer)"
                             ng-show="showDialogAll">
                         <span class="glyphicon glyphicon-trash"></span>

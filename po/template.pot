@@ -988,7 +988,7 @@ msgid "Delete User"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:301
-msgid "Delete all tokens? <br>"
+msgid "Delete all tokens?"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:399
@@ -1019,6 +1019,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:26
 #: privacyidea/static/components/token/views/token.containercreate.html:19
+#: privacyidea/static/components/token/views/token.containerdetails.html:278
 #: privacyidea/static/components/token/views/token.containerdetails.html:75
 #: privacyidea/static/components/token/views/token.containerdetails.html:86
 #: privacyidea/static/components/token/views/token.containerlist.html:47
@@ -1421,6 +1422,7 @@ msgstr ""
 msgid "Fail counter"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.containerdetails.html:279
 #: privacyidea/static/components/user/views/user.details.html:161
 msgid "Failcounter"
 msgstr ""
@@ -2043,6 +2045,7 @@ msgid ""
 "                newly enrolled tokens"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.containerdetails.html:280
 #: privacyidea/static/components/token/views/token.details.html:86
 #: privacyidea/static/components/user/views/user.details.html:162
 msgid "Maxfail"
@@ -2328,6 +2331,7 @@ msgstr ""
 msgid "Other Error"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.containerdetails.html:281
 #: privacyidea/static/components/user/views/user.details.html:163
 msgid "Otplen"
 msgstr ""
@@ -3303,12 +3307,9 @@ msgstr ""
 msgid "Support"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containercreate.html:12
-msgid "Supported Token Types: {{ form.token_types }}"
-msgstr ""
-
-#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:21
-msgid "Supported Token Types: {{ newContainer.token_types }}"
+#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:22
+#: privacyidea/static/components/token/views/token.containercreate.html:13
+msgid "Supported Token Types"
 msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:28
@@ -4253,10 +4254,6 @@ msgstr ""
 msgid "Token Applications"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:284
-msgid "Token Realms"
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
 msgstr ""
@@ -4299,6 +4296,7 @@ msgstr ""
 msgid "Token of {{username}} without a container"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.containerdetails.html:284
 #: privacyidea/static/components/token/views/token.containerdetails.html:522
 #: privacyidea/static/components/token/views/token.list.html:76
 msgid "Token realms"
@@ -4625,6 +4623,7 @@ msgstr ""
 msgid "Where statement"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.containerdetails.html:277
 #: privacyidea/static/components/user/views/user.details.html:159
 msgid "Window"
 msgstr ""
@@ -4840,7 +4839,6 @@ msgstr ""
 msgid "client"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:278
 #: privacyidea/static/components/token/views/token.containerdetails.html:491
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.list.html:41
@@ -4875,7 +4873,6 @@ msgstr ""
 msgid "enter some OTP value"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:279
 #: privacyidea/static/components/token/views/token.containerdetails.html:502
 #: privacyidea/static/components/token/views/token.list.html:57
 msgid "failcounter"
@@ -4925,10 +4922,6 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:280
-msgid "maxfail"
-msgstr ""
-
 #: privacyidea/static/components/audit/views/audit.log.html:149
 msgid "missing_line"
 msgstr ""
@@ -4947,10 +4940,6 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:19
 msgid "offline: Use HOTP token for offline login to notebooks."
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.containerdetails.html:281
-msgid "otplen"
 msgstr ""
 
 #. Translation in dynamic user creation
@@ -5168,18 +5157,6 @@ msgstr ""
 msgid "username"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:277
-msgid "window"
-msgstr ""
-
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.containerdetails.html:59
-msgid "{{ exclusiveState }}"
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.containerdetails.html:53
-msgid "{{ stateType }}"
 msgstr ""
