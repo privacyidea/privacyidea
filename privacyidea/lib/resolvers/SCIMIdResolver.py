@@ -292,7 +292,7 @@ class IdResolver (UserIdResolver):
         return j_content
 
     @staticmethod
-    def get_access_token(server=None, client=None, secret=None):
+    def get_access_token(server=None, client='', secret=''):
 
         auth = to_unicode(base64.b64encode(to_bytes(client + ':' + secret)))
 
