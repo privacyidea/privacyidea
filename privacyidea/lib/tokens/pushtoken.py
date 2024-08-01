@@ -43,7 +43,8 @@ from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, Match,
+                                    get_action_values_from_options)
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
 
@@ -433,34 +434,35 @@ class PushTokenClass(TokenClass):
                                'value': ["0", "1"]
                            },
                            PUSH_ACTION.REQUIRE_PRESENCE: {
-                               'type': 'str',
+                               'type': 'bool',
                                'desc': _('Require the user to confirm the login with a presence check.'),
-                               'group': 'PUSH',
-                               'value': ["0", "1"]
+                               'group': 'PUSH'
                            },
                            PUSH_ACTION.PRESENCE_OPTIONS: {
-                                'type': 'str',
-                                'desc': _('The options that can be presented to the user to confirm the login. '
-                                             'ALPHABETIC: A-Z, NUMERIC: 01-99, CUSTOM: user defined.'
-                                             f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
-                                'group': 'PUSH',
-                                'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
+                               'type': 'str',
+                               'desc': _('The options that can be presented to the user to confirm the login. '
+                                         '<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, '
+                                         '<code>CUSTOM</code>: user defined.'
+                                         f'Does only apply if <em>{PUSH_ACTION.REQUIRE_PRESENCE}</em> is set.'),
+                               'group': 'PUSH',
+                               'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
                            },
                            PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
-                                'type': 'str',
-                                'desc': _('Custom options that can be presented to the user to confirm the login. '
-                                          'The string must contain at least 2 options and should be unique. '
-                                          'The options are separated by ":". '
-                                          'e.g.: "01:02:03:1A:1B:1C" without the " ". '
-                                             f'Does only apply if "{PUSH_ACTION.PRESENCE_OPTIONS}" is set to "CUSTOM".'),
-                                'group': 'PUSH'
+                               'type': 'str',
+                               'desc': _('Custom options that can be presented to the user to confirm the login. '
+                                         'The string must contain at least 2 options and should be unique. '
+                                         'The options are separated by <code>:</code>. '
+                                         'e.g.: <code>01:02:03:1A:1B:1C</code>. '
+                                         f'Does only apply if <em>{PUSH_ACTION.PRESENCE_OPTIONS}</em> is set '
+                                         f'to <code>CUSTOM</code>.'),
+                               'group': 'PUSH'
                            },
                            PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
-                           'type': 'str',
-                            'desc': _('The number of options the user is presented with to confirm the login. '
-                                         f'Does not apply if "{PUSH_ACTION.REQUIRE_PRESENCE}" is "0" or not set.'),
-                            'group': 'PUSH',
-                            'value': ALLOWED_NUMBER_OF_OPTIONS
+                               'type': 'str',
+                               'desc': _('The number of options the user is presented with to confirm the login. '
+                                         f'Does only apply if <em>{PUSH_ACTION.REQUIRE_PRESENCE}</em> is set.'),
+                               'group': 'PUSH',
+                               'value': ALLOWED_NUMBER_OF_OPTIONS
                            },
                            PUSH_ACTION.WAIT: {
                                'type': 'int',
@@ -968,10 +970,9 @@ class PushTokenClass(TokenClass):
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
         # Determine, if we require presence
-        require_presence = get_action_values_from_options(SCOPE.AUTH,
-                                                          PUSH_ACTION.REQUIRE_PRESENCE, options) or "0"
-        require_presence = getParam({"require_presence": require_presence}, "require_presence",
-                                    allowed_values=["0", "1"], default="0")
+        g = options.get("g")
+        require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
+                                      user_object=options.get("user")).any()
         data = None
         current_presence_options = None
         if is_true(require_presence):
@@ -996,7 +997,7 @@ class PushTokenClass(TokenClass):
                 # If the user has more than one token and more than one challenge is created, we need to ensure, that
                 # all challenge data is the same.
                 data = get_challenges(transaction_id=transactionid)[0].data
-                current_presence_options = data.split(",")[:-1] # The correct option is the last one so we remove it
+                current_presence_options = data.split(",")[:-1]  # The correct option is the last one, so we remove it
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -1183,7 +1184,8 @@ class PushTokenClass(TokenClass):
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        c = token_obj.create_challenge(options={"session": CHALLENGE_SESSION.ENROLLMENT})
+        c = token_obj.create_challenge(options={"g": g, "user": user_obj,
+                                                "session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
         enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
                                                        token_type=cls.get_class_type())
