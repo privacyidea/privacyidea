@@ -432,6 +432,12 @@ class PushTokenClass(TokenClass):
                                'group': "PUSH",
                                'value': ["0", "1"]
                            },
+                           PUSH_ACTION.REQUIRE_PRESENCE: {
+                               'type': 'str',
+                               'desc': _('Require the user to confirm the login with a presence check.'),
+                               'group': 'PUSH',
+                               'value': ["0", "1"]
+                           },
                            PUSH_ACTION.PRESENCE_OPTIONS: {
                                 'type': 'str',
                                 'desc': _('The options that can be presented to the user to confirm the login. '

@@ -1,3 +1,6 @@
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.config import (set_privacyidea_config)
@@ -21,7 +24,7 @@ from base64 import b32decode, b32encode
 import mock
 import responses
 from google.oauth2 import service_account
-from .test_lib_tokens_push import _create_credential_mock
+from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
 
 PWFILE = "tests/testdata/passwords"
@@ -406,3 +409,96 @@ class TtypePushAPITestCase(MyApiTestCase):
         remove_token(serial)
         # remove the policy
         delete_policy("push1")
+
+    def test_04_api_poll_declined_chal(self):
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+        set_policy("PUSH_ACTION.REGISTRATION_URL", scope=SCOPE.ENROLL,
+                   action=f"{PUSH_ACTION.REGISTRATION_URL}={REGISTRATION_URL}")
+        # create push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                                   callback=_check_firebase_params,
+                                   content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertTrue("transaction_id" in jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 0)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+
+        # Check if the challenge is sent to the smartphone
+        # So when we check later, if the challenge is still sent, we can be sure, that the
+        # challenge was not answered.
+        timestamp = datetime.utcnow().isoformat()
+        sign_string = f"{tokenobj.token.serial}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "timestamp": timestamp,
+                                                 "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            self.assertEqual(len(value), 1, value)
+
+        # Decline the challenge
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0]
+        challenge.set_session(CHALLENGE_SESSION.DECLINED)
+        challenge.save()
+
+        # If the challenge is successfully declined, the /validate/check endpoint
+        # will not send the challenge again.
+        timestamp = datetime.utcnow().isoformat()
+        sign_string = f"{tokenobj.token.serial}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "timestamp": timestamp,
+                                                 "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            self.assertEqual(len(value), 0, value)
+        remove_token(serial=serial)
