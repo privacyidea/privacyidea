@@ -804,7 +804,7 @@ class PushTokenClass(TokenClass):
             challenges = []
             challengeobject_list = get_challenges(serial=serial)
             for chal in challengeobject_list:
-                if (chal.set_session() == CHALLENGE_SESSION.DECLINED):
+                if (chal.get_session() == CHALLENGE_SESSION.DECLINED):
                     continue
                 # check if the challenge is active and not already answered
                 _cnt, answered = chal.get_otp_status()
