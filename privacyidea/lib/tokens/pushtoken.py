@@ -715,7 +715,7 @@ class PushTokenClass(TokenClass):
                                 # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
                             else:
                                 chal.set_otp_status(True)
-                            chal.save()
+                        chal.save()
                     except InvalidSignature as _e:
                         pass
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
@@ -804,6 +804,8 @@ class PushTokenClass(TokenClass):
             challenges = []
             challengeobject_list = get_challenges(serial=serial)
             for chal in challengeobject_list:
+                if (chal.set_session() == CHALLENGE_SESSION.DECLINED):
+                    continue
                 # check if the challenge is active and not already answered
                 _cnt, answered = chal.get_otp_status()
                 if not answered and chal.is_valid():
