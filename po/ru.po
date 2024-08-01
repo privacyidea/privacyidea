@@ -3,12 +3,13 @@
 # Skeeve Aleph <skifalef@gmail.com>, 2024.
 # Alex <zerk1@mail.ru>, 2024.
 # Сергей Николаевич Котенков <kotenkovsn@ya.ru>, 2024.
+# Сергей Котенков <kotenkovsn@ya.ru>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-08-01 00:19+0000\n"
-"Last-Translator: Сергей Николаевич Котенков <kotenkovsn@ya.ru>\n"
+"PO-Revision-Date: 2024-08-02 02:09+0000\n"
+"Last-Translator: Сергей Котенков <kotenkovsn@ya.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
 "Language: ru\n"
@@ -1192,17 +1193,13 @@ msgid "Delete User"
 msgstr "Удалить пользователя"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:301
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete all tokens?"
-msgstr "Удалить токен"
+msgstr "Удалить все токены?"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:399
 #: privacyidea/static/components/user/views/user.details.html:225
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete this token?"
-msgstr "Удалить токен"
+msgstr "Удалить данный токен?"
 
 #: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
