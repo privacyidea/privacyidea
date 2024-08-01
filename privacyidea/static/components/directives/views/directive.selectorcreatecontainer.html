@@ -18,10 +18,10 @@
                 ng-model="newContainer.type"
                 ng-options="type as attr.description for (type, attr) in newContainer.types">
         </select>
-        <div class="form-group" translate>
-            Supported Token Types: {{ newContainer.token_types }}
-            <br>
+        <div class="form-group">
+            <span translate>Supported Token Types</span>: {{ newContainer.token_types }}
         </div>
+        <br>
         <!-- Description -->
         <label for="description" translate>Description</label>
         <input type="text" class="form-control" id="description"
@@ -47,4 +47,3 @@
         </div>
     </div>
 </div>
-
