@@ -64,6 +64,7 @@ import string
 import datetime
 import os
 import logging
+from collections import defaultdict
 
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
@@ -74,7 +75,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
@@ -2113,6 +2114,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
+            message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
             if r_chal:
                 challenge_info = challenge_info or {}
@@ -2690,3 +2692,33 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
                 raise TokenAdminError("Token can not be assiend to the specified user!")
 
     return token
+
+
+def challenge_text_replace(message, user, token_obj):
+    serial = token_obj.token.serial if token_obj.token.serial else None
+    tokenowner = user if user else None
+    tokentype = token_obj.token.tokentype if token_obj.token.tokentype else ""
+    tags = create_tag_dict(serial=serial, tokenowner=tokenowner, tokentype=tokentype)
+
+    if tokentype == "sms":
+        if is_true(token_obj.get_tokeninfo("dynamic_phone")):
+            phone = token_obj.user.get_user_phone("mobile")
+            if type(phone) == list and phone:
+                # if there is a non-empty list, we use the first entry
+                phone = phone[0]
+        else:
+            phone = token_obj.get_tokeninfo("phone")
+        tags["phone"] = phone
+
+    if tokentype == "email":
+        if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
+            email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
+            if type(email) == list and email:
+                # If there is a non-empty list, we use the first entry
+                email = email[0]
+        else:
+            email = TokenClass.get_tokeninfo(token_obj, token_obj.EMAIL_ADDRESS_KEY)
+        tags["email"] = email
+
+    message = message.format_map(defaultdict(str, tags))
+    return message
