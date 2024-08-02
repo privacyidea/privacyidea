@@ -595,18 +595,9 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }
 
                 scope.setDefaultSerialSelection = function () {
-                    if (!scope.containerSerial || scope.containerSerial === "createnew") {
+                    if (!scope.containerSerial) {
                         scope.containerSerial = "none";
                     }
-                    /*
-                    if (!scope.containerSerial || scope.containerSerial === "createnew") {
-                        if (AuthFactory.checkRight("container_create")) {
-                            scope.containerSerial = "createnew";
-                        } else {
-                            scope.containerSerial = "none";
-                        }
-                    }
-                    */
                 }
 
                 // Set the default to creating a new container/the first container if there is containerSerial set from outer scope
