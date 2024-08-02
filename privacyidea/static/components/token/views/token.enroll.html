@@ -44,6 +44,7 @@
 
         <!-- User Assignment -->
         <div ng-if="loggedInUser.role == 'admin' && $state.includes('token.rollover') == false">
+            <hr class="horizontal-line-invisible"/>
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=true></div>
@@ -71,10 +72,13 @@
 
         <!-- ============ Container ====================== -->
         <div ng-show="checkRight('container_add_token') && checkRight('container_list')">
-            <h4 translate>Assign Container</h4>
+            <hr class="horizontal-line-invisible"/>
+            <h4 translate>Assign the token to a container</h4>
             <div select-or-create-container container-serial="containerSerial"
                  disable-selection="tokenIsInContainer"
-                 enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm"
+                 enable-user-assignment=true
+                 check-user-assignment=true
+                 user-name="newUser.user" user-realm="newUser.realm"
                  token-types="[form.type]">
             </div>
             <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
