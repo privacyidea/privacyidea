@@ -38,6 +38,15 @@ fieldset[disabled] .btn-transparent.focus {
   background-color: transparent;
   border-color: #ddd;
 }
+
 .btn-header {
   font-weight: bold;
+}
+
+.horizontal-line-invisible {
+    width: 95%;
+    height: 5px;
+    line-height: 80%;
+    border-top: 1px rgba(72, 112, 150, 0) solid;
+    margin: 12px;
 }
