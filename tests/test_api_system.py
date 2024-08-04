@@ -1240,8 +1240,14 @@ class APIConfigTestCase(MyApiTestCase):
 
     def test_31_realm_node_api(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
+        nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
         save_resolver({
             "resolver": "local_resolver_1",
+            "type": "passwdresolver",
+            "file": "/etc/passwd"
+        })
+        save_resolver({
+            "resolver": "local_resolver_2",
             "type": "passwdresolver",
             "file": "/etc/passwd"
         })
@@ -1258,14 +1264,25 @@ class APIConfigTestCase(MyApiTestCase):
                              res.json)
 
         # add the node name and uuid to the database
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
+        db.session.add(NodeName(id=nd1_uuid, name="Node1"))
+        db.session.add(NodeName(id=nd2_uuid, name="Node2"))
         db.session.commit()
 
         # try a weird priority value
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
                                            method='POST',
-                                           json=[{"name": "local_resolver_1",
-                                                  "priority": "foo"}],
+                                           json={"resolver": [{"name": "local_resolver_1",
+                                                               "priority": "foo"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual('ERR905: Could not verify data in request!',
+                             res.json.get("result").get("error").get("message"),
+                             res.json)
+        # missing resolver name
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"priority": "10"}]},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
@@ -1273,23 +1290,193 @@ class APIConfigTestCase(MyApiTestCase):
                              res.json.get("result").get("error").get("message"),
                              res.json)
 
+        # try to add a non-existing resolver
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
                                            method='POST',
-                                           json=[{"name": "local_resolver_1",
-                                                  "priority": 10}],
+                                           json={"resolver": [{"name": "unknown_resolver",
+                                                               "priority": 10}]},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
-            self.assertEqual(len(result["value"].get("added")), 1, result)
+            self.assertEqual(0, len(result["value"].get("added")), result)
+            self.assertEqual(1, len(result["value"].get("failed")), result)
+            self.assertIn("unknown_resolver", result["value"]["failed"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        self.assertEqual(0, len(realm["realm_with_node"]["resolver"]), realm)
+
+        # add a resolver to the realm
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_1",
+                                                               "priority": 10}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(1, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
             self.assertIn("local_resolver_1", result["value"]["added"], result)
 
         realm = get_realms()
         self.assertIn("realm_with_node", realm, realm)
         reso1 = next(r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1")
         self.assertEqual(10, reso1["priority"], reso1)
-        # with the node uuid not available in the table, the node will not be set.
         self.assertEqual(nd1_uuid, reso1["node"], reso1)
+
+        # add the same realm on a different node with no priority
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_1"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(2, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_1", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        res_list = [r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1"]
+        # there should be two entries with the same resolver name
+        self.assertEqual(2, len(res_list), res_list)
+        # both node uuids should be in the resolver list
+        reso1n1 = next(r for r in res_list if r["node"] == nd1_uuid)
+        reso1n2 = next(r for r in res_list if r["node"] == nd2_uuid)
+        # check the corresponding priorities
+        self.assertEqual(10, reso1n1["priority"], reso1n1)
+        self.assertEqual(None, reso1n2["priority"], reso1n2)
+
+        # update priority of the resolver on the second node
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_1",
+                                                               "priority": "5"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(2, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_1", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        res_list = [r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1"]
+        # there should be two entries with the same resolver name
+        self.assertEqual(2, len(res_list), res_list)
+        # both node uuids should be in the resolver list
+        reso1n1 = next(r for r in res_list if r["node"] == nd1_uuid)
+        reso1n2 = next(r for r in res_list if r["node"] == nd2_uuid)
+        # check the corresponding priorities
+        self.assertEqual(10, reso1n1["priority"], reso1n1)
+        self.assertEqual(5, reso1n2["priority"], reso1n2)
+
+        # add a second resolver on the second node. We need to specify the
+        # existing resolver as well otherwise it would be removed
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_1",
+                                                               "priority": "5"},
+                                                              {"name": "local_resolver_2",
+                                                               "priority": "20"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(3, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_1", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        res_list = [r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1"]
+        # there should be two entries with the same resolver name
+        self.assertEqual(2, len(res_list), res_list)
+        # both node uuids should be in the resolver list
+        reso1n1 = next(r for r in res_list if r["node"] == nd1_uuid)
+        reso1n2 = next(r for r in res_list if r["node"] == nd2_uuid)
+        # check the corresponding priorities
+        self.assertEqual(10, reso1n1["priority"], reso1n1)
+        self.assertEqual(5, reso1n2["priority"], reso1n2)
+        reso2n2 = next(r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_2")
+        self.assertEqual(20, reso2n2["priority"], reso2n2)
+
+        # remove priority on resolver on node 1
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_1"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(3, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_1", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        reso1 = next(r for r in realm["realm_with_node"]["resolver"] if r["node"] == nd1_uuid)
+        self.assertEqual("local_resolver_1", reso1["name"], reso1)
+        self.assertEqual(None, reso1["priority"], reso1)
+
+        # remove resolver_1 on node 2
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
+                                           method='POST',
+                                           json={"resolver": [{"name": "local_resolver_2",
+                                                               "priority": "20"}]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(2, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_1", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        res_list = [r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1"]
+        # there should be two entries with the same resolver name
+        self.assertEqual(1, len(res_list), res_list)
+        # both node uuids should be in the resolver list
+        reso1n1 = next(r for r in res_list if r["node"] == nd1_uuid)
+        # check the corresponding priorities
+        self.assertEqual(None, reso1n1["priority"], reso1n1)
+        reso2n2 = next(r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_2")
+        self.assertEqual(20, reso2n2["priority"], reso2n2)
+
+        # remove resolver on node 1
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
+                                           method='POST',
+                                           json={"resolver": []},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(1, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("local_resolver_2", result["value"]["added"], result)
+
+        realm = get_realms()
+        self.assertIn("realm_with_node", realm, realm)
+        res_list = [r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_1"]
+        # there should be two entries with the same resolver name
+        self.assertEqual(0, len(res_list), res_list)
+        # both node uuids should be in the resolver list
+        reso2n2 = next(r for r in realm["realm_with_node"]["resolver"] if r["name"] == "local_resolver_2")
+        self.assertEqual(20, reso2n2["priority"], reso2n2)
+
         delete_realm("realm_with_node")
         delete_resolver("local_resolver_1")
+        delete_resolver("local_resolver_2")

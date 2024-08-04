@@ -44,6 +44,7 @@ from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.error import DatabaseError
 
 log = logging.getLogger(__name__)
 
@@ -250,11 +251,16 @@ def set_realm(realm, resolvers=None):
         reso_name = reso['name'].strip()
         db_reso = Resolver.query.filter_by(name=reso_name).first()
         if db_reso:
-            ResolverRealm(db_reso.id, db_realm.id,
-                          node_uuid=str(reso.get('node', '')),
-                          priority=reso.get('priority', None)).save()
-            added.append(reso_name)
+            try:
+                ResolverRealm(db_reso.id, db_realm.id,
+                              node_uuid=str(reso.get('node', '')),
+                              priority=reso.get('priority')).save()
+                added.append(reso_name)
+            except DatabaseError as exx:
+                log.warning(f"Could not add resolver {reso_name} to realm {realm}: {exx}")
+                failed.append(reso_name)
         else:
+            log.debug(f"Could not find resolver {reso_name} in database.")
             failed.append(reso_name)
 
     # if this is the first realm, make it the default

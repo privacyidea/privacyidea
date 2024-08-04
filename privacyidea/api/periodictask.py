@@ -23,9 +23,9 @@ This module is tested in tests/test_api_periodictask.py"""
 import json
 import logging
 
-from flask import Blueprint, g, request, current_app
+from flask import Blueprint, g, request
 
-from privacyidea.lib.config import get_privacyidea_nodes
+from privacyidea.lib.config import get_privacyidea_node_names
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
@@ -72,7 +72,7 @@ def list_nodes():
     """
     Return a list of available nodes
     """
-    nodes = get_privacyidea_nodes(names_only=True)
+    nodes = get_privacyidea_node_names()
     g.audit_object.log({"success": True})
     return send_result(nodes)
 

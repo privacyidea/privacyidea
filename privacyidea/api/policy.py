@@ -48,7 +48,7 @@ from ..lib.policy import (set_policy, ACTION,
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode, is_true
-from privacyidea.lib.config import get_privacyidea_nodes
+from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
@@ -396,7 +396,7 @@ def import_policy_api(filename=None):
     """
     policy_file = request.files['file']
     file_contents = ""
-    # In case of form post requests, it is a "instance" of FieldStorage
+    # In case of form post requests, it is an "instance" of FieldStorage
     # i.e. the Filename is selected in the browser and the data is
     # transferred
     # in an iframe. see: http://jquery.malsup.com/form/#sample4
@@ -552,7 +552,7 @@ def get_policy_defs(scope=None):
             "comparators": comparator_descriptions,
         }
     elif scope == 'pinodes':
-        result = get_privacyidea_nodes(names_only=True)
+        result = get_privacyidea_node_names()
     else:
         static_pol = get_static_policy_definitions()
         dynamic_pol = get_dynamic_policy_definitions()

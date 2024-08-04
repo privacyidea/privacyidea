@@ -458,33 +458,39 @@ def set_realm_node_api(realm, nodeid):
 
     :arg string realm: The unique name of the realm
     :arg string nodeid: The UUID of the node
-    :<json list resolvers: A JSON list consisting of objects with the resolver name
-      and priority
+    :<json resolver: A JSON object with a list consisting of objects with the
+      resolver name and priority
     :reqheader PI-Authorization: The authorization token
+    :statuscode 200: no error
+    :statuscode 400:
+      - The given node UUID does not exist
+      - Could not verify data in request
 
     **Example request**:
 
     Create a new realm ``newrealm``, that consists of the resolvers
     ``resolver1`` and ``resolver2`` on the node with
-    UUID 8e4272a9-9037-40df-8aa3-976e4a04b5a9:
+    UUID ``8e4272a9-9037-40df-8aa3-976e4a04b5a9``:
 
     .. sourcecode:: http
 
-       POST /realm/newrealm/node/8e4272a9-9037-40df-8aa3-976e4a04b5a9 HTTP/1.1
-       Host: example.com
-       Accept: application/json
-       Content-Type: application/json
+      POST /realm/newrealm/node/8e4272a9-9037-40df-8aa3-976e4a04b5a9 HTTP/1.1
+      Host: example.com
+      Accept: application/json
+      Content-Type: application/json
 
-       [
-         {
-           "name": "resolver1",
-           "priority": 1
-         },
-         {
-           "name": "resolver2",
-           "priority": 2
-         }
-       ]
+      {
+        "resolver": [
+          {
+            "name": "resolver1",
+            "priority": 1
+          },
+          {
+            "name": "resolver2",
+            "priority": 2
+          }
+        ]
+      }
 
     **Example response**:
 
@@ -514,15 +520,29 @@ def set_realm_node_api(realm, nodeid):
 
     data = request.json
     resolvers = []
-    for res in data:
+    if "resolver" not in data:
+        log.warning("Missing resolver data in request")
+        raise ParameterError(_("Could not verify data in request!"))
+
+    for res in data["resolver"]:
         try:
-            resolvers.append({'name': res["name"],
-                              'priority': int(res["priority"]),
+            resolvers.append({"name": res["name"],
+                              "priority": int(res["priority"]) if "priority" in res else None,
                               "node": nodeid})
-        except ValueError:
-            log.warning(f"Could not parse priority for resolver {res}")
+        except (KeyError, ValueError) as e:
+            log.warning(f"Could not parse resolver data {res}: {e}")
+            log.debug(e.__traceback__)
             raise ParameterError(_("Could not verify data in request!"))
 
+    # since this endpoint id node-specific, we would delete all other resolvers
+    # which are specified for a different node or no node at all. We need to
+    # add all the other resolvers to the dictionary to avoid deleting them
+    orig_resolvers = get_realms(realm).get(realm, {}).get("resolver", [])
+    for res in orig_resolvers:
+        if res.get("node", "") != nodeid:
+            resolvers.append({'name': res["name"],
+                              'priority': res.get("priority", None),
+                              "node": res.get("node")})
     (added, failed) = set_realm(realm, resolvers=resolvers)
     g.audit_object.log({'success': not failed,
                         'info': "realm: {0!r}, resolvers: {1!r}".format(realm,

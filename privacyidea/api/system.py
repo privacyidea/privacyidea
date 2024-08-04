@@ -448,6 +448,7 @@ def list_ca_connectors():
 
 
 @system_blueprint.route("/nodes", methods=['GET'])
+@admin_required
 def list_nodes():
     """
     Return a list of nodes, that are known to the system.
