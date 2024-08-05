@@ -451,9 +451,20 @@ class UserTestCase(MyTestCase):
 
         root = User("root", "sort_node_realm")
         r = root.get_ordered_resolvers()
+        self.assertEqual(3, len(r), r)
         self.assertEqual(r[0], "reso4")
         self.assertEqual(r[1], "resolver2")
         self.assertEqual(r[2], "reso3")
+
+        # check resolver on node 2
+        get_app_config()["NODE_UUID"] = nd2_uuid
+        root = User("root", "sort_node_realm")
+        r = root.get_ordered_resolvers()
+        self.assertEqual(3, len(r), r)
+        self.assertEqual(r[0], "reso4")
+        self.assertEqual(r[1], "reso3")
+        self.assertEqual(r[2], "resolver1")
+
         delete_realm("sort_node_realm")
         delete_resolver("resolver1")
         delete_resolver("resolver2")

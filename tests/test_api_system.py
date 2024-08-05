@@ -1251,6 +1251,11 @@ class APIConfigTestCase(MyApiTestCase):
             "type": "passwdresolver",
             "file": "/etc/passwd"
         })
+        save_resolver({
+            "resolver": "global_resolver",
+            "type": "passwdresolver",
+            "file": "/etc/passwd"
+        })
         # first the request without the node uuid in the database
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
                                            method='POST',
@@ -1331,7 +1336,9 @@ class APIConfigTestCase(MyApiTestCase):
         # add the same realm on a different node with no priority
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
                                            method='POST',
-                                           json={"resolver": [{"name": "local_resolver_1"}]},
+                                           json={"resolver": [{
+                                               "name": "local_resolver_1",
+                                               "priority": None}]},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
@@ -1429,6 +1436,24 @@ class APIConfigTestCase(MyApiTestCase):
         self.assertEqual("local_resolver_1", reso1["name"], reso1)
         self.assertEqual(None, reso1["priority"], reso1)
 
+        # add an unspecific resolver to the realm
+        with self.app.test_request_context('/realm/realm_with_node',
+                                           method='POST',
+                                           json={"resolvers": "global_resolver"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(4, len(result["value"].get("added")), result)
+            self.assertEqual(0, len(result["value"].get("failed")), result)
+            self.assertIn("global_resolver", result["value"]["added"], result)
+
+        realm = get_realms()
+        reso1 = next(r for r in realm["realm_with_node"]["resolver"] if not r["node"])
+        self.assertEqual("global_resolver", reso1["name"], reso1)
+        self.assertEqual(None, reso1["priority"], reso1)
+
         # remove resolver_1 on node 2
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd2_uuid}',
                                            method='POST',
@@ -1439,7 +1464,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
-            self.assertEqual(2, len(result["value"].get("added")), result)
+            self.assertEqual(3, len(result["value"].get("added")), result)
             self.assertEqual(0, len(result["value"].get("failed")), result)
             self.assertIn("local_resolver_1", result["value"]["added"], result)
 
@@ -1464,7 +1489,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
-            self.assertEqual(1, len(result["value"].get("added")), result)
+            self.assertEqual(2, len(result["value"].get("added")), result)
             self.assertEqual(0, len(result["value"].get("failed")), result)
             self.assertIn("local_resolver_2", result["value"]["added"], result)
 

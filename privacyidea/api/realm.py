@@ -138,6 +138,15 @@ def set_realm_api(realm=None):
     resolvers = [{'name': res,
                   'priority': priority.get(res, None)
                   } for res in resolver_list]
+    # since this endpoint is not node-specific, we would delete all other resolvers
+    # which are specified for a different node.
+    # We need to add all the other resolvers to the dictionary to avoid deleting them
+    orig_resolvers = get_realms(realm).get(realm, {}).get("resolver", [])
+    for res in orig_resolvers:
+        if res.get("node", ""):
+            resolvers.append({'name': res["name"],
+                              'priority': res.get("priority"),
+                              "node": res.get("node")})
     (added, failed) = set_realm(realm, resolvers=resolvers)
     g.audit_object.log({'success': not failed,
                         'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
@@ -527,23 +536,24 @@ def set_realm_node_api(realm, nodeid):
     for res in data["resolver"]:
         try:
             resolvers.append({"name": res["name"],
-                              "priority": int(res["priority"]) if "priority" in res else None,
+                              "priority": int(res.get("priority")) if res.get("priority") else None,
                               "node": nodeid})
         except (KeyError, ValueError) as e:
             log.warning(f"Could not parse resolver data {res}: {e}")
             log.debug(e.__traceback__)
             raise ParameterError(_("Could not verify data in request!"))
 
-    # since this endpoint id node-specific, we would delete all other resolvers
+    # since this endpoint is node-specific, we would delete all other resolvers
     # which are specified for a different node or no node at all. We need to
     # add all the other resolvers to the dictionary to avoid deleting them
     orig_resolvers = get_realms(realm).get(realm, {}).get("resolver", [])
     for res in orig_resolvers:
         if res.get("node", "") != nodeid:
             resolvers.append({'name': res["name"],
-                              'priority': res.get("priority", None),
+                              'priority': res.get("priority"),
                               "node": res.get("node")})
     (added, failed) = set_realm(realm, resolvers=resolvers)
+
     g.audit_object.log({'success': not failed,
                         'info': "realm: {0!r}, resolvers: {1!r}".format(realm,
                                                                         resolvers)})

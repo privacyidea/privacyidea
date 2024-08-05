@@ -211,11 +211,13 @@ class User(object):
                                     resolver.get("node")))
 
         # sort the resolvers by the 2nd entry in the tuple, the priority
-        resolvers = sorted(resolver_tuples, key=lambda res: res[1])
+        sorted_resolvers = sorted(resolver_tuples, key=lambda res: res[1])
         # if the resolver contains a node setting, we only add it if it is on the correct node
         local_node_uuid = get_app_config_value("NODE_UUID")
-        resolvers = [r[0] for r in resolvers if not r[2] or r[2] == local_node_uuid]
-        return resolvers
+        resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
+        # remove duplicate resolver names but keeping the order
+        seen = set()
+        return [x for x in resolvers if not (x in seen or seen.add(x))]
 
     def _get_resolvers(self, all_resolvers=False):
         """
