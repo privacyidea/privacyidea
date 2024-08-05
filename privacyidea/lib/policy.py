@@ -2429,7 +2429,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.CHALLENGETEXT: {
                 'type': 'str',
                 'desc': _('Use an alternate challenge text for telling the '
-                          'user to enter an OTP value.')
+                          'user to enter an OTP value.  You can also use '
+                          'tags for automated replacement. Check out our '
+                          'docs at https://privacyidea.readthedocs.io/ for more details.')
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',

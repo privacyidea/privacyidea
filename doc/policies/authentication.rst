@@ -737,6 +737,20 @@ tag.
 
 .. note:: The footer will only be used, if the header is also set.
 
+.. note:: Starting with version 3.11 the `challenge-text` can contain tags similar to the
+    policy :ref:`emailtext`:
+    * {serial} the serial number of the token.
+    * {user} the given name of the token owner.
+    * {givenname} the given name of the token owner.
+    * {surname} the surname of the token owner.
+    * {username} the loginname of the token owner.
+    * {userrealm} the realm of the token owner.
+    * {tokentype} the type of the token.
+    * {time} the current server time in the format HH:MM:SS.
+    * {date} the current server date in the format YYYY-MM-DD.
+    * {phone} the phone number from the challenge in case of sms token.
+    * {email} email address from the challenge in case of email token.
+
 .. _policy_indexedsecret:
 
 indexedsecret_challenge_text

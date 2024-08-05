@@ -625,7 +625,8 @@ class WebAuthnTokenClass(TokenClass):
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Use an alternative challenge text for telling the user to confirm with his WebAuthn "
-                                  "token.")
+                                  "token. You can also use tags for automated replacement. Check out our docs at "
+                                  "https://privacyidea.readthedocs.io/ for more details.")
                     }
                 },
                 SCOPE.AUTHZ: {
@@ -745,7 +746,9 @@ class WebAuthnTokenClass(TokenClass):
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Use an alternate challenge text for telling the "
-                                  "user to confirm with his WebAuthn device."),
+                                  "user to confirm with his WebAuthn device. You can "
+                                  "also use tags for automated replacement. Check out "
+                                  "our docs at https://privacyidea.readthedocs.io/ for more details."),
                         'group': WEBAUTHNGROUP.WEBAUTHN
                     }
                 }
