@@ -2665,9 +2665,9 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Challenge_text with tags
         set_policy("chalsms", SCOPE.AUTH, "sms_challenge_text=Hello {user} please enter "
-                                            "the otp send to {phone}")
+                                          "the otp sent to {phone}")
         set_policy("chalemail", SCOPE.AUTH, "email_challenge_text=Hello {user} please enter "
-                                            "the otp send to {email}")
+                                            "the otp sent to {email}")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -2676,9 +2676,9 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             resp = res.json
-            self.assertIn("Hello Cornelius please enter the otp send to 123456",
+            self.assertIn("Hello Cornelius please enter the otp sent to 123456",
                           resp.get("detail").get("message"))
-            self.assertIn("Hello Cornelius please enter the otp send to hallo@example.com",
+            self.assertIn("Hello Cornelius please enter the otp sent to hallo@example.com",
                           resp.get("detail").get("message"))
 
         remove_token("CHAL1")

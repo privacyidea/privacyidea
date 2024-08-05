@@ -2708,7 +2708,8 @@ def challenge_text_replace(message, user, token_obj):
                 phone = phone[0]
         else:
             phone = token_obj.get_tokeninfo("phone")
-        tags["phone"] = phone
+        if phone is not None:
+            tags["phone"] = phone
 
     if tokentype == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
@@ -2718,7 +2719,8 @@ def challenge_text_replace(message, user, token_obj):
                 email = email[0]
         else:
             email = TokenClass.get_tokeninfo(token_obj, token_obj.EMAIL_ADDRESS_KEY)
-        tags["email"] = email
+        if email is not None:
+            tags["email"] = email
 
     message = message.format_map(defaultdict(str, tags))
     return message
