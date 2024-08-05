@@ -589,12 +589,12 @@ push_require_presence
 
 .. index:: push token
 
-type: int
+type: bool
 
-If `require presence` is set to "1", then the login window will display a message like
-"Please confirm login by pressing Button 'C' on your smartphone".
+If this policy is set, the login window will display a message like
+``Please confirm login by pressing Button 'C' on your smartphone``.
 
-The push notification on the smartphone will show several buttons. One is labeled "C".
+The push notification on the smartphone will show several buttons. One is labeled ``C``.
 
 The user then can confirm the login by pressing this button. All other buttons will decline the
 login request.
@@ -603,7 +603,9 @@ login request.
    person owning the smartphone are two different persons. In this case they will have to communicate
    for a successful login.
 
-If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
+If this policy is not set, the PUSH message will simply ask the user, if he wants to log in.
+
+.. versionadded:: 3.10
 
 .. _policy_push_presence_options:
 
@@ -614,7 +616,7 @@ push_presence_options
 
 type: string
 
-Takes only effect if :ref:`policy_push_require_presence` is set to "1".
+Takes only effect if :ref:`policy_push_require_presence` is set.
 
 This policy configures the buttons that are displayed in the push notification on the smartphone.
 
@@ -635,10 +637,12 @@ The following options are available:
 
 The default is to use the ``ALPHABETIC`` options.
 
+.. versionadded:: 3.10
+
 .. _policy_push_presence_custom_options:
 
 push_presence_custom_options
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: push token
 
@@ -653,19 +657,23 @@ The string must contain at least 2 options and should be unique.
 
 The options are separated by ":" e.g. ``01:02:03:1A:1B:1C``
 
+.. versionadded:: 3.10
+
 .. _push_presence_num_options:
 
 push_presence_num_options
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: push token
 
 type: int
 
-Takes only effect if :ref:`policy_push_require_presence` is set to "1".
+Takes only effect if :ref:`policy_push_require_presence` is set.
 
 This policy configures the number of buttons that are displayed in the push notification on the smartphone.
 The default is 3 buttons. If the configured number of buttons is not possible, it will be clamped to the next possible value.
+
+.. versionadded:: 3.10
 
 .. _policy_auth_push_allow_poll:
 

@@ -484,7 +484,7 @@ class TtypePushAPITestCase(MyApiTestCase):
         challenge.set_session(CHALLENGE_SESSION.DECLINED)
         challenge.save()
 
-        # If the challenge is successfully declined, the /validate/check endpoint
+        # If the challenge is successfully declined, the /ttype/push endpoint
         # will not send the challenge again.
         timestamp = datetime.utcnow().isoformat()
         sign_string = f"{tokenobj.token.serial}|{timestamp}"
