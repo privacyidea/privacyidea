@@ -6,9 +6,18 @@
                     ng-class="{ active: $state.includes('config.realms.list')}">
                     <a ui-sref="config.realms.list"
                             translate>All Realms</a></li>
-                <li><a ng-click="clearDefaultRealm()"
-                       ng-show="checkRight('resolverwrite')"
-                        translate>Clear default realm</a></li>
+                <li ng-class="{ active: $state.includes('config.realms.edit')}"
+                    ng-show="$state.includes('config.realms.edit')">
+                    <a ui-sref="config.realms.edit" translate>
+                        Edit Realm {{ $stateParams.realmName }}
+                    </a>
+                </li>
+                <li ng-class="{ active: $state.includes('config.realms.create')}"
+                ng-show="checkRight('resolverwrite')">
+                    <a ui-sref="config.realms.create" translate>
+                        Create Realm
+                    </a>
+                </li>
                 <hr>
                 <li role="presentation">
                         <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+

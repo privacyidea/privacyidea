@@ -204,11 +204,24 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
 //                })
                 .state('config.realms', {
                     url: "/realms",
-                    templateUrl: configpath + "config.realms.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.realms.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "realmController"
                 })
                 .state('config.realms.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.realms.list.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.realms.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "realmListController"
+                })
+                .state('config.realms.create', {
+                    url: "/create",
+                    templateUrl: configpath + "config.realms.create.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "realmCreateController"
+                })
+                .state('config.realms.edit', {
+                    url: "/edit",
+                    templateUrl: configpath + "config.realms.create.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "realmEditController",
+                    params: {realmName: null, realm: null}
                 })
                 .state('config.smtp', {
                     url: "/smtp",

@@ -623,9 +623,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         if ($location.path() === "/config/resolvers") {
             $location.path("/config/resolvers/list");
         }
-        if ($location.path() === "/config/realms") {
-            $location.path("/config/realms/list");
-        }
 
         $scope.items = ["item1", "item2", "item3"];
         $scope.dragControlListeners = {
@@ -703,78 +700,12 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
             });
         };
 
-        $scope.getRealms = function () {
-            ConfigFactory.getRealms(function (data) {
-                //debug: console.log("getting realms");
-                $scope.realms = data.result.value;
-                //debug: console.log($scope.realms);
-            });
-        };
-
-        $scope.setRealm = function (name) {
-            var resolvers = [];
-            var pObject = {};
-            angular.forEach($scope.selectedResolvers, function (value, resolvername) {
-                if (value.selected === true) {
-                    resolvers.push(resolvername);
-                    pObject["priority." + resolvername] = value.priority;
-                }
-            });
-
-            pObject.resolvers = resolvers.join(',');
-
-            ConfigFactory.setRealm(name, pObject, function (data) {
-                $scope.set_result = data.result.value;
-                $scope.cancelEdit();
-                $scope.getRealms();
-            });
-        };
-
-        $scope.delRealm = function (name) {
-            ConfigFactory.delRealm(name, function (data) {
-                $scope.set_result = data.result.value;
-                $scope.getRealms();
-            });
-        };
-
-        $scope.setDefaultRealm = function (name) {
-            ConfigFactory.setDefaultRealm(name, function (data) {
-                $scope.set_result = data.result.value;
-                $scope.getRealms();
-            });
-        };
-
-        $scope.clearDefaultRealm = function () {
-            ConfigFactory.clearDefaultRealm(function (data) {
-                $scope.set_result = data.result.value;
-                $scope.getRealms();
-            });
-        };
-
-        $scope.startEdit = function (realmname, realm) {
-            $scope.editRealm = realmname;
-            // fill the selectedResolvers with the resolver of the realm
-            $scope.selectedResolvers = {};
-            angular.forEach(realm.resolver, function (resolver, _keyreso) {
-                $scope.selectedResolvers[resolver.name] = {
-                    selected: true,
-                    priority: resolver.priority
-                };
-            });
-        };
-
-        $scope.cancelEdit = function () {
-            $scope.editRealm = null;
-            $scope.selectedResolvers = {};
-        };
-
         $scope.editResolver = function (resolvername, r_type) {
             // change the view to the config.resolvers.edit
             $state.go("config.resolvers.edit" + r_type, {'resolvername': resolvername});
             $rootScope.returnTo = "config.resolvers.list";
         };
 
-        $scope.getRealms();
         $scope.getResolvers();
         $scope.selectedResolvers = {};
         $scope.selectedPINodes = {};

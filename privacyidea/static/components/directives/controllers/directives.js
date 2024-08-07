@@ -517,7 +517,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 };
 
                 scope.getContainers = function () {
-                    if (AuthFactory.checkRight("container_list")){
+                    if (AuthFactory.checkRight("container_list")) {
                         $http.get(containerUrl + "/?no_token=1", {
                             headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                         }).then(function (response) {
@@ -648,6 +648,25 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         AuthFactory.authError(error.data);
                     });
                 }
+            }
+        };
+    }]);
+
+
+myApp.directive("selectResolver", ["instanceUrl", "versioningSuffixProvider", "$http",
+    function (instanceUrl, versioningSuffixProvider, $http) {
+        return {
+            scope: {
+                selectedResolvers: "=",
+                resolvers: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.selectresolver.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
+                scope.selectionChanged = function (newSelection) {
+                    scope.selectedResolvers = newSelection;
+                };
+
             }
         };
     }]);
