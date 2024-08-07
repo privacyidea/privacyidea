@@ -25,11 +25,10 @@ from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConn
 from OpenSSL import crypto
 import logging
 import traceback
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, int_to_hex
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes
 from cryptography.hazmat.primitives import serialization
-
 
 log = logging.getLogger(__name__)
 try:
@@ -41,11 +40,13 @@ try:
                                                             GetCSRStatusReply,
                                                             SubmitCSRRequest,
                                                             GetCertificateRequest,
-                                                            GetCertificateReply)
+                                                            GetCertificateReply,
+                                                            RevokeCertificateRequest,
+                                                            RevokeCertificateReply)
+
     AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
 except ImportError:  # pragma: no cover
     log.warning("Can not import grpc modules.")
-
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
@@ -108,6 +109,8 @@ class MSCAConnector(BaseCAConnector):
         :param config: A dictionary with all necessary attributes.
         :return:
         """
+        self.templates = None
+        self.config = None
         self.name = name
         self.hostname = None
         self.port = None
@@ -211,7 +214,7 @@ class MSCAConnector(BaseCAConnector):
         Return the description of this CA connectors.
         This contains the name as a key and the possible parameters.
 
-        :return: resolver description dict
+        :return: connector description
         :rtype:  dict
         """
         typ = cls.connector_type
@@ -285,37 +288,62 @@ class MSCAConnector(BaseCAConnector):
         :param certificate: The certificate to revoke
         :type certificate: Either takes X509 object or a PEM encoded
             certificate (string)
-        :param request_id: The Id of the certificate in the certificate authority
+        :param request_id: The id of the certificate in the certificate authority
         :type request_id: int
         :param reason: One of the available reasons the certificate gets revoked
         :type reason: basestring
-        :return: Returns the serial number of the revoked certificate. Otherwise
+        :return: Returns the serial number of the revoked certificate. Otherwise,
             an error is raised.
         """
-        # TODO: here we need to revoke the cert based on the request Id.
-        pass  # pragma: no cover
+        if isinstance(certificate, str):
+            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate.encode("ascii"))
+        elif isinstance(certificate, crypto.X509):
+            cert_obj = certificate
+        else:
+            raise CAError("Certificate in unsupported format")
+        serial = cert_obj.get_serial_number()
+        serial_hex = int_to_hex(serial)
+
+        revocation_reason = 0
+        if isinstance(reason, str) and reason not in CRL_REASONS:
+            raise CAError(f"Invalid revocation reason: {reason}")
+        elif isinstance(reason, str):
+            revocation_reason = CRL_REASONS.index(reason)
+        elif isinstance(reason, int) and len(CRL_REASONS) > reason >= 0:
+            revocation_reason = reason
+
+        if self.connection:
+            reply: RevokeCertificateReply = (
+                self.connection.RevokeCertificate(RevokeCertificateRequest(caName=self.ca,
+                                                                           serialNumber=serial_hex,
+                                                                           reason=revocation_reason)))
+            if reply.status.code == 0:
+                return serial_hex
+            else:
+                log.error(f"Revocation failed: {reply.status.message}")
+                raise CAError(f"Revocation failed: {reply.status.message}")
 
     def get_cr_status(self, request_id):
         """
         If a certificate needs a CA manager approval the request is in a pending state.
         This method fetches the state of a requested certificate.
-        This way we can know, if the certificate was issued in the meantime.
+        This way we can know if the certificate was issued in the meantime.
 
-        :param request_id: Id of the request to check
+        :param request_id: id of the request to check
         :type request_id: int
         :return: Status code of the request
         """
         if self.connection:
-            csrRequest = GetCSRStatusRequest()
-            csrRequest.certRequestId = request_id
-            csrRequest.caName = self.ca
-            csrReply = self.connection.GetCSRStatus(csrRequest)
+            csr_request = GetCSRStatusRequest()
+            csr_request.certRequestId = request_id
+            csr_request.caName = self.ca
+            csr_reply = self.connection.GetCSRStatus(csr_request)
             """
             Disposition 2: denied
             Disposition 3: issued
             Disposition 5: pending
             """
-            return csrReply.disposition
+            return csr_reply.disposition
 
     def get_issued_certificate(self, request_id):
         """
@@ -325,11 +353,11 @@ class MSCAConnector(BaseCAConnector):
         :return: The certificate as PEM string
         """
         if self.connection:
-            certRequest = GetCertificateRequest()
-            certRequest.id = request_id
-            certRequest.caName = self.ca
-            certReply = self.connection.GetCertificate(certRequest)
-            return certReply.cert
+            cert_request = GetCertificateRequest()
+            cert_request.id = request_id
+            cert_request.caName = self.ca
+            cert_reply = self.connection.GetCertificate(cert_request)
+            return cert_reply.cert
 
     def get_templates(self):
         """
@@ -339,9 +367,9 @@ class MSCAConnector(BaseCAConnector):
         """
         if self.connection:
             templ = {}
-            templateRequest = GetTemplatesRequest()
-            templateReply = self.connection.GetTemplates(templateRequest)
-            for template in templateReply.templateNames:
+            template_request = GetTemplatesRequest()
+            template_reply = self.connection.GetTemplates(template_request)
+            for template in template_reply.templateNames:
                 templ[template] = ""
             return templ
 
@@ -374,9 +402,9 @@ class MSCAConnector(BaseCAConnector):
                                                ATTR.PORT: config.port,
                                                ATTR.HTTP_PROXY: config.http_proxy})
             # returns a list of machine names\CAnames
-            cARequest = GetCAsRequest()
-            cAReply = dummy_ca.connection.GetCAs(cARequest)
-            cas = [x for x in cAReply.caNames]
+            get_cas_request = GetCAsRequest()
+            get_cas_reply = dummy_ca.connection.GetCAs(get_cas_request)
+            cas = [x for x in get_cas_reply.caNames]
             print("Available CAs: \n")
             for c in cas:
                 print("     {0!s}".format(c))
@@ -389,14 +417,14 @@ class MSCAConnector(BaseCAConnector):
 
         # return the configuration to the upper level, so that the CA
         # connector can be created in the database
-        caparms = {"caconnector": name,
-                   "type": "microsoft",
-                   ATTR.HOSTNAME: config.hostname,
-                   ATTR.PORT: config.port,
-                   ATTR.HTTP_PROXY: config.http_proxy,
-                   ATTR.CA: config.ca
-                   }
-        return caparms
+        ca_params = {"caconnector": name,
+                     "type": "microsoft",
+                     ATTR.HOSTNAME: config.hostname,
+                     ATTR.PORT: config.port,
+                     ATTR.HTTP_PROXY: config.http_proxy,
+                     ATTR.CA: config.ca
+                     }
+        return ca_params
 
     def get_specific_options(self):
         """
@@ -406,7 +434,7 @@ class MSCAConnector(BaseCAConnector):
         cas = []
         if self.connection:
             # returns a list of machine names\CAnames
-            cARequest = GetCAsRequest()
-            cAReply = self.connection.GetCAs(cARequest)
-            cas = [x for x in cAReply.caNames]
+            get_cas_request = GetCAsRequest()
+            get_cas_reply = self.connection.GetCAs(get_cas_request)
+            cas = [x for x in get_cas_reply.caNames]
         return {"available_cas": cas}
