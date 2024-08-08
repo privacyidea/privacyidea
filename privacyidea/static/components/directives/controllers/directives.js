@@ -656,3 +656,22 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
             }
         };
     }]);
+
+
+myApp.directive("selectResolver", ["instanceUrl", "versioningSuffixProvider", "$http",
+    function (instanceUrl, versioningSuffixProvider, $http) {
+        return {
+            scope: {
+                selectedResolvers: "=",
+                resolvers: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.selectresolver.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
+                scope.selectionChanged = function (newSelection) {
+                    scope.selectedResolvers = newSelection;
+                };
+
+            }
+        };
+    }]);

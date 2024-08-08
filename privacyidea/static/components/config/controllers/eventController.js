@@ -99,8 +99,8 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                         $scope.handlerActions = Object.keys($scope.handlerOptions);
                         $scope.form = event.result.value[0];
                         // tick the checked events
-                        for (var i = 0; i < $scope.availableEvents.length; i++) {
-                            var name = $scope.availableEvents[i].name;
+                        for (let i = 0; i < $scope.availableEvents.length; i++) {
+                            const name = $scope.availableEvents[i].name;
                             if ($scope.form.event.indexOf(name) >= 0) {
                                 $scope.availableEvents[i].ticked = true;
                             }
@@ -146,7 +146,7 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
         $scope.getAvailableEvents = function () {
             ConfigFactory.getEvent("available", function (data) {
                 //debug: console.log("getting available events");
-                var events = data.result.value;
+                const events = data.result.value;
                 $scope.availableEvents = Array();
                 angular.forEach(events, function (event) {
                     $scope.availableEvents.push({"name": event});
@@ -169,9 +169,9 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
         $scope.createEvent = function () {
             // This is called to save the event handler
             $scope.form.id = $scope.eventid;
-            var events = Array();
+            let events = Array();
             // transform the event options to form parameters
-            for (var option in $scope.opts) {
+            for (let option in $scope.opts) {
                 if ($scope.opts.hasOwnProperty(option)) {
                     $scope.form["option." + option] = $scope.opts[option];
                 }
@@ -190,7 +190,7 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                 if (activated === true) {
                     if (typeof $scope.conds[value] === "object") {
                         // push all ticked values
-                        var multivalue = Array();
+                        let multivalue = Array();
                         angular.forEach($scope.conds[value], function (mval) {
                             if (mval.ticked === true) {
                                 multivalue.push(mval.name);
@@ -204,6 +204,7 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             });
             ConfigFactory.setEvent($scope.form, function () {
                 $state.go("config.events.list");
+                $scope.reload();
             });
             $('html,body').scrollTop(0);
         };

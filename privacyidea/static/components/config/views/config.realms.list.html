@@ -1,77 +1,88 @@
 <div class="table-responsive">
-    <table class="table table-bordered table-responsive table-striped table-capitalize-header">
+
+    <div class="form-group" ng-hide="numNodes <= 1">
+        <label for="nodeSelect">
+            Node
+        </label>
+        <select class="form-control"
+                id="nodeSelect"
+                ng-model="selectedNode.name"
+                ng-options="nodeName as nodesDisplayString[nodeName] for (nodeName, uuid) in nodes">
+        </select>
+    </div>
+
+    <table class="table table-bordered table-responsive table-striped table-capitalize-header"
+           ng-repeat="(nodeName, nodeUUID) in nodes"
+           ng-show="selectedNode.name === nodeName">
         <thead>
         <tr>
             <th translate>Default</th>
             <th translate>Realm name</th>
             <th translate>resolvers</th>
+            <th></th>
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="(realmname, realm) in realms">
+        <tr ng-repeat="(realmName, realm) in realmByNodes[nodeName]">
             <td>
                 <span class="glyphicon glyphicon-ok"
                       ng-show="realm.default"></span>
                 <span ng-show="checkRight('resolverwrite')">
                     <button class="btn btn-success"
                             ng-hide="realm.default"
-                            ng-click="setDefaultRealm(realmname)"
+                            ng-click="setDefaultRealm(realmName)"
                             translate>set Default
                     </button>
                 </span>
             </td>
             <td>
-                {{ realmname }}
+                {{ realmName }}
             </td>
             <td>
-                <span ng-hide="editRealm == realmname">
-                    <span ng-repeat="reso in realm.resolver">
+                <div ng-hide="editRealm === realmName || (nodeName !== selectedNode.name && nodeName !== 'All' && selectedNode.name !== 'All')"
+                     ng-repeat="(nodeName, resolver) in realm.nodes">
+                    <span ng-hide="nodeName === 'All' || numNodes <= 1">
+                        <b>{{ nodeName }}:</b><br>
+                    </span>
+                    <span ng-hide="nodeName !== 'All' || numNodes <= 1">
+                        <b>{{ nodesDisplayString['All'] }}:</b><br>
+                    </span>
+                    <span ng-repeat="reso in resolver">
                         <a ui-sref="config.resolvers.edit{{ reso.type }}
                             ({resolvername:reso.name})">
                             {{ reso.name }}</a>
                         [{{ reso.priority }}]
                          ({{ reso.type }})<br>
                     </span>
-                </span>
-                <span ng-show="editRealm == realmname">
-                    <!-- TODO: Hieraus eine component bauen!-->
-                    <span  ng-repeat="resolver in resolvers">
-                        <label for="{{ resolver.resolvername }}">
-                            <input type="checkbox"
-                                   ng-model="selectedResolvers[resolver.resolvername].selected"
-                                   name="group"
-                                   id="{{ resolver.resolvername }}"
-                                   ng-checked="selectedResolvers[resolver.resolvername].selected">
-                            {{ resolver.resolvername }}
-                            <input type="number" size="3" width="3ex"
-                                   max="999" min="1"
-                                   ng-show="selectedResolvers[resolver.resolvername].selected"
-                                   ng-model="selectedResolvers[resolver.resolvername].priority"
-                                   placeholder="priority" />
-                            ({{ resolver.type }})
-                        </label><br>
-                    </span>
-                </span>
-
+                    <hr ng-show="!$last && selectedNode.name === 'All'"
+                        class="horizontal-line"/>
+                </div>
+                <div ng-show="editRealm === realmName">
+                    <div select-resolver
+                         id="editRealmResolverSelect"
+                         selected-resolvers="selectedResolvers"
+                         resolvers="resolvers">
+                    </div>
+                </div>
             </td>
             <td>
                 <span ng-hide="editRealm">
                 <button class="btn btn-primary"
                         ng-show="checkRight('resolverwrite')"
-                        ng-click="startEdit(realmname, realm)"
+                        ng-click="startEdit(realmName, realm)"
                         translate>Edit
                 </button>
                 <button class="btn btn-danger"
                         ng-show="checkRight('resolverdelete')"
-                        ng-click="delRealm(realmname)">
+                        ng-click="delRealm(realmName)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                 </button>
                 </span>
-                <span ng-show="editRealm == realmname">
+                <span ng-show="editRealm == realmName">
                     <button class="btn btn-primary"
                             ng-show="checkRight('resolverwrite')"
-                            ng-click="setRealm(realmname)"
+                            ng-click="createRealmInPlace(realmName, 'All', selectedResolvers)"
                             translate>Save
                     </button>
                     <button class="btn btn-danger"
@@ -93,7 +104,7 @@
                     <div class="form-group">
                         <input name="realmname" id="realmname"
                                class="form-control"
-                               ng-model="realm.name" required
+                               ng-model="newRealmParams.realmName" required
                                placeholder="{{ 'new realm'|translate }}"
                                ng-pattern="inputNamePatterns.simple.pattern"
                                title="{{ inputNamePatterns.simple.title | translate }}"
@@ -101,28 +112,30 @@
                     </div>
                 </td>
                 <td>
-                    <span  ng-repeat="resolver in resolvers">
-                        <label for="{{ resolver.resolvername }}">
-                            <input type="checkbox"
-                                   ng-model="selectedResolvers[resolver.resolvername].selected"
-                                   name="group"
-                                   id="{{ resolver.resolvername }}">
-                            {{ resolver.resolvername }}
-                            <input type="number" size="3" width="3ex"
-                                   max="999" min="1"
-                                   ng-show="selectedResolvers[resolver.resolvername].selected"
-                                   ng-model="selectedResolvers[resolver.resolvername].priority"
-                                   placeholder="priority" />
-                            ({{ resolver.type }})
-                        </label><br>
-                    </span>
+                    <select class="form-control"
+                            id="createRealmNodeSelect"
+                            ng-model="newRealmParams.node"
+                            ng-options="nodeName as nodesDisplayString[nodeName] for (nodeName, uuid) in nodes"
+                            ng-show="selectedNode.name === 'All' && numNodes > 1">
+                    </select>
+                    <div select-resolver
+                         id="createRealmResolverSelect"
+                         selected-resolvers="selectedResolvers"
+                         resolvers="resolvers">
+                    </div>
                 </td>
                 <td>
-                    <span ng-hide="editRealm">
-                    <button ng-click="setRealm(realm.name)"
-                            ng-disabled="formNewRealm.$invalid"
-                            class="btn btn-primary" translate>Create realm
-                    </button>
+                    <span ng-hide="editRealm || selectedNode.name !== 'All'">
+                        <button ng-click="createRealmInPlace(newRealmParams.realmName, newRealmParams.node, selectedResolvers)"
+                                ng-disabled="formNewRealm.$invalid || !newRealmParams.realmName"
+                                class="btn btn-primary" translate>Create realm
+                        </button>
+                    </span>
+                    <span ng-hide="editRealm || selectedNode.name === 'All'">
+                        <button ng-click="createRealmInPlace(newRealmParams.realmName, selectedNode.name, selectedResolvers)"
+                                ng-disabled="formNewRealm.$invalid || !newRealmParams.realmName"
+                                class="btn btn-primary" translate>Create realm for node {{ selectedNode.name }}
+                        </button>
                     </span>
                 </td>
             </tr>
@@ -130,6 +143,13 @@
 
         </tbody>
     </table>
+
+    <button class="btn btn-primary btn-capitalize"
+            ng-show="checkRight('resolverwrite')"
+            ng-click="clearDefaultRealm()"
+            translate>
+        Clear Default Realm
+    </button>
 
     <!--
     <pre ng-bind="selectedResolvers | json"></pre>
