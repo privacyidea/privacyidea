@@ -54,14 +54,10 @@
                     <hr ng-show="!$last && selectedNode.name === 'All'"
                         class="horizontal-line"/>
                 </div>
-                <div ng-show="editRealm === realmName" ng-repeat="(nodeUUID, resolvers) in realm.nodes">
-                    <select class="form-control"
-                            ng-init="realmNode = nodesById[nodeUUID]"
-                            ng-model="realmNode"
-                            ng-options="nodeName as nodeName for (nodeName, uuid) in nodes">
-                    </select>
-                    <div selectResolver
-                         selectedResolvers="selectedResolvers"
+                <div ng-show="editRealm === realmName">
+                    <div select-resolver
+                         id="editRealmResolverSelect"
+                         selected-resolvers="selectedResolvers"
                          resolvers="resolvers">
                     </div>
                 </div>
@@ -83,7 +79,7 @@
                 <span ng-show="editRealm == realmName">
                     <button class="btn btn-primary"
                             ng-show="checkRight('resolverwrite')"
-                            ng-click="setRealmNode(realmName, selectedResolvers)"
+                            ng-click="createRealmInPlace(realmName, 'All', selectedResolvers)"
                             translate>Save
                     </button>
                     <button class="btn btn-danger"
@@ -117,7 +113,7 @@
                             id="createRealmNodeSelect"
                             ng-model="newRealmParams.node"
                             ng-options="nodeName as nodesDisplayString[nodeName] for (nodeName, uuid) in nodes"
-                            ng-show="selectedNode.name === 'All'">
+                            ng-show="selectedNode.name === 'All' && numNodes > 1">
                     </select>
                     <div select-resolver
                          id="createRealmResolverSelect"

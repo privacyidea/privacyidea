@@ -29,13 +29,15 @@
                      resolvers="resolvers">
                 </div>
 
-                <button class="btn btn-default btn-sm" ng-click="applyDefaultResolversToNodes()">
+                <button class="btn btn-default btn-sm"
+                        ng-click="applyDefaultResolversToNodes()"
+                        ng-show="numNodes > 1">
                     Apply selection to nodes
                 </button>
             </div>
 
 
-            <div class="col-xs-8">
+            <div class="col-xs-8" ng-show="numNodes > 1">
                 <div class="form-group">
                     <h4 translate>Node-specific Resolver Configuration</h4>
                     <label for="nodeSelection" translate>Nodes:</label>
