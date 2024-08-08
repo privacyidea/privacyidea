@@ -4,7 +4,7 @@ from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
-from privacyidea.models import db, save_config_timestamp
+from privacyidea.models import db, save_config_timestamp, NodeName
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User

@@ -44,7 +44,12 @@ user. The administrator can see all the details of the token.
    *Tokens overview*
 
 The administrator can click on one token, to show more details of this token
-and to perform actions on this token. Read on in :ref:`token_details`.
+and to perform actions on this token. Read on here:
+
+.. toctree::
+   :maxdepth: 1
+
+   token_details
 
 In the *Token Applications* the administrator can check for all SSH Keys attached to
 services and for HOTP tokens attached to machines for offline authentication.
@@ -68,7 +73,12 @@ the tokens it contains.
 
    *Container List*
 
-More details about the container view can be found in :ref:`container_functionality`.
+More details about the container view can be found here:
+
+.. toctree::
+   :maxdepth: 1
+
+   container_view
 
 .. _usersview:
 

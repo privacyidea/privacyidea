@@ -17,7 +17,9 @@ from privacyidea.lib.user import (User, create_user,
                                   split_user,
                                   get_user_from_param,
                                   UserError)
+from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.user import log as user_log
+from privacyidea.models import NodeName
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
 
@@ -48,7 +50,7 @@ class UserTestCase(MyTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-    }
+                  }
 
     def test_00_create_user(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -199,8 +201,8 @@ class UserTestCase(MyTestCase):
 
         # create a realm, where cornelius is in two resolvers!
         rid = save_resolver({"resolver": self.resolvername3,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE2})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm2,
@@ -276,14 +278,16 @@ class UserTestCase(MyTestCase):
         # resolver.
         self.assertEqual(User(login="cornelius",
                               realm="realm2").check_password("test"), None)
+        delete_realm("realm2")
+        delete_realm("passwordrealm")
 
     def test_11_get_search_fields(self):
         user = User(login="cornelius", realm=self.realm1)
-        sF = user.get_search_fields()
-        self.assertTrue(self.resolvername1 in sF, sF)
-        resolver_sF = sF.get(self.resolvername1)
-        self.assertTrue("username" in resolver_sF, resolver_sF)
-        self.assertTrue("userid" in resolver_sF, resolver_sF)
+        s_f = user.get_search_fields()
+        self.assertTrue(self.resolvername1 in s_f, s_f)
+        resolver_s_f = s_f.get(self.resolvername1)
+        self.assertTrue("username" in resolver_s_f, resolver_s_f)
+        self.assertTrue("userid" in resolver_s_f, resolver_s_f)
 
     def test_12_resolver_priority(self):
         # Test the priority of resolvers.
@@ -366,11 +370,12 @@ class UserTestCase(MyTestCase):
         # Create the user
         uid = create_user(resolver, {"username": "achmed3",
                                      "givenname": "achmed"},
-                                     password="secret")
+                          password="secret")
         self.assertTrue(uid > 6)
 
         user = User("achmed3", realm=realm)
         r = user.check_password("secret")
+        self.assertEqual(f"achmed3@{realm}", r)
 
         # delete user
         r = user.delete()
@@ -379,14 +384,21 @@ class UserTestCase(MyTestCase):
     def test_15_user_exist(self):
         root = User("root", resolver=self.resolvername1, realm=self.realm1)
         self.assertTrue(root.exist())
+        delete_realm("realm1")
 
     def test_16_ordered_resolver(self):
-        rid = save_resolver({"resolver": "resolver2",
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
-        rid = save_resolver({"resolver": "reso4",
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        save_resolver({"resolver": "resolver2",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        save_resolver({"resolver": "reso3",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE2})
+        save_resolver({"resolver": "reso4",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
 
         (added, failed) = set_realm("sort_realm",
                                     [
@@ -395,8 +407,8 @@ class UserTestCase(MyTestCase):
                                         {'name': "reso3", 'priority': 27},
                                         {'name': "reso4", 'priority': 5}])
 
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 4)
+        self.assertEqual(0, len(failed), failed)
+        self.assertEqual(4, len(added), added)
 
         root = User("root", "sort_realm")
         r = root.get_ordered_resolvers()
@@ -406,6 +418,58 @@ class UserTestCase(MyTestCase):
         self.assertEqual(r[3], "resolver1")
 
         delete_realm("sort_realm")
+
+        # Now check with nodes given
+        nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
+        nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        NodeName(id=nd1_uuid, name="Node1").save()
+        NodeName(id=nd2_uuid, name="Node2").save()
+
+        get_app_config()["NODE_UUID"] = nd1_uuid
+        (added, failed) = set_realm("sort_node_realm",
+                                    [
+                                        {
+                                            'name': "resolver1",
+                                            'priority': 30,
+                                            'node': nd2_uuid,
+                                        },
+                                        {
+                                            'name': "resolver2",
+                                            'priority': 10,
+                                            'node': nd1_uuid,
+                                        },
+                                        {
+                                            "name": "reso3",
+                                            "priority": 35,
+                                            "node": nd2_uuid
+                                        },
+                                        {'name': "reso3", 'priority': 27},
+                                        {'name': "reso4", 'priority': 5}
+                                    ])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 5)
+
+        root = User("root", "sort_node_realm")
+        r = root.get_ordered_resolvers()
+        self.assertEqual(3, len(r), r)
+        self.assertEqual(r[0], "reso4")
+        self.assertEqual(r[1], "resolver2")
+        self.assertEqual(r[2], "reso3")
+
+        # check resolver on node 2
+        get_app_config()["NODE_UUID"] = nd2_uuid
+        root = User("root", "sort_node_realm")
+        r = root.get_ordered_resolvers()
+        self.assertEqual(3, len(r), r)
+        self.assertEqual(r[0], "reso4")
+        self.assertEqual(r[1], "reso3")
+        self.assertEqual(r[2], "resolver1")
+
+        delete_realm("sort_node_realm")
+        delete_resolver("resolver1")
+        delete_resolver("resolver2")
+        delete_resolver("reso3")
+        delete_resolver("reso4")
 
     def test_17_check_nonascii_user(self):
         realm = "sqlrealm"
@@ -481,6 +545,7 @@ class UserTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_19_compare_user_object(self):
+        set_realm(self.realm1, [{'name': self.resolvername1}])
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         params = ({'LDAPURI': 'ldap://localhost',
                    'LDAPBASE': 'o=test',
@@ -507,7 +572,7 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(failed), 0)
 
         # Comparing different objects fails
-        self.assertFalse(User("salesman", "ldap") == None)
+        self.assertIsNotNone(User("salesman", "ldap"))
         # comparing different realm or resolver fails
         self.assertFalse(User("cornelius", self.realm1) == User("salesman", "ldap"))
         # comparing different users fails
@@ -520,6 +585,9 @@ class UserTestCase(MyTestCase):
         delete_resolver("ldapresolver")
 
     def test_50_user_attributes(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
         user = User(login="root",
                     realm=self.realm1)
         r = user.set_attribute("hans", "wurst")
@@ -530,21 +598,24 @@ class UserTestCase(MyTestCase):
         self.assertEqual(attrs.get("hans"), "wurst")
         self.assertEqual(attrs.get("hugen"), "dubel")
         # Now we can overwrite attributes
-        r = user.set_attribute("hans", "meiser")
+        user.set_attribute("hans", "meiser")
         attrs = user.attributes
         self.assertEqual(attrs.get("hans"), "meiser")
         self.assertEqual(attrs.get("hugen"), "dubel")
         # now delete some attributes of the user
         r = user.delete_attribute("hans")
-        self.assertTrue(r == 1)
+        self.assertEqual(r, 1)
         attrs = user.attributes
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), "dubel")
         # delete all attributes
         user.set_attribute("key", "value")
         r = user.delete_attribute()
-        self.assertTrue(r == 2)
+        self.assertEqual(r, 2)
         attrs = user.attributes
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), None)
         self.assertEqual(attrs.get("key"), None)
+
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)

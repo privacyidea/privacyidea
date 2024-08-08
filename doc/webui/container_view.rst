@@ -33,32 +33,32 @@ different actions on the container and the contained tokens.
    *Container Details*
 
 Delete
-------
+......
 By clicking on the delete button, two options appear: Deleting only the container or deleting the container with all
 contained tokens.
 
 States
-------
+......
 
 A container can be in multiple states. However, there are also states that exclude each other, e.g. active and
 disabled. Exclusive states are displayed next to each other.
 
 
 Realms
-------
+......
 
 A container can be in multiple realms even without having a specific user assigned. If a user is assigned, the container
 is automatically in the realm of the user. This realm can not be removed without unassigning the user.
 
 User
-----
+....
 
 To assign a user, select a realm and start typing the users name. Select one of the suggested users and assign it to the
 container by clicking on the 'Assign User' button. Clicking on the assigned users name, redirects to the
 :ref:'user_details' page.
 
 Tokens
-------
+......
 
 At the bottom of the container details page, all the tokens in the container are listed. You can enable and disable each
 token and reset the failure counter. You can also remove or delete tokens from the container.

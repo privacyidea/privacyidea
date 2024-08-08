@@ -1019,7 +1019,7 @@ def return_saml_attributes_on_fail():
     return r
 
 
-def get_privacyidea_node(default='localnode'):
+def get_privacyidea_node(default='localnode') -> str:
     """
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
@@ -1032,19 +1032,45 @@ def get_privacyidea_node(default='localnode'):
     return node_name
 
 
-def get_privacyidea_nodes():
+def get_privacyidea_nodes() -> list:
     """
-    This returns the list of the nodes, including the own local node name
+    This returns the list of the nodes known to privacyIDEA.
+    It includes the own local node name and returns the name and the
+    corresponding UUID
 
-    :return: list of nodes
+    :return: list of nodes as dicts with name and uuid
     :rtype: list
     """
-    node_names = []
+    nodes_list = []
     nodes = db.session.query(NodeName).all()
-    for node in nodes:
-        node_names.append(node.name)
 
-    return node_names
+    for node in nodes:
+        nodes_list.append({
+            "uuid": node.id,
+            "name": node.name})
+
+    return nodes_list
+
+
+def get_privacyidea_node_names() -> list:
+    """
+    This returns the list of the node names known to privacyIDEA.
+    It includes the own local node name.
+
+    :return: list of node names as strings
+    :rtype: list
+    """
+    return [node.get("name") for node in get_privacyidea_nodes()]
+
+
+def check_node_uuid_exists(node_uuid) -> bool:
+    """
+    Check if a node with the given UUID exists in the database.
+
+    :param node_uuid: the UUID of the node
+    :return: True if the node exists in the database, False otherwise
+    """
+    return db.session.query(NodeName).filter_by(id=node_uuid).first() is not None
 
 
 @register_export()

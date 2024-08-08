@@ -32,7 +32,8 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+"""privacyIDEA Database definition"""
+
 import binascii
 import logging
 import traceback
@@ -41,24 +42,19 @@ from datetime import datetime, timedelta, timezone
 from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Mapped
 
-from privacyidea.lib.crypto import (encrypt,
-                                    encryptPin,
-                                    decryptPin,
-                                    geturandom,
-                                    hash,
-                                    SecretObj,
-                                    get_rand_digit_str)
-from sqlalchemy import and_, desc
+from privacyidea.lib.crypto import (encrypt, encryptPin, decryptPin,
+                                    geturandom, hash, SecretObj, pass_hash,
+                                    verify_pass_hash, get_rand_digit_str)
+from sqlalchemy import and_
 from sqlalchemy.schema import Sequence, CreateSequence
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.exc import IntegrityError
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
-from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.error import DatabaseError
 
 log = logging.getLogger(__name__)
 
@@ -1228,7 +1224,7 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
         self.resolver_id = None
         self.realm_id = None
         if priority:
-            self.priority = priority
+            self.priority = int(priority)
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver_name:
@@ -1249,12 +1245,12 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                 # Did not find a NodeName entry, adding a new one only if node_name is set
                 if node_name:
                     self.node_uuid = NodeName(node_uuid, node_name).save().id
+                else:
+                    raise DatabaseError(f"No NodeName entry found for UUID {node_uuid}")
 
         elif node_name:
-            # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)
-                                               .order_by(desc(NodeName.lastseen))
-                                               .first()).id
+            # Get the UUID for the corresponding node name
+            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)).id
 
 
 class TokenOwner(MethodsMixin, db.Model):

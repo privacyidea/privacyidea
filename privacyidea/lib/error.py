@@ -21,12 +21,11 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#    
+#
 """
 contains Errors and Exceptions
 """
 
-from privacyidea.lib import lazy_gettext
 import logging
 
 log = logging.getLogger(__name__)
@@ -54,6 +53,7 @@ class ERROR:
     RESOURCE_NOT_FOUND = 601
     HSM = 707
     SELFSERVICE = 807
+    DATABASE = 902
     SERVER = 903
     USER = 904
     PARAMETER = 905
@@ -192,3 +192,9 @@ class ParameterError(privacyIDEAError):
 
     def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
         privacyIDEAError.__init__(self, description=description, id=id)
+
+
+class DatabaseError(privacyIDEAError):
+    """Error in the database layer"""
+    def __init__(self, description="database error!", eid=ERROR.DATABASE):
+        privacyIDEAError.__init__(self, description=description, id=eid)

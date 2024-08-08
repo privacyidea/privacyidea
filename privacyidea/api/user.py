@@ -62,14 +62,14 @@ def get_users():
                   from this realm
     :param resolver: a distinct resolvername
     :param <searchexpr>: a search expression, that depends on the ResolverClass
-    
+
     :return: json result with "result": true and the userlist in "value".
 
     **Example request**:
 
     .. sourcecode:: http
 
-       GET /user?realm=realm1 HTTP/1.1
+       GET /user/?realm=realm1 HTTP/1.1
        Host: example.com
        Accept: application/json
 
@@ -108,7 +108,7 @@ def get_users():
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})
-    
+
     return send_result(users)
 
 

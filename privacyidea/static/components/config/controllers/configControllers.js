@@ -175,8 +175,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         });
         ConfigFactory.getPINodes(function (data) {
             $scope.pinodes = [];
-            angular.forEach(data.result.value, function (value, key) {
-                $scope.pinodes.push({name: value, ticked: false});
+            angular.forEach(data.result.value, function (node) {
+                $scope.pinodes.push({name: node.name, uuid: node.uuid, ticked: false});
             });
             $scope.pinodesLoaded = true;
             check_all_loaded();

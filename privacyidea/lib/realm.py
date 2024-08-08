@@ -44,6 +44,7 @@ from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.error import DatabaseError
 
 log = logging.getLogger(__name__)
 
@@ -139,16 +140,20 @@ def set_default_realm(default_realm=None):
     :return: db ID of the realm set as default
     :rtype: int
     """
+    res = 0
     r = Realm.query.filter_by(default=True).first()
     if r:
         # delete the old entry
         r.default = False
+        r.save()
+        res = r.id
     if default_realm:
         # set the new realm as default realm
         r = fetch_one_resource(Realm, name=default_realm)
         r.default = True
-    r.save()
-    return r.id
+        r.save()
+        res = r.id
+    return res
 
 
 @log_with(log)
@@ -218,6 +223,7 @@ def set_realm(realm, resolvers=None):
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     :rtype: tuple
+    .. versionchanged:: 3.10 accept a node in the resolver configuration
     """
     if resolvers is None:
         resolvers = []
@@ -245,11 +251,16 @@ def set_realm(realm, resolvers=None):
         reso_name = reso['name'].strip()
         db_reso = Resolver.query.filter_by(name=reso_name).first()
         if db_reso:
-            ResolverRealm(db_reso.id, db_realm.id,
-                          node_uuid=str(reso.get('node', '')),
-                          priority=reso.get('priority', None)).save()
-            added.append(reso_name)
+            try:
+                ResolverRealm(db_reso.id, db_realm.id,
+                              node_uuid=str(reso.get('node', '')),
+                              priority=reso.get('priority')).save()
+                added.append(reso_name)
+            except DatabaseError as exx:
+                log.warning(f"Could not add resolver {reso_name} to realm {realm}: {exx}")
+                failed.append(reso_name)
         else:
+            log.debug(f"Could not find resolver {reso_name} in database.")
             failed.append(reso_name)
 
     # if this is the first realm, make it the default

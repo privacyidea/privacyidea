@@ -235,6 +235,8 @@ def create_app(config_name="development",
         DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
         logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
+    log = logging.getLogger(__name__)
+
     queue.register_app(app)
 
     if initialize_hsm:
@@ -247,41 +249,36 @@ def create_app(config_name="development",
         try:
             pi_uuid = uuid.UUID(app.config.get("PI_UUID", ""))
         except ValueError as e:
-            logging.getLogger(__name__).debug(f"Could not determine UUID from config: {e}")
+            log.debug(f"Could not determine UUID from config: {e}")
             # check if we can get the UUID from an external file
             pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
             try:
                 with open(pi_uuid_file) as f:
                     pi_uuid = uuid.UUID(f.read().strip())
             except Exception as e:  # pragma: no cover
-                logging.getLogger(__name__).debug(f"Could not determine UUID "
-                                                  f"from file '{pi_uuid_file}': {e}")
+                log.debug(f"Could not determine UUID from file '{pi_uuid_file}': {e}")
 
                 # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
                 try:
                     with open("/etc/machine-id") as f:
                         pi_uuid = uuid.UUID(f.read().strip())
                 except Exception as e:  # pragma: no cover
-                    logging.getLogger(__name__).debug(f"Could not determine the machine "
-                                                      f"id: {e}")
+                    log.debug(f"Could not determine the machine id: {e}")
                     # we generate a random UUID which will change on every startup
                     # unless it is persisted to the pi_uuid_file
                     pi_uuid = uuid.uuid4()
-                    logging.getLogger(__name__).warning(f"Generating a random UUID: {pi_uuid}! "
-                                                        f"If persisting the UUID fails, "
-                                                        f"it will change on every application start")
+                    log.warning(f"Generating a random UUID: {pi_uuid}! If "
+                                f"persisting the UUID fails, it will change on every application start")
                     # only in case of a generated UUID we save it to the uuid file
                     try:
                         with open(pi_uuid_file, 'a') as f:  # pragma: no cover
                             f.write(f"{str(pi_uuid)}\n")
-                            logging.getLogger(__name__).info(f"Successfully wrote current UUID"
-                                                             f" to file '{pi_uuid_file}'")
+                            log.info(f"Successfully wrote current UUID to file '{pi_uuid_file}'")
                     except IOError as exx:
-                        logging.getLogger(__name__).warning(f"Could not write UUID to "
-                                                            f"file '{pi_uuid_file}': {exx}")
+                        log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
 
             app.config["PI_UUID"] = str(pi_uuid)
-            logging.getLogger(__name__).debug(f"Current UUID: '{pi_uuid}'")
+            log.debug(f"Current UUID: '{pi_uuid}'")
 
         pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
 
@@ -291,11 +288,10 @@ def create_app(config_name="development",
                                       lastseen=datetime.datetime.utcnow()))
             db.session.commit()
         else:
-            logging.getLogger(__name__).warning(f"Could not update node names in "
-                                                f"db. Check that table '{NodeName.__tablename__}' exists.")
+            log.warning(f"Could not update node names in db. "
+                        f"Check that table '{NodeName.__tablename__}' exists.")
 
-    logging.getLogger(__name__).debug("Reading application from the static "
-                                      "folder {0!s} and the template folder "
-                                      "{1!s}".format(app.static_folder, app.template_folder))
+    log.debug(f"Reading application from the static folder {app.static_folder} "
+              f"and the template folder {app.template_folder}")
 
     return app
