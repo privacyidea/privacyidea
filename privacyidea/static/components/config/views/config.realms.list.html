@@ -23,7 +23,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="(realmName, realm) in realmByNodes[nodeUUID]">
+        <tr ng-repeat="(realmName, realm) in realmByNodes[nodeName]">
             <td>
                 <span class="glyphicon glyphicon-ok"
                       ng-show="realm.default"></span>
@@ -39,10 +39,13 @@
                 {{ realmName }}
             </td>
             <td>
-                <div ng-hide="editRealm === realmName || (nodesById[nodeUUID] !== selectedNode.name && selectedNode.name !== 'All')"
-                     ng-repeat="(nodeUUID, resolver) in realm.nodes">
-                    <span ng-hide="nodeUUID === '' || numNodes <= 1 || selectedNode.name !== 'All'">
-                        <b>{{ nodesById[nodeUUID] }}:</b><br>
+                <div ng-hide="editRealm === realmName || (nodeName !== selectedNode.name && nodeName !== 'All' && selectedNode.name !== 'All')"
+                     ng-repeat="(nodeName, resolver) in realm.nodes">
+                    <span ng-hide="nodeName === 'All' || numNodes <= 1">
+                        <b>{{ nodeName }}:</b><br>
+                    </span>
+                    <span ng-hide="nodeName !== 'All' || numNodes <= 1">
+                        <b>{{ nodesDisplayString['All'] }}:</b><br>
                     </span>
                     <span ng-repeat="reso in resolver">
                         <a ui-sref="config.resolvers.edit{{ reso.type }}
@@ -102,7 +105,7 @@
                         <input name="realmname" id="realmname"
                                class="form-control"
                                ng-model="newRealmParams.realmName" required
-                               placeholder="{{ 'new_realm'|translate }}"
+                               placeholder="{{ 'new realm'|translate }}"
                                ng-pattern="inputNamePatterns.simple.pattern"
                                title="{{ inputNamePatterns.simple.title | translate }}"
                                autofocus/>

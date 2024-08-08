@@ -11,7 +11,7 @@
         <input name="realmName" id="realmname"
                class="form-control"
                ng-model="realmName" required
-               placeholder="{{ 'new_realm'|translate }}"
+               placeholder="{{ 'new realm'|translate }}"
                ng-pattern="inputNamePatterns.simple.pattern"
                ng-disabled="editRealm"
                title="{{ inputNamePatterns.simple.title | translate }}"
@@ -32,7 +32,7 @@
                 <button class="btn btn-default btn-sm"
                         ng-click="applyDefaultResolversToNodes()"
                         ng-show="numNodes > 1">
-                    Apply selection to nodes
+                    Apply Selection to Nodes
                 </button>
             </div>
 
@@ -89,12 +89,12 @@
 
     <hr class="horizontal-line-invisible">
     <div class="form-group text-center">
-        <button ng-click="setRealmNode(realmName, selectedResolvers)"
+        <button ng-click="setRealmNodeValidate(realmName, selectedResolvers, selectedNodes)"
                 ng-hide="editRealm"
                 ng-disabled="realmName === undefined || realmName === '' || !checkRight('resolverwrite')"
-                class="btn btn-primary" translate>Create realm
+                class="btn btn-primary" translate>Create Realm
         </button>
-        <button ng-click="setRealmNode(realmName, selectedResolvers)" ng-show="editRealm"
+        <button ng-click="setRealmNodeValidate(realmName, selectedResolvers, selectedNodes)" ng-show="editRealm"
                 class="btn btn-primary" translate>Save Realm
         </button>
     </div>

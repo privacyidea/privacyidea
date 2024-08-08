@@ -74,6 +74,28 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                 });
             }
         };
+
+        $scope.setRealmNodeValidate = function (realmName, selectedResolvers, selectedNodes) {
+            // Validate whether the node of the selected resolvers are selected
+            angular.forEach(selectedResolvers, function (res, nodeName) {
+                if (nodeName !== "" && nodeName !== "All") {
+                    let nodeSelected = false;
+                    angular.forEach(selectedNodes, function (node) {
+                        if (node.name == nodeName && node.ticked) {
+                            nodeSelected = true;
+                        }
+                    });
+                    if (!nodeSelected) {
+                        // node not selected, remove resolvers of this node
+                        angular.forEach(selectedResolvers[nodeName], function (resolver, resolverName) {
+                            selectedResolvers[nodeName][resolverName].selected = false;
+                        });
+                    }
+                }
+            });
+            $scope.setRealmNode(realmName, selectedResolvers)
+        };
+
     }]);
 
 myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$state", "$stateParams", "ConfigFactory",
@@ -98,20 +120,36 @@ myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$
                 for (let i = 0; i < realm.resolver.length; i++) {
                     // sort resolvers by nodes for the realm
                     let resObj = realm.resolver[i];
-                    if (!realm.nodes[resObj.node]) {
-                        realm.nodes[resObj.node] = [];
+                    let nodeName = $scope.nodesById[resObj.node];
+                    if (!nodeName) {
+                        nodeName = "All";
                     }
-                    realm.nodes[resObj.node].push(resObj);
 
-                    // sort realm by nodes
-                    if (!$scope.realmByNodes[resObj.node]) {
-                        // Initialize the node's dict
-                        $scope.realmByNodes[resObj.node] = {};
+                    if (!realm.nodes[nodeName]) {
+                        realm.nodes[nodeName] = [];
                     }
-                    $scope.realmByNodes[resObj.node][realmName] = realm;
-                    $scope.realmByNodes["All"][realmName] = realm;
+                    realm.nodes[nodeName].push(resObj);
                 }
-            })
+
+                // sort realm by nodes and set default if node-specific realm is not defined
+                $scope.realmByNodes["All"][realmName] = angular.copy(realm);
+                angular.forEach(Object.keys($scope.nodes), function (nodeName) {
+                    if (nodeName !== "All") {
+                        if(!$scope.realmByNodes[nodeName]){
+                            $scope.realmByNodes[nodeName] = {};
+                        }
+                        let realmForNode = angular.copy(realm);
+                        realmForNode.nodes = {};
+                        if (realm.nodes[nodeName]) {
+                            realmForNode.nodes[nodeName] = angular.copy(realm.nodes[nodeName]);
+                            $scope.realmByNodes[nodeName][realmName] = realmForNode;
+                        } else if (realm.nodes["All"]) {
+                            realmForNode.nodes["All"] = angular.copy(realm.nodes["All"]);
+                            $scope.realmByNodes[nodeName][realmName] = realmForNode;
+                        }
+                    }
+                });
+            });
         };
 
         $scope.delRealm = function (name) {
@@ -194,6 +232,14 @@ myApp.controller("realmCreateController", ["$scope", "$location", "$rootScope", 
             });
         };
 
+        $scope.nodeSelectionChanged = function () {
+            angular.forEach($scope.selectedResolvers, function (nodeName, res) {
+                if ($scope.selectedNodes.indexOf(nodeName) == -1) {
+                    delete ($scope.selectedResolvers[nodeName]);
+                }
+            });
+        };
+
     }]);
 
 myApp.controller("realmEditController", ["$scope", "$location", "$rootScope", "$state", "$stateParams",
@@ -245,6 +291,7 @@ myApp.controller("realmEditController", ["$scope", "$location", "$rootScope", "$
         };
 
         $scope.getStateParams();
+
 
         $scope.applyDefaultResolversToNodes = function () {
             angular.forEach($scope.selectedNodes, function (node) {
