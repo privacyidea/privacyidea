@@ -191,8 +191,8 @@
                     </label>
                     <div class="col-sm-9">
                         <input id="passwordstoredprocedure" class="form-control"
-                            ng-model="params.PasswordStoredProcedure" required
-                            placeholder="DECLARE @OUT int; EXEC PasswordStoredProcedure @username = :username, @password = :password, @out OUTPUT; SELECT @out" />
+                            ng-model="params.PasswordStoredProcedure" ng-required="params.UsePasswordStoredProcedure"
+                            placeholder="DECLARE @out int; EXEC PasswordStoredProcedure @username = :username, @password = :password, @id = @out OUTPUT; SELECT @out as out" />
                     </div>
                 </div>
 
@@ -202,8 +202,8 @@
                     </label>
                     <div class="col-sm-9">
                         <input id="passwordstoredproceduremapping" class="form-control"
-                            ng-model="params.PasswordStoredProcedureMap" required
-                            placeholder='{"username": "username", "password": "password"}' />
+                            ng-model="params.PasswordStoredProcedureMap" ng-required="params.UsePasswordStoredProcedure"
+                            placeholder='{"username": "username", "password": "password", "@out": "userid"}' />
                     </div>
                 </div>
             </div>
