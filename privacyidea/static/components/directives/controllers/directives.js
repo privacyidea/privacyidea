@@ -475,9 +475,19 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.selectorcreatecontainer.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {
-                scope.showUserAssignment = scope.enableUserAssignment && AuthFactory.checkRight("container_assign_user");
-                // if showUserAssignment is false, the user assignment will be disabled
-                scope.assignUserToContainer = scope.checkUserAssignment && scope.showUserAssignment;
+                // Showing the user assignment checkbox is not only dependent on the enableUserAssignment flag, but also
+                // on the user assignment rights and the userName being set.
+                scope.showUserAssignment = scope.enableUserAssignment && AuthFactory.checkRight("container_assign_user") && scope.userName;
+                // If showUserAssignment is false, the user assignment will be disabled
+                scope.assignUserToContainer = scope.checkUserAssignment;
+
+                scope.$watch("userName", function (newVal, oldVal) {
+                    if (newVal) {
+                        scope.showUserAssignment = scope.enableUserAssignment && AuthFactory.checkRight("container_assign_user");
+                    } else {
+                        scope.showUserAssignment = false;
+                    }
+                });
 
                 scope.newContainer = {
                     type: "generic", types: "", token_types: "", description: "",
@@ -585,12 +595,8 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 }
 
                 scope.setDefaultSerialSelection = function () {
-                    if (!scope.containerSerial || scope.containerSerial === "createnew") {
-                        if (AuthFactory.checkRight("container_create")) {
-                            scope.containerSerial = "createnew";
-                        } else {
-                            scope.containerSerial = "none";
-                        }
+                    if (!scope.containerSerial) {
+                        scope.containerSerial = "none";
                     }
                 }
 
@@ -638,7 +644,6 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                         const newSerial = response.data.result.value.container_serial;
                         scope.getContainers();
                         scope.containerSerial = newSerial;
-                        scope.isCreateNew = false;
                         scope.newContainer.description = "";
                         if (scope.assignUserToContainer && scope.userName && scope.userRealm) {
                             params["user"] = fixUser(scope.userName);

@@ -68,7 +68,7 @@ google-auth==2.23.3
     # via privacyIDEA (setup.py)
 greenlet==3.0.1
     # via sqlalchemy
-grpcio==1.59.0
+grpcio==1.62.2
     # via privacyIDEA (setup.py)
 huey[redis]==2.5.0
     # via

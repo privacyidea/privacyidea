@@ -10,7 +10,8 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
+                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
+                                              AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
@@ -921,7 +922,7 @@ class PushTokenTestCase(MyTestCase):
                                                method='POST',
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
-                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     # this will be overwritten by pushtoken_disable_wait
                                                      PUSH_ACTION.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
@@ -995,7 +996,6 @@ class PushTokenTestCase(MyTestCase):
                                                self.firebase_config_name))
         # create push token
         tokenobj = self._create_push_token()
-        serial = tokenobj.get_serial()
 
         # set PIN
         tokenobj.set_pin("pushpin")
