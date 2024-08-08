@@ -2,6 +2,8 @@ Version 3.10dev4
 
   Features:
   * Node-specific realms (#3758)
+    * Add node names and UUIDs to database (#3757)
+    * Add, remove and configure realms with node-specific resolver configuration (API and WebUI)
   * Add token containers (#1291)
     * There are three container types (generic, smartphone, and yubikey) which can contain different token types
     * A container can have one owner and multiple tokens
