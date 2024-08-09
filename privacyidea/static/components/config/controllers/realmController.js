@@ -6,6 +6,7 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
         }
 
         $scope.nodes = {"All": "All"};
+        $scope.nodesDefined = false;
         $scope.nodesById = {};
         $scope.nodesDisplayString = {"All": "All Nodes"};
 
@@ -21,6 +22,7 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                     $scope.nodeNames.push({"name": node.name, "ticked": false});
                     $scope.nodesDisplayString[node.name] = node.name;
                 });
+                $scope.nodesDefined = true;
             });
         };
         $scope.getNodes();
@@ -210,7 +212,12 @@ myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$
             $scope.selectedResolvers = {};
         };
 
-        $scope.getRealms();
+        // wait until the nodes are loaded from the realmController to load realms and sort them by nodes
+        $scope.$watch("nodesDefined", function (newVal, oldVal) {
+            if (newVal) {
+                $scope.getRealms();
+            }
+        }, true);
 
         // listen to the reload broadcast
         $scope.$on("piReload", function () {
