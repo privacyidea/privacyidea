@@ -30,7 +30,7 @@ The code is tested in tests/test_lib_caconnector.py.
 import logging
 from .log import log_with
 from .config import (get_caconnector_types,
-                    get_caconnector_class_dict)
+                     get_caconnector_class_dict)
 from ..models import (CAConnector,
                       CAConnectorConfig)
 from ..api.lib.utils import required
@@ -108,10 +108,10 @@ def save_caconnector(params):
         if types.get(key) == "password":
             value = encryptPassword(value)
         CAConnectorConfig(caconnector_id=connector_id,
-                        Key=key,
-                        Value=value,
-                        Type=types.get(key, ""),
-                        Description=desc.get(key, "")).save()
+                          Key=key,
+                          Value=value,
+                          Type=types.get(key, ""),
+                          Description=desc.get(key, "")).save()
     return connector_id
 
 
@@ -171,6 +171,7 @@ def get_caconnector_specific_options(catype, data):
     c_obj_class = get_caconnector_class(catype)
     c_obj = c_obj_class("dummy", data)
     return c_obj.get_specific_options()
+
 
 @log_with(log)
 def delete_caconnector(connector_name):
@@ -270,7 +271,7 @@ def get_caconnector_object(connector_name):
     c_obj = None
 
     connectors = CAConnector.query.filter(func.lower(CAConnector.name) ==
-                                    connector_name.lower()).all()
+                                          connector_name.lower()).all()
     for conn in connectors:
         c_obj_class = get_caconnector_class(conn.catype)
 

@@ -561,7 +561,6 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
-
             },
             delMachineResolver: function (name, callback) {
                 $http.delete(machineResolverUrl + "/" + name, {
@@ -571,7 +570,6 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
-
             },
             delCAConnector: function (name, callback) {
                 $http.delete(CAConnectorUrl + "/" + name, {

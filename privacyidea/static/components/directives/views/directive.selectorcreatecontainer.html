@@ -1,5 +1,5 @@
 <div class="form-group">
-    <div>
+    <div class="form-group">
         <select class="form-control"
                 id="containerSelect"
                 ng-disabled="disableSelection"
@@ -9,7 +9,8 @@
         </select>
     </div>
     <!-- New container creation -->
-    <div ng-show="containerSerial == 'createnew'">
+    <div class="form-group"
+         ng-show="containerSerial == 'createnew'">
         <!-- Type -->
         <label for="containerType" translate>New container type</label>
         <select class="form-control"
@@ -18,12 +19,11 @@
                 ng-model="newContainer.type"
                 ng-options="type as attr.description for (type, attr) in newContainer.types">
         </select>
-        <div class="form-group" translate>
-            Supported Token Types: {{ newContainer.token_types }}
-            <br>
+        <div class="form-group">
+            <span translate>Supported Token Types</span>: {{ newContainer.token_types }}
         </div>
         <!-- Description -->
-        <label for="description" translate>Description</label>
+        <label for="description" translate>Description of the container</label>
         <input type="text" class="form-control" id="description"
                autocomplete="new-password"
                placeholder="{{ 'Some nice words...'|translate }}"
@@ -41,10 +41,9 @@
             <button type="button"
                     ng-click="createContainer()"
                     ng-disabled="checkRight('container_create')"
-                    class="btn btn-primary">
+                    class="btn btn-default">
                 <span translate>Create Container</span>
             </button>
         </div>
     </div>
 </div>
-

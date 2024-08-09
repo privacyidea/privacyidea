@@ -200,6 +200,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             useIt: false
         };
         $scope.enrolling = false;
+        $scope.containerSerial = $stateParams.containerSerial;
 
         $scope.formInit = {
             tokenTypes: {},  // will be set later with response from server
@@ -496,8 +497,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
             $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
 
-            if ($scope.form.container_serial === "createnew" || $scope.form.container_serial === "none") {
-                delete $scope.form.container_serial
+            if ($scope.containerSerial !== "createnew" && $scope.containerSerial !== "none") {
+                $scope.form.container_serial = $scope.containerSerial;
             }
 
             TokenFactory.enroll($scope.newUser,

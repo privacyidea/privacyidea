@@ -177,6 +177,7 @@ myApp.controller("periodicTaskDetailController", ["$scope", "$stateParams",
         }
         ConfigFactory.setPeriodicTask(params, function() {
             $state.go("config.periodictasks.list");
+            $scope.reload();
         });
         $('html,body').scrollTop(0);
     };
