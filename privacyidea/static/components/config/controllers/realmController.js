@@ -1,5 +1,5 @@
-myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$state", "ConfigFactory",
-    function ($scope, $location, $rootScope, $state, ConfigFactory) {
+myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$state", "ConfigFactory", "gettextCatalog",
+    function ($scope, $location, $rootScope, $state, ConfigFactory, gettextCatalog) {
         // redirect to the list view
         if ($location.path() === "/config/realms") {
             $location.path("/config/realms/list");
@@ -8,7 +8,7 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
         $scope.nodes = {"All": "All"};
         $scope.nodesDefined = false;
         $scope.nodesById = {};
-        $scope.nodesDisplayString = {"All": "All Nodes"};
+        $scope.nodesDisplayString = {"All": gettextCatalog.getString("All Nodes")};
 
         $scope.getNodes = function () {
             $scope.nodeNames = [];

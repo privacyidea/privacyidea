@@ -189,7 +189,6 @@ from privacyidea.lib.user import User
 from privacyidea.lib import _
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
-import datetime
 import re
 import ast
 import traceback
@@ -2428,10 +2427,10 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.CHALLENGETEXT: {
                 'type': 'str',
-                'desc': _('Use an alternate challenge text for telling the '
-                          'user to enter an OTP value.  You can also use '
-                          'tags for automated replacement. Check out our '
-                          'docs at https://privacyidea.readthedocs.io/ for more details.')
+                'desc': _('Use an alternative challenge text for telling the '
+                          'user to enter an OTP value. You can also use '
+                          'tags for automated replacement. Check out the '
+                          'documentation for more details.')
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',

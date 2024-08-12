@@ -1329,13 +1329,11 @@ def split_pin_pass(passw, otplen, prependpin):
     if prependpin:
         pin = passw[0:-otplen]
         otpval = passw[-otplen:]
-        log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                    len(otpval)))
+        log.debug(f"PIN prepended. PIN length is {len(pin)}, OTP length is {len(otpval)}.")
     else:
         pin = passw[otplen:]
         otpval = passw[0:otplen]
-        log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                   len(otpval)))
+        log.debug(f"PIN appended. PIN length is {len(pin)}, OTP length is {len(otpval)}.")
     return pin, otpval
 
 
@@ -1383,7 +1381,7 @@ def create_tag_dict(logged_in_user=None,
                 url=request.url_root if request else "",
                 user=tokenowner.info.get("givenname") if tokenowner else "",
                 surname=tokenowner.info.get("surname") if tokenowner else "",
-                givenname=recipient.get("givenname"),
+                givenname=tokenowner.info.get("givenname") if tokenowner else "",
                 username=tokenowner.login if tokenowner else "",
                 userrealm=tokenowner.realm if tokenowner else "",
                 tokentype=tokentype,

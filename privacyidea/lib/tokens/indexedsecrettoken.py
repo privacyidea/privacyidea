@@ -104,10 +104,10 @@ class IndexedSecretTokenClass(TokenClass):
                'policy': {SCOPE.AUTH: {
                    ACTION.CHALLENGETEXT: {
                        'type': 'str',
-                       'desc': _('Use an alternate challenge text for telling the '
+                       'desc': _('Use an alternative challenge text for telling the '
                                  'user which positions of the secret he should enter. You can also '
-                                 'use tags for automated replacement. Check out our docs '
-                                 'at https://privacyidea.readthedocs.io/ for more details.'),
+                                 'use tags for automated replacement. Check out the documentation '
+                                 'for more details.'),
                        'group': "Indexed Secret Token"
                    },
                    PIIXACTION.COUNT: {

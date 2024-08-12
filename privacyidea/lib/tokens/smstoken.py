@@ -216,10 +216,10 @@ class SmsTokenClass(HotpTokenClass):
                                      'one SMS OTP.')},
                        ACTION.CHALLENGETEXT: {
                            'type': 'str',
-                           'desc': _('Use an alternate challenge text for telling the '
+                           'desc': _('Use an alternative challenge text for telling the '
                                      'user to enter the code from the SMS. You can also '
-                                     'use tags for automated replacement. Check out our docs '
-                                     'at https://privacyidea.readthedocs.io/ for more details.')
+                                     'use tags for automated replacement. Check out the '
+                                     'documentation for more details.')
                        }
                    },
                    SCOPE.ADMIN: {

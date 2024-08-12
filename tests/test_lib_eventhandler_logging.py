@@ -120,8 +120,8 @@ class LoggingTestCase(MyTestCase):
                           'surname', 'givenname', 'username', 'userrealm',
                           'tokentype', 'time', 'date', 'client_ip',
                           'ua_browser', 'ua_string']
-        tok = init_token({"serial": "testserial", "type": "spass",
-                          "pin": "pin"}, user=User("cornelius", "sqliterealm"))
+        init_token({"serial": "testserial", "type": "spass",
+                    "pin": "pin"}, user=User("cornelius", "sqliterealm"))
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin", "role": "admin",
@@ -153,7 +153,7 @@ class LoggingTestCase(MyTestCase):
                 ('pi-eventlogger', 'INFO',
                  'admin=admin realm=super action=/auth serial=testserial '
                  'url=http://localhost/ user=Cornelius surname=Kölbel '
-                 'givenname=None username=cornelius userrealm=sqliterealm '
+                 'givenname=Cornelius username=cornelius userrealm=sqliterealm '
                  'tokentype=spass time=05:06:08 date=2018-03-04 '
                  'client_ip=None ua_browser=browser ua_string=hello world')
             )

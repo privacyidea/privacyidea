@@ -617,7 +617,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         if ($location.path() === "/config") {
             $location.path("/config/system");
         }
-        if ($location.path() == "/config/system") {
+        if ($location.path() === "/config/system") {
             $location.path("/config/system/edit");
         }
         if ($location.path() === "/config/resolvers") {

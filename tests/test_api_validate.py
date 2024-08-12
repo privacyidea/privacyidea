@@ -1515,7 +1515,7 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), _("Enter the OTP from the Email:"))
+            self.assertEqual(detail.get("message"), _("Enter the OTP from the Email"))
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value
@@ -1529,7 +1529,6 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertTrue(result.get("value"))
 
         # delete the token
@@ -2239,10 +2238,8 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
             detail = res.json.get("detail")
-            self.assertEqual(detail.get("messages")[0],
-                             _("Enter the OTP from the Email:"))
-            transaction_id = detail.get("transaction_ids")[0]
-            # check the sent message
+            self.assertEqual(detail.get("messages")[0], _("Enter the OTP from the Email"))
+            # check the send message
             sent_message = smtpmock.get_sent_message()
             self.assertTrue("RGVpbiAyODcwODI=" in sent_message)
             self.assertTrue("Subject: Dein OTP" in sent_message)
@@ -2256,14 +2253,14 @@ class ValidateAPITestCase(MyApiTestCase):
         OTPKE2 = "31323334353637383930313233343536373839AA"
         user = User("multichal", self.realm1)
         pin = "test49"
-        token_a = init_token({"serial": "CR2A",
-                              "type": "hotp",
-                              "otpkey": OTPKE2,
-                              "pin": pin}, user)
-        token_b = init_token({"serial": "CR2B",
-                              "type": "hotp",
-                              "otpkey": self.otpkey,
-                              "pin": pin}, user)
+        init_token({"serial": "CR2A",
+                    "type": "hotp",
+                    "otpkey": OTPKE2,
+                    "pin": pin}, user)
+        init_token({"serial": "CR2B",
+                    "type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
@@ -4310,7 +4307,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(data.get("result").get("authentication"), "CHALLENGE")
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email", detail.get("message"))
 
         # Now test with triggerchallenge
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -4325,7 +4322,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(data.get("result").get("value"), 1)
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("messages")[0])
+            self.assertEqual("Enter the OTP from the Email", detail.get("messages")[0])
         remove_token(self.serial_email)
 
     @smtpmock.activate
@@ -4357,7 +4354,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4372,7 +4369,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -4429,7 +4426,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4444,7 +4441,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -5388,7 +5385,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             _("Enter the OTP from the Email:"))
+                             _("Enter the OTP from the Email"))
             transaction_id = detail.get("transaction_id")
 
         # If we wait long enough, the challenge has expired,
