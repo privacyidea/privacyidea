@@ -111,8 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             callback-cancel="getContainer()"
             callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
-        <tr ng-hide="true">
-            <!-- Hide container info since it is not yet used. -->
+        <tr>
             <td translate> Info</td>
             <td>
                 <ul>
@@ -194,14 +193,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </fieldset>
             </td>
         </tr>
-        <tr ng-hide="true">
-            <!-- Hide last seen since it is not yet used with the planned functionality. -->
+        <tr>
             <td translate> Last Seen</td>
             <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>
         </tr>
-        <tr ng-hide="true">
-            <!-- Hide last updated since it is not yet used with the planned functionality. -->
+        <tr>
             <td translate> Last Updated</td>
             <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
             <td></td>

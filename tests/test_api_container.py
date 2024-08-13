@@ -1,3 +1,8 @@
+import base64
+
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+
 from privacyidea.lib.container import init_container, find_container_by_serial, add_token_to_container, assign_user, \
     add_container_realms, get_container_realms
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
@@ -1291,3 +1296,26 @@ class APIContainer(MyApiTestCase):
                                            {"token_serial": "non-existing", "pagesize": 15},
                                            self.at, 'GET')
         self.assertGreater(json["result"]["value"]["count"], 0)
+
+    def test_24_init_binding_smartphone(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        registration_url = "http://test/container/register/initialization"
+        smartphone.init_registration({"container_registration_url": registration_url})
+
+        # Mock smartphone
+        container_info = smartphone.get_container_info_dict()
+        message = f"{container_info['nonce']}|{container_info['registration_time']}|{registration_url}|{smartphone.serial}"
+        private_key_smph = ec.generate_private_key(ec.SECP384R1())
+        public_key_smph = private_key_smph.public_key()
+        pub_key_smph_bytes = public_key_smph.public_bytes(encoding=serialization.Encoding.PEM,
+                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        pub_key_smph_encoded = base64.b64encode(pub_key_smph_bytes).decode('utf-8')
+
+        signature = private_key_smph.sign(message.encode("utf-8"), ec.ECDSA(hashes.SHA256()))
+        params = {"container_serial": smartphone_serial, "signature": base64.b64encode(signature),
+                  "public_key": pub_key_smph_encoded}
+
+        json = self.request_assert_success('container/register/initialization',
+                                           params,
+                                           self.at, 'POST')
