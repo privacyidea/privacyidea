@@ -937,7 +937,11 @@ def check_verify_enrollment(request, response):
     :param response:
     :return:
     """
-    serial = response.json.get("detail").get("serial")
+    serial = response.json.get("detail", {}).get("serial")
+    if not serial:
+        log.info("No serial number found in response. Can not do check_verify_enrollment.")
+        return
+
     verify = request.all_data.get("verify")
     if verify:
         # In case we are in a 2nd step verification, we must early exit
