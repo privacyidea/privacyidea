@@ -940,7 +940,7 @@ def check_verify_enrollment(request, response):
     serial = response.json.get("detail", {}).get("serial")
     if not serial:
         log.info("No serial number found in response. Can not do check_verify_enrollment.")
-        return
+        return response
 
     verify = request.all_data.get("verify")
     if verify:
