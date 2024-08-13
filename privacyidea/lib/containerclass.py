@@ -44,7 +44,6 @@ class TokenContainerClass:
             value = ""
         self._db_container.description = value
         self._db_container.save()
-        self.update_last_updated()
 
     @property
     def type(self):
@@ -71,7 +70,6 @@ class TokenContainerClass:
         """
         self._db_container.last_updated = datetime.now(timezone.utc)
         self._db_container.save()
-        self.update_last_seen()
 
     @property
     def realms(self):
@@ -380,6 +378,16 @@ class TokenContainerClass:
         """
         return self._db_container.info_list
 
+    def get_container_info_dict(self):
+        """
+        Return the tokencontainerinfo from the DB
+
+        :return: dictionary of tokencontainerinfo objects
+        """
+        container_info_list = self._db_container.info_list
+        container_info_dict = {info.key: info.value for info in container_info_list}
+        return container_info_dict
+
     def delete_container_info(self, key=None):
         """
         Delete the tokencontainerinfo from the DB
@@ -397,6 +405,18 @@ class TokenContainerClass:
         if container_infos.count() == 0:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
         return res
+
+    def init_binding(self):
+        """
+        Initialize binding of a pi container to a physical container.
+        """
+        return
+
+    def validate_binding(self, params):
+        """
+        Finalize binding of a pi container to a physical container.
+        """
+        return {}
 
     @classmethod
     def get_class_type(cls):

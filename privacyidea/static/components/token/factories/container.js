@@ -131,15 +131,6 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
-            updateLastSeen: function (serial) {
-                $http.post(containerUrl + "/" + serial + "/lastseen",
-                    {}, {
-                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).then(function (response) {
-                }, function (error) {
-                    AuthFactory.authError(error.data)
-                });
-            },
             setStates: function (params, callback) {
                 $http.post(containerUrl + "/" + params["container_serial"] + "/states", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}

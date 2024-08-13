@@ -1,3 +1,8 @@
+import base64
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import delete_container_by_id, find_container_by_id, find_container_by_serial, \
     init_container, get_all_containers, _gen_serial, find_container_for_token, get_container_policy_info, \
@@ -783,3 +788,48 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Pass undefined user role raises Parameter error
         self.assertRaises(ParameterError, _check_user_access_on_container, container, user, "random")
+
+    def test_34_init_registration_smartphone(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        registration_url = "http://test/container/register/initializaion"
+        params = {"container_registration_url": registration_url}
+
+        res = smartphone.init_registration(params)
+        self.assertIn("containerUrl", res.keys())
+        self.assertIn("nonce", res.keys())
+
+        # Check container info
+        container_info = smartphone.get_container_info_dict()
+        self.assertEqual(res["nonce"], container_info["nonce"])
+        self.assertIn("registration_time", container_info.keys())
+
+    def test_35_validate_registration_smartphone(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        registration_url = "http://test/container/register/initialization"
+        smartphone.init_registration({"container_registration_url": registration_url})
+
+        # Mock smartphone
+        container_info = smartphone.get_container_info_dict()
+        message = f"{container_info['nonce']}|{container_info['registration_time']}|{registration_url}|{smartphone.serial}"
+        private_key_smph = ec.generate_private_key(ec.SECP384R1())
+        public_key_smph = private_key_smph.public_key()
+        pub_key_smph_bytes = public_key_smph.public_bytes(encoding=serialization.Encoding.PEM,
+                                                            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        pub_key_smph_encoded = base64.b64encode(pub_key_smph_bytes).decode('utf-8')
+        signature = private_key_smph.sign(message.encode("utf-8"), ec.ECDSA(hashes.SHA256()))
+        params = {"signature": base64.b64encode(signature), "public_key": pub_key_smph_encoded}
+
+        # Validate registration
+        res = smartphone.validate_registration(params)
+        self.assertIn("public_key", res.keys())
+
+        # Check if container info is set correctly
+        container_info = smartphone.get_container_info_dict()
+        container_info_keys = container_info.keys()
+        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_server", container_info_keys)
+        self.assertIn("private_key_server", container_info_keys)
+        self.assertNotIn("nonce", container_info_keys)
+        self.assertNotIn("registration_time", container_info_keys)

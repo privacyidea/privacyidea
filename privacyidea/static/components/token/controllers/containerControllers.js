@@ -11,6 +11,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             token_types: ""
         };
 
+        $scope.containerRegister = false;
+
         $scope.$watch('form', function (newVal, oldVal) {
             if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
                 $scope.form.token_types = $scope.formData.containerTypes[newVal.containerType]["token_types_display"];
@@ -109,7 +111,15 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
 
             ContainerFactory.createContainer(params, function (data) {
-                $state.go("token.containerdetails", {"containerSerial": data.result.value.container_serial});
+                $scope.containerSerial = data.result.value.container_serial;
+                if (data.result.value['containerUrl']) {
+                    $scope.containerRegister = true;
+                    $scope.containerRegistrationURL = data.result.value['containerUrl']['value'];
+                    $scope.containerRegistrationQR = data.result.value['containerUrl']['img'];
+                } else {
+                    $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                }
+
             });
         };
     }]);
@@ -430,14 +440,14 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (serial) {
-               $scope.disableToken(serial);
+                $scope.disableToken(serial);
             });
         };
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (serial) {
-               $scope.enableToken(serial);
+                $scope.enableToken(serial);
             });
         };
 
@@ -460,7 +470,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     // last token: pass callback function
                     TokenFactory.delete(token, callback);
                 } else {
-                    TokenFactory.delete(token, function(){});
+                    TokenFactory.delete(token, function () {
+                    });
                 }
             });
             $scope.showDialogAll = false;
@@ -552,5 +563,4 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         // ----------- Initial calls -------------
         $scope.getContainer();
-        ContainerFactory.updateLastSeen($scope.containerSerial);
     }]);
