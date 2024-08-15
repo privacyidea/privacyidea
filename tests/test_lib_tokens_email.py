@@ -3,13 +3,13 @@ This test file tests the lib.tokens.smstoken
 """
 from testfixtures import log_capture
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
-from privacyidea.models import (Token, Config, Challenge)
+from privacyidea.models import Token, Config
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
@@ -412,7 +412,7 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(c[0], c)
         display_message = c[1]
         self.assertTrue(c[3]["attributes"]["state"], transactionid)
-        self.assertEqual(display_message, _("Enter the OTP from the Email:"))
+        self.assertEqual(display_message, _("Enter the OTP from the Email"))
         _n, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
         self.assertEqual(mimetype, "plain")
 
@@ -453,7 +453,7 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(c[0], c)
         display_message = c[1]
         self.assertTrue(c[3]["attributes"]["state"], transactionid)
-        self.assertEqual(display_message, _("Enter the OTP from the Email:"))
+        self.assertEqual(display_message, _("Enter the OTP from the Email"))
 
     @smtpmock.activate
     def test_20_sending_email_exception(self):

@@ -179,10 +179,10 @@ class EmailTokenClass(HotpTokenClass):
                                  'one EMail OTP.')},
                    ACTION.CHALLENGETEXT: {
                        'type': 'str',
-                       'desc': _('Use an alternate challenge text for telling the '
-                                 'user to enter the code from the eMail. You can also '
-                                 'use tags for automated replacement. Check out our docs '
-                                 'at https://privacyidea.readthedocs.io/ for more details.')
+                       'desc': _('Use an alternative challenge text for telling the '
+                                 'user to enter the code from the e-mail. You can also '
+                                 'use tags for automated replacement. Check out the documentation '
+                                 'for more details.')
                    },
                },
                    SCOPE.ENROLL: {
@@ -275,7 +275,7 @@ class EmailTokenClass(HotpTokenClass):
         return_message = get_action_values_from_options(SCOPE.AUTH,
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
-                                                        options) or _("Enter the OTP from the Email:")
+                                                        options) or _("Enter the OTP from the Email")
         reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 

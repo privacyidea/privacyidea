@@ -259,10 +259,10 @@ class U2fTokenClass(TokenClass):
                                      "trusting the registered U2F tokens.")},
                        ACTION.CHALLENGETEXT: {
                            'type': 'str',
-                           'desc': _('Use an alternate challenge text for telling the '
-                                     'user to confirm with his U2F device.  You can also '
-                                     'use tags for automated replacement. Check out our docs '
-                                     'at https://privacyidea.readthedocs.io/ for more details.')
+                           'desc': _('Use an alternative challenge text for telling the '
+                                     'user to confirm with his U2F device. You can also '
+                                     'use tags for automated replacement. Check out the '
+                                     'documentation for more details.')
                        }
                    },
                    SCOPE.AUTHZ: {

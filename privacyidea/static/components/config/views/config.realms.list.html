@@ -128,13 +128,13 @@
                     <span ng-hide="editRealm || selectedNode.name !== 'All'">
                         <button ng-click="createRealmInPlace(newRealmParams.realmName, newRealmParams.node, selectedResolvers)"
                                 ng-disabled="formNewRealm.$invalid || !newRealmParams.realmName"
-                                class="btn btn-primary" translate>Create realm
+                                class="btn btn-primary" translate>Create Realm
                         </button>
                     </span>
                     <span ng-hide="editRealm || selectedNode.name === 'All'">
                         <button ng-click="createRealmInPlace(newRealmParams.realmName, selectedNode.name, selectedResolvers)"
                                 ng-disabled="formNewRealm.$invalid || !newRealmParams.realmName"
-                                class="btn btn-primary" translate>Create realm for node {{ selectedNode.name }}
+                                class="btn btn-primary" translate>Create Realm for node {{ selectedNode.name }}
                         </button>
                     </span>
                 </td>
