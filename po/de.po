@@ -26,19 +26,6 @@ msgctxt "subscription"
 msgid "Level"
 msgstr "Subskriptionsstufe"
 
-#: privacyidea/static/components/token/views/token.enrolled.paper.html:22
-#: privacyidea/static/components/token/views/token.enrolled.paper.html:24
-#: privacyidea/static/components/token/views/token.enrolled.paper.html:26
-#: privacyidea/static/components/token/views/token.enrolled.paper.html:28
-#: privacyidea/static/components/token/views/token.enrolled.paper.html:30
-#: privacyidea/static/components/token/views/token.enrolled.tan.html:22
-#: privacyidea/static/components/token/views/token.enrolled.tan.html:24
-#: privacyidea/static/components/token/views/token.enrolled.tan.html:26
-#: privacyidea/static/components/token/views/token.enrolled.tan.html:28
-#: privacyidea/static/components/token/views/token.enrolled.tan.html:30
-msgid "#"
-msgstr "#"
-
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:116
 msgid "(none)"
 msgstr "(none)"
@@ -347,7 +334,7 @@ msgid "Add new question"
 msgstr "Neue Frage hinzufügen"
 
 #: privacyidea/static/components/token/views/token.details.html:607
-#: privacyidea/static/components/token/views/token.enroll.html:82
+#: privacyidea/static/components/token/views/token.enroll.html:86
 #, fuzzy
 #| msgid "Add a condition"
 msgid "Add to Container"
@@ -393,6 +380,12 @@ msgstr "Alle Maschinen-Resolver"
 msgid "All Machines"
 msgstr "Alle Maschinen"
 
+#: privacyidea/static/components/config/controllers/realmController.js:11
+#, fuzzy
+#| msgid "All tokens"
+msgid "All Nodes"
+msgstr "Alle Token"
+
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
 msgstr "Alle regelmäßigen Aufgaben"
@@ -435,6 +428,7 @@ msgstr "Eine E-Mail wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
+#: privacyidea/static/components/token/views/token.applications.html:2
 #: privacyidea/static/components/token/views/token.details.html:646
 #: privacyidea/static/components/token/views/token.details.html:725
 msgid "Application"
@@ -448,10 +442,6 @@ msgstr "Applikationstyp"
 msgid "Application specific password"
 msgstr "Applikationsspezifisches Passwort"
 
-#: privacyidea/static/components/token/views/token.applications.html:2
-msgid "Application:"
-msgstr "Anwendung:"
-
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -461,7 +451,6 @@ msgstr ""
 "Zeichen langen Hex-String eingeben."
 
 #: privacyidea/static/components/token/views/token.details.html:582
-#: privacyidea/static/components/token/views/token.enroll.html:74
 #, fuzzy
 #| msgid "Assign User"
 msgid "Assign Container"
@@ -500,7 +489,13 @@ msgid ""
 "                realm {{ userRealm }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:47
+#: privacyidea/static/components/token/views/token.enroll.html:76
+#, fuzzy
+#| msgid "Assign token to user"
+msgid "Assign the token to a container"
+msgstr "Token einem Benutzer zuweisen"
+
+#: privacyidea/static/components/token/views/token.enroll.html:48
 msgid "Assign token to user"
 msgstr "Token einem Benutzer zuweisen"
 
@@ -635,7 +630,7 @@ msgstr "CRL Konfiguration"
 msgid "Cache Timeout (seconds)"
 msgstr "Cache-Zeitüberschreitung (Sekunden)"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:77
+#: privacyidea/static/components/config/views/config.realms.list.html:88
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
 #: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.containerdetails.html:123
@@ -727,8 +722,10 @@ msgstr "OTP PIN und OTP Wert prüfen."
 msgid "Choose a realm..."
 msgstr "Realm auswählen..."
 
-#: privacyidea/static/components/config/views/config.realms.html:9
-msgid "Clear default realm"
+#: privacyidea/static/components/config/views/config.realms.list.html:147
+#, fuzzy
+#| msgid "Clear default realm"
+msgid "Clear Default Realm"
 msgstr "Standard-Realm zurücksetzen"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:20
@@ -925,6 +922,19 @@ msgstr "Erstelle ein neues Ereignis"
 msgid "Create Periodic Task Definition"
 msgstr "Erstelle eine Definition einer regelmäßigen Aufgabe"
 
+#: privacyidea/static/components/config/views/config.realms.create.html:92
+#: privacyidea/static/components/config/views/config.realms.html:17
+#: privacyidea/static/components/config/views/config.realms.list.html:129
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
+#, fuzzy
+#| msgid "Create realm"
+msgid "Create Realm"
+msgstr "Realm anlegen"
+
+#: privacyidea/static/components/config/views/config.realms.list.html:135
+msgid "Create Realm for node {{ selectedNode.name }}"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.events.details.html:25
 msgid "Create a new Event Handler"
 msgstr "Erstelle eine neue Ereignisdefinition"
@@ -1023,11 +1033,6 @@ msgstr "Erzeuge einen neue Richtlinie"
 msgid "Create new SMS Gateway definition"
 msgstr "Eine neue SMS-Gateway-Definition erzeugen"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:122
-#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
-msgid "Create realm"
-msgstr "Realm anlegen"
-
 #: privacyidea/static/components/user/views/user.details.html:108
 msgid "Custom attribute name"
 msgstr "Benutzerdefinierter Attributname"
@@ -1060,7 +1065,7 @@ msgstr "Datum"
 msgid "DayPassword Token settings"
 msgstr "DayPassword-Token Einstellungen"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:5
+#: privacyidea/static/components/config/views/config.realms.list.html:19
 msgid "Default"
 msgstr "Standard"
 
@@ -1098,7 +1103,7 @@ msgstr "Standard Zeitfenster"
 #: privacyidea/static/components/config/views/config.policies.list.html:79
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:31
 #: privacyidea/static/components/config/views/config.radius.list.html:31
-#: privacyidea/static/components/config/views/config.realms.list.html:68
+#: privacyidea/static/components/config/views/config.realms.list.html:79
 #: privacyidea/static/components/config/views/config.resolvers.list.html:27
 #: privacyidea/static/components/config/views/config.serviceid.list.html:30
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:27
@@ -1184,7 +1189,6 @@ msgstr "Benutzer löschen"
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
-#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:26
 #: privacyidea/static/components/token/views/token.containercreate.html:19
 #: privacyidea/static/components/token/views/token.containerdetails.html:278
 #: privacyidea/static/components/token/views/token.containerdetails.html:75
@@ -1200,6 +1204,10 @@ msgstr "Benutzer löschen"
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr "Beschreibung"
+
+#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:26
+msgid "Description of the container"
+msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.details.html:99
 #: privacyidea/static/components/token/views/token.details.html:698
@@ -1327,7 +1335,7 @@ msgstr "E-Mail-Token-Einstellungen"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:19
-#: privacyidea/static/components/config/views/config.realms.list.html:59
+#: privacyidea/static/components/config/views/config.realms.list.html:70
 #: privacyidea/static/components/config/views/config.resolvers.list.html:19
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:57
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
@@ -1397,6 +1405,10 @@ msgstr "Richtlinie {{ existingPolicyname }} bearbeiten"
 #: privacyidea/static/components/config/views/config.radius.edit.html:2
 msgid "Edit RADIUS server {{ identifier }}"
 msgstr "RADIUS-Server {{ identifier }} bearbeiten"
+
+#: privacyidea/static/components/config/views/config.realms.html:11
+msgid "Edit Realm {{ $stateParams.realmName }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:12
 #: privacyidea/static/components/config/views/config.resolvers.html:12
@@ -1494,7 +1506,7 @@ msgstr "Endpunkt (URL)"
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
-#: privacyidea/static/components/token/views/token.enroll.html:165
+#: privacyidea/static/components/token/views/token.enroll.html:169
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:56
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:56
@@ -1505,7 +1517,7 @@ msgstr "Token ausrollen"
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:147
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:238
+#: privacyidea/static/components/token/views/token.enroll.html:242
 msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen"
 
@@ -1562,11 +1574,11 @@ msgstr ""
 "Bitte geben Sie Ihren Benutzernamen und Ihr Passwort ein, \n"
 "um sich anzumelden."
 
-#: privacyidea/static/components/config/factories/config.js:44
+#: privacyidea/static/components/config/factories/config.js:48
 msgid "Error fetching policy template"
 msgstr "Fehler beim Laden der Richtlinien-Vorlage"
 
-#: privacyidea/static/components/config/factories/config.js:34
+#: privacyidea/static/components/config/factories/config.js:36
 msgid "Error fetching policy templates."
 msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 
@@ -1593,7 +1605,7 @@ msgstr "Beispiele"
 msgid "Expiration"
 msgstr "Gültig bis"
 
-#: privacyidea/static/components/token/views/token.enroll.html:99
+#: privacyidea/static/components/token/views/token.enroll.html:103
 #, fuzzy
 #| msgid "Extended Atttributes"
 msgid "Extended Attributes"
@@ -1812,7 +1824,7 @@ msgstr "Hilfe zu Richtlinien"
 msgid "Help about RADIUS-Server"
 msgstr "Hilfe zu RADIUS Servern"
 
-#: privacyidea/static/components/config/views/config.realms.html:17
+#: privacyidea/static/components/config/views/config.realms.html:26
 msgid "Help about Realms"
 msgstr "Hilfe zu Realms"
 
@@ -2245,7 +2257,7 @@ msgstr "Als {{ remoteUser }} anmelden"
 msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
-#: privacyidea/static/components/token/views/token.enroll.html:242
+#: privacyidea/static/components/token/views/token.enroll.html:246
 #: privacyidea/static/templates/menu.html:151
 msgid "Logout"
 msgstr "Abmelden"
@@ -2369,7 +2381,7 @@ msgstr "Neue Dienste-Kennzeichnung definieren"
 msgid "New Tokengroup definition"
 msgstr "Neue Tokengruppen Definition"
 
-#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:14
+#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:15
 msgid "New container type"
 msgstr ""
 
@@ -2440,10 +2452,11 @@ msgstr "Keine Seriennummer gefunden"
 msgid "No user found"
 msgstr "Keinen Benutzer gefunden"
 
-#: privacyidea/static/components/config/views/config.periodictasks.details.html:75
-#: privacyidea/static/components/config/views/config.periodictasks.list.html:11
-msgid "Nodes"
-msgstr "Knoten"
+#: privacyidea/static/components/config/views/config.realms.create.html:42
+#, fuzzy
+#| msgid "Delete Configuration"
+msgid "Node-specific Resolver Configuration"
+msgstr "Konfiguration löschen"
 
 #: privacyidea/static/components/config/views/config.token.question.html:11
 msgid "Number of answers"
@@ -2493,7 +2506,7 @@ msgstr "OTP-Schlüssel"
 msgid "OTP Length"
 msgstr "OTP-Länge"
 
-#: privacyidea/static/components/token/views/token.enroll.html:53
+#: privacyidea/static/components/token/views/token.enroll.html:54
 msgid "OTP PINs do not match!"
 msgstr "Die OTP-PINs sind nicht gleich!"
 
@@ -2618,7 +2631,7 @@ msgstr "PIN erfolgreich gesetzt."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:35
-#: privacyidea/static/components/token/views/token.enroll.html:61
+#: privacyidea/static/components/token/views/token.enroll.html:62
 msgid "PIN/Password"
 msgstr "PIN/Passwort"
 
@@ -2935,11 +2948,17 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm"
 
+#: privacyidea/static/components/config/views/config.realms.create.html:10
+#, fuzzy
+#| msgid "Realm name"
+msgid "Realm Name"
+msgstr "Realmname"
+
 #: privacyidea/static/components/login/controllers/loginControllers.js:639
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
-#: privacyidea/static/components/config/views/config.realms.list.html:6
+#: privacyidea/static/components/config/views/config.realms.list.html:20
 msgid "Realm name"
 msgstr "Realmname"
 
@@ -3017,13 +3036,13 @@ msgid "Remove All"
 msgstr "Remote Realm"
 
 #: privacyidea/static/components/token/views/token.details.html:614
-#: privacyidea/static/components/token/views/token.enroll.html:87
+#: privacyidea/static/components/token/views/token.enroll.html:91
 msgid "Remove from Container"
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:45
-#: privacyidea/static/components/token/views/token.enroll.html:69
+#: privacyidea/static/components/token/views/token.enroll.html:70
 msgid "Repeat PIN or password"
 msgstr "PIN/Passwort wiederholen"
 
@@ -3093,6 +3112,12 @@ msgstr "Resolver"
 msgid "Resolver name"
 msgstr "Resolvername"
 
+#: privacyidea/static/components/config/views/config.realms.create.html:25
+#, fuzzy
+#| msgid "Resolver"
+msgid "Resolvers"
+msgstr "Resolver"
+
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:38
 msgid "Resource Server URI"
 msgstr "URI des Resource Servers"
@@ -3140,7 +3165,7 @@ msgstr "Rollout Status"
 msgid "Rollover"
 msgstr "Rollover"
 
-#: privacyidea/static/components/token/views/token.enroll.html:166
+#: privacyidea/static/components/token/views/token.enroll.html:170
 msgid "Rollover Token"
 msgstr "Rollover Token"
 
@@ -3232,7 +3257,7 @@ msgstr "SSL Konfiguration"
 msgid "STARTTLS"
 msgstr "STARTTLS"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:72
+#: privacyidea/static/components/config/views/config.realms.list.html:83
 #: privacyidea/static/components/config/views/config.tokens.html:83
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:62
 msgid "Save"
@@ -3267,6 +3292,12 @@ msgstr "Richtlinie speichern"
 #: privacyidea/static/components/config/views/config.radius.edit.html:120
 msgid "Save RADIUS server"
 msgstr "RADIUS-Server speichern"
+
+#: privacyidea/static/components/config/views/config.realms.create.html:97
+#, fuzzy
+#| msgid "Save realms"
+msgid "Save Realm"
+msgstr "Realms speichern"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:253
 msgid "Save Resolver"
@@ -3631,7 +3662,7 @@ msgstr "Erfolgreich authentisiert."
 msgid "Support"
 msgstr "Support"
 
-#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:22
+#: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:23
 #: privacyidea/static/components/token/views/token.containercreate.html:13
 #, fuzzy
 #| msgid "Skipped Tokens"
@@ -3663,7 +3694,7 @@ msgid "System Config"
 msgstr "Systemkonfiguration"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:574
-#: privacyidea/static/components/config/controllers/configControllers.js:788
+#: privacyidea/static/components/config/controllers/configControllers.js:719
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
@@ -4456,7 +4487,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr "Der Server wird ein Passwort erzeugen."
 
-#: privacyidea/static/components/token/views/token.enroll.html:148
+#: privacyidea/static/components/token/views/token.enroll.html:152
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -4480,7 +4511,7 @@ msgstr ""
 "Der Zeitraum, in dem das Passwort genutzt werden kann. zum Beispiel "
 "<code>1d</code> oder <code>12h</code>."
 
-#: privacyidea/static/components/token/views/token.enroll.html:196
+#: privacyidea/static/components/token/views/token.enroll.html:200
 #, fuzzy
 #| msgid ""
 #| "The token was successfully enrolled with serial number\n"
@@ -4523,7 +4554,7 @@ msgstr "Der Token wurde ausgerollt."
 msgid "The token is valid till {{ lostResult.end_date }}."
 msgstr "Der Token ist bis {{ lostResult.end_date }} gültig."
 
-#: privacyidea/static/components/token/views/token.enroll.html:215
+#: privacyidea/static/components/token/views/token.enroll.html:219
 msgid ""
 "The token was enrolled, but you still need to verify it before you can use "
 "it!"
@@ -4535,7 +4566,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "Der Token wurde erfolgreich als verloren markiert."
 
-#: privacyidea/static/components/token/views/token.enroll.html:181
+#: privacyidea/static/components/token/views/token.enroll.html:185
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -4552,7 +4583,7 @@ msgstr ""
 "<a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
 "realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
-#: privacyidea/static/components/token/views/token.enroll.html:190
+#: privacyidea/static/components/token/views/token.enroll.html:194
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5032,7 +5063,7 @@ msgstr "Typ"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:40
-#: privacyidea/static/components/token/views/token.enroll.html:65
+#: privacyidea/static/components/token/views/token.enroll.html:66
 msgid "Type a PIN or password"
 msgstr "Geben Sie eine PIN/ein Passwort ein"
 
@@ -5217,7 +5248,7 @@ msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 
 #: privacyidea/static/components/token/views/token.details.html:265
-#: privacyidea/static/components/token/views/token.enroll.html:128
+#: privacyidea/static/components/token/views/token.enroll.html:132
 msgid "Validity End"
 msgstr "Ende Gültigkeit"
 
@@ -5226,7 +5257,7 @@ msgid "Validity Period"
 msgstr "Gültigkeitsdauer"
 
 #: privacyidea/static/components/token/views/token.details.html:239
-#: privacyidea/static/components/token/views/token.enroll.html:107
+#: privacyidea/static/components/token/views/token.enroll.html:111
 msgid "Validity Start"
 msgstr "Begin Gültigkeit"
 
@@ -5245,7 +5276,7 @@ msgid "Verify TLS"
 msgstr "TLS verifizieren"
 
 #: privacyidea/static/components/token/views/token.details.html:80
-#: privacyidea/static/components/token/views/token.enroll.html:225
+#: privacyidea/static/components/token/views/token.enroll.html:229
 msgid "Verify Token"
 msgstr "Token verifizieren"
 
@@ -5665,7 +5696,8 @@ msgstr "Fehlende Zeile"
 msgid "mobile"
 msgstr "Mobiltelefon"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:97
+#: privacyidea/static/components/config/views/config.realms.create.html:14
+#: privacyidea/static/components/config/views/config.realms.list.html:108
 msgid "new realm"
 msgstr "Neuer Realm"
 
@@ -5694,8 +5726,13 @@ msgstr "Telefon"
 msgid "policies"
 msgstr "Richtlinien"
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:75
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:254
-msgid "privacyIDEA Node"
+#: privacyidea/static/components/config/views/config.realms.create.html:43
+#, fuzzy
+#| msgid "privacyIDEA Node"
+msgid "privacyIDEA Nodes"
 msgstr "privacyIDEA Knoten"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:88
@@ -5763,7 +5800,7 @@ msgstr "Realm"
 msgid "resolver"
 msgstr "Resolver"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:7
+#: privacyidea/static/components/config/views/config.realms.list.html:21
 msgid "resolvers"
 msgstr "Resolver"
 
@@ -5794,7 +5831,7 @@ msgstr "Seriennummer, OTP-Schlüssel, Typ, OCRA-Suite"
 msgid "serial number, seed, type, otplen, timeStep"
 msgstr "Seriennummer, OTP-Schlüssel, Typ, OTP-Länge, Zeitschritt"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:16
+#: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "set Default"
 msgstr "Setze als Standard"
 
@@ -5913,6 +5950,15 @@ msgstr "Benutzername"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "#"
+#~ msgstr "#"
+
+#~ msgid "Application:"
+#~ msgstr "Anwendung:"
+
+#~ msgid "Nodes"
+#~ msgstr "Knoten"
 
 #~ msgid "maxfail"
 #~ msgstr "Max. Fehlerzähler"
