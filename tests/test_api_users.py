@@ -1,10 +1,10 @@
+""" API testcases for the "/user/" endpoint """
 from .base import MyApiTestCase
 import json
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token, remove_token
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
 from urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwd"
@@ -25,7 +25,7 @@ class APIUsersTestCase(MyApiTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-    }
+                  }
 
     def _create_user_wordy(self):
         """
@@ -76,23 +76,23 @@ class APIUsersTestCase(MyApiTestCase):
             self.wordy_auth_token = result.get("value").get("token")
             # check that this is a user
             role = result.get("value").get("role")
-            self.assertTrue(role == "user", result)
+            self.assertEqual("user", role, result)
 
     def test_00_get_empty_users(self):
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(b'"status": true' in res.data, res.data)
-            self.assertTrue(b'"value": []' in res.data, res.data)
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["status"], res.json)
+            self.assertEqual([], res.json["result"]["value"], res.json)
 
     def test_01_get_passwd_user(self):
         # create resolver
         with self.app.test_request_context('/resolver/r1',
-                                           data=json.dumps({"resolver": "r1",
+                                           json={"resolver": "r1",
                                                  "type": "passwdresolver",
-                                                 "fileName": PWFILE}),
+                                                 "fileName": PWFILE},
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -111,13 +111,12 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json
             value = result.get("result").get("value")
-            self.assertTrue('r1' in value["added"], res.data)
-            self.assertTrue('r2' in value["failed"], res.data)
+            self.assertIn('r1', value["added"], result)
+            self.assertIn('r2', value["failed"], result)
 
         # get user list
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"realm":
-                                                                       realm}),
+                                           query_string=urlencode({"realm": realm}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -127,25 +126,27 @@ class APIUsersTestCase(MyApiTestCase):
             unames = [x.get('username') for x in value]
             self.assertIn("cornelius", unames, value)
             self.assertIn("corny", unames, value)
+            # Check that there is no password entry in the results
+            self.assertTrue(all(["password" not in x for x in value]), value)
 
         # get user list with search dict
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"username":
-                                                                       "cornelius"}),
+                                           query_string=urlencode({"username": "cornelius"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json
             value = result.get("result").get("value")
+            # Check that there is no password entry in the result
+            self.assertNotIn("password", value, result)
             unames = [x.get('username') for x in value]
             self.assertIn("cornelius", unames, value)
             self.assertNotIn("corny", unames, value)
 
-        # get user with a non existing realm
+        # get user with a non-existing realm
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"realm":
-                                                            "non_existing"}),
+                                           query_string=urlencode({"realm": "non_existing"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -210,8 +211,7 @@ class APIUsersTestCase(MyApiTestCase):
                                                {"user": "wordy2",
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
-                                           headers={'Authorization':
-                                                        wordy_auth_token}):
+                                           headers={'Authorization': wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -227,8 +227,6 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
-            # In self.at_user we store the user token
-            wordy_auth_token = result.get("value").get("token")
             # check that this is a user
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
@@ -342,8 +340,7 @@ class APIUsersTestCase(MyApiTestCase):
                                                {"user": "wördy2".encode('utf-8'),
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
-                                           headers={'Authorization':
-                                                        wordy_auth_token}):
+                                           headers={'Authorization': wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -359,8 +356,6 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
-            # In self.at_user we store the user token
-            wordy_auth_token = result.get("value").get("token")
             # check that this is a user
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
@@ -473,7 +468,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual(result.get("value")[0].get("newattribute"), "newvalue")
 
         # The additional attribute should also be returned, if the user authenticates successfully.
-        init_token({"serial": "SPASS1", "type": "spass", "pin": "test"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "SPASS1", "type": "spass", "pin": "test"},
+                   user=User("cornelius", self.realm1))
         set_policy(name="POL1", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -482,7 +478,6 @@ class APIUsersTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
             details = res.json.get("detail")
             user_data = details.get("user")
             self.assertIn("newattribute", user_data)

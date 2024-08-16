@@ -425,7 +425,6 @@ class UserTestCase(MyTestCase):
         NodeName(id=nd1_uuid, name="Node1").save()
         NodeName(id=nd2_uuid, name="Node2").save()
 
-        get_app_config()["NODE_UUID"] = nd1_uuid
         (added, failed) = set_realm("sort_node_realm",
                                     [
                                         {
@@ -449,6 +448,8 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 5)
 
+        # Test on node 1
+        get_app_config()["PI_NODE_UUID"] = nd1_uuid
         root = User("root", "sort_node_realm")
         r = root.get_ordered_resolvers()
         self.assertEqual(3, len(r), r)
@@ -456,14 +457,41 @@ class UserTestCase(MyTestCase):
         self.assertEqual(r[1], "resolver2")
         self.assertEqual(r[2], "reso3")
 
-        # check resolver on node 2
-        get_app_config()["NODE_UUID"] = nd2_uuid
+        # Test on node 2
+        get_app_config()["PI_NODE_UUID"] = nd2_uuid
         root = User("root", "sort_node_realm")
         r = root.get_ordered_resolvers()
         self.assertEqual(3, len(r), r)
         self.assertEqual(r[0], "reso4")
         self.assertEqual(r[1], "reso3")
         self.assertEqual(r[2], "resolver1")
+
+        # Check the list of users in each realm
+        delete_realm("sort_node_realm")
+        (added, failed) = set_realm("sort_node_realm",
+                                    [
+                                        {
+                                            'name': "resolver1",
+                                            'priority': 30,
+                                            'node': nd1_uuid,
+                                        },
+                                        {
+                                            "name": "reso3",
+                                            "priority": 35,
+                                            "node": nd2_uuid
+                                        }
+                                    ])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 2)
+
+        # Test on node 1
+        get_app_config()["PI_NODE_UUID"] = nd1_uuid
+        ul = get_user_list()
+        self.assertEqual(48, len(ul), ul)
+        # Test on node 2
+        get_app_config()["PI_NODE_UUID"] = nd2_uuid
+        ul = get_user_list()
+        self.assertEqual(15, len(ul), ul)
 
         delete_realm("sort_node_realm")
         delete_resolver("resolver1")

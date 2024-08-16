@@ -11,8 +11,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     PolicyClass)
 from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass,
-                                   assign_token, token_exist, add_tokeninfo, unassign_token, init_token)
+                                   check_serial_pass, unassign_token, init_token,
+                                   assign_token, token_exist, add_tokeninfo)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -2823,7 +2823,7 @@ class APITokenTestCase(MyApiTestCase):
                                                "type": "paper"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             detail = res.json.get("detail")
             result = res.json.get("result")
             self.assertTrue(result.get("status"), result)
@@ -3002,6 +3002,28 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("require_description")
 
+    def test_60_list_tokens_for_user(self):
+        self.setUp_user_realms()
+        tok = init_token({"genkey": 1},
+                         user=User(
+                             login="usernotoken", realm=self.realm1,
+                             resolver=self.resolvername1))
+        # list tokens of user
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({
+                                               "user": "usernotoken",
+                                               "realm": self.realm1}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(1, result.get("value").get("count"), result)
+            token = result.get("value").get("tokens")[0]
+            self.assertEqual(tok.get_serial(), token.get("serial"), token)
+        remove_token(tok.get_serial())
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21
@@ -3082,7 +3104,6 @@ class API00TokenPerformance(MyApiTestCase):
             self.assertFalse(result["status"])
 
         # run POST unassign with a wildcard. This shall not unassign
-        from privacyidea.lib.token import assign_token, unassign_token
         assign_token("perf001", User("cornelius", self.realm1))
         with self.app.test_request_context('/token/unassign',
                                            method='POST',

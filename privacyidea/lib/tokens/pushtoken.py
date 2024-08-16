@@ -442,7 +442,7 @@ class PushTokenClass(TokenClass):
                                'type': 'str',
                                'desc': _('The options that can be presented to the user to confirm the login. '
                                          '<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, '
-                                         '<code>CUSTOM</code>: user defined.'
+                                         '<code>CUSTOM</code>: user defined. '
                                          f'Does only apply if <em>{PUSH_ACTION.REQUIRE_PRESENCE}</em> is set.'),
                                'group': 'PUSH',
                                'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],

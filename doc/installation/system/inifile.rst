@@ -237,10 +237,10 @@ can give these different nodes dedicated names.
 ``PI_NODE`` is a string with the name of this very node. At the startup of
 privacyIDEA, an installation specific unique ID will be used to tie the
 node name to an installation. The administrator can set a unique ID for this
-installation as well with the ``PI_UUID`` configuration value (it must conform to
+installation as well with the ``PI_NODE_UUID`` configuration value (it must conform to
 `RFC 4122 <https://datatracker.ietf.org/doc/html/rfc4122.html>`_).
 
-If no ``PI_UUID`` is configured, privacyIDEA tries to read the ID from a file.
+If no ``PI_NODE_UUID`` is configured, privacyIDEA tries to read the ID from a file.
 The administrator can specify the file with ``PI_UUID_FILE``. The default value
 is ``/etc/privacyidea/uuid.txt``. If this file does not provide an ID, the
 ``/etc/machine-id``  will be used. And if all fails, a unique ID will be generated
