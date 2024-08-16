@@ -486,11 +486,11 @@ class UserTestCase(MyTestCase):
 
         # Test on node 1
         get_app_config()["PI_NODE_UUID"] = nd1_uuid
-        ul = get_user_list()
+        ul = get_user_list(param={"realm": "sort_node_realm"})
         self.assertEqual(48, len(ul), ul)
         # Test on node 2
         get_app_config()["PI_NODE_UUID"] = nd2_uuid
-        ul = get_user_list()
+        ul = get_user_list(param={"realm": "sort_node_realm"})
         self.assertEqual(15, len(ul), ul)
 
         delete_realm("sort_node_realm")
