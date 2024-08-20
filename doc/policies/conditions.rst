@@ -185,6 +185,19 @@ The following comparators can be used in definitions of policy conditions:
 * ``matches`` evaluates to true if the left value completely matches the regular expression given by the right value.
   ``!matches`` evaluates to true if this is not the case.
 
+
+If you want to define a policy that e.g. only matches users from Active Directory, that are in a
+VPN User group, you would first need to map the `memberOf` attribute in the LDAP resolver to a certain
+attribute like `"goups": "memberOf"`. Then you need to define the extended condition:
+
+   "groups" contains "CN=VPN Users,OU=Groups,DC=example,DC=com"
+
+If you however want to define a policy that matches a certain e.g. a certain username from a list,
+you would have to define an extended condition like:
+
+   "username" in "alice,bob,charlie"
+
+
 Error Handling
 ~~~~~~~~~~~~~~
 
