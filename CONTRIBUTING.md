@@ -6,9 +6,9 @@ be really easy.
 First of all:  
 **Thanks a lot for contributing to privacyIDEA!**
 
-## Tell about it
+## Talk about it
 
-You are using privacyIDEA in your network? Tell about it!
+You are using privacyIDEA in your network? Talk about it!
 Write a blog post, tell your friends or simply twitter about it.
 This will make privacyIDEA wider known and attract new users and contributors.
 
@@ -39,7 +39,7 @@ https://community.privacyidea.org
 
 ## Long Term Supported Versions
 We currently do **not** have a long term supported versions. If a new minor version is released, 
-the previous minor versions will usually not receive any more updates. For pressing matters, there might be exceptions.
+the previous minor versions will usually not receive any more updates.
 
 ## Professional services
 
