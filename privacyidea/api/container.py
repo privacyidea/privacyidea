@@ -30,9 +30,8 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        set_container_description, set_container_states, set_container_realms,
                                        delete_container_by_serial, assign_user, unassign_user, add_token_to_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
-                                       remove_multiple_tokens_from_container, get_container_classes)
+                                       remove_multiple_tokens_from_container)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -208,13 +207,6 @@ def init():
     serial = init_container(request.all_data)
     res = {"container_serial": serial}
 
-    # Generate QR Code
-    container = find_container_by_serial(serial)
-    if container.type == "smartphone":
-        params = {'container_registration_url': 'http://127.0.0.1:5000/container/registration/initialization'}
-        res_registration = container.init_registration(params)
-        res.update(res_registration)
-
     # Audit log
     container = find_container_by_serial(serial)
     owners = container.get_users()
@@ -259,6 +251,7 @@ def delete(container_serial):
     # Delete container
     res = delete_container_by_serial(container_serial, user, user_role)
     g.audit_object.log({"success": res > 0})
+
     return send_result(True)
 
 
@@ -590,42 +583,109 @@ def set_container_info(container_serial, key):
     return send_result(res)
 
 
-@container_blueprint.route('register/initialization', methods=['POST'])
-@prepolicy(check_container_action, request, action='container_registration')
-@event('container_registration_init', request, g)
+@container_blueprint.route('register/initialize', methods=['POST'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REGISTER)
+@event('container_register_initialize', request, g)
 @log_with(log)
 def registration_init():
     """
+    Prepares the registration of a container. It returns all information required for the container to register.
+
+    :param: container_serial: Serial of the container
+    :return: Result of the registration process as dictionary (content depends on the container type) like
+
+        ::
+
+            {
+                "container_serial": "serial",
+                "container_registration_url": "http://test/container/register/finalize",
+                ...
+            }
+    """
+    params = request.all_data
+    container_serial = getParam(params, "container_serial", required)
+    container = find_container_by_serial(container_serial)
+    res = {"container_serial": container_serial}
+
+    # Get registration url for the second step
+    registration_url = g.request_headers.environ.get('werkzeug.request').base_url
+    params.update({'container_registration_url': registration_url})
+
+    # Initialize registration
+    res_registration = container.initialize_registration(params)
+    res.update(res_registration)
+    return send_result(res)
+
+
+@container_blueprint.route('register/finalize', methods=['POST'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REGISTER)
+@event('container_register_finalize', request, g)
+@log_with(log)
+def registration_finalize():
+    """
     This endpoint is called from a container as second step for the registration process.
+    At least the container serial has to be passed in the parameters. Further parameters might be required, depending on
+    the container type.
+
+    :param: container_serial: Serial of the container
+    :return: Result of the registration process as dictionary (content depends on the container type)
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
 
     # Get container
-    container_dict = get_all_containers(serial=container_serial)
-    if len(container_dict['containers']) <= 0:
-        log.warning(f"Container {container_serial} does not exist!")
-        raise ResourceNotFoundError(f"Container does not exists!")
-    container = container_dict['containers'][0]
+    container = find_container_by_serial(container_serial)
+
+    # Update params with registration url
+    # TODO: Check if this is the correct way to get the host
+    # host = g.request_headers.environ.get("HTTP_ORIGIN")
+    # registration_url = f"{host}/container/register/finalize"
+    registration_url = g.request_headers.environ.get('werkzeug.request').base_url
+    params.update({'container_registration_url': registration_url})
+
+    # Validate registration
+    res = container.finalize_registration(params)
 
     # Update last seen
     container.update_last_seen()
 
-    # Finalize binding
-    res = container.validate_registration(params)
-
     return send_result(res)
 
 
-@container_blueprint.route('register/<string:container_serial>/terminate', methods=['POST'])
-@prepolicy(check_container_action, request, action='container_registration')
-@event('container_registration_terminate', request, g)
+@container_blueprint.route('register/<string:container_serial>/terminate', methods=['DELETE'])
+@event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate(container_serial: str):
     """
     Terminate the synchronization of a container with privacyIDEA
     """
     container = find_container_by_serial(container_serial)
-    container.terminate_registration()
+    res = container.terminate_registration()
 
-    return send_result({"value": True})
+    return send_result(res)
+
+
+@container_blueprint.route('challenge', methods=['POST'])
+@log_with(log)
+def create_challenge():
+    """
+    Creates a challenge for a container to synchronize with privacyIDEA.
+    """
+    return
+
+
+@container_blueprint.route('<string:container_serial>/synchronize', methods=['POST'])
+def synchronization(container_serial: str):
+    """
+    Validates the challenge if the container is authorized. If successful, the server returns the container's state,
+    including all attributes and tokens. The token secret is not included
+    """
+    return
+
+
+@container_blueprint.route('<string:container_serial>/tokensecrets', methods=['POST'])
+def get_token_secrets(container_serial: str):
+    """
+    This endpoint is called by a container to get the secrets of the tokens in the container.
+    """
+    return

@@ -675,3 +675,16 @@ myApp.directive("selectResolver", ["instanceUrl", "versioningSuffixProvider", "$
             }
         };
     }]);
+
+myApp.directive("registerContainer", ["instanceUrl", "versioningSuffixProvider", "$http",
+    function (instanceUrl, versioningSuffixProvider, $http) {
+        return {
+            scope: {
+                passphrase: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.registerContainer.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
+            }
+        };
+    }]);

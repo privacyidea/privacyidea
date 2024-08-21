@@ -404,6 +404,7 @@ class ACTION(object):
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
+    CONTAINER_REGISTER = "container_register"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
 
 
@@ -2100,7 +2101,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Admin is allowed to list containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REGISTER: {'type': 'bool',
+                                        'desc': _('Admin is allowed to register containers for synchronization.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2275,7 +2280,12 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Users are allowed to list their own containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REGISTER: {'type': 'bool',
+                                        'desc': _(
+                                            'Users are allowed to register their own containers for synchronization.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {

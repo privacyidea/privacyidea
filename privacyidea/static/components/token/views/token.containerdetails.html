@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <h3 name="Container Details">
-    <translate>Container details for {{ containerSerial }}</translate>
+    <translate>Container Details for {{ containerSerial }}</translate>
 </h3>
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
@@ -111,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             callback-cancel="getContainer()"
             callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
-        <tr>
+        <tr ng-hide="true">
             <td translate> Info</td>
             <td>
                 <ul>
@@ -193,20 +193,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </fieldset>
             </td>
         </tr>
-        <tr>
-            <td translate> Last Seen</td>
-            <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td translate> Last Updated</td>
-            <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
-            <td></td>
-        </tr>
     </table>
 </div>
 
 <!-- =================== USER ASSIGN ================= -->
+<hr class="horizontal-line-invisible">
 <div>
     <h4 ng-show="containerOwner" translate>Assigned User</h4>
     <table ng-show="containerOwner"
@@ -266,7 +257,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 </div>
 
 <!-- =================== Tokens ================= -->
-
+<hr class="horizontal-line-invisible">
 <h4 translate>Tokens in the Container</h4>
 
 <div class="table-responsive" ng-show="container.tokens.length > 0">
@@ -620,5 +611,76 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </tr>
             </tbody>
         </table>
+    </div>
+</div>
+
+<!------------ Container Registration ------------>
+<div class="form-group" ng-hide="container.type === 'generic' || !checkRight('container_register')">
+    <hr class="horizontal-line-invisible">
+    <h4 translate>Container Registration</h4>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td translate>Info</td>
+            <td>
+                <ul>
+                    <li ng-repeat="(k,v) in container.info">
+                        {{ k + ": " + v }}<br>
+                    </li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+    <!--- State: not yet registered --->
+    <div class="text-center">
+        <button class="btn btn-primary"
+                ng-show="!container.info['registration_state'] && !showQR"
+                ng-click="registerContainer()">
+            <span translate>Register Container on Device</span>
+        </button>
+    </div>
+    <!--- State: client wait --->
+    <div class="row" ng-show="showQR">
+        <div class="col-sm-6">
+            <img width="250" ng-src="{{ containerRegistrationQR }}"/>
+        </div>
+        <div class="col-sm-6">
+            <p class="help-block" translate>
+                Please scan the QR code with the privacyIDEA Authenticator App
+                or click <a href="{{ containerRegistrationURL }}">this link</a> on your
+                smartphone to register your container. It will send the missing registration data to the configured
+                endpoint.
+            </p>
+        </div>
+    </div>
+    <div register-container passphrase="passphrase" init-registration="initRegistration">
+    </div>
+    <div class="text-center">
+        <button class="btn btn-primary"
+                ng-show="container.info['registration_state'] === 'client_wait' && container.type === 'smartphone'"
+                ng-click="registerContainer()">
+            <span translate>Regenerate QR Code</span>
+        </button>
+    </div>
+    <!--- State: Registered --->
+    <div ng-show="container.info['registration_state'] === 'registered'">
+        <table class="table table-bordered table-striped">
+            <tr>
+                <td translate> Last Seen</td>
+                <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td translate> Last Updated</td>
+                <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
+                <td></td>
+            </tr>
+        </table>
+        <div class="text-center">
+            <button class="btn btn-primary"
+                    ng-click="deregisterContainer()">
+                <span translate>Deregister Container</span>
+            </button>
+        </div>
     </div>
 </div>

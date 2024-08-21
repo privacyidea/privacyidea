@@ -21,8 +21,8 @@ import importlib
 import logging
 import os
 
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
@@ -69,6 +69,11 @@ def delete_container_by_serial(serial: str, user: User, user_role="user"):
 
     # Check user rights: Throws error if user is not allowed to modify the container
     _check_user_access_on_container(container, user, user_role)
+
+    # Delete challenges
+    challenge_list = get_challenges(serial=serial)
+    for challenge in challenge_list:
+        challenge.delete()
 
     return container.delete()
 

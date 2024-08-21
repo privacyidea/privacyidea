@@ -22,9 +22,15 @@ from datetime import datetime, timezone
 
 from typing import List
 
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
+from flask import json
+
 from privacyidea.lib import _
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.crypto import verify_ecc
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, privacyIDEAError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
@@ -425,17 +431,74 @@ class TokenContainerClass:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
         return res
 
-    def init_binding(self):
+    def initialize_registration(self, params):
         """
-        Initialize binding of a pi container to a physical container.
+        Initialize the registration of a pi container on a physical container.
+        """
+        return {}
+
+    def finalize_registration(self, params):
+        """
+        Finalize the registration of a pi container on a physical container.
+        """
+        return {}
+
+    def terminate_registration(self):
+        """
+        Terminate the registration of a pi container on a physical container.
         """
         return
 
-    def validate_binding(self, params):
+    def check_challenge_response(self, signature, message, public_key: EllipticCurvePublicKey, passphrase=None,
+                                 transaction_id=None):
         """
-        Finalize binding of a pi container to a physical container.
+        Verifies the response of a challenge:
+            * Checks if challenge is valid (not expired)
+            * Verifies the signature
+            * Verifies the passphrase if it is part of the challenge
+
+        :param signature: Signature of the message
+        :param message: Message that was signed
+        :param public_key: Public key to verify the signature
+        :param passphrase: Passphrase to verify the challenge
+        :param transaction_id: Transaction ID of the challenge
+        :return: True if the challenge response is valid, otherwise raises an privacyIDEAError
         """
-        return {}
+        challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
+        valid_challenge = False
+
+        # What are we doing if there are multiple challenges?
+        for challenge in challenge_list:
+            if challenge.is_valid():
+                # We only need this information if we are not getting the message, but have to recreate it
+                nonce = challenge.challenge
+                times_stamp = challenge.timestamp
+
+                container_info = self.get_container_info_dict()
+                hash_algorithm = container_info.get("hash_algorithm", "SHA256")
+
+                # Check signature
+                try:
+                    valid_challenge, hash_algorithm = verify_ecc(message.encode("utf-8"), signature, public_key,
+                                                                 hash_algorithm)
+                except InvalidSignature:
+                    raise privacyIDEAError('Could not verify signature!')
+
+                # Check passphrase
+                challenge_data = json.loads(challenge.data)
+                challenge_passphrase = challenge_data.get("passphrase_response")
+                if challenge_passphrase:
+                    if challenge_data.get("passphrase_ad") == "AD":
+                        # TODO: Validate against AD
+                        pass
+                    else:
+                        if challenge_passphrase != passphrase:
+                            raise privacyIDEAError('Could not verify signature!')
+
+                # Valid challenge: delete it
+                challenge.delete()
+
+        return valid_challenge
 
     @classmethod
     def get_class_type(cls):

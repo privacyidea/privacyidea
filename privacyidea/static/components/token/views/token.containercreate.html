@@ -17,6 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <div class="well" ng-hide="containerRegister">
+<div class="form-group" ng-hide="containerRegister">
+    <h3 translate>Create a New Container</h3>
     <form name="formCreateContainer" role="form"
           ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
         <!-- Container Type -->
@@ -31,7 +33,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <div class="form-group">
             <span translate>Supported Token Types</span>: {{ form.token_types }}
         </div>
-        <br>
 
         <!-- Description -->
         <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('container_description')">
@@ -43,12 +44,31 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
 
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
-        <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container to
-            user</h4>
-        <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
-            <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
+        <div class="form-group">
+            <hr class="horizontal-line-invisible">
+            <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container
+                to
+                user</h4>
+            <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
+                <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
+                </div>
             </div>
         </div>
+
+        <!-- Init registration -->
+        <div class="form-group" ng-show="checkRight('container_register')">
+            <hr class="horizontal-line-invisible">
+            <h4 translate>Registration</h4>
+            <input type="checkbox" id="init_registration"
+                   ng-model="initRegistration">
+            <label for="init_registration" translate>Initialize Registration</label>
+
+            <div register-container
+                 passphrase="passphrase"
+                 ng-show="initRegistration">
+            </div>
+        </div>
+
         <!-- Submit Button -->
         <div class="text-center" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
             <button type="button" ng-click="createContainer()"

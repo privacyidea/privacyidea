@@ -1,10 +1,8 @@
 import base64
 
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import ec
-
-from privacyidea.lib.container import init_container, find_container_by_serial, add_token_to_container, assign_user, \
-    add_container_realms, get_container_realms
+from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
+                                       add_container_realms, get_container_realms)
+from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -1297,25 +1295,98 @@ class APIContainer(MyApiTestCase):
                                            self.at, 'GET')
         self.assertGreater(json["result"]["value"]["count"], 0)
 
-    def test_24_init_binding_smartphone(self):
+    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
+        message = f"{nonce}|{registration_time}|{registration_url}|{serial}"
+        if passphrase:
+            message += f"|{passphrase}"
+
+        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
+        pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+
+        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
+
+        params = {"signature": base64.b64encode(signature), "public_key": pub_key_smph_str, "passphrase": passphrase,
+                  "message": message, "container_serial": serial}
+
+        return params
+
+    def test_24_register_smartphone_success(self):
         smartphone_serial = init_container({"type": "smartphone"})
-        smartphone = find_container_by_serial(smartphone_serial)
-        registration_url = "http://test/container/register/initialization"
-        smartphone.init_registration({"container_registration_url": registration_url})
+        data = {"container_serial": smartphone_serial,
+                "passphrase_required": True,
+                "passphrase_ad": False,
+                "passphrase_prompt": "Enter your passphrase",
+                "passphrase_response": "top_secret"}
 
-        # Mock smartphone
-        container_info = smartphone.get_container_info_dict()
-        message = f"{container_info['nonce']}|{container_info['registration_time']}|{registration_url}|{smartphone.serial}"
-        private_key_smph = ec.generate_private_key(ec.SECP384R1())
-        public_key_smph = private_key_smph.public_key()
-        pub_key_smph_bytes = public_key_smph.public_bytes(encoding=serialization.Encoding.PEM,
-                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo)
-        pub_key_smph_encoded = base64.b64encode(pub_key_smph_bytes).decode('utf-8')
+        # Initialize
+        json = self.request_assert_success('container/register/initialize',
+                                           data,
+                                           self.at, 'POST')
+        # Check if the response contains the expected values
+        init_response_data = json["result"]["value"]
+        self.assertIn("container_url", init_response_data)
+        self.assertIn("nonce", init_response_data)
+        self.assertIn("time_stamp", init_response_data)
+        self.assertIn("key_algorithm", init_response_data)
 
-        signature = private_key_smph.sign(message.encode("utf-8"), ec.ECDSA(hashes.SHA256()))
-        params = {"container_serial": smartphone_serial, "signature": base64.b64encode(signature),
-                  "public_key": pub_key_smph_encoded}
-
-        json = self.request_assert_success('container/register/initialization',
+        # Finalize
+        params = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                      registration_url="http://localhost/container/register/finalize",
+                                                      nonce=init_response_data["nonce"],
+                                                      registration_time=init_response_data["time_stamp"],
+                                                      passphrase="top_secret")
+        json = self.request_assert_success('container/register/finalize',
                                            params,
                                            self.at, 'POST')
+        # Check if the response contains the expected values
+        self.assertIn("public_key", json["result"]["value"])
+
+        # Terminate
+        self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
+                                    {},
+                                    self.at, 'DELETE')
+
+    def test_25_register_init_fail(self):
+        # Missing container serial
+        json = self.request_assert_error(400, 'container/register/initialize',
+                                         {}, self.at, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
+
+        # Invalid container serial
+        json = self.request_assert_error(404, 'container/register/initialize',
+                                         {"container_serial": "invalid_serial"}, self.at, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(601, error["code"])  # ResourceNotFound
+
+        # Require passphrase but no passphrase provided
+        smartphone_serial = init_container({"type": "smartphone"})
+        data = {"container_serial": smartphone_serial,
+                "passphrase_required": True}
+        json = self.request_assert_error(400, 'container/register/initialize',
+                                         data, self.at, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Passphrase required but no passphrase provided!", error["message"])
+
+    def test_26_register_finalize_fail(self):
+        # Missing container serial
+        json = self.request_assert_error(400, 'container/register/finalize',
+                                         {}, self.at, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
+
+        # Invalid container serial
+        json = self.request_assert_error(404, 'container/register/finalize',
+                                         {"container_serial": "invalid_serial"}, self.at, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(601, error["code"])  # ResourceNotFound
+
+    def test_27_register_terminate_fail(self):
+        # Invalid container serial
+        json = self.request_assert_error(404, f'container/register/invalidSerial/terminate',
+                                         {}, self.at, 'DELETE')
+        error = json["result"]["error"]
+        self.assertEqual(601, error["code"])  # ResourceNotFound
