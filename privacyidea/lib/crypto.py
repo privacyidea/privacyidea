@@ -50,9 +50,13 @@ import random
 import string
 import binascii
 import ctypes
-
 import base64
 import traceback
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives._serialization import NoEncryption
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.hashes import HashAlgorithm
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException, ParameterError
@@ -62,7 +66,7 @@ from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
                                    b64encode_and_unicode)
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
@@ -124,7 +128,8 @@ class SecretObj(object):
         '''
         self._setupKey_()
         backend = default_backend()
-        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(), backend=backend)  # nosec B305 # part of Yubikey specification
+        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(),
+                        backend=backend)  # nosec B305 # part of Yubikey specification
         decryptor = cipher.decryptor()
         msg_bin = decryptor.update(enc_data) + decryptor.finalize()
         self._clearKey_(preserve=self.preserve)
@@ -504,11 +509,11 @@ def geturandom(length=20, hex=False):
         ret = to_unicode(binascii.hexlify(ret))
     return ret
 
+
 # some random functions based on geturandom #################################
 
 
 class urandom(object):
-
     precision = 12
 
     @staticmethod
@@ -850,7 +855,7 @@ def generate_otpkey(key_size=20):
 
 
 def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits, requirements=[]):
+                                         string.ascii_uppercase + string.digits, requirements=[]):
     """
     Generate a random password of the specified length of the given characters
     with optional requirements
@@ -888,7 +893,7 @@ def generate_keypair(rsa_keysize=2048):
         public_exponent=65537,
         key_size=rsa_keysize,
         backend=default_backend()
-        )
+    )
     public_key = private_key.public_key()
     pem_priv = to_unicode(private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -898,3 +903,174 @@ def generate_keypair(rsa_keysize=2048):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.PKCS1))
     return pem_pub, pem_priv
+
+
+def generate_keypair_ecc(curve_name: str):
+    """
+    Generates a key pair using the given elliptic curve.
+
+    :param curve_name: The name of the elliptic curve to use, e.g. 'secp384r1'
+    :return: A tuple of (public_key, private_key) elliptic curve key objects
+    """
+    curve = ec.EllipticCurve
+    curve.name = curve_name
+
+    try:
+        private_key = ec.generate_private_key(curve)
+    except UnsupportedAlgorithm:
+        raise ParameterError(f"Unsupported elliptic curve {curve_name}!")
+
+    public_key = private_key.public_key()
+    return public_key, private_key
+
+
+def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None, private_key: EllipticCurvePrivateKey = None):
+    """
+    Encodes the given ECC key (pair) in urlsafe base64 to a string. If one key is None, an empty string is returned for
+    this key.
+
+    :param private_key: An EllipticCurvePrivateKey object or None if only a public key shall be encoded
+    :param public_key: An EllipticCurvePublicKey object or None if only a private key shall be encoded
+    :return: A tuple of two strings (private_key, public_key) in base64 encoding
+    """
+    private_key_str = ""
+    if private_key:
+        private_key_b64 = base64.urlsafe_b64encode(
+            private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                      format=serialization.PrivateFormat.PKCS8,
+                                      encryption_algorithm=NoEncryption()))
+        private_key_str = private_key_b64.decode("utf-8")
+
+    public_key_str = ""
+    if public_key:
+        public_key_b64 = base64.urlsafe_b64encode(
+            public_key.public_bytes(encoding=serialization.Encoding.PEM,
+                                    format=serialization.PublicFormat.SubjectPublicKeyInfo))
+        public_key_str = public_key_b64.decode("utf-8")
+    return public_key_str, private_key_str
+
+
+def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: str = None):
+    """
+    Converts public and private keys as base64url encoded strings to ECC key objects.
+    If only one key is given, None is returned for the other one.
+
+    :param public_key_str: The public key in base64url encoding
+    :param private_key_str: The private key in base64url encoding
+    :return: A tuple of (public_key, private_key) ecc public/private key objects or None if no string is provided
+    """
+    private_key = None
+    if private_key_str:
+        private_key = serialization.load_pem_private_key(
+            base64.urlsafe_b64decode(private_key_str), password=None)
+
+    public_key = None
+    if public_key_str:
+        public_key = serialization.load_pem_public_key(
+            base64.urlsafe_b64decode(public_key_str))
+
+    return public_key, private_key
+
+
+def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None):
+    """
+    Returns the HashAlgorithm object for the given algorithm name.
+
+    :param algorithm_name: The name of the hash algorithm
+    :param default: The default hash algorithm object to use if the given one is not found
+    :return: The hash algorithm object
+    """
+    hash_algorithm = default
+    classes = hashes.__all__
+
+    # Find correct spelling
+    if algorithm_name not in classes:
+        # Try with capitalize and uppercase
+        if algorithm_name.capitalize() in classes:
+            algorithm_name = algorithm_name.capitalize()
+        elif algorithm_name.upper() in classes:
+            algorithm_name = algorithm_name.upper()
+
+    if algorithm_name in classes:
+        hash_class = getattr(hashes, algorithm_name)
+        hash_algorithm = hash_class()
+    else:
+        log.info(f"Unknown hash algorithm {algorithm_name}! Uses {default} instead.")
+    return hash_algorithm
+
+
+def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name:str):
+    """
+    Signs a message with the given ecc private key.
+
+    :param message: The message to sign
+    :param private_key: The private key ecc object to sign the message
+    :param algorithm_name: The name of the hash algorithm to use
+    :return: (signature, algorithm_name) The signature and the name of the hash algorithm that was used.
+    """
+    if isinstance(message, str):
+        message = message.encode("utf-8")
+    hash_algorithm = get_hash_algorithm_object(algorithm_name, default=hashes.SHA256())
+    ecdsa_algorithm = ec.ECDSA(hash_algorithm)
+    signature = private_key.sign(message, ecdsa_algorithm)
+    return signature, hash_algorithm.name
+
+
+def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublicKey, algorithm_name: str):
+    """
+    Verifies a signature with the given public key.
+    Raises InvalidSignature if the signature is invalid.
+
+    :param message: The message that was signed
+    :param signature: The signature to verify
+    :param public_key: The public key ecc object to verify the signature
+    :param algorithm_name: The name of the hash algorithm to use
+    :return: (valid, algorithm_name) True if the signature is valid and the name of the hash algorithm that was used.
+    """
+    if isinstance(message, str):
+        message = message.encode("utf-8")
+    hash_algorithm = get_hash_algorithm_object(algorithm_name, default=hashes.SHA256())
+    ecdsa_algorithm = ec.ECDSA(hash_algorithm)
+    public_key.verify(signature, message, ecdsa_algorithm)
+    return True, hash_algorithm.name
+
+
+def ecdh_key_exchange(private_key, public_key):
+    """
+    Performs an ECDH key exchange.
+    """
+    shared_key = private_key.exchange(ec.ECDH(), public_key)
+
+    # Perform key derivation.
+    derived_key = HKDF(algorithm=hashes.SHA256(),
+                       length=32,
+                       salt=None,
+                       info=b'handshake data',
+                       ).derive(shared_key)
+    return derived_key
+
+
+def encrypt_ecc(message, shared_key, algorithm_name):
+    """
+    Encrypts a message with the given public key.
+    """
+    # TODO: Make that applicable for different algorithms and modes
+
+    init_vector = geturandom(16)
+    cipher = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector))
+    encryptor = cipher.encryptor()
+    secret = encryptor.update(message) + encryptor.finalize()
+    return init_vector, secret, encryptor.tag
+
+
+def decrypt_ecc(secret, shared_key, init_vector, tag, algorithm):
+    """
+    Decrypts a message with the given private key.
+    """
+
+    decryptor = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector, tag),).decryptor()
+
+    # Decryption gets us the authenticated plaintext.
+    # If the tag does not match an InvalidTag exception will be raised.
+    message = decryptor.update(secret) + decryptor.finalize()
+    return message
