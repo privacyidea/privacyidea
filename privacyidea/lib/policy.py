@@ -189,7 +189,6 @@ from privacyidea.lib.user import User
 from privacyidea.lib import _
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
-import datetime
 import re
 import ast
 import traceback

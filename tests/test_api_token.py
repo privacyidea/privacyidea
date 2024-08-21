@@ -3008,7 +3008,7 @@ class APITokenTestCase(MyApiTestCase):
                          user=User(
                              login="usernotoken", realm=self.realm1,
                              resolver=self.resolvername1))
-        # list tokens of user
+        # List tokens of user
         with self.app.test_request_context("/token/",
                                            method="GET",
                                            query_string=urlencode({

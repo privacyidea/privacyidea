@@ -412,7 +412,10 @@ def list_api():
     """
     Display the list of tokens. Using different parameters you can choose,
     which tokens you want to get and also in which format you want to get the
-    information (*outform*).
+    information.
+
+    The result will be paginated (even with ``outform=csv``) with a default
+    page size of 15 entries.
 
     :query serial: Display the token data of this single token. You can do a not strict matching by specifying a serial
         like "*OATH*". Multiple serials can be passed as comma separated list.
@@ -429,7 +432,7 @@ def list_api():
     :query assigned: Only return assigned (True) or not assigned (False) tokens
     :query active: Only return active (True) or inactive (False) tokens
     :query pagesize: limit the number of returned tokens
-    :query outform: if set to "csv", than the token list will be given in CSV
+    :query outform: if set to "csv", the token list will be given in CSV
     :query rollout_state: only list tokens with the given rollout_state
     :query infokey: only list tokens, where the infokey has the given infovalue
     :query infovalue: only list tokens, where the infokey has the given infovalue

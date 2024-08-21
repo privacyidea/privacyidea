@@ -756,12 +756,12 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             users.extend(ulist)
 
         except KeyError as exx:  # pragma: no cover
-            log.error("{0!r}".format((exx)))
+            log.error("{0!r}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
         except Exception as exx:  # pragma: no cover
-            log.error("{0!r}".format((exx)))
+            log.error("{0!r}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 

@@ -66,10 +66,11 @@ import os
 import logging
 from collections import defaultdict
 
-from sqlalchemy import (and_, func)
+from sqlalchemy import (and_, func, or_)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
 
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError, PolicyError)
@@ -87,7 +88,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
-from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
@@ -336,6 +337,53 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                 TokenContainerToken.container_id == container.id).all()
             token_ids = [token_id.token_id for token_id in token_container_token]
             sql_query = sql_query.filter(Token.id.in_(token_ids))
+
+    # Node specific resolver configuration.
+    local_node_uuid = get_app_config_value("PI_NODE_UUID")
+    realms = get_realms()
+    resolvers = []
+    realms_to_filter = []
+    # Gather all resolvers which are available on this node and all realms
+    # which don't have resolvers on this node
+    for realm_name, realm in realms.items():
+        added = False
+        for res in realm.get("resolver"):
+            if res.get("name"):
+                if not res.get("node") or res["node"] == local_node_uuid:
+                    # Add the resolver to the list if there is either no node
+                    # specified or the node matches the local node
+                    resolvers.append(res.get("name"))
+                    added = True
+        if not added:
+            # If no resolver from this realm were added, this realm should be
+            # ignored as well
+            realms_to_filter.append(realm_name)
+
+    # Filter out resolvers that are not available on this specific node
+    if assigned is not None:
+        # If the `assigned` parameter is set to false, there are no resolvers to check
+        if assigned is True:
+            # If the `assigned` parameter is set and true, we already have the
+            # TokenOwner table columns available and just need to check the resolvers
+            sql_query = sql_query.filter(TokenOwner.resolver.in_(resolvers))
+    else:
+        # If the `assigned` parameter is not given, we need to (left outer) join
+        # the TokenOwner table to check for existing owners or resolvers
+        sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
+        sql_query = sql_query.filter(or_(TokenOwner.id == None,
+                                         TokenOwner.resolver.in_(resolvers)))
+
+    # Filter out realms that have no active resolvers on this specific node
+    if assigned is None or assigned is True:
+        # We need to check if either no TokenOwner.realm_id is given or if it
+        # matches the realm IDs of the realms in `realms_to_filter`
+        if not (stripped_realm or allowed_realms):
+            sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id)
+        sql_query = sql_query.filter(or_(
+            TokenOwner.realm_id == None,
+            and_(func.lower(Realm.name).not_in([r.lower() for r in realms_to_filter]),
+                 TokenOwner.realm_id == Realm.id,
+                 TokenOwner.token_id == Token.id)))
 
     return sql_query
 

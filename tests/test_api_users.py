@@ -144,7 +144,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertIn("cornelius", unames, value)
             self.assertNotIn("corny", unames, value)
 
-        # get user with a non-existing realm
+        # Get user with a non-existing realm
         with self.app.test_request_context('/user/',
                                            query_string=urlencode({"realm": "non_existing"}),
                                            method='GET',

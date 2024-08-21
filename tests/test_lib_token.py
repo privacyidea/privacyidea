@@ -122,7 +122,7 @@ class TokenTestCase(MyTestCase):
         # get All tokens
         tokenobject_list = get_tokens()
         # Check if these are valid tokentypes
-        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         for token_object in tokenobject_list:
             self.assertTrue(token_object.type in get_token_types(),
                             token_object.type)

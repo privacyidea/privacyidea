@@ -352,8 +352,8 @@ The action is only triggered, if the user in the event has the given number
 of tokens assigned.
 
 This can be used to e.g. automatically enroll a token for the user if the
-user has no tokens left (``token_number == 0``) of to notify the administrator if
-the user has to many tokens assigned.
+user has no tokens left or to notify the administrator if
+the user has a certain amount of tokens assigned.
 
 **counter**
 
