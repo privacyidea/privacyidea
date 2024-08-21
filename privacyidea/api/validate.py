@@ -69,12 +69,14 @@ import threading
 
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
-from .lib.utils import send_result, getParam
+from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib import _
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token)
+                                   check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
+                                   find_fido2_token_by_credential_id, verify_fido2_challenge)
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
@@ -98,7 +100,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode)
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, Match, SCOPE
 from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.register import register_blueprint
@@ -116,6 +118,7 @@ from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 import json
 
 from ..lib.framework import get_app_config_value
+from ..lib.tokens.webauthntoken import WEBAUTHNACTION
 
 log = logging.getLogger(__name__)
 
@@ -241,7 +244,7 @@ def offlinerefill():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(webauthntoken_auth, request=request)
-@check_user_or_serial_in_request(request)
+#@check_user_or_serial_in_request(request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
@@ -394,7 +397,7 @@ def check():
     """
     user = request.User
     serial = getParam(request.all_data, "serial")
-    password = getParam(request.all_data, "pass", required)
+    password = getParam(request.all_data, "pass")
     otp_only = getParam(request.all_data, "otponly")
     token_type = getParam(request.all_data, "type")
     options = {"g": g,
@@ -408,6 +411,45 @@ def check():
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
+
+    user = request.all_data.get("user", "").strip()
+    serial = request.all_data.get("serial", "").strip()
+    success = False
+
+    # Passkey/FIDO2: Identify the user by the credential ID
+    credential_id = get_optional(request.all_data, "id")
+    # If only the credential ID is given, try to use it to identify the token
+    if credential_id and not user and not serial:
+        # Find the token that responded to the challenge
+        transaction_id = get_required(request.all_data, "transaction_id")
+        request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
+
+        try:
+            token = find_fido2_token_by_credential_id(credential_id)
+            if not token.user:
+                return send_result(False, rid=2, details={
+                    "message": "No user found for the token with the given credential ID!"})
+        except ResourceNotFoundError:
+            return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
+
+        r = verify_fido2_challenge(transaction_id, token, request.all_data)
+        details = None
+        result = r > 0
+        success = result
+        if r > 0:
+            # If the authentication was successful, return the username of the token owner
+            # TODO what is returned could be configurable, attribute mapping
+            details = {"username": token.user.login}
+    # End Passkey
+
+    # If no serial or user is available at this point, we have to raise an error
+    # because the entity that wants to authenticate can not be identified
+    if not serial and not user:
+        raise ParameterError(_("You need to specify a serial or a user."))
+    if "*" in serial:
+        raise ParameterError(_("Invalid serial number."))
+    if "%" in user:
+        raise ParameterError(_("Invalid user."))
 
     if serial:
         if user:
@@ -432,13 +474,13 @@ def check():
                 if success or return_saml_attributes_on_fail():
                     # privacyIDEA's own attribute map
                     result["attributes"] = {"username": ui.get("username"),
-                                                "realm": user.realm,
-                                                "resolver": user.resolver,
-                                                "email": ui.get("email"),
-                                                "surname": ui.get("surname"),
-                                                "givenname": ui.get("givenname"),
-                                                "mobile": ui.get("mobile"),
-                                                "phone": ui.get("phone")}
+                                            "realm": user.realm,
+                                            "resolver": user.resolver,
+                                            "email": ui.get("email"),
+                                            "surname": ui.get("surname"),
+                                            "givenname": ui.get("givenname"),
+                                            "mobile": ui.get("mobile"),
+                                            "phone": ui.get("phone")}
                     # additional attributes
                     for k, v in ui.items():
                         result["attributes"][k] = v
@@ -682,3 +724,46 @@ def poll_transaction(transaction_id=None):
     })
 
     return send_result(result, rid=2, details=details)
+
+
+@validate_blueprint.route('/initialize', methods=['POST'])
+def initialize():
+    """
+    """
+    rp_id_policies = (Match.user(g,
+                                 scope=SCOPE.ENROLL,
+                                 action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                 user_object=None)
+                      .action_values(unique=True))
+    if rp_id_policies:
+        rp_id = list(rp_id_policies)[0]
+        challenge = create_fido2_challenge(rp_id)
+        return send_result(True, rid=2, details=challenge)
+    else:
+        raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
+
+
+@validate_blueprint.route('/finalize', methods=['POST'])
+def finalize():
+    """
+    """
+    # Find the token that responded to the challenge
+    transaction_id = get_required(request.all_data, "transaction_id")
+    credential_id = get_required(request.all_data, "id")
+    request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
+
+    try:
+        token = find_fido2_token_by_credential_id(credential_id)
+        if not token.user:
+            return send_result(False, rid=2, details={
+                "message": "No user found for the token with the given credential ID!"})
+    except ResourceNotFoundError:
+        return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
+
+    r = verify_fido2_challenge(transaction_id, token, request.all_data)
+    details = None
+    if r > 0:
+        # If the authentication was successful, return the username of the token owner
+        # TODO what is returned could be configurable, attribute mapping
+        details = {"username": token.user.login}
+    return send_result(r > 0, rid=2, details=details)

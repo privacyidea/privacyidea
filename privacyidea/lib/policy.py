@@ -1304,11 +1304,11 @@ class PolicyClass(object):
         else:
             extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         if pols:
-            # admin policies or user policies are set, so we need to
+            # Admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
-                # determine, if there is a enrollment policy for this very type
+                # determine, if there is an enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
                                                user=username,
                                                realm=userrealm,

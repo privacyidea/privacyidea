@@ -65,11 +65,11 @@ from privacyidea.lib.user import User
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
-                                             WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                             webauthn_b64_decode, webauthn_b64_encode,
-                                             WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                             ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                             WebAuthnUser)
+                                               WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
+                                               webauthn_b64_decode, webauthn_b64_encode,
+                                               WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
+                                               ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
+                                               WebAuthnUser)
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, WEBAUTHNACTION, WEBAUTHNCONFIG,

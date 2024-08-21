@@ -747,6 +747,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.pushtoken")
     module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
     module_list.add("privacyidea.lib.tokens.webauthntoken")
+    module_list.add("privacyidea.lib.tokens.passkeytoken")
 
     # Dynamic token modules
     dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")
@@ -809,12 +810,6 @@ def get_token_module_list():
         if mod_name == '\\' or len(mod_name.strip()) == 0:
             continue
 
-        # load all token class implementations
-        # if mod_name in sys.modules:
-        #    module = sys.modules[mod_name]
-        #    log.debug('module %s loaded' % (mod_name))
-        #    modules.append(module)
-        # else:
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)

@@ -21,7 +21,6 @@
 
 import binascii
 
-from OpenSSL import crypto
 from cryptography import x509
 
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
@@ -33,10 +32,10 @@ from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
-                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
-                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
-                                             WebAuthnAssertionResponse, AuthenticationRejectedException,
-                                             USER_VERIFICATION_LEVEL)
+                                               ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
+                                               WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
+                                               WebAuthnAssertionResponse, AuthenticationRejectedException,
+                                               USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
@@ -766,7 +765,7 @@ class WebAuthnTokenClass(TokenClass):
     @staticmethod
     def get_setting_type(key):
         """
-        Fetch the type of a setting specific to WebAuthn tokens.
+        Fetch the type of setting specific to WebAuthn tokens.
 
         The WebAuthn token defines several public settings. When these are
         written to the database, the type of the setting is automatically
@@ -865,7 +864,7 @@ class WebAuthnTokenClass(TokenClass):
             try:
                 http_origin = getParam(param, "HTTP_ORIGIN", required, allow_empty=False)
             except ParameterError:
-                raise ValueError("The ORIGIN HTTP header must be included, when enrolling a new WebAuthn token.")
+                raise ValueError("The ORIGIN HTTP header must be included when enrolling a new WebAuthn token.")
 
             challengeobject_list = [
                 challengeobject
@@ -1178,7 +1177,7 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        dataimage = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
+        dataimage = "" #convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
                                      "img": dataimage},

@@ -316,6 +316,18 @@ angular.module("TokenModule", ["privacyideaAuth"])
                             }
                         });
                 },
+                initToken: function (params, callback) {
+                    if (params["user"]) {
+                        params["user"] = fixUser(params["user"]);
+                    }
+                    $http.post(tokenUrl + "/init", params,
+                        {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+                    ).then(function (response) {
+                        callback(response.data);
+                    }, function (error) {
+                        AuthFactory.authError(error.data);
+                    });
+                },
                 delete: function (serial, callback) {
                     $http.delete(tokenUrl + "/" + serial,
                         {

@@ -451,7 +451,7 @@ def check_auth_token(required_role=None):
 @user_required
 def get_rights():
     """
-    This returns the rights of the logged in user.
+    This returns the rights of the logged-in user.
 
     :reqheader Authorization: The authorization token acquired by /auth request
     """

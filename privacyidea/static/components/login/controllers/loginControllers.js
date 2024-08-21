@@ -651,6 +651,10 @@ angular.module("privacyideaApp")
                 $scope.$broadcast("piReload");
             };
 
+            $scope.login.username = "admin";
+            $scope.login.password = "admin";
+            $scope.authenticate();
+
         }]);
 
 angular.module("privacyideaApp")

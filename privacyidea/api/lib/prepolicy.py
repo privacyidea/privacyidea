@@ -72,6 +72,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminErro
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
@@ -1645,8 +1646,7 @@ def u2ftoken_allowed(request, action):
         if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
             log.warning("The U2F device {0!s} is not "
                         "allowed to be registered due to policy "
-                        "restriction".format(
-                serial))
+                        "restriction".format(serial))
             raise PolicyError("The U2F device is not allowed "
                               "to be registered due to policy "
                               "restriction.")
@@ -1744,7 +1744,8 @@ def webauthntoken_request(request, action):
 
     # Check if this is an enrollment request for a WebAuthn token.
     ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
+    if ttype and (ttype.lower() == WebAuthnTokenClass.get_class_type()
+                  or ttype.lower() == PasskeyTokenClass.get_class_type()):
         webauthn = True
         scope = SCOPE.ENROLL
 
@@ -1974,127 +1975,109 @@ def webauthntoken_enroll(request, action):
     """
 
     ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        rp_id_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
+    if (ttype and (ttype.lower() == WebAuthnTokenClass.get_class_type()
+                   or ttype.lower() == PasskeyTokenClass.get_class_type())):
+        user_object = request.User if hasattr(request, 'User') else None
+        rp_id_policies = (Match.user(g,
+                                     scope=SCOPE.ENROLL,
+                                     action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                     user_object=user_object)
+                          .action_values(unique=True))
         if rp_id_policies:
             rp_id = list(rp_id_policies)[0]
         else:
-            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
+            raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_ID}")
 
-        rp_name_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True)
+        rp_name_policies = Match.user(g,
+                                      scope=SCOPE.ENROLL,
+                                      action=WEBAUTHNACTION.RELYING_PARTY_NAME,
+                                      user_object=user_object).action_values(unique=True,
+                                                                             allow_white_space_in_action=True)
         if rp_name_policies:
             rp_name = list(rp_name_policies)[0]
         else:
-            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
+            raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_NAME}")
 
         # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
         if not is_fqdn(rp_id):
-            log.warning(
-                "Illegal value for {0!s} (must be a domain name): {1!s}"
-                .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))
-            raise PolicyError(
-                "Illegal value for {0!s} (must be a domain name)."
-                .format(WEBAUTHNACTION.RELYING_PARTY_ID))
+            message = f"Illegal value for {WEBAUTHNACTION.RELYING_PARTY_ID} (must be a domain name): {rp_id}"
+            log.warning(message)
+            raise PolicyError(message)
 
-        authenticator_attachment_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attachment = list(authenticator_attachment_policies)[0] \
-            if authenticator_attachment_policies \
-               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
-            else None
+        authenticator_attachment_policies = Match.user(g,
+                                                       scope=SCOPE.ENROLL,
+                                                       action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                                                       user_object=user_object).action_values(unique=True)
+        authenticator_attachment = None
+        if (authenticator_attachment_policies
+                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES):
+            authenticator_attachment = authenticator_attachment_policies[0]
 
-        # we need to set `unique` to False since this policy can contain multiple values
-        public_key_credential_algorithm_pref_policies = Match.user(
+        # We need to set 'unique' to False since this policy can contain multiple values
+        pubkey_credential_algo_pref_policies = Match.user(
             g,
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-            user_object=request.User if hasattr(request, 'User') else None
-        ).action_values(unique=False)
-        public_key_credential_algorithm_pref = public_key_credential_algorithm_pref_policies.keys() \
-            if public_key_credential_algorithm_pref_policies \
-            else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in public_key_credential_algorithm_pref]):
-            raise PolicyError(
-                "{0!s} must be one of {1!s}"
-                .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                        ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())))
+            user_object=user_object).action_values(unique=False)
 
-        authenticator_attestation_level_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
-            if authenticator_attestation_level_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
+        pubkey_credential_algo_pref = (pubkey_credential_algo_pref_policies.keys()
+                                       if pubkey_credential_algo_pref_policies
+                                       else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE)
+
+        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in pubkey_credential_algo_pref]):
+            raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
+                              f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
+
+        authenticator_attestation_level_policies = Match.user(g,
+                                                              scope=SCOPE.ENROLL,
+                                                              action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                              user_object=user_object).action_values(unique=True)
+
+        authenticator_attestation_level = (list(authenticator_attestation_level_policies)[0]
+                                           if authenticator_attestation_level_policies
+                                           else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
         if authenticator_attestation_level not in ATTESTATION_LEVELS:
             raise PolicyError(
-                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                    ', '.join(ATTESTATION_LEVELS)))
+                f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL} must be one of {', '.join(ATTESTATION_LEVELS)}")
 
-        authenticator_attestation_form_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
-            if authenticator_attestation_form_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+        authenticator_attestation_form_policies = Match.user(g,
+                                                             scope=SCOPE.ENROLL,
+                                                             action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                                                             user_object=user_object).action_values(unique=True)
+
+        authenticator_attestation_form = (list(authenticator_attestation_form_policies)[0]
+                                          if authenticator_attestation_form_policies
+                                          else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
         if authenticator_attestation_form not in ATTESTATION_FORMS:
             raise PolicyError(
-                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                                                    ', '.join(ATTESTATION_FORMS)))
+                f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM} must be one of {', '.join(ATTESTATION_FORMS)}")
 
-        challengetext_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True,
-                           write_to_audit_log=False)
-        challengetext = list(challengetext_policies)[0] \
-            if challengetext_policies \
-            else DEFAULT_CHALLENGE_TEXT_ENROLL
+        challenge_text_policies = Match.user(g,
+                                             scope=SCOPE.ENROLL,
+                                             action=f"{WebAuthnTokenClass.get_class_type()}_{ACTION.CHALLENGETEXT}",
+                                             user_object=user_object).action_values(unique=True,
+                                                                                    allow_white_space_in_action=True,
+                                                                                    write_to_audit_log=False)
+        challenge_text = (list(challenge_text_policies)[0]
+                          if challenge_text_policies
+                          else DEFAULT_CHALLENGE_TEXT_ENROLL)
 
-        avoid_double_registration_policy = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
-                  user_object=request.User if hasattr(request, 'User') else None).any()
+        avoid_double_registration_policy = Match.user(g,
+                                                      scope=SCOPE.ENROLL,
+                                                      action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+                                                      user_object=user_object).any()
 
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
 
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
-            = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] \
-            = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
-               for x in PUBKEY_CRED_ALGORITHMS_ORDER
-               if x in public_key_credential_algorithm_pref]
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
-            = authenticator_attestation_level
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
-            = authenticator_attestation_form
-        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
-            = challengetext
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] = ([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                                                                              for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                                                                              if
+                                                                              x in pubkey_credential_algo_pref])
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
+        request.all_data[f"{ttype.lower()}_{ACTION.CHALLENGETEXT}"] = challenge_text
         request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
 
     return True

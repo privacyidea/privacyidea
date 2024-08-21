@@ -6,9 +6,9 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from testfixtures import log_capture
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
-                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
-                                             USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.piwebauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
+                                               ATTESTATION_LEVEL, ATTESTATION_FORM,
+                                               USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
@@ -1771,7 +1771,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_21_u2f_verify_cert(self):
         # Usually the attestation certificate gets verified during enrollment unless
-        # we set the policy scope=enrollment, action=no_verifcy
+        # we set the policy scope=enrollment, action=no_verify
         from privacyidea.lib.tokens.u2ftoken import U2FACTION
         g.logged_in_user = {"username": "user1",
                             "realm": "",

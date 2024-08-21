@@ -49,14 +49,14 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
     '$state', '$rootScope',
     'ValidateFactory', 'AuthFactory',
     'ConfigFactory', 'MachineFactory',
-    'inform', 'gettextCatalog', 'ContainerFactory',
+    'inform', 'gettextCatalog', 'ContainerFactory', '$http', 'validateUrl',
     function ($scope, TokenFactory,
               UserFactory, $stateParams,
               $state, $rootScope,
               ValidateFactory,
               AuthFactory, ConfigFactory,
               MachineFactory, inform,
-              gettextCatalog, ContainerFactory) {
+              gettextCatalog, ContainerFactory, $http, validateUrl) {
 
         // Container
         $scope.tokenIsInContainer = false;
@@ -88,8 +88,64 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
         // End container
 
+        // passkey test
+        $scope.bytesToBase64 = function (bytes) {
+            const binString = Array.from(bytes, (byte) =>
+                String.fromCodePoint(byte),).join("");
+            return btoa(binString);
+        };
+
+        const available = PublicKeyCredential.isConditionalMediationAvailable()
+            .then((available) => {
+                console.log("isConditionalMediationAvailable: " + available);
+            });
+        $scope.testPasskey = function () {
+            // TODO send the HTTP_ORIGIN here and bind it to the challenge to double check?
+            $http.post(validateUrl + "/initialize", {}).then(function (response) {
+                    let data = response.data.detail;
+                    console.log(data);
+                    navigator.credentials.get({
+                        publicKey: {
+                            challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
+                            rpId: data.rpId,
+                            // see note below
+                            userVerification: "preferred",
+                        },
+                    }).then(credential => {
+                        console.log(credential);
+                        let params = {
+                            transaction_id: data.transaction_id,
+                            id: credential.id,
+                            authenticatorData: $scope.bytesToBase64(new Uint8Array(credential.response.authenticatorData)),
+                            clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+                            signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
+                            userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
+                        };
+                        $http.post(validateUrl + "/check", params, {
+                            }
+                        ).then(function (response) {
+                            let data = response.data;
+                            console.log(data);
+                            if (data.result.value) {
+                                $scope.loggedinUsername = data.detail.username;
+                            } else {
+                                $scope.loggedinUsername = "failure";
+                            }
+                        }, function (error) {
+                            AuthFactory.authError(error.data)
+                        });
+
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                }
+            )
+            ;
+        };
+// end passkey test
+
         $scope.tokenSerial = $stateParams.tokenSerial;
-        // This is the parent object
+// This is the parent object
         $scope.selectedToken = {'serial': $scope.tokenSerial};
         $scope.editCountWindow = false;
         $scope.selectedRealms = {};
@@ -111,10 +167,10 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                     ' check the token.');
             }
         });
-        // scroll to the top of the page
+// scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-        // define functions
+// define functions
         $scope.get = function () {
             TokenFactory.getTokenForSerial($scope.tokenSerial, function (data) {
                 let blob;
@@ -153,7 +209,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-        // initialize
+// initialize
         $scope.get();
 
         $scope.returnTo = function () {
@@ -376,9 +432,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-        //----------------------------------------------------------------
-        //   Admin functions
-        //
+//----------------------------------------------------------------
+//   Admin functions
+//
 
         if ($scope.loggedInUser.role === "admin") {
             // These are functions that can only be used by administrators.
@@ -475,9 +531,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         }  // End of admin functions
 
 
-        // ===========================================================
-        // =============== Tokeninfo Date stuff ======================
-        // ===========================================================
+// ===========================================================
+// =============== Tokeninfo Date stuff ======================
+// ===========================================================
 
         $scope.openDate = function ($event) {
             $event.preventDefault();
@@ -485,7 +541,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             return true;
         };
 
-        // listen to the reload broadcast
+// listen to the reload broadcast
         $scope.$on("piReload", $scope.get);
 
         $scope.rolloverTokenAllowed = function (token) {
@@ -497,4 +553,5 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             }
             return false;
         };
-    }]);
+    }])
+;

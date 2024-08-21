@@ -785,7 +785,7 @@ def reduce_realms(all_realms, policies):
 
 def is_true(value):
     """
-    Returns True is the value is 1, "1", True or "true"
+    Returns True if the value is 1, "1", True,"True", "true" or "TRUE"
 
     :param value: string or integer
     :return: Boolean
