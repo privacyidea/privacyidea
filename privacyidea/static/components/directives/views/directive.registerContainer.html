@@ -1,0 +1,51 @@
+<div>
+    <input type="checkbox" id="passphrase_required"
+           ng-model="passphrase.required">
+    <label for="passphrase_required" translate>Secure the registration with a passphrase.</label>
+    <div ng-show="passphrase.required">
+        <div class="form-group">
+            <input type="checkbox" id="passphrase_ad"
+                   ng-model="passphrase.ad">
+            <label for="passphrase_ad" translate>Use the passphrase of the user from the AD.</label>
+        </div>
+
+        <label for="passphrase_prompt" translate>
+            Passphrase Prompt
+        </label>
+        <div class="row">
+            <div class="col-sm-7">
+                <input class="form-control"
+                       id="passphrase_prompt"
+                       ng-model="passphrase.prompt"
+                       placeholder="{{ 'This prompt will be displayed to the user.'|translate }}"
+                       ng-disabled="passphrase.ad"
+                       autofocus/>
+            </div>
+            <div class="col-sm-5">
+                <p class="help help-block" translate>
+                    Enter a passphrase prompt that will be displayed to the user.
+                    This should indicate which passphrase the user should enter.
+                </p>
+            </div>
+        </div>
+        <label for="passphrase_response" translate>
+            Passphrase Response
+        </label>
+        <div class="row">
+            <div class="col-sm-7">
+                <input class="form-control"
+                       id="passphrase_response"
+                       ng-model="passphrase.response"
+                       placeholder="{{ 'Passphrase the user has to enter to successfully register the container'|translate }}"
+                       ng-disabled="passphrase.ad"
+                       autofocus/>
+            </div>
+            <div class="col-sm-5">
+                <p class="help help-block" translate>
+                    This is the correct answer to the passphrase prompt the user has to enter to
+                    successfully register the container.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

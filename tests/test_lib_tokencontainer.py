@@ -1,19 +1,24 @@
 import base64
+import json
+from datetime import datetime, timezone
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
-
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.container import delete_container_by_id, find_container_by_id, find_container_by_serial, \
-    init_container, get_all_containers, _gen_serial, find_container_for_token, get_container_policy_info, \
-    delete_container_by_serial, get_container_classes_descriptions, get_container_token_types, add_container_info, \
-    _check_user_access_on_container, assign_user, set_container_realms, add_container_realms, get_container_info_dict, \
-    set_container_info, delete_container_info, set_container_description, set_container_states, add_container_states, \
-    remove_multiple_tokens_from_container, remove_token_from_container, add_multiple_tokens_to_container, \
-    add_token_to_container
+from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
+                                       init_container, get_all_containers, _gen_serial, find_container_for_token,
+                                       delete_container_by_serial, get_container_classes_descriptions,
+                                       get_container_token_types, add_container_info,
+                                       _check_user_access_on_container, assign_user, set_container_realms,
+                                       add_container_realms, get_container_info_dict,
+                                       set_container_info, delete_container_info, set_container_description,
+                                       set_container_states, add_container_states,
+                                       remove_multiple_tokens_from_container, remove_token_from_container,
+                                       add_multiple_tokens_to_container,
+                                       add_token_to_container)
 from privacyidea.lib.container import get_container_classes
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError, \
-    TokenAdminError
+from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
+from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
+                                   TokenAdminError, privacyIDEAError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token
@@ -789,40 +794,117 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Pass undefined user role raises Parameter error
         self.assertRaises(ParameterError, _check_user_access_on_container, container, user, "random")
 
-    def test_34_init_registration_smartphone(self):
+    def register_smartphone_initialize_success(self, registration_url, passphrase_params=None):
         smartphone_serial = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
-        registration_url = "http://test/container/register/initializaion"
         params = {"container_registration_url": registration_url}
 
-        res = smartphone.init_registration(params)
-        self.assertIn("containerUrl", res.keys())
-        self.assertIn("nonce", res.keys())
+        # passphrase
+        if passphrase_params:
+            params.update(passphrase_params)
 
-        # Check container info
-        container_info = smartphone.get_container_info_dict()
-        self.assertEqual(res["nonce"], container_info["nonce"])
-        self.assertIn("registration_time", container_info.keys())
+        # Prepare
+        result = smartphone.initialize_registration(params)
 
-    def test_35_validate_registration_smartphone(self):
+        result_entries = result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("container_url", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        return smartphone_serial, result
+
+    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
+        message = f"{nonce}|{registration_time}|{registration_url}|{serial}"
+        if passphrase:
+            message += f"|{passphrase}"
+
+        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
+        pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+
+        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
+
+        params = {"signature": base64.b64encode(signature), "public_key": pub_key_smph_str, "passphrase": passphrase,
+                  "message": message}
+
+        return params
+
+    def test_34_register_smartphone_init_fails(self):
         smartphone_serial = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
-        registration_url = "http://test/container/register/initialization"
-        smartphone.init_registration({"container_registration_url": registration_url})
+
+        # Prepare with missing registration URL
+        self.assertRaises(ParameterError, smartphone.initialize_registration, {})
+
+    def test_35_register_smartphone_finalize_unauthorized(self):
+        # Mock smartphone with guessed params (no prepare)
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        registration_url = "http://test/container/register/finalize"
+        nonce = geturandom(20, hex=True)
+        time_stamp = datetime.now(timezone.utc)
+        params = self.mock_smartphone_register_params(nonce, time_stamp,
+                                                      registration_url, smartphone_serial)
+
+        # Try finalize registration
+        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+
+        # Valid prepare
+        registration_url = "http://test/container/register/finalize"
+        passphrase_params = {"passphrase_required": True, "passphrase_ad": False,
+                             "passphrase_prompt": "Enter passphrase", "passphrase_response": "top_secret"}
+        smartphone_serial, init_results = self.register_smartphone_initialize_success(registration_url,
+                                                                                      passphrase_params)
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Mock smartphone with wrong nonce
+        invalid_nonce = geturandom(20, hex=True)
+        params = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
+                                                      registration_url, smartphone_serial)
+
+        # Try to finalize registration: this can only work if we do not pass the message to the validate check
+        # self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+
+        # Mock smartphone with invalid public key
+        params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
+                                                      registration_url, smartphone_serial)
+        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
+        params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+
+        # Try finalize registration
+        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+
+        # Mock smartphone with invalid passphrase
+        params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
+                                                      registration_url, smartphone_serial,
+                                                      "different_secret")
+        # Try to finalize registration
+        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+
+    def test_36_register_smartphone_terminate(self):
+        # container is not registered
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.terminate_registration()
+
+        # check container_info is empty
+        container_info = smartphone.get_container_info_dict()
+        self.assertEqual(2, len(container_info))
+        self.assertIn("key_algorithm", container_info.keys())
+        self.assertIn("hash_algorithm", container_info.keys())
+
+    def test_37_register_smartphone_success(self):
+        # Prepare
+        registration_url = "http://test/container/register/finalize"
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(registration_url)
+        smartphone = find_container_by_serial(smartphone_serial)
 
         # Mock smartphone
-        container_info = smartphone.get_container_info_dict()
-        message = f"{container_info['nonce']}|{container_info['registration_time']}|{registration_url}|{smartphone.serial}"
-        private_key_smph = ec.generate_private_key(ec.SECP384R1())
-        public_key_smph = private_key_smph.public_key()
-        pub_key_smph_bytes = public_key_smph.public_bytes(encoding=serialization.Encoding.PEM,
-                                                            format=serialization.PublicFormat.SubjectPublicKeyInfo)
-        pub_key_smph_encoded = base64.b64encode(pub_key_smph_bytes).decode('utf-8')
-        signature = private_key_smph.sign(message.encode("utf-8"), ec.ECDSA(hashes.SHA256()))
-        params = {"signature": base64.b64encode(signature), "public_key": pub_key_smph_encoded}
+        params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
+                                                      registration_url, smartphone_serial)
 
-        # Validate registration
-        res = smartphone.validate_registration(params)
+        # Finalize registration
+        res = smartphone.finalize_registration(params)
         self.assertIn("public_key", res.keys())
 
         # Check if container info is set correctly
@@ -831,5 +913,42 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
-        self.assertNotIn("nonce", container_info_keys)
-        self.assertNotIn("registration_time", container_info_keys)
+
+        # Terminate registration
+        smartphone.terminate_registration()
+        # Check that the container info is deleted
+        container_info = smartphone.get_container_info_dict()
+        container_info_keys = container_info.keys()
+        self.assertNotIn("public_key_container", container_info_keys)
+        self.assertNotIn("public_key_server", container_info_keys)
+        self.assertNotIn("private_key_server", container_info_keys)
+
+    def test_38_register_smartphone_passphrase_success(self):
+        # Prepare
+        registration_url = "http://test/container/register/finalize"
+        passphrase_params = {"passphrase_required": True, "passphrase_ad": False,
+                             "passphrase_prompt": "Enter passphrase", "passphrase_response": "top_secret"}
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(registration_url,
+                                                                                     passphrase_params)
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Check that passphrase is included in the challenge
+        challenge = get_challenges(serial=smartphone_serial)[0]
+        challenge_data = json.loads(challenge.data)
+        self.assertEqual(passphrase_params["passphrase_response"], challenge_data["passphrase_response"])
+
+        # Mock smartphone
+        params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
+                                                      registration_url, smartphone_serial,
+                                                      passphrase_params["passphrase_response"])
+
+        # Finalize registration
+        res = smartphone.finalize_registration(params)
+        self.assertIn("public_key", res.keys())
+
+        # Check if container info is set correctly
+        container_info = smartphone.get_container_info_dict()
+        container_info_keys = container_info.keys()
+        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_server", container_info_keys)
+        self.assertIn("private_key_server", container_info_keys)

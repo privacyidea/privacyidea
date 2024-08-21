@@ -12,6 +12,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         };
 
         $scope.containerRegister = false;
+        $scope.initRegistration = false;
+        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
 
         $scope.$watch('form', function (newVal, oldVal) {
             if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
@@ -112,10 +114,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
             ContainerFactory.createContainer(params, function (data) {
                 $scope.containerSerial = data.result.value.container_serial;
-                if (data.result.value['containerUrl']) {
-                    $scope.containerRegister = true;
-                    $scope.containerRegistrationURL = data.result.value['containerUrl']['value'];
-                    $scope.containerRegistrationQR = data.result.value['containerUrl']['img'];
+                if ($scope.initRegistration && AuthFactory.checkRight('container_register')) {
+                    let registrationParams =
+                        {
+                            "container_serial": $scope.containerSerial,
+                            "passphrase_required": $scope.passphrase.required,
+                            "passphrase_ad": $scope.passphrase.ad,
+                            "passphrase_prompt": $scope.passphrase.prompt,
+                            "passphrase_response": $scope.passphrase.response
+                        };
+                    ContainerFactory.initializeRegistration(registrationParams, function (registrationData) {
+                        $scope.containerRegister = true;
+                        $scope.containerRegistrationURL = registrationData.result.value['container_url']['value'];
+                        $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
+                    });
                 } else {
                     $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                 }
@@ -390,6 +402,30 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.saveContainerInfo = function () {
             $scope.editContainerInfo = false;
+        };
+
+        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.registerContainer = function () {
+            let registrationParams =
+                {
+                    "container_serial": $scope.containerSerial,
+                    "passphrase_required": $scope.passphrase.required,
+                    "passphrase_ad": $scope.passphrase.ad,
+                    "passphrase_prompt": $scope.passphrase.prompt,
+                    "passphrase_response": $scope.passphrase.response
+                };
+            ContainerFactory.initializeRegistration(registrationParams, function (data) {
+                $scope.getContainer();
+                if ($scope.container.type === "smartphone") {
+                    $scope.showQR = true;
+                    $scope.containerRegistrationURL = data.result.value['container_url']['value'];
+                    $scope.containerRegistrationQR = data.result.value['container_url']['img'];
+                }
+            });
+        };
+
+        $scope.deregisterContainer = function () {
+            ContainerFactory.terminateRegistration($scope.containerSerial, $scope.getContainer);
         };
 
         if ($scope.loggedInUser.isAdmin) {
