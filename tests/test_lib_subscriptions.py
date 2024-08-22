@@ -9,7 +9,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            raise_exception_probability,
                                            check_subscription,
                                            SubscriptionError,
-                                           SUBSCRIPTION_DATE_FORMAT)
+                                           subscription_status)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 import mock
@@ -136,3 +136,9 @@ class SubscriptionApplicationTestCase(MyTestCase):
                 SubscriptionError,
                 'Signature of your subscription does not'):
             save_subscription(sub1)
+
+    def test_04_subscription_status(self):
+        save_subscription(SUBSCRIPTION1)
+        res = subscription_status()
+        # Token count < 50
+        self.assertEqual(0, res)
