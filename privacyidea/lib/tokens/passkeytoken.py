@@ -1,6 +1,7 @@
 import logging
 from hashlib import sha512, sha256
 
+from flask_babel import lazy_gettext
 from webauthn import (generate_registration_options,
                       options_to_json, verify_registration_response, verify_authentication_response)
 from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
@@ -13,7 +14,7 @@ from privacyidea.api.lib.utils import get_optional, get_required
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import geturandom, get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError
 from privacyidea.lib.log import log_with
@@ -240,3 +241,31 @@ class PasskeyTokenClass(TokenClass):
 
         self.add_tokeninfo("sign_count", res.new_sign_count)
         return 1
+
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        Requires the key "webauthn_relying_party_id" (WEBAUTHNACTION.RELYING_PARTY_ID) in the option dict.
+        Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
+        the credential_id that returned with the response to this challenge.
+        The returned dict has the format:
+        {
+            "transaction_id": "12345678901234567890",
+            "challenge": "AAAAAAAAAAAAAAA",
+            "rpId": "example.com",
+            "message": "authenticate or whatever"
+        }
+        The challenge nonce is encoded in base64url.
+        """
+        rp_id = get_required(options, WEBAUTHNACTION.RELYING_PARTY_ID)
+        challenge = bytes_to_base64url(geturandom(32))
+        transaction_id = get_rand_digit_str(20)
+        message = lazy_gettext("Please authenticate with your Passkey!")
+        db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
+        db_challenge.save()
+        ret = {
+            "transaction_id": transaction_id,
+            "challenge": challenge,
+            "message": message,
+            "rpId": rp_id
+        }
+        return ret

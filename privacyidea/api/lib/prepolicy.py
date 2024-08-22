@@ -1900,17 +1900,15 @@ def webauthntoken_auth(request, action):
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if not request.all_data.get("type") \
-            and not is_webauthn_assertion_response(request.all_data) \
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
-        allowed_transports_policies = Match \
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
+    if (not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data)
+            and ('serial' not in request.all_data or
+                 request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix()))):
+        user_object = request.User if hasattr(request, 'User') else None
+        allowed_transports_policies = (Match.user(g,
+                                                  scope=SCOPE.AUTH,
+                                                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
+                                                  user_object=user_object)
+                                       .action_values(unique=False, allow_white_space_in_action=True))
         allowed_transports = set(
             transport
             for allowed_transports_policy in (
@@ -1921,23 +1919,20 @@ def webauthntoken_auth(request, action):
             for transport in allowed_transports_policy.split()
         )
 
-        challengetext_policies = Match \
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True,
-                           write_to_audit_log=False)
-        challengetext = list(challengetext_policies)[0] \
-            if challengetext_policies \
-            else DEFAULT_CHALLENGE_TEXT_AUTH
+        webauthn_challenge_text_policy = f"{WebAuthnTokenClass.get_class_type()}_{ACTION.CHALLENGETEXT}"
+        challenge_text_policies = (Match.user(g,
+                                              scope=SCOPE.AUTH,
+                                              action=webauthn_challenge_text_policy,
+                                              user_object=user_object)
+                                   .action_values(unique=True,
+                                                  allow_white_space_in_action=True,
+                                                  write_to_audit_log=False))
+        challenge_text = (list(challenge_text_policies)[0]
+                          if challenge_text_policies
+                          else DEFAULT_CHALLENGE_TEXT_AUTH)
 
-        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
-            = list(allowed_transports)
-        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
-            = challengetext
-
+        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
+        request.all_data[webauthn_challenge_text_policy] = challenge_text
     return True
 
 

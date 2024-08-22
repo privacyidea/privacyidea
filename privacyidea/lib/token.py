@@ -70,6 +70,7 @@ from typing import Union
 
 from sqlalchemy import and_, func, or_, select
 from dateutil.tz import tzlocal
+from flask_babel import lazy_gettext
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
@@ -2923,7 +2924,7 @@ def create_fido2_challenge(rp_id: str) -> dict:
     """
     challenge = bytes_to_base64url(geturandom(32))
     transaction_id = get_rand_digit_str(20)
-    message = "authenticate or whatever"
+    message = lazy_gettext("Please authenticate with your Passkey!")
 
     db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
     db_challenge.save()

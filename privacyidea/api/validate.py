@@ -467,23 +467,24 @@ def check():
         success, details = check_user_pass(user, password, options=options)
         result = success
         if request.path.endswith("samlcheck"):
-            ui = user.info
             result = {"auth": success,
                       "attributes": {}}
             if return_saml_attributes():
                 if success or return_saml_attributes_on_fail():
                     # privacyIDEA's own attribute map
-                    result["attributes"] = {"username": ui.get("username"),
+                    user_info = user.info
+                    result["attributes"] = {"username": user_info.get("username"),
                                             "realm": user.realm,
                                             "resolver": user.resolver,
-                                            "email": ui.get("email"),
-                                            "surname": ui.get("surname"),
-                                            "givenname": ui.get("givenname"),
-                                            "mobile": ui.get("mobile"),
-                                            "phone": ui.get("phone")}
+                                            "email": user_info.get("email"),
+                                            "surname": user_info.get("surname"),
+                                            "givenname": user_info.get("givenname"),
+                                            "mobile": user_info.get("mobile"),
+                                            "phone": user_info.get("phone")}
                     # additional attributes
-                    for k, v in ui.items():
+                    for k, v in user_info.items():
                         result["attributes"][k] = v
+
     serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
         if 'multi_challenge' in details else details.get('serial')
     r = send_result(result, rid=2, details=details)
