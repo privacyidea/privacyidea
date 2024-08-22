@@ -22,30 +22,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-/*
-angular.module('privacyideaApp.containerStates', ['ui.router', 'privacyideaApp.versioning'])
-    .config(['$stateProvider', 'versioningSuffixProviderProvider',
-        function ($stateProvider, versioningSuffixProviderProvider) {
-            let instance = window.location.pathname;
-            if (instance === "/") {
-                instance = "";
-            }
-            // TODO change to container path if needed
-            let tokenpath = instance + "/static/components/token/views/";
-            $stateProvider
-                .state('container', {
-                    url: "/container",
-                    templateUrl: tokenpath + "token.containercreate.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "containerCreateController"
-                })
-                .state('container.create', {
-                    url: "/container/create",
-                    templateUrl: tokenpath + "token.containercreate.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "containerCreateController"
-                })
-        }
-    ]);
-*/
+
 angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versioning']).config(
     ['$stateProvider', 'versioningSuffixProviderProvider',
         function ($stateProvider, versioningSuffixProviderProvider) {
