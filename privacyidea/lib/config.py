@@ -464,7 +464,7 @@ def get_token_class(tokentype):
     This takes a token type like "hotp" and returns a class
     like <class privacidea.lib.tokens.hotptoken.HotpTokenClass>
     :return: The tokenclass for the given type
-    :rtype: tokenclass
+    :rtype: tokenclass.TokenClass
     """
     if tokentype.lower() == "hmac":
         tokentype = "hotp"
