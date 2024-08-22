@@ -8,7 +8,8 @@ from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse
 from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorAttachment,
-                                      AuthenticatorSelectionCriteria, ResidentKeyRequirement)
+                                      AuthenticatorSelectionCriteria, ResidentKeyRequirement,
+                                      PublicKeyCredentialDescriptor)
 
 from privacyidea.api.lib.utils import get_optional, get_required
 from privacyidea.lib import _
@@ -67,15 +68,16 @@ class PasskeyTokenClass(TokenClass):
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
+        First step of enrollment:Returns the registration data for the passkey token.
+        Also creates a challenge in the database which has to be verified in the second step.
         """
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
-            # Create the initial registration data and a challenge in the database
-            response_detail = TokenClass.get_init_detail(self, params, user)
             if not user:
                 raise ParameterError("User must be provided for passkey enrollment!")
 
-            nonce = self._get_nonce()
+            response_detail = TokenClass.get_init_detail(self, params, user)
 
+            nonce = self._get_nonce()
             challenge_validity = int(get_from_config(WEBAUTHNCONFIG.CHALLENGE_VALIDITY_TIME,
                                                      get_from_config('DefaultChallengeValidityTime', 120)))
             challenge = Challenge(serial=self.token.serial,
@@ -85,16 +87,15 @@ class PasskeyTokenClass(TokenClass):
                                   session=get_optional(params, 'session'),
                                   validitytime=challenge_validity)
             challenge.save()
+
             # To avoid registering the same authenticator multiple times, get other passkey token of the user
             # and set their credential ids in exclude_credentials
-            """
-            credential_ids = []
-            existing_token = get_tokens(tokentype=self.type, user=self.user)
-            for t in existing_token:
-                if t.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
-                    credential_id = t.decrypt_otpkey()
-                    credential_ids.append()
-            """
+            registered_credential_ids = get_optional(params, "registered_credential_ids")
+            excluded_credentials: list[PublicKeyCredentialDescriptor] = []
+            if registered_credential_ids:
+                 excluded_credentials = ([PublicKeyCredentialDescriptor(id=cred)
+                                          for cred in registered_credential_ids])
+
             registration_options = generate_registration_options(
                 rp_id=get_required(params, WEBAUTHNACTION.RELYING_PARTY_ID),
                 rp_name=get_required(params, WEBAUTHNACTION.RELYING_PARTY_NAME),
@@ -104,15 +105,15 @@ class PasskeyTokenClass(TokenClass):
                 # Attestation=None is recommended for passkeys
                 attestation=AttestationConveyancePreference.NONE,
                 authenticator_selection=AuthenticatorSelectionCriteria(
-                    authenticator_attachment=AuthenticatorAttachment.PLATFORM,
                     resident_key=ResidentKeyRequirement.REQUIRED,
                 ),
                 challenge=nonce,
-                # exclude_credentials=credential_ids,
+                exclude_credentials=excluded_credentials,
                 supported_pub_key_algs=[COSEAlgorithmIdentifier.ECDSA_SHA_256,
                                         COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256],
                 timeout=12000,
             )
+
             options_json = options_to_json(registration_options)
             response_detail["passkey_registration"] = options_json
             response_detail["transaction_id"] = challenge.transaction_id
@@ -120,19 +121,14 @@ class PasskeyTokenClass(TokenClass):
             # Add RP ID and Name to the token info
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID, registration_options.rp.id)
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME, registration_options.rp.name)
-
-        elif self.token.rollout_state == "":
-            # This is the second step of the init request: The registration is completed.
-            response_detail = {
-                "webAuthnRegisterResponse": {"subject": self.token.description}
-            }
-
         else:
             response_detail = {}
         return response_detail
 
     def update(self, param, reset_failcount=True):
         """
+        Second step of enrollment: Verify the registration data from the authenticator with challenge from the database.
+        If the registration is successful, the token is set to enrolled and metadata is written to the token info.
         """
         response_detail = {"details": {"serial": self.token.serial}}
 
@@ -174,7 +170,6 @@ class PasskeyTokenClass(TokenClass):
                     expected_challenge=challenge_list[0].challenge.encode("utf-8"),
                     expected_origin=get_required(param, "HTTP_ORIGIN"),
                     expected_rp_id=get_required(param, WEBAUTHNACTION.RELYING_PARTY_ID),
-                    require_user_verification=True,
                 )
             except InvalidRegistrationResponse as ex:
                 log.error(f"Invalid registration response: {ex}")

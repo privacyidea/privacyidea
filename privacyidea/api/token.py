@@ -59,6 +59,7 @@ from flask import (Blueprint, request, g, current_app)
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from ..lib.tokenclass import ROLLOUTSTATE
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -71,7 +72,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_credential_ids_for_user)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
@@ -300,10 +301,18 @@ def init():
 
     if token_object:
         g.audit_object.log({"success": True})
+
+        # If the token is a fido2 token, find all already enrolled fido2 token for the user
+        # to avoid registering the same authenticator multiple times
+        if (token_object.get_type() in ["passkey", "webauthn"]
+                and token_object.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+            param["registered_credential_ids"] = get_credential_ids_for_user(user)
+
         # The token was created successfully, so we add token specific
         # init details like the Google URL to the response
         init_details = token_object.get_init_detail(param, user)
         response_details.update(init_details)
+
         # Check if a containerSerial is set and assign the token to the container
         if "container_serial" in param:
             container_serial = param.get("container_serial")

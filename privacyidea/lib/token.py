@@ -66,7 +66,6 @@ import os
 import string
 import traceback
 from collections import defaultdict
-from typing import Union
 
 from sqlalchemy import and_, func, or_, select
 from dateutil.tz import tzlocal
@@ -122,7 +121,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -2959,3 +2958,18 @@ def verify_fido2_challenge(transaction_id: str, token, params: dict) -> int:
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
     }
     return token.check_otp(None, options=options)
+
+
+def get_credential_ids_for_user(user: User) -> list:
+    """
+    Get a list of credential ids of passkey or webauthn token for a user.
+    Can be used to avoid double registration of an authenticator
+
+    :param user: The user object
+    :return: A list of credential ids
+    """
+    credential_ids = []
+    for token in get_tokens(user=user):
+        if token.get_tokentype() in ["webauthn", "passkey"] and token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+            credential_ids.append(token.token.get_otpkey().getKey())
+    return credential_ids

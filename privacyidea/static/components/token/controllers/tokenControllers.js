@@ -487,9 +487,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.bytesToBase64 = function (bytes) {
                 const binString = Array.from(bytes, (byte) =>
                     String.fromCodePoint(byte),).join("");
-                let ret = btoa(binString);
-                console.log("bytesToBase64 returns: " + ret);
-                return ret;
+                return btoa(binString);
             };
 
             if ($scope.enrolledToken.passkey_registration) {
@@ -516,8 +514,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 }).then(function (newCredentialInfo) {
                     console.log("newCredentialInfo");
                     console.log(newCredentialInfo);
-                    console.log("attestationObject" + newCredentialInfo.response.attestationObject);
-                    console.log("clientDataJSON" + newCredentialInfo.response.clientDataJSON);
                     let params = {
                         user: $scope.newUser.user,
                         realm: $scope.newUser.realm,
