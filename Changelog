@@ -1,4 +1,4 @@
-Version 3.10dev4
+Version 3.10, 2024-08-23
 
   Features:
   * Node-specific realms (#3758)
@@ -26,6 +26,18 @@ Version 3.10dev4
     SUCCESS, FAILED and CHALLENGE (#3886)
   * Enrollment via validate can have a custom enrollment text (#3890)
   * Allow case insensitive usernames in policies (#3281)
+  * Cleanup of expired challenges externally (#3920)
+  * Migration of several tools to the click framework
+  * Offline token: Allow to post-pend the PIN
+  * Dump token data to JSON
+  * Allow case-insensitive usernames in policies
+  * Allow extended notes on policies
+  * WebAuthn: Allow offline usage
+  * Add user-agent to audit log
+  * Check secret length for Yubikey token during enrollment
+  * Enable user-agent version in subscription checks (#3800)
+  * token-janitor now uses the click framework (#3769)
+  * Enhance offline token to allow refill for WebAuthn tokens (#3764)
 
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages
@@ -36,43 +48,12 @@ Version 3.10dev4
   * Declined PUSH requests are now saved as such and can no longer be polled (#4026)
   * Label policies are considered for PUSH token enrollment via validate (#3883)
   * Verify enrollment now works for indexed secret token (#3869)
-
-
-Version 3.10dev3, 2024-06-27
-
-  Enhancements:
-  * Cleanup of expired challenges externally (#3920)
-
-  Fixes:
   * Remove duplicate messages from response (#3989)
   * Lazy translation evaluation for static strings (#3721)
   * Truncate token description (#3747)
-
-Version 3.10dev2, 2024-05-07
-
-  Enhancements:
-  * Migration of several tools to the click framework
-  * Offline token: Allow to post-pend the PIN
-  * Dump token data to JSON
-  * Allow case-insensitive usernames in policies
-  * Allow extended notes on policies
-  * WebAuthn: Allow offline usage
-  * Add user-agent to audit log
-  * Check secret length for Yubikey token during enrollment
-
-  Fixes:
   * Verify enrollment for indexed secret token
   * Verify enrollment for paper token and TAN token
   * WebUI: Cancel poll-transaction in case another token is used
-
-Version 3.10dev1, 2023-11-29
-
-  Enhancements:
-  * Enable user-agent version in subscription checks (#3800)
-  * token-janitor now uses the click framework (#3769)
-  * Enhance offline token to allow refill for WebAuthn tokens (#3764)
-
-  Fixes:
   * Use uppercase hash name for google-authenticator URLs (#3812)
 
 Version 3.9.3, 2024-04-04
@@ -252,7 +233,6 @@ Version 3.8, 2022-12-20
   WebUI:
   * Disable realm button in case of reasolverread (UI) (#3149)
   * Add missing translation for PSKC import (#3129)
-
 
 
 Version 3.8dev3, 2022-12-07
