@@ -77,7 +77,7 @@ class libpolicy(object):
     def __call__(self, wrapped_function):
         """
         This decorates the given function.
-        If some error occur the a PolicyException is raised.
+        If some error occurs, a PolicyException is raised.
 
         The decorator function takes the options parameter and can modify
         the behaviour of the original function.
@@ -495,14 +495,14 @@ def login_mode(wrapped_function, *args, **kwds):
         kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """
-    # if tokenclass.check_pin is called in any other way, options may be None
-    #  or it might have no element "g".
+    # If tokenclass.check_pin is called in any other way, options may be None
+    # or have no element "g".
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
-        # We need the user but we do not need the password
+        # We need the user, but we do not need the password
         user_object = args[0]
-        # get the policy
+        # Get the policy
         login_mode_dict = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.LOGINMODE,
                                      user_object=user_object).action_values(unique=True)
         if login_mode_dict:
@@ -534,7 +534,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
     :return: True or False
     """
     # if tokenclass.check_pin is called in any other way, options may be None
-    #  or it might have no element "g".
+    # or no element "g".
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
@@ -548,7 +548,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
             user_object = token.user
             realms = token.get_realms()
             if not user_object and len(realms):
-                # if the token has not owner, we take a realm.
+                # if the token has no owner, we take a realm.
                 user_object = User("", realm=realms[0])
         if not user_object:
             # If we still have no user and no tokenrealm, we create an empty
@@ -593,7 +593,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
-        # We need the old serial number, to determine the user - if it exist.
+        # We need the old serial number, to determine the user - if it exists.
         serial = args[0]
         toks = get_tokens(serial=serial)
         if len(toks) == 1:
@@ -656,3 +656,14 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
                         "cannot be reset.")
 
     return r
+
+def pin_check_only(wrapped_function, *args, **kwargs):
+    print("entering pin_check_only")
+    options = kwargs.get("options") or {}
+    g = options.get("g")
+    if g:
+        user_object = kwargs.get("user")
+        pin_only = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PIN_CHECK_ONLY,
+                              user_object=user_object).policies(write_to_audit_log=False)
+        print(f"policy: {pin_only}")
+    return wrapped_function(*args, **kwargs)

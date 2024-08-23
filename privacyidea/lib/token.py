@@ -99,7 +99,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               config_lost_token,
-                                              reset_all_user_tokens)
+                                              reset_all_user_tokens, pin_check_only)
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -2195,6 +2195,7 @@ def check_otp(serial, otpval):
 
 
 @libpolicy(auth_cache)
+@libpolicy(pin_check_only)
 @libpolicy(auth_user_does_not_exist)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_timelimit)
