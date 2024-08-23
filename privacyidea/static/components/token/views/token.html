@@ -58,7 +58,7 @@
                         {{ $stateParams.tokenSerial }}</a>
                     </li>
                     <li role="presentation"
-                        ng-show="checkEnroll() || loggedInUser.role === 'admin'"
+                        ng-show="checkEnroll()"
                         ng-class="{active: $state.includes('token.enroll')}">
                         <a ui-sref="token.enroll">
                             <span class="glyphicon glyphicon-edit"></span>
