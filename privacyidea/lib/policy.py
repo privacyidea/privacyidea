@@ -404,6 +404,7 @@ class ACTION(object):
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
+    PIN_CHECK_ONLY = "pin_check_only"
 
 
 class TYPE(object):
@@ -2515,6 +2516,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('You can set the client modes in the order that you prefer. '
                           'For example: "interactive webauthn poll u2f". Accepted '
                           'values are: <code>interactive webauthn poll u2f</code>')
+            },
+            ACTION.PIN_CHECK_ONLY: {
+                'type': 'bool',
+                'desc': _('Use the pass parameter only to check the password. '
+                          'This does not responses to challenges which contain a transaction id.'),
             }
         },
         SCOPE.AUTHZ: {
