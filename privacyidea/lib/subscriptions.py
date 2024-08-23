@@ -104,7 +104,7 @@ def subscription_status(component="privacyidea", tokentype=None):
 
     :return: subscription state
     """
-    token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype)
+    token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype, all_nodes=True)
     if token_count <= APPLICATIONS.get(component, 50):
         return 0
 

@@ -247,7 +247,7 @@ def create_app(config_name="development",
     with app.app_context():
         # first check if we have a UUID in the config file which takes precedence
         try:
-            pi_uuid = uuid.UUID(app.config.get("PI_UUID", ""))
+            pi_uuid = uuid.UUID(app.config.get("PI_NODE_UUID", ""))
         except ValueError as e:
             log.debug(f"Could not determine UUID from config: {e}")
             # check if we can get the UUID from an external file
@@ -277,7 +277,7 @@ def create_app(config_name="development",
                     except IOError as exx:
                         log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
 
-            app.config["PI_UUID"] = str(pi_uuid)
+            app.config["PI_NODE_UUID"] = str(pi_uuid)
             log.debug(f"Current UUID: '{pi_uuid}'")
 
         pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")

@@ -42,7 +42,7 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                         pObject["priority." + resolverName] = value.priority;
                     }
                 });
-                pObject.resolvers = resolvers.join(',');
+                pObject.resolvers = resolvers;
 
                 ConfigFactory.setRealm(realmName, pObject, function (data) {
                     delete (selectedResolvers[nodeName]);
@@ -51,7 +51,6 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                     } else {
                         $location.path("/config/realms/list");
                         $scope.reload();
-                        return;
                     }
                 });
             } else {
@@ -71,7 +70,6 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                     } else {
                         $location.path("/config/realms/list");
                         $scope.reload();
-                        return;
                     }
                 });
             }
@@ -83,7 +81,7 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
                 if (nodeName !== "" && nodeName !== "All") {
                     let nodeSelected = false;
                     angular.forEach(selectedNodes, function (node) {
-                        if (node.name == nodeName && node.ticked) {
+                        if (node.name === nodeName && node.ticked) {
                             nodeSelected = true;
                         }
                     });

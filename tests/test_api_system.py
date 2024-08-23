@@ -1,3 +1,4 @@
+""" API testcases for the "/system/ endpoint """
 import os
 
 import json
@@ -5,13 +6,10 @@ import json
 from .base import MyApiTestCase
 
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, ACTION, SCOPE
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.radiusserver import add_radius, delete_radius
-from privacyidea.lib.resolver import (save_resolver, delete_resolver, CENSORED,
-                                      get_resolver_list)
+from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.models import db, NodeName
 from .test_lib_resolver import LDAPDirectory, ldap3mock

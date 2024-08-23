@@ -1146,9 +1146,9 @@ class UserNotificationTestCase(MyTestCase):
         # TODO: Also we should check that no email was sent (i.e. call of smtpserver)
         self.assertTrue(res)
         # Cleanup
+        remove_token("SPNOTIFY")
         delete_realm("notify_realm")
         delete_resolver("notify_resolver")
-        remove_token("SPNOTIFY")
 
     def test_16_check_conditions_user_num_tokens(self):
         # prepare

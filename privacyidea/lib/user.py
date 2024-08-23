@@ -213,7 +213,7 @@ class User(object):
         # sort the resolvers by the 2nd entry in the tuple, the priority
         sorted_resolvers = sorted(resolver_tuples, key=lambda res: res[1])
         # if the resolver contains a node setting, we only add it if it is on the correct node
-        local_node_uuid = get_app_config_value("NODE_UUID")
+        local_node_uuid = get_app_config_value("PI_NODE_UUID")
         resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
         # remove duplicate resolver names but keeping the order
         seen = set()
@@ -717,12 +717,15 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         resolvers.append(param_resolver)
     if user_resolver:
         resolvers.append(user_resolver)
+
+    local_node_uuid = get_app_config_value("PI_NODE_UUID")
     for pu_realm in [param_realm, user_realm]:
         if pu_realm:
             realm_config = get_realm(pu_realm)
             for r in realm_config.get("resolver", {}):
                 if r.get("name"):
-                    resolvers.append(r.get("name"))
+                    if not r.get("node") or r["node"] == local_node_uuid:
+                        resolvers.append(r.get("name"))
 
     if not (param_resolver or user_resolver or param_realm or user_realm):
         # if no realm or resolver was specified, we search the resolvers
@@ -730,7 +733,8 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         all_realms = get_realms()
         for _name, res_list in all_realms.items():
             for resolver_entry in res_list.get("resolver"):
-                resolvers.append(resolver_entry.get("name"))
+                if not resolver_entry.get("node") or resolver_entry["node"] == local_node_uuid:
+                    resolvers.append(resolver_entry.get("name"))
 
     for resolver_name in set(resolvers):
         try:
@@ -752,12 +756,12 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             users.extend(ulist)
 
         except KeyError as exx:  # pragma: no cover
-            log.error("{0!r}".format((exx)))
+            log.error("{0!r}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
         except Exception as exx:  # pragma: no cover
-            log.error("{0!r}".format((exx)))
+            log.error("{0!r}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 

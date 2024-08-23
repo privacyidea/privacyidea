@@ -554,8 +554,11 @@ def set_realm_node_api(realm, nodeid):
                               "node": res.get("node")})
     (added, failed) = set_realm(realm, resolvers=resolvers)
 
-    g.audit_object.log({'success': not failed,
-                        'info': "realm: {0!r}, resolvers: {1!r}".format(realm,
-                                                                        resolvers)})
+    g.audit_object.log({
+        'success': not failed,
+        # Overwrite resolver entry in audit log since `before_after` added a dict
+        'resolver': ", ".join([r["name"] for r in resolvers]),
+        'info': "realm: {0!r}, resolvers: {1!r}".format(realm,
+                                                        [r["name"] for r in resolvers])})
     return send_result({"added": added,
                         "failed": failed})

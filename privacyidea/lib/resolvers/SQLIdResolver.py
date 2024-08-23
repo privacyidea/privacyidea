@@ -410,6 +410,8 @@ class IdResolver (UserIdResolver):
         for r in result.mappings():
             user = self._get_user_from_mapped_object(r)
             if "userid" in user:
+                # Remove the "password" attribute
+                user.pop("password", None)
                 users.append(user)
 
         return users
