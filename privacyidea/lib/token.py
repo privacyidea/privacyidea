@@ -235,7 +235,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         elif assigned is True:
             sql_query = sql_query.where(TokenOwner.id.is_not(None))
         else:
-            log.warning("assigned value not in [True, False] {0!r}".format(assigned))
+            log.warning(f"'assigned' value not in [True, False]: {assigned}")
 
     if stripped_resolver:
         # filter for given resolver
@@ -358,7 +358,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                         resolvers.append(res.get("name"))
                         added = True
             if not added:
-                # If no resolver from this realm were added, this realm should be
+                # If no resolvers from this realm were added, this realm should be
                 # ignored as well
                 realms_to_filter.append(realm_name)
 
