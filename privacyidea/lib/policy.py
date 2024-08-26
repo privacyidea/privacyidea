@@ -3128,7 +3128,7 @@ class Match(object):
         elif scope == ROLE.USER:
             if not user_obj:
                 # If we have a user object (including resolver) in a request, we use this on.
-                # Otherwise we take the user from the logged in user.
+                # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
         else:
