@@ -2411,6 +2411,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy pin_check_only is set.")
 
+    options.pop("otppin_userstore_success", None)
+
     """
     There might be
     2 in pin_matching_token_list
