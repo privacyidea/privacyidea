@@ -436,7 +436,7 @@ class User(object):
             log.info("User %r from realm %r tries to "
                      "authenticate" % (self.login, self.realm))
             res = self._get_resolvers()
-            # Now we know, the resolvers of this user and we can verify the
+            # Now we know, the resolvers of this user, and we can verify the
             # password
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
@@ -445,7 +445,7 @@ class User(object):
                     success = "{0!s}@{1!s}".format(self.login, self.realm)
                     log.debug("Successfully authenticated user {0!r}.".format(self))
                 else:
-                    log.info("user {0!r} failed to authenticate.".format(self))
+                    log.info("User {0!r} failed to authenticate.".format(self))
 
             elif not res:
                 log.error("The user {0!r} exists in NO resolver.".format(self))
