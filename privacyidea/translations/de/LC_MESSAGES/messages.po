@@ -606,7 +606,7 @@ msgstr "Administratoren können Tokens aus Containern entfernen."
 
 #: lib/policy.py:2088
 msgid "Admin is allowed to assign users to containers."
-msgstr "Der Administrator kann Container einem Benutzer zuweisen."
+msgstr "Administratoren können Container einem Benutzer zuweisen."
 
 #: lib/policy.py:2092
 #, fuzzy
