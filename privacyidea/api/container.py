@@ -30,12 +30,13 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        set_container_description, set_container_states, set_container_realms,
                                        delete_container_by_serial, assign_user, unassign_user, add_token_to_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
-                                       remove_multiple_tokens_from_container)
+                                       remove_multiple_tokens_from_container,
+                                       create_container_dict, create_endpoint_url)
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.error import PolicyError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION
-from privacyidea.lib.token import get_tokens, convert_token_objects_to_dicts
+from privacyidea.lib.policy import ACTION, Match, SCOPE
 from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)
@@ -85,48 +86,8 @@ def list_containers():
                                 sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
-    res: list = []
-    for container in result["containers"]:
-        tmp: dict = {"type": container.type,
-                     "serial": container.serial,
-                     "description": container.description,
-                     "last_seen": container.last_seen,
-                     "last_updated": container.last_updated}
-        tmp_users: dict = {}
-        users: list = []
-        for user in container.get_users():
-            tmp_users["user_name"] = user.login
-            tmp_users["user_realm"] = user.realm
-            tmp_users["user_resolver"] = user.resolver
-            tmp_users["user_id"] = user.uid
-            users.append(tmp_users)
-        tmp["users"] = users
-
-        if not no_token:
-            token_serials = ",".join([token.get_serial() for token in container.get_tokens()])
-            tokens_dict_list = []
-            if len(token_serials) > 0:
-                tokens = get_tokens(serial=token_serials)
-                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
-                                                                  allowed_realms=allowed_token_realms)
-            tmp["tokens"] = tokens_dict_list
-
-        tmp["states"] = container.get_states()
-
-        infos: dict = {}
-        for info in container.get_container_info():
-            if info.type:
-                infos[info.key + ".type"] = info.type
-            infos[info.key] = info.value
-        tmp["info"] = infos
-
-        realms = []
-        for realm in container.realms:
-            realms.append(realm.name)
-        tmp["realms"] = realms
-
-        res.append(tmp)
-    result["containers"] = res
+    containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms)
+    result["containers"] = containers
 
     g.audit_object.log({"success": True})
     return send_result(result)
@@ -608,8 +569,17 @@ def registration_init():
     res = {"container_serial": container_serial}
 
     # Get registration url for the second step
-    registration_url = g.request_headers.environ.get('werkzeug.request').base_url
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
+    if len(server_url_policies) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    registration_url = create_endpoint_url(server_url, "container/register/finalize")
     params.update({'container_registration_url': registration_url})
+
+    # Get validity time for the registration
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TIMEOUT).policies()
+    if len(server_url_policies) > 0:
+        params.update({'registration_timeout': server_url_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TIMEOUT]})
 
     # Initialize registration
     res_registration = container.initialize_registration(params)
@@ -637,14 +607,17 @@ def registration_finalize():
     container = find_container_by_serial(container_serial)
 
     # Update params with registration url
-    # TODO: Check if this is the correct way to get the host
-    # host = g.request_headers.environ.get("HTTP_ORIGIN")
-    # registration_url = f"{host}/container/register/finalize"
-    registration_url = g.request_headers.environ.get('werkzeug.request').base_url
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
+    if len(server_url_policies) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    registration_url = create_endpoint_url(server_url, "container/register/finalize")
+    challenge_url = create_endpoint_url(server_url, f"container/{container_serial}/challenge")
     params.update({'container_registration_url': registration_url})
 
     # Validate registration
     res = container.finalize_registration(params)
+    res.update({'container_challenge_url': challenge_url})
 
     # Update last seen
     container.update_last_seen()
@@ -658,6 +631,8 @@ def registration_finalize():
 def registration_terminate(container_serial: str):
     """
     Terminate the synchronization of a container with privacyIDEA
+
+    :param container_serial: Serial of the container
     """
     container = find_container_by_serial(container_serial)
     res = container.terminate_registration()
@@ -665,27 +640,71 @@ def registration_terminate(container_serial: str):
     return send_result(res)
 
 
-@container_blueprint.route('challenge', methods=['POST'])
+@container_blueprint.route('synchronize/<string:container_serial>/initialize', methods=['POST'])
+@event('container_create_challenge', request, g)
 @log_with(log)
-def create_challenge():
+def synchronize_init(container_serial: str):
     """
     Creates a challenge for a container to synchronize with privacyIDEA.
+
+    :param container_serial: Serial of the container
+    : return: dictionary with the challenge like
+
+        ::
+            {
+                "nonce": "...",
+                "time_stamp": <time stamp iso formatted>,
+                "container_synchronize_url": <url where the smartphone can synchronize the container with the server>
+            }
     """
-    return
+    # Get synchronization url for the second step
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
+    if len(server_url_policies) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    synchronize_url = create_endpoint_url(server_url, f"container/{container_serial}/synchronize")
+
+    # Create challenge
+    container = find_container_by_serial(container_serial)
+    res = container.create_challenge(request.all_data)
+    res.update({'container_synchronize_url': synchronize_url})
+
+    return send_result(res)
 
 
-@container_blueprint.route('<string:container_serial>/synchronize', methods=['POST'])
-def synchronization(container_serial: str):
+@container_blueprint.route('synchronize/<string:container_serial>/finalize', methods=['POST'])
+def synchronize_finalize(container_serial: str):
     """
     Validates the challenge if the container is authorized. If successful, the server returns the container's state,
-    including all attributes and tokens. The token secret is not included
-    """
-    return
+    including all attributes and tokens. The token secrets are also included. The full data is encrypted.
+    Additional parameters and entries in the response are possible, depending on the container type.
 
+    :param container_serial: Serial of the container
+    :jsonparam: container_dict: container data with included tokens
+    :return: dictionary with the container properties like
 
-@container_blueprint.route('<string:container_serial>/tokensecrets', methods=['POST'])
-def get_token_secrets(container_serial: str):
+        ::
+            {
+                "description": <description>,
+                "states": <list of states>,
+                "realms": <list of realms>,
+                "users": {"username": <username>, "realm": <realm>, "resolver": <resolver>},
+                "tokens": [{"serial": <serial>,
+                            "type": <type>,
+                            "description": <description>,
+                            "active": <active>,
+                            ...}, ...],
+            }
     """
-    This endpoint is called by a container to get the secrets of the tokens in the container.
-    """
+    # validate challenge
+    # check policy?
+    # get container dict
+
+    result = get_all_containers(serial=container_serial)
+
+    # Update last seen & last updated
+    container = find_container_by_serial(container_serial)
+    container.update_last_seen()
+    container.update_last_updated()
+
     return

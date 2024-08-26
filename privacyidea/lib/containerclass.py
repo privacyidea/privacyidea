@@ -449,8 +449,34 @@ class TokenContainerClass:
         """
         return
 
-    def check_challenge_response(self, signature, message, public_key: EllipticCurvePublicKey, passphrase=None,
-                                 transaction_id=None):
+    def initialize_synchronization(self, params):
+        """
+        Initialize the synchronization of a container with the pi server.
+        It creates a challenge for the container to allow the registration.
+        """
+        return {}
+
+    def finalize_synchronization(self, params):
+        """
+        Finalizes the synchronization of a container with the pi server.
+        Here the actual data exchange happens.
+        """
+        return {}
+
+    def create_challenge(self, params):
+        """
+        Create a challenge for the container.
+        """
+        return {}
+
+    def check_challenge_response(self, params):
+        """
+        Check the response of a challenge.
+        """
+        return False
+
+    def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, transaction_id=None,
+                           url=None, scope=None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -458,11 +484,10 @@ class TokenContainerClass:
             * Verifies the passphrase if it is part of the challenge
 
         :param signature: Signature of the message
-        :param message: Message that was signed
         :param public_key: Public key to verify the signature
-        :param passphrase: Passphrase to verify the challenge
         :param transaction_id: Transaction ID of the challenge
-        :return: True if the challenge response is valid, otherwise raises an privacyIDEAError
+        :param url: URL of an endpoint the client can contact
+        :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
         valid_challenge = False
@@ -470,9 +495,19 @@ class TokenContainerClass:
         # What are we doing if there are multiple challenges?
         for challenge in challenge_list:
             if challenge.is_valid():
-                # We only need this information if we are not getting the message, but have to recreate it
+                # Create message
                 nonce = challenge.challenge
-                times_stamp = challenge.timestamp
+                times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
+                extra_data = json.loads(challenge.data)
+                passphrase = extra_data.get("passphrase_response")
+                message = f"{nonce}|{times_stamp}"
+                if url:
+                    message += f"|{url}"
+                message += f"|{self.serial}"
+                if passphrase:
+                    message += f"|{passphrase}"
+                if scope:
+                    message += f"|{scope}"
 
                 container_info = self.get_container_info_dict()
                 hash_algorithm = container_info.get("hash_algorithm", "SHA256")
@@ -482,7 +517,8 @@ class TokenContainerClass:
                     valid_challenge, hash_algorithm = verify_ecc(message.encode("utf-8"), signature, public_key,
                                                                  hash_algorithm)
                 except InvalidSignature:
-                    raise privacyIDEAError('Could not verify signature!')
+                    # It is not the right challenge
+                    continue
 
                 # Check passphrase
                 challenge_data = json.loads(challenge.data)
@@ -497,8 +533,53 @@ class TokenContainerClass:
 
                 # Valid challenge: delete it
                 challenge.delete()
+                break
 
         return valid_challenge
+
+    def get_container_details(self, no_token=False):
+        """
+        Returns a dictionary containing all properties, contained tokens, and owners
+        """
+        details = {"type": self.type,
+                   "serial": self.serial,
+                   "description": self.description,
+                   "last_seen": self.last_seen,
+                   "last_updated": self.last_updated,
+                   "states": self.get_states()}
+
+        infos = {}
+        for info in self.get_container_info():
+            if info.type:
+                infos[info.key + ".type"] = info.type
+            infos[info.key] = info.value
+        details["info"] = infos
+
+        realms = []
+        for realm in self.realms:
+            realms.append(realm.name)
+        details["realms"] = realms
+
+        users = []
+        user_info = {}
+        for user in self.get_users():
+            user_info["user_name"] = user.login
+            user_info["user_realm"] = user.realm
+            user_info["user_resolver"] = user.resolverModel
+            user_info["user_id"] = user.uid
+            users.append(user_info)
+        details["users"] = users
+
+        if not no_token:
+            token_dict_list = []
+            token_list = self.get_tokens()
+            for token in token_list:
+                token_dict_list.append(token.get_as_dict_with_user_and_containers())
+
+            details["tokens"] = token_dict_list
+
+        return details
+
 
     @classmethod
     def get_class_type(cls):

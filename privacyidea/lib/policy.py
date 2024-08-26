@@ -405,6 +405,8 @@ class ACTION(object):
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
     CONTAINER_REGISTER = "container_register"
+    PI_SERVER_URL = "privacyIDEA_server_url"
+    CONTAINER_REGISTRATION_TIMEOUT = "container_registration_timeout"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
 
 
@@ -2418,6 +2420,19 @@ def get_static_policy_definitions(scope=None):
                 'multiple': True,
                 'value': [token_obj.get_class_type() for token_obj in get_token_classes() if
                           token_obj.can_verify_enrollment]
+            },
+            ACTION.PI_SERVER_URL: {
+                'type': 'str',
+                'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
+                          'It is used to build URLs the container can contact for registration and synchronisation.'),
+                'group': GROUP.CONTAINER
+            },
+            ACTION.CONTAINER_REGISTRATION_TIMEOUT: {
+                'type': 'int',
+                'value': list(range(1, 120)),
+                'desc': _('The time in minutes the user has to do the second step of the registration.'
+                          'The default is two minutes'),
+                'group': GROUP.CONTAINER
             }
         },
         SCOPE.AUTH: {
