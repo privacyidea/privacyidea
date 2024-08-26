@@ -4,12 +4,13 @@
 # "J. Lavoie" <j.lavoie@net-c.ca>, 2024.
 # Felix E <felix@eckhofer.com>, 2024.
 # pablo-knight <julio.storch@netknights.it>, 2024.
+# Jelina Unger <jelina.unger@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-04-05 15:01+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2024-08-27 08:31+0000\n"
+"Last-Translator: Jelina Unger <jelina.unger@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -17,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.7.1-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -237,7 +238,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:122
 msgid "A description for this policy"
-msgstr ""
+msgstr "Eine Beschreibung für diese Richtlinie"
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
@@ -304,18 +305,16 @@ msgstr "Aktive Richtlinien"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:602
 msgid "Add"
-msgstr ""
+msgstr "Hinzufügen"
 
 #: privacyidea/static/components/user/views/user.details.html:303
-#, fuzzy
-#| msgid "Tokens"
 msgid "Add Tokens"
-msgstr "Token"
+msgstr "Tokens Hinzufügen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:424
 #: privacyidea/static/components/user/views/user.details.html:296
 msgid "Add Tokens to Container"
-msgstr ""
+msgstr "Tokens zum Container hinzufügen"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
@@ -335,10 +334,8 @@ msgstr "Neue Frage hinzufügen"
 
 #: privacyidea/static/components/token/views/token.details.html:607
 #: privacyidea/static/components/token/views/token.enroll.html:86
-#, fuzzy
-#| msgid "Add a condition"
 msgid "Add to Container"
-msgstr "Bedingung hinzufügen"
+msgstr "Zum Container hinzufügen"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
@@ -381,10 +378,8 @@ msgid "All Machines"
 msgstr "Alle Maschinen"
 
 #: privacyidea/static/components/config/controllers/realmController.js:11
-#, fuzzy
-#| msgid "All tokens"
 msgid "All Nodes"
-msgstr "Alle Token"
+msgstr "Alle Knoten"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
@@ -451,10 +446,8 @@ msgstr ""
 "Zeichen langen Hex-String eingeben."
 
 #: privacyidea/static/components/token/views/token.details.html:582
-#, fuzzy
-#| msgid "Assign User"
 msgid "Assign Container"
-msgstr "Benutzer zuweisen"
+msgstr "Container zuweisen"
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:84
@@ -478,22 +471,18 @@ msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Einen neuen Token {{ newTokenObject.serial }} zuweisen"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:27
-#, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign container to user"
-msgstr "Token einem Benutzer zuweisen"
+msgstr "Container einem Benutzer zuweisen"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:35
 msgid ""
 "Assign the new container to {{ userName }} in\n"
 "                realm {{ userRealm }}"
-msgstr ""
+msgstr "Den neuen Container {{ userName }} in Realm {{ userRealm }} zuweisen"
 
 #: privacyidea/static/components/token/views/token.enroll.html:76
-#, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign the token to a container"
-msgstr "Token einem Benutzer zuweisen"
+msgstr "Token einem Container zuweisen"
 
 #: privacyidea/static/components/token/views/token.enroll.html:48
 msgid "Assign token to user"
@@ -698,10 +687,6 @@ msgid "Check OTP only."
 msgstr "Nur den OTP-Wert prüfen."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:219
-#, fuzzy
-#| msgid ""
-#| "Check all possible resolvers of a user to match the resolver\n"
-#| "                in this policy."
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                        in this policy."
@@ -723,8 +708,6 @@ msgid "Choose a realm..."
 msgstr "Realm auswählen..."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:147
-#, fuzzy
-#| msgid "Clear default realm"
 msgid "Clear Default Realm"
 msgstr "Standard-Realm zurücksetzen"
 
@@ -808,10 +791,8 @@ msgid "Close"
 msgstr "Schließen"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:24
-#, fuzzy
-#| msgid "Close all groups"
 msgid "Close all containers"
-msgstr "Alle Gruppen zuklappen"
+msgstr "Alle Container zuklappen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
 #: privacyidea/static/components/config/views/config.policies.details.html:331
@@ -855,45 +836,33 @@ msgid "Connector name"
 msgstr "Konnektorname"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:101
-#, fuzzy
-#| msgid "Uploaded Tokens"
 msgid "Contained Tokens:"
-msgstr "Hochgeladene Token"
+msgstr "Enthaltene Tokens:"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:56
-#, fuzzy
-#| msgid "Remote Realm"
 msgid "Container Realms"
-msgstr "Remote Realm"
+msgstr "Container Realms"
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
-#, fuzzy
-#| msgid "Remote Serial"
 msgid "Container Serial"
-msgstr "Remote Seriennummer"
+msgstr "Container Seriennummer"
 
 #: privacyidea/static/components/audit/views/audit.log.html:89
 #: privacyidea/static/components/token/views/token.containercreate.html:5
-#, fuzzy
-#| msgid "Bind Type"
 msgid "Container Type"
-msgstr "Bind-Typ"
+msgstr "Containertyp"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:2
-#, fuzzy
-#| msgid "Token details for {{ tokenSerial }}"
 msgid "Container details for {{ containerSerial }}"
-msgstr "Details zu Token {{ tokenSerial }}"
+msgstr "Details zu Container {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.html:33
 msgid "Containers"
-msgstr ""
+msgstr "Containers"
 
 #: privacyidea/static/components/user/views/user.details.html:335
-#, fuzzy
-#| msgid "Tokens for user {{ username }}"
 msgid "Containers for user {{ username }}"
-msgstr "Token des Benutzers {{ username }}"
+msgstr "Container des Benutzers {{ username }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:35
 #: privacyidea/static/components/token/views/token.details.html:122
@@ -913,10 +882,8 @@ msgstr "Zählerfenster für neu ausgerollte Token"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:45
 #: privacyidea/static/components/token/views/token.html:186
-#, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Create Container"
-msgstr "Erstelle ein neues Ereignis"
+msgstr "Container erstellen"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:195
 msgid "Create Periodic Task Definition"
@@ -933,7 +900,7 @@ msgstr "Realm anlegen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:135
 msgid "Create Realm for node {{ selectedNode.name }}"
-msgstr ""
+msgstr "Realm für den Knoten {{ selectedNode.name }} anlegen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:25
 msgid "Create a new Event Handler"
@@ -1124,26 +1091,20 @@ msgid "Delete"
 msgstr "Löschen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:299
-#, fuzzy
-#| msgid "Delete"
 msgid "Delete All"
-msgstr "Löschen"
+msgstr "Alle Löschen"
 
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:12
 msgid "Delete Configuration"
 msgstr "Konfiguration löschen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:25
-#, fuzzy
-#| msgid "Delete Configuration"
 msgid "Delete Container"
-msgstr "Konfiguration löschen"
+msgstr "Container löschen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:34
-#, fuzzy
-#| msgid "Delete Configuration"
 msgid "Delete Container and Tokens"
-msgstr "Konfiguration löschen"
+msgstr "Container und Tokens löschen"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
@@ -1156,17 +1117,13 @@ msgid "Delete User"
 msgstr "Benutzer löschen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:301
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete all tokens?"
-msgstr "Token löschen"
+msgstr "Alle Token löschen?"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:399
 #: privacyidea/static/components/user/views/user.details.html:225
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete this token?"
-msgstr "Token löschen"
+msgstr "Soll dieser Token gelöscht werden?"
 
 #: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
@@ -1207,7 +1164,7 @@ msgstr "Beschreibung"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:26
 msgid "Description of the container"
-msgstr ""
+msgstr "Beschreibung des Containers"
 
 #: privacyidea/static/components/machine/views/machine.details.html:99
 #: privacyidea/static/components/token/views/token.details.html:698
@@ -1243,10 +1200,8 @@ msgid "Disable"
 msgstr "Deaktivieren"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:271
-#, fuzzy
-#| msgid "Disable"
 msgid "Disable All"
-msgstr "Deaktivieren"
+msgstr "Alle deaktivieren"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:546
 #: privacyidea/static/components/token/views/token.list.html:99
@@ -1408,7 +1363,7 @@ msgstr "RADIUS-Server {{ identifier }} bearbeiten"
 
 #: privacyidea/static/components/config/views/config.realms.html:11
 msgid "Edit Realm {{ $stateParams.realmName }}"
-msgstr ""
+msgstr "Realm {{ $stateParams.realmName }} bearbeiten"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:12
 #: privacyidea/static/components/config/views/config.resolvers.html:12
@@ -1482,10 +1437,8 @@ msgid "Enable"
 msgstr "Aktivieren"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:265
-#, fuzzy
-#| msgid "Enable"
 msgid "Enable All"
-msgstr "Aktivieren"
+msgstr "Alle aktivieren"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:551
 #: privacyidea/static/components/token/views/token.list.html:104
@@ -1606,8 +1559,6 @@ msgid "Expiration"
 msgstr "Gültig bis"
 
 #: privacyidea/static/components/token/views/token.enroll.html:103
-#, fuzzy
-#| msgid "Extended Atttributes"
 msgid "Extended Attributes"
 msgstr "Erweiterte Attribute"
 
@@ -1617,8 +1568,6 @@ msgstr "Fehlerzähler"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:279
 #: privacyidea/static/components/user/views/user.details.html:161
-#, fuzzy
-#| msgid "Fail counter"
 msgid "Failcounter"
 msgstr "Fehlerzähler"
 
@@ -1948,10 +1897,8 @@ msgid "Here you may register a new user account"
 msgstr "Hier können Sie ein neues Benutzerkonto registrieren"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:432
-#, fuzzy
-#| msgid "Skipped Tokens"
 msgid "Hide Add Token List"
-msgstr "Ausgelassene Token"
+msgstr "List zum Hinzufügen von Tokens verbergen"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:57
 msgid "Hide Policy templates"
@@ -2152,16 +2099,12 @@ msgid "Last Definition Update"
 msgstr "Letzte Aktualisierung der Definition"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:181
-#, fuzzy
-#| msgid "Last seen:"
 msgid "Last Seen"
-msgstr "Zuletzt gesehen:"
+msgstr "Zuletzt gesehen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:187
-#, fuzzy
-#| msgid "Last Definition Update"
 msgid "Last Updated"
-msgstr "Letzte Aktualisierung der Definition"
+msgstr "Letzte Aktualisierung"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:19
 msgid "Last seen:"
@@ -2180,10 +2123,8 @@ msgid "List Challenges"
 msgstr "Challenges anzeigen"
 
 #: privacyidea/static/components/token/views/token.html:173
-#, fuzzy
-#| msgid "List Challenges"
 msgid "List Containers"
-msgstr "Challenges anzeigen"
+msgstr "Container Liste"
 
 #: privacyidea/static/components/config/views/config.system.html:55
 msgid "List RADIUS server definitions"
@@ -2383,7 +2324,7 @@ msgstr "Neue Tokengruppen Definition"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:15
 msgid "New container type"
-msgstr ""
+msgstr "Neuer Containertyp"
 
 #: privacyidea/static/components/config/views/config.system.html:88
 msgid "New privacyIDEA server"
@@ -2563,13 +2504,11 @@ msgstr "Online Dokumentation"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:443
 msgid "Only show tokens that are not in a container."
-msgstr ""
+msgstr "Zeige nur Token an, die in keinem Container sind."
 
 #: privacyidea/static/components/token/views/token.containerlist.html:16
-#, fuzzy
-#| msgid "Open all groups"
 msgid "Open all containers"
-msgstr "Alle Gruppen aufklappen"
+msgstr "Alle Container aufklappen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
 #: privacyidea/static/components/config/views/config.policies.details.html:326
@@ -2603,8 +2542,6 @@ msgstr "Unbekanter Fehler"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:281
 #: privacyidea/static/components/user/views/user.details.html:163
-#, fuzzy
-#| msgid "otplen"
 msgid "Otplen"
 msgstr "OTP Länge"
 
@@ -3024,21 +2961,17 @@ msgid "Remote User"
 msgstr "Remote Benutzer"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:391
-#, fuzzy
-#| msgid "Remote Server"
 msgid "Remove"
-msgstr "Remote-Server"
+msgstr "Entfernen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:293
-#, fuzzy
-#| msgid "Remote Realm"
 msgid "Remove All"
-msgstr "Remote Realm"
+msgstr "Alle entfernen"
 
 #: privacyidea/static/components/token/views/token.details.html:614
 #: privacyidea/static/components/token/views/token.enroll.html:91
 msgid "Remove from Container"
-msgstr ""
+msgstr "Aus dem Container entfernen"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:45
@@ -3269,10 +3202,8 @@ msgid "Save CA"
 msgstr "Zertifizierungsstelle speichern"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:116
-#, fuzzy
-#| msgid "Save Token Info"
 msgid "Save Container Info"
-msgstr "Tokeninfo speichern"
+msgstr "Container Info speichern"
 
 #: privacyidea/static/components/config/views/config.events.details.html:104
 #: privacyidea/static/components/config/views/config.events.details.html:311
@@ -3294,10 +3225,8 @@ msgid "Save RADIUS server"
 msgstr "RADIUS-Server speichern"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:97
-#, fuzzy
-#| msgid "Save realms"
 msgid "Save Realm"
-msgstr "Realms speichern"
+msgstr "Realm speichern"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:253
 msgid "Save Resolver"
@@ -3317,10 +3246,8 @@ msgid "Save Service ID"
 msgstr "Dienste-Kennzeichnung speichern"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:65
-#, fuzzy
-#| msgid "Save SMS gateway"
 msgid "Save States"
-msgstr "SMS-Gateway speichern"
+msgstr "Status speichern"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:235
 msgid "Save System Config"
@@ -3634,7 +3561,7 @@ msgstr "StartTLS"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:44
 msgid "State"
-msgstr ""
+msgstr "Status"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
@@ -3664,10 +3591,8 @@ msgstr "Support"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:23
 #: privacyidea/static/components/token/views/token.containercreate.html:13
-#, fuzzy
-#| msgid "Skipped Tokens"
 msgid "Supported Token Types"
-msgstr "Ausgelassene Token"
+msgstr "Unterstützte Tokentypen"
 
 #: privacyidea/static/components/register/views/register.html:28
 #: privacyidea/static/components/register/views/register.html:32
@@ -4512,12 +4437,6 @@ msgstr ""
 "<code>1d</code> oder <code>12h</code>."
 
 #: privacyidea/static/components/token/views/token.enroll.html:200
-#, fuzzy
-#| msgid ""
-#| "The token was successfully enrolled with serial number\n"
-#| "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-#| "serial})\">\n"
-#| "                {{ enrolledToken.serial }}</a>."
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -4525,8 +4444,11 @@ msgid ""
 "                {{ enrolledToken.container_serial }}\n"
 "            </a>."
 msgstr ""
-"Der Token mit der Seriennummer  <a ui-sref=\"token.details({tokenSerial:"
-"enrolledToken.serial})\">{{ enrolledToken.serial }}</a>  wurde erfolgreich "
+"Der Token wurde in dem Container\n"
+"            <a ui-sref=\"token.containerdetails({containerSerial: "
+"enrolledToken.container_serial})\">\n"
+"                {{ enrolledToken.container_serial }}\n"
+"            </a> \n"
 "ausgerollt."
 
 #: privacyidea/static/components/token/views/token.details.html:583
@@ -4540,10 +4462,17 @@ msgid ""
 "span>\n"
 "    ."
 msgstr ""
+"Der Token ist aktuell in dem  Container\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})\""
+" ng-hide=\"!checkRight('container_list')\">\n"
+"        {{ containerSerial }}\n"
+"    </a>\n"
+"    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
+"span> ."
 
 #: privacyidea/static/components/token/views/token.details.html:591
 msgid "The token is currently in no container."
-msgstr ""
+msgstr "Der Token ist aktuell in keinem Container."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:34
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:32
@@ -4980,7 +4909,7 @@ msgstr "Assistent zum Ausrollen von Token"
 
 #: privacyidea/static/components/user/views/user.details.html:140
 msgid "Token of {{username}} without a container"
-msgstr ""
+msgstr "Tokens von {{username}}, die in keinem Container sind"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:284
 #: privacyidea/static/components/token/views/token.containerdetails.html:522
@@ -5032,7 +4961,7 @@ msgstr "Token des Benutzers {{ username }}"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:255
 msgid "Tokens in the Container"
-msgstr ""
+msgstr "Tokens in dem Container"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:17
 msgid "Total"
@@ -5043,10 +4972,8 @@ msgid "Total Challenges:"
 msgstr "Alle Challenges:"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:12
-#, fuzzy
-#| msgid "total tokens: {{ tokendata.count }}"
 msgid "Total Containers: {{ containerdata.count }}"
-msgstr "Tokenanzahl: {{ tokendata.count }}"
+msgstr "Containeranzahl: {{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
@@ -5319,8 +5246,6 @@ msgstr "WHERE-Ausdruck"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:277
 #: privacyidea/static/components/user/views/user.details.html:159
-#, fuzzy
-#| msgid "window"
 msgid "Window"
 msgstr "Fenster"
 
@@ -5340,11 +5265,6 @@ msgid "Working Directory"
 msgstr "Arbeitsverzeichnis"
 
 #: privacyidea/static/components/token/views/token.enroll.html:3
-#, fuzzy
-#| msgid ""
-#| "You are about to rollover your token! This will invalidate your existing "
-#| "token\n"
-#| "        and create a new token with a new secret key!"
 msgid ""
 "You are about to rollover your token! This will invalidate\n"
 "        your existing token\n"
@@ -5588,10 +5508,8 @@ msgid "appId"
 msgstr "AppID"
 
 #: privacyidea/static/components/audit/views/audit.log.html:57
-#, fuzzy
-#| msgid "Authentications"
 msgid "authentication"
-msgstr "Authentifizierungen"
+msgstr "Authentifizierung"
 
 #: privacyidea/static/components/token/views/token.details.html:199
 msgid "certificate"
@@ -5730,8 +5648,6 @@ msgstr "Richtlinien"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:254
 #: privacyidea/static/components/config/views/config.realms.create.html:43
-#, fuzzy
-#| msgid "privacyIDEA Node"
 msgid "privacyIDEA Nodes"
 msgstr "privacyIDEA Knoten"
 
