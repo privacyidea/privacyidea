@@ -599,7 +599,7 @@
 <!------------ Container Registration ------------>
 <div class="form-group" ng-hide="container.type === 'generic' || !checkRight('container_register')">
     <hr class="horizontal-line-invisible">
-    <h4 translate>Container Registration</h4>
+    <h4 translate>Container Synchronization</h4>
 
     <table class="table table-bordered table-striped">
         <tr>
@@ -607,57 +607,68 @@
             <td>
                 <ul>
                     <li ng-repeat="(k,v) in container.info">
-                        {{ k + ": " + v }}<br>
+                        {{ k }}: {{ v | truncate:30 }}
                     </li>
                 </ul>
             </td>
         </tr>
+        <tr ng-show="container.info['registration_state'] === 'registered'">
+            <td translate> Last Seen</td>
+            <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
+        </tr>
+        <tr ng-show="container.info['registration_state'] === 'registered'">
+            <td translate> Last Updated</td>
+            <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
+        </tr>
     </table>
-    <!--- State: not yet registered --->
-    <div class="text-center">
-        <button class="btn btn-primary"
-                ng-show="!container.info['registration_state'] && !showQR"
-                ng-click="registerContainer()">
-            <span translate>Register Container on Device</span>
-        </button>
-    </div>
-    <!--- State: client wait --->
-    <div class="row" ng-show="showQR">
-        <div class="col-sm-6">
-            <img width="250" ng-src="{{ containerRegistrationQR }}"/>
+
+    <!--- State: Not registered / client wait --->
+    <uib-accordion ng-hide="container.info['registration_state'] === 'registered' || container.type !== 'smartphone'">
+        <div uib-accordion-group
+             class="panel-default"
+             is-open="registrationOptions.open">
+            <uib-accordion-heading ng-click="registrationOptions.open=!registrationOptions.open">
+                <div>Registration Configuration
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': registrationOptions.open,
+                                         'glyphicon-chevron-right': !registrationOptions.open}">
+                        </span>
+                </div>
+            </uib-accordion-heading>
+            <div register-container passphrase="passphrase" init-registration="initRegistration">
+            </div>
+            <div class="text-center">
+                <button class="btn btn-primary"
+                        ng-show="!container.info['registration_state']"
+                        ng-click="registerContainer()">
+                    <span translate>Register Container on Device</span>
+                </button>
+                <button class="btn btn-primary"
+                        ng-show="container.info['registration_state'] === 'client_wait'"
+                        ng-click="registerContainer()">
+                    <span translate>Regenerate QR Code</span>
+                </button>
+            </div>
         </div>
-        <div class="col-sm-6">
-            <p class="help-block" translate>
-                Please scan the QR code with the privacyIDEA Authenticator App
-                or click <a href="{{ containerRegistrationURL }}">this link</a> on your
-                smartphone to register your container. It will send the missing registration data to the configured
-                endpoint.
-            </p>
+    </uib-accordion>
+
+    <div ng-show="container.info['registration_state'] === 'client_wait' && container.type === 'smartphone'">
+        <div class="row" ng-show="showQR">
+            <div class="col-sm-6">
+                <img width="250" ng-src="{{ containerRegistrationQR }}"/>
+            </div>
+            <div class="col-sm-6">
+                <p class="help-block" translate>
+                    Please scan the QR code with the privacyIDEA Authenticator App
+                    or click <a href="{{ containerRegistrationURL }}">this link</a> on your
+                    smartphone to register your container. It will send the missing registration data to the configured
+                    endpoint.
+                </p>
+            </div>
         </div>
-    </div>
-    <div register-container passphrase="passphrase" init-registration="initRegistration">
-    </div>
-    <div class="text-center">
-        <button class="btn btn-primary"
-                ng-show="container.info['registration_state'] === 'client_wait' && container.type === 'smartphone'"
-                ng-click="registerContainer()">
-            <span translate>Regenerate QR Code</span>
-        </button>
     </div>
     <!--- State: Registered --->
     <div ng-show="container.info['registration_state'] === 'registered'">
-        <table class="table table-bordered table-striped">
-            <tr>
-                <td translate> Last Seen</td>
-                <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td translate> Last Updated</td>
-                <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
-                <td></td>
-            </tr>
-        </table>
         <div class="text-center">
             <button class="btn btn-primary"
                     ng-click="deregisterContainer()">
@@ -665,4 +676,5 @@
             </button>
         </div>
     </div>
+
 </div>
