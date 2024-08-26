@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-08-12 15:30+0200\n"
-"PO-Revision-Date: 2024-08-26 11:46+0000\n"
+"PO-Revision-Date: 2024-08-27 08:31+0000\n"
 "Last-Translator: Jelina Unger <jelina.unger@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -609,22 +609,16 @@ msgid "Admin is allowed to assign users to containers."
 msgstr "Administratoren können Container einem Benutzer zuweisen."
 
 #: lib/policy.py:2092
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to unassign users from containers."
-msgstr "Der Administrator kann Token einem Benutzer zuweisen."
+msgstr "Administratoren können Benutzerzuweisungen eines Containers aufheben."
 
 #: lib/policy.py:2096
-#, fuzzy
-#| msgid "Admin is allowed to manage the realms of a token."
 msgid "Admin is allowed to set the realm of containers."
-msgstr "Der Administrator kann die Realms eines Tokens bearbeiten."
+msgstr "Administratoren können die Realms eines Containers bearbeiten."
 
 #: lib/policy.py:2100
-#, fuzzy
-#| msgid "Admin is allowed to list tokens."
 msgid "Admin is allowed to list containers."
-msgstr "Der Administrator darf Token auflisten."
+msgstr "Administratoren können Container auflisten."
 
 #: lib/policy.py:2107
 msgid ""
@@ -745,28 +739,20 @@ msgstr ""
 "dem Benutzer nicht angezeigt werden."
 
 #: lib/policy.py:2239
-#, fuzzy
-#| msgid "The user is allowed to disable his own tokens."
 msgid "Users are allowed to edit the state of their own containers."
-msgstr "Der Benutzer darf seine eigenen Token deaktivieren."
+msgstr "Benutzer können den Status ihrer eigenen Container bearbeiten."
 
 #: lib/policy.py:2243
-#, fuzzy
-#| msgid "The user is allowed to set the token description."
 msgid "Users are allowed to edit the description of their own containers."
-msgstr "Der Benutzer darf die Token-Beschreibung setzen."
+msgstr "Benutzer können die Beschreibung ihrer eigenen Container bearbeiten."
 
 #: lib/policy.py:2248
-#, fuzzy
-#| msgid "The user is allowed to enable his own tokens."
 msgid "Users are allowed to create containers."
-msgstr "Der Benutzer darf seine eigenen Token aktivieren."
+msgstr "Benutzer können Container erstellen."
 
 #: lib/policy.py:2252
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to delete their own containers."
-msgstr "Der Benutzer darf seine eigenen Token löschen."
+msgstr "Benutzer können ihre eigenen Container löschen."
 
 #: lib/policy.py:2256
 msgid "Users are allowed to add their own tokens to their own containers."
@@ -775,26 +761,21 @@ msgstr ""
 "hinzufügen."
 
 #: lib/policy.py:2261
-#, fuzzy
-#| msgid "Admin is allowed to remove tokens from the database."
 msgid "Users are allowed to remove their own tokens from their own containers."
-msgstr "Der Administrator kann Token aus der Datenbank löschen."
+msgstr ""
+"Benutzer können ihre eigenen Token aus ihren eigenen Containern entfernen."
 
 #: lib/policy.py:2266
 msgid "Users are allowed to assign themselves to containers without an owner."
 msgstr "Die Benutzer dürfen sich einem Container ohne Besitzer zuweisen."
 
 #: lib/policy.py:2271
-#, fuzzy
-#| msgid "The user is allowed to unassign his own tokens."
 msgid "Users are allowed to unassign themselves from containers."
-msgstr "Der Benutzer darf die eigene Zuweisung zu seinen Token aufheben."
+msgstr "Benutzer können die Zuweisung zu ihren Containern aufheben."
 
 #: lib/policy.py:2275
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to list their own containers."
-msgstr "Der Benutzer darf seine eigenen Token löschen."
+msgstr "Benutzer können ihre eigenen Container auflisten."
 
 #: lib/policy.py:2282
 msgid "Limit the number of allowed tokens in a realm."
@@ -1754,10 +1735,8 @@ msgstr ""
 "passt."
 
 #: lib/eventhandler/base.py:295
-#, fuzzy
-#| msgid "The token has a user assigned."
 msgid "The token is in a container."
-msgstr "Der Token ist einem Benutzer zugewiesen."
+msgstr "Der Token ist in einem Container."
 
 #: lib/eventhandler/base.py:302
 msgid "Action is triggered, if the user has this number of tokens assigned."
@@ -1765,12 +1744,11 @@ msgstr ""
 "Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
 
 #: lib/eventhandler/base.py:309
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of containers assigned."
 msgstr ""
-"Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
+"Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Containern "
+"besitzt."
 
 #: lib/eventhandler/base.py:316
 msgid ""
@@ -1874,59 +1852,43 @@ msgid ""
 "The container is in the specified states, but can additionally be in other "
 "states."
 msgstr ""
-"Der Container ist in dem angegebenen Zustand, kann jedoch zusätzlich weitere "
-"Zustände haben."
+"Der Container hat den angegebenen Status, kann jedoch zusätzlich weitere "
+"haben."
 
 #: lib/eventhandler/base.py:412
-#, fuzzy
-#| msgid "The admin will not see the specified columns in the audit."
 msgid "The container is only in the specified states."
-msgstr ""
-"Die angegebenen Spalten werden im Audit Log ausgeblendet und dem "
-"Administrator nicht angezeigt."
+msgstr "Der Container hat nur die angegebenen Status und keine weiteren."
 
 #: lib/eventhandler/base.py:419
-#, fuzzy
-#| msgid "The token has a user assigned."
 msgid "The container has a user assigned."
-msgstr "Der Token ist einem Benutzer zugewiesen."
+msgstr "Der Container ist einem Benutzer zugewiesen."
 
 #: lib/eventhandler/base.py:426
-#, fuzzy
-#| msgid "The user has no tokens assigned"
 msgid "The container has at least one token assigned."
-msgstr "Dem Benutzer sind keine Token zugewiesen"
+msgstr "In dem Container ist mindestens ein Token enthalten."
 
 #: lib/eventhandler/base.py:433
-#, fuzzy
-#| msgid "The logged in user is of the following type."
 msgid "The container is of a certain type."
-msgstr "Der angemeldete Benutzer ist vom Typ."
+msgstr "Der Container ist von diesem Typ."
 
 #: lib/eventhandler/containerhandler.py:75
-#, fuzzy
-#| msgid "Token type to create"
 msgid "Container type to create"
-msgstr "Tokentyp der angelegt werden soll"
+msgstr "Typ des Containers, der erstellt werden soll"
 
 #: lib/eventhandler/containerhandler.py:81
 #: lib/eventhandler/containerhandler.py:103
-#, fuzzy
-#| msgid "The new description of the token."
 msgid "Description of the container"
-msgstr "Die neue Beschreibung des Tokens."
+msgstr "Beschreibung des Containers"
 
 #: lib/eventhandler/containerhandler.py:86
-#, fuzzy
-#| msgid "Assign token to user in request or to tokenowner."
 msgid "Assign container to user in request or to token/container owner"
-msgstr "Token dem Benutzer aus dem Request oder dem Tokenbesitzer zuweisen."
+msgstr ""
+"Container dem Benutzer aus dem Request oder dem Token-/Containerbesitzer "
+"zuweisen."
 
 #: lib/eventhandler/containerhandler.py:91
-#, fuzzy
-#| msgid "Assign token to user in request or to tokenowner."
 msgid "Add token from request to container"
-msgstr "Token dem Benutzer aus dem Request oder dem Tokenbesitzer zuweisen."
+msgstr "Token aus dem Request zum Container hinzufügen."
 
 #: lib/eventhandler/containerhandler.py:111
 msgid "Set this container info key (deletes all existing keys)."
@@ -1936,10 +1898,8 @@ msgstr ""
 
 #: lib/eventhandler/containerhandler.py:115
 #: lib/eventhandler/containerhandler.py:125
-#, fuzzy
-#| msgid "Set the failcounter of the token."
 msgid "Set the value for the key above."
-msgstr "Setze den Fehlerzähler des Tokens."
+msgstr "Setze den Wert für das oben angegebene Schlüsselwort."
 
 #: lib/eventhandler/containerhandler.py:121
 msgid "Add this key to the container info."
