@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-08-12 15:30+0200\n"
-"PO-Revision-Date: 2024-06-29 13:09+0000\n"
+"PO-Revision-Date: 2024-08-26 11:46+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.7-dev\n"
+"X-Generator: Weblate 5.7.1-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -33,14 +33,12 @@ msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Login-Daten"
 
 #: api/realm.py:528
-#, fuzzy
-#| msgid "The tokengroup does not exist."
 msgid "The given node does not exist!"
-msgstr "Die Token-Gruppe existiert nicht."
+msgstr "Der angegebene privacyIDEA-Knoten existiert nicht!"
 
 #: api/realm.py:534 api/realm.py:544
 msgid "Could not verify data in request!"
-msgstr ""
+msgstr "Die Daten in der Anfrage können nicht verifiziert werden!"
 
 #: api/lib/postpolicy.py:86
 msgid ""
@@ -621,10 +619,8 @@ msgid "Admin is allowed to remove tokens from containers."
 msgstr "Der Administrator kann Token aus der Datenbank löschen."
 
 #: lib/policy.py:2088
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to assign users to containers."
-msgstr "Der Administrator kann Token einem Benutzer zuweisen."
+msgstr "Der Administrator kann Container einem Benutzer zuweisen."
 
 #: lib/policy.py:2092
 #, fuzzy
