@@ -404,7 +404,7 @@ class ACTION(object):
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
-    PIN_CHECK_ONLY = "pin_check_only"
+    FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
 
 
 class TYPE(object):
@@ -2517,10 +2517,10 @@ def get_static_policy_definitions(scope=None):
                           'For example: "interactive webauthn poll u2f". Accepted '
                           'values are: <code>interactive webauthn poll u2f</code>')
             },
-            ACTION.PIN_CHECK_ONLY: {
+            ACTION.FORCE_CHALLENGE_RESPONSE: {
                 'type': 'bool',
-                'desc': _('Use the pass parameter only to check the password. '
-                          'This does not responses to challenges which contain a transaction id.'),
+                'desc': _('When enabled, authentication attempts will be interpreted as either the PIN or '
+                          'the answer to a challenge. PIN concatenated with OTP can not be used anymore!'),
             }
         },
         SCOPE.AUTHZ: {

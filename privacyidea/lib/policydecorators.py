@@ -120,17 +120,16 @@ def challenge_response_allowed(func):
         token = args[0]
         user_object = kwds.get("user") or User()
         if g:
-            allowed_tokentypes_dict = Match.user(g, scope=SCOPE.AUTH,
-                                                 action=ACTION.CHALLENGERESPONSE, user_object=user_object) \
-                .action_values(unique=False, write_to_audit_log=False)
-            log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
-            allowed_tokentypes_dict = {k.lower(): v for k, v in allowed_tokentypes_dict.items()}
+            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE, user_object=user_object)
+                                       .action_values(unique=False, write_to_audit_log=False))
+            log.debug(f"Found these allowed token types: {list(allowed_token_types)}")
+            allowed_token_types = {k.lower(): v for k, v in allowed_token_types.items()}
             token = token.get_tokentype().lower()
             chal_resp_found = False
-            if token in allowed_tokentypes_dict:
+            if token in allowed_token_types:
                 # This token is allowed to do challenge-response
                 chal_resp_found = True
-                g.audit_object.add_policy(allowed_tokentypes_dict.get(token))
+                g.audit_object.add_policy(allowed_token_types.get(token))
 
             if not chal_resp_found:
                 # No policy to allow this token to do challenge-response
@@ -155,15 +154,15 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     """
     options = options or {}
     g = options.get("g")
-    auth_cache_dict = None
+    auth_cache_policy = None
 
     if g:
-        auth_cache_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
-                                     user_object=user_object).action_values(unique=True, write_to_audit_log=False)
-        if auth_cache_dict:
-            auth_times = list(auth_cache_dict)[0].split("/")
+        auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE, user_object=user_object)
+                           .action_values(unique=True, write_to_audit_log=False))
+        if auth_cache_policy:
+            auth_times = list(auth_cache_policy)[0].split("/")
 
-            # determine first_auth from policy!
+            # Determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
             first_auth = datetime.datetime.utcnow() - first_offset
             last_auth = first_auth  # Default if no last auth exists
@@ -185,12 +184,12 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      max_auths=max_auths)
 
             if result:
-                g.audit_object.add_policy(next(iter(auth_cache_dict.values())))
+                g.audit_object.add_policy(next(iter(auth_cache_policy.values())))
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
-    if auth_cache_dict and res:
+    if auth_cache_policy and res:
         # If authentication is successful, we store the password in auth_cache
         add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw)
     return res, reply_dict
@@ -219,18 +218,16 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
                                    user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
-            tokencount = get_tokens(user=user_object, count=True)
-            if tokencount == 0:
+            token_count = get_tokens(user=user_object, count=True)
+            if token_count == 0:
                 g.audit_object.add_policy([p.get("name") for p in pass_no_token])
-                return True, {"message": "user has no token, accepted due to '{!s}'".format(
-                    pass_no_token[0].get("name"))}
+                return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
 
 
-def auth_user_does_not_exist(wrapped_function, user_object, passw,
-                             options=None):
+def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None):
     """
     This decorator checks, if the user does exist at all.
     If the user does exist, the wrapped function is called.
@@ -532,6 +529,9 @@ def auth_otppin(wrapped_function, *args, **kwds):
      * checks the pin against the userstore
      * or passes the request to the wrapped_function
 
+    If ACTION.OTPPIN is ACTIONVALUE.USERSTORE, the result is written to options["otppin_userstore_success"] for the use
+    in subsequent calls to this function in the same request (checking all token of a user).
+
     :param wrapped_function: In this case the wrapped function should be
         :py:func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
     :param `*args`: args[1] is the pin
@@ -576,9 +576,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
                     return False
                 else:
                     rv = user_object.check_password(pin)
-                    success = rv is not None
-                    options["otppin_userstore_success"] = success
-                    return success
+                    options["otppin_userstore_success"] = rv is not None
+                    return options["otppin_userstore_success"]
 
     # Call and return the original check_pin function
     return wrapped_function(*args, **kwds)
@@ -672,7 +671,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 def pin_check_only(wrapped_function, user_object, passw, options=None):
     g = options.get("g")
     if g:
-        if Match.user(g, scope=SCOPE.AUTH, action=ACTION.PIN_CHECK_ONLY,
+        if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
                       user_object=user_object).any(write_to_audit_log=False):
             options["pin_check_only"] = True
     return wrapped_function(user_object, passw, options)

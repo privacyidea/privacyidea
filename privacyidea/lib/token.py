@@ -2385,7 +2385,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             if not ("pin_check_only" in options and is_true(options["pin_check_only"])):
                 # This is a normal authentication attempt
                 try:
-                    # pass the length of the valid_token_list to ``authenticate`` so that
+                    # Pass the length of the valid_token_list to ``authenticate`` so that
                     # the push token can react accordingly
                     options["valid_token_num"] = len(valid_token_list)
                     pin_match, otp_count, repl = \
@@ -2411,6 +2411,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy pin_check_only is set.")
 
+    # Remove the caching entry for otppin=userstore if it exists
     options.pop("otppin_userstore_success", None)
 
     """
@@ -2420,7 +2421,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     10 in invalid_token_list
     0 in challenge_token_list.
 
-    in this case, the failcounter of the 2 tokens in pin_matchting_token_list
+    in this case, the failcounter of the 2 tokens in pin_matching_token_list
     needs to be increased. And return False
 
     If there is
