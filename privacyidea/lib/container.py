@@ -2,11 +2,13 @@ import importlib
 import logging
 import os
 
+from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
+from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token, get_tokens,
+                                   convert_token_objects_to_dicts)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
@@ -797,3 +799,119 @@ def _check_user_access_on_container(container, user, user_role):
         raise PolicyError(f"User {user} is not allowed to modify container {container.serial}.")
     else:
         raise ParameterError(f"Unknown user role {user_role}!")
+
+
+def create_container_dict(container_list, no_token=False, user=None, logged_in_user_role='user',
+                          allowed_token_realms=[]):
+    """
+    Create a dictionary for each container in the list.
+    It contains the container properties, owners, realms, tokens and info.
+    The information is only provided if the user is allowed to see it.
+
+    :param container_list: List of container objects
+    :param no_token: If True, the token information is not included
+    :param user: The user object requesting the containers
+    :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
+    :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
+    :return: List of container dictionaries like
+
+        ::
+            [
+                {
+                    "type": "generic",
+                    "serial": "CONT0001",
+                    "description": "Container description",
+                    "last_seen": "2021-06-01T12:00:00+00:00",
+                    "last_updated": "2021-06-01T12:00:00+00:00",
+                    "states": ["active"],
+                    "users": [
+                        {
+                            "user_name": "user1",
+                            "user_realm": "realm1",
+                            "user_resolver": "resolver1",
+                            "user_id": 1
+                        }
+                        ],
+                    "tokens": [
+                        {
+                            "serial": "TOTP0001",
+                            "type": "totp",
+                            "active": true,
+                            ...
+                        }],
+                    "info": {"hash_algorithm": "SHA256", ...},
+                    "realms": ["realm1", "realm2"]
+                }, ...
+            ]
+    """
+    res: list = []
+    for container in container_list:
+        tmp: dict = {"type": container.type,
+                     "serial": container.serial,
+                     "description": container.description,
+                     "last_seen": container.last_seen,
+                     "last_updated": container.last_updated}
+        tmp_users: dict = {}
+        users: list = []
+        for user in container.get_users():
+            tmp_users["user_name"] = user.login
+            tmp_users["user_realm"] = user.realm
+            tmp_users["user_resolver"] = user.resolver
+            tmp_users["user_id"] = user.uid
+            users.append(tmp_users)
+        tmp["users"] = users
+
+        if not no_token:
+            token_serials = ",".join([token.get_serial() for token in container.get_tokens()])
+            tokens_dict_list = []
+            if len(token_serials) > 0:
+                tokens = get_tokens(serial=token_serials)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
+                                                                  allowed_realms=allowed_token_realms)
+            tmp["tokens"] = tokens_dict_list
+
+        tmp["states"] = container.get_states()
+
+        infos: dict = {}
+        for info in container.get_container_info():
+            if info.type:
+                infos[info.key + ".type"] = info.type
+            infos[info.key] = info.value
+        tmp["info"] = infos
+
+        realms = []
+        for realm in container.realms:
+            realms.append(realm.name)
+        tmp["realms"] = realms
+
+        res.append(tmp)
+
+    return res
+
+
+def synchronize_container(container_serial, params):
+    """
+    Synchronizes a physical container with privacyIDEA.
+    """
+    signature = getParam(params, "signature", required=True)
+
+    container = find_container_by_serial(container_serial)
+    container.synchronize(params)
+    return True
+
+
+def create_endpoint_url(base_url, endpoint):
+    """
+    Creates the url for an endpoint.
+
+    :param base_url: The base url of the host
+    :param endpoint: The endpoint
+    :return: The url for the endpoint
+    """
+    if endpoint not in base_url:
+        if base_url[-1] != "/":
+            base_url += "/"
+        endpoint_url = base_url + endpoint
+    else:
+        endpoint_url = base_url
+    return endpoint_url

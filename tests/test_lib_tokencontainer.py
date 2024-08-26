@@ -14,7 +14,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        set_container_states, add_container_states,
                                        remove_multiple_tokens_from_container, remove_token_from_container,
                                        add_multiple_tokens_to_container,
-                                       add_token_to_container)
+                                       add_token_to_container, create_endpoint_url)
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
@@ -824,8 +824,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_key": pub_key_smph_str, "passphrase": passphrase,
-                  "message": message}
+        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str}
 
         return params
 
@@ -851,8 +850,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Valid prepare
         registration_url = "http://test/container/register/finalize"
-        passphrase_params = {"passphrase_required": True, "passphrase_ad": False,
-                             "passphrase_prompt": "Enter passphrase", "passphrase_response": "top_secret"}
+        passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
+                             "passphrase_response": "top_secret"}
         smartphone_serial, init_results = self.register_smartphone_initialize_success(registration_url,
                                                                                       passphrase_params)
         smartphone = find_container_by_serial(smartphone_serial)
@@ -861,13 +860,15 @@ class TokenContainerManagementTestCase(MyTestCase):
         invalid_nonce = geturandom(20, hex=True)
         params = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
                                                       registration_url, smartphone_serial)
+        params.update({"container_registration_url": registration_url})
 
-        # Try to finalize registration: this can only work if we do not pass the message to the validate check
-        # self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+        # Try to finalize registration
+        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
         # Mock smartphone with invalid public key
         params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
                                                       registration_url, smartphone_serial)
+        params.update({"container_registration_url": registration_url})
         public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
 
@@ -878,6 +879,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
                                                       registration_url, smartphone_serial,
                                                       "different_secret")
+        params.update({"container_registration_url": registration_url})
+
         # Try to finalize registration
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
@@ -902,10 +905,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Mock smartphone
         params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
                                                       registration_url, smartphone_serial)
+        params.update({"container_registration_url": registration_url})
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
-        self.assertIn("public_key", res.keys())
+        self.assertIn("public_server_key", res.keys())
 
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
@@ -913,6 +917,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
+        self.assertNotEqual("", container_info["public_key_container"], container_info["public_key_server"])
 
         # Terminate registration
         smartphone.terminate_registration()
@@ -926,8 +931,8 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_38_register_smartphone_passphrase_success(self):
         # Prepare
         registration_url = "http://test/container/register/finalize"
-        passphrase_params = {"passphrase_required": True, "passphrase_ad": False,
-                             "passphrase_prompt": "Enter passphrase", "passphrase_response": "top_secret"}
+        passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
+                             "passphrase_response": "top_secret"}
         smartphone_serial, init_result = self.register_smartphone_initialize_success(registration_url,
                                                                                      passphrase_params)
         smartphone = find_container_by_serial(smartphone_serial)
@@ -941,10 +946,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
                                                       registration_url, smartphone_serial,
                                                       passphrase_params["passphrase_response"])
+        params.update({"container_registration_url": registration_url})
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
-        self.assertIn("public_key", res.keys())
+        self.assertIn("public_server_key", res.keys())
 
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
@@ -952,3 +958,55 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
+
+    def test_39_reinit_registration_invalidates_old_challenge(self):
+        # First init
+        registration_url = "http://test/container/register/finalize"
+        smartphone_serial, init_result_old = self.register_smartphone_initialize_success(registration_url)
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # second init
+        init_result_new = smartphone.initialize_registration(
+            {"container_serial": smartphone_serial, "container_registration_url": registration_url})
+
+        # Finalize with old init data
+        params = self.mock_smartphone_register_params(init_result_old["nonce"], init_result_old["time_stamp"],
+                                                      registration_url, smartphone_serial)
+        params.update({"container_registration_url": registration_url})
+        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+
+        # Finalize with new init data
+        params = self.mock_smartphone_register_params(init_result_new["nonce"], init_result_new["time_stamp"],
+                                                      registration_url, smartphone_serial)
+        params.update({"container_registration_url": registration_url})
+
+        # Finalize registration
+        res = smartphone.finalize_registration(params)
+        self.assertIn("public_server_key", res.keys())
+
+    def test_39_create_container_challenge(self):
+        container_serial = init_container({"type": "smartphone"})
+        container = find_container_by_serial(container_serial)
+
+        res = container.create_challenge({})
+        self.assertIn("nonce", res.keys())
+        self.assertIn("time_stamp", res.keys())
+
+        # check challenge
+        challenge = get_challenges(serial=container_serial)[0]
+        self.assertEqual(res["nonce"], challenge.challenge)
+        self.assertEqual(res["time_stamp"], challenge.timestamp.replace(tzinfo=timezone.utc).isoformat())
+
+    def test_40_create_endpoint_url(self):
+        correct_url = "https://pi/test/endpoint"
+        # simple concat
+        endpoint = create_endpoint_url("https://pi/", "test/endpoint")
+        self.assertEqual(correct_url, endpoint)
+
+        # base url without /
+        endpoint = create_endpoint_url("https://pi", "test/endpoint")
+        self.assertEqual(correct_url, endpoint)
+
+        # endpoint already included in base url
+        endpoint = create_endpoint_url("https://pi/test/endpoint", "test/endpoint")
+        self.assertEqual(correct_url, endpoint)
