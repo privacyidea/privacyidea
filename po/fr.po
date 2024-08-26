@@ -3,13 +3,13 @@
 # "J. Lavoie" <j.lavoie@net-c.ca>, 2024.
 # nicolas hahang <nicolas.hahang@gmail.com>, 2024.
 # Julien Mutterer <Julien_M@users.noreply.hosted.weblate.org>, 2024.
+# Jelina Unger <jelina.unger@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-04-25 15:07+0000\n"
-"Last-Translator: Julien Mutterer <Julien_M@users.noreply.hosted.weblate."
-"org>\n"
+"PO-Revision-Date: 2024-08-27 08:31+0000\n"
+"Last-Translator: Jelina Unger <jelina.unger@netknights.it>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.5.1-dev\n"
+"X-Generator: Weblate 5.7.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -348,18 +348,16 @@ msgstr "Politiques actives"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:602
 msgid "Add"
-msgstr ""
+msgstr "Ajouter"
 
 #: privacyidea/static/components/user/views/user.details.html:303
-#, fuzzy
-#| msgid "Tokens"
 msgid "Add Tokens"
-msgstr "Jetons"
+msgstr "Ajouter des jetons"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:424
 #: privacyidea/static/components/user/views/user.details.html:296
 msgid "Add Tokens to Container"
-msgstr ""
+msgstr "Ajouter des jetons au container"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
@@ -379,10 +377,8 @@ msgstr "Ajouter une nouvelle question"
 
 #: privacyidea/static/components/token/views/token.details.html:607
 #: privacyidea/static/components/token/views/token.enroll.html:86
-#, fuzzy
-#| msgid "Add a condition"
 msgid "Add to Container"
-msgstr "Ajouter une condition"
+msgstr "Ajouter au container"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
