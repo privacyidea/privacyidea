@@ -104,7 +104,7 @@ def teardown_request(exc):
 
 
 @token_blueprint.before_request
-@container_blueprint.before_request
+# @container_blueprint.before_request
 @audit_blueprint.before_request
 @system_blueprint.before_request
 @user_required
@@ -148,16 +148,28 @@ def before_admin_request():
     before_request()
 
 
-@container_sync_blueprint.before_request
+@container_blueprint.before_request
 def before_container_request():
+    # auth free endpoints
+    auth_token_free_endpoints = ["register/finalize", "register/terminate", "synchronize/finalize"]
+    is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path.endswith(endpoint)]
+
     # Get auth token
     auth_token = request.headers.get('PI-Authorization')
     if not auth_token:
         auth_token = request.headers.get('Authorization')
 
-    # Verify auth token if it is not None and for all non-auth-free endpoints anyway
-    if auth_token:
-        verify_auth_token(auth_token, ["user", "admin"])
+    # Verify auth token for all non-auth-token-free endpoints anyway
+    if auth_token or True not in is_auth_free:
+        r = verify_auth_token(auth_token, ["user", "admin"])
+        g.logged_in_user = {"username": r.get("username"),
+                            "realm": r.get("realm"),
+                            "role": r.get("role")}
+    elif auth_token:
+        # if an auth token is present, but it is not mandatory for the endpoint, write it in the params to be verified
+        # later
+        request.all_data["auth_token"] = auth_token
+
     before_request()
 
 
