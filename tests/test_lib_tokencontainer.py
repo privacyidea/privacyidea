@@ -892,9 +892,11 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # check container_info is empty
         container_info = smartphone.get_container_info_dict()
-        self.assertEqual(2, len(container_info))
+        self.assertEqual(4, len(container_info))
         self.assertIn("key_algorithm", container_info.keys())
         self.assertIn("hash_algorithm", container_info.keys())
+        self.assertIn("encrypt_algorithm", container_info.keys())
+        self.assertIn("encrypt_algorithm", container_info.keys())
 
     def test_37_register_smartphone_success(self):
         # Prepare

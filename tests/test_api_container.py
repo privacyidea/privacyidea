@@ -743,39 +743,43 @@ class APIContainerAuthorization(MyApiTestCase):
 class APIContainer(MyApiTestCase):
 
     def request_assert_success(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data,
-                                           headers={'Authorization': auth_token}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
             return res.json
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data,
-                                           headers={'Authorization': auth_token}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(status_code, res.status_code, res.json)
             self.assertFalse(res.json["result"]["status"])
             return res.json
 
     def request_assert_405(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data,
-                                           headers={'Authorization': auth_token}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
             return res.json
 
     def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data,
-                                           headers={'Authorization': auth_token}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
 
@@ -1337,7 +1341,8 @@ class APIContainer(MyApiTestCase):
                                                       passphrase="top_secret")
         json = self.request_assert_success('container/register/finalize',
                                            params,
-                                           self.at, 'POST')
+                                           None, 'POST')
+
         # Check if the response contains the expected values
         self.assertIn("public_server_key", json["result"]["value"])
         challenge_url = f"http://localhost/container/{smartphone_serial}/challenge"
@@ -1380,7 +1385,7 @@ class APIContainer(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
         container_serial = init_container({"type": "smartphone"})
         json = self.request_assert_error(403, 'container/register/finalize',
-                                         {"container_serial": container_serial}, self.at, 'POST')
+                                         {"container_serial": container_serial}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(303, error["code"])
 
@@ -1388,14 +1393,14 @@ class APIContainer(MyApiTestCase):
 
         # Missing container serial
         json = self.request_assert_error(400, 'container/register/finalize',
-                                         {}, self.at, 'POST')
+                                         {}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
 
         # Invalid container serial
         json = self.request_assert_error(404, 'container/register/finalize',
-                                         {"container_serial": "invalid_serial"}, self.at, 'POST')
+                                         {"container_serial": "invalid_serial"}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1409,18 +1414,5 @@ class APIContainer(MyApiTestCase):
                                          {}, self.at, 'DELETE')
         error = json["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
-
-        delete_policy("policy")
-
-    def test_28_create_challenge(self):
-        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
-
-        container_serial = init_container({"type": "smartphone"})
-        json = self.request_assert_success(f'/container/{container_serial}/challenge',
-                                           {}, self.at, 'POST')
-        result = json["result"]["value"]
-        self.assertIn("container_synchronize_url", result.keys())
-        self.assertIn("nonce", result.keys())
-        self.assertIn("time_stamp", result.keys())
 
         delete_policy("policy")
