@@ -588,7 +588,6 @@ def registration_init():
 
 
 @container_blueprint.route('register/finalize', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REGISTER)
 @event('container_register_finalize', request, g)
 @log_with(log)
 def registration_finalize():
