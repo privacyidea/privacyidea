@@ -574,7 +574,7 @@ def registration_init():
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-    registration_url = create_endpoint_url(server_url, "containersync/register/finalize")
+    registration_url = create_endpoint_url(server_url, "container/register/finalize")
     params.update({'container_registration_url': registration_url})
 
     # Get validity time for the registration
@@ -588,7 +588,7 @@ def registration_init():
     return send_result(res)
 
 
-@container_sync_blueprint.route('register/finalize', methods=['POST'])
+@container_blueprint.route('register/finalize', methods=['POST'])
 @event('container_register_finalize', request, g)
 @log_with(log)
 def registration_finalize():
@@ -611,8 +611,8 @@ def registration_finalize():
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-    registration_url = create_endpoint_url(server_url, "containersync/register/finalize")
-    challenge_url = create_endpoint_url(server_url, f"containersync/{container_serial}/challenge")
+    registration_url = create_endpoint_url(server_url, "container/register/finalize")
+    challenge_url = create_endpoint_url(server_url, f"container/{container_serial}/challenge")
     params.update({'container_registration_url': registration_url})
 
     # Validate registration
@@ -625,7 +625,7 @@ def registration_finalize():
     return send_result(res)
 
 
-@container_sync_blueprint.route('register/<string:container_serial>/terminate', methods=['DELETE'])
+@container_blueprint.route('register/<string:container_serial>/terminate', methods=['DELETE'])
 @event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate(container_serial: str):
@@ -640,7 +640,7 @@ def registration_terminate(container_serial: str):
     return send_result(res)
 
 
-@container_sync_blueprint.route('synchronize/<string:container_serial>/initialize', methods=['POST'])
+@container_blueprint.route('synchronize/<string:container_serial>/initialize', methods=['POST'])
 @event('container_create_challenge', request, g)
 @log_with(log)
 def synchronize_init(container_serial: str):
@@ -662,7 +662,7 @@ def synchronize_init(container_serial: str):
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-    synchronize_url = create_endpoint_url(server_url, f"containersync/{container_serial}/synchronize")
+    synchronize_url = create_endpoint_url(server_url, f"container/{container_serial}/synchronize")
 
     # Create challenge
     container = find_container_by_serial(container_serial)
@@ -672,7 +672,7 @@ def synchronize_init(container_serial: str):
     return send_result(res)
 
 
-@container_sync_blueprint.route('synchronize/<string:container_serial>/finalize', methods=['POST'])
+@container_blueprint.route('synchronize/<string:container_serial>/finalize', methods=['POST'])
 def synchronize_finalize(container_serial: str):
     """
     Validates the challenge if the container is authorized. If successful, the server returns the container's state,
