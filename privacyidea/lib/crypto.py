@@ -933,19 +933,18 @@ def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None, privat
     :param public_key: An EllipticCurvePublicKey object or None if only a private key shall be encoded
     :return: A tuple of two strings (private_key, public_key) in base64 encoding
     """
+    # TODO: Check if PEM is urlsafe or if an additional url safe encoding is needed
     private_key_str = ""
     if private_key:
-        private_key_b64 = base64.urlsafe_b64encode(
-            private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                      format=serialization.PrivateFormat.PKCS8,
-                                      encryption_algorithm=NoEncryption()))
+        private_key_b64 = private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                                    format=serialization.PrivateFormat.PKCS8,
+                                                    encryption_algorithm=NoEncryption())
         private_key_str = private_key_b64.decode("utf-8")
 
     public_key_str = ""
     if public_key:
-        public_key_b64 = base64.urlsafe_b64encode(
-            public_key.public_bytes(encoding=serialization.Encoding.PEM,
-                                    format=serialization.PublicFormat.SubjectPublicKeyInfo))
+        public_key_b64 = public_key.public_bytes(encoding=serialization.Encoding.PEM,
+                                                 format=serialization.PublicFormat.SubjectPublicKeyInfo)
         public_key_str = public_key_b64.decode("utf-8")
     return public_key_str, private_key_str
 
@@ -961,13 +960,11 @@ def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: 
     """
     private_key = None
     if private_key_str:
-        private_key = serialization.load_pem_private_key(
-            base64.urlsafe_b64decode(private_key_str), password=None)
+        private_key = serialization.load_pem_private_key(private_key_str.encode("utf-8"), password=None)
 
     public_key = None
     if public_key_str:
-        public_key = serialization.load_pem_public_key(
-            base64.urlsafe_b64decode(public_key_str))
+        public_key = serialization.load_pem_public_key(public_key_str.encode("utf-8"))
 
     return public_key, private_key
 
@@ -999,7 +996,7 @@ def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None
     return hash_algorithm
 
 
-def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name:str):
+def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str):
     """
     Signs a message with the given ecc private key.
 
@@ -1050,7 +1047,7 @@ def ecdh_key_exchange(private_key, public_key):
     return derived_key
 
 
-def encrypt_ecc(message, shared_key, algorithm_name):
+def encrypt_ecc(message, shared_key, algorithm_name, mode_name):
     """
     Encrypts a message with the given public key.
     """
@@ -1068,7 +1065,7 @@ def decrypt_ecc(secret, shared_key, init_vector, tag, algorithm):
     Decrypts a message with the given private key.
     """
 
-    decryptor = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector, tag),).decryptor()
+    decryptor = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector, tag), ).decryptor()
 
     # Decryption gets us the authenticated plaintext.
     # If the tag does not match an InvalidTag exception will be raised.
