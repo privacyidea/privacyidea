@@ -165,12 +165,49 @@ def before_container_request():
         g.logged_in_user = {"username": r.get("username"),
                             "realm": r.get("realm"),
                             "role": r.get("role")}
-    elif auth_token:
-        # if an auth token is present, but it is not mandatory for the endpoint, write it in the params to be verified
-        # later
-        request.all_data["auth_token"] = auth_token
+        before_request()
+    else:
+        if auth_token:
+            # if an auth token is present, but it is not mandatory for the endpoint, write it in the params to be
+            # verified later
+            request.all_data["auth_token"] = auth_token
 
-    before_request()
+        # simplified before request (without user stuff)
+        ensure_no_config_object()
+        request.all_data = get_all_params(request)
+
+        g.policy_object = PolicyClass()
+        g.audit_object = getAudit(current_app.config, g.startdate)
+        g.event_config = EventConfiguration()
+        # access_route contains the ip addresses of all clients, hops and proxies.
+        g.client_ip = get_client_ip(request,
+                                    get_from_config(SYSCONF.OVERRIDECLIENT))
+        # Save the HTTP header in the localproxy object
+        g.request_headers = request.headers
+        privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+        # Already get some typical parameters to log
+        # Container info
+        container_serial = getParam(request.all_data, "container_serial")
+        container = None
+        container_type = None
+        if container_serial and "*" not in container_serial:
+            try:
+                container = find_container_by_serial(container_serial)
+            except ResourceNotFoundError:
+                # The container serial might not exist
+                pass
+        if container:
+            container_type = container.type
+
+        g.audit_object.log({"success": False,
+                            "container_serial": container_serial,
+                            "container_type": container_type,
+                            "client": g.client_ip,
+                            "privacyidea_server": privacyidea_server,
+                            "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                            "action_detail": "",
+                            "thread_id": "{0!s}".format(threading.current_thread().ident),
+                            "info": ""})
 
 
 def before_request():
