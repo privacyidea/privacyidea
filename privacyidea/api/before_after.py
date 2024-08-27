@@ -25,8 +25,8 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from .lib.utils import (send_error, get_all_params)
-from .container import container_blueprint
+from .lib.utils import (send_error, get_all_params, verify_auth_token)
+from .container import container_blueprint, container_sync_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
@@ -104,7 +104,7 @@ def teardown_request(exc):
 
 
 @token_blueprint.before_request
-# @container_blueprint.before_request
+@container_blueprint.before_request
 @audit_blueprint.before_request
 @system_blueprint.before_request
 @user_required
@@ -148,35 +148,17 @@ def before_admin_request():
     before_request()
 
 
-@container_blueprint.before_request
+@container_sync_blueprint.before_request
 def before_container_request():
-    endpoint_url = request.url
-    if "register/finalize" not in endpoint_url:
-        before_request()
-    else:
-        ensure_no_config_object()
-        request.all_data = get_all_params(request)
-        privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-        # Create a policy_object, that reads the database audit settings
-        # and contains the complete policy definition during the request.
-        # This audit_object can be used in the postpolicy and prepolicy and it
-        # can be passed to the inner policies.
-        g.policy_object = PolicyClass()
-        g.audit_object = getAudit(current_app.config)
-        g.event_config = EventConfiguration()
-        # access_route contains the ip addresses of all clients, hops and proxies.
-        g.client_ip = get_client_ip(request,
-                                    get_from_config(SYSCONF.OVERRIDECLIENT))
-        g.container_serial = getParam(request.all_data, "container_serial", default=None)
-        g.audit_object.log({"success": False,
-                            "action_detail": "",
-                            "client": g.client_ip,
-                            "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                            "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                            "privacyidea_server": privacyidea_server,
-                            "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                            "thread_id": "{0!s}".format(threading.current_thread().ident),
-                            "info": ""})
+    # Get auth token
+    auth_token = request.headers.get('PI-Authorization')
+    if not auth_token:
+        auth_token = request.headers.get('Authorization')
+
+    # Verify auth token if it is not None and for all non-auth-free endpoints anyway
+    if auth_token:
+        verify_auth_token(auth_token, ["user", "admin"])
+    before_request()
 
 
 def before_request():

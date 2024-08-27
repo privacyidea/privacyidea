@@ -198,7 +198,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             terminateRegistration: function (container_serial, callback) {
-                $http.delete(containerUrl + "/register/" + container_serial + "/terminate", {
+                $http.delete(containerUrl + "sync/register/" + container_serial + "/terminate", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);

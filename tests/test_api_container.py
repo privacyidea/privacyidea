@@ -808,6 +808,13 @@ class APIContainer(MyApiTestCase):
         self.assertEqual(404, error["code"])
         self.assertEqual("ERR404: Type parameter is required!", error["message"])
 
+        # Init without auth token
+        payload = {"type": "Smartphone", "description": "test description!!"}
+        json = self.request_assert_error(401, '/container/init', payload, None, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(4033, error["code"])
+        self.assertEqual("Authentication failure. Missing Authorization header.", error["message"])
+
     def test_02_delete_container_fail(self):
         # Delete non-existing container
         json = self.request_assert_error(404, '/container/wrong_serial', {}, self.at, 'DELETE')
@@ -1335,21 +1342,21 @@ class APIContainer(MyApiTestCase):
 
         # Finalize
         params = self.mock_smartphone_register_params(serial=smartphone_serial,
-                                                      registration_url="http://localhost/container/register/finalize",
+                                                      registration_url="http://localhost/containersync/register/finalize",
                                                       nonce=init_response_data["nonce"],
                                                       registration_time=init_response_data["time_stamp"],
                                                       passphrase="top_secret")
-        json = self.request_assert_success('container/register/finalize',
+        json = self.request_assert_success('containersync/register/finalize',
                                            params,
                                            None, 'POST')
 
         # Check if the response contains the expected values
         self.assertIn("public_server_key", json["result"]["value"])
-        challenge_url = f"http://localhost/container/{smartphone_serial}/challenge"
+        challenge_url = f"http://localhost/containersync/{smartphone_serial}/challenge"
         self.assertEqual(challenge_url, json["result"]["value"]["container_challenge_url"])
 
         # Terminate
-        self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
+        self.request_assert_success(f'containersync/register/{smartphone_serial}/terminate',
                                     {},
                                     self.at, 'DELETE')
         delete_policy("policy")
@@ -1384,7 +1391,7 @@ class APIContainer(MyApiTestCase):
         # Policy with server url disabled defined
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
         container_serial = init_container({"type": "smartphone"})
-        json = self.request_assert_error(403, 'container/register/finalize',
+        json = self.request_assert_error(403, 'containersync/register/finalize',
                                          {"container_serial": container_serial}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(303, error["code"])
@@ -1392,14 +1399,14 @@ class APIContainer(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=True)
 
         # Missing container serial
-        json = self.request_assert_error(400, 'container/register/finalize',
+        json = self.request_assert_error(400, 'containersync/register/finalize',
                                          {}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
 
         # Invalid container serial
-        json = self.request_assert_error(404, 'container/register/finalize',
+        json = self.request_assert_error(404, 'containersync/register/finalize',
                                          {"container_serial": "invalid_serial"}, None, 'POST')
         error = json["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
@@ -1410,7 +1417,7 @@ class APIContainer(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
 
         # Invalid container serial
-        json = self.request_assert_error(404, f'container/register/invalidSerial/terminate',
+        json = self.request_assert_error(404, f'containersync/register/invalidSerial/terminate',
                                          {}, self.at, 'DELETE')
         error = json["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
