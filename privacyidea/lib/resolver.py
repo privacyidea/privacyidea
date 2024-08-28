@@ -299,7 +299,7 @@ def get_resolver_class(resolver_type):
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername
-    
+
     :param resolvername: THe name of the resolver
     :return: The type of the resolver
     :rtype: string
@@ -381,6 +381,11 @@ def import_resolver(data, name=None):
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
     log.debug('Import resolver config: {0!s}'.format(data))
+
+    # Check for old style export type where resolvers were given as a list
+    if isinstance(data, list):
+        data = {x.get("resolvername"): x for x in data}
+
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue

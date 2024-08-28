@@ -1,12 +1,13 @@
+"""Base test configuration to set up/teardown tests."""
 import unittest
 import mock
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
-from privacyidea.models import db, save_config_timestamp, NodeName
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
+from privacyidea.models import db, save_config_timestamp
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.auditmodules.base import Audit
