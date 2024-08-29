@@ -120,17 +120,12 @@ class LibPolicyTestCase(MyTestCase):
                         "WrongPW", options=options,
                         user=User("cornelius", realm="r1"))
         self.assertFalse(r)
-        # Check that the result is cached in options. This is only done when OTPPIN=userstore.
-        self.assertEqual(False, options["otppin_userstore_success"])
-        # Remove the cache for the next try with another input
-        options.pop("otppin_userstore_success")
 
         # Correct password from userstore: "test"
         r = auth_otppin(self.fake_check_otp, None,
                         "test", options=options,
                         user=User("cornelius", realm="r1"))
         self.assertTrue(r)
-        self.assertEqual(True, options["otppin_userstore_success"])
         delete_policy("pol1")
 
     def test_03_otppin_for_serial(self):
@@ -151,9 +146,6 @@ class LibPolicyTestCase(MyTestCase):
         # Not identified by the user but by the token owner
         r = auth_otppin(self.fake_check_otp, token, "WrongPW", options=options, user=None)
         self.assertFalse(r)
-        # Check for cache entry since this otppin=userstore and then remove it
-        self.assertEqual(False, options["otppin_userstore_success"])
-        options.pop("otppin_userstore_success")
 
         # Correct password from userstore: "test"
         # Not identified by the user but by the token owner
@@ -161,7 +153,6 @@ class LibPolicyTestCase(MyTestCase):
                         "test", options=options,
                         user=None)
         self.assertTrue(r)
-        self.assertEqual(True, options["otppin_userstore_success"])
         delete_policy("pol1")
         remove_token("T001")
 
@@ -270,26 +261,23 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
         options = {"g": g}
-        rv = auth_user_passthru(check_user_pass, user, passw,
-                                options=options)
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
-        self.assertEqual(rv[1].get("message"),
-                         "against userstore due to 'pol1'")
+        self.assertEqual(rv[1].get("message"), "against userstore due to 'pol1'")
 
         # Now set a PASSTHRU policy to a RADIUS config (new style)
         radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
-        r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
-                       dictionary=DICT_FILE)
+        r = add_radius("radiusconfig1", "1.2.3.4", "testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
+
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
         options = {"g": g}
-        rv = auth_user_passthru(check_user_pass, user, passw,
-                                options=options)
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
                          "against RADIUS server radiusconfig1 due to 'pol1'")
@@ -900,7 +888,7 @@ class LibPolicyTestCase(MyTestCase):
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertTrue("against RADIUS server radiusconfig1 due to 'pol1'" in rv[1].get("message"))
-        self.assertTrue("autoassigned TOKMATCH" in rv[1].get("message"))
+        self.assertIn("auto-assigned TOKMATCH", rv[1].get("message"))
 
         # Check if the token is assigned and can authenticate
         r = check_user_pass(User("cornelius", "r1"), "test{0!s}".format(self.valid_otp_values[2]))

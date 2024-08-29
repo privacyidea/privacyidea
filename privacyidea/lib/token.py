@@ -2355,8 +2355,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
         if len(token_object_list) == 0:
             # If there is no unlocked token left.
-            raise TokenAdminError(_("This action is not possible, since the "
-                                    "token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2408,9 +2407,6 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 invalid_token_list.append(token_object)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy pin_check_only is set.")
-
-    # Remove the caching entry for otppin=userstore if it exists
-    options.pop("otppin_userstore_success", None)
 
     """
     There might be

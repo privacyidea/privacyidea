@@ -562,16 +562,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
                     return False
 
             if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
-                # If the PIN should be checked with the userstore, cache the result in options so we only have to do
-                # this once per request.
-                if "otppin_userstore_success" in options and is_true(options["otppin_userstore_success"]):
-                    return True
-                elif "otppin_userstore_success" in options and not is_true(options["otppin_userstore_success"]):
-                    return False
-                else:
-                    rv = user_object.check_password(pin)
-                    options["otppin_userstore_success"] = rv is not None
-                    return options["otppin_userstore_success"]
+                rv = user_object.check_password(pin)
+                return rv is not None
 
     # Call and return the original check_pin function
     return wrapped_function(*args, **kwds)
