@@ -120,7 +120,8 @@ def challenge_response_allowed(func):
         token = args[0]
         user_object = kwds.get("user") or User()
         if g:
-            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE, user_object=user_object)
+            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE,
+                                              user_object=user_object)
                                        .action_values(unique=False, write_to_audit_log=False))
             log.debug(f"Found these allowed token types: {list(allowed_token_types)}")
             allowed_token_types = {k.lower(): v for k, v in allowed_token_types.items()}
