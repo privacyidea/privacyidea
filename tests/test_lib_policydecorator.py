@@ -878,8 +878,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(get_tokens(user=user, count=True), 0)
         rv = auth_user_passthru(check_user_pass, user, passw, options)
         self.assertFalse(rv[0])
-        self.assertEqual(rv[1].get("message"),
-                         "The user has no tokens assigned")
+        self.assertEqual(rv[1].get("message"), "The user has no tokens assigned")
 
         # Now add a PASSTHRU policy to a RADIUS config
         radiusmock.setdata(response=radiusmock.AccessAccept)
@@ -912,3 +911,57 @@ class LibPolicyTestCase(MyTestCase):
         remove_token("TOKMATCH")
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_17_force_challenge_response(self):
+        # If force_challenge_response is enabled, authentication will only be possible by sending the PIN in the first
+        # step, then sending the OTP in the second step with a transaction_id returned in the first step.
+        # Authenticating with PIN+OTP in one step will fail.
+        self.setUp_user_realms()
+        user = User(login="cornelius", realm=self.realm1)
+        secret = "AAAAAAAAAA"
+        pin = "1234"
+        otps = ["984989", "457702", "527850", "820671", "569870"]
+        token = init_token({"type":"hotp", "pin":pin, "otpkey": secret}, user=user)
+        fake_g = FakeFlaskG()
+        fake_g.policy_object = PolicyClass()
+        fake_g.audit_object = FakeAudit()
+
+        # Without any policies, the default PIN+OTP works
+        res, reply_dict = check_user_pass(user, pin+otps[0], options={"g": fake_g})
+        self.assertTrue(res)
+        self.assertIn("message", reply_dict)
+        self.assertIn("serial", reply_dict)
+        self.assertIn("type", reply_dict)
+
+        # With force_challenge_response policy, PIN+OTP will fail
+        set_policy(name="force_cr", scope=SCOPE.AUTH, action=f"{ACTION.FORCE_CHALLENGE_RESPONSE}")
+        # Also enable challenge-response for hotp type
+        set_policy(name="hotp_cr", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+
+        res, reply_dict = check_user_pass(user, pin + otps[1], options={"g": fake_g})
+        self.assertFalse(res)
+        self.assertIn("message", reply_dict) # wrong otp pin message
+        self.assertNotIn("serial", reply_dict)
+        self.assertNotIn("type", reply_dict)
+
+        # Using just the PIN will trigger the challenge
+        res, reply_dict = check_user_pass(user, pin, options={"g": fake_g})
+        self.assertIn("message", reply_dict)
+        self.assertIn("serial", reply_dict)
+        self.assertIn("type", reply_dict)
+        self.assertIn("transaction_id", reply_dict)
+        self.assertIn("multi_challenge", reply_dict)
+        self.assertEqual(1, len(reply_dict["multi_challenge"]))
+
+        # Using the OTP with the transaction_id will authenticate
+        # Re-use the second OTP value because it was not consumed before
+        res, reply_dict = check_user_pass(user, otps[1],
+                                          options={"g": fake_g, "transaction_id": reply_dict["transaction_id"]})
+        self.assertTrue(res)
+        self.assertIn("message", reply_dict)
+        self.assertIn("serial", reply_dict)
+        # Cleanup
+        delete_policy("force_cr")
+        delete_policy("hotp_cr")
+        user.delete()
+        remove_token(token.token.serial)

@@ -2520,7 +2520,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.FORCE_CHALLENGE_RESPONSE: {
                 'type': 'bool',
                 'desc': _('When enabled, authentication attempts will be interpreted as either the PIN or '
-                          'the answer to a challenge. PIN concatenated with OTP can not be used anymore!'),
+                          'the answer to a challenge. PIN concatenated with OTP can not be used anymore! '
+                          'Does only work when authenticating with a username.'),
             }
         },
         SCOPE.AUTHZ: {

@@ -2166,9 +2166,9 @@ def check_serial_pass(serial, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    tokenobject = get_one_token(serial=serial)
-    res, reply_dict = check_token_list([tokenobject], passw,
-                                       user=tokenobject.user,
+    token_object = get_one_token(serial=serial)
+    res, reply_dict = check_token_list([token_object], passw,
+                                       user=token_object.user,
                                        options=options,
                                        allow_reset_all_tokens=True)
 
@@ -2187,8 +2187,8 @@ def check_otp(serial, otpval):
     :rtype: tuple(bool, dict)
     """
     reply_dict = {}
-    tokenobject = get_one_token(serial=serial)
-    res = tokenobject.check_otp(otpval) >= 0
+    token_object = get_one_token(serial=serial)
+    res = token_object.check_otp(otpval) >= 0
     if not res:
         reply_dict["message"] = _("OTP verification failed.")
     return res, reply_dict
@@ -2381,7 +2381,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
-            if not ("pin_check_only" in options and is_true(options["pin_check_only"])):
+            if not ("force_challenge_response" in options and is_true(options["force_challenge_response"])):
                 # This is a normal authentication attempt
                 try:
                     # Pass the length of the valid_token_list to ``authenticate`` so that
@@ -2594,7 +2594,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and
         # not even the PIN.
-        # Depending of IncFailCountOnFalsePin, we increase the failcounter.
+        # Depending on IncFailCountOnFalsePin, we increase the failcounter.
         reply_dict["message"] = _("wrong otp pin")
         if get_inc_fail_count_on_false_pin():
             for token_object in invalid_token_list:
