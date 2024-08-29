@@ -99,7 +99,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               config_lost_token,
-                                              reset_all_user_tokens, pin_check_only)
+                                              reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -2200,7 +2200,7 @@ def check_otp(serial, otpval):
 @libpolicy(auth_user_timelimit)
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
-@libpolicy(pin_check_only)
+@libpolicy(force_challenge_response)
 @log_with(log, hide_kwargs=["passw"])
 def check_user_pass(user, passw, options=None):
     """
@@ -2219,16 +2219,16 @@ def check_user_pass(user, passw, options=None):
     :rtype: tuple
     """
     token_type = options.pop("token_type", None)
-    tokenobject_list = get_tokens(user=user, tokentype=token_type)
+    token_objects = get_tokens(user=user, tokentype=token_type)
     reply_dict = {}
-    if not tokenobject_list:
+    if not token_objects:
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = _("The user has no tokens assigned")
     else:
-        tokenobject = tokenobject_list[0]
-        res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           user=tokenobject.user,
+        token_object = token_objects[0]
+        res, reply_dict = check_token_list(token_objects, passw,
+                                           user=token_object.user,
                                            options=options,
                                            allow_reset_all_tokens=True)
 
@@ -2253,8 +2253,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token_obj in token_list:
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = \
-                token_obj.create_challenge(
+            r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)

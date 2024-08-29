@@ -668,7 +668,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     return r
 
 
-def pin_check_only(wrapped_function, user_object, passw, options=None):
+def force_challenge_response(wrapped_function, user_object, passw, options=None):
     g = options.get("g")
     if g:
         if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
