@@ -41,6 +41,7 @@ from privacyidea.lib.policy import (PolicyClass, enable_policy, delete_policy,
 from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
+from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.cli.pimanage.challenge import challenge_cli
 
@@ -566,6 +567,9 @@ imp_fmt_dict = {
 def config_import(ctx, infile, types, name):
     """
     Import server configuration using specific or all registered importer types.
+
+    Note: Existing configuration with the same name will be overwritten, other
+    existing configuration will be kept as is.
     """
     data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
@@ -579,17 +583,48 @@ def config_import(ctx, infile, types, name):
         except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
             continue
     if not data:
-        print('Could not read input format! '
-              'Accepting: {0!s}.'.format(', '.join(imp_fmt_dict.keys())),
-              file=sys.stderr)
+        click.secho("Could not read input format! ", fg="red")
+        click.secho(f"Accepted formats are: {', '.join(imp_fmt_dict.keys())}.",
+                    fg="yellow")
         ctx.exit(1)
+
+    def minver(s: str) -> str:
+        """Get major.minor version number from string."""
+        return ".".join(s.split('.')[0:2])
+
+    # Check the version in the import data
+    if "privacyIDEA_version" not in data:
+        click.secho("Unable to determine version of exported data.", fg="yellow")
+        click.secho("Please make sure that the imported configuration "
+                    "works as expected.", fg="yellow")
+
+    else:
+        if minver(data["privacyIDEA_version"]) != minver(get_version_number()):
+            click.secho(f"Version of export ({minver(data['privacyIDEA_version'])}) "
+                        f"does not match current privacyIDEA "
+                        f"version ({minver(get_version_number())}).", fg="yellow")
+            click.secho("Please make sure that the imported configuration "
+                        "works as expected.", fg="yellow")
 
     # we need to go through the importer functions based on priority
     for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
         if typ in imp_types:
             if typ in data:
-                print('Importing configuration type "{0!s}".'.format(typ))
-                value['func'](data[typ], name=name)
+                click.echo(f"Importing configuration type '{typ}'.")
+                try:
+                    value['func'](data[typ], name=name)
+                except Exception as e:
+                    click.secho(f"Could not successfully import data of "
+                                f"type {typ}: {e}", fg="red")
+
+
+# Create the "importer" command as a hidden and deprecated alias for "import"
+importer_cmd = copy.copy(config_cli.get_command(None, "import"))
+importer_cmd.hidden = True
+importer_cmd.deprecated = True
+importer_cmd.name = "importer"
+importer_cmd.epilog = "This command is deprecated. Please use 'pi-manage config import' instead."
+config_cli.add_command(importer_cmd)
 
 
 exp_fmt_dict = {
@@ -628,6 +663,8 @@ def config_export(output, fmt, types, name):
         out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
 
     if out:
+        # Add version information to output
+        out["privacyIDEA_version"] = get_version_number()
         res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
         output.write(res)
 
