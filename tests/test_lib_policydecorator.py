@@ -921,13 +921,13 @@ class LibPolicyTestCase(MyTestCase):
         secret = "AAAAAAAAAA"
         pin = "1234"
         otps = ["984989", "457702", "527850", "820671", "569870"]
-        token = init_token({"type":"hotp", "pin":pin, "otpkey": secret}, user=user)
+        token = init_token({"type": "hotp", "pin": pin, "otpkey": secret}, user=user)
         fake_g = FakeFlaskG()
         fake_g.policy_object = PolicyClass()
         fake_g.audit_object = FakeAudit()
 
         # Without any policies, the default PIN+OTP works
-        res, reply_dict = check_user_pass(user, pin+otps[0], options={"g": fake_g})
+        res, reply_dict = check_user_pass(user, pin + otps[0], options={"g": fake_g})
         self.assertTrue(res)
         self.assertIn("message", reply_dict)
         self.assertIn("serial", reply_dict)
@@ -940,7 +940,7 @@ class LibPolicyTestCase(MyTestCase):
 
         res, reply_dict = check_user_pass(user, pin + otps[1], options={"g": fake_g})
         self.assertFalse(res)
-        self.assertIn("message", reply_dict) # wrong otp pin message
+        self.assertIn("message", reply_dict)  # wrong otp pin message
         self.assertNotIn("serial", reply_dict)
         self.assertNotIn("type", reply_dict)
 
