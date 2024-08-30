@@ -444,7 +444,6 @@ class User(object):
         try:
             log.info(f"User {self.login} from realm {self.realm} tries to authenticate")
             # If the password was already checked, return the known result
-            """
             if password_hash in self._checked_passwords.keys():
                 if self._checked_passwords[password_hash]:
                     success = f"{self.login}@{self.realm}"
@@ -452,7 +451,6 @@ class User(object):
                 else:
                     log.info(f"User {self} failed to authenticate from request cache.")
                 return success
-            """
             res = self._get_resolvers()
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
