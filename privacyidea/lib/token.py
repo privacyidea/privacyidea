@@ -1063,6 +1063,43 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
+def get_serial_by_otp_list(token_list, otp_list=[], window=10):
+    """
+    Returns a list of serials for a given list of OTP values
+    The tokenobject_list would be created by get_tokens()
+
+    :param token_list: the list of token objects to be investigated
+    :type token_list: list of token objects
+    :param otp_list: a list of otp values, that need to be found
+    :param window: the window of search
+    :type window: int
+
+    :return: the serial for a given OTP value and the user
+    :rtype: basestring
+    """
+    result_list = []
+
+    for otp in otp_list:
+        for token in token_list:
+            log.debug("checking token {0!r}".format(token.get_serial()))
+            try:
+                r = token.check_otp_exist(otp=otp, window=window, inc_counter=False)
+                log.debug("result = {0:d}".format(int(r)))
+                if r >= 0:
+                    result_list.append(token)
+            except Exception as err:
+                # A flaw in a single token should not stop privacyidea from finding
+                # the right token
+                log.warning(f"error in calculating OTP for token {token.token.serial}: {err}")
+        token_list = result_list
+        result_list = []
+
+    serials = [token.get_serial() for token in token_list]
+
+    return serials
+
+
+@log_with(log)
 def gen_serial(tokentype=None, prefix=None):
     """
     generate a serial for a given tokentype

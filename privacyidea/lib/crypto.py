@@ -1035,6 +1035,11 @@ def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublic
 def ecdh_key_exchange(private_key, public_key):
     """
     Performs an ECDH key exchange.
+    The shared key is calculated from the private and public key. Afterward, a key derivation is performed.
+
+    :param private_key: The private key ecc object
+    :param public_key: The public key ecc object
+    :return: The shared key as bytes
     """
     shared_key = private_key.exchange(ec.ECDH(), public_key)
 
@@ -1042,14 +1047,21 @@ def ecdh_key_exchange(private_key, public_key):
     derived_key = HKDF(algorithm=hashes.SHA256(),
                        length=32,
                        salt=None,
-                       info=b'handshake data',
+                       info=None,
                        ).derive(shared_key)
     return derived_key
 
 
-def encrypt_ecc(message, shared_key, algorithm_name, mode_name):
+def encrypt_ecc(message: bytes, shared_key: bytes, algorithm_name: str, mode_name):
     """
     Encrypts a message with the given public key.
+
+    :param message: The message to encrypt
+    :param shared_key: The shared key to use for encryption
+    :param algorithm_name: The name of the algorithm to use for the encryption
+    :param mode_name: The name of the mode to use for the encryption
+    :return: (encrypted_message, encryption_parameters) The encrypted message and the encryption parameters depending on
+        the user algorithm and mode
     """
     # TODO: Make that applicable for different algorithms and modes
 
@@ -1057,14 +1069,39 @@ def encrypt_ecc(message, shared_key, algorithm_name, mode_name):
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector))
     encryptor = cipher.encryptor()
     secret = encryptor.update(message) + encryptor.finalize()
-    return init_vector, secret, encryptor.tag
+
+    # convert to strings
+    secret_str = base64.urlsafe_b64encode(secret).decode("utf-8")
+    init_vector_str = base64.urlsafe_b64encode(init_vector).decode("utf-8")
+    tag_str = base64.urlsafe_b64encode(encryptor.tag).decode("utf-8")
+
+    params = {"algorithm": algorithm_name, "mode": mode_name, "init_vector": init_vector_str, "tag": tag_str}
+    return secret_str, params
 
 
-def decrypt_ecc(secret, shared_key, init_vector, tag, algorithm):
+def decrypt_ecc(secret: bytes, shared_key: bytes, algorithm: str, params: dict):
     """
-    Decrypts a message with the given private key.
-    """
+    Decrypts a message with the given key.
 
+    :param secret: The encrypted message
+    :param shared_key: The shared key to use for decryption
+    :param algorithm: The name of the algorithm to use for the decryption
+    :param params: The Further parameters for the decryption depending on the algorithm like
+
+        ::
+            {
+                "mode": "GCM",
+                "init_vector": "VPJwIAUl8IYVdbKAb6vu1w==",
+                "tag": "Wzuu8O5WYI_xf4Hb14rEBA=="
+            }
+
+    :return: The decrypted message as bytes
+    """
+    if isinstance(secret, str):
+        secret = base64.urlsafe_b64decode(secret)
+
+    init_vector = base64.urlsafe_b64decode(params['init_vector'])
+    tag = base64.urlsafe_b64decode(params['tag'])
     decryptor = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector, tag), ).decryptor()
 
     # Decryption gets us the authenticated plaintext.

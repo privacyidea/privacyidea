@@ -425,8 +425,8 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         derived_key = ecdh_key_exchange(priv_key_client, pub_key_server)
 
         message = b"Hello World"
-        init_vector, secret, tag = encrypt_ecc(message, derived_key, "AES", "")
-        decrypted_message = decrypt_ecc(secret, derived_key, init_vector, tag, "")
+        secret, enc_params = encrypt_ecc(message, derived_key, "AES", "")
+        decrypted_message = decrypt_ecc(secret, derived_key, "", enc_params)
 
         self.assertEqual(message, decrypted_message)
 

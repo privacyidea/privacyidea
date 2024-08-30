@@ -151,8 +151,13 @@ def before_admin_request():
 @container_blueprint.before_request
 def before_container_request():
     # auth free endpoints
-    auth_token_free_endpoints = ["register/finalize", "register/terminate", "synchronize/finalize"]
-    is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path.endswith(endpoint)]
+    ensure_no_config_object()
+    request.all_data = get_all_params(request)
+    container_serial = getParam(request.all_data, "container_serial")
+    auth_token_free_endpoints = ["/container/register/finalize", "/container/register/terminate",
+                                 f"/container/sync/{container_serial}/init",
+                                 f"/container/sync/{container_serial}/finalize"]
+    is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path == endpoint]
 
     # Get auth token
     auth_token = request.headers.get('PI-Authorization')
@@ -160,7 +165,7 @@ def before_container_request():
         auth_token = request.headers.get('Authorization')
 
     # Verify auth token for all non-auth-token-free endpoints anyway
-    if auth_token or True not in is_auth_free:
+    if True not in is_auth_free:
         r = verify_auth_token(auth_token, ["user", "admin"])
         g.logged_in_user = {"username": r.get("username"),
                             "realm": r.get("realm"),
@@ -173,9 +178,6 @@ def before_container_request():
             request.all_data["auth_token"] = auth_token
 
         # simplified before request (without user stuff)
-        ensure_no_config_object()
-        request.all_data = get_all_params(request)
-
         g.policy_object = PolicyClass()
         g.audit_object = getAudit(current_app.config, g.startdate)
         g.event_config = EventConfiguration()

@@ -82,6 +82,7 @@ from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
                     ParameterError)
+from .machineresolver import get_resolver_object
 
 from ..api.lib.utils import getParam
 from .log import log_with
@@ -104,7 +105,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 from base64 import b32encode
 from binascii import unhexlify
-
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -1722,6 +1722,40 @@ class TokenClass(object):
 
         return token_dict
 
+    def get_as_dict_with_user_and_containers(self):
+        """
+        This returns the token data as a dictionary including the user information and the container serials.
+
+        :return: The token data as dict
+        """
+        token_dict = self.get_as_dict()
+
+        # add user information
+        # In certain cases the LDAP or SQL server might not be reachable.
+        # Then an exception is raised
+        token_dict["username"] = ""
+        token_dict["user_realm"] = ""
+        try:
+            userobject = self.user
+            if userobject:
+                token_dict["username"] = userobject.login
+                token_dict["user_realm"] = userobject.realm
+                token_dict["user_editable"] = get_resolver_object(
+                    userobject.resolver).editable
+        except Exception as exx:
+            log.error("User information can not be retrieved: {0!s}".format(exx))
+            log.debug(traceback.format_exc())
+            token_dict["username"] = "**resolver error**"
+
+        # check if token is in a container
+        token_dict["container_serial"] = ""
+        from privacyidea.lib.container import find_container_for_token
+        container = find_container_for_token(self.get_serial())
+        if container:
+            token_dict["container_serial"] = container.serial
+
+        return token_dict
+
     @classmethod
     def api_endpoint(cls, request, g):
         """
@@ -1989,3 +2023,9 @@ class TokenClass(object):
         token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
         token_dict["info_list"] = self.get_tokeninfo(decrypted=True)
         return token_dict
+
+    def get_enroll_url(self, user):
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+        """
+        return None

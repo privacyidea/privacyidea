@@ -886,3 +886,16 @@ class HotpTokenClass(TokenClass):
         except AttributeError:
             # Certain from HOTP inherited tokenclasses might not set currently_in_challenge
             return False
+
+    def get_enroll_url(self, user):
+        """
+        Return the URL to enroll this token.
+
+        :param user: The user object
+        :return: The URL containing all required information to enroll the token
+        """
+        token_secret = self.token.get_otpkey().getKey().decode("utf-8")
+        self.init_details.update({"otpkey": token_secret})
+        init_details = self.get_init_detail(None, user)
+        enroll_url = init_details.get("googleurl").get("value")
+        return enroll_url

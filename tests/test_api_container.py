@@ -1316,10 +1316,11 @@ class APIContainer(MyApiTestCase):
 
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str, "passphrase": passphrase,
+        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
+                  "passphrase": passphrase,
                   "message": message, "container_serial": serial}
 
-        return params
+        return params, private_key_smph
 
     def test_24_register_smartphone_success(self):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
@@ -1341,27 +1342,33 @@ class APIContainer(MyApiTestCase):
         self.assertIn("key_algorithm", init_response_data)
 
         # Finalize
-        params = self.mock_smartphone_register_params(serial=smartphone_serial,
-                                                      registration_url="http://localhost/container/register/finalize",
-                                                      nonce=init_response_data["nonce"],
-                                                      registration_time=init_response_data["time_stamp"],
-                                                      passphrase="top_secret")
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         registration_url="http://localhost/container/register/finalize",
+                                                                         nonce=init_response_data["nonce"],
+                                                                         registration_time=init_response_data[
+                                                                             "time_stamp"],
+                                                                         passphrase="top_secret")
         json = self.request_assert_success('container/register/finalize',
                                            params,
                                            None, 'POST')
 
         # Check if the response contains the expected values
         self.assertIn("public_server_key", json["result"]["value"])
-        challenge_url = f"http://localhost/container/{smartphone_serial}/challenge"
-        self.assertEqual(challenge_url, json["result"]["value"]["container_challenge_url"])
+        sync_url = f"http://localhost/container/sync/{smartphone_serial}/init"
+        self.assertEqual(sync_url, json["result"]["value"]["container_sync_url"])
 
+        delete_policy("policy")
+
+        return smartphone_serial, priv_key_sig_smph
+
+    def test_25_register_terminate_success(self):
+        smartphone_serial, _ = self.test_24_register_smartphone_success()
         # Terminate
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
                                     {},
                                     self.at, 'DELETE')
-        delete_policy("policy")
 
-    def test_25_register_init_fail(self):
+    def test_26_register_init_fail(self):
         # Policy with server url not defined
         container_serial = init_container({"type": "smartphone"})
         json = self.request_assert_error(403, 'container/register/initialize',
@@ -1387,7 +1394,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_26_register_finalize_fail(self):
+    def test_27_register_finalize_fail(self):
         # Policy with server url disabled defined
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
         container_serial = init_container({"type": "smartphone"})
@@ -1413,7 +1420,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_27_register_terminate_fail(self):
+    def test_28_register_terminate_fail(self):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
 
         # Invalid container serial
@@ -1421,5 +1428,83 @@ class APIContainer(MyApiTestCase):
                                          {}, self.at, 'DELETE')
         error = json["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
+
+        delete_policy("policy")
+
+    def mock_smartphone_sync(self, params, serial, private_key_sig_smph):
+        nonce = params["nonce"]
+        time_stamp = params["time_stamp"]
+        scope = params["container_sync_url"]
+
+        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("secp384r1")
+        pub_key_enc_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_enc_smph)
+
+        message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
+        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
+
+        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str}
+        return params
+
+    def test_29_sync_init_success(self):
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+        smartphone_serial = init_container({"type": "smartphone"})
+
+        json = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
+                                           {}, None, 'GET')
+        result_entries = json["result"]["value"].keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+        self.assertIn("container_sync_url", result_entries)
+
+        delete_policy("policy")
+
+    def test_30_sync_finalize_success(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
+
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+
+        # Init
+        json = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
+                                           {}, None, 'GET')
+
+        params = self.mock_smartphone_sync(json["result"]["value"], smartphone_serial, priv_key_smph)
+
+        # Finalize
+        json = self.request_assert_success(f'container/sync/{smartphone_serial}/finalize',
+                                           params, None, 'POST')
+        result_entries = json["result"]["value"].keys()
+        self.assertEqual("AES", json["result"]["value"]["encryption_algorithm"])
+        self.assertIn("encryption_params", result_entries)
+        self.assertIn("public_server_key", result_entries)
+        self.assertIn("container_dict", result_entries)
+        self.assertIn("container_sync_url", result_entries)
+
+        delete_policy("policy")
+
+    def test_31_sync_finalize_fail(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+
+        # missing policy
+        json = self.request_assert_error(403, f'container/sync/{smartphone_serial}/finalize',
+                                         {}, None, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(303, error["code"])
+
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+
+        # missing input parameters
+        params = {"public_enc_key_client": "123"}
+        json = self.request_assert_error(400, f'container/sync/{smartphone_serial}/finalize',
+                                         params, None, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(905, error["code"])
+
+        params = {"public_enc_key_client": "123"}
+        json = self.request_assert_error(400, f'container/sync/{smartphone_serial}/finalize',
+                                         params, None, 'POST')
+        error = json["result"]["error"]
+        self.assertEqual(905, error["code"])
 
         delete_policy("policy")
