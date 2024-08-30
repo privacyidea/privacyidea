@@ -83,12 +83,6 @@ class User(object):
     realm = ""
     resolver = ""
 
-    # Hash of already checked passwords and their result. If a user has multiple token, it is not necessary to check
-    # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
-    # will have an entry for PIN+OTP (likely to fail) and then the OTP cut off to just PIN. In case the PIN was
-    # given in the request, the dict will have only one entry.
-    _checked_passwords: dict = {}
-
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
     @log_with(log)
@@ -102,6 +96,11 @@ class User(object):
         self.resolver = resolver or ""
         self.uid = uid
         self.rtype = None
+        # Hash of already checked passwords and their result. If a user has multiple token, it is not necessary to check
+        # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
+        # will have an entry for PIN+OTP (likely to fail) and then the OTP cut off to just PIN. In case the PIN was
+        # given in the request, the dict will have only one entry.
+        self._checked_passwords = {}
         if not self.login and not self.resolver and uid is not None:
             raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
@@ -465,7 +464,7 @@ class User(object):
                     self._checked_passwords[password_hash] = False
 
             elif not res:
-                log.error(f"The user {self} exists in NO resolver.")
+                log.error(f"The user {self!r} exists in NO resolver.")
         except UserError as e:  # pragma: no cover
             log.error(f"Error while trying to verify the username: {e}")
         except Exception as e:  # pragma: no cover
