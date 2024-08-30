@@ -8,12 +8,12 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.container import create_container_dict
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
-                                    ecc_key_pair_to_b64url_str, generate_keypair_ecc)
-from privacyidea.lib.error import privacyIDEAError, ParameterError
-from privacyidea.lib.token import get_tokens_from_serial_or_user
+                                    ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc, ecdh_key_exchange)
+from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
 
@@ -88,7 +88,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return "A smartphone that uses an authenticator app."
 
-    def initialize_registration(self, params):
+    def init_registration(self, params):
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
@@ -241,7 +241,7 @@ class SmartphoneContainer(TokenContainerClass):
         for challenge in challenge_list:
             challenge.delete()
 
-    def initialize_synchronization(self, params):
+    def init_sync(self, params):
         """
         Initialize the synchronization of a container with the pi server.
         It creates a challenge for the container to allow the registration.
@@ -250,7 +250,7 @@ class SmartphoneContainer(TokenContainerClass):
 
             ::
                 {
-
+                    "scope": "https://pi/container/synchronize/SMPH0001/finalize"
                 }
 
         :return: Dictionary with the challenge nonce and the timestamp
@@ -262,9 +262,12 @@ class SmartphoneContainer(TokenContainerClass):
                     "key_algorithm": "secp384r1"
                 }
         """
+        scope = getParam(params, "scope", optional=False)
+
         # Create challenge
         nonce = geturandom(20, hex=True)
-        db_challenge = Challenge(serial=self.serial, challenge=nonce)
+        data = json.dumps({"scope": scope})
+        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=data)
         db_challenge.save()
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
@@ -278,23 +281,52 @@ class SmartphoneContainer(TokenContainerClass):
                "key_algorithm": key_algorithm}
         return res
 
-    def finalize_synchronization(self, params):
+    def finalize_sync(self, params):
         """
         Finalizes the synchronization of a container with the pi server.
         Here the actual data exchange happens.
+
+        :param params: Dictionary with the parameters for the synchronization.
+
+            ::
+                {
+                    "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
+                    "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
+                    "container_dict": {"serial": "SMPH0001", "type": "smartphone", ...}
+                }
+
+        :return: Dictionary with the result of the synchronization.
+
+            ::
+                {
+                    "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
+                    "encryption_algorithm": "AES",
+                    "encryption_params": {"mode": "GCM", "init_vector": "init_vector", "tag": "tag"},
+                    "container_dict_encrypted": <encrypted container dict from server>
+                }
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
-        pub_key_encr_container = getParam(params, "public_key_client", optional=False)
-        container_client = getParam(params, "container_dict", optional=True)
+        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
+        pub_key_encr_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_encr_container_str)
+        container_client_str = getParam(params, "container_client", optional=True)
+        container_client = json.loads(container_client_str) if container_client_str else {}
         scope = getParam(params, "scope", optional=True)
 
+        try:
+            pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
+        except KeyError:
+            raise privacyIDEAError("The container is not registered!")
+        pub_key_sig_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
+
         # Validate challenge
-        valid_challenge = self.validate_challenge(signature, pub_key_encr_container, scope)
+        valid_challenge = self.validate_challenge(signature, pub_key_sig_container, scope=scope,
+                                                  key=pub_key_encr_container_str,
+                                                  container=container_client_str)
         if not valid_challenge:
             raise privacyIDEAError('Could not verify signature!')
 
-        # Generate key pair for the server
+        # Generate encryption key pair for the server
         container_info = self.get_container_info_dict()
         key_algorithm = container_info.get("key_algorithm", "secp384r1")
         public_key_encr_server, private_key_encr_server = generate_keypair_ecc(key_algorithm)
@@ -307,30 +339,101 @@ class SmartphoneContainer(TokenContainerClass):
         encrypt_mode = container_info.get("encrypt_mode", "ECB")
 
         # Get container dict with token secrets
-        # TODO: Think about a better architecture to get the container details with tokens and users as dict
-        container_dict = create_container_dict([self], logged_in_user_role='admin', allowed_token_realms=None)
-        # Get token secrets
-        for token_dict in container_dict["tokens"]:
-            token = get_tokens_from_serial_or_user(token_dict["serial"], None)
-            secret = token.token.get_otpkey()
-            token_dict["secret"] = secret.val
+        container_dict = self.synchronize_container_details(container_client)
 
         # encrypt container dict
-
-        # Update container info
-        self.add_container_info("public_key_container", pub_key_encr_container)
-        self.add_container_info("public_key_server", public_key_encr_server_str)
-        self.add_container_info("private_key_server", encryptPassword(private_key_encr_server_str))
+        session_key = ecdh_key_exchange(private_key_encr_server, pub_key_encr_container)
+        container_dict_bytes = json.dumps(container_dict).encode('utf-8')
+        container_dict_encrypted, encryption_params = encrypt_ecc(container_dict_bytes, session_key, encrypt_algorithm,
+                                                                  encrypt_mode)
 
         res = {"encryption_algorithm": encrypt_algorithm,
-               "encryption_mode": encrypt_mode}
+               "encryption_params": encryption_params,
+               "container_dict": container_dict_encrypted,
+               "public_server_key": public_key_encr_server_str}
         return res
+
+    def synchronize_container_details(self, container_client: dict):
+        """
+        Compares the container from the client with the server and returns the differences.
+        The container dictionary from the client contains information about the container itself and the tokens.
+        For each token the type and serial shall be provided. If no serial is available, two otp values can be provided.
+        The server than tries to find the serial for the otp values. If multiple serials are found, it will not be
+        included in the returned dictionary, since the token can not be uniquely identified.
+        The returned dictionary contains information about the container itself and the tokens that needs to be added
+        or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated the serial and
+        further information is provided.
+
+        :param container_client: The container from the client as dictionary.
+
+            ::
+                {
+                    "container": {"states": ["active"]},
+                    "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
+                                {"otp": ["1234", "9876"], "type": "hotp"}]
+                }
+
+        :return: container dictionary like
+
+            ::
+                {
+                    "container": {"states": ["active"]},
+                    "tokens": {"add": ["enroll_url1", "enroll_url2"],
+                               "update": [{"serial": "TOTP001", "active": True},
+                                          {"serial": "HOTP001", "active": False, "otp": ["1234", "9876"],
+                                           "type": "hotp"}]}
+                }
+        """
+        container_dict = {"container": {"states": self.get_states()}}
+        server_token_serials = [token.get_serial() for token in self.get_tokens()]
+
+        # Get serials for client tokens without serial
+        client_tokens = container_client.get("tokens", [])
+        serial_otp_map = {}
+        for token in client_tokens:
+            dict_keys = token.keys()
+            # Get serial from otp if required
+            if "serial" not in dict_keys and "otp" in dict_keys:
+                token_type = token.get("type")
+                token_list = get_tokens(tokentype=token_type)
+                serial_list = get_serial_by_otp_list(token_list, otp_list=token["otp"])
+                if len(serial_list) == 1:
+                    serial = serial_list[0]
+                    token["serial"] = serial
+                    serial_otp_map[serial] = token["otp"]
+                # shall we ignore otp values where multiple serials are found?
+
+        # map client and server tokens
+        client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
+        missing_serials = list(set(server_token_serials).difference(set(client_serials)))
+        same_serials = list(set(server_token_serials).intersection(set(client_serials)))
+
+        # Get info for missing serials: enroll url
+        add_list = []
+        for serial in missing_serials:
+            token = get_tokens_from_serial_or_user(serial, None)[0]
+            enroll_url = token.get_enroll_url(user=User())
+            add_list.append(enroll_url)
+
+        # Get info for same serials: token details
+        update_dict = []
+        for serial in same_serials:
+            token = get_tokens_from_serial_or_user(serial, None)[0]
+            token_dict = {"serial": serial, "active": token.is_active()}
+            otp = serial_otp_map.get(serial)
+            if otp:
+                token_dict["otp"] = otp
+            update_dict.append(token_dict)
+
+        container_dict["tokens"] = {"add": add_list, "update": update_dict}
+
+        return container_dict
 
     def create_challenge(self, params):
         """
         Create a challenge.
 
-        :param container_serial: The serial of the container
+        :param params: a dictionary containing container type specific parameters
         :return: Dictionary with the challenge nonce and the timestamp
 
             ::

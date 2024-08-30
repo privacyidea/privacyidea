@@ -16,7 +16,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        add_multiple_tokens_to_container,
                                        add_token_to_container, create_endpoint_url)
 from privacyidea.lib.container import get_container_classes
-from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
+from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc, \
+    b64url_str_key_pair_to_ecc_obj, ecdh_key_exchange
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
                                    TokenAdminError, privacyIDEAError)
 from privacyidea.lib.token import init_token, remove_token
@@ -804,7 +805,7 @@ class TokenContainerManagementTestCase(MyTestCase):
             params.update(passphrase_params)
 
         # Prepare
-        result = smartphone.initialize_registration(params)
+        result = smartphone.init_registration(params)
 
         result_entries = result.keys()
         self.assertIn("nonce", result_entries)
@@ -826,14 +827,14 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str}
 
-        return params
+        return params, private_key_smph
 
     def test_34_register_smartphone_init_fails(self):
         smartphone_serial = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Prepare with missing registration URL
-        self.assertRaises(ParameterError, smartphone.initialize_registration, {})
+        self.assertRaises(ParameterError, smartphone.init_registration, {})
 
     def test_35_register_smartphone_finalize_unauthorized(self):
         # Mock smartphone with guessed params (no prepare)
@@ -842,8 +843,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         registration_url = "http://test/container/register/finalize"
         nonce = geturandom(20, hex=True)
         time_stamp = datetime.now(timezone.utc)
-        params = self.mock_smartphone_register_params(nonce, time_stamp,
-                                                      registration_url, smartphone_serial)
+        params, _ = self.mock_smartphone_register_params(nonce, time_stamp,
+                                                         registration_url, smartphone_serial)
 
         # Try finalize registration
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
@@ -858,16 +859,16 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock smartphone with wrong nonce
         invalid_nonce = geturandom(20, hex=True)
-        params = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
-                                                      registration_url, smartphone_serial)
+        params, _ = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
+                                                         registration_url, smartphone_serial)
         params.update({"container_registration_url": registration_url})
 
         # Try to finalize registration
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
         # Mock smartphone with invalid public key
-        params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                      registration_url, smartphone_serial)
+        params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
+                                                         registration_url, smartphone_serial)
         params.update({"container_registration_url": registration_url})
         public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
@@ -876,9 +877,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
         # Mock smartphone with invalid passphrase
-        params = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                      registration_url, smartphone_serial,
-                                                      "different_secret")
+        params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
+                                                         registration_url, smartphone_serial,
+                                                         "different_secret")
         params.update({"container_registration_url": registration_url})
 
         # Try to finalize registration
@@ -905,8 +906,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Mock smartphone
-        params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
-                                                      registration_url, smartphone_serial)
+        params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
+                                                                         init_result["time_stamp"],
+                                                                         registration_url, smartphone_serial)
         params.update({"container_registration_url": registration_url})
 
         # Finalize registration
@@ -921,6 +923,12 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("private_key_server", container_info_keys)
         self.assertNotEqual("", container_info["public_key_container"], container_info["public_key_server"])
 
+        return smartphone_serial, priv_sig_key_smph
+
+    def test_38_register_terminate_smartphone_success(self):
+        smartphone_serial, _ = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
         # Terminate registration
         smartphone.terminate_registration()
         # Check that the container info is deleted
@@ -930,7 +938,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertNotIn("public_key_server", container_info_keys)
         self.assertNotIn("private_key_server", container_info_keys)
 
-    def test_38_register_smartphone_passphrase_success(self):
+    def test_39_register_smartphone_passphrase_success(self):
         # Prepare
         registration_url = "http://test/container/register/finalize"
         passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
@@ -945,9 +953,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(passphrase_params["passphrase_response"], challenge_data["passphrase_response"])
 
         # Mock smartphone
-        params = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
-                                                      registration_url, smartphone_serial,
-                                                      passphrase_params["passphrase_response"])
+        params, _ = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
+                                                         registration_url, smartphone_serial,
+                                                         passphrase_params["passphrase_response"])
         params.update({"container_registration_url": registration_url})
 
         # Finalize registration
@@ -961,32 +969,32 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
 
-    def test_39_reinit_registration_invalidates_old_challenge(self):
+    def test_40_reinit_registration_invalidates_old_challenge(self):
         # First init
         registration_url = "http://test/container/register/finalize"
         smartphone_serial, init_result_old = self.register_smartphone_initialize_success(registration_url)
         smartphone = find_container_by_serial(smartphone_serial)
 
         # second init
-        init_result_new = smartphone.initialize_registration(
+        init_result_new = smartphone.init_registration(
             {"container_serial": smartphone_serial, "container_registration_url": registration_url})
 
         # Finalize with old init data
-        params = self.mock_smartphone_register_params(init_result_old["nonce"], init_result_old["time_stamp"],
-                                                      registration_url, smartphone_serial)
+        params, _ = self.mock_smartphone_register_params(init_result_old["nonce"], init_result_old["time_stamp"],
+                                                         registration_url, smartphone_serial)
         params.update({"container_registration_url": registration_url})
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
         # Finalize with new init data
-        params = self.mock_smartphone_register_params(init_result_new["nonce"], init_result_new["time_stamp"],
-                                                      registration_url, smartphone_serial)
+        params, _ = self.mock_smartphone_register_params(init_result_new["nonce"], init_result_new["time_stamp"],
+                                                         registration_url, smartphone_serial)
         params.update({"container_registration_url": registration_url})
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
         self.assertIn("public_server_key", res.keys())
 
-    def test_39_create_container_challenge(self):
+    def test_41_create_container_challenge(self):
         container_serial = init_container({"type": "smartphone"})
         container = find_container_by_serial(container_serial)
 
@@ -999,7 +1007,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(res["nonce"], challenge.challenge)
         self.assertEqual(res["time_stamp"], challenge.timestamp.replace(tzinfo=timezone.utc).isoformat())
 
-    def test_40_create_endpoint_url(self):
+    def test_42_create_endpoint_url(self):
         correct_url = "https://pi/test/endpoint"
         # simple concat
         endpoint = create_endpoint_url("https://pi/", "test/endpoint")
@@ -1012,3 +1020,215 @@ class TokenContainerManagementTestCase(MyTestCase):
         # endpoint already included in base url
         endpoint = create_endpoint_url("https://pi/test/endpoint", "test/endpoint")
         self.assertEqual(correct_url, endpoint)
+
+    def mock_smartphone_sync(self, params, serial, private_key_sig_smph, client_container=None):
+        nonce = params["nonce"]
+        time_stamp = params["time_stamp"]
+        scope = params["container_sync_url"]
+
+        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("secp384r1")
+        pub_key_enc_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_enc_smph)
+
+        message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
+        if client_container:
+            message += f"|{json.dumps(client_container)}"
+        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
+
+        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str}
+        if client_container:
+            params.update({"container_client": json.dumps(client_container)})
+        return params, private_enc_key_smph
+
+    def test_43_init_synchronize_smartphone_success(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        params = {"scope": "container/synchronize/finalize"}
+        result = smartphone.init_sync(params)
+        result_entries = result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # check challenge
+        challenge = get_challenges(serial=smartphone_serial)[0]
+        self.assertEqual(result["nonce"], challenge.challenge)
+        self.assertEqual(result["time_stamp"], challenge.timestamp.replace(tzinfo=timezone.utc).isoformat())
+        data = json.loads(challenge.data)
+        self.assertEqual(params["scope"], data["scope"])
+
+    def test_44_init_synchronize_smartphone_fail(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        self.assertRaises(ParameterError, smartphone.init_sync, {})
+
+    def test_45_finalize_synchronize_smartphone_success(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        smph_params,_ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        res = smartphone.finalize_sync(smph_params)
+        self.assertEqual("AES", res["encryption_algorithm"])
+        self.assertIn("encryption_params", res.keys())
+        self.assertIn("public_server_key", res.keys())
+        self.assertIn("container_dict", res.keys())
+
+    def test_46_finalize_synchronize_smartphone_with_tokens(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # tokens
+        hotp_server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        hotp_token = init_token({"genkey": "1", "type": "hotp"})
+        _, _, otp_dict = hotp_token.get_multi_otp(2)
+        hotp_otps = list(otp_dict["otp"].values())
+        totp_token = init_token({"genkey": "1", "type": "totp"})
+        # the function uses the local time, hence we have to pass the utc time
+        time_now = datetime.now(timezone.utc)
+        _, _, otp_dict = totp_token.get_multi_otp(2, curTime=time_now)
+        totp_otps = [otp["otpval"] for otp in list(otp_dict["otp"].values())]
+
+        smartphone.add_token(hotp_server_token)
+        smartphone.add_token(totp_token)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        # In the first step the smph does not know the container. hence it only sends the token infos
+        random_otp = "123456"
+        client_container = {"tokens": [{"type": "hotp", "otp": hotp_otps}, {"type": "totp", "otp": totp_otps},
+                                       {"type": "hotp", "otp": [random_otp]}]}
+        smph_params, priv_enc_key_smph = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph,
+                                                                   client_container)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        res = smartphone.finalize_sync(smph_params)
+        self.assertEqual("AES", res["encryption_algorithm"])
+        self.assertIn("encryption_params", res.keys())
+        self.assertIn("public_server_key", res.keys())
+        self.assertIn("container_dict", res.keys())
+
+        # check container dict results
+        container_dict_enc = res["container_dict"]
+        # decrypt container info
+        pub_key_server, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=res["public_server_key"])
+        session_key = ecdh_key_exchange(priv_enc_key_smph, pub_key_server)
+        container_dict_enc = decrypt_ecc(container_dict_enc, session_key, "", res["encryption_params"])
+        container_dict = json.loads(container_dict_enc)
+
+        # check entries
+        container_details = container_dict["container"]
+        self.assertIn("active", container_details["states"])
+        # tokens
+        token_details = container_dict["tokens"]
+        add_tokens = token_details["add"]
+        self.assertEqual(1, len(add_tokens))
+        self.assertIn(hotp_server_token.get_serial(), add_tokens[0])
+        update_tokens = token_details["update"]
+        self.assertEqual(1, len(update_tokens))
+        self.assertEqual(totp_token.get_serial(), update_tokens[0]["serial"])
+        self.assertTrue(update_tokens[0]["active"])
+
+    def test_47_synchronize_without_registration(self):
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        _, priv_sig_key_smph = generate_keypair_ecc("secp384r1")
+        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        self.assertRaises(privacyIDEAError, smartphone.finalize_sync, smph_params)
+
+    def test_48_synchronize_with_invalid_signature(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone with another serial
+        init_result.update({'container_sync_url': params["scope"]})
+        smph_params, _ = self.mock_smartphone_sync(init_result, "SMPH9999", priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        self.assertRaises(privacyIDEAError, smartphone.finalize_sync, smph_params)
+
+    def test_49_synchronize_container_details(self):
+        # Arrange
+        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        hotp_token = init_token({"genkey": True, "type": "hotp"})
+        _, _, otp_dict = hotp_token.get_multi_otp(2)
+        hotp_otps = list(otp_dict["otp"].values())
+        totp_token = init_token({"genkey": True, "type": "totp"})
+
+        smartphone.add_token(hotp_token)
+        smartphone.add_token(totp_token)
+
+        # clients tokens with different properties
+        client_container = {"container": {"states": ["active"]},
+                            "tokens": [{"serial": totp_token.get_serial(), "active": True}, {"otp": hotp_otps}]}
+
+        # manipulate container and tokens in the meantime
+        smartphone.set_states(["lost"])
+        totp_token.enable(False)
+
+        # synchronize details
+        synced_container_details = smartphone.synchronize_container_details(client_container)
+
+        # check container details
+        self.assertEqual("lost", synced_container_details["container"]["states"][0])
+        # check tokens
+        add_tokens = synced_container_details["tokens"]["add"]
+        self.assertEqual(0, len(add_tokens))
+        updated_tokens = synced_container_details["tokens"]["update"]
+        for token in updated_tokens:
+            self.assertIn(token["serial"], [hotp_token.get_serial(), totp_token.get_serial()])
+            if token["serial"] == hotp_token.get_serial():
+                self.assertTrue(token["active"])
+            elif token["serial"] == totp_token.get_serial():
+                self.assertFalse(token["active"])
+
+        # Pass empty client container
+        synced_container_details = smartphone.synchronize_container_details({})
+        # check tokens
+        add_tokens = synced_container_details["tokens"]["add"]
+        self.assertEqual(2, len(add_tokens))

@@ -412,7 +412,7 @@ class TokenContainerClass:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
         return res
 
-    def initialize_registration(self, params):
+    def init_registration(self, params):
         """
         Initialize the registration of a pi container on a physical container.
         """
@@ -430,14 +430,14 @@ class TokenContainerClass:
         """
         return
 
-    def initialize_synchronization(self, params):
+    def init_sync(self, params):
         """
         Initialize the synchronization of a container with the pi server.
         It creates a challenge for the container to allow the registration.
         """
         return {}
 
-    def finalize_synchronization(self, params):
+    def finalize_sync(self, params):
         """
         Finalizes the synchronization of a container with the pi server.
         Here the actual data exchange happens.
@@ -457,7 +457,7 @@ class TokenContainerClass:
         return False
 
     def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, transaction_id=None,
-                           url=None, scope=None):
+                           url=None, scope=None, key=None, container=None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -473,7 +473,7 @@ class TokenContainerClass:
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
         valid_challenge = False
 
-        # What are we doing if there are multiple challenges?
+        # Checks all challenges of the container, at least one must be valid
         for challenge in challenge_list:
             if challenge.is_valid():
                 # Create message
@@ -489,6 +489,10 @@ class TokenContainerClass:
                     message += f"|{passphrase}"
                 if scope:
                     message += f"|{scope}"
+                if key:
+                    message += f"|{key}"
+                if container:
+                    message += f"|{container}"
 
                 container_info = self.get_container_info_dict()
                 hash_algorithm = container_info.get("hash_algorithm", "SHA256")

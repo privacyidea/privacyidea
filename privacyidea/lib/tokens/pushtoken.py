@@ -1201,3 +1201,11 @@ class PushTokenClass(TokenClass):
                 "message": message or _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
+
+    def get_enroll_url(self, user):
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+        """
+        init_details = self.get_init_detail(None, user)
+        enroll_url = init_details.get("pushurl").get("value")
+        return enroll_url

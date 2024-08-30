@@ -535,15 +535,16 @@ def registration_init():
     Prepares the registration of a container. It returns all information required for the container to register.
 
     :param: container_serial: Serial of the container
-    :return: Result of the registration process as dictionary (content depends on the container type) like
+    :return: Result of the registration process as dictionary. At least the registration url for the second step is
+        provided.
 
+    An example response looks like this:
         ::
 
             {
-                "container_serial": "serial",
-                "container_registration_url": "http://test/container/register/finalize",
-                ...
+                "container_registration_url": "http://test/container/register/finalize"
             }
+    Further information might be provided depending on the container type.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -564,7 +565,7 @@ def registration_init():
         params.update({'registration_timeout': server_url_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TIMEOUT]})
 
     # Initialize registration
-    res_registration = container.initialize_registration(params)
+    res_registration = container.init_registration(params)
     res.update(res_registration)
     return send_result(res)
 
@@ -579,7 +580,16 @@ def registration_finalize():
     the container type.
 
     :param: container_serial: Serial of the container
-    :return: Result of the registration process as dictionary (content depends on the container type)
+    :return: Result of the registration process as dictionary
+
+    An example response looks like this:
+        ::
+
+            {
+                "container_sync_url": "http://pi/container/sync/SMP001/init"
+            }
+
+    Depending on the container type, more information might be provided.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -593,12 +603,12 @@ def registration_finalize():
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
     registration_url = create_endpoint_url(server_url, "container/register/finalize")
-    challenge_url = create_endpoint_url(server_url, f"container/{container_serial}/challenge")
+    sync_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/init")
     params.update({'container_registration_url': registration_url})
 
     # Validate registration
     res = container.finalize_registration(params)
-    res.update({'container_challenge_url': challenge_url})
+    res.update({'container_sync_url': sync_url})
 
     # Update last seen
     container.update_last_seen()
@@ -611,7 +621,7 @@ def registration_finalize():
 @log_with(log)
 def registration_terminate(container_serial: str):
     """
-    Terminate the synchronization of a container with privacyIDEA
+    Terminates the synchronization of a container with privacyIDEA.
 
     :param container_serial: Serial of the container
     """
@@ -621,71 +631,99 @@ def registration_terminate(container_serial: str):
     return send_result(res)
 
 
-@container_blueprint.route('synchronize/<string:container_serial>/initialize', methods=['POST'])
+@container_blueprint.route('sync/<string:container_serial>/init', methods=['GET'])
 @event('container_create_challenge', request, g)
 @log_with(log)
-def synchronize_init(container_serial: str):
+def sync_init(container_serial: str):
     """
     Creates a challenge for a container to synchronize with privacyIDEA.
 
     :param container_serial: Serial of the container
-    : return: dictionary with the challenge like
+    :return: dictionary with the required information for the synchronization
 
-        ::
-            {
-                "nonce": "...",
-                "time_stamp": <time stamp iso formatted>,
-                "container_synchronize_url": <url where the smartphone can synchronize the container with the server>
-            }
+    An example response looks like this:
+
+    ::
+
+        {
+            "container_sync_url": "http://pi/container/sync/SMP001/finalize"
+        }
+
+    Further entries are possible depending on the container type.
     """
     # Get synchronization url for the second step
     server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-    synchronize_url = create_endpoint_url(server_url, f"container/{container_serial}/synchronize")
+    synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
 
     # Create challenge
     container = find_container_by_serial(container_serial)
-    res = container.create_challenge(request.all_data)
-    res.update({'container_synchronize_url': synchronize_url})
+    params = request.all_data
+    params.update({'scope': synchronize_url})
+    res = container.init_sync(request.all_data)
+    res.update({'container_sync_url': synchronize_url})
 
     return send_result(res)
 
 
-@container_blueprint.route('synchronize/<string:container_serial>/finalize', methods=['POST'])
-def synchronize_finalize(container_serial: str):
+@container_blueprint.route('sync/<string:container_serial>/finalize', methods=['POST'])
+def sync_finalize(container_serial: str):
     """
-    Validates the challenge if the container is authorized. If successful, the server returns the container's state,
-    including all attributes and tokens. The token secrets are also included. The full data is encrypted.
+    Validates the challenge if the container is authorized to synchronize. If successful, the server returns the
+    container's state, including all attributes and tokens. The token secrets are also included.
+    The full data is encrypted.
     Additional parameters and entries in the response are possible, depending on the container type.
 
     :param container_serial: Serial of the container
-    :jsonparam: container_dict: container data with included tokens
-    :return: dictionary with the container properties like
+    :jsonparam: container_dict_client: container data with included tokens from the client like
 
         ::
-            {
-                "description": <description>,
-                "states": <list of states>,
-                "realms": <list of realms>,
-                "users": {"username": <username>, "realm": <realm>, "resolver": <resolver>},
-                "tokens": [{"serial": <serial>,
-                            "type": <type>,
-                            "description": <description>,
-                            "active": <active>,
-                            ...}, ...],
-            }
-    """
-    # validate challenge
-    # check policy?
-    # get container dict
 
-    result = get_all_containers(serial=container_serial)
+            {
+                "container": {...},
+                "tokens": [{"serial": "TOTP001", "active": True,...},
+                           {"otp": ["1234", "4567"], "type": "hotp"}]
+            }
+
+        The provided information may differ for different container and token types. To identify tokens at least the
+        serial shall be provided. However, some clients might not have the serial. In this case, the client can provide
+        a list of at least two otp values for hotp, totp and daypassword tokens.
+
+    :return: dictionary including the container properties and the tokens like
+
+        ::
+
+            {
+                "container":   {"states": ["active]},
+                "tokens": {"add": [<enroll information token1>, <enroll information token2>, ...],
+                           "update": [{"serial": "TOTP001", "active": True},
+                                      {"serial": "HOTP001", "active": False,
+                                       "otp": ["1234", "9876"], "type": "hotp"}]}
+            }
+
+        The provided enroll information depends on the token type as well as the returned information for the tokens
+        to be updated.
+    """
+    params = request.all_data
+
+    # Get synchronization url for the second step
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
+    if len(server_url_policies) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
+    params.update({'scope': synchronize_url})
+
+    # 2nd synchronize step
+    container = find_container_by_serial(container_serial)
+    res = container.finalize_sync(params)
+    res.update({'container_sync_url': synchronize_url})
 
     # Update last seen & last updated
-    container = find_container_by_serial(container_serial)
+    # Should we also update the last seen here or only if a token is used to authenticate?
     container.update_last_seen()
     container.update_last_updated()
 
-    return
+    return send_result(res)

@@ -377,7 +377,7 @@ class TokenTestCase(MyTestCase):
         # check for the token association
         token_id = tokenobject.token.id
         realm_assoc = TokenRealm.query.filter(TokenRealm.token_id == \
-            token_id).count()
+                                              token_id).count()
         self.assertTrue(realm_assoc == 1, realm_assoc)
         # Add a challenge for this token
         challenge = Challenge(tokenobject.get_serial(), transaction_id="918273")
@@ -392,7 +392,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(get_tokens(count=True) == count1)
         # check for the realm association
         realm_assoc = TokenRealm.query.filter(TokenRealm.token_id == \
-            token_id).count()
+                                              token_id).count()
         self.assertTrue(realm_assoc == 0, realm_assoc)
         # check if the challenge is removed
         chall_count = Challenge.query.filter(Challenge.serial ==
@@ -430,7 +430,6 @@ class TokenTestCase(MyTestCase):
             mock_log.assert_called_with('The realm of an assigned user cannot be removed from'
                                         ' token {0!s} (realm: {1!s})'.format(serial, 'realm1'))
             token.delete_token()
-
 
     def test_17_set_defaults(self):
         serial = "SETTOKEN"
@@ -506,7 +505,6 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(tokenobject.token.so_pin != "")
         remove_token(serial)
 
-
     def test_21_enable_disable(self):
         serial = "enable"
         tokenobject = init_token({"serial": serial,
@@ -540,7 +538,6 @@ class TokenTestCase(MyTestCase):
         hashlib = tokenobject.token.get_info()
         self.assertTrue(hashlib.get("hashlib") == "sha256", hashlib)
         remove_token(serial)
-
 
     def test_23_set_otplen(self):
         serial = "otplen"
@@ -584,7 +581,7 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn("something", tinfo2)
         # delete non-existing tokeninfo entry
         r = delete_tokeninfo(serial, "somethingelse")
-        self.assertEqual(r, 1) # this still returns 1, because 1 token was matched!
+        self.assertEqual(r, 1)  # this still returns 1, because 1 token was matched!
         # tokeninfo has not changed
         self.assertEqual(tokenobject.token.get_info(), tinfo2)
         # try to delete non-existing tokeninfo
@@ -664,7 +661,7 @@ class TokenTestCase(MyTestCase):
         # Now compare the pinhash
         self.assertTrue(tobject1.token.pin_hash == tobject2.token.pin_hash,
                         "{0!s} <> {1!s}".format(tobject1.token.pin_hash,
-                                      tobject2.token.pin_hash))
+                                                tobject2.token.pin_hash))
 
         remove_token(serial1)
         remove_token(serial2)
@@ -855,8 +852,8 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             check_serial_pass("XXXXXXXXX", "password")
 
-        #r = get_multi_otp("hotptoken", count=20)
-        #self.assertTrue(r == 0, r)
+        # r = get_multi_otp("hotptoken", count=20)
+        # self.assertTrue(r == 0, r)
         # 0: '520489', 1: '403154', 2: '481090', 3: '868912',
         # 4: '736127', 5: '229903', 6: '436521', 7: '186581',
         # 8: '447589', 9: '903435', 10: '578337', 11: '328281',
@@ -880,8 +877,8 @@ class TokenTestCase(MyTestCase):
         r, reply = check_user_pass(user, "hotppin868912")
         self.assertTrue(r)
         r, reply = check_user_pass(user, "hotppin736127")
-        #r = get_multi_otp("hotptoken", count=20)
-        #self.assertTrue(r == 0, r)
+        # r = get_multi_otp("hotptoken", count=20)
+        # self.assertTrue(r == 0, r)
         # 0: '520489', 1: '403154', 2: '481090', 3: '868912',
         # 4: '736127', 5: '229903', 6: '436521', 7: '186581',
         # 8: '447589', 9: '903435', 10: '578337', 11: '328281',
@@ -916,7 +913,7 @@ class TokenTestCase(MyTestCase):
         # check that the challenge is created
         self.assertTrue(num1 + 1 == num2, (num1, num2))
         self.assertTrue(type(reply) == dict, reply)
-        transaction_id = reply.get("transaction_id","")
+        transaction_id = reply.get("transaction_id", "")
         self.assertTrue(len(transaction_id) > 10, reply)
 
         # Challenge Response, with the transaction id
@@ -978,7 +975,7 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")), token_count-1)
+        self.assertTrue(len(tokens.get("tokens")), token_count - 1)
         self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
@@ -1040,7 +1037,6 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn(token.get_serial(), token_serials)
         for token in tokens_pag["tokens"]:
             self.assertEqual("", token["container_serial"])
-
 
     def test_42_sort_tokens(self):
         # return pagination
@@ -1314,7 +1310,8 @@ class TokenTestCase(MyTestCase):
         r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[2], user,
                                      options={"transaction_id": transaction_id})
         self.assertFalse(r)
-        self.assertEqual(r_dict.get("message"), "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
+        self.assertEqual(r_dict.get("message"),
+                         "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
 
         remove_token("CR2A")
         remove_token("CR2B")
@@ -1363,7 +1360,7 @@ class TokenTestCase(MyTestCase):
         # All challenges of the transaction_id have been deleted on
         # successful authentication
         r = Challenge.query.filter(Challenge.transaction_id ==
-                                transaction_id).all()
+                                   transaction_id).all()
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
@@ -1694,11 +1691,30 @@ class TokenTestCase(MyTestCase):
         class dummy_token(object):
             def __init__(self, type):
                 self.type = type
+
         self.assertEqual(1000, weigh_token_type(dummy_token("push")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("hotp")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
         self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
 
+    def test_60_get_enroll_url(self):
+        hotp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True,
+                       'rollover': False, 'timeStep': 30, 'type': 'hotp', 'validity_period_end': '',
+                       'validity_period_start': ''}
+        hotp = init_token(hotp_params)
+        totp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True, 'rollover': False, 'timeStep': 30, 'type': 'totp',
+                       'validity_period_end': '', 'validity_period_start': ''}
+        totp = init_token(totp_params)
+
+        hotp_init = hotp.get_init_detail(hotp_params, User())
+        hotp_enroll_url = hotp.get_enroll_url(User())
+        self.assertEqual(hotp_init["googleurl"]["value"], hotp_enroll_url)
+
+        totp_init = totp.get_init_detail(totp_params, User())
+        totp_enroll_url = totp.get_enroll_url(User())
+        self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
 
 
 class TokenOutOfBandTestCase(MyTestCase):
@@ -1847,7 +1863,7 @@ class TokenFailCounterTestCase(MyTestCase):
 
     def test_04_reset_all_failcounters(self):
         from privacyidea.lib.policy import (set_policy, PolicyClass, SCOPE,
-            ACTION)
+                                            ACTION)
         from flask import g
 
         set_policy("reset_all", scope=SCOPE.AUTH,
@@ -2015,8 +2031,8 @@ class PINChangeTestCase(MyTestCase):
                           "otpkey": self.otpkey, "pin": "test",
                           "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
         tok2 = init_token({"type": "hotp",
-                          "otpkey": self.otpkey, "pin": "fail",
-                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+                           "otpkey": self.otpkey, "pin": "fail",
+                           "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
         # Set, that the token needs to change the pin
         tok.set_next_pin_change("-1d")
         # Check it
@@ -2078,8 +2094,8 @@ class PINChangeTestCase(MyTestCase):
                           "otpkey": self.otpkey, "pin": "test",
                           "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
         tok2 = init_token({"type": "hotp",
-                          "otpkey": self.otpkey, "pin": "fail",
-                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+                           "otpkey": self.otpkey, "pin": "fail",
+                           "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
         # Set, that the token needs to change the pin
         tok.set_next_pin_change("-1d")
         # Check it
@@ -2127,8 +2143,8 @@ class PINChangeTestCase(MyTestCase):
                           "otpkey": self.otpkey, "pin": "test",
                           "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
         tok2 = init_token({"type": "hotp",
-                          "otpkey": self.otpkey, "pin": "fail",
-                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+                           "otpkey": self.otpkey, "pin": "fail",
+                           "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
         # Set, that the token needs to change the pin
         tok.set_next_pin_change("-1d")
         # Check it
