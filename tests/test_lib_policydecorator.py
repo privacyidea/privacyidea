@@ -942,7 +942,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(1, len(reply_dict["multi_challenge"]))
 
         # Using the OTP with the transaction_id will authenticate
-        # Re-use the second OTP value because it was not consumed before
+        # Reuse the second OTP value because it was not consumed before
         res, reply_dict = check_user_pass(user, otps[1],
                                           options={"g": fake_g, "transaction_id": reply_dict["transaction_id"]})
         self.assertTrue(res)

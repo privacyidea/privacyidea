@@ -117,7 +117,7 @@ def challenge_response_allowed(func):
     def challenge_response_wrapper(*args, **kwds):
         options = kwds.get("options", {})
         g = options.get("g")
-        token = args[0]
+        token_type = args[0]
         user_object = kwds.get("user") or User()
         if g:
             allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE,
@@ -125,12 +125,12 @@ def challenge_response_allowed(func):
                                    .action_values(unique=False, write_to_audit_log=False))
             log.debug(f"Found these allowed token types: {list(allowed_token_types)}")
             allowed_token_types = {k.lower(): v for k, v in allowed_token_types.items()}
-            token = token.get_tokentype().lower()
+            token_type = token_type.get_tokentype().lower()
             challenge_response = False
-            if token in allowed_token_types:
+            if token_type in allowed_token_types:
                 # This token is allowed to do challenge-response
                 challenge_response = True
-                g.audit_object.add_policy(allowed_token_types.get(token))
+                g.audit_object.add_policy(allowed_token_types.get(token_type))
 
             if not challenge_response:
                 # No policy to allow this token to do challenge-response
@@ -651,9 +651,12 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
 
 def force_challenge_response(wrapped_function, user_object, passw, options=None):
-    g = options.get("g")
-    if g:
-        if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
-                      user_object=user_object).any(write_to_audit_log=False):
-            options["force_challenge_response"] = True
+    if options:
+        g = options.get("g")
+        if g:
+            if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
+                          user_object=user_object).any(write_to_audit_log=False):
+                options["force_challenge_response"] = True
+    else:
+        log.warning("force_challenge_response can not work without options!")
     return wrapped_function(user_object, passw, options)

@@ -48,8 +48,6 @@ import hashlib
 import logging
 import traceback
 
-from pyasn1_modules.rfc5990 import sha256
-
 from .error import UserError
 from ..api.lib.utils import (getParam,
                              optional)
@@ -89,7 +87,7 @@ class User(object):
     # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
     # will have an entry for PIN+OTP (likely to fail) and then the OTP cut off to just PIN. In case the PIN was
     # given in the request, the dict will have only one entry.
-    checked_passwords: dict = {}
+    _checked_passwords: dict = {}
 
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
@@ -107,7 +105,7 @@ class User(object):
         if not self.login and not self.resolver and uid is not None:
             raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
-        # usercache
+        # user cache
         if login or uid is not None:
             self._get_user_from_userstore()
             # Just store the resolver type
@@ -211,8 +209,8 @@ class User(object):
         """
         resolver_tuples = []
         realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {})\
-                                         .get("resolver", [])
+        resolvers_in_realm = realm_config.get(self.realm, {}) \
+            .get("resolver", [])
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
@@ -441,18 +439,20 @@ class User(object):
         :rtype: string/None
         """
         success = None
-        password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+        password_hash = hashlib.sha3_512(password.encode("utf-8")).hexdigest()
+
         try:
             log.info(f"User {self.login} from realm {self.realm} tries to authenticate")
             # If the password was already checked, return the known result
-            if password_hash in self.checked_passwords.keys():
-                if self.checked_passwords[password_hash]:
+            """
+            if password_hash in self._checked_passwords.keys():
+                if self._checked_passwords[password_hash]:
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self} from request cache.")
                 else:
                     log.info(f"User {self} failed to authenticate from request cache.")
                 return success
-
+            """
             res = self._get_resolvers()
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
@@ -461,10 +461,10 @@ class User(object):
                 if y.checkPass(uid, password):
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
-                    self.checked_passwords[password_hash] = True
+                    self._checked_passwords[password_hash] = True
                 else:
                     log.info(f"User {self} failed to authenticate.")
-                    self.checked_passwords[password_hash] = False
+                    self._checked_passwords[password_hash] = False
 
             elif not res:
                 log.error(f"The user {self} exists in NO resolver.")
