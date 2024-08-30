@@ -742,29 +742,3 @@ def initialize():
         return send_result(True, rid=2, details=challenge)
     else:
         raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
-
-
-@validate_blueprint.route('/finalize', methods=['POST'])
-def finalize():
-    """
-    """
-    # Find the token that responded to the challenge
-    transaction_id = get_required(request.all_data, "transaction_id")
-    credential_id = get_required(request.all_data, "id")
-    request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
-
-    try:
-        token = find_fido2_token_by_credential_id(credential_id)
-        if not token.user:
-            return send_result(False, rid=2, details={
-                "message": "No user found for the token with the given credential ID!"})
-    except ResourceNotFoundError:
-        return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
-
-    r = verify_fido2_challenge(transaction_id, token, request.all_data)
-    details = None
-    if r > 0:
-        # If the authentication was successful, return the username of the token owner
-        # TODO what is returned could be configurable, attribute mapping
-        details = {"username": token.user.login}
-    return send_result(r > 0, rid=2, details=details)
