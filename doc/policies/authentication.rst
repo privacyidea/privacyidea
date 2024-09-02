@@ -333,6 +333,18 @@ be used during authentication. The list is separated by whitespaces like
 
 .. _policy_change_pin_via_validate:
 
+force_challenge_response
+~~~~~~~~~~~~~
+
+.. index:: force_challenge_response
+
+type: bool
+
+When enabled, authentication attempts will be interpreted as either the PIN or the answer to a challenge.
+PIN concatenated with OTP can not be used anymore! Does only work when authenticating with a username.
+
+.. _policy_force_challenge_response:
+
 change_pin_via_validate
 ~~~~~~~~~~~~~~~~~~~~~~~
 

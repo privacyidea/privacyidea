@@ -44,6 +44,7 @@ or to webservices!
 This code is tested in tests/test_lib_user.py
 '''
 
+import hashlib
 import logging
 import traceback
 
@@ -95,10 +96,15 @@ class User(object):
         self.resolver = resolver or ""
         self.uid = uid
         self.rtype = None
+        # Hash of already checked passwords and their result. If a user has multiple token, it is not necessary to check
+        # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
+        # will have an entry for PIN+OTP (likely to fail) and then the OTP cut off to just PIN. In case the PIN was
+        # given in the request, the dict will have only one entry.
+        self._checked_passwords = {}
         if not self.login and not self.resolver and uid is not None:
             raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
-        # usercache
+        # user cache
         if login or uid is not None:
             self._get_user_from_userstore()
             # Just store the resolver type
@@ -202,8 +208,8 @@ class User(object):
         """
         resolver_tuples = []
         realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {})\
-                                         .get("resolver", [])
+        resolvers_in_realm = realm_config.get(self.realm, {}) \
+            .get("resolver", [])
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
@@ -432,28 +438,42 @@ class User(object):
         :rtype: string/None
         """
         success = None
+
+        # The password hash is used to avoid multiple password checks at the
+        # resolver. It is not persisted in any way and only stored in memory for
+        # the duration of the request.
+        password_hash = hashlib.sha3_512(password.encode("utf-8")).hexdigest()
+
         try:
-            log.info("User %r from realm %r tries to "
-                     "authenticate" % (self.login, self.realm))
+            log.info(f"User {self.login} from realm {self.realm} tries to authenticate")
+            # If the password was already checked, return the known result
+            if password_hash in self._checked_passwords.keys():
+                if self._checked_passwords[password_hash]:
+                    success = f"{self.login}@{self.realm}"
+                    log.debug(f"Successfully authenticated user {self} from request cache.")
+                else:
+                    log.info(f"User {self} failed to authenticate from request cache.")
+                return success
             res = self._get_resolvers()
-            # Now we know, the resolvers of this user and we can verify the
-            # password
+            # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
                 if y.checkPass(uid, password):
-                    success = "{0!s}@{1!s}".format(self.login, self.realm)
-                    log.debug("Successfully authenticated user {0!r}.".format(self))
+                    success = f"{self.login}@{self.realm}"
+                    log.debug(f"Successfully authenticated user {self}.")
+                    self._checked_passwords[password_hash] = True
                 else:
-                    log.info("user {0!r} failed to authenticate.".format(self))
+                    log.info(f"User {self} failed to authenticate.")
+                    self._checked_passwords[password_hash] = False
 
             elif not res:
-                log.error("The user {0!r} exists in NO resolver.".format(self))
+                log.error(f"The user {self!r} exists in NO resolver.")
         except UserError as e:  # pragma: no cover
-            log.error("Error while trying to verify the username: {0!r}".format(e))
+            log.error(f"Error while trying to verify the username: {e}")
         except Exception as e:  # pragma: no cover
-            log.error("Error checking password within module {0!r}".format(e))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"Error checking password within module {e}")
+            log.debug(f"{traceback.format_exc()}")
 
         return success
 

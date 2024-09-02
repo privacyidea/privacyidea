@@ -485,7 +485,7 @@ class TokenClass(object):
         :return: If the PIN is correct, return True
         :rtype: bool
         """
-        # check PIN against the token database
+        # Check PIN against the token database
         res = self.token.check_pin(pin)
         return res
 

@@ -404,6 +404,7 @@ class ACTION(object):
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
+    FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
 
 
 class TYPE(object):
@@ -2515,6 +2516,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('You can set the client modes in the order that you prefer. '
                           'For example: "interactive webauthn poll u2f". Accepted '
                           'values are: <code>interactive webauthn poll u2f</code>')
+            },
+            ACTION.FORCE_CHALLENGE_RESPONSE: {
+                'type': 'bool',
+                'desc': _('When enabled, authentication attempts will be interpreted as either the PIN or '
+                          'the answer to a challenge. PIN concatenated with OTP can not be used anymore! '
+                          'Does only work when authenticating with a username.'),
             }
         },
         SCOPE.AUTHZ: {
@@ -3122,7 +3129,7 @@ class Match(object):
         elif scope == ROLE.USER:
             if not user_obj:
                 # If we have a user object (including resolver) in a request, we use this on.
-                # Otherwise we take the user from the logged in user.
+                # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
         else:

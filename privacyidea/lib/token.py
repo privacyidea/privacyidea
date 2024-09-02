@@ -91,6 +91,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -99,7 +100,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               config_lost_token,
-                                              reset_all_user_tokens)
+                                              reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -2166,9 +2167,9 @@ def check_serial_pass(serial, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    tokenobject = get_one_token(serial=serial)
-    res, reply_dict = check_token_list([tokenobject], passw,
-                                       user=tokenobject.user,
+    token_object = get_one_token(serial=serial)
+    res, reply_dict = check_token_list([token_object], passw,
+                                       user=token_object.user,
                                        options=options,
                                        allow_reset_all_tokens=True)
 
@@ -2187,8 +2188,8 @@ def check_otp(serial, otpval):
     :rtype: tuple(bool, dict)
     """
     reply_dict = {}
-    tokenobject = get_one_token(serial=serial)
-    res = tokenobject.check_otp(otpval) >= 0
+    token_object = get_one_token(serial=serial)
+    res = token_object.check_otp(otpval) >= 0
     if not res:
         reply_dict["message"] = _("OTP verification failed.")
     return res, reply_dict
@@ -2200,6 +2201,7 @@ def check_otp(serial, otpval):
 @libpolicy(auth_user_timelimit)
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
+@libpolicy(force_challenge_response)
 @log_with(log, hide_kwargs=["passw"])
 def check_user_pass(user, passw, options=None):
     """
@@ -2218,16 +2220,16 @@ def check_user_pass(user, passw, options=None):
     :rtype: tuple
     """
     token_type = options.pop("token_type", None)
-    tokenobject_list = get_tokens(user=user, tokentype=token_type)
+    token_objects = get_tokens(user=user, tokentype=token_type)
     reply_dict = {}
-    if not tokenobject_list:
+    if not token_objects:
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = _("The user has no tokens assigned")
     else:
-        tokenobject = tokenobject_list[0]
-        res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           user=tokenobject.user,
+        token_object = token_objects[0]
+        res, reply_dict = check_token_list(token_objects, passw,
+                                           user=token_object.user,
                                            options=options,
                                            allow_reset_all_tokens=True)
 
@@ -2252,8 +2254,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token_obj in token_list:
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = \
-                token_obj.create_challenge(
+            r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
@@ -2311,10 +2312,9 @@ def weigh_token_type(token_obj):
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
 @libpolicy(generic_challenge_response_resync)
-def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
+def check_token_list(token_object_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
-    this takes a list of token objects and tries to find the matching token
-    for the given passw. It also tests,
+    Takes a list of token objects and tries to find the matching token for the given passw. It also tests
     * if the token is active or
     * the max fail count is reached,
     * if the validity period is ok...
@@ -2322,8 +2322,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     This function is called by check_serial_pass, check_user_pass and
     check_yubikey_pass.
 
-    :param tokenobject_list: list of identified tokens
-    :param passw: the provided passw (mostly pin+otp)
+    :param token_object_list: list of identified tokens
+    :param passw: the provided password, can be just the PIN or PIN+OTP
     :param user: the identified use - as class object
     :param options: additional parameters, which are passed to the token
     :param allow_reset_all_tokens: If set to True, the policy reset_all_user_tokens is evaluated to
@@ -2336,77 +2336,78 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     reply_dict = {}
     increase_auth_counters = not is_true(get_from_config(key="no_auth_counter"))
 
-    # add the user to the options, so that every token, that get passed the
-    # options can see the user
+    # Add the user to the options, so that every token with access to options can see the user
     if options:
         options = options.copy()
     else:
         options = {}
     options.update({'user': user})
 
-    # if there has been one token in challenge mode, we only handle challenges
+    # If there has been one token in challenge mode, we only handle challenges
     challenge_response_token_list = []
     challenge_request_token_list = []
     pin_matching_token_list = []
     invalid_token_list = []
     valid_token_list = []
 
-    # Remove locked tokens from tokenobject_list
-    if len(tokenobject_list) > 0:
-        tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
+    # Remove locked tokens from token_object_list
+    if len(token_object_list) > 0:
+        token_object_list = [token for token in token_object_list if not token.is_revoked()]
 
-        if len(tokenobject_list) == 0:
+        if len(token_object_list) == 0:
             # If there is no unlocked token left.
-            raise TokenAdminError(_("This action is not possible, since the "
-                                    "token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
 
-    # Remove certain disabled tokens from tokenobject_list
-    if len(tokenobject_list) > 0:
-        tokenobject_list = [token for token in tokenobject_list if token.use_for_authentication(options)]
+    # Remove certain disabled tokens from token_object_list
+    if len(token_object_list) > 0:
+        token_object_list = [token for token in token_object_list if token.use_for_authentication(options)]
 
-    for tokenobject in sorted(tokenobject_list, key=weigh_token_type):
+    for token_object in sorted(token_object_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):
-            # Avoid a SQL query triggered by ``tokenobject.user`` in case
+            # Avoid a SQL query triggered by ``token_object.user`` in case
             # the log level is not DEBUG
-            log.debug("Found user with loginId {0!r}: {1!r}".format(
-                tokenobject.user, tokenobject.get_serial()))
+            log.debug(f"Found user with loginId {token_object.user}: {token_object.get_serial()}")
 
-        if tokenobject.is_challenge_response(passw, user=user, options=options):
-            # This is a challenge response and it still has a challenge DB entry
-            if tokenobject.has_db_challenge_response(passw, user=user, options=options):
-                challenge_response_token_list.append(tokenobject)
+        if token_object.is_challenge_response(passw, user=user, options=options):
+            # This is a challenge response, and it still has a challenge DB entry
+            if token_object.has_db_challenge_response(passw, user=user, options=options):
+                challenge_response_token_list.append(token_object)
             else:
                 # This is a transaction_id, that either never existed or has expired.
                 # We add this to the invalid_token_list
-                invalid_token_list.append(tokenobject)
-        elif tokenobject.is_challenge_request(passw, user=user,
-                                              options=options):
+                invalid_token_list.append(token_object)
+        elif token_object.is_challenge_request(passw, user=user,
+                                               options=options):
             # This is a challenge request
-            challenge_request_token_list.append(tokenobject)
+            challenge_request_token_list.append(token_object)
         else:
-            # This is a normal authentication attempt
-            try:
-                # pass the length of the valid_token_list to ``authenticate`` so that
-                # the push token can react accordingly
-                options["valid_token_num"] = len(valid_token_list)
-                pin_match, otp_count, repl = \
-                    tokenobject.authenticate(passw, user, options=options)
-            except TokenAdminError as tae:
-                # Token is locked
-                pin_match = False
-                otp_count = -1
-                repl = {'message': tae.message}
-            repl = repl or {}
-            reply_dict.update(repl)
-            if otp_count >= 0:
-                # This is a successful authentication
-                valid_token_list.append(tokenobject)
-            elif pin_match:
-                # The PIN of the token matches
-                pin_matching_token_list.append(tokenobject)
+            if not (ACTION.FORCE_CHALLENGE_RESPONSE in options and is_true(options[ACTION.FORCE_CHALLENGE_RESPONSE])):
+                # This is a normal authentication attempt
+                try:
+                    # Pass the length of the valid_token_list to ``authenticate`` so that
+                    # the push token can react accordingly
+                    options["valid_token_num"] = len(valid_token_list)
+                    pin_match, otp_count, repl = token_object.authenticate(passw, user, options=options)
+                except TokenAdminError as tae:
+                    # Token is locked
+                    pin_match = False
+                    otp_count = -1
+                    repl = {'message': tae.message}
+                repl = repl or {}
+                reply_dict.update(repl)
+                if otp_count >= 0:
+                    # This is a successful authentication
+                    valid_token_list.append(token_object)
+                elif pin_match:
+                    # The PIN of the token matches
+                    pin_matching_token_list.append(token_object)
+                else:
+                    # Nothing matches at all
+                    invalid_token_list.append(token_object)
             else:
-                # Nothing matches at all
-                invalid_token_list.append(tokenobject)
+                invalid_token_list.append(token_object)
+                log.info(f"Skipping authentication try for token {token_object.get_serial()}"
+                         f" because policy force_challenge_response is set.")
 
     """
     There might be
@@ -2415,7 +2416,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     10 in invalid_token_list
     0 in challenge_token_list.
 
-    in this case, the failcounter of the 2 tokens in pin_matchting_token_list
+    in this case, the failcounter of the 2 tokens in pin_matching_token_list
     needs to be increased. And return False
 
     If there is
@@ -2437,7 +2438,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     <count> of the valid tokens need to be increased to the new count.
     """
     if valid_token_list:
-        # One ore more successfully authenticating tokens found
+        # One or more successfully authenticating tokens found
         # We need to return success
         message_list = [_("matching {0:d} tokens").format(len(valid_token_list))]
         # write serial numbers or something to audit log
@@ -2484,45 +2485,45 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # found.
         matching_challenge = False
         further_challenge = False
-        for tokenobject in challenge_response_token_list:
-            if tokenobject.check_challenge_response(passw=passw,
+        for token_object in challenge_response_token_list:
+            if token_object.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
-                reply_dict["serial"] = tokenobject.token.serial
+                reply_dict["serial"] = token_object.token.serial
                 matching_challenge = True
                 messages = []
-                if not tokenobject.is_fit_for_challenge(messages, options=options):
+                if not token_object.is_fit_for_challenge(messages, options=options):
                     messages.insert(0, _("Challenge matches, but token is not fit for challenge"))
                     reply_dict["message"] = ". ".join(messages)
                     log.info("Received a valid response to a "
-                             "challenge for a non-fit token {0!s}. {1!s}".format(tokenobject.token.serial,
+                             "challenge for a non-fit token {0!s}. {1!s}".format(token_object.token.serial,
                                                                                  reply_dict["message"]))
                 else:
                     # Challenge matches, token is active and token is fit for challenge
                     res = True
                     if increase_auth_counters:
-                        tokenobject.inc_count_auth_success()
+                        token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
                     # If they exist, add next pin and next password change
-                    next_pin = tokenobject.get_tokeninfo("next_pin_change")
+                    next_pin = token_object.get_tokeninfo("next_pin_change")
                     if next_pin:
                         reply_dict["next_pin_change"] = next_pin
-                        reply_dict["pin_change"] = tokenobject.is_pin_change()
-                    next_passw = tokenobject.get_tokeninfo("next_password_change")
+                        reply_dict["pin_change"] = token_object.is_pin_change()
+                    next_passw = token_object.get_tokeninfo("next_password_change")
                     if next_passw:
                         reply_dict["next_password_change"] = next_passw
-                        reply_dict["password_change"] = tokenobject.is_pin_change(password=True)
-                    tokenobject.challenge_janitor()
-                    if tokenobject.has_further_challenge(options):
+                        reply_dict["password_change"] = token_object.is_pin_change(password=True)
+                    token_object.challenge_janitor()
+                    if token_object.has_further_challenge(options):
                         # The token creates further challenges, so create the new challenge
                         # and new transaction_id
-                        create_challenges_from_tokens([tokenobject], reply_dict, options)
+                        create_challenges_from_tokens([token_object], reply_dict, options)
                         further_challenge = True
                         res = False
                     else:
                         # This was the last successful challenge, so
                         # reset the fail counter of the challenge response token
-                        tokenobject.reset()
-                        tokenobject.post_success()
+                        token_object.reset()
+                        token_object.post_success()
 
                     # clean up all challenges from this and other tokens. I.e.
                     # all challenges with this very transaction_id!
@@ -2565,10 +2566,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # We did not find a valid token and no challenge.
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
-        for tokenobject in pin_matching_token_list:
-            tokenobject.inc_failcount()
+        for token_object in pin_matching_token_list:
+            token_object.inc_failcount()
             if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
-                tokenobject.check_reset_failcount()
+                token_object.check_reset_failcount()
             reply_dict["message"] = _("wrong otp value")
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was
@@ -2589,13 +2590,13 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and
         # not even the PIN.
-        # Depending of IncFailCountOnFalsePin, we increase the failcounter.
+        # Depending on IncFailCountOnFalsePin, we increase the failcounter.
         reply_dict["message"] = _("wrong otp pin")
         if get_inc_fail_count_on_false_pin():
-            for tokenobject in invalid_token_list:
-                tokenobject.inc_failcount()
+            for token_object in invalid_token_list:
+                token_object.inc_failcount()
                 if increase_auth_counters:
-                    tokenobject.inc_count_auth()
+                    token_object.inc_count_auth()
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")

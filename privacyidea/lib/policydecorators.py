@@ -24,12 +24,12 @@
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-# License as published by the Free Software Foundation; either
+# as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
 # This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNE7SS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 #
 # You should have received a copy of the GNU Affero General Public
@@ -41,18 +41,20 @@ policy decorators for the API (pre/post) are defined in api/lib/policy
 
 The functions of this module are tested in tests/test_lib_policy_decorator.py
 """
+import datetime
+import functools
 import logging
 import re
-from privacyidea.lib.policy import Match
-from privacyidea.lib.error import PolicyError, privacyIDEAError
-import functools
-from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
-from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
-from privacyidea.lib.authcache import verify_in_cache, add_to_cache
-import datetime
+
 from dateutil.tz import tzlocal
+
+from privacyidea.lib.authcache import verify_in_cache, add_to_cache
+from privacyidea.lib.error import PolicyError
+from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
+from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass, is_true
 
 log = logging.getLogger(__name__)
 
@@ -66,6 +68,7 @@ class libpolicy(object):
     The decorator expects a named parameter "options". In this options dict
     it will look for the flask global "g".
     """
+
     def __init__(self, decorator_function):
         """
         :param decorator_function: This is the policy function that is to be
@@ -77,7 +80,7 @@ class libpolicy(object):
     def __call__(self, wrapped_function):
         """
         This decorates the given function.
-        If some error occur the a PolicyException is raised.
+        If some error occurs, a PolicyException is raised.
 
         The decorator function takes the options parameter and can modify
         the behaviour of the original function.
@@ -86,6 +89,7 @@ class libpolicy(object):
         :type wrapped_function: API function
         :return: None
         """
+
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
             return self.decorator_function(wrapped_function, *args, **kwds)
@@ -108,26 +112,27 @@ def challenge_response_allowed(func):
 
     :param func: wrapped function
     """
+
     @functools.wraps(func)
     def challenge_response_wrapper(*args, **kwds):
         options = kwds.get("options", {})
         g = options.get("g")
-        token = args[0]
+        token_type = args[0]
         user_object = kwds.get("user") or User()
         if g:
-            allowed_tokentypes_dict = Match.user(g, scope=SCOPE.AUTH,
-                                                 action=ACTION.CHALLENGERESPONSE, user_object=user_object)\
-                .action_values(unique=False, write_to_audit_log=False)
-            log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
-            allowed_tokentypes_dict = {k.lower(): v for k, v in allowed_tokentypes_dict.items()}
-            token = token.get_tokentype().lower()
-            chal_resp_found = False
-            if token in allowed_tokentypes_dict:
+            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE,
+                                              user_object=user_object)
+                                   .action_values(unique=False, write_to_audit_log=False))
+            log.debug(f"Found these allowed token types: {list(allowed_token_types)}")
+            allowed_token_types = {k.lower(): v for k, v in allowed_token_types.items()}
+            token_type = token_type.get_tokentype().lower()
+            challenge_response = False
+            if token_type in allowed_token_types:
                 # This token is allowed to do challenge-response
-                chal_resp_found = True
-                g.audit_object.add_policy(allowed_tokentypes_dict.get(token))
+                challenge_response = True
+                g.audit_object.add_policy(allowed_token_types.get(token_type))
 
-            if not chal_resp_found:
+            if not challenge_response:
                 # No policy to allow this token to do challenge-response
                 return False
 
@@ -139,9 +144,9 @@ def challenge_response_allowed(func):
 
 def auth_cache(wrapped_function, user_object, passw, options=None):
     """
-    Decorate lib.token:check_user_pass. Verify, if the authentication can 
+    Decorate lib.token:check_user_pass. Verify, if the authentication can
     be found in the auth_cache.
-    
+
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
     :param passw: The PIN and OTP
@@ -150,15 +155,15 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     """
     options = options or {}
     g = options.get("g")
-    auth_cache_dict = None
+    auth_cache_policy = None
 
     if g:
-        auth_cache_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
-                                     user_object=user_object).action_values(unique=True, write_to_audit_log=False)
-        if auth_cache_dict:
-            auth_times = list(auth_cache_dict)[0].split("/")
+        auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE, user_object=user_object)
+                             .action_values(unique=True, write_to_audit_log=False))
+        if auth_cache_policy:
+            auth_times = list(auth_cache_policy)[0].split("/")
 
-            # determine first_auth from policy!
+            # Determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
             first_auth = datetime.datetime.utcnow() - first_offset
             last_auth = first_auth  # Default if no last auth exists
@@ -180,12 +185,12 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      max_auths=max_auths)
 
             if result:
-                g.audit_object.add_policy(next(iter(auth_cache_dict.values())))
+                g.audit_object.add_policy(next(iter(auth_cache_policy.values())))
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
-    if auth_cache_dict and res:
+    if auth_cache_policy and res:
         # If authentication is successful, we store the password in auth_cache
         add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw)
     return res, reply_dict
@@ -214,18 +219,16 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
                                    user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
-            tokencount = get_tokens(user=user_object, count=True)
-            if tokencount == 0:
+            token_count = get_tokens(user=user_object, count=True)
+            if token_count == 0:
                 g.audit_object.add_policy([p.get("name") for p in pass_no_token])
-                return True, {"message": "user has no token, accepted due to '{!s}'".format(
-                    pass_no_token[0].get("name"))}
+                return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
 
 
-def auth_user_does_not_exist(wrapped_function, user_object, passw,
-                               options=None):
+def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None):
     """
     This decorator checks, if the user does exist at all.
     If the user does exist, the wrapped function is called.
@@ -248,8 +251,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
             # Check if user object exists
             if not user_object.exist():
                 g.audit_object.add_policy([p.get("name") for p in pass_no_user])
-                return True, {"message": "user does not exist, accepted due to '{!s}'".format(
-                    pass_no_user[0].get("name"))}
+                return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'"}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -288,8 +290,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
-                    return True, {"message": "against userstore due to '{!s}'".format(
-                                      policy_name)}
+                    return True, {"message": f"against userstore due to '{policy_name}'"}
             else:
                 # We are doing RADIUS passthru
                 log.info("Forwarding the authentication request to the radius "
@@ -307,8 +308,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                             prepend_pin = components[0] == "pin"
                             otp_length = int(components[int(prepend_pin)])
                             pin, otp = split_pin_pass(passw, otp_length, prepend_pin)
-                            realm_tokens = get_tokens(realm=user_object.realm,
-                                                      assigned=False)
+                            realm_tokens = get_tokens(realm=user_object.realm, assigned=False)
                             window = 100
                             if len(components) == 3:
                                 window = int(components[2])
@@ -318,14 +318,13 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                     # We do not check any max tokens per realm or user,
                                     # since this very user currently has no token
                                     # and the unassigned token already was contained in the user's realm
-                                    assign_token(serial=token_obj.token.serial,
-                                                 user=user_object, pin=pin)
-                                    messages.append("autoassigned {0!s}".format(token_obj.token.serial))
+                                    assign_token(serial=token_obj.token.serial, user=user_object, pin=pin)
+                                    messages.append(f"auto-assigned {token_obj.token.serial}")
                                     break
 
                         else:
-                            log.warning("Wrong value in passthru_assign policy: {0!s}".format(passthru_assign))
-                    messages.append("against RADIUS server {!s} due to '{!s}'".format(pass_thru_action, policy_name))
+                            log.warning(f"Wrong value in passthru_assign policy: {passthru_assign}")
+                    messages.append(f"against RADIUS server {pass_thru_action} due to '{policy_name}'")
                     return True, {'message': ",".join(messages)}
 
     # If nothing else returned, we return the wrapped function
@@ -340,7 +339,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     If the authentication was successful, it checks, if the number of allowed
     successful authentications is exceeded (AUTHMAXSUCCESS).
 
-    If the AUTHMAXFAIL is exceed it denies even a successful authentication.
+    If the AUTHMAXFAIL is exceeded it denies even a successful authentication.
 
     The wrapped function is usually token.check_user_pass, which takes the
     arguments (user, passw, options={})
@@ -378,8 +377,8 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                     "realm": user_object.realm,
                                                     "info": "%loginmode=privacyIDEA%",
                                                     "action": "%/auth"},
-                                                    success=False,
-                                                    timedelta=tdelta)
+                                                   success=False,
+                                                   timedelta=tdelta)
             log.debug("Checking users timelimit %s: %s "
                       "failed authentications with /auth" %
                       (list(max_fail_dict)[0], fail_auth_c))
@@ -394,7 +393,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             # Only in case of a successful authentication
             if len(max_success_dict) == 1:
                 policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
-                # check the successful authentications for this user
+                # Check the successful authentications for this user
                 succ_c = g.audit_object.get_count({"user": user_object.login,
                                                    "realm": user_object.realm,
                                                    "action":
@@ -405,11 +404,11 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                           "successful authentications with /validate/check" %
                           (list(max_success_dict)[0], succ_c))
                 succ_auth_c = g.audit_object.get_count({"user": user_object.login,
-                                                   "realm": user_object.realm,
-                                                   "info": "%loginmode=privacyIDEA%",
-                                                   "action": "%/auth"},
-                                                  success=True,
-                                                  timedelta=tdelta)
+                                                        "realm": user_object.realm,
+                                                        "info": "%loginmode=privacyIDEA%",
+                                                        "action": "%/auth"},
+                                                       success=True,
+                                                       timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
                           "successful authentications with /auth" %
                           (list(max_success_dict)[0], succ_auth_c))
@@ -444,12 +443,10 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
     options = options or {}
     g = options.get("g")
     if g and res:
-        # in case of a serial:
         if isinstance(user_or_serial, User):
             user_object = user_or_serial
             serial = reply_dict.get("serial")
         else:
-            # in case of a serial:
             user_object = None
             serial = user_or_serial
 
@@ -464,18 +461,17 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth_dict = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.LASTAUTH,
-                                        user_object=user_object).action_values(unique=True, write_to_audit_log=False)
+            last_auth_dict = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.LASTAUTH, user_object=user_object)
+                              .action_values(unique=True, write_to_audit_log=False))
             if len(last_auth_dict) == 1:
                 res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
-                    reply_dict["message"] = "The last successful " \
-                                            "authentication was %s. " \
-                                            "It is to long ago." % \
-                                            token.get_tokeninfo(ACTION.LASTAUTH)
+                    reply_dict["message"] = (f"The last successful authentication was "
+                                             f"{token.get_tokeninfo(ACTION.LASTAUTH)}. It is too long ago.")
+
                     g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
-            # set the last successful authentication, if res still true
+            # Set the last successful authentication, if res still true
             if res:
                 token.add_tokeninfo(ACTION.LASTAUTH,
                                     datetime.datetime.now(tzlocal()))
@@ -495,14 +491,14 @@ def login_mode(wrapped_function, *args, **kwds):
         kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """
-    # if tokenclass.check_pin is called in any other way, options may be None
-    #  or it might have no element "g".
+    # If tokenclass.check_pin is called in any other way, options may be None
+    # or have no element "g".
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
-        # We need the user but we do not need the password
+        # We need the user, but we do not need the password
         user_object = args[0]
-        # get the policy
+        # Get the policy
         login_mode_dict = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.LOGINMODE,
                                      user_object=user_object).action_values(unique=True)
         if login_mode_dict:
@@ -527,34 +523,34 @@ def auth_otppin(wrapped_function, *args, **kwds):
      * checks the pin against the userstore
      * or passes the request to the wrapped_function
 
+    If ACTION.OTPPIN is ACTIONVALUE.USERSTORE, the result is written to options["otppin_userstore_success"] for the use
+    in subsequent calls to this function in the same request (checking all token of a user).
+
     :param wrapped_function: In this case the wrapped function should be
         :py:func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
     :param `*args`: args[1] is the pin
     :param `**kwds`: kwds["options"] contains the flask g
     :return: True or False
     """
-    # if tokenclass.check_pin is called in any other way, options may be None
-    #  or it might have no element "g".
+    # If tokenclass.check_pin is called in any other way, options may be None
+    # or no element "g".
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
         token = args[0]
         pin = args[1]
-        clientip = options.get("clientip")
         user_object = kwds.get("user")
         if not user_object:
-            # No user in the parameters, so we need to determine the owner of
-            #  the token
+            # No user in the parameters, so we need to determine the owner of the token
             user_object = token.user
             realms = token.get_realms()
             if not user_object and len(realms):
-                # if the token has not owner, we take a realm.
+                # If the token has no owner, we take a realm.
                 user_object = User("", realm=realms[0])
         if not user_object:
-            # If we still have no user and no tokenrealm, we create an empty
-            # user object.
-            user_object=User("", realm="")
-        # get the policy
+            # If we still have no user and no tokenrealm, we create an empty user object.
+            user_object = User("", realm="")
+        # Get the policy for OTPPIN
         otppin_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.OTPPIN,
                                  user_object=user_object).action_values(unique=True)
         if otppin_dict:
@@ -569,7 +565,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
                 rv = user_object.check_password(pin)
                 return rv is not None
 
-    # call and return the original check_pin function
+    # Call and return the original check_pin function
     return wrapped_function(*args, **kwds)
 
 
@@ -587,27 +583,25 @@ def config_lost_token(wrapped_function, *args, **kwds):
     :return: calls the original function with the modified "validity",
         "contents" and "pw_len" argument
     """
-    # if called in any other way, options may be None
-    #  or it might have no element "g".
+    # If called in any other way, options may be None, or it might have no element "g".
     from privacyidea.lib.token import get_tokens
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
-        # We need the old serial number, to determine the user - if it exist.
+        # We need the old serial number, to determine the user - if it exists.
         serial = args[0]
-        toks = get_tokens(serial=serial)
-        if len(toks) == 1:
-            user_object = toks[0].user
-            # get the policy
+        tokens = get_tokens(serial=serial)
+        if len(tokens) == 1:
+            user_object = tokens[0].user or None
+            # Get the policies
             contents_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWCONTENTS,
-                                       user_object=user_object if user_object else None)\
-                .action_values(unique=True)
+                                       user_object=user_object).action_values(unique=True)
+
             validity_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENVALID,
-                                       user_object=user_object if user_object else None)\
-                .action_values(unique=True)
+                                       user_object=user_object).action_values(unique=True)
+
             pw_len_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWLEN,
-                                     user_object=user_object if user_object else None)\
-                .action_values(unique=True)
+                                     user_object=user_object).action_values(unique=True)
 
             if contents_dict:
                 kwds["contents"] = list(contents_dict)[0]
@@ -630,29 +624,39 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     :param options: options dictionary containing g.
     :return: None
     """
-    tokenobject_list = args[0]
+    token_objects = args[0]
     options = kwds.get("options") or {}
     g = options.get("g")
     allow_reset = kwds.get("allow_reset_all_tokens")
 
     r = wrapped_function(*args, **kwds)
 
-    toks_avail = [tok for tok in tokenobject_list if tok.get_class_type() not in ['registration']]
+    available_tokens = [tok for tok in token_objects if tok.get_class_type() not in ['registration']]
 
     # A successful authentication was done
-    if r[0] and g and allow_reset and toks_avail:
-        token_owner = kwds.get('user') or toks_avail[0].user
+    if r[0] and g and allow_reset and available_tokens:
+        token_owner = kwds.get('user') or available_tokens[0].user
         reset_all = Match.user(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))
-            for tok_obj_reset in toks_avail:
+            for tok_obj_reset in available_tokens:
                 try:
                     tok_obj_reset.reset()
                 except Exception:
-                    log.debug(
-                        "registration token does not exist anymore and "
-                        "cannot be reset.")
+                    log.debug("Registration token does not exist anymore and cannot be reset.")
 
     return r
+
+
+def force_challenge_response(wrapped_function, user_object, passw, options=None):
+    if options:
+        g = options.get("g")
+        if g:
+            if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
+                          user_object=user_object).any(write_to_audit_log=False):
+                options[ACTION.FORCE_CHALLENGE_RESPONSE] = True
+    else:
+        log.warning("force_challenge_response can not work without options!")
+    return wrapped_function(user_object, passw, options)
