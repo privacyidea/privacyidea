@@ -119,9 +119,9 @@ def add_to_cache(username, used_login, resolver, user_id):
     """
     if is_cache_enabled():
         timestamp = datetime.datetime.now()
-        record = UserCache(username, used_login, resolver, user_id, timestamp)
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
             username, used_login, resolver, user_id, timestamp))
+        record = UserCache(username, used_login, resolver, user_id, timestamp)
         record.save()
 
 
@@ -239,4 +239,3 @@ def user_init(wrapped_function, self):
     if self.login and self.resolver and self.uid and self.used_login:
         # We only cache complete sets!
         add_to_cache(self.login, self.used_login, self.resolver, self.uid)
-

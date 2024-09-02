@@ -144,9 +144,9 @@ def challenge_response_allowed(func):
 
 def auth_cache(wrapped_function, user_object, passw, options=None):
     """
-    Decorate lib.token:check_user_pass. Verify, if the authentication can 
+    Decorate lib.token:check_user_pass. Verify, if the authentication can
     be found in the auth_cache.
-    
+
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
     :param passw: The PIN and OTP
@@ -656,7 +656,7 @@ def force_challenge_response(wrapped_function, user_object, passw, options=None)
         if g:
             if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
                           user_object=user_object).any(write_to_audit_log=False):
-                options["force_challenge_response"] = True
+                options[ACTION.FORCE_CHALLENGE_RESPONSE] = True
     else:
         log.warning("force_challenge_response can not work without options!")
     return wrapped_function(user_object, passw, options)

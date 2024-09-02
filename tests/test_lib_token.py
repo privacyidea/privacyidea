@@ -2327,9 +2327,8 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'INFO',
                     "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
             # Check that we have the password check of the resolver only once
-            resolver_logs = [x for x in lc.records if x.name == "privacyidea.lib.resolvers.PasswdIdResolver"]
-            self.assertEqual(2, len(resolver_logs), resolver_logs)
-            self.assertEqual("user uid 1000 failed to authenticate", resolver_logs[1].message, resolver_logs)
+            resolver_logs = [x for x in lc.records if x.msg == "user uid 1000 failed to authenticate"]
+            self.assertEqual(1, len(resolver_logs), resolver_logs)
 
         # Now try authentication with the correct password and OTP
         with LogCapture(level=logging.DEBUG) as lc:
@@ -2352,9 +2351,8 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'DEBUG',
                     "Successfully authenticated user <cornelius.resolver1@realm1> from request cache."))
             # Check that we have the password check of the resolver only once
-            resolver_logs = [x for x in lc.records if x.name == "privacyidea.lib.resolvers.PasswdIdResolver"]
-            self.assertEqual(2, len(resolver_logs), resolver_logs)
-            self.assertEqual("successfully authenticated user uid 1000", resolver_logs[1].message, resolver_logs)
+            resolver_logs = [x for x in lc.records if x.msg == "successfully authenticated user uid 1000"]
+            self.assertEqual(1, len(resolver_logs), resolver_logs)
 
         # Now we enable the challenge-response policy for HOTP token
         set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
@@ -2364,7 +2362,9 @@ class TestMultipleUserToken(MyTestCase):
             res, res_data = check_user_pass(user, "wrong", options=options)
             self.assertFalse(res)
             self.assertEqual("wrong otp pin", res_data["message"], res_data)
-            # There should be two failed password checks, one regular and one from cache
+            # There should be two failed password checks, one regular and one from cache.
+            # Since the wrong password is too short, the direct authentication
+            # isn't even attempted since the split into PIN and OTP fails.
             lc.check_present(
                 (
                     'privacyidea.lib.user', 'INFO',
@@ -2379,9 +2379,41 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'INFO',
                     "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
             # Check that we have the password check of the resolver only once
-            resolver_logs = [x for x in lc.records if x.name == "privacyidea.lib.resolvers.PasswdIdResolver"]
+            resolver_logs = [x for x in lc.records if x.msg == "user uid 1000 failed to authenticate"]
+            self.assertEqual(1, len(resolver_logs), resolver_logs)
+
+        # Now we try again with a long wrong password
+        with LogCapture(level=logging.DEBUG) as lc:
+            res, res_data = check_user_pass(user, "wrong_password", options=options)
+            self.assertFalse(res)
+            self.assertEqual("wrong otp pin", res_data["message"], res_data)
+            # There should be four failed password checks, two regular and two from cache.
+            # For the direct authentication the long password is split and tested as well.
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm realm1 tries to authenticate"),
+                (
+                    'privacyidea.lib.resolvers.PasswdIdResolver', 'WARNING',
+                    'user uid 1000 failed to authenticate'),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    'User <cornelius.resolver1@realm1> failed to authenticate.'),
+                (
+                    'privacyidea.lib.resolvers.PasswdIdResolver', 'WARNING',
+                    'user uid 1000 failed to authenticate'),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    'User <cornelius.resolver1@realm1> failed to authenticate.'),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User <cornelius.resolver1@realm1> failed to authenticate from request cache."),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
+            # Check that we have the password check of the resolver only once
+            resolver_logs = [x for x in lc.records if x.msg == "user uid 1000 failed to authenticate"]
             self.assertEqual(2, len(resolver_logs), resolver_logs)
-            self.assertEqual("user uid 1000 failed to authenticate", resolver_logs[1].message, resolver_logs)
 
         # Now we try with a correct password to trigger the challenge
         with LogCapture(level=logging.DEBUG) as lc:
@@ -2406,9 +2438,8 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'DEBUG',
                     "Successfully authenticated user <cornelius.resolver1@realm1> from request cache."))
             # Check that we have the password check of the resolver only once
-            resolver_logs = [x for x in lc.records if x.name == "privacyidea.lib.resolvers.PasswdIdResolver"]
-            self.assertEqual(2, len(resolver_logs), resolver_logs)
-            self.assertEqual("successfully authenticated user uid 1000", resolver_logs[1].message, resolver_logs)
+            resolver_logs = [x for x in lc.records if x.msg == "successfully authenticated user uid 1000"]
+            self.assertEqual(1, len(resolver_logs), resolver_logs)
 
         # Remove challenges from the database to avoid confusion
         db.session.execute(Challenge.__table__.delete().where(Challenge.transaction_id == transaction_id))
@@ -2447,3 +2478,39 @@ class TestMultipleUserToken(MyTestCase):
             # We now have two password checks in the resolver, one failed (with OTP) and one successful
             resolver_logs = [x for x in lc.records if x.name == "privacyidea.lib.resolvers.PasswdIdResolver"]
             self.assertEqual(4, len(resolver_logs), resolver_logs)
+
+        # Now set the force_challenge_response policy and try again.
+        # We should only have on password check
+        set_policy("force_chalresp", scope=SCOPE.AUTH, action=f"{ACTION.FORCE_CHALLENGE_RESPONSE}")
+
+        with LogCapture(level=logging.DEBUG) as lc:
+            res, res_data = check_user_pass(user, "test376074", options=options)
+            self.assertFalse(res, res_data)
+            # We should have four password check log entries, two regular and on two from cache
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm realm1 tries to authenticate"),
+                (
+                    'privacyidea.lib.resolvers.PasswdIdResolver', 'WARNING',
+                    'user uid 1000 failed to authenticate'),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    'User <cornelius.resolver1@realm1> failed to authenticate.'),
+                (
+                    'privacyidea.lib.token',
+                    'INFO',
+                    'Skipping authentication try for token s1 because policy '
+                    'force_challenge_response is set.'),
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
+            # We now have two password checks in the resolver, one failed (with OTP) and one successful
+            resolver_logs = [x for x in lc.records if x.msg == "user uid 1000 failed to authenticate"]
+            self.assertEqual(1, len(resolver_logs), resolver_logs)
+
+        delete_policy("otppin")
+        delete_policy("chalresp")
+        delete_policy("force_chalresp")
+        remove_token("s1")
+        remove_token("s2")
