@@ -6,9 +6,9 @@ be really easy.
 First of all:  
 **Thanks a lot for contributing to privacyIDEA!**
 
-## Tell about it
+## Talk about it
 
-You are using privacyIDEA in your network? Tell about it!
+You are using privacyIDEA in your network? Talk about it!
 Write a blog post, tell your friends or simply twitter about it.
 This will make privacyIDEA wider known and attract new users and contributors.
 
@@ -37,13 +37,17 @@ So **you are "the community"**, go and help others!
 
 https://community.privacyidea.org
 
+## Long Term Supported Versions
+We currently do **not** have a long term supported versions. If a new minor version is released, 
+the previous minor versions will usually not receive any more updates.
+
 ## Professional services
 
 If you want to get rid of the NO-WARRANTY
 label take a look at privacyIDEA Enterprise Edition including a
 Service Level Agreement or get professional consultancy:
 
-- consultancy
+- Consultancy
   https://netknights.it/en/leistungen/one-time-services/
 - privacyIDEA Enterprise Edition
   https://netknights.it/en/leistungen/service-level-agreements/
@@ -87,10 +91,10 @@ http://privacyidea.readthedocs.io/en/latest/faq/translation.html
 
 ## Test coverage
 
-We have a rather high test coverage. But tests can always be
+We aim to have the highest test coverage possible, but tests can always be
 improved.
 
-The tests are also split in three levels: database, library and API.
+The tests are also split into three layers: database, library and API.
 Here you can find files that should get an improved test coverage.
 Take a look at yellow and red files.
 
@@ -99,7 +103,7 @@ https://codecov.io/github/privacyidea/privacyidea?branch=master
 ## Report a security vulnerability
 
 If you found a problematic security vulnerability, please
-refrain from reporting an issue at github but send this vulnerability to
+refrain from reporting an issue at GitHub but send this vulnerability to
 us directly.
 Please include the following details:
 
@@ -138,11 +142,8 @@ If you are sending a pull request, please note the following:
   your problem or idea, which you want to solve with your
   pull request. We want to discuss the functionality within the issue and
   not guess the intention from the pull request!
-* In your pull request refer to the issue.
-* Describe your changes in the commit message.
-* At the beginning of the file, add the date, your name,
-  your email address and a description of what you
-  changed in the file!
+* In your pull request, refer to the issue.
+* Try to use an expressive commit message and describe the changes you made in the commit or in the issue.
 * We try to stick to **PEP 8**. So please use sensible names, check your line
   breaks, comment your classes and functions...
   Using something like *pylint* or an integrated editor like *pycharm* can
@@ -151,7 +152,7 @@ If you are sending a pull request, please note the following:
 * When implementing something new, try to implement it in a **generic way**,
   that it can be used and different use cases.
 * We are proud of our **code coverage**. The modular code with decorators can
-  be tested more easy. Write **tests** for your code!
+  be tested easier. Write **tests** for your code!
 * If you need to change the database model, edit ``privacyidea/models.py``
   accordingly. Then you can use
   ``./pi-manage`` to create migration scripts. The migration scripts
@@ -200,19 +201,19 @@ a pull request and getting the pull request reviewed and merged.
 
 ##### Milestones
 
-For each planned release, we create a github milestone. We add issues to
+For each planned release, we create a GitHub milestone. We add issues to
 milestones in order to keep track of features that should be implemented or
 bugs that should be fixed for the respective release. This also helps with
 creating the release changelog later.
 
 ### Projects
 
-We use *Github Projects* to organize our weekly develoment cycle.
+We use *GitHub Projects* to organize our weekly development cycle.
 
 In a weekly meeting we decide, which issues will be handled during the
 following week. Issues are put into the
 [project](https://github.com/privacyidea/privacyidea/projects) in the state
-*Todo*.
+*Todo*. It is best to create an issue for your contribution, because we track issues and not pull requests.
 
 When a developer starts working on the issue, the developer puts the issue
 into the state *In progress*. When he is done he opens a pull requests,
@@ -223,7 +224,8 @@ into the master branch. The issue is closed and goes into the state
 *Nearly done*.
 
 The closes issue is again discussed in the next meeting and then finally
-moved to the state *Done*.
+moved to the state *Done*. Alternatively, if the merged pull request was not sufficient or additional requirements
+come up, the issue is moved back to *In progress*.
 
 (More details on each step further below)
 
@@ -255,7 +257,7 @@ a feature, we open a pull request (see below).
 
 ##### PR descriptions
 
-We use github's *pull requests*. The pull request description mentions the
+We use GitHub's *pull requests*. The pull request description mentions the
 issue that is being worked on (e.g. "Working on #xyz" or "Closes #xyz", see
 [keywords](https://help.github.com/en/articles/closing-issues-using-keywords)).
 The respective issue should be added to a milestone. This makes it easier to
@@ -272,7 +274,8 @@ In the following, we call the requester of a pull request the *developer* and
 differentiate between *external contributors* and *team members*:
 
 * An external contributor can simply open a pull request. The team then decides
-on a reviewer and accordingly requests a review.
+on a reviewer and accordingly requests a review. If there was a discussion in the issue before, it can be sensible to
+request a review from the team member who was involved in the discussion.
 * A team member explicitly requests a review from one or more other team
 members. In order to find a suitable reviewer, a developer may refer to the
 [development team list](Development-Team). Even after having created a pull
@@ -288,11 +291,12 @@ assign responsibility.
 
 ##### Reviewing Pull Requests
 
-The reviewer uses the github [code review
+The reviewer uses the GitHub [code review
 features](https://github.com/features/code-review/) to add comments and request
 changes. The developer addresses the remarks in the following commits and
-replies to the comments. If the reviewer is satisfied with the changes, the
-reviewer resolves the respective conversation.
+replies to the comments. If the reviewer is satisfied with the changes and/or explanations, the
+reviewer resolves the respective conversation. If the reviewer added a simple comment, e.g. about a typo, 
+the developer can resolve the conversation after fixing it.
 
 ##### Merging a Pull Request
 
