@@ -4,13 +4,14 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
+# Nils Behlen <nils.behlen@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2024-08-27 08:31+0000\n"
-"Last-Translator: Jelina Unger <jelina.unger@netknights.it>\n"
+"PO-Revision-Date: 2024-09-03 02:47+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -18,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.7.1-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -918,27 +919,18 @@ msgstr ""
 "[1234565890]"
 
 #: lib/policy.py:2399
-#, fuzzy
-#| msgid ""
-#| "Specify a white space separated list of token types, that should be "
-#| "verified during enrollment."
 msgid ""
 "Specify the email validator that should be used to validate email addresses "
 "during enrollment."
 msgstr ""
-"Eine Leerzeichen-getrennte Liste an Tokentypen, die beim Rollout durch die "
-"Eingabe eines OTP-Wertes verifiziert werden sollen."
+"Geben Sie den Email-Validierer an, der beim Ausrollen verwendet werden soll."
 
 #: lib/policy.py:2405
-#, fuzzy
-#| msgid ""
-#| "Specify a white space separated list of token types, that should be "
-#| "verified during enrollment."
 msgid ""
 "Specify the list of token types, that must be verified during enrollment."
 msgstr ""
-"Eine Leerzeichen-getrennte Liste an Tokentypen, die beim Rollout durch die "
-"Eingabe eines OTP-Wertes verifiziert werden sollen."
+"Eine Liste von Tokentypen, die beim Rollout durch die Eingabe eines OTP-"
+"Wertes verifiziert werden sollen."
 
 #: lib/policy.py:2418
 msgid ""
@@ -949,28 +941,21 @@ msgstr ""
 "Benutzerquelle oder nichts sein."
 
 #: lib/policy.py:2423
-#, fuzzy
-#| msgid ""
-#| "This is a whitespace separated list of tokentypes, that can be used with "
-#| "challenge response."
 msgid ""
 "Specify the list of token types, that must be used with challenge response."
 msgstr ""
-"Liste von Tokentypen, die für das Challenge-Response Verfahren verwendet "
-"werden können (durch Leerzeichen getrennt)."
+"Liste von Tokentypen, welche nur noch im Challenge-Response Verfahren "
+"verwendet werden können."
 
 #: lib/policy.py:2431
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter an OTP "
 "value. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
 "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus "
-"der Email einzugeben."
+"der Email einzugeben. Es können tags (siehe Dokumentation) zur Textersetzung "
+"verwendet werden."
 
 #: lib/policy.py:2438
 msgid ""
@@ -1109,6 +1094,9 @@ msgid ""
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
 "anymore! Does only work when authenticating with a username."
 msgstr ""
+"Alle Token können nur noch im Challenge-Response Modus verwendet werden. "
+"Eine Authentisierung mit PIN+OTP ist nicht mehr möglich. Gilt nur für "
+"Authentisierungen mit Benutzernamen."
 
 #: lib/policy.py:2530
 msgid ""
@@ -1291,6 +1279,9 @@ msgid ""
 "default validity is 1 hour. You can specify different validity times in "
 "seconds."
 msgstr ""
+"privacyIDEA stellt einen JWT aus, wenn sich Benutzer und Admins im WebUI "
+"anmelden. Hier können Sie die Gültigkeit des JWT in Sekuinden einstellen. "
+"Der Standard ist 1 Stunde."
 
 #: lib/policy.py:2678
 msgid "Set how many tokens should be displayed in the token view on one page."
@@ -1663,6 +1654,8 @@ msgid ""
 "The challenge session matches the string or regular expression (like "
 "'challenge_declined' or 'enrollment')"
 msgstr ""
+"Daten aus der Challenge stimmen mit dem string oder der regular expression "
+"überein, wie 'challenge_declined' oder 'enrollment'"
 
 #: lib/eventhandler/base.py:176
 msgid "The challenge of a token during the authentication process is expired."
@@ -2210,12 +2203,15 @@ msgid ""
 "Interpret the tokeninfo as 'int' and increase the tokeninfo value by the "
 "given offset."
 msgstr ""
+"Interpretiere die angegebene Tokeninfo als Zahl und erhöhe sie um einen Wert."
 
 #: lib/eventhandler/tokenhandler.py:343
 msgid ""
 "The increment the tokeninfo key should be increased. Can be positive or "
 "negative, s.th. like +1 or -7."
 msgstr ""
+"Der Wert um welche die Tokeninfo erhöht werden soll. Kann ein positive oder "
+"negative Zahl sein, bspw. +1 oder -7."
 
 #: lib/eventhandler/tokenhandler.py:353
 msgid "Delete this tokeninfo key."
@@ -2683,17 +2679,14 @@ msgstr ""
 "Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
 
 #: lib/tokens/emailtoken.py:182
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the e-mail. You can also use tags for automated replacement. Check out "
 "the documentation for more details."
 msgstr ""
 "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus "
-"der Email einzugeben."
+"der Email einzugeben. Es können tags zur Textersetzung verwendet werden, "
+"siehe Dokumentation."
 
 #: lib/tokens/emailtoken.py:191
 msgid "The user may only have this maximum number of email tokens assigned."
@@ -2708,10 +2701,8 @@ msgstr ""
 "haben."
 
 #: lib/tokens/emailtoken.py:278
-#, fuzzy
-#| msgid "Enter the OTP from the Email:"
 msgid "Enter the OTP from the Email"
-msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein:"
+msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein"
 
 #: lib/tokens/emailtoken.py:317
 msgid "The PIN was correct, but the EMail could not be sent!"
@@ -2829,17 +2820,14 @@ msgstr ""
 "vom Benutzer."
 
 #: lib/tokens/indexedsecrettoken.py:107
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user which positions of "
-#| "the secret he should enter."
 msgid ""
 "Use an alternative challenge text for telling the user which positions of "
 "the secret he should enter. You can also use tags for automated replacement. "
 "Check out the documentation for more details."
 msgstr ""
 "Benutzen Sie einen alternativen Text, um den Benutzer zur Eingabe der "
-"zufälligen Positionen aufzufordern."
+"zufälligen Positionen aufzufordern. Es können tags zur Textersetzung "
+"verwendet werden, siehe Dokumentation."
 
 #: lib/tokens/indexedsecrettoken.py:115
 msgid "Number of necessary positions to be answered by the user."
@@ -3038,6 +3026,8 @@ msgstr ""
 #: lib/tokens/pushtoken.py:438
 msgid "Require the user to confirm the login with a presence check."
 msgstr ""
+"Der Nutzer muss beim Bestätigen der Authentisierung einen Präsenz-Check "
+"machen."
 
 #: lib/tokens/pushtoken.py:443
 msgid ""
@@ -3045,6 +3035,9 @@ msgid ""
 "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
 "code>: user defined. "
 msgstr ""
+"Die Art der Optionen, welche dem Nutzer zum Präsenz-Check angezeigt werden. "
+"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, "
+"<code>CUSTOM</code>: user defined. "
 
 #: lib/tokens/pushtoken.py:452
 msgid ""
@@ -3053,10 +3046,15 @@ msgid ""
 "separated by <code>:</code>. e.g.: <code>01:02:03:1A:1B:1C</code>. to "
 "<code>CUSTOM</code>."
 msgstr ""
+"Angepasste Optionen welche dem Nutzer beim Präsenz-Check angezeigt werden. "
+"Es müssen mindestens zwei einzigartige Optionen sein. Die Optionen werden "
+"separiert durch <code>:</code>, bspw. <code>01:02:03:1A:1B:1C</code>."
 
 #: lib/tokens/pushtoken.py:462
 msgid "The number of options the user is presented with to confirm the login. "
 msgstr ""
+"Die Anzahl der Optionen, welche dem Nutzer beim Präsenz-Check angezeigt "
+"werden. "
 
 #: lib/tokens/pushtoken.py:469
 msgid ""
@@ -3195,17 +3193,14 @@ msgstr ""
 "authentisiert hat."
 
 #: lib/tokens/smstoken.py:219
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the SMS. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
 "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus "
-"der Email einzugeben."
+"der SMS einzugeben. Es können tags zur Textersetzung verwendet werden, siehe "
+"Dokumentation."
 
 #: lib/tokens/smstoken.py:229
 msgid "Choose the gateways the administrator is allowed to set."
@@ -3332,17 +3327,14 @@ msgstr ""
 "kann."
 
 #: lib/tokens/u2ftoken.py:262
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to confirm with his "
-#| "U2F device."
 msgid ""
 "Use an alternative challenge text for telling the user to confirm with his "
 "U2F device. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
 "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, die Anmeldung "
-"mit seinem U2F-Token zu bestätigen."
+"mit seinem U2F-Token zu bestätigen. Es können tags zur Textersetzung "
+"verwendet werden, siehe Dokumentation."
 
 #: lib/tokens/u2ftoken.py:271
 msgid "Only specified U2F tokens are authorized."
@@ -3438,17 +3430,14 @@ msgstr ""
 "erlaubt)"
 
 #: lib/tokens/webauthntoken.py:627
-#, fuzzy
-#| msgid ""
-#| "Use an alternative challenge text for telling the user to confirm with "
-#| "his WebAuthn token."
 msgid ""
 "Use an alternative challenge text for telling the user to confirm the login "
 "with his WebAuthn token. You can also use tags for automated replacement. "
 "Check out the documentation for more details."
 msgstr ""
 "Ein alternativer Text, der den Benutzer auffordert die Authentifizierung mit "
-"seinem WebAuthn Token zu bestätigen."
+"seinem WebAuthn Token zu bestätigen. Es können tags zur Textersetzung "
+"verwendet werden, siehe Dokumentation."
 
 #: lib/tokens/webauthntoken.py:636
 msgid ""
@@ -3569,17 +3558,14 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/webauthntoken.py:749
-#, fuzzy
-#| msgid ""
-#| "Use an alternative challenge text for telling the user to confirm with "
-#| "his WebAuthn token."
 msgid ""
 "Use an alternative challenge text for telling the user to confirm the "
 "enrollment with his WebAuthn device. You can also use tags for automated "
 "replacement. Check out the documentation for more details."
 msgstr ""
-"Ein alternativer Text, der den Benutzer auffordert die Authentifizierung mit "
-"seinem WebAuthn Token zu bestätigen."
+"Ein alternativer Text, der den Benutzer auffordert die Registrierung seines "
+"WebAuthn Token zu bestätigen. Es können tags zur Textersetzung verwendet "
+"werden, siehe Dokumentation."
 
 #: lib/tokens/yubicotoken.py:101
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
