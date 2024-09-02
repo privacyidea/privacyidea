@@ -5,7 +5,7 @@ The lib.user.py only depends on the database model
 """
 import logging
 
-from testfixtures import log_capture
+from testfixtures import log_capture, LogCapture
 
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
@@ -261,14 +261,56 @@ class UserTestCase(MyTestCase):
         # reset splitAtSign setting
         set_privacyidea_config("splitAtSign", True)
 
+#    @log_capture(level=logging.DEBUG)
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",
                                     [{'name': self.resolvername3}])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 1)
+        self.assertEqual(0, len(failed))
+        self.assertEqual(1, len(added))
 
-        self.assertTrue(User(login="cornelius",
-                             realm="passwordrealm").check_password("test"))
+        user = User(login="cornelius", realm="passwordrealm")
+        logging.getLogger('privacyidea.lib.user').setLevel(logging.DEBUG)
+        with LogCapture(level=logging.DEBUG) as lc:
+            self.assertTrue(user.check_password("test"))
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm passwordrealm tries to authenticate"),
+                (
+                    'privacyidea.lib.user', 'DEBUG',
+                    "Successfully authenticated user <cornelius.reso3@passwordrealm>."))
+        # Try another password check with the same user and password to see
+        # if it was properly cached
+        with LogCapture(level=logging.DEBUG) as lc:
+            self.assertTrue(user.check_password("test"))
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm passwordrealm tries to authenticate"),
+                (
+                    'privacyidea.lib.user', 'DEBUG',
+                    "Successfully authenticated user <cornelius.reso3@passwordrealm> from request cache."))
+        # Now try the same user with a wrong password
+        with LogCapture() as lc:
+            self.assertFalse(user.check_password("wrong"))
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm passwordrealm tries to authenticate"),
+                (
+                    'privacyidea.lib.user', "INFO",
+                    "User <cornelius.reso3@passwordrealm> failed to authenticate."))
+        # And try again to check if the wrong password was cached as well
+        with LogCapture() as lc:
+            self.assertFalse(user.check_password("wrong"))
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    "User cornelius from realm passwordrealm tries to authenticate"),
+                (
+                    'privacyidea.lib.user', "INFO",
+                    "User <cornelius.reso3@passwordrealm> failed to authenticate from request cache."))
+
         self.assertFalse(User(login="cornelius",
                               realm="passwordrealm").check_password("wrong"))
         self.assertFalse(User(login="unknownuser",

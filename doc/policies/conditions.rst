@@ -188,7 +188,7 @@ The following comparators can be used in definitions of policy conditions:
 
 If you want to define a policy that e.g. only matches users from Active Directory, that are in a
 VPN User group, you would first need to map the `memberOf` attribute in the LDAP resolver to a certain
-attribute like `"goups": "memberOf"`. Then you need to define the extended condition:
+attribute like `"groups": "memberOf"`. Then you need to define the extended condition:
 
    "groups" contains "CN=VPN Users,OU=Groups,DC=example,DC=com"
 

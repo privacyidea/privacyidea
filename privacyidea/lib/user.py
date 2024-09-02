@@ -438,6 +438,10 @@ class User(object):
         :rtype: string/None
         """
         success = None
+
+        # The password hash is used to avoid multiple password checks at the
+        # resolver. It is not persisted in any way and only stored in memory for
+        # the duration of the request.
         password_hash = hashlib.sha3_512(password.encode("utf-8")).hexdigest()
 
         try:

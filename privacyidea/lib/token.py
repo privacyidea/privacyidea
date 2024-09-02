@@ -2376,7 +2376,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
         elif token_object.is_challenge_request(passw, user=user,
-                                              options=options):
+                                               options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
@@ -2406,7 +2406,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             else:
                 invalid_token_list.append(token_object)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
-                         f" because policy pin_check_only is set.")
+                         f" because policy force_challenge_response is set.")
 
     """
     There might be
