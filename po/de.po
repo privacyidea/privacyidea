@@ -5,12 +5,13 @@
 # Felix E <felix@eckhofer.com>, 2024.
 # pablo-knight <julio.storch@netknights.it>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
+# Nils Behlen <nils.behlen@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-09-03 02:47+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -893,10 +894,8 @@ msgstr "Erstelle eine Definition einer regelmäßigen Aufgabe"
 #: privacyidea/static/components/config/views/config.realms.html:17
 #: privacyidea/static/components/config/views/config.realms.list.html:129
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
-#, fuzzy
-#| msgid "Create realm"
 msgid "Create Realm"
-msgstr "Realm anlegen"
+msgstr "Realm Anlegen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:135
 msgid "Create Realm for node {{ selectedNode.name }}"
@@ -2394,10 +2393,8 @@ msgid "No user found"
 msgstr "Keinen Benutzer gefunden"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:42
-#, fuzzy
-#| msgid "Delete Configuration"
 msgid "Node-specific Resolver Configuration"
-msgstr "Konfiguration löschen"
+msgstr "Knoten-Spezifische Resolver Konfiguration"
 
 #: privacyidea/static/components/config/views/config.token.question.html:11
 msgid "Number of answers"
@@ -2886,10 +2883,8 @@ msgid "Realm"
 msgstr "Realm"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:10
-#, fuzzy
-#| msgid "Realm name"
 msgid "Realm Name"
-msgstr "Realmname"
+msgstr "Realm Name"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:639
 msgid "Realm defrealm created."
@@ -3046,8 +3041,6 @@ msgid "Resolver name"
 msgstr "Resolvername"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:25
-#, fuzzy
-#| msgid "Resolver"
 msgid "Resolvers"
 msgstr "Resolver"
 
@@ -3357,10 +3350,8 @@ msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
 #: privacyidea/static/components/user/views/user.details.html:248
-#, fuzzy
-#| msgid "Section"
 msgid "Selection"
-msgstr "Bereich"
+msgstr "Auswahl"
 
 #: privacyidea/static/components/recovery/views/recovery.html:38
 msgid "Send Reset Code"
@@ -4920,8 +4911,6 @@ msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:550
-#, fuzzy
-#| msgid "Enrollment successfully verified."
 msgid "Token successfully verified"
 msgstr "Der Rollout wurde erfolgreich überprüft."
 
