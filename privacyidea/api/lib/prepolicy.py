@@ -193,7 +193,7 @@ def set_random_pin(request=None, action=None):
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
     pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
@@ -483,7 +483,7 @@ def enroll_pin(request=None, action=None):
     enrollment. If not, it deleted the PIN from the request.
     """
     resolver = request.User.resolver if request.User else None
-    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+    (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
                                                                                         request.all_data)
     allowed_action = Match.generic(g, scope=role,
                                    action=ACTION.ENROLLPIN,
@@ -727,7 +727,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+    (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
                                                                                         request.all_data)
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
@@ -1238,7 +1238,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
     if action is ACTION.AUDIT:
@@ -1288,7 +1288,7 @@ def check_container_action(request=None, action=None):
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
 
     realm = params.get("realm")
     resolver = resolver or params.get("resolver")
@@ -1386,7 +1386,7 @@ def check_token_init(request=None, action=None):
                       "enroll this token type!"}
     params = request.all_data
     resolver = request.User.resolver if request.User else None
-    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     init_allowed = Match.generic(g, action=action,
@@ -1452,6 +1452,7 @@ def api_key_required(request=None, action=None):
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
             g.logged_in_user = {"username": r.get("username", ""),
+                                "userid": r.get("userid", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
         except (AttributeError, jwt.DecodeError):
@@ -2306,7 +2307,7 @@ def require_description(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,

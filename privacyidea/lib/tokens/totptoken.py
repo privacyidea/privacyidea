@@ -42,7 +42,6 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
-from privacyidea.lib.utils import determine_logged_in_userparams
 from privacyidea.lib import _, lazy_gettext
 
 optional = True

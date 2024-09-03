@@ -219,6 +219,7 @@ def get_auth_token():
     username = getParam(request.all_data, "username")
     password = getParam(request.all_data, "password")
     realm_param = getParam(request.all_data, "realm")
+    userid = ""
     details = {}
     realm = ''
 
@@ -355,6 +356,7 @@ def get_auth_token():
     else:
         g.audit_object.log({"success": True})
         request.User = user_obj
+        userid = user_obj.uid
 
     # If the HSM is not ready, we need to create the nonce in another way!
     hsm = init_hsm()
@@ -379,6 +381,7 @@ def get_auth_token():
     log_level = current_app.config.get("PI_LOGLEVEL", 30)
 
     token = jwt.encode({"username": loginname,
+                        "userid": userid,
                         "realm": realm,
                         "nonce": nonce,
                         "role": role,
@@ -389,6 +392,7 @@ def get_auth_token():
 
     # set the logged-in user for post-policies and post-events
     g.logged_in_user = {"username": loginname,
+                        "userid": userid,
                         "realm": realm,
                         "role": role}
 
@@ -397,6 +401,7 @@ def get_auth_token():
     return send_result({"token": to_unicode(token),
                         "role": role,
                         "username": loginname,
+                        "userid": userid,
                         "realm": realm,
                         "log_level": log_level,
                         "rights": rights,
@@ -443,6 +448,7 @@ def check_auth_token(required_role=None):
         auth_token = request.headers.get('Authorization')
     r = verify_auth_token(auth_token, required_role)
     g.logged_in_user = {"username": r.get("username"),
+                        "userid": r.get("userid"),
                         "realm": r.get("realm"),
                         "role": r.get("role")}
 

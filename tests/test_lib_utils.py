@@ -881,7 +881,7 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, check_serial_valid, "")
 
     def test_33_determine_logged_in_user(self):
-        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
+        (role, user, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams({"role": "user",
                                                                                       "username": "hans",
                                                                                       "realm": "realm1"}, {})
 
@@ -891,24 +891,26 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(adminuser, None)
         self.assertEqual(adminrealm, None)
 
-        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"},
-                                                                                     {"user": "peter",
-                                                                                      "realm": "domain"})
+        logged_in_user = {"role": "admin", "username": "hans", "realm": "realm1", "userid": 1}
+        params = {"user": "peter", "realm": "domain", "userid": 2}
+        (role, user, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(logged_in_user,
+                                                                                                         params)
 
         self.assertEqual(role, "admin")
         self.assertEqual(user, "peter")
         self.assertEqual(realm, "domain")
         self.assertEqual(adminuser, "hans")
         self.assertEqual(adminrealm, "realm1")
+        self.assertEqual()
 
         self.assertRaises(PolicyError, determine_logged_in_userparams,
                           {"role": "marshal",
                            "username": "Wyatt Earp",
-                           "realm": "Wild West"},
+                           "realm": "Wild West",
+                           "userid": 3},
                           {"user": "Dave Rudabaugh",
-                           "realm": "Dodge City"})
+                           "realm": "Dodge City",
+                           "userid": 4})
 
     def test_34_compare_generic_condition(self):
 

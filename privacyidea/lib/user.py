@@ -273,7 +273,8 @@ class User(object):
                                                                      resolvername))
                 log.info("userid resolved to {0!r} ".format(uid))
                 self.resolver = resolvername
-                self.uid = uid
+                if uid != self.login:
+                    self.uid = uid
                 # We do not need to search other resolvers!
                 return True
             else:
@@ -463,6 +464,11 @@ class User(object):
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
                     self._checked_passwords[password_hash] = True
+                    # success = "{0!s}@{1!s}".format(self.login, self.realm)
+                    # update_uid = y.getUserId(self.login)
+                    # if update_uid != uid:
+                    #     self.uid = update_uid
+                    # log.debug("Successfully authenticated user {0!r}.".format(self))
                 else:
                     log.info(f"User {self} failed to authenticate.")
                     self._checked_passwords[password_hash] = False
@@ -668,6 +674,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     """
     realm = ""
     username = getParam(param, "user", optionalOrRequired)
+    userid = getParam(param, "userid")
 
     if username is None:
         username = ""
@@ -680,8 +687,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username != "":
         if realm is None or realm == "":
             realm = get_default_realm()
-
-    user_object = User(login=username, realm=realm,
+    user_object = User(login=username, realm=realm, uid=userid,
                        resolver=param.get("resolver"))
 
     return user_object

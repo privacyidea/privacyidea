@@ -717,13 +717,13 @@ class HotpTokenClass(TokenClass):
         ret = {}
         if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+        (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
         return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
 
     @classmethod
     def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
-                              adminuser=None, adminrealm=None):
+                              adminuser=None, adminrealm=None, userid=None):
         """
         Internal function that can be called either during enrollment via /token/init or during
         enrollment via validate/check.
