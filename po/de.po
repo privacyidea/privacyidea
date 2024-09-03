@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-08-27 08:31+0000\n"
-"Last-Translator: Jelina Unger <jelina.unger@netknights.it>\n"
+"PO-Revision-Date: 2024-09-03 02:47+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.7.1-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -3151,12 +3151,6 @@ msgid "SSH Tokens attached to services"
 msgstr "SSH-Tokens, die mit Diensten verbunden sind"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:6
-#, fuzzy
-#| msgid ""
-#| "SSH Tokens can be attached to a service ID with a user. The user is the "
-#| "user on the SSH server\n"
-#| "and may differ from the token owner. To attach the token to a service ID "
-#| "go to the token details."
 msgid ""
 "SSH Tokens can be attached to a service ID with a user. The user is the user "
 "on the SSH server\n"
@@ -5017,10 +5011,8 @@ msgid "URL of the privacyIDEA server"
 msgstr "URL des privacyIDEA Servers"
 
 #: privacyidea/static/components/user/views/user.details.html:217
-#, fuzzy
-#| msgid "Unassign User"
 msgid "Unassign"
-msgstr "Benutzerzuweisung aufheben"
+msgstr "Zuweisung aufheben"
 
 #: privacyidea/static/components/token/views/token.details.html:555
 msgid "Unassign Token"
@@ -5154,7 +5146,7 @@ msgstr "Benutzer"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:241
 msgid "Username case-insensitive."
-msgstr ""
+msgstr "Groß-/Kleinschreibung bei Benutzernamen ignorieren."
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
 #: privacyidea/static/components/config/views/config.html:62
@@ -5850,14 +5842,12 @@ msgid "user"
 msgstr "Benutzer"
 
 #: privacyidea/static/components/audit/views/audit.log.html:131
-#, fuzzy
-#| msgid "username"
 msgid "user agent"
-msgstr "Benutzername"
+msgstr "User-Agent"
 
 #: privacyidea/static/components/audit/views/audit.log.html:137
 msgid "user agent version"
-msgstr ""
+msgstr "Version des User-Agent"
 
 #: privacyidea/static/components/user/views/user.list.html:15
 msgid "username"
