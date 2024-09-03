@@ -1,3 +1,16 @@
+# Authors in version 3.10
+
+Cornelius Kölbel <cornelius.koelbel@netknights.it>
+cparkins <Christopher.PARKINS@amadeus.com>
+DesSolo @ GitHub
+Frank Merkel <frank.merkel@netknights.it>
+Jelina Unger <jelina.unger@netknights.it>
+jona-samuel <jona-samuel.hoehmann@netknights.it>
+maxstaubach @ GitHub
+Nils Behlen <nils.behlen@netknights.it>
+pablo-knight <julio.storch@netknights.it>
+Paul Lettich <paul.lettich@netknights.it>
+
 # Authors in version 3.9
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
