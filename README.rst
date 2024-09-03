@@ -1,10 +1,6 @@
 privacyIDEA
 ===========
 
-.. image:: https://travis-ci.com/privacyidea/privacyidea.svg?branch=master
-    :alt: Build Status
-    :target: https://travis-ci.com/privacyidea/privacyidea
-
 .. .. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
 ..     :alt: CircleCI
 ..     :target: https://circleci.com/gh/privacyidea/privacyidea
@@ -36,7 +32,7 @@ privacyIDEA
 ..    :alt: Code Climate
 ..    :target: https://codeclimate.com/github/privacyidea/privacyidea
 
-.. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
+.. .. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
 
@@ -59,7 +55,6 @@ applications to privacyIDEA.
 
 .. image:: https://privacyidea.org/wp-content/uploads/2017/privacyIDEA-Integration.png
     :alt: privacyIDEA Integration
-    :scale: 50 %
 
 privacyIDEA does not bind you to any decision of the authentication
 protocol, nor does it dictate you where your user information should be
