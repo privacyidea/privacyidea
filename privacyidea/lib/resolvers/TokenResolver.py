@@ -38,6 +38,7 @@ SYMMETRICAL_ALGORITHMS = ["HS256", "HS384", "HS512"]
 
 log = logging.getLogger(__name__)
 
+
 class TokenResolver(UserIdResolver):
     def __init__(self):
         super(TokenResolver, self).__init__()
@@ -108,7 +109,7 @@ class TokenResolver(UserIdResolver):
             return self.user_id
         elif self.token_data and 'userid' in self.token_data:
             return self.token_data['userid']
-        
+
         log.info("no userid found")
         if isinstance(loginName, str):
             return loginName
@@ -140,9 +141,9 @@ class TokenResolver(UserIdResolver):
         """
         if self.token_data:
             return self.token_data
-        
+
         return {"userid": self.getUserId(userid), "username": self.getUsername(userid)}
-    
+
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -220,9 +221,10 @@ class TokenResolver(UserIdResolver):
             decode_key = bytes(decode_key, 'utf-8')
 
         options = {}
-        if test: options={'verify_exp': test}
+        if test:
+            options = {'verify_exp': test}
         jwt_token = jwt.decode(token, decode_key, algorithms=[self.methodAllowed], options=options)
-        token = {key.lower():value for key, value in jwt_token.items()}
+        token = {key.lower(): value for key, value in jwt_token.items()}
 
         # Create mapped response with response mapping resolver input
         response = {}
@@ -231,7 +233,7 @@ class TokenResolver(UserIdResolver):
                 response[pi_user_key] = get(token, value[1:-1].lower())
             else:
                 response[pi_user_key] = value
-        
+
         if not test:
             # Only cache token data when not testing
             self.token_data = response

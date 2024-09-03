@@ -341,7 +341,7 @@ class HotpTokenClass(TokenClass):
             # Add twostep settings to the tokeninfo
             for key, default in [
                 ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
-                ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
+                    ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
                 self.add_tokeninfo(key, getParam(param, key, optional, default))
 
         val = getParam(upd_param, "hashlib", optional)
@@ -353,7 +353,7 @@ class HotpTokenClass(TokenClass):
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
         key_size = getParam(upd_param, 'key_size', optional) \
-                   or getParam(upd_param, 'keysize', optional)
+            or getParam(upd_param, 'keysize', optional)
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
@@ -377,7 +377,7 @@ class HotpTokenClass(TokenClass):
     @property
     def hashlib(self):
         hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("hotp.hashlib", 'sha1')
+            get_from_config("hotp.hashlib", 'sha1')
         return hashlibStr
 
     def _calc_otp(self, counter):
@@ -718,7 +718,7 @@ class HotpTokenClass(TokenClass):
         if not g.logged_in_user:
             return ret
         (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
+                                                                                                                 params)
         return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
 
     @classmethod
@@ -865,7 +865,7 @@ class HotpTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
-        detail["messages"] = [ message ]
+        detail["messages"] = [message]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,

@@ -125,7 +125,7 @@ class UtilsTestCase(MyTestCase):
                          {
                              (IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16")),
                              (IPNetwork("127.0.0.1/24"), IPNetwork("10.1.0.0/16"), IPNetwork("10.2.0.0/24"))
-                         })
+        })
 
     def test_04b_check_overrideclient(self):
         proxy_def = " 10.0.0.12, 1.2.3.4/16> 192.168.1.0/24, 172.16.0.1 " \
@@ -211,15 +211,15 @@ class UtilsTestCase(MyTestCase):
         realms = {'defrealm': {'default': False,
                                'option': '',
                                'resolver': [
-                                    {'priority': None,
-                                     'type': 'passwdresolver',
-                                     'name': 'deflocal'}]},
+                                   {'priority': None,
+                                    'type': 'passwdresolver',
+                                    'name': 'deflocal'}]},
                   'localsql': {'default': True,
                                'option': '',
                                'resolver': [
-                                    {'priority': None,
-                                     'type': 'sqlresolver',
-                                     'name': 'localusers2'}]}}
+                                   {'priority': None,
+                                    'type': 'sqlresolver',
+                                    'name': 'localusers2'}]}}
         # The policy dictionary contains much more entries, but for us only
         # the realm is relevant
         policies = [{'realm': []}]
@@ -791,7 +791,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
         self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
         self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
-                          '-vv8_f7_')
+                         '-vv8_f7_')
 
     def test_27_images(self):
         hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
@@ -808,13 +808,13 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(modhex_encode(b'\x47'), 'fi')
         self.assertEqual(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
         self.assertEqual(modhex_encode(binascii.unhexlify('0123456789abcdef')),
-                          'cbdefghijklnrtuv')
+                         'cbdefghijklnrtuv')
         self.assertEqual(modhex_encode('Hallo'), 'fjhbhrhrhv')
         # and the other way around
         self.assertEqual(modhex_decode('fi'), b'\x47')
         self.assertEqual(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
         self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
-                          binascii.unhexlify('0123456789abcdef'))
+                         binascii.unhexlify('0123456789abcdef'))
         self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
         # fail with invalid modhex
         self.assertRaises((binascii.Error, TypeError), modhex_decode, 'nlltvcc')
@@ -882,8 +882,8 @@ class UtilsTestCase(MyTestCase):
 
     def test_33_determine_logged_in_user(self):
         (role, user, realm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams({"role": "user",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"}, {})
+                                                                                                          "username": "hans",
+                                                                                                          "realm": "realm1"}, {})
 
         self.assertEqual(role, "user")
         self.assertEqual(user, "hans")
