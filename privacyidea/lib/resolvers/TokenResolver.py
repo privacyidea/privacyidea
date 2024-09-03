@@ -1,9 +1,9 @@
-#  Mar, 12 2020 Bruno Cascio
+#  Sep, 3 2024 Chris Parkins
 #  http://www.privacyidea.org
 #
 #  product:  PrivacyIDEA
-#  module:   httpresolver
-#  tool:     HTTPResolver
+#  module:   tokenresolver
+#  tool:     TokenResolver
 #  edition:  Comunity Edition
 #
 #  License:  AGPLv3
