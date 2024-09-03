@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-08-15 17:33+0200\n"
+"POT-Creation-Date: 2024-09-02 17:05+0200\n"
 "PO-Revision-Date: 2021-12-31 19:53+0000\n"
 "Last-Translator: Michael Yang <pcgames99@gmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
@@ -19,24 +19,44 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: api/auth.py:225
+#: api/auth.py:227
 msgid "Authentication failure. Unknown realm: {0!s}."
 msgstr "身份驗證失敗。未知領域: {0!s}。"
 
-#: api/auth.py:229
+#: api/auth.py:231
 msgid "Authentication failure. Missing Username"
 msgstr "身份驗證失敗。缺少使用者名"
 
-#: api/auth.py:350
+#: api/auth.py:352
 msgid "Authentication failure. Wrong credentials"
 msgstr "身份驗證失敗。憑據錯誤"
 
-#: api/lib/prepolicy.py:2237
+#: api/realm.py:528
+msgid "The given node does not exist!"
+msgstr ""
+
+#: api/realm.py:534 api/realm.py:544
+msgid "Could not verify data in request!"
+msgstr ""
+
+#: api/lib/postpolicy.py:86
+msgid ""
+"\n"
+"<--- Please describe your Problem in detail --->\n"
+"\n"
+"<--- Please provide as many additional information as possible --->\n"
+"\n"
+"privacyIDEA Version: {version}\n"
+"Subscriber: {subscriber_name}\n"
+"Subscriptions: {subscriptions}\n"
+msgstr ""
+
+#: api/lib/prepolicy.py:2329
 #, fuzzy
 msgid "Missing description for {} token."
 msgstr "令牌的新說明。"
 
-#: api/lib/prepolicy.py:2238
+#: api/lib/prepolicy.py:2330
 #, fuzzy
 msgid "Description required for {} token."
 msgstr "令牌的新說明。"
@@ -73,256 +93,261 @@ msgstr "“{0!s}”是無效的策略名稱。"
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr "策略的名稱只能包含字元 a-zA-Z0-9_。-"
 
-#: lib/challengeresponsedecorators.py:151
+#: lib/challengeresponsedecorators.py:149
 msgid "Please enter the new PIN again"
 msgstr "請再次輸入新的 PIN 碼"
 
-#: lib/challengeresponsedecorators.py:165
+#: lib/challengeresponsedecorators.py:163
 msgid "Please enter a new PIN"
 msgstr "請輸入新的 PIN 碼"
 
-#: lib/challengeresponsedecorators.py:203
+#: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
 
-#: lib/decorators.py:43 lib/token.py:2193
+#: lib/containerclass.py:446
+msgid ""
+"General purpose container that can hold any type and any number of token."
+msgstr ""
+
+#: lib/decorators.py:41 lib/token.py:2359
 msgid "This action is not possible, since the token is locked"
 msgstr "此操作是不可能的，因為令牌已鎖定"
 
-#: lib/decorators.py:94
-msgid "You need to specify a serial or a user."
-msgstr "您需要指定序列號或使用者。"
-
-#: lib/decorators.py:96
-msgid "Invalid serial number."
-msgstr "序列號無效。"
-
-#: lib/decorators.py:98
-msgid "Invalid user."
-msgstr "無效使用者。"
-
-#: lib/error.py:194
+#: lib/decorators.py:85
 msgid "You either need to provide user or serial"
 msgstr "您需要提供使用者或序列號"
 
-#: lib/policy.py:1367
+#: lib/decorators.py:111
+msgid "You need to specify a serial or a user."
+msgstr "您需要指定序列號或使用者。"
+
+#: lib/decorators.py:113
+msgid "Invalid serial number."
+msgstr "序列號無效。"
+
+#: lib/decorators.py:115
+msgid "Invalid user."
+msgstr "無效使用者。"
+
+#: lib/policy.py:1412
 msgid "Invalid client definition!"
 msgstr ""
 
-#: lib/policy.py:1548
+#: lib/policy.py:1606
 msgid "Define in which resolver the user should be registered."
 msgstr "定義使用者應該在哪個解析器中註冊。"
 
-#: lib/policy.py:1552
+#: lib/policy.py:1610
 msgid "Define in which realm the user should be registered."
 msgstr "定義使用者應該在哪個領域註冊。"
 
-#: lib/policy.py:1556
+#: lib/policy.py:1614
 msgid ""
 "The SMTP server configuration, that should be used to send the registration "
 "email."
 msgstr "SMTP 伺服器配置，應用於發送註冊電子郵件。"
 
-#: lib/policy.py:1560
+#: lib/policy.py:1618
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr "只有擁有此電子郵件地址的用戶才允許註冊。這是一個正則表達式。"
 
-#: lib/policy.py:1565
+#: lib/policy.py:1623
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
 msgstr "註冊電子郵件的正文。使用“{regkey}”作為註冊碼的標籤。"
 
-#: lib/policy.py:1571
+#: lib/policy.py:1629
 msgid "Admin is allowed to enable tokens."
 msgstr "允許管理員啟用令牌。"
 
-#: lib/policy.py:1575
+#: lib/policy.py:1633
 msgid "Admin is allowed to disable tokens."
 msgstr "允許管理員禁用令牌。"
 
-#: lib/policy.py:1579
+#: lib/policy.py:1637
 msgid "Admin is allowed to set token properties."
 msgstr "允許管理員設置令牌屬性。"
 
-#: lib/policy.py:1584
+#: lib/policy.py:1642
 #, fuzzy
 msgid "The admin is allowed to set the token description."
 msgstr "允許用戶設置令牌描述。"
 
-#: lib/policy.py:1588
+#: lib/policy.py:1646
 msgid "Admin is allowed to set the OTP PIN of tokens."
 msgstr "允許管理員設置令牌的OTP PIN。"
 
-#: lib/policy.py:1594
+#: lib/policy.py:1652
 msgid "Admin is allowed to set a random OTP PIN of tokens."
 msgstr "允許管理員設置令牌的隨機OTP PIN。"
 
-#: lib/policy.py:1598
+#: lib/policy.py:1656
 msgid "Admin is allowed to manually set and delete token info."
 msgstr "允許管理員手動設置和刪除令牌資訊。"
 
-#: lib/policy.py:1602
+#: lib/policy.py:1660
 msgid "Admin is allowed to set the OTP PIN during enrollment."
 msgstr "允許管理員在註冊期間設置 OTP PIN。"
 
-#: lib/policy.py:1607
+#: lib/policy.py:1665
 msgid "Admin is allowed to resync tokens."
 msgstr "允許管理員重新同步令牌。"
 
-#: lib/policy.py:1611
+#: lib/policy.py:1669
 msgid "Admin is allowed to reset the Failcounter of a token."
 msgstr "允許管理員重置令牌的失敗計數器。"
 
-#: lib/policy.py:1617
+#: lib/policy.py:1675
 msgid "Admin is allowed to revoke a token"
 msgstr "允許管理員撤銷令牌"
 
-#: lib/policy.py:1621
+#: lib/policy.py:1679
 msgid "Admin is allowed to assign a token to a user."
 msgstr "允許管理員將令牌分配給使用者。"
 
-#: lib/policy.py:1627
+#: lib/policy.py:1685
 msgid ""
 "Admin is allowed to remove the token from a user, i.e. unassign a token."
 msgstr "允許管理員從用戶中刪除令牌，即取消分配令牌。"
 
-#: lib/policy.py:1633
+#: lib/policy.py:1691
 msgid "Admin is allowed to import token files."
 msgstr "允許管理員導入令牌檔。"
 
-#: lib/policy.py:1638
+#: lib/policy.py:1696
 msgid "Admin is allowed to remove tokens from the database."
 msgstr "允許管理員從資料庫中刪除令牌。"
 
-#: lib/policy.py:1644
+#: lib/policy.py:1702
 msgid "Admin is allowed to view the list of the users."
 msgstr "允許管理員查看用戶清單。"
 
-#: lib/policy.py:1650
+#: lib/policy.py:1708
 msgid "The Admin is allowed to list the machines."
 msgstr "允許管理員列出機器。"
 
-#: lib/policy.py:1655
+#: lib/policy.py:1713
 msgid "The Admin is allowed to attach and detach tokens to machines."
 msgstr "允許管理員將令牌附加和分離到機器上。"
 
-#: lib/policy.py:1662
+#: lib/policy.py:1720
 msgid ""
 "The Admin is allowed to fetch authentication items of tokens assigned to "
 "machines."
 msgstr "允許管理員獲取分配給機器的令牌的身份驗證項目。"
 
-#: lib/policy.py:1667
+#: lib/policy.py:1725
 msgid "Admin is allowed to manage the realms of a token."
 msgstr "允許管理員管理令牌的領域。"
 
-#: lib/policy.py:1672
+#: lib/policy.py:1730
 msgid "Admin is allowed to list tokens."
 msgstr "允許管理員列出令牌。"
 
-#: lib/policy.py:1676
+#: lib/policy.py:1734
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr "允許管理員檢索給定 OTP 值的序列號。"
 
-#: lib/policy.py:1681
+#: lib/policy.py:1739
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
 msgstr "允許管理員從privacyIDEA中檢索隨機密鑰。"
 
-#: lib/policy.py:1685
+#: lib/policy.py:1743
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "允許管理員將一個令牌的 PIN 複製到另一個令牌。"
 
-#: lib/policy.py:1690
+#: lib/policy.py:1748
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign a "
 "user to another token."
 msgstr "允許管理員將分配的用戶複製到另一個令牌，即分配一個使用者到另一個令牌。"
 
-#: lib/policy.py:1696
+#: lib/policy.py:1754
 msgid "Admin is allowed to trigger the lost token workflow."
 msgstr "允許管理員觸發丟失的令牌工作流程。"
 
-#: lib/policy.py:1702
+#: lib/policy.py:1760
 msgid "Admin is allowed to write and modify the system configuration."
 msgstr "允許管理員編寫和修改系統配置。"
 
-#: lib/policy.py:1707
+#: lib/policy.py:1765
 msgid "Admin is allowed to delete keys in the system configuration."
 msgstr "允許管理員刪除系統配置中的金鑰。"
 
-#: lib/policy.py:1713
+#: lib/policy.py:1771
 msgid "Admin is allowed to read basic system configuration."
 msgstr "允許管理員讀取基本系統配置。"
 
-#: lib/policy.py:1718
+#: lib/policy.py:1776
 msgid ""
 "Admin is allowed to export a documentation of the complete configuration "
 "including resolvers and realm."
 msgstr "允許管理員匯出完整配置的文件，包括解析程式和領域。"
 
-#: lib/policy.py:1726
+#: lib/policy.py:1784
 msgid "Admin is allowed to write and modify the policies."
 msgstr "允許管理員編寫和修改策略。"
 
-#: lib/policy.py:1731
+#: lib/policy.py:1789
 msgid "Admin is allowed to delete policies."
 msgstr "允許管理員刪除策略。"
 
-#: lib/policy.py:1736
+#: lib/policy.py:1794
 msgid "Admin is allowed to read policies."
 msgstr "允許管理員讀取策略。"
 
-#: lib/policy.py:1740
+#: lib/policy.py:1798
 msgid ""
 "Admin is allowed to write and modify the resolver and realm configuration."
 msgstr "允許管理員編寫和修改解析程式和領域配置。"
 
-#: lib/policy.py:1747
+#: lib/policy.py:1805
 msgid "Admin is allowed to delete resolvers and realms."
 msgstr "允許管理員刪除解析程式和領域。"
 
-#: lib/policy.py:1752
+#: lib/policy.py:1810
 msgid "Admin is allowed to read resolvers."
 msgstr "允許管理員讀取解析程式。"
 
-#: lib/policy.py:1756
+#: lib/policy.py:1814
 msgid ""
 "Admin is allowed to create new CA Connector definitions and modify existing "
 "ones."
 msgstr "允許管理員創建新的 CA 連接器定義並修改現有定義。"
 
-#: lib/policy.py:1762
+#: lib/policy.py:1820
 msgid "Admin is allowed to delete CA Connector definitions."
 msgstr "允許管理員刪除 CA 連接器定義。"
 
-#: lib/policy.py:1767
+#: lib/policy.py:1825
 msgid "Admin is allowed to read CA Connector definitions."
 msgstr "允許管理員讀取 CA 連接器定義。"
 
-#: lib/policy.py:1772
+#: lib/policy.py:1830
 msgid "Admin is allowed to write and modify the machine resolvers."
 msgstr "允許管理員編寫和修改機器解析程式。"
 
-#: lib/policy.py:1778
+#: lib/policy.py:1836
 msgid "Admin is allowed to delete machine resolvers."
 msgstr "允許管理員刪除機器解析程式。"
 
-#: lib/policy.py:1784
+#: lib/policy.py:1842
 msgid "Admin is allowed to read machine resolvers."
 msgstr "允許管理員讀取機器解析程式。"
 
-#: lib/policy.py:1791 lib/policy.py:2072
+#: lib/policy.py:1849 lib/policy.py:2174
 msgid "Set the maximum allowed length of the OTP PIN."
 msgstr "設置 OTP PIN 的最大允許長度。"
 
-#: lib/policy.py:1796 lib/policy.py:2077
+#: lib/policy.py:1854 lib/policy.py:2179
 msgid "Set the minimum required length of the OTP PIN."
 msgstr "設置 OTP PIN 所需的最小長度。"
 
-#: lib/policy.py:1800 lib/policy.py:2081
+#: lib/policy.py:1858 lib/policy.py:2183
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
@@ -330,116 +355,116 @@ msgstr ""
 "指定 OTP PIN 所需的內容。 (c) 字符，(n) 數字，(s) 特殊。使用修飾符 +/- 或允許"
 "的字符列表 [1234567890]"
 
-#: lib/policy.py:1809
+#: lib/policy.py:1867
 msgid "The length of a random PIN set by the administrator."
 msgstr "管理員設置的隨機 PIN 的長度。"
 
-#: lib/policy.py:1812
+#: lib/policy.py:1870
 msgid "Admin is allowed to view the Audit log."
 msgstr "允許管理員查看審核日誌。"
 
-#: lib/policy.py:1816
+#: lib/policy.py:1874
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
 msgstr "管理員只能看到最近 10 天、3 個月或 2 年的審核條目。"
 
-#: lib/policy.py:1821
+#: lib/policy.py:1879
 msgid "The admin will not see the specified columns in the audit."
 msgstr "管理員不會在審核中看到指定的列。"
 
-#: lib/policy.py:1826
+#: lib/policy.py:1884
 msgid "The admin is allowed to download the complete auditlog."
 msgstr "允許管理員下載完整的審核日誌。"
 
-#: lib/policy.py:1831
+#: lib/policy.py:1889
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
 msgstr "允許管理員在 userstore/UserIdResolver 中添加使用者。"
 
-#: lib/policy.py:1836
+#: lib/policy.py:1894
 msgid "Admin is allowed to update the users data in a userstore."
 msgstr "允許管理員更新使用者存儲中的用戶數據。"
 
-#: lib/policy.py:1841
+#: lib/policy.py:1899
 msgid "Admin is allowed to delete a user object in a userstore."
 msgstr "允許管理員刪除使用者存儲中的用戶物件。"
 
-#: lib/policy.py:1846
+#: lib/policy.py:1904
 msgid "Admin is allowed to set the password of the HSM/Security Module."
 msgstr "允許管理員設置 HSM/安全模組的密碼。"
 
-#: lib/policy.py:1850
+#: lib/policy.py:1908
 msgid "Admin is allowed to retrieve the list of active challenges."
 msgstr "允許管理員檢索活動質詢的清單。"
 
-#: lib/policy.py:1856
+#: lib/policy.py:1914
 msgid "Admin is allowed to write new SMTP server definitions."
 msgstr "允許管理員編寫新的 SMTP 伺服器定義。"
 
-#: lib/policy.py:1861
+#: lib/policy.py:1919
 msgid "Admin is allowed to read SMTP server definitions."
 msgstr "允許管理員讀取 SMTP 伺服器定義。"
 
-#: lib/policy.py:1866
+#: lib/policy.py:1924
 msgid "Admin is allowed to write new RADIUS server definitions."
 msgstr "允許管理員編寫新的RADIUS伺服器定義。"
 
-#: lib/policy.py:1872
+#: lib/policy.py:1930
 msgid "Admin is allowed to read RADIUS server definitions."
 msgstr "允許管理員讀取RADIUS伺服器定義。"
 
-#: lib/policy.py:1877
+#: lib/policy.py:1935
 msgid "Admin is allowed to write remote privacyIDEA server definitions."
 msgstr "允許管理員編寫遠端privacyIDEA伺服器定義。"
 
-#: lib/policy.py:1884
+#: lib/policy.py:1942
 msgid "Admin is allowed to read remote privacyIDEA server definitions."
 msgstr "允許管理員讀取遠端privacyIDEA伺服器定義。"
 
-#: lib/policy.py:1891
+#: lib/policy.py:1949
 msgid "Admin is allowed to write periodic task definitions."
 msgstr "允許管理員編寫定期任務定義。"
 
-#: lib/policy.py:1896
+#: lib/policy.py:1954
 msgid "Admin is allowed to read periodic task definitions."
 msgstr "允許管理員定期讀取任務定義。"
 
-#: lib/policy.py:1901
+#: lib/policy.py:1959
 msgid "Admin is allowed to read statistics data."
 msgstr "允許管理員讀取統計數據。"
 
-#: lib/policy.py:1904
+#: lib/policy.py:1962
 msgid "Admin is allowed to delete statistics data."
 msgstr "允許管理員刪除統計數據。"
 
-#: lib/policy.py:1907
+#: lib/policy.py:1965
 msgid "Admin is allowed to write and modify the event handling configuration."
 msgstr "允許管理員編寫和修改事件處理配置。"
 
-#: lib/policy.py:1913
+#: lib/policy.py:1971
 msgid "Admin is allowed to read event handling configuration."
 msgstr "允許管理員讀取事件處理配置。"
 
-#: lib/policy.py:1918
+#: lib/policy.py:1976
 msgid "Admin is allowed to write and modify SMS gateway definitions."
 msgstr "允許管理員編寫和修改 SMS gateway 定義。"
 
-#: lib/policy.py:1924
+#: lib/policy.py:1982
 msgid "Admin is allowed to read SMS gateway definitions."
 msgstr "允許管理員讀取 SMS gateway 定義。"
 
-#: lib/policy.py:1929
+#: lib/policy.py:1987
 msgid ""
 "Admin is allowed to get the list of authenticated clients and their types."
 msgstr "允許管理員獲取經過身份驗證的用戶端及其類型的清單。"
 
-#: lib/policy.py:1936
+#: lib/policy.py:1994
 msgid "Admin is allowed to add and delete component subscriptions."
 msgstr "允許管理員添加和刪除元件訂閱。"
 
-#: lib/policy.py:1942
+#: lib/policy.py:2000
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
 msgstr "管理員可以觸發詢問，例如簡訊OTP令牌。"
 
-#: lib/policy.py:1948
+#: lib/policy.py:2006
 msgid ""
 "The Admin is allowed to set certain custom user attributes. If the Admin "
 "should be allowed to set any attribute, set this to '*:*'. For more details, "
@@ -448,134 +473,199 @@ msgstr ""
 "允許管理員設置某些自定義用戶屬性。如果允許管理員設置任何屬性，請將其設置為"
 "\"*:*\"。有關更多詳細資訊，請查看文件。"
 
-#: lib/policy.py:1956
+#: lib/policy.py:2014
 msgid ""
 "The Admin is allowed to delete certain custom user attributes. If the Admin "
 "should be allowed to delete any attribute, set this to '*'. For more "
 "details, check the documentation."
 msgstr ""
-"允許管理員刪除某些自定義用戶屬性。如果允許管理員刪除任何屬性，請將其設置為\"*"
-"\"。有關更多詳細資訊，請查看文件。"
+"允許管理員刪除某些自定義用戶屬性。如果允許管理員刪除任何屬性，請將其設置為"
+"\"*\"。有關更多詳細資訊，請查看文件。"
 
-#: lib/policy.py:1964
+#: lib/policy.py:2022
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed to "
 "the admin."
 msgstr ""
 
-#: lib/policy.py:1969
+#: lib/policy.py:2027
 msgid "The Admin is allowed list the available tokengroups."
 msgstr ""
 
-#: lib/policy.py:1974
+#: lib/policy.py:2032
 msgid "The Admin is allowed to add a new tokengroup."
 msgstr ""
 
-#: lib/policy.py:1979
+#: lib/policy.py:2037
 msgid "The Admin is allowed delete a tokengroup."
 msgstr ""
 
-#: lib/policy.py:1984
+#: lib/policy.py:2042
 #, fuzzy
 msgid "The Admin is allowed list the available service ID definitions."
 msgstr "允許管理員讀取RADIUS伺服器定義。"
 
-#: lib/policy.py:1989
+#: lib/policy.py:2047
 #, fuzzy
 msgid "The Admin is allowed to add a new service ID definition."
 msgstr "允許管理員讀取RADIUS伺服器定義。"
 
-#: lib/policy.py:1994
+#: lib/policy.py:2052
 #, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
 msgstr "允許管理員刪除 CA 連接器定義。"
 
-#: lib/policy.py:1999
+#: lib/policy.py:2057
 msgid "The Admin is allowed to manage the tokengroups of a token."
 msgstr ""
 
-#: lib/policy.py:2006
+#: lib/policy.py:2061
+#, fuzzy
+#| msgid "Admin is allowed to reset the Failcounter of a token."
+msgid "Admin is allowed to edit the container info."
+msgstr "允許管理員重置令牌的失敗計數器。"
+
+#: lib/policy.py:2065
+#, fuzzy
+#| msgid "Admin is allowed to reset the Failcounter of a token."
+msgid "Admin is allowed to edit the container state."
+msgstr "允許管理員重置令牌的失敗計數器。"
+
+#: lib/policy.py:2069
+#, fuzzy
+msgid "Admin is allowed to edit the container description."
+msgstr "允許用戶設置令牌描述。"
+
+#: lib/policy.py:2073
+#, fuzzy
+#| msgid "Admin is allowed to read policies."
+msgid "Admin is allowed to create containers."
+msgstr "允許管理員讀取策略。"
+
+#: lib/policy.py:2077
+#, fuzzy
+#| msgid "Admin is allowed to delete policies."
+msgid "Admin is allowed to delete containers."
+msgstr "允許管理員刪除策略。"
+
+#: lib/policy.py:2081
+#, fuzzy
+#| msgid "Admin is allowed to assign a token to a user."
+msgid "Admin is allowed to add tokens to containers."
+msgstr "允許管理員將令牌分配給使用者。"
+
+#: lib/policy.py:2085
+#, fuzzy
+#| msgid "Admin is allowed to remove tokens from the database."
+msgid "Admin is allowed to remove tokens from containers."
+msgstr "允許管理員從資料庫中刪除令牌。"
+
+#: lib/policy.py:2089
+#, fuzzy
+#| msgid "Admin is allowed to assign a token to a user."
+msgid "Admin is allowed to assign users to containers."
+msgstr "允許管理員將令牌分配給使用者。"
+
+#: lib/policy.py:2093
+#, fuzzy
+#| msgid "Admin is allowed to assign a token to a user."
+msgid "Admin is allowed to unassign users from containers."
+msgstr "允許管理員將令牌分配給使用者。"
+
+#: lib/policy.py:2097
+#, fuzzy
+#| msgid "Admin is allowed to manage the realms of a token."
+msgid "Admin is allowed to set the realm of containers."
+msgstr "允許管理員管理令牌的領域。"
+
+#: lib/policy.py:2101
+#, fuzzy
+#| msgid "Admin is allowed to list tokens."
+msgid "Admin is allowed to list containers."
+msgstr "允許管理員列出令牌。"
+
+#: lib/policy.py:2108
 msgid ""
 "The user is allowed to assign an existing token that is not yet assigned "
 "using the token serial number."
 msgstr "允許使用者分配尚未使用令牌序列號分配的現有令牌。"
 
-#: lib/policy.py:2012
+#: lib/policy.py:2114
 msgid "The user is allowed to disable his own tokens."
 msgstr "允許使用者禁用自己的令牌。"
 
-#: lib/policy.py:2018
+#: lib/policy.py:2120
 msgid "The user is allowed to enable his own tokens."
 msgstr "允許用戶啟用自己的令牌。"
 
-#: lib/policy.py:2024
+#: lib/policy.py:2126
 msgid "The user is allowed to delete his own tokens."
 msgstr "允許用戶刪除自己的令牌。"
 
-#: lib/policy.py:2030
+#: lib/policy.py:2132
 msgid "The user is allowed to unassign his own tokens."
 msgstr "允許使用者取消分配自己的令牌。"
 
-#: lib/policy.py:2035
+#: lib/policy.py:2137
 msgid "The user is allowed to resyncronize his tokens."
 msgstr "允許使用者重新同步自己的令牌。"
 
-#: lib/policy.py:2040
+#: lib/policy.py:2142
 msgid "The user is allowed to revoke a token"
 msgstr "允許使用者撤銷令牌"
 
-#: lib/policy.py:2045
+#: lib/policy.py:2147
 msgid "The user is allowed to reset the failcounter of his tokens."
 msgstr "允許使用者重置自己令牌的失敗計數器。"
 
-#: lib/policy.py:2050
+#: lib/policy.py:2152
 msgid "The user is allowed to set the OTP PIN of his tokens."
 msgstr "允許用戶設置自己令牌的 OTP PIN。"
 
-#: lib/policy.py:2055
+#: lib/policy.py:2157
 msgid "The user is allowed to set a random OTP PIN of his tokens."
 msgstr "允許用戶設置自己令牌的隨機OTP PIN。"
 
-#: lib/policy.py:2060
+#: lib/policy.py:2162
 msgid "The length of a random PIN set by the user."
 msgstr "用戶設置的隨機 PIN 的長度。"
 
-#: lib/policy.py:2063
+#: lib/policy.py:2165
 msgid "The user is allowed to set the token description."
 msgstr "允許用戶設置令牌描述。"
 
-#: lib/policy.py:2067
+#: lib/policy.py:2169
 msgid "The user is allowed to set the OTP PIN during enrollment."
 msgstr "允許用戶在註冊期間設置OTP PIN。"
 
-#: lib/policy.py:2090
+#: lib/policy.py:2191
 msgid "Allow the user to view his own token history."
 msgstr "允許使用者查看自己的令牌歷史記錄。"
 
-#: lib/policy.py:2093
+#: lib/policy.py:2194
 msgid "The user will only see audit entries of the last 10d, 3m or 2y."
 msgstr "使用者只能看到最近 10 天、3 個月或 2 年的審核條目。"
 
-#: lib/policy.py:2097
+#: lib/policy.py:2198
 msgid "The user will not see the specified columns in the audit."
 msgstr "使用者將不會在審核中看到指定的列。"
 
-#: lib/policy.py:2102
+#: lib/policy.py:2203
 msgid "The user is allowed to view his own user information."
 msgstr "允許使用者查看自己的用戶資訊。"
 
-#: lib/policy.py:2106
+#: lib/policy.py:2207
 msgid ""
 "The user is allowed to update his own user information, like changing his "
 "password."
 msgstr "允許使用者更新自己的使用者資訊，例如更改其密碼。"
 
-#: lib/policy.py:2111
+#: lib/policy.py:2212
 msgid ""
 "The user is allowed to do a password reset in an editable UserIdResolver."
 msgstr "允許使用者在可編輯的使用者 IdResolver 中執行密碼重置。"
 
-#: lib/policy.py:2117
+#: lib/policy.py:2218
 msgid ""
 "The user is allowed to set certain custom user attributes. If the user "
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
@@ -584,7 +674,7 @@ msgstr ""
 "允許使用者設置某些自定義用戶屬性。如果允許使用者設置任何屬性，請將其設置為"
 "\"*:*\"。請謹慎使用\"*\"！有關更多詳細資訊，請查看文件。"
 
-#: lib/policy.py:2125
+#: lib/policy.py:2226
 msgid ""
 "The user is allowed to delete certain custom user attributes. If the user "
 "should be allowed to delete any attribute, set this to '*'. Use '*' with "
@@ -593,103 +683,153 @@ msgstr ""
 "允許使用者刪除某些自定義用戶屬性。如果應允許使用者刪除任何屬性，請將其設置為"
 "\"*\"。請謹慎使用\"*\"！有關更多詳細資訊，請查看文件。"
 
-#: lib/policy.py:2133
+#: lib/policy.py:2234
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed to "
 "the user."
 msgstr ""
 
-#: lib/policy.py:2141
+#: lib/policy.py:2240
+#, fuzzy
+#| msgid "The user is allowed to disable his own tokens."
+msgid "Users are allowed to edit the state of their own containers."
+msgstr "允許使用者禁用自己的令牌。"
+
+#: lib/policy.py:2244
+#, fuzzy
+#| msgid "The user is allowed to set the token description."
+msgid "Users are allowed to edit the description of their own containers."
+msgstr "允許用戶設置令牌描述。"
+
+#: lib/policy.py:2249
+#, fuzzy
+#| msgid "The user is allowed to enable his own tokens."
+msgid "Users are allowed to create containers."
+msgstr "允許用戶啟用自己的令牌。"
+
+#: lib/policy.py:2253
+#, fuzzy
+#| msgid "The user is allowed to delete his own tokens."
+msgid "Users are allowed to delete their own containers."
+msgstr "允許用戶刪除自己的令牌。"
+
+#: lib/policy.py:2257
+msgid "Users are allowed to add their own tokens to their own containers."
+msgstr ""
+
+#: lib/policy.py:2262
+#, fuzzy
+#| msgid "Admin is allowed to remove tokens from the database."
+msgid "Users are allowed to remove their own tokens from their own containers."
+msgstr "允許管理員從資料庫中刪除令牌。"
+
+#: lib/policy.py:2267
+msgid "Users are allowed to assign themselves to containers without an owner."
+msgstr ""
+
+#: lib/policy.py:2272
+#, fuzzy
+#| msgid "The user is allowed to unassign his own tokens."
+msgid "Users are allowed to unassign themselves from containers."
+msgstr "允許使用者取消分配自己的令牌。"
+
+#: lib/policy.py:2276
+#, fuzzy
+#| msgid "The user is allowed to delete his own tokens."
+msgid "Users are allowed to list their own containers."
+msgstr "允許用戶刪除自己的令牌。"
+
+#: lib/policy.py:2283
 msgid "Limit the number of allowed tokens in a realm."
 msgstr "限制域中允許的令牌數。"
 
-#: lib/policy.py:2145
+#: lib/policy.py:2287
 msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
 
-#: lib/policy.py:2153
+#: lib/policy.py:2295
 msgid "Limit the number of tokens a user may have assigned."
 msgstr "限制使用者可能已分配的令牌數。"
 
-#: lib/policy.py:2158
+#: lib/policy.py:2300
 msgid "Limit the number of active tokens a user may have assigned."
 msgstr "限制使用者可能已分配的活動令牌數。"
 
-#: lib/policy.py:2163
+#: lib/policy.py:2305
 msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr "在註冊過程中為令牌設置具有此長度的隨機 OTP PIN。"
 
-#: lib/policy.py:2168
+#: lib/policy.py:2310
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr "如果是隨機的OTP PIN，請使用此python模組來處理PIN。"
 
-#: lib/policy.py:2173
+#: lib/policy.py:2315
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the user "
 "will have to change the PIN during first use."
 msgstr ""
 "如果管理員在註冊期間或之後設置了 OTP PIN，則用戶必須在第一次使用時更改 PIN。"
 
-#: lib/policy.py:2180
+#: lib/policy.py:2322
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN every "
 "180 days, enter '180d'."
 msgstr "使用者需要定期更改其 PIN。要每 180 天更改 PIN 碼，請輸入\"180d\"。"
 
-#: lib/policy.py:2187
+#: lib/policy.py:2329
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr "OTP PIN可以進行hash或加密。對 PIN 進行hash處理是預設行為。"
 
-#: lib/policy.py:2192
+#: lib/policy.py:2334
 msgid ""
 "The label for a new enrolled Smartphone token. Possible tags are <code>{user}"
 "</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
 "code> and <code>{surname}</code>."
 msgstr ""
 
-#: lib/policy.py:2198
+#: lib/policy.py:2340
 msgid ""
 "The issuer label for new enrolled Smartphone token.Possible tags are "
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
 
-#: lib/policy.py:2205
+#: lib/policy.py:2347
 msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
 
-#: lib/policy.py:2212
+#: lib/policy.py:2354
 msgid ""
 "Users can assign a token just by using the unassigned token to authenticate."
 msgstr "使用者只需使用未分配的令牌進行身份驗證即可分配令牌。"
 
-#: lib/policy.py:2218
+#: lib/policy.py:2360
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr "臨時令牌（丟失令牌）情況下的密碼長度。"
 
-#: lib/policy.py:2222
+#: lib/policy.py:2364
 msgid ""
 "The contents of the temporary password, described by the characters C, c, n, "
 "s, 8."
 msgstr "臨時密碼的內容，由字元 C、c、n、s、8 描述。"
 
-#: lib/policy.py:2227
+#: lib/policy.py:2369
 msgid "The length of the validity for the temporary token (in days)."
 msgstr "臨時令牌的有效期長度（以天為單位）。"
 
-#: lib/policy.py:2232
+#: lib/policy.py:2374
 msgid "Set the length of registration codes."
 msgstr "設置註冊碼的長度。"
 
-#: lib/policy.py:2236
+#: lib/policy.py:2378
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
@@ -698,53 +838,67 @@ msgstr ""
 "指定註冊碼所需的內容。 (c) 字符，(n) 數字，(s) 特殊。使用修飾符 +/- 或允許的"
 "字符列表 [1234567890]"
 
-#: lib/policy.py:2245
+#: lib/policy.py:2387
 msgid "Set the length of the password of generated password tokens."
 msgstr ""
 
-#: lib/policy.py:2249
+#: lib/policy.py:2391
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
 msgstr ""
 
-#: lib/policy.py:2257
+#: lib/policy.py:2399
 msgid ""
-"Specify a white space separated list of token types, that should be verified "
+"Specify the email validator that should be used to validate email addresses "
 "during enrollment."
 msgstr ""
 
-#: lib/policy.py:2266
+#: lib/policy.py:2405
+msgid ""
+"Specify the list of token types, that must be verified during enrollment."
+msgstr ""
+
+#: lib/policy.py:2418
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr "使用令牌 PIN ，使用使用者儲存密碼或不使用固定密碼元件。"
 
-#: lib/policy.py:2271
+#: lib/policy.py:2423
+#, fuzzy
+#| msgid ""
+#| "This is a whitespace separated list of tokentypes, that can be used with "
+#| "challenge response."
 msgid ""
-"This is a whitespace separated list of tokentypes, that can be used with "
-"challenge response."
+"Specify the list of token types, that must be used with challenge response."
 msgstr "這是一個以空格分隔的令牌類型清單，可與質詢回應一起使用。"
 
-#: lib/policy.py:2278
+#: lib/policy.py:2431
+#, fuzzy
+#| msgid ""
+#| "Use an alternate challenge text for telling the user to enter the code "
+#| "from the eMail."
 msgid ""
-"Use an alternate challenge text for telling the user to enter an OTP value."
-msgstr "使用替代質詢文本告訴使用者輸入 OTP 值。"
+"Use an alternative challenge text for telling the user to enter an OTP "
+"value. You can also use tags for automated replacement. Check out the "
+"documentation for more details."
+msgstr "使用替代質詢文本告訴使用者輸入電子郵件中的代碼。"
 
-#: lib/policy.py:2283
+#: lib/policy.py:2438
 msgid ""
 "If there are several different challenges, this text precedes the list of "
 "the challenge texts."
 msgstr "如果存在多個不同的質詢，則此文本位於質詢文本清單之前。"
 
-#: lib/policy.py:2288
+#: lib/policy.py:2443
 msgid ""
 "If there are several different challenges, this text follows the list of the "
 "challenge texts."
 msgstr "如果有幾個不同的挑戰，則此文本將遵循挑戰文本清單。"
 
-#: lib/policy.py:2293
+#: lib/policy.py:2448
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
@@ -752,19 +906,23 @@ msgstr ""
 "如果要更改令牌的 PIN，這將允許使用者在驗證/檢查請求期間通過質詢/回應更改 "
 "PIN。"
 
-#: lib/policy.py:2298
+#: lib/policy.py:2453
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
 msgstr ""
 
-#: lib/policy.py:2303
+#: lib/policy.py:2458
 msgid ""
 "In case of a successful authentication the following tokentype is enrolled. "
 "The maximum number of tokens for a user is checked."
 msgstr ""
 
-#: lib/policy.py:2310
+#: lib/policy.py:2464
+msgid "Change the default text that is shown during enrolling a token."
+msgstr ""
+
+#: lib/policy.py:2469
 msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
@@ -772,7 +930,7 @@ msgstr ""
 "如果設置，則此域中的使用者將根據使用者存儲或給定的RADIUS配置進行身份驗證（如"
 "果使用者未分配令牌）。"
 
-#: lib/policy.py:2317
+#: lib/policy.py:2476
 msgid ""
 "This allows to automatically assign a Token within privacyIDEA, if the user "
 "was authenticated via passthru against a RADIUS server. The OTP value is "
@@ -783,37 +941,37 @@ msgstr ""
 "份驗證的。OTP 值用於在 privacyIDEA 中查找未分配的令牌。輸入 OTP 值的長度以及 "
 "PIN 設置的位置，如 8：pin 或 pin：6。"
 
-#: lib/policy.py:2324
+#: lib/policy.py:2483
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
 msgstr "如果用戶沒有令牌，則此使用者的身份驗證請求將始終為 true。"
 
-#: lib/policy.py:2329
+#: lib/policy.py:2488
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
 msgstr "如果用戶使用者不存在，則此不存在使用者的身份驗證請求將始終為 true。"
 
-#: lib/policy.py:2335
+#: lib/policy.py:2494
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
 msgstr "可用於修改認證請求中的參數傳遞、用戶和領域。有關範例，請參閱文檔。"
 
-#: lib/policy.py:2341
+#: lib/policy.py:2500
 msgid ""
 "If a user authenticates successfully reset the failcounter of all of his "
 "tokens."
 msgstr "如果使用者成功通過身份驗證，請重置其所有令牌的失敗計數器。"
 
-#: lib/policy.py:2346
+#: lib/policy.py:2505
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
 msgstr ""
 
-#: lib/policy.py:2350
+#: lib/policy.py:2509
 msgid ""
 "Cache the password used for authentication and allow authentication with the "
 "same credentials for a certain amount of time. Specify timeout like 4h or "
@@ -822,14 +980,21 @@ msgstr ""
 "緩存用於身份驗證的密碼，並允許使用相同的憑據進行身份驗證一段時間。指定超時，"
 "如 4 小時或 4 小時/5 分鐘。"
 
-#: lib/policy.py:2357
+#: lib/policy.py:2516
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 
-#: lib/policy.py:2365
+#: lib/policy.py:2522
+msgid ""
+"When enabled, authentication attempts will be interpreted as either the PIN "
+"or the answer to a challenge. PIN concatenated with OTP can not be used "
+"anymore! Does only work when authenticating with a username."
+msgstr ""
+
+#: lib/policy.py:2530
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
@@ -837,7 +1002,7 @@ msgstr ""
 "允許使用者進行身份驗證（預設）。如果設置為'{0!s}'，則使用者的身份驗證將被拒"
 "絕。"
 
-#: lib/policy.py:2372
+#: lib/policy.py:2537
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -846,7 +1011,7 @@ msgstr ""
 "允許應用程式選擇應用於身份驗證的令牌類型。應用程式可以在請求中設置參數"
 "「type」。使用驗證/檢查，驗證/samlcheck和驗證/觸發挑戰。"
 
-#: lib/policy.py:2379
+#: lib/policy.py:2544
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -855,7 +1020,7 @@ msgstr ""
 "您可以指定在給定時間內允許使用者執行多少個成功的身份驗證請求。指定 1/5 秒、"
 "2/10 分鐘、10/1 小時 - 秒、分、小時為秒、分鐘和小時。"
 
-#: lib/policy.py:2387
+#: lib/policy.py:2552
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -864,7 +1029,7 @@ msgstr ""
 "您可以指定在給定時間內允許使用者執行多少個失敗的身份驗證請求。指定 1/5 秒、"
 "2/10 分鐘、10/1 小時 - 秒、分、小時為秒、分鐘和小時。"
 
-#: lib/policy.py:2395
+#: lib/policy.py:2560
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -873,17 +1038,17 @@ msgstr ""
 "您可以指定使用者需要使用此權杖再次進行身份驗證的時間範圍。如果使用者稍後進行"
 "身份驗證，則身份驗證將失敗。指定類似 30小時、7天 或 1年。"
 
-#: lib/policy.py:2403
+#: lib/policy.py:2568
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "使用者將僅使用此令牌類型進行身份驗證。"
 
-#: lib/policy.py:2410
+#: lib/policy.py:2575
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
 msgstr "僅當令牌的序列號與此正則表達式匹配時，才會對用戶進行身份驗證。"
 
-#: lib/policy.py:2416
+#: lib/policy.py:2581
 #, fuzzy
 #| msgid ""
 #| "The user will only be authenticated if the tokeninfo field matches the "
@@ -895,7 +1060,7 @@ msgstr ""
 "僅當 tokeninfo 字段與正則表示式匹配時，才會對用戶進行身份驗證。Key/&lt;"
 "regexp&gt;/"
 
-#: lib/policy.py:2423
+#: lib/policy.py:2588
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -903,31 +1068,31 @@ msgstr ""
 "使用者的「領域」被設置為此領域。如果使用者不包含在默認領域中並且無法通過其領"
 "域，這一點很重要。"
 
-#: lib/policy.py:2430
+#: lib/policy.py:2595
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
 msgstr "如果身份驗證成功，則不會返回其他詳細資訊。"
 
-#: lib/policy.py:2436
+#: lib/policy.py:2601
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
 msgstr "如果身份驗證失敗，則不會返回任何詳細資訊。"
 
-#: lib/policy.py:2442
+#: lib/policy.py:2607
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
 msgstr "如果身份驗證成功，用戶數據將添加到身份驗證回應的詳細資訊分支中。"
 
-#: lib/policy.py:2449
+#: lib/policy.py:2614
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr "如果認證成功，使用者解析程式和領域將添加到認證回應的詳細資訊分支中。"
 
-#: lib/policy.py:2456
+#: lib/policy.py:2621
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
@@ -935,14 +1100,14 @@ msgstr ""
 "在身份驗證期間需要發送 API 身份驗證金鑰。這樣可以避免針對 /validate/check 介"
 "面的惡意身份驗證請求。"
 
-#: lib/policy.py:2466
+#: lib/policy.py:2631
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
 msgstr ""
 "如果設置，管理員在登錄到 privacyIDEA WebUI 時將看到一個儀錶板作為開始螢幕。"
 
-#: lib/policy.py:2471
+#: lib/policy.py:2636
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -950,25 +1115,25 @@ msgstr ""
 "如果設置為\"privacyIDEA\"，則使用者和管理員在登錄到 Web UI 時需要針對 "
 "privacyIDEA 進行身份驗證。默認為「用戶存儲」。。"
 
-#: lib/policy.py:2480
+#: lib/policy.py:2645
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
 msgstr "要在 WebUI 登錄對話框中顯示的替代文字，而不是「請登錄」。"
 
-#: lib/policy.py:2484
+#: lib/policy.py:2649
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
 msgstr "在使用者清單中搜索時，只有在按 Enter 鍵時才會執行搜索。"
 
-#: lib/policy.py:2489
+#: lib/policy.py:2654
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
 msgstr "當用戶處於空閒狀態超過logout_time限制時執行的操作。默認為「鎖屏」。。"
 
-#: lib/policy.py:2497
+#: lib/policy.py:2662
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -976,44 +1141,51 @@ msgstr ""
 "Web伺服器設置的REMOTE_USER可用於登錄到privacyIDEA，否則將被忽略。默認為「禁"
 "用」。"
 
-#: lib/policy.py:2503
+#: lib/policy.py:2668
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
 msgstr ""
 "設置時間（以秒為單位），在此時間之後，使用者將從 WebUI 註銷。默認值：120"
 
-#: lib/policy.py:2508
+#: lib/policy.py:2673
+msgid ""
+"privacyIDEA issues a JWT when the user or admins logs in to the WebUI. The "
+"default validity is 1 hour. You can specify different validity times in "
+"seconds."
+msgstr ""
+
+#: lib/policy.py:2678
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr "設置應在一個頁面上的令牌檢視中顯示多少個令牌。"
 
-#: lib/policy.py:2513
+#: lib/policy.py:2683
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr "設置應在一個頁面上的用戶檢視中顯示多少個使用者。"
 
-#: lib/policy.py:2518
+#: lib/policy.py:2688
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr ""
 
-#: lib/policy.py:2523
+#: lib/policy.py:2693
 msgid "Use your own html template for the web UI menu."
 msgstr "將您自己的 html 範本用於 Web UI 功能表。"
 
-#: lib/policy.py:2527
+#: lib/policy.py:2697
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr "將您自己的 html 範本用於 Web UI 基線/頁腳。"
 
-#: lib/policy.py:2531
+#: lib/policy.py:2701
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr "連結您的隱私聲明以顯示在基線/頁腳中。"
 
-#: lib/policy.py:2535
+#: lib/policy.py:2705
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr "使用者ID和解析程式是否應顯示在令牌清單中。"
 
-#: lib/policy.py:2540
+#: lib/policy.py:2710
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1022,51 +1194,51 @@ msgstr ""
 "存儲庫的 URL，可在其中找到策略範本。 （默認 https: //raw.githubusercontent."
 "com/ privacyidea/policy-templates /master/templates/）"
 
-#: lib/policy.py:2547
+#: lib/policy.py:2717
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2552
+#: lib/policy.py:2722
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr "只要用戶沒有令牌，他就只會在UI中看到令牌精靈。"
 
-#: lib/policy.py:2557
+#: lib/policy.py:2727
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
 msgstr "令牌精靈將顯示在令牌功能表中，即使使用者已有令牌也是如此。"
 
-#: lib/policy.py:2562
+#: lib/policy.py:2732
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr "這是一個以空格分隔的令牌類型清單，令牌詳細資訊中會顯示一個翻轉按鈕。"
 
-#: lib/policy.py:2569
+#: lib/policy.py:2739
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr "如果使用者未分配令牌，將顯示歡迎對話方塊。"
 
-#: lib/policy.py:2573
+#: lib/policy.py:2743
 msgid "This is the default token type in the token enrollment dialog."
 msgstr "這是令牌註冊對話框中的預設令牌類型。"
 
-#: lib/policy.py:2579
+#: lib/policy.py:2749
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
 msgstr ""
 "領域名稱清單，這些名稱顯示在 WebUI 登錄螢幕的下拉功能表中。領域由空格分隔。"
 
-#: lib/policy.py:2585
+#: lib/policy.py:2755
 msgid ""
 "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr "如果選取此選項，管理員將不再看到歡迎對話框。"
 
-#: lib/policy.py:2590
+#: lib/policy.py:2760
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
@@ -1074,24 +1246,24 @@ msgstr ""
 "默認情況下，禁用的操作會導致禁用的按鈕。選取此操作時，禁用操作的按鈕將被隱"
 "藏。"
 
-#: lib/policy.py:2595
+#: lib/policy.py:2765
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2600
+#: lib/policy.py:2770
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr "如果選取此選項，種子將在註冊期間顯示為文字。"
 
-#: lib/policy.py:2605
+#: lib/policy.py:2775
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
 msgstr "如果選取此選項，則privacyIDEA節點名稱將顯示在功能表欄中。"
 
-#: lib/policy.py:2610
+#: lib/policy.py:2780
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1100,7 +1272,7 @@ msgstr ""
 "如果選取此選項，則 HOTP、TOTP 和 Push 令牌的註冊頁面將包含一個 QR 碼，該 QR "
 "碼將指向 Google Play 商店中的privacyIDEA身份驗證器。"
 
-#: lib/policy.py:2617
+#: lib/policy.py:2787
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1109,7 +1281,7 @@ msgstr ""
 "如果選取此選項，HOTP、TOTP 和 Push 令牌的註冊頁面將包含一個 QR 碼，該 QR 碼將"
 "指向 iOS App Store 中的 privacyIDEA 身份驗證器。"
 
-#: lib/policy.py:2624
+#: lib/policy.py:2794
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
@@ -1117,167 +1289,171 @@ msgstr ""
 "此操作將在 HOTP、TOTP 和推送令牌的註冊頁面中添加一個 QR 碼，該代碼將指向此給"
 "定 URL。"
 
-#: lib/policy.py:2669
+#: lib/policy.py:2838
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr "僅當滿足使用者資訊的某些條件時，策略才匹配。"
 
-#: lib/policy.py:2672
+#: lib/policy.py:2841
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
 msgstr "僅當滿足令牌屬性的某些條件時，策略才匹配。"
 
-#: lib/policy.py:2675
+#: lib/policy.py:2844
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
 msgstr "僅當滿足令牌資訊上的某些條件時，策略才匹配。"
 
-#: lib/policy.py:2678
+#: lib/policy.py:2847
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
 msgstr "僅當滿足 HTTP 請求標頭上的某些條件時，該策略才匹配。"
 
-#: lib/policy.py:2681
+#: lib/policy.py:2850
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
 msgstr ""
 
-#: lib/radiusserver.py:225 lib/radiusserver.py:257
+#: lib/radiusserver.py:223 lib/radiusserver.py:255
 msgid "The RADIUS secret is too long"
 msgstr "RADIUS 金鑰太長"
 
-#: lib/token.py:152
+#: lib/subscriptions.py:43
+msgid "My subscription has expired."
+msgstr ""
+
+#: lib/token.py:159
 msgid "create_tokenclass_object failed:  {0!r}"
 msgstr ""
 
-#: lib/token.py:308
+#: lib/token.py:325
 msgid "I can only create SQL filters from tokeninfo of length 1."
 msgstr ""
 
-#: lib/token.py:565
+#: lib/token.py:718
 msgid "The requested token could not be found."
 msgstr ""
 
-#: lib/token.py:567
-msgid "More than one matching token were found."
+#: lib/token.py:723
+msgid "More than one matching token was found."
 msgstr ""
 
-#: lib/token.py:881
+#: lib/token.py:1035
 msgid "multiple tokens are matching this OTP value!"
 msgstr ""
 
-#: lib/token.py:1041
+#: lib/token.py:1195
 msgid "init token failed: unknown token type {0!r}"
 msgstr ""
 
-#: lib/token.py:1062
+#: lib/token.py:1216
 msgid "initToken failed: {0!s}"
 msgstr ""
 
-#: lib/token.py:1222
+#: lib/token.py:1376
 msgid "Token already assigned to user {0!r}"
 msgstr ""
 
-#: lib/token.py:1236
+#: lib/token.py:1390
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr ""
 
-#: lib/token.py:1264
+#: lib/token.py:1418
 msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
 msgstr ""
 
-#: lib/token.py:1340
+#: lib/token.py:1494
 msgid "Parameter user must not be a string: {0!r}"
 msgstr ""
 
-#: lib/token.py:1879
+#: lib/token.py:2047
 msgid "You can only define a lost token for an assigned token."
 msgstr ""
 
-#: lib/token.py:1905
+#: lib/token.py:2073
 msgid "temporary replacement for {0!s}"
 msgstr ""
 
-#: lib/token.py:1961
+#: lib/token.py:2129
 msgid "There is no active and assigned token in this realm"
 msgstr ""
 
-#: lib/token.py:1973
+#: lib/token.py:2141
 msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
 
-#: lib/token.py:2027
+#: lib/token.py:2194
 msgid "OTP verification failed."
 msgstr ""
 
-#: lib/token.py:2060
+#: lib/token.py:2228
 msgid "The user has no tokens assigned"
 msgstr ""
 
-#: lib/token.py:2275
+#: lib/token.py:2443
 msgid "matching {0:d} tokens"
 msgstr ""
 
-#: lib/token.py:2327
+#: lib/token.py:2495
 msgid "Challenge matches, but token is not fit for challenge"
 msgstr ""
 
-#: lib/token.py:2337
+#: lib/token.py:2505
 msgid "Found matching challenge"
 msgstr ""
 
-#: lib/token.py:2379
+#: lib/token.py:2547
 msgid "Response did not match the challenge."
 msgstr ""
 
-#: lib/token.py:2381
+#: lib/token.py:2549
 msgid "Response did not match for {0!s} tokens."
 msgstr ""
 
-#: lib/token.py:2389
+#: lib/token.py:2557
 msgid "No active challenge response token found"
 msgstr ""
 
-#: lib/token.py:2405
+#: lib/token.py:2573
 msgid "wrong otp value"
 msgstr ""
 
-#: lib/token.py:2412
+#: lib/token.py:2580
 msgid ". previous otp used again"
 msgstr ""
 
-#: lib/token.py:2426
+#: lib/token.py:2594
 msgid "wrong otp pin"
 msgstr ""
 
-#: lib/token.py:2434
+#: lib/token.py:2602
 msgid "No suitable token found for authentication."
 msgstr ""
 
-#: lib/token.py:2459
+#: lib/token.py:2627
 #, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "允許管理員初始化{0!s}令牌。"
 
-#: lib/token.py:2467
+#: lib/token.py:2635
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "允許用戶註冊{0!s}令牌。"
 
-#: lib/token.py:2498
+#: lib/token.py:2666
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "設置{0!s}令牌允許的最大 PIN 長度。"
 
-#: lib/token.py:2505
+#: lib/token.py:2673
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "設置{0!s}令牌所需的最小 PIN 長度。"
 
-#: lib/token.py:2511
+#: lib/token.py:2679
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -1285,90 +1461,119 @@ msgstr ""
 "指定 {0!s} 令牌所需的 PIN 內容。 (c) 字符、(n) 數字、(s) 特殊、(o) 其他。 "
 "[+/-]！"
 
-#: lib/token.py:2556 lib/token.py:2572
+#: lib/token.py:2724 lib/token.py:2740
 msgid "The tokengroup does not exist."
 msgstr ""
 
-#: lib/tokenclass.py:1674
+#: lib/tokenclass.py:1691
 msgid "please enter otp: "
 msgstr "請輸入 otp： "
 
-#: lib/applications/ssh.py:104
+#: lib/applications/ssh.py:105
 #, fuzzy
 msgid "The username on the SSH server."
 msgstr "強制在伺服器上生成金鑰。"
 
-#: lib/applications/ssh.py:106
+#: lib/applications/ssh.py:107
 msgid ""
 "The service ID of the SSH server. Several servers can have the same service "
 "ID."
 msgstr ""
 
-#: lib/eventhandler/base.py:146
+#: lib/eventhandler/base.py:169
+msgid ""
+"The challenge session matches the string or regular expression (like "
+"'challenge_declined' or 'enrollment')"
+msgstr ""
+
+#: lib/eventhandler/base.py:176
+msgid "The challenge of a token during the authentication process is expired."
+msgstr ""
+
+#: lib/eventhandler/base.py:184
 msgid ""
 "The rollout_state of the token has a certain value like 'clientwait' or "
 "'enrolled'."
 msgstr "令牌的rollout_state具有特定值，如\"用戶端等待\"或\"已註冊\"。"
 
-#: lib/eventhandler/base.py:151
+#: lib/eventhandler/base.py:190
 msgid "The realm of the user, for which this event should apply."
 msgstr "用戶的領域，此事件應應用到該領域。"
 
-#: lib/eventhandler/base.py:157
+#: lib/eventhandler/base.py:197
 msgid "The resolver of the user, for which this event should apply."
 msgstr "使用者的安全解決程式，應應用此事件。"
 
-#: lib/eventhandler/base.py:163
+#: lib/eventhandler/base.py:204
 msgid "The realm of the token, for which this event should apply."
 msgstr "令牌的領域，此事件應適用於該領域。"
 
-#: lib/eventhandler/base.py:170
+#: lib/eventhandler/base.py:212
 msgid "The resolver of the token, for which this event should apply."
 msgstr "令牌的解析程式，此事件應應用。"
 
-#: lib/eventhandler/base.py:177
+#: lib/eventhandler/base.py:220
 msgid "The type of the token."
 msgstr "令牌的類型。"
 
-#: lib/eventhandler/base.py:183
+#: lib/eventhandler/base.py:227
 msgid "The logged in user is of the following type."
 msgstr "登錄使用者屬於以下類型。"
 
-#: lib/eventhandler/base.py:189
+#: lib/eventhandler/base.py:234
 msgid "The result.value within the response is True or False."
 msgstr "回應中的 result.value 為 True 或 False。"
 
-#: lib/eventhandler/base.py:196
+#: lib/eventhandler/base.py:242
 msgid "The result.status within the response is True or False."
 msgstr "回應中的 result.status 為 True 或 False。"
 
-#: lib/eventhandler/base.py:203
+#: lib/eventhandler/base.py:250
+#, fuzzy
+#| msgid "The result.value within the response is True or False."
+msgid "The result.authentication within the response is the given value."
+msgstr "回應中的 result.value 為 True 或 False。"
+
+#: lib/eventhandler/base.py:258
 msgid "Check if the max failcounter of the token is reached."
 msgstr "檢查是否達到令牌的最大失敗計數器。"
 
-#: lib/eventhandler/base.py:210
+#: lib/eventhandler/base.py:266
 msgid "The token has a user assigned."
 msgstr "令牌分配了使用者。"
 
-#: lib/eventhandler/base.py:216
+#: lib/eventhandler/base.py:273
 msgid ""
 "The token has a user assigned, but the user does not exist in the userstore "
 "anymore."
 msgstr "令牌分配了一個使用者，但該使用者不再存在於使用者存儲中。"
 
-#: lib/eventhandler/base.py:223
+#: lib/eventhandler/base.py:281
 msgid "Check if the token is within its validity period."
 msgstr "檢查令牌是否在其有效期內。"
 
-#: lib/eventhandler/base.py:229
+#: lib/eventhandler/base.py:288
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr "如果串行與此正則表示式匹配，則觸發操作。"
 
-#: lib/eventhandler/base.py:235
+#: lib/eventhandler/base.py:295
+#, fuzzy
+#| msgid "The token has a user assigned."
+msgid "The token is in a container."
+msgstr "令牌分配了使用者。"
+
+#: lib/eventhandler/base.py:302
 msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr "如果為使用者分配了此數量的令牌，則會觸發操作。"
 
-#: lib/eventhandler/base.py:241
+#: lib/eventhandler/base.py:309
+#, fuzzy
+#| msgid "Action is triggered, if the user has this number of tokens assigned."
+msgid ""
+"Action is triggered, if the user has this number of containers assigned."
+msgstr "如果為使用者分配了此數量的令牌，則會觸發操作。"
+
+#: lib/eventhandler/base.py:316
 msgid ""
 "Action is triggered, if the counter of the token equals this setting. Can "
 "also be '>100' or '<99' for no exact match."
@@ -1376,13 +1581,13 @@ msgstr ""
 "如果令牌的計數器等於此設置，則觸發操作。也可以是\">100\"或\"<99\"，因為沒有完"
 "全匹配。"
 
-#: lib/eventhandler/base.py:248
+#: lib/eventhandler/base.py:324
 msgid ""
 "Action is triggered, if the last authentication of the token is older than "
 "7h, 10d or 1y."
 msgstr "如果令牌的最後一次身份驗證早於 7小時、10天 或 1年，則會觸發操作。"
 
-#: lib/eventhandler/base.py:254
+#: lib/eventhandler/base.py:331
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly 100."
@@ -1390,7 +1595,7 @@ msgstr ""
 "如果 tokeninfo 字段\"count_auth\"大於 100、小於 99 或正好 100，則可以使用"
 "\">100\"、\"<99\"或\"=100\"來觸發操作。"
 
-#: lib/eventhandler/base.py:261
+#: lib/eventhandler/base.py:339
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
@@ -1399,7 +1604,7 @@ msgstr ""
 "如果 tokeninfo 字段 \"count_auth_success\" 大於 100、小於 99 或正好 100，則可"
 "以使用\">100\"、\"<99\"或\"=100\"來觸發操作。"
 
-#: lib/eventhandler/base.py:269
+#: lib/eventhandler/base.py:348
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "difference between the tokeninfo field 'count_auth' and 'count_auth_success "
@@ -1408,7 +1613,7 @@ msgstr ""
 "如果 tokeninfo 字段 \"count_auth\" 和 \"count_auth_success 之間的差異大於 "
 "100、小於 99 或正好 100，則可以使用\">100\"、\"<99\"或\"=100\"來觸發操作。"
 
-#: lib/eventhandler/base.py:277
+#: lib/eventhandler/base.py:357
 msgid ""
 "This can be '>9', '<9', or '=10', to trigger the action, if the failcounter "
 "of a token matches this value. Note that the failcounter stops increasing, "
@@ -1417,17 +1622,17 @@ msgstr ""
 "如果令牌的 failcounter 與此值匹配，則可以使用\">9\"、\"<9\"或\"=10\"來觸發操"
 "作。請注意，如果達到max_failcount，故障計數器將停止增加。"
 
-#: lib/eventhandler/base.py:285
+#: lib/eventhandler/base.py:366
 msgid ""
 "This condition can check any arbitrary tokeninfo field. You need to enter "
 "something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' "
 "or '<fieldname> < <fieldvalue>'."
 msgstr ""
 "此條件可以檢查任何任意令牌資訊欄位。您需要輸入類似\"<fieldname> == "
-"<fieldvalue>\"、\"<fieldname> > <fieldvalue>\"或\"<fieldname> < <fieldvalue>"
-"\"之類的內容。"
+"<fieldvalue>\"、\"<fieldname> > <fieldvalue>\"或\"<fieldname> < "
+"<fieldvalue>\"之類的內容。"
 
-#: lib/eventhandler/base.py:293
+#: lib/eventhandler/base.py:375
 msgid ""
 "This condition can check the value of an arbitrary event counter and compare "
 "it like 'myCounter == 1000', 'myCounter > 1000' or 'myCounter < 1000'."
@@ -1435,7 +1640,7 @@ msgstr ""
 "此條件可以檢查任意事件計數器的值，並將其進行比較，如\"myCounter == "
 "1000\"、\"myCounter > 1000\"或\"myCounter < 1000\"。"
 
-#: lib/eventhandler/base.py:300
+#: lib/eventhandler/base.py:383
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->error->message in the response."
@@ -1443,7 +1648,7 @@ msgstr ""
 "在這裡，您可以輸入正規表示式。僅當正則表達式與回應中的詳細資訊>錯誤>消息匹配"
 "時，該條件才適用。"
 
-#: lib/eventhandler/base.py:307
+#: lib/eventhandler/base.py:391
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->message in the response."
@@ -1451,16 +1656,86 @@ msgstr ""
 "在這裡，您可以輸入正規表示式。僅當正則表達式與回應中的詳細資訊>消息匹配時，該"
 "條件才適用。"
 
-#: lib/eventhandler/base.py:314
+#: lib/eventhandler/base.py:399
 msgid "Trigger the action, if the client IP matches."
 msgstr "如果用戶端 IP 匹配，則觸發操作。"
 
-#: lib/eventhandler/counterhandler.py:69 lib/eventhandler/counterhandler.py:74
-#: lib/eventhandler/counterhandler.py:82
+#: lib/eventhandler/base.py:405
+msgid ""
+"The container is in the specified states, but can additionally be in other "
+"states."
+msgstr ""
+
+#: lib/eventhandler/base.py:412
+#, fuzzy
+#| msgid "The admin will not see the specified columns in the audit."
+msgid "The container is only in the specified states."
+msgstr "管理員不會在審核中看到指定的列。"
+
+#: lib/eventhandler/base.py:419
+#, fuzzy
+#| msgid "The token has a user assigned."
+msgid "The container has a user assigned."
+msgstr "令牌分配了使用者。"
+
+#: lib/eventhandler/base.py:426
+#, fuzzy
+#| msgid "The token has a user assigned."
+msgid "The container has at least one token assigned."
+msgstr "令牌分配了使用者。"
+
+#: lib/eventhandler/base.py:433
+#, fuzzy
+#| msgid "The logged in user is of the following type."
+msgid "The container is of a certain type."
+msgstr "登錄使用者屬於以下類型。"
+
+#: lib/eventhandler/containerhandler.py:93
+#, fuzzy
+#| msgid "Token type to create"
+msgid "Container type to create"
+msgstr "要創建的令牌類型"
+
+#: lib/eventhandler/containerhandler.py:99
+#: lib/eventhandler/containerhandler.py:121
+#, fuzzy
+#| msgid "The new description of the token."
+msgid "Description of the container"
+msgstr "令牌的新說明。"
+
+#: lib/eventhandler/containerhandler.py:104
+#, fuzzy
+#| msgid "Assign token to user in request or to tokenowner."
+msgid "Assign container to user in request or to token/container owner"
+msgstr "將令牌分配給請求中的使用者或令牌擁有者。"
+
+#: lib/eventhandler/containerhandler.py:109
+#, fuzzy
+#| msgid "Assign token to user in request or to tokenowner."
+msgid "Add token from request to container"
+msgstr "將令牌分配給請求中的使用者或令牌擁有者。"
+
+#: lib/eventhandler/containerhandler.py:129
+msgid "Set this container info key (deletes all existing keys)."
+msgstr ""
+
+#: lib/eventhandler/containerhandler.py:133
+#: lib/eventhandler/containerhandler.py:143
+#, fuzzy
+#| msgid "Set the failcounter of the token."
+msgid "Set the value for the key above."
+msgstr "設置令牌的失敗計數器。"
+
+#: lib/eventhandler/containerhandler.py:139
+msgid "Add this key to the container info."
+msgstr ""
+
+#: lib/eventhandler/counterhandler.py:67 lib/eventhandler/counterhandler.py:72
+#: lib/eventhandler/counterhandler.py:80
 msgid "The identifier/key of the counter."
 msgstr "計數器的識別碼/金鑰。"
 
-#: lib/eventhandler/counterhandler.py:77
+#: lib/eventhandler/counterhandler.py:75
 msgid "Don't stop counter if it reaches zero."
 msgstr "如果計數器達到零，請不要停止計數器。"
 
@@ -1484,99 +1759,99 @@ msgstr ""
 msgid "The key of the custom user attribute that should be deleted."
 msgstr ""
 
-#: lib/eventhandler/federationhandler.py:76
+#: lib/eventhandler/federationhandler.py:74
 msgid "The remote/child privacyIDEA Server."
 msgstr "遠端/兒童privacyIDEA伺服器。"
 
-#: lib/eventhandler/federationhandler.py:81
+#: lib/eventhandler/federationhandler.py:79
 msgid "Change the realm name to a realm on the child privacyIDEA system."
 msgstr "將領域名稱更改為子privacyIDEA系統上的領域。"
 
-#: lib/eventhandler/federationhandler.py:87
+#: lib/eventhandler/federationhandler.py:85
 msgid "Change the resolver name to a resolver on the child privacyIDEA system."
 msgstr "將解析程式名稱更改為子privacyIDEA 系統上的解析程式。"
 
-#: lib/eventhandler/federationhandler.py:93
+#: lib/eventhandler/federationhandler.py:91
 msgid ""
 "Forward the client IP to the child privacyIDEA server. Otherwise this server "
 "will be the client."
 msgstr "將用戶端 IP 轉發到子privacyIDEA 伺服器。否則，此伺服器將是用戶端。"
 
-#: lib/eventhandler/federationhandler.py:100
+#: lib/eventhandler/federationhandler.py:98
 msgid ""
 "Forward the authorization header. This allows to also forward request like "
 "token- and system-requests."
 msgstr "轉發授權標頭。這也允許轉發請求，如令牌和系統請求。"
 
-#: lib/eventhandler/logginghandler.py:87
+#: lib/eventhandler/logginghandler.py:85
 msgid "The name of the logging facility"
 msgstr "日誌記錄工具的名稱"
 
-#: lib/eventhandler/logginghandler.py:93
+#: lib/eventhandler/logginghandler.py:91
 msgid "The string to write to the log"
 msgstr "要寫入日誌的字串"
 
-#: lib/eventhandler/logginghandler.py:99
+#: lib/eventhandler/logginghandler.py:97
 msgid "The logging level for this logging notification"
 msgstr "此記錄通知的紀錄記錄級別"
 
-#: lib/eventhandler/requestmangler.py:100
+#: lib/eventhandler/requestmangler.py:98
 msgid "The parameter that should be deleted."
 msgstr "應刪除的參數。"
 
-#: lib/eventhandler/requestmangler.py:106
+#: lib/eventhandler/requestmangler.py:104
 msgid "The parameter that should be added or modified."
 msgstr "應添加或修改的參數。"
 
-#: lib/eventhandler/requestmangler.py:111
+#: lib/eventhandler/requestmangler.py:109
 msgid ""
 "The new value of the parameter. Can contain tags like {0}, {1} for the "
 "matched sub strings."
 msgstr "參數的新值。可以包含匹配的子字串的{0}、{1}等標記。"
 
-#: lib/eventhandler/requestmangler.py:116
+#: lib/eventhandler/requestmangler.py:114
 msgid "The parameter, that should match some values."
 msgstr "參數，應與某些值匹配。"
 
-#: lib/eventhandler/requestmangler.py:120
+#: lib/eventhandler/requestmangler.py:118
 msgid ""
 "The value of the match_parameter. It can contain a regular expression and "
 "'()' to transfer values to the new parameter."
 msgstr "match_parameter的值。它可以包含正則表達式和'()'以將值傳輸到新參數。"
 
-#: lib/eventhandler/responsemangler.py:81
+#: lib/eventhandler/responsemangler.py:79
 msgid ""
 "The JSON pointer (key) that should be deleted. Please specify in the format "
 "'/detail/message'."
 msgstr "應刪除的 JSON 指標（鍵）。請以\"/詳情/消息\"格式註明。"
 
-#: lib/eventhandler/responsemangler.py:88
+#: lib/eventhandler/responsemangler.py:86
 msgid ""
 "The JSON pointer (key) that should be set. Please specify in the format '/"
 "detail/message'."
 msgstr "應設置的 JSON 指標（鍵）。請以\"/詳情/消息\"格式註明。"
 
-#: lib/eventhandler/responsemangler.py:94
+#: lib/eventhandler/responsemangler.py:92
 msgid "The type of the value."
 msgstr "值的類型。"
 
-#: lib/eventhandler/responsemangler.py:100
+#: lib/eventhandler/responsemangler.py:98
 msgid "The value of the JSON key that should be set."
 msgstr "應設置的 JSON 鍵的值。"
 
-#: lib/eventhandler/scripthandler.py:96
-#: lib/smsprovider/ScriptSMSProvider.py:123
+#: lib/eventhandler/scripthandler.py:94
+#: lib/smsprovider/ScriptSMSProvider.py:121
 msgid ""
 "Wait for script to complete or run script in background. This will either "
 "return the HTTP request early or could also block the request."
 msgstr ""
 "等待腳本完成或在後台運行腳本。這將提前返回 HTTP 請求，也可能阻止該請求。"
 
-#: lib/eventhandler/scripthandler.py:104
+#: lib/eventhandler/scripthandler.py:102
 msgid "On script error raise exception in HTTP request."
 msgstr "腳本錯誤時，在 HTTP 請求中引發異常。"
 
-#: lib/eventhandler/scripthandler.py:108
+#: lib/eventhandler/scripthandler.py:106
 msgid ""
 "Finish current transaction before running the script. This is useful if "
 "changes to the database should be made available to the script or the "
@@ -1585,26 +1860,26 @@ msgstr ""
 "在運行腳本之前完成當前事務。如果對資料庫的更改應可用於腳本或正在運行的請求，"
 "這將非常有用。"
 
-#: lib/eventhandler/scripthandler.py:115
+#: lib/eventhandler/scripthandler.py:113
 msgid "Add '--serial <serial number>' as script parameter."
 msgstr "添加「--序列號<序列号>」作為腳本參數。"
 
-#: lib/eventhandler/scripthandler.py:120
+#: lib/eventhandler/scripthandler.py:118
 msgid "Add '--user <username>' as script parameter."
 msgstr "添加\"--使用者<username>\"作為腳本參數。"
 
-#: lib/eventhandler/scripthandler.py:125
+#: lib/eventhandler/scripthandler.py:123
 msgid "Add '--realm <realm>' as script parameter."
 msgstr "添加\"--領域<realm>\"作為腳本參數。"
 
-#: lib/eventhandler/scripthandler.py:130
+#: lib/eventhandler/scripthandler.py:128
 msgid ""
 "Add the username of the logged in user as script parameter like '--"
 "logged_in_user <username>'."
 msgstr ""
 "將登錄用戶的使用者名添加為腳本參數，如\"--logged_in_user <username>\"。"
 
-#: lib/eventhandler/scripthandler.py:136
+#: lib/eventhandler/scripthandler.py:134
 msgid ""
 "Add the role (either admin or user) of the logged in user as script "
 "parameter like '--logged_in_role <role>'."
@@ -1612,11 +1887,11 @@ msgstr ""
 "將登錄使用者的角色（管理員或使用者）添加為腳本參數，如\"--logged_in_role "
 "<role>\"。"
 
-#: lib/eventhandler/tokenhandler.py:139
+#: lib/eventhandler/tokenhandler.py:144
 msgid "set a new realm of the token"
 msgstr "設置令牌的新領域"
 
-#: lib/eventhandler/tokenhandler.py:143
+#: lib/eventhandler/tokenhandler.py:150
 #, fuzzy
 msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms "
@@ -1626,53 +1901,58 @@ msgstr ""
 "新領域將是令牌的唯一領域。即，所有其他領域將從此令牌中刪除。否則，該領域將添"
 "加到令牌中。"
 
-#: lib/eventhandler/tokenhandler.py:158
+#: lib/eventhandler/tokenhandler.py:167
 msgid "set the PIN of the token to a random PIN of this length."
 msgstr "將令牌的 PIN 設定為此長度的隨機 PIN。"
 
-#: lib/eventhandler/tokenhandler.py:165
+#: lib/eventhandler/tokenhandler.py:177
 msgid "Token type to create"
 msgstr "要創建的令牌類型"
 
-#: lib/eventhandler/tokenhandler.py:170
+#: lib/eventhandler/tokenhandler.py:183
 msgid "Assign token to user in request or to tokenowner."
 msgstr "將令牌分配給請求中的使用者或令牌擁有者。"
 
-#: lib/eventhandler/tokenhandler.py:175
+#: lib/eventhandler/tokenhandler.py:190
 msgid "Set the realm of the newly created token."
 msgstr "設置新創建的令牌的領域。"
 
-#: lib/eventhandler/tokenhandler.py:182
+#: lib/eventhandler/tokenhandler.py:199
 msgid "Dynamically read the mobile number from the user store."
 msgstr "從使用者存儲中動態讀取手機號碼。"
 
-#: lib/eventhandler/tokenhandler.py:189
+#: lib/eventhandler/tokenhandler.py:207
 msgid "Dynamically read the email address from the user store."
 msgstr "從使用者存儲中動態讀取電子郵件位址。"
 
-#: lib/eventhandler/tokenhandler.py:196
+#: lib/eventhandler/tokenhandler.py:215
 msgid "Use a specific SMTP server configuration for this token."
 msgstr "對此令牌使用特定的 SMTP 伺服器配置。"
 
-#: lib/eventhandler/tokenhandler.py:203
+#: lib/eventhandler/tokenhandler.py:223
 msgid "Use a specific SMS gateway configuration for this token."
 msgstr "對此令牌使用特定的SMS gateway 配置。"
 
-#: lib/eventhandler/tokenhandler.py:208
+#: lib/eventhandler/tokenhandler.py:229
 msgid "A dictionary of additional init parameters."
 msgstr "其他初始化參數的字典。"
 
-#: lib/eventhandler/tokenhandler.py:214
+#: lib/eventhandler/tokenhandler.py:236
 msgid ""
 "Set the MOTP PIN of the MOTP token during enrollment. This is a required "
 "value for enrolling MOTP tokens."
 msgstr "在註冊期間設置 MOTP 令牌的 MOTP PIN。這是註冊 MOTP 令牌的必需值。"
 
-#: lib/eventhandler/tokenhandler.py:223
+#: lib/eventhandler/tokenhandler.py:243
+msgid ""
+"Add the token to the container if there is one identifiable in the request."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:252
 msgid "The new description of the token."
 msgstr "令牌的新說明。"
 
-#: lib/eventhandler/tokenhandler.py:230
+#: lib/eventhandler/tokenhandler.py:261
 msgid ""
 "The token will be valid starting at the given date. Can be a fixed date or "
 "an offset like +10m, +24h, +7d."
@@ -1680,7 +1960,7 @@ msgstr ""
 "令牌將從給定日期開始有效。可以是固定日期，也可以是偏移量，如 +10分鐘、+24小"
 "時、+7天。"
 
-#: lib/eventhandler/tokenhandler.py:237
+#: lib/eventhandler/tokenhandler.py:269
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
@@ -1688,64 +1968,76 @@ msgstr ""
 "令牌將在給定日期之前有效。可以是固定日期，也可以是偏移量，如 +10分鐘、+24小"
 "時、+7天。"
 
-#: lib/eventhandler/tokenhandler.py:250
+#: lib/eventhandler/tokenhandler.py:283
 msgid "Set the new count window of the token."
 msgstr "設置令牌的新計數視窗。"
 
-#: lib/eventhandler/tokenhandler.py:260
+#: lib/eventhandler/tokenhandler.py:293
 msgid "Set the failcounter of the token."
 msgstr "設置令牌的失敗計數器。"
 
-#: lib/eventhandler/tokenhandler.py:270
+#: lib/eventhandler/tokenhandler.py:303
 msgid ""
 "Increase or decrease the fail counter of the token. Values of +n, -n with n "
 "being an integer are accepted."
 msgstr "增加或減少令牌的失敗計數器。接受 +n、-n 的值，其中 n 為整數。"
 
-#: lib/eventhandler/tokenhandler.py:280
+#: lib/eventhandler/tokenhandler.py:313
 msgid "Set the maximum failcounter of the token."
 msgstr "設置令牌的最大失敗計數器。"
 
-#: lib/eventhandler/tokenhandler.py:288
+#: lib/eventhandler/tokenhandler.py:322
 msgid "Set this tokeninfo key."
 msgstr "設置此令牌資訊金鑰。"
 
-#: lib/eventhandler/tokenhandler.py:293
+#: lib/eventhandler/tokenhandler.py:327
 #, fuzzy
 msgid "Set the above key to this value."
 msgstr "將上面的項設置為 this 值。"
 
-#: lib/eventhandler/tokenhandler.py:302
+#: lib/eventhandler/tokenhandler.py:337
+msgid ""
+"Interpret the tokeninfo as 'int' and increase the tokeninfo value by the "
+"given offset."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:343
+msgid ""
+"The increment the tokeninfo key should be increased. Can be positive or "
+"negative, s.th. like +1 or -7."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:353
 msgid "Delete this tokeninfo key."
 msgstr "刪除此令牌資訊金鑰。"
 
-#: lib/eventhandler/tokenhandler.py:310
+#: lib/eventhandler/tokenhandler.py:362
 msgid "Add a tokengroup to the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:319
+#: lib/eventhandler/tokenhandler.py:372
 msgid "Remove a tokengroup from the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:328
+#: lib/eventhandler/tokenhandler.py:382
 msgid "The ID of the machine you want to attach the token to"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:334
+#: lib/eventhandler/tokenhandler.py:389
 msgid "Set the service_id for an SSH application."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:342
+#: lib/eventhandler/tokenhandler.py:397
 msgid ""
 "Set a token application like 'offline' or 'SSH'. Note: Not all tokens work "
 "well with all applications!"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:351
+#: lib/eventhandler/tokenhandler.py:408
 msgid "The number of offline OTP values available"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:359
+#: lib/eventhandler/tokenhandler.py:416
 msgid "The number of rounds for password hashing"
 msgstr ""
 
@@ -1806,23 +2098,23 @@ msgstr ""
 "通知的檔名。現有檔將被覆蓋。該名稱可以包含文檔中指定的標記，也可以包含標記 "
 "{random}。"
 
-#: lib/eventhandler/webhookeventhandler.py:86
+#: lib/eventhandler/webhookeventhandler.py:84
 msgid "The URL the WebHook is posted to"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:91
+#: lib/eventhandler/webhookeventhandler.py:89
 msgid "The encoding that is sent to the WebHook, for example json"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:99
+#: lib/eventhandler/webhookeventhandler.py:97
 msgid "You can replace placeholder like {logged_in_user}"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:104
+#: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
 msgstr ""
 
-#: lib/machines/ldap.py:338
+#: lib/machines/ldap.py:336
 #, python-format
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "您的LDAP配置似乎正常，%i 機器物件已找到。"
@@ -1837,51 +2129,51 @@ msgstr "您的 LDAP 配置找到了 {0!s} 個用戶物件，但只有 {1!s} 具�
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "您的LDAP配置似乎正常，找到 {0!s} 個用戶物件。"
 
-#: lib/smsprovider/FirebaseProvider.py:201
+#: lib/smsprovider/FirebaseProvider.py:199
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to the "
 "Firebase REST API."
 msgstr "JSON 配置檔的檔名，它允許 privacyIDEA 與 Firebase REST API 通信。"
 
-#: lib/smsprovider/FirebaseProvider.py:206
+#: lib/smsprovider/FirebaseProvider.py:204
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "用於 googleapis.com HTTPS 連接的代理設置。"
 
-#: lib/smsprovider/HttpSMSProvider.py:244
+#: lib/smsprovider/HttpSMSProvider.py:242
 msgid "The base URL of the HTTP Gateway"
 msgstr "HTTP Gateway 的基本 URL"
 
-#: lib/smsprovider/HttpSMSProvider.py:247
+#: lib/smsprovider/HttpSMSProvider.py:245
 msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
 msgstr "是否應通過 HTTP GET 或 POST 請求連接 HTTP Gateway。"
 
-#: lib/smsprovider/HttpSMSProvider.py:252
+#: lib/smsprovider/HttpSMSProvider.py:250
 msgid ""
 "Specify a substring, that indicates, that the SMS was delivered successfully."
 msgstr "指定一個子字串，該子字串指示SMS已成功傳遞。"
 
-#: lib/smsprovider/HttpSMSProvider.py:256
+#: lib/smsprovider/HttpSMSProvider.py:254
 msgid ""
 "Specify a substring, that indicates, that the SMS failed to be delivered."
 msgstr "指定一個子字串，該子字串指示SMS無法傳遞。"
 
-#: lib/smsprovider/HttpSMSProvider.py:260
+#: lib/smsprovider/HttpSMSProvider.py:258
 msgid "Username in case of basic authentication."
 msgstr "基本身份驗證情況下的使用者名。"
 
-#: lib/smsprovider/HttpSMSProvider.py:264
+#: lib/smsprovider/HttpSMSProvider.py:262
 msgid "Password in case of basic authentication."
 msgstr "基本身份驗證情況下的密碼。"
 
-#: lib/smsprovider/HttpSMSProvider.py:269
+#: lib/smsprovider/HttpSMSProvider.py:267
 msgid "Should the SSL certificate be verified."
 msgstr "是否應驗證 SSL 證書。"
 
-#: lib/smsprovider/HttpSMSProvider.py:275
+#: lib/smsprovider/HttpSMSProvider.py:273
 msgid "Should the data in a POST Request be sent as JSON."
 msgstr ""
 
-#: lib/smsprovider/HttpSMSProvider.py:282
+#: lib/smsprovider/HttpSMSProvider.py:280
 msgid ""
 "An optional proxy string. DEPRECATED. Do not use this anymore. Rather use "
 "HTTP_PROXY for http connections and HTTPS_PROXY for https connection. The "
@@ -1890,29 +2182,29 @@ msgstr ""
 "可選取的代理字串。荒廢的。不要再使用它了。而是將HTTP_PROXY用於HTTP連接，而"
 "HTTPS_PROXY用於HTTPs連接。代理選項將在將來刪除。"
 
-#: lib/smsprovider/HttpSMSProvider.py:287
+#: lib/smsprovider/HttpSMSProvider.py:285
 msgid "Proxy setting for HTTP connections."
 msgstr "HTTP 連接的代理設置。"
 
-#: lib/smsprovider/HttpSMSProvider.py:288
+#: lib/smsprovider/HttpSMSProvider.py:286
 msgid "Proxy setting for HTTPS connections."
 msgstr "HTTPS 連接的代理設置。"
 
-#: lib/smsprovider/HttpSMSProvider.py:289
+#: lib/smsprovider/HttpSMSProvider.py:287
 msgid "The timeout in seconds."
 msgstr "超時（以秒為單位）。"
 
-#: lib/smsprovider/SMSProvider.py:76
+#: lib/smsprovider/SMSProvider.py:74
 #, fuzzy
 msgid ""
-"Regular expression to modify the phone number to make it compatible with "
+"Regular expression to modify the phone number to make it compatible with the "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
 "+/]//'."
 msgstr ""
 "正則表達式，用於修改電話號碼以使其與提供程式相容。輸入類似\"/[\\+/]/\"的內容"
 "以刪除加號和斜杠。"
 
-#: lib/smsprovider/ScriptSMSProvider.py:115
+#: lib/smsprovider/ScriptSMSProvider.py:113
 msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin."
@@ -1920,188 +2212,188 @@ msgstr ""
 "腳本目錄中的腳本PI_SCRIPT_SMSPROVIDER_DIRECTORY調用。期望電話作為參數和來自 "
 "stdin 的消息。"
 
-#: lib/smsprovider/SmppSMSProvider.py:127
+#: lib/smsprovider/SmppSMSProvider.py:125
 msgid "SMSC Host IP"
 msgstr "SMSC 主機 IP"
 
-#: lib/smsprovider/SmppSMSProvider.py:130
+#: lib/smsprovider/SmppSMSProvider.py:128
 msgid "SMSC Port"
 msgstr "SMSC Port"
 
-#: lib/smsprovider/SmppSMSProvider.py:132
+#: lib/smsprovider/SmppSMSProvider.py:130
 msgid "SMSC Service ID"
 msgstr "SMSC 服務 ID"
 
-#: lib/smsprovider/SmppSMSProvider.py:134
+#: lib/smsprovider/SmppSMSProvider.py:132
 msgid "Password for authentication on SMSC"
 msgstr "用於在 SMSC 上進行身份驗證的密碼"
 
-#: lib/smsprovider/SmppSMSProvider.py:136
+#: lib/smsprovider/SmppSMSProvider.py:134
 msgid "SOURCE_ADDR_TON Special Flag"
 msgstr "SOURCE_ADDR_TON 特別標誌"
 
-#: lib/smsprovider/SmppSMSProvider.py:138
+#: lib/smsprovider/SmppSMSProvider.py:136
 msgid "S_ADDR_NPI Special Flag"
 msgstr "S_ADDR_NPI特別標誌"
 
-#: lib/smsprovider/SmppSMSProvider.py:140
+#: lib/smsprovider/SmppSMSProvider.py:138
 msgid "Source address (SMS sender)"
 msgstr "來源位址（簡訊發件者）"
 
-#: lib/smsprovider/SmppSMSProvider.py:141
+#: lib/smsprovider/SmppSMSProvider.py:139
 msgid "DESTINATION_ADDR_TON Special Flag"
 msgstr "DESTINATION_ADDR_TON 特別標誌"
 
-#: lib/smsprovider/SmppSMSProvider.py:142
+#: lib/smsprovider/SmppSMSProvider.py:140
 msgid "D_ADDR_NPI Special Flag"
 msgstr "D_ADDR_NPI 特殊旗幟"
 
-#: lib/task/eventcounter.py:42
+#: lib/task/eventcounter.py:41
 msgid "The name of the event counter to read."
 msgstr "要讀取的事件計數器的名稱。"
 
-#: lib/task/eventcounter.py:47
+#: lib/task/eventcounter.py:46
 msgid "The name of the stats key to write to the MonitoringStats table."
 msgstr "要寫入監控統計資訊表的統計資訊鍵的名稱。"
 
-#: lib/task/eventcounter.py:53
+#: lib/task/eventcounter.py:52
 msgid ""
 "Whether to reset the event_counter, if it is read and written to the "
 "MonitoringStats table."
 msgstr "是否重置event_counter，如果將其讀取並寫入監控統計表。"
 
-#: lib/task/simplestats.py:48
+#: lib/task/simplestats.py:46
 msgid "Total number of tokens"
 msgstr "令牌總數"
 
-#: lib/task/simplestats.py:51
+#: lib/task/simplestats.py:49
 msgid "Total number of hardware tokens"
 msgstr "硬體令牌總數"
 
-#: lib/task/simplestats.py:54
+#: lib/task/simplestats.py:52
 msgid "Total number of software tokens"
 msgstr "軟體令牌總數"
 
-#: lib/task/simplestats.py:57
+#: lib/task/simplestats.py:55
 msgid "Number of hardware tokens not assigned to a user"
 msgstr "未分配給使用者的硬體令牌數"
 
-#: lib/task/simplestats.py:60
+#: lib/task/simplestats.py:58
 msgid "Number of tokens assigned to users"
 msgstr "分配給使用者的令牌數"
 
-#: lib/task/simplestats.py:63
+#: lib/task/simplestats.py:61
 msgid "Number of users with tokens assigned"
 msgstr "分配了令牌的用戶數"
 
-#: lib/tokens/applicationspecificpasswordtoken.py:76
+#: lib/tokens/applicationspecificpasswordtoken.py:74
 msgid ""
 "Application Specific Password: A token with a fixed password. Can be used "
 "for certain applications or services."
 msgstr ""
 
-#: lib/tokens/applicationspecificpasswordtoken.py:87
+#: lib/tokens/applicationspecificpasswordtoken.py:85
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of application specific password "
 "tokens assigned."
 msgstr "使用者只能分配此最大數量的活動密碼令牌。"
 
-#: lib/tokens/applicationspecificpasswordtoken.py:93
+#: lib/tokens/applicationspecificpasswordtoken.py:91
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of active application specific "
 "password tokens assigned."
 msgstr "使用者只能分配此最大數量的活動密碼令牌。"
 
-#: lib/tokens/certificatetoken.py:282
+#: lib/tokens/certificatetoken.py:280
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "證書：註冊 x509 證書令牌。"
 
-#: lib/tokens/certificatetoken.py:293
+#: lib/tokens/certificatetoken.py:291
 msgid "The user may only have this maximum number of certificates assigned."
 msgstr "使用者只能分配此最大數量的證書。"
 
-#: lib/tokens/certificatetoken.py:298
+#: lib/tokens/certificatetoken.py:296
 msgid ""
 "The user may only have this maximum number of active certificates assigned."
 msgstr "使用者只能分配此最大數量的活動證書。"
 
-#: lib/tokens/certificatetoken.py:303
+#: lib/tokens/certificatetoken.py:301
 msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr "註冊證書令牌可能需要證明證書。（預設值：忽略）"
 
-#: lib/tokens/certificatetoken.py:312
+#: lib/tokens/certificatetoken.py:310
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:318
+#: lib/tokens/certificatetoken.py:316
 msgid "The template that should be used to issue a certificate."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:323
+#: lib/tokens/certificatetoken.py:321
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
+#: lib/tokens/certificatetoken.py:329 lib/tokens/certificatetoken.py:336
 msgid "The directory containing attestation certificate chains."
 msgstr "包含證明證書鏈的目錄。"
 
-#: lib/tokens/daplugtoken.py:124
+#: lib/tokens/daplugtoken.py:122
 msgid "event based OTP token using the HOTP algorithm"
 msgstr "使用 HOTP 演算法的基於事件的 OTP 令牌"
 
-#: lib/tokens/daplugtoken.py:130
+#: lib/tokens/daplugtoken.py:128
 msgid "The user may only have this maximum number of daplug tokens assigned."
 msgstr "使用者只能分配此最大數量的 daplug 令牌。"
 
-#: lib/tokens/daplugtoken.py:135
+#: lib/tokens/daplugtoken.py:133
 msgid ""
 "The user may only have this maximum number of active daplug tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 daplug 令牌。"
 
-#: lib/tokens/daypasswordtoken.py:36
+#: lib/tokens/daypasswordtoken.py:34
 #, fuzzy
-msgid "Specify the time step of the DayPassword token."
+msgid "Specify the time step of the DayPassword token. For example: \"24h\""
 msgstr "設置令牌的失敗計數器。"
 
-#: lib/tokens/daypasswordtoken.py:84
+#: lib/tokens/daypasswordtoken.py:82
 msgid ""
 "DayPassword: A time-based token with a variable timestep and the possibility "
 "to use the OTP more than once."
 msgstr ""
 
-#: lib/tokens/daypasswordtoken.py:121 lib/tokens/hotptoken.py:176
-#: lib/tokens/totptoken.py:161
+#: lib/tokens/daypasswordtoken.py:119 lib/tokens/hotptoken.py:173
+#: lib/tokens/totptoken.py:159
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
 msgstr "強制為privacyIDEA 身份驗證器設置一個APP PIN"
 
-#: lib/tokens/daypasswordtoken.py:126
+#: lib/tokens/daypasswordtoken.py:124
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of daypassword tokens assigned."
 msgstr "使用者只能分配此最大數量的密碼令牌。"
 
-#: lib/tokens/daypasswordtoken.py:132
+#: lib/tokens/daypasswordtoken.py:130
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of active daypassword tokens "
 "assigned."
 msgstr "使用者只能分配此最大數量的活動密碼令牌。"
 
-#: lib/tokens/emailtoken.py:156
+#: lib/tokens/emailtoken.py:155
 msgid "EMail Token"
 msgstr "電子郵件令牌"
 
-#: lib/tokens/emailtoken.py:158
+#: lib/tokens/emailtoken.py:157
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr "電子郵件：將一次性密碼發送到使用者的電子郵件位址。"
 
-#: lib/tokens/emailtoken.py:166
+#: lib/tokens/emailtoken.py:165
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
@@ -2110,13 +2402,13 @@ msgstr ""
 "將通過電子郵件發送的電子郵件令牌的文字。使用{otp}和{serial}作為參數。您還可以"
 "將文件名指定為以“file:”開頭的電子郵件模板。"
 
-#: lib/tokens/emailtoken.py:173
+#: lib/tokens/emailtoken.py:172
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr "電子郵件令牌的電子郵件的主題。使用{otp}和{serial}作為參數。"
 
-#: lib/tokens/emailtoken.py:178
+#: lib/tokens/emailtoken.py:177
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with "
 "one EMail OTP."
@@ -2124,127 +2416,145 @@ msgstr ""
 "如果設置，則在使用一個電子郵件 OTP 成功進行身份驗證後，將發送新的電子郵件 "
 "OTP。"
 
-#: lib/tokens/emailtoken.py:183
+#: lib/tokens/emailtoken.py:182
+#, fuzzy
+#| msgid ""
+#| "Use an alternate challenge text for telling the user to enter the code "
+#| "from the eMail."
 msgid ""
-"Use an alternate challenge text for telling the user to enter the code from "
-"the eMail."
+"Use an alternative challenge text for telling the user to enter the code "
+"from the e-mail. You can also use tags for automated replacement. Check out "
+"the documentation for more details."
 msgstr "使用替代質詢文本告訴使用者輸入電子郵件中的代碼。"
 
-#: lib/tokens/emailtoken.py:190
+#: lib/tokens/emailtoken.py:191
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr "使用者只能分配此最大數量的電子郵件令牌。"
 
-#: lib/tokens/emailtoken.py:195
+#: lib/tokens/emailtoken.py:196
 msgid ""
 "The user may only have this maximum number of active email tokens assigned."
 msgstr "使用者只能分配此最大數量的活動電子郵件令牌。"
 
-#: lib/tokens/emailtoken.py:277
-msgid "Enter the OTP from the Email:"
+#: lib/tokens/emailtoken.py:278
+#, fuzzy
+#| msgid "Enter the OTP from the Email:"
+msgid "Enter the OTP from the Email"
 msgstr "從電子郵件中輸入OTP："
 
-#: lib/tokens/emailtoken.py:316
+#: lib/tokens/emailtoken.py:317
 msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:547
+#: lib/tokens/emailtoken.py:552
 msgid "Please enter your new email address!"
 msgstr ""
 
-#: lib/tokens/foureyestoken.py:132
+#: lib/tokens/emailtoken.py:592
+msgid "The email address is not valid!"
+msgstr ""
+
+#: lib/tokens/foureyestoken.py:130
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
 msgstr "4Eyes 令牌：使用兩個或更多使用者的令牌進行身份驗證"
 
-#: lib/tokens/foureyestoken.py:143
+#: lib/tokens/foureyestoken.py:141
 msgid "The user may only have this maximum number of 4eyes tokens assigned."
 msgstr "使用者只能分配此最大數量的 4eyes 令牌。"
 
-#: lib/tokens/foureyestoken.py:148
+#: lib/tokens/foureyestoken.py:146
 msgid ""
 "The user may only have this maximum number of active 4eyes tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 daplug 令牌。"
 
-#: lib/tokens/hotptoken.py:85
+#: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
 msgstr ""
 
-#: lib/tokens/hotptoken.py:100
+#: lib/tokens/hotptoken.py:97
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr "指定要使用的 hash。可以是 SHA1, SHA-256 或 SHA-512。"
 
-#: lib/tokens/hotptoken.py:102
+#: lib/tokens/hotptoken.py:99
 msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
 msgstr "指定要使用的 otplen。可以是 6 位或 8 位數位。"
 
-#: lib/tokens/hotptoken.py:103
+#: lib/tokens/hotptoken.py:100
 msgid "Force the key to be generated on the server."
 msgstr "強制在伺服器上生成金鑰。"
 
-#: lib/tokens/hotptoken.py:104
+#: lib/tokens/hotptoken.py:101
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr "指定是允許使用者還是強制使用者使用兩步註冊。"
 
-#: lib/tokens/hotptoken.py:106
+#: lib/tokens/hotptoken.py:103
 msgid ""
 "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr "指定是允許還是強制管理員使用兩步註冊。"
 
-#: lib/tokens/hotptoken.py:143
+#: lib/tokens/hotptoken.py:140
 msgid "HOTP: Event based One Time Passwords."
 msgstr "HOTP：基於事件的一次性密碼。"
 
-#: lib/tokens/hotptoken.py:151
+#: lib/tokens/hotptoken.py:148
 msgid "The user may only have this maximum number of HOTP tokens assigned."
 msgstr "使用者只能分配此最大數量的 HOTP 令牌。"
 
-#: lib/tokens/hotptoken.py:156
+#: lib/tokens/hotptoken.py:153
 msgid ""
 "The user may only have this maximum number of active HOTP tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 HOTP 令牌。"
 
-#: lib/tokens/hotptoken.py:161 lib/tokens/totptoken.py:150
+#: lib/tokens/hotptoken.py:158 lib/tokens/totptoken.py:148
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "用戶端貢獻的 OTP 種子部分的大小（以位元組為單位）"
 
-#: lib/tokens/hotptoken.py:166 lib/tokens/totptoken.py:153
+#: lib/tokens/hotptoken.py:163 lib/tokens/totptoken.py:151
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "伺服器貢獻的 OTP 種子部分的大小（以位元組為單位）"
 
-#: lib/tokens/hotptoken.py:171 lib/tokens/totptoken.py:156
+#: lib/tokens/hotptoken.py:168 lib/tokens/totptoken.py:154
 msgid ""
 "The difficulty factor used for the OTP seed generation (should be at least "
 "10000)"
 msgstr "用於OTP種子產生的難度因數（應至少為10000）"
 
-#: lib/tokens/hotptoken.py:282
+#: lib/tokens/hotptoken.py:279
 msgid "URL for google Authenticator"
 msgstr "谷歌身份驗證器的網址"
 
-#: lib/tokens/hotptoken.py:295
+#: lib/tokens/hotptoken.py:292
 msgid "URL for OATH token"
 msgstr "OATH 令牌的網址"
 
-#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1048
-msgid "Please scan the QR code!"
+#: lib/tokens/hotptoken.py:842
+#, fuzzy
+#| msgid "Please scan the QR code!"
+msgid "Please scan the QR code and enter the OTP value!"
 msgstr "請掃描二維碼"
 
-#: lib/tokens/indexedsecrettoken.py:51
+#: lib/tokens/indexedsecrettoken.py:49
 msgid "Please enter the positions {0!s} from your secret."
 msgstr "請輸入您的金鑰中的 {0!s} 位置。"
 
-#: lib/tokens/indexedsecrettoken.py:100
+#: lib/tokens/indexedsecrettoken.py:98
 msgid "Indexed Secret Token"
 msgstr "索引秘密令牌"
 
-#: lib/tokens/indexedsecrettoken.py:102
+#: lib/tokens/indexedsecrettoken.py:100
 msgid ""
 "IndexedSecret: Request certain positions of a shared secret from the user."
 msgstr "已編入索引的機密：向使用者請求共享機密的某些位置。"
 
-#: lib/tokens/indexedsecrettoken.py:109
+#: lib/tokens/indexedsecrettoken.py:107
+#, fuzzy
+#| msgid ""
+#| "Use an alternate challenge text for telling the user which positions of "
+#| "the secret he should enter."
 msgid ""
-"Use an alternate challenge text for telling the user which positions of the "
-"secret he should enter."
+"Use an alternative challenge text for telling the user which positions of "
+"the secret he should enter. You can also use tags for automated replacement. "
+"Check out the documentation for more details."
 msgstr "使用備用質詢文本告訴使用者他應輸入機密的哪個位置。"
 
 #: lib/tokens/indexedsecrettoken.py:115
@@ -2270,88 +2580,100 @@ msgid ""
 "assigned."
 msgstr "使用者只能分配此最大數量的活動索引機密令牌。"
 
-#: lib/tokens/motptoken.py:105
+#: lib/tokens/motptoken.py:84
+#, fuzzy
+#| msgid "TOTP: Time based One Time Passwords."
+msgid "mOTP: Classical mobile One Time Passwords."
+msgstr "TOTP：基於時間的一次性密碼。"
+
+#: lib/tokens/motptoken.py:102
 msgid "The user may only have this maximum number of mOTP tokens assigned."
 msgstr "使用者只能分配此最大數量的 mOTP 令牌。"
 
-#: lib/tokens/motptoken.py:110
+#: lib/tokens/motptoken.py:107
 msgid ""
 "The user may only have this maximum number of active mOTP tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 mOTP 令牌。"
 
-#: lib/tokens/motptoken.py:153
-msgid "URL for MOTP token"
+#: lib/tokens/motptoken.py:149
+#, fuzzy
+#| msgid "URL for MOTP token"
+msgid "URL for mOTP token"
 msgstr "MOTP 令牌的網址"
 
-#: lib/tokens/ocratoken.py:91
+#: lib/tokens/ocratoken.py:89
 msgid "OCRA: Enroll an OCRA token."
 msgstr "OCRA：註冊 OCRA 令牌。"
 
-#: lib/tokens/ocratoken.py:101
+#: lib/tokens/ocratoken.py:99
 msgid "The user may only have this maximum number of OCRA tokens assigned."
 msgstr "使用者只能分配此最大數量的 OCRA 令牌。"
 
-#: lib/tokens/ocratoken.py:106
+#: lib/tokens/ocratoken.py:104
 msgid ""
 "The user may only have this maximum number of active OCRA tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 OCRA 令牌。"
 
-#: lib/tokens/papertoken.py:109 lib/tokens/tantoken.py:107
+#: lib/tokens/papertoken.py:96
+msgid "PPR: One Time Passwords printed on a sheet of paper."
+msgstr ""
+
+#: lib/tokens/papertoken.py:107 lib/tokens/tantoken.py:106
 msgid "The number of OTP values, which are printed on the paper."
 msgstr "列印在紙張上的 OTP 值的數量。"
 
-#: lib/tokens/papertoken.py:114
+#: lib/tokens/papertoken.py:112
 msgid "The user may only have this maximum number of paper tokens assigned."
 msgstr "使用者只能分配此最大數量的紙質令牌。"
 
-#: lib/tokens/papertoken.py:119
+#: lib/tokens/papertoken.py:117
 msgid ""
 "The user may only have this maximum number of active paper tokens assigned."
 msgstr "使用者只能分配此最大數量的活動紙質令牌。"
 
-#: lib/tokens/passwordtoken.py:115
+#: lib/tokens/passwordtoken.py:113
 msgid ""
 "A token with a fixed password. Can be combined  with the OTP PIN. Is used "
 "for the lost token scenario."
 msgstr "具有固定密碼的令牌。可與 OTP PIN 結合使用。用於丟失令牌方案。"
 
-#: lib/tokens/passwordtoken.py:127
+#: lib/tokens/passwordtoken.py:125
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr "使用者只能分配此最大數量的密碼令牌。"
 
-#: lib/tokens/passwordtoken.py:132
+#: lib/tokens/passwordtoken.py:130
 msgid ""
 "The user may only have this maximum number of active password tokens "
 "assigned."
 msgstr "使用者只能分配此最大數量的活動密碼令牌。"
 
-#: lib/tokens/pushtoken.py:71
+#: lib/tokens/pushtoken.py:72
 msgid "Please confirm the authentication on your mobile device!"
 msgstr "請在您的行動裝置上確認身份驗證！"
 
-#: lib/tokens/pushtoken.py:72
+#: lib/tokens/pushtoken.py:73
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check for a "
 "new Login request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:74
+#: lib/tokens/pushtoken.py:75
 msgid "Do you want to confirm the login?"
 msgstr "是否要確認登錄？"
 
-#: lib/tokens/pushtoken.py:300
+#: lib/tokens/pushtoken.py:368
 msgid "PUSH Token"
 msgstr "推送令牌"
 
-#: lib/tokens/pushtoken.py:302
+#: lib/tokens/pushtoken.py:370
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "推送：向智慧手機發送推送通知。"
 
-#: lib/tokens/pushtoken.py:310
+#: lib/tokens/pushtoken.py:379
 msgid "The configuration of your Firebase application."
 msgstr "您的 Firebase 應用的配置。"
 
-#: lib/tokens/pushtoken.py:318
+#: lib/tokens/pushtoken.py:387
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
@@ -2359,136 +2681,165 @@ msgstr ""
 "推送應用在第二個註冊步驟中應聯繫的URL。通常它是privacyIDEA伺服器的端點/ttype/"
 "push。"
 
-#: lib/tokens/pushtoken.py:324
+#: lib/tokens/pushtoken.py:393
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr "第二個註冊步驟必須在此時間內完成（以分鐘為單位）。"
 
-#: lib/tokens/pushtoken.py:328
+#: lib/tokens/pushtoken.py:397
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr "智能手機需要在註冊期間驗證 SSL。（預設值 1）"
 
-#: lib/tokens/pushtoken.py:334
+#: lib/tokens/pushtoken.py:403
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr "使用者只能分配此最大數量的推送令牌。"
 
-#: lib/tokens/pushtoken.py:339
+#: lib/tokens/pushtoken.py:408
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
 msgstr "使用者只能分配此最大數量的活動推送令牌。"
 
-#: lib/tokens/pushtoken.py:345
+#: lib/tokens/pushtoken.py:414
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:351
-msgid "The question the user sees on his mobile phone."
-msgstr "用戶在行動電話上看到的問題。"
+#: lib/tokens/pushtoken.py:420
+msgid ""
+"The question the user sees on his mobile phone. Several tags like {serial} "
+"and {client_ip} can be used as parameters."
+msgstr ""
 
-#: lib/tokens/pushtoken.py:356
+#: lib/tokens/pushtoken.py:427
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "使用者在其行動電話上看到的通知的標題。"
 
-#: lib/tokens/pushtoken.py:361
+#: lib/tokens/pushtoken.py:432
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "智能手機需要在身份驗證期間驗證 SSL。（預設值 1）"
 
-#: lib/tokens/pushtoken.py:367
+#: lib/tokens/pushtoken.py:438
+msgid "Require the user to confirm the login with a presence check."
+msgstr ""
+
+#: lib/tokens/pushtoken.py:443
+msgid ""
+"The options that can be presented to the user to confirm the login. "
+"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
+"code>: user defined. "
+msgstr ""
+
+#: lib/tokens/pushtoken.py:452
+msgid ""
+"Custom options that can be presented to the user to confirm the login. The "
+"string must contain at least 2 options and should be unique. The options are "
+"separated by <code>:</code>. e.g.: <code>01:02:03:1A:1B:1C</code>. to "
+"<code>CUSTOM</code>."
+msgstr ""
+
+#: lib/tokens/pushtoken.py:462
+msgid "The number of options the user is presented with to confirm the login. "
+msgstr ""
+
+#: lib/tokens/pushtoken.py:469
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr "等待秒數，以便使用者在第一個請求中確認質詢。"
 
-#: lib/tokens/pushtoken.py:373
+#: lib/tokens/pushtoken.py:475
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "配置是否允許推送令牌輪詢質詢"
 
-#: lib/tokens/pushtoken.py:508
+#: lib/tokens/pushtoken.py:610
 msgid "URL for privacyIDEA Push Token"
 msgstr "privacyIDEA 推送令牌的URL"
 
-#: lib/tokens/questionnairetoken.py:98
+#: lib/tokens/pushtoken.py:1201
+msgid "Please scan the QR code!"
+msgstr "請掃描二維碼"
+
+#: lib/tokens/questionnairetoken.py:96
 msgid "Questionnaire: Enroll Questions for the user."
 msgstr "調查表：為用戶註冊問題。"
 
-#: lib/tokens/questionnairetoken.py:109
+#: lib/tokens/questionnairetoken.py:107
 msgid "The user has to answer this number of questions during authentication."
 msgstr "用戶必須在身份驗證期間回答這批問題。"
 
-#: lib/tokens/questionnairetoken.py:117
+#: lib/tokens/questionnairetoken.py:115
 msgid ""
 "The user may only have this maximum number of questionaire tokens assigned."
 msgstr "使用者只能分配此最大數量的提問者令牌。"
 
-#: lib/tokens/questionnairetoken.py:122
+#: lib/tokens/questionnairetoken.py:120
 msgid ""
 "The user may only have this maximum number of active questionaire tokens "
 "assigned."
 msgstr "使用者只能分配此最大數量的活動提問者令牌。"
 
-#: lib/tokens/questionnairetoken.py:166
+#: lib/tokens/questionnairetoken.py:164
 #, python-format
 msgid "You need to provide at least %s answers."
 msgstr "您需要至少提供 %s 答案。"
 
-#: lib/tokens/radiustoken.py:108
+#: lib/tokens/radiustoken.py:106
 msgid "RADIUS: Forward authentication request to a RADIUS server."
 msgstr "RADIUS：將身份驗證請求轉發到RADIUS伺服器。"
 
-#: lib/tokens/radiustoken.py:117
+#: lib/tokens/radiustoken.py:115
 msgid "The user may only have this maximum number of RADIUS tokens assigned."
 msgstr "使用者只能分配此最大數量的RADIUS令牌。"
 
-#: lib/tokens/radiustoken.py:122
+#: lib/tokens/radiustoken.py:120
 msgid ""
 "The user may only have this maximum number of active RADIUS tokens assigned."
 msgstr "使用者只能分配此最大數量的活動RADIUS令牌。"
 
-#: lib/tokens/registrationtoken.py:129
+#: lib/tokens/registrationtoken.py:127
 msgid ""
 "Registration: A token that creates a registration code that can be used as a "
 "second factor once."
 msgstr "註冊：創建註冊碼的令牌，該註冊碼可用作第二因素一次。"
 
-#: lib/tokens/registrationtoken.py:141
+#: lib/tokens/registrationtoken.py:139
 msgid ""
 "The user may only have this maximum number of registration tokens assigned."
 msgstr "使用者只能分配此最大數量的註冊令牌。"
 
-#: lib/tokens/registrationtoken.py:146
+#: lib/tokens/registrationtoken.py:144
 msgid ""
 "The user may only have this maximum number of active registration tokens "
 "assigned."
 msgstr "使用者只能分配此最大數量的活動註冊令牌。"
 
-#: lib/tokens/remotetoken.py:114
+#: lib/tokens/remotetoken.py:112
 msgid "Remote Token: Forward authentication request to another server."
 msgstr "遠端令牌：將身份驗證請求轉發到另一台伺服器。"
 
-#: lib/tokens/remotetoken.py:123 lib/tokens/totptoken.py:166
+#: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:164
 msgid "The user may only have this maximum number of remote tokens assigned."
 msgstr "使用者只能分配此最大數量的遠端令牌。"
 
-#: lib/tokens/remotetoken.py:128 lib/tokens/totptoken.py:171
+#: lib/tokens/remotetoken.py:126 lib/tokens/totptoken.py:169
 msgid ""
 "The user may only have this maximum number of active remote tokens assigned."
 msgstr "使用者只能分配此最大數量的活動遠端令牌。"
 
-#: lib/tokens/smstoken.py:200
+#: lib/tokens/smstoken.py:198
 msgid "SMS Token"
 msgstr "短信令牌"
 
-#: lib/tokens/smstoken.py:202
+#: lib/tokens/smstoken.py:200
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "短信：向用戶手機發送一次性密碼。"
 
-#: lib/tokens/smstoken.py:211
+#: lib/tokens/smstoken.py:209
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr "將通過簡訊發送的文本，用於簡訊令牌。使用{otp}和{serial}作為參數。"
 
-#: lib/tokens/smstoken.py:216
+#: lib/tokens/smstoken.py:214
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with one "
 "SMS OTP."
@@ -2496,11 +2847,16 @@ msgstr ""
 "如果設置，在使用一個簡訊一次性密碼成功進行身份驗證后，將發送新的簡訊一次性密"
 "碼。"
 
-#: lib/tokens/smstoken.py:221
+#: lib/tokens/smstoken.py:219
+#, fuzzy
+#| msgid ""
+#| "Use an alternate challenge text for telling the user to enter the code "
+#| "from the eMail."
 msgid ""
-"Use an alternate challenge text for telling the user to enter the code from "
-"the SMS."
-msgstr "使用備用質詢文本告訴使用者輸入簡訊中的代碼。"
+"Use an alternative challenge text for telling the user to enter the code "
+"from the SMS. You can also use tags for automated replacement. Check out the "
+"documentation for more details."
+msgstr "使用替代質詢文本告訴使用者輸入電子郵件中的代碼。"
 
 #: lib/tokens/smstoken.py:229
 msgid "Choose the gateways the administrator is allowed to set."
@@ -2527,81 +2883,96 @@ msgstr "從簡訊中輸入OTP："
 msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
-#: lib/tokens/smstoken.py:605
+#: lib/tokens/smstoken.py:606
 msgid "Please enter your new phone number!"
 msgstr ""
 
-#: lib/tokens/spasstoken.py:88
+#: lib/tokens/spasstoken.py:86
 msgid "SPass: Simple Pass token. Static passwords."
 msgstr "SPass：簡單傳遞令牌。靜態密碼。"
 
-#: lib/tokens/spasstoken.py:100
+#: lib/tokens/spasstoken.py:98
 msgid "The user may only have this maximum number of SPASS tokens assigned."
 msgstr "使用者只能分配此最大數量的 SPASS 令牌。"
 
-#: lib/tokens/spasstoken.py:105
+#: lib/tokens/spasstoken.py:103
 msgid ""
 "The user may only have this maximum number of active SPASS tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 SPASS 令牌。"
 
-#: lib/tokens/sshkeytoken.py:84
+#: lib/tokens/sshkeytoken.py:82
 msgid "SSH Public Key: The public SSH key."
 msgstr "SSH 公鑰：公有 SSH 金鑰。"
 
-#: lib/tokens/sshkeytoken.py:93
+#: lib/tokens/sshkeytoken.py:91
 msgid "The user may only have this maximum number of SSH keys assigned."
 msgstr "使用者只能分配此最大數量的 SSH 金鑰。"
 
-#: lib/tokens/sshkeytoken.py:98
+#: lib/tokens/sshkeytoken.py:96
 msgid "The user may only have this maximum number of active SSH keys assigned."
 msgstr "使用者只能分配此最大數量的活動 SSH 金鑰。"
 
-#: lib/tokens/tantoken.py:112
+#: lib/tokens/tantoken.py:96
+msgid "TAN: TANs printed on a sheet of paper."
+msgstr ""
+
+#: lib/tokens/tantoken.py:111
 msgid "The user may only have this maximum number of TAN tokens assigned."
 msgstr "使用者只能分配此最大數量的 TAN 令牌。"
 
-#: lib/tokens/tantoken.py:117
+#: lib/tokens/tantoken.py:116
 msgid ""
 "The user may only have this maximum number of active TAN tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 TAN 令牌。"
 
-#: lib/tokens/tiqrtoken.py:158
+#: lib/tokens/tiqrtoken.py:156
 msgid "TiQR: Enroll a TiQR token."
 msgstr "TiQR：註冊 TiQR 令牌。"
 
-#: lib/tokens/tiqrtoken.py:168
+#: lib/tokens/tiqrtoken.py:166
 msgid "The user may only have this maximum number of TiQR tokens assigned."
 msgstr "使用者只能分配此最大數量的 TiQR 令牌。"
 
-#: lib/tokens/tiqrtoken.py:173
+#: lib/tokens/tiqrtoken.py:171
 msgid ""
 "The user may only have this maximum number of active TiQR tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 TiQR 令牌。"
 
-#: lib/tokens/tiqrtoken.py:238
+#: lib/tokens/tiqrtoken.py:236
 msgid "URL for TiQR enrollment"
 msgstr "TiQR 註冊的網址"
 
-#: lib/tokens/tiqrtoken.py:395
+#: lib/tokens/tiqrtoken.py:394
 msgid "Please scan the QR Code"
 msgstr "請掃描二維碼"
 
-#: lib/tokens/totptoken.py:62
+#: lib/tokens/totptoken.py:60
 msgid "Specify the time step of the time-based OTP token."
 msgstr ""
 
-#: lib/tokens/totptoken.py:109
+#: lib/tokens/totptoken.py:107
 msgid "TOTP: Time based One Time Passwords."
 msgstr "TOTP：基於時間的一次性密碼。"
 
-#: lib/tokens/u2ftoken.py:260
+#: lib/tokens/u2ftoken.py:248
+#, fuzzy
+#| msgid "TiQR: Enroll a TiQR token."
+msgid "U2F: Enroll a U2F token."
+msgstr "TiQR：註冊 TiQR 令牌。"
+
+#: lib/tokens/u2ftoken.py:258
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
 msgstr "這是信任已註冊的U2F令牌的FQDN主機名的清單。"
 
-#: lib/tokens/u2ftoken.py:264
+#: lib/tokens/u2ftoken.py:262
+#, fuzzy
+#| msgid ""
+#| "Use an alternate challenge text for telling the user to confirm with his "
+#| "U2F device."
 msgid ""
-"Use an alternate challenge text for telling the user to confirm with his U2F "
-"device."
+"Use an alternative challenge text for telling the user to confirm with his "
+"U2F device. You can also use tags for automated replacement. Check out the "
+"documentation for more details."
 msgstr "使用備用質詢文本告訴使用者使用其 U2F 設備進行確認。"
 
 #: lib/tokens/u2ftoken.py:271
@@ -2629,43 +3000,47 @@ msgstr "使用者只能分配此最大數量的活動U2F令牌。"
 msgid "You need to define the appId in the token config!"
 msgstr "您需要在令牌配置中定義 appId！"
 
-#: lib/tokens/u2ftoken.py:444
+#: lib/tokens/u2ftoken.py:443
 msgid "Please confirm with your U2F token ({0!s})"
 msgstr "請使用您的 U2F 令牌 ({0!s}) 進行確認"
 
-#: lib/tokens/vascotoken.py:101
+#: lib/tokens/vascotoken.py:99
 msgid "VASCO Token: Authentication using VASCO tokens"
 msgstr "VASCO 令牌：使用 VASCO 令牌進行身份驗證"
 
-#: lib/tokens/vascotoken.py:110
+#: lib/tokens/vascotoken.py:108
 msgid "The user may only have this maximum number of Vasco tokens assigned."
 msgstr "使用者只能分配此最大數量的 Vasco 令牌。"
 
-#: lib/tokens/vascotoken.py:115
+#: lib/tokens/vascotoken.py:113
 msgid ""
 "The user may only have this maximum number of active Vasco tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 Vasco 令牌。"
 
-#: lib/tokens/webauthntoken.py:460
+#: lib/tokens/webauthntoken.py:458
 msgid "Generic WebAuthn Token"
 msgstr "通用 WebAuthn 令牌"
 
-#: lib/tokens/webauthntoken.py:470
+#: lib/tokens/webauthntoken.py:468
 msgid "Please confirm with your WebAuthn token ({0!s})"
 msgstr "請使用您的 WebAuthn 令牌 ({0!s}) 進行確認"
 
-#: lib/tokens/webauthntoken.py:471
+#: lib/tokens/webauthntoken.py:469
 msgid "Please confirm with your WebAuthn token"
 msgstr "請使用您的 WebAuthn 令牌進行確認"
 
-#: lib/tokens/webauthntoken.py:608
+#: lib/tokens/webauthntoken.py:596
+msgid "WebAuthn: Enroll a Web Authentication token."
+msgstr ""
+
+#: lib/tokens/webauthntoken.py:606
 msgid ""
 "A list of transports to prefer to communicate with WebAuthn tokens. Default: "
 "usb ble nfc internal (All standard transports)"
 msgstr ""
 "首選與 WebAuthn 令牌通信的傳輸清單。預設值：usb ble nfc 內部（所有標準傳輸）"
 
-#: lib/tokens/webauthntoken.py:613
+#: lib/tokens/webauthntoken.py:611
 msgid ""
 "The time in seconds the user has to confirm authorization on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
@@ -2674,7 +3049,7 @@ msgstr ""
 "用戶必須在其 WebAuthn 令牌上確認授權的時間（以秒為單位）。注意：您將希望同時"
 "增加 ChallengeValidityTime。默認值：60"
 
-#: lib/tokens/webauthntoken.py:619
+#: lib/tokens/webauthntoken.py:617
 msgid ""
 "Whether the user's identity should be verified when authenticating with a "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
@@ -2683,10 +3058,15 @@ msgstr ""
 "使用 WebAuthn 令牌進行身份驗證時是否應驗證使用者的身份。預設值：首選（驗證權"
 "杖是否支援使用者）"
 
-#: lib/tokens/webauthntoken.py:629
+#: lib/tokens/webauthntoken.py:627
+#, fuzzy
+#| msgid ""
+#| "Use an alternative challenge text for telling the user to confirm with "
+#| "his WebAuthn token."
 msgid ""
-"Use an alternative challenge text for telling the user to confirm with his "
-"WebAuthn token."
+"Use an alternative challenge text for telling the user to confirm the login "
+"with his WebAuthn token. You can also use tags for automated replacement. "
+"Check out the documentation for more details."
 msgstr "使用替代質詢文本告訴使用者使用其WebAuthn令牌進行確認。"
 
 #: lib/tokens/webauthntoken.py:636
@@ -2792,94 +3172,117 @@ msgid "The user may only have this number of active WebAuthn tokens assigned."
 msgstr "使用者只能分配此數量的活動 WebAuthn 令牌。"
 
 #: lib/tokens/webauthntoken.py:749
+#, fuzzy
+#| msgid ""
+#| "Use an alternative challenge text for telling the user to confirm with "
+#| "his WebAuthn token."
 msgid ""
-"Use an alternate challenge text for telling the user to confirm with his "
-"WebAuthn device."
-msgstr "使用替代質詢文本告訴使用者使用其 WebAuthn 設備進行確認。"
+"Use an alternative challenge text for telling the user to confirm the "
+"enrollment with his WebAuthn device. You can also use tags for automated "
+"replacement. Check out the documentation for more details."
+msgstr "使用替代質詢文本告訴使用者使用其WebAuthn令牌進行確認。"
 
-#: lib/tokens/yubicotoken.py:103
+#: lib/tokens/yubicotoken.py:101
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
 msgstr "Yubikey Cloud 模式：將身份驗證請求轉發到 YubiCloud。"
 
-#: lib/tokens/yubicotoken.py:112
+#: lib/tokens/yubicotoken.py:110
 msgid "The user may only have this maximum number of Yubico tokens assigned."
 msgstr "使用者只能分配此最大數量的 Yubico 令牌。"
 
-#: lib/tokens/yubicotoken.py:117
+#: lib/tokens/yubicotoken.py:115
 msgid ""
 "The user may only have this maximum number of active Yubico tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 Yubico 令牌。"
 
-#: lib/tokens/yubikeytoken.py:161
+#: lib/tokens/yubikeytoken.py:160
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
 msgstr "Yubikey AES模式：使用Yubikey的一次性密碼。"
 
-#: lib/tokens/yubikeytoken.py:170
+#: lib/tokens/yubikeytoken.py:169
 msgid "The user may only have this maximum number of Yubikey tokens assigned."
 msgstr "使用者只能分配此最大數量的 Yubikey 令牌。"
 
-#: lib/tokens/yubikeytoken.py:175
+#: lib/tokens/yubikeytoken.py:174
 msgid ""
 "The user may only have this maximum number of active Yubikey tokens assigned."
 msgstr "使用者只能分配此最大數量的活動 Yubikey 令牌。"
 
-#: lib/tokens/yubikeytoken.py:181
+#: lib/tokens/yubikeytoken.py:180
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize "
 "Yubikeys."
 msgstr "用於初始化 Yubikey 的 Yubikey 存取代碼。"
 
-#: lib/utils/compare.py:191
+#: lib/utils/compare.py:189
 msgid "true if the value of the left attribute contains the right value"
 msgstr "如果 left 屬性的值包含右值，則為 true"
 
-#: lib/utils/compare.py:192
+#: lib/utils/compare.py:190
 msgid "false if the value of the left attribute contains the right value"
 msgstr "如果 left 屬性的值包含右值，則為 true"
 
-#: lib/utils/compare.py:194
+#: lib/utils/compare.py:192
 msgid "true if the value of the left attribute equals the right value"
 msgstr "如果 left 屬性的值等於右值，則為 true"
 
-#: lib/utils/compare.py:195
+#: lib/utils/compare.py:193
 msgid "false if the value of the left attribute equals the right value"
 msgstr "如果左屬性的值等於右值，則為 false"
 
-#: lib/utils/compare.py:197
+#: lib/utils/compare.py:195
 msgid ""
 "true if the value of the left attribute completely matches the given regular "
 "expression pattern on the right"
 msgstr "如果左側屬性的值與右側給定的正則表達式模式完全匹配，則為 true"
 
-#: lib/utils/compare.py:198
+#: lib/utils/compare.py:196
 msgid ""
 "false if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr "如果左側屬性的值與右側給定的正則表達式模式完全匹配，則為 false"
 
-#: lib/utils/compare.py:200
+#: lib/utils/compare.py:198
 msgid ""
 "true if the value of the left attribute is contained in the comma-separated "
 "values on the right"
 msgstr "如果左側屬性的值包含在右側的逗號分隔值中，則為 true"
 
-#: lib/utils/compare.py:201
+#: lib/utils/compare.py:199
 msgid ""
 "false if the value of the left attribute is contained in the comma-separated "
 "values on the right"
 msgstr "如果左側屬性的值包含在右側的逗號分隔值中，則為 false"
 
-#: lib/utils/compare.py:203
+#: lib/utils/compare.py:201
 msgid ""
 "true if the integer value of the left attribute is smaller than the right "
 "integer value"
 msgstr "如果左側屬性的整數值小於右側整數值，則為 true"
 
-#: lib/utils/compare.py:204
+#: lib/utils/compare.py:202
 msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr "如果左側屬性的整數值大於右側整數值，則為 true"
+
+#~ msgid ""
+#~ "Use an alternate challenge text for telling the user to enter an OTP "
+#~ "value."
+#~ msgstr "使用替代質詢文本告訴使用者輸入 OTP 值。"
+
+#~ msgid ""
+#~ "Use an alternate challenge text for telling the user to enter the code "
+#~ "from the SMS."
+#~ msgstr "使用備用質詢文本告訴使用者輸入簡訊中的代碼。"
+
+#~ msgid ""
+#~ "Use an alternate challenge text for telling the user to confirm with his "
+#~ "WebAuthn device."
+#~ msgstr "使用替代質詢文本告訴使用者使用其 WebAuthn 設備進行確認。"
+
+#~ msgid "The question the user sees on his mobile phone."
+#~ msgstr "用戶在行動電話上看到的問題。"
 
 #~ msgid ""
 #~ "Set label for a new enrolled Google Authenticator. Possible tags are &lt;"
