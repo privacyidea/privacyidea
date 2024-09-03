@@ -4,7 +4,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.10dev5"
+VERSION = "3.10"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -159,11 +159,12 @@ setup(
                  " Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7',
                  'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
-                 'Programming Language :: Python :: 3.10'
+                 'Programming Language :: Python :: 3.10',
+                 'Programming Language :: Python :: 3.11',
+                 'Programming Language :: Python :: 3.12'
                  ],
     zip_safe=False,
     long_description=get_file_contents('README.rst')

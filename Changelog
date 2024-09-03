@@ -1,4 +1,4 @@
-Version 3.10, 2024-08-23
+Version 3.10, 2024-09-03
 
   Features:
   * Node-specific realms (#3758)
@@ -14,47 +14,61 @@ Version 3.10, 2024-08-23
     * Added container serial and type as columns to the audit log
 
   Enhancements:
+  * Drop support of Python 3.6 and enable Python 3.11 and 3.12 (#3593, #3711, #3760)
   * UI: Capitalize headings
-  * UI user details: Enable/disable tokens, reset the fail counter, delete tokens and unassign user from token
+  * UI: Enable/disable tokens, reset the fail counter, delete tokens and unassign user from token in user details
+  * UI: The support button in the footer will now initiate an email to ease the request of support (#3919)
+  * UI: Add multiple choice elements for realms and resolvers (#3793)
+  * UI: Hide enroll token menu entry, if no token-type is allowed (#4053)
   * MS CA Connector: Added certificate revocation (#3316)
   * Email and Phone number attributes can be used in challenge texts (#2917)
   * Validity of JWT can be configured (#3996)
-  * UI: The support button in the footer will now initiate an email to ease the request of support (#3919)
-  * PUSH token: Optionally, the user can be required to press a number or character that is displayed on login
+  * PUSH: Optionally, the user can be required to press a number or character that is displayed on login
                 to complete the push authentication (#3897)
+  * PUSH: Add event handler for declining push requests (#3632)
+  * PUSH: Allow tags in PUSH notifications (#3227)
   * Added "Authentication" condition to event handlers, which can be used to distinguish between
     SUCCESS, FAILED and CHALLENGE (#3886)
-  * Enrollment via validate can have a custom enrollment text (#3890)
+  * Enrollment via validate can have a custom enrollment text (#3884)
   * Allow case insensitive usernames in policies (#3281)
   * Cleanup of expired challenges externally (#3920)
-  * Migration of several tools to the click framework
-  * Offline token: Allow to post-pend the PIN
-  * Dump token data to JSON
-  * Allow case-insensitive usernames in policies
-  * Allow extended notes on policies
-  * WebAuthn: Allow offline usage
-  * Add user-agent to audit log
-  * Check secret length for Yubikey token during enrollment
+  * Tools: Migration of several tools to the click framework (#2498, #3769)
+  * Add functionality to dump token data to YAML (#3005)
+  * Allow extended notes on policies (#1814, #3895)
+  * WebAuthn: Allow offline usage (#3764, #3857, #3866)
+  * Add user-agent to audit log (#3856)
+  * Check Yubikey OTP length before validating (#3746)
+  * Check secret length for Yubikey token during enrollment (#3725)
   * Enable user-agent version in subscription checks (#3800)
-  * token-janitor now uses the click framework (#3769)
   * Enhance offline token to allow refill for WebAuthn tokens (#3764)
+  * Add policy to disable PIN+OTP check when using challenge-response (#4051)
+  * Add privacyIDEA version to exported data and warn during import if versions mismatch (#4055)
+  * Make token description available as a tag in the user-notification handler (#3763)
+  * Add "creator" tag to QR-code for enrollment (#3902)
+  * Add email validation to enrollment (#3918)
 
   Fixes:
   * UI: Added translation for page navigation in the user details and list pages
   * UI: Fixed open and close all actions in create new policy and conditions in create new event handler
-  * When attaching a token to a machine, validate the serial and the application (#4019)
   * UI: Removed duplicated controller calls resulting in duplicated API calls (#3421)
+  * UI: Cancel poll-transaction in case another token is used (#3861)
+  * UI: Fix reset of user filters when changing user view (#3543)
+  * UI: Fix error during generation of drop-down lists in UI (#3937)
+  * UI: Hide "unassign" button in token view if the user does not have the proper rights (#3966)
+  * When attaching a token to a machine, validate the serial and the application (#4019)
   * The realm of the token owner can not be removed from the token, unless the token is unassigned from the user (#3986)
-  * Declined PUSH requests are now saved as such and can no longer be polled (#4026)
-  * Label policies are considered for PUSH token enrollment via validate (#3883)
+  * PUSH: Declined PUSH requests are now saved as such and can no longer be polled (#4026)
+  * PUSH: Label policies are now considered for PUSH token enrollment via validate (#3883)
   * Verify enrollment now works for indexed secret token (#3869)
   * Remove duplicate messages from response (#3989)
   * Lazy translation evaluation for static strings (#3721)
   * Truncate token description (#3747)
-  * Verify enrollment for indexed secret token
-  * Verify enrollment for paper token and TAN token
-  * WebUI: Cancel poll-transaction in case another token is used
   * Use uppercase hash name for google-authenticator URLs (#3812)
+  * Improve logging of event handler status in Audit log (#3781)
+  * Update config description of LDAP resolver to remove warning (#3854)
+  * Add missing index to Challenge.expiration column (#3920)
+  * Fix usage of challenge text and token defaults policies during multi-challenge enrollment (#3928, #3976)
+  * Enable sms/email text policies when verifying enrollment (#3971)
 
 Version 3.9.3, 2024-04-04
 
