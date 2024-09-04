@@ -901,7 +901,8 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(realm, "domain")
         self.assertEqual(adminuser, "hans")
         self.assertEqual(adminrealm, "realm1")
-        self.assertEqual()
+        self.assertEqual(userid, 2)
+        self.assertEqual(adminuserid, 1)
 
         self.assertRaises(PolicyError, determine_logged_in_userparams,
                           {"role": "marshal",
