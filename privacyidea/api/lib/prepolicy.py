@@ -193,8 +193,7 @@ def set_random_pin(request=None, action=None):
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm, userid,
-     adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
     pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
@@ -484,8 +483,8 @@ def enroll_pin(request=None, action=None):
     enrollment. If not, it deleted the PIN from the request.
     """
     resolver = request.User.resolver if request.User else None
-    (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                                             request.all_data)
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                        request.all_data)
     allowed_action = Match.generic(g, scope=role,
                                    action=ACTION.ENROLLPIN,
                                    user_object=request.User,
@@ -728,8 +727,8 @@ def twostep_enrollment_parameters(request=None, action=None):
     token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                                             request.all_data)
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                        request.all_data)
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
@@ -1239,8 +1238,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
-    (role, username, realm, adminuser, adminrealm, userid,
-     adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
     if action is ACTION.AUDIT:
@@ -1290,8 +1288,7 @@ def check_container_action(request=None, action=None):
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
-    (role, username, realm, adminuser, adminrealm, userid,
-     adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     realm = params.get("realm")
     resolver = resolver or params.get("resolver")
@@ -1389,8 +1386,7 @@ def check_token_init(request=None, action=None):
                       "enroll this token type!"}
     params = request.all_data
     resolver = request.User.resolver if request.User else None
-    (role, username, userrealm, adminuser, adminrealm, userid,
-     adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     init_allowed = Match.generic(g, action=action,
@@ -1456,7 +1452,6 @@ def api_key_required(request=None, action=None):
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
             g.logged_in_user = {"username": r.get("username", ""),
-                                "userid": r.get("userid", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
         except (AttributeError, jwt.DecodeError):
@@ -1648,10 +1643,8 @@ def u2ftoken_allowed(request, action):
             .action_values(unique=False)
 
         if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
-            log.warning("The U2F device {0!s} is not "
-                        "allowed to be registered due to policy "
-                        "restriction".format(
-                            serial))
+            log.warning("The U2F device {0!s} is not allowed to be registered due to policy restriction"
+                        .format(serial))
             raise PolicyError("The U2F device is not allowed "
                               "to be registered due to policy "
                               "restriction.")
@@ -2020,7 +2013,7 @@ def webauthntoken_enroll(request, action):
             .action_values(unique=True)
         authenticator_attachment = list(authenticator_attachment_policies)[0] \
             if authenticator_attachment_policies \
-            and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
+               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
             else None
 
         # we need to set `unique` to False since this policy can contain multiple values
@@ -2258,7 +2251,7 @@ def required_piv_attestation(request, action=None):
 
         # Add parameter verify_attestation
         request.all_data["verify_attestation"] = REQUIRE_ACTIONS.VERIFY in list(require_att) or \
-            REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
+                                                 REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
 
 
 def hide_tokeninfo(request=None, action=None):
@@ -2311,8 +2304,7 @@ def require_description(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm, userid,
-     adminuserid) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,
@@ -2329,7 +2321,7 @@ def require_description(request=None, action=None):
         serial = getParam(params, "serial")
         if serial:
             tok = get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True) or \
-                get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
+                  get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
         # only if no token exists, yet, we need to check the description
         if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))

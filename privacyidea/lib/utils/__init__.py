@@ -1433,28 +1433,24 @@ def determine_logged_in_userparams(logged_in_user, params):
 
     :param logged_in_user: Logged-in user dictionary.
     :param params: Request parameters (all_data)
-    :return: Tuple of (scope, username, realm, adminuser, adminrealm, userid, adminuserid)
+    :return: Tuple of (scope, username, realm, adminuser, adminrealm)
     """
     role = logged_in_user.get("role")
     username = logged_in_user.get("username")
     realm = logged_in_user.get("realm")
-    userid = logged_in_user.get("userid")
     admin_realm = None
     admin_user = None
-    admin_userid = None
     if role == "admin":
         admin_realm = realm
         admin_user = username
-        admin_userid = userid
         username = params.get("user")
         realm = params.get("realm")
-        userid = params.get("userid")
     elif role == "user":
         pass
     else:
         raise PolicyError("Unknown role: {}".format(role))
 
-    return role, username, realm, admin_user, admin_realm, userid, admin_userid
+    return role, username, realm, admin_user, admin_realm
 
 
 def to_list(input):

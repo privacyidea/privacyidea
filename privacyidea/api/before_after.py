@@ -164,7 +164,6 @@ def before_request():
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.
         request.all_data["user"] = g.logged_in_user.get("username")
-        request.all_data["userid"] = g.logged_in_user.get("userid")
         request.all_data["realm"] = g.logged_in_user.get("realm")
 
     try:

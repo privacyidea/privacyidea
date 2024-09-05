@@ -164,7 +164,6 @@ class ScriptEventHandler(BaseEventHandler):
             logged_in_user = g.logged_in_user
         else:
             logged_in_user = {"username": "none",
-                              "userid": "none",
                               "realm": "none",
                               "role": "none"}
 

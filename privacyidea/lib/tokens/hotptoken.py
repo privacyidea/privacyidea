@@ -341,7 +341,7 @@ class HotpTokenClass(TokenClass):
             # Add twostep settings to the tokeninfo
             for key, default in [
                 ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
-                    ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
+                ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
                 self.add_tokeninfo(key, getParam(param, key, optional, default))
 
         val = getParam(upd_param, "hashlib", optional)
@@ -353,7 +353,7 @@ class HotpTokenClass(TokenClass):
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
         key_size = getParam(upd_param, 'key_size', optional) \
-            or getParam(upd_param, 'keysize', optional)
+                   or getParam(upd_param, 'keysize', optional)
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
@@ -372,7 +372,7 @@ class HotpTokenClass(TokenClass):
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
-            self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+           self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
 
     @property
     def hashlib(self):
@@ -717,13 +717,11 @@ class HotpTokenClass(TokenClass):
         ret = {}
         if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                                                 params)
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
         return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
 
     @classmethod
-    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
-                              adminuser=None, adminrealm=None, userid=None):
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None, adminuser=None, adminrealm=None):
         """
         Internal function that can be called either during enrollment via /token/init or during
         enrollment via validate/check.

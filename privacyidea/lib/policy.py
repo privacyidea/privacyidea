@@ -1285,11 +1285,11 @@ class PolicyClass(object):
         # In this case we do not distinguish the userobject as for whom an administrator would enroll a token
         # We simply want to know which tokentypes a user or an admin in generally allowed to enroll. This is
         # why we pass an empty params.
-        (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(logged_in_user, {})
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user, {})
         user_object = None
         if username and userrealm:
             # We need a user_object to do user-attribute specific policy matching
-            user_object = User(username, userrealm, uid=userid)
+            user_object = User(username, userrealm)
         # check, if we have a policy definition at all.
         pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()

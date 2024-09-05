@@ -362,8 +362,7 @@ class CertificateTokenClass(TokenClass):
         :return: default parameters
         """
         ret = {ACTION.TRUSTED_CA_PATH: DEFAULT_CA_PATH}
-        (role, username, userrealm, adminuser, adminrealm, userid, adminuserid) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                                                 params)
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
         # Now we fetch CA-pathes from the policies
         paths = Match.generic(g, scope=role,
                               action=ACTION.TRUSTED_CA_PATH,
