@@ -131,7 +131,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_token_action(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -199,7 +198,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "disable", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         r = check_base_action(req, "disable")
@@ -211,12 +209,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01a_admin_realms(self):
         admin1 = {"username": "admin1",
-                  "userid": "1",
                   "role": "admin",
                   "realm": "realm1"}
 
         admin2 = {"username": "admin1",
-                  "userid": "1",
                   "role": "admin",
                   "realm": "realm2"}
 
@@ -247,7 +243,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_02_check_token_init(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -280,7 +275,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "enroll", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         r = check_token_init(req)
@@ -288,7 +282,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # An exception is raised for an invalid role
         g.logged_in_user = {"username": "user1",
-                            "userid": "3",
                             "role": "invalid"}
         with self.assertRaises(PolicyError):
             check_token_init(req)
@@ -298,7 +291,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_03_check_token_upload(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -336,7 +328,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04a_check_max_active_token_user(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -437,7 +428,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -552,7 +542,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_05_check_max_token_realm(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -604,7 +593,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_realm(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -660,7 +648,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_tokenlabel(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -718,7 +705,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_07a_init_random_pin(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -768,7 +754,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_07b_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -872,7 +857,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -903,7 +887,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08a_enroll_pin_admin(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -935,7 +918,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08b_enroll_pin_user(self):
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "realm": self.realm1,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -969,7 +951,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_09_pin_policies(self, capture):
         create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1063,7 +1044,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_09_pin_policies_admin(self, capture):
         create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
-                            "userid": "5",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1154,7 +1134,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_01b_token_specific_pin_policy(self):
         create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
-                            "userid": "5",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1214,7 +1193,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1291,7 +1269,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_12_mangle(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1391,7 +1368,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_14_required_email(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1511,14 +1487,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # Test AdminA
         g.logged_in_user = {"username": "adminA",
-                            "userid": "6",
                             "role": "admin",
                             "realm": ""}
         r = check_base_action(req, action=ACTION.POLICYWRITE)
         self.assertEqual(r, True)
         # Test AdminB
         g.logged_in_user = {"username": "adminB",
-                            "userid": "7",
                             "role": "admin",
                             "realm": ""}
         # AdminB is allowed to add user
@@ -1529,7 +1503,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           action=ACTION.POLICYWRITE)
         # Test AdminC: is not allowed to do anything
         g.logged_in_user = {"username": "adminC",
-                            "userid": "8",
                             "role": "admin",
                             "realm": ""}
         self.assertRaises(PolicyError, check_base_action, req,
@@ -1555,7 +1528,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "resolver": "resolverA"}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "adminA",
-                            "userid": "6",
                             "role": "admin",
                             "realm": ""}
         # User can be added
@@ -1572,7 +1544,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_18_auditlog_age(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1612,7 +1583,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.ADMIN,
                    action="{0!s}=serial action".format(ACTION.HIDE_AUDIT_COLUMNS))
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         # request, that matches the policy
@@ -1630,7 +1600,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.USER,
                    action="{0!s}=number realm".format(ACTION.HIDE_AUDIT_COLUMNS))
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         # request, that matches the policy
@@ -1655,7 +1624,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.ADMIN,
                    action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         req.all_data = {}
@@ -1667,7 +1635,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             self.assertIn(col, req.all_data.get("hidden_tokeninfo"))
         # check that it won't be added when logged in as a user
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         req.all_data = {}
@@ -1681,7 +1648,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.USER,
                    action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         req.all_data = {}
@@ -1693,7 +1659,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # check that it won't be added when logged in as an admin
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         req.all_data = {}
@@ -1705,7 +1670,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_papertoken_count(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1732,7 +1696,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_tantoken_count(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1759,7 +1722,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20_allowed_audit_realm(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1812,7 +1774,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # we set the policy scope=enrollment, action=no_verifcy
         from privacyidea.lib.tokens.u2ftoken import U2FACTION
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1849,7 +1810,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -1873,7 +1833,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "root",
-                            "userid": "9",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1896,7 +1855,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_22_push_firebase_config(self):
         from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
         g.logged_in_user = {"username": "user1",
-                            "userid": "2",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1977,7 +1935,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Cornelius is allowed to enroll TOTP
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "realm": realm,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -2001,7 +1958,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Corny is allowed to enroll HOTP
         g.logged_in_user = {"username": "corny",
-                            "userid": "10",
                             "realm": realm,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -2085,7 +2041,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # a filter with realms ["realm1", "realm2"].
         # The None is a wildcard, [] allows no listing at all.
         admin1 = {"username": "admin1",
-                  "userid": "1",
                   "role": "admin",
                   "realm": "realm1"}
 
@@ -2157,7 +2112,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User("cornelius", self.realm1)
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "realm": self.realm1,
                             "role": ROLE.USER}
         req.all_data = {"type": "indexedsecret"}
@@ -3177,7 +3131,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_36_init_registrationcode_length_contents(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -3212,7 +3165,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_37_init_password_length_contents(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -3254,7 +3206,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_40_custom_user_attributes(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -3341,7 +3292,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_50_enroll_ca_connector(self):
         g.logged_in_user = {"username": "admin1",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -3439,7 +3389,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_61_required_description_for_specified_token_types(self):
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -3475,7 +3424,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_62_jwt_validity(self):
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -4439,7 +4387,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
-                            "userid": "4",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -4477,7 +4424,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action="hotp_otplen=8,hotp_hashlib=sha512")
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "admin",
-                            "userid": "5",
                             "realm": "super",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -4500,7 +4446,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_17_pin_change(self):
         g.logged_in_user = {"username": "admin",
-                            "userid": "1",
                             "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
@@ -4575,7 +4520,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Now the user changes the PIN. Afterwards the next_pin_change is empty
         g.logged_in_user = {"username": "hans",
-                            "userid": "8",
                             "realm": "",
                             "role": "user"}
 

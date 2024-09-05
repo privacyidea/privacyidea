@@ -4,7 +4,7 @@
 #  product:  PrivacyIDEA
 #  module:   tokenresolver
 #  tool:     TokenResolver
-#  edition:  Comunity Edition
+#  edition:  Community Edition
 #
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -78,7 +78,7 @@ class TokenResolver(UserIdResolver):
         """
         descriptor = {}
         typ = cls.getResolverClassType()
-        descriptor['clazz'] = "useridresolver.TokenResolver.TokenResolver"
+        descriptor['clazz'] = "useridresolver.TokenResolver.IdResolver"
         descriptor['config'] = {
             'methodAllowed': 'string',
             'secret': 'string',

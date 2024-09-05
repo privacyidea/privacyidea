@@ -678,8 +678,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username != "":
         if realm is None or realm == "":
             realm = get_default_realm()
-    user_object = User(login=username, realm=realm, uid=userid,
-                       resolver=param.get("resolver"))
+    user_object = User(login=username, realm=realm, uid=userid, resolver=param.get("resolver"))
 
     return user_object
 
