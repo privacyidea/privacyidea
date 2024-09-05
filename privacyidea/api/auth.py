@@ -49,8 +49,7 @@ from flask import (Blueprint,
                    g)
 import jwt
 from functools import wraps
-from datetime import (datetime,
-                      timedelta)
+from datetime import (datetime, timedelta, timezone)
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -237,10 +236,12 @@ def get_auth_token():
         # The user could not be resolved, but it could still be a local administrator
         loginname, realm = split_user(username)
         realm = (realm_param or realm or get_default_realm()).lower()
+        userid = loginname
         user_obj = User()
     else:
         realm = user_obj.realm
         loginname = user_obj.login
+        userid = user_obj.uid
 
     # Failsafe to have the user attempt in the log, whatever happens
     # This can be overwritten later
@@ -356,7 +357,6 @@ def get_auth_token():
     else:
         g.audit_object.log({"success": True})
         request.User = user_obj
-        userid = user_obj.uid
 
     # If the HSM is not ready, we need to create the nonce in another way!
     hsm = init_hsm()
@@ -386,7 +386,7 @@ def get_auth_token():
                         "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
-                        "exp": datetime.utcnow() + validity,
+                        "exp": datetime.now(timezone.utc) + validity,
                         "rights": rights},
                        secret, algorithm='HS256')
 
