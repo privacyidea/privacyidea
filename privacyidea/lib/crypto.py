@@ -55,6 +55,7 @@ import traceback
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives._serialization import NoEncryption
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
@@ -912,15 +913,20 @@ def generate_keypair_ecc(curve_name: str):
     :param curve_name: The name of the elliptic curve to use, e.g. 'secp384r1'
     :return: A tuple of (public_key, private_key) elliptic curve key objects
     """
-    curve = ec.EllipticCurve
-    curve.name = curve_name
 
-    try:
-        private_key = ec.generate_private_key(curve)
-    except UnsupportedAlgorithm:
-        raise ParameterError(f"Unsupported elliptic curve {curve_name}!")
+    if curve_name == "x25519":
+        private_key = X25519PrivateKey.generate()
+        public_key = private_key.public_key()
+    else:
+        curve = ec.EllipticCurve
+        curve.name = curve_name
 
-    public_key = private_key.public_key()
+        try:
+            private_key = ec.generate_private_key(curve)
+        except UnsupportedAlgorithm:
+            raise ParameterError(f"Unsupported elliptic curve {curve_name}!")
+
+        public_key = private_key.public_key()
     return public_key, private_key
 
 
@@ -1032,7 +1038,7 @@ def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublic
     return True, hash_algorithm.name
 
 
-def ecdh_key_exchange(private_key, public_key):
+def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey):
     """
     Performs an ECDH key exchange.
     The shared key is calculated from the private and public key. Afterward, a key derivation is performed.
@@ -1041,7 +1047,7 @@ def ecdh_key_exchange(private_key, public_key):
     :param public_key: The public key ecc object
     :return: The shared key as bytes
     """
-    shared_key = private_key.exchange(ec.ECDH(), public_key)
+    shared_key = private_key.exchange(public_key)
 
     # Perform key derivation.
     derived_key = HKDF(algorithm=hashes.SHA256(),

@@ -4,6 +4,7 @@ This test file tests the lib.crypto and lib.security.default
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from mock import call
 import binascii
 
@@ -292,6 +293,10 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         self.assertTrue(isinstance(pub_key, ec.EllipticCurvePublicKey))
         self.assertTrue(isinstance(priv_key, ec.EllipticCurvePrivateKey))
 
+        pub_key, priv_key = generate_keypair_ecc("x25519")
+        self.assertTrue(isinstance(pub_key, X25519PublicKey))
+        self.assertTrue(isinstance(priv_key, X25519PrivateKey))
+
     def test_02_generate_keypair_ecc_fail(self):
         self.assertRaises(ParameterError, generate_keypair_ecc, "unknown")
 
@@ -419,8 +424,8 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         self.assertRaises(InvalidSignature, verify_ecc, message, signature, pub_key_ec, "Unknown")
 
     def test_09_ecdh_encryption_decryption(self):
-        pub_key_server, priv_key_server = generate_keypair_ecc("secp384r1")
-        pub_key_client, priv_key_client = generate_keypair_ecc("secp384r1")
+        pub_key_server, priv_key_server = generate_keypair_ecc("x25519")
+        pub_key_client, priv_key_client = generate_keypair_ecc("x25519")
 
         derived_key = ecdh_key_exchange(priv_key_client, pub_key_server)
 

@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import base64
 import logging
 from datetime import timezone
 from urllib.parse import quote
@@ -345,9 +346,9 @@ class SmartphoneContainer(TokenContainerClass):
             raise privacyIDEAError('Could not verify signature!')
 
         # Generate encryption key pair for the server
-        container_info = self.get_container_info_dict()
-        key_algorithm = container_info.get("key_algorithm", "secp384r1")
-        public_key_encr_server, private_key_encr_server = generate_keypair_ecc(key_algorithm)
+        # container_info = self.get_container_info_dict()
+        # key_algorithm = container_info.get("key_algorithm", "secp384r1")
+        public_key_encr_server, private_key_encr_server = generate_keypair_ecc("x25519")
         public_key_encr_server_str, private_key_encr_server_str = ecc_key_pair_to_b64url_str(public_key_encr_server,
                                                                                              private_key_encr_server)
 

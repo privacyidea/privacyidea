@@ -1026,7 +1026,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         time_stamp = params["time_stamp"]
         scope = params["container_sync_url"]
 
-        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("secp384r1")
+        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
         pub_key_enc_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_enc_smph)
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
@@ -1078,7 +1078,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock smartphone
         init_result.update({'container_sync_url': params["scope"]})
-        smph_params,_ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
+        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
 
         # Finalize sync
         smph_params.update({'scope': params["scope"]})
