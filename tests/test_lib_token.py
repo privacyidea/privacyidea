@@ -1339,6 +1339,8 @@ class TokenTestCase(MyTestCase):
         # All challenges of the transaction_id have been deleted on
         # successful authentication
         r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
