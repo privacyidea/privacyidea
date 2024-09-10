@@ -19,8 +19,6 @@
  *
  */
 
-// TODO: We can not delete an optional value!
-
 myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
     "$location", "ConfigFactory",
     function ($scope, $stateParams, $state, $location, ConfigFactory) {
@@ -28,12 +26,33 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
             $location.path("/config/smsgateway/list");
         }
 
+        // Get all gateway definitions
+        $scope.getSMSGateways = function (gwid) {
+            ConfigFactory.getSMSGateways(gwid, function (data) {
+                $scope.smsgateways = data.result.value;
+            });
+        };
+
+        $scope.getSMSGateways();
+
+        $scope.deleteSMSgateway = function (name) {
+            ConfigFactory.delSMSGateway(name, function () {
+                $scope.getSMSGateways();
+            });
+        };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getSMSGateways);
+    }]);
+
+myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$state",
+    "$location", "ConfigFactory",
+    function ($scope, $stateParams, $state, $location, ConfigFactory) {
         $scope.form = {};
         $scope.gateway_id = $stateParams.gateway_id;
         $scope.opts = {};
         $scope.headers = {};
 
-        // Get all gateway definitions
         $scope.getSMSGateways = function (gwid) {
             ConfigFactory.getSMSGateways(gwid, function (data) {
                 $scope.smsgateways = data.result.value;
@@ -45,12 +64,12 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
                     let option_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
                     // fill all parameters (default options and additional options)
                     angular.forEach(Object.keys($scope.form.options),
-                        function (optionname) {
-                            if (option_array.indexOf(optionname) > -1) {
-                                $scope.form["option." + optionname] = $scope.form.options[optionname];
+                        function (optionName) {
+                            if (option_array.indexOf(optionName) > -1) {
+                                $scope.form["option." + optionName] = $scope.form.options[optionName];
                             } else {
                                 // file the optionals!
-                                $scope.opts[optionname] = $scope.form.options[optionname];
+                                $scope.opts[optionName] = $scope.form.options[optionName];
                             }
                         });
                     // fill all parameters (headers)
@@ -65,11 +84,11 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
                 $scope.smsproviders = data.result.value;
                 //debug: console.log("Fetched all SMS providers");
                 //debug: console.log($scope.smsproviders);
+                $scope.getSMSGateways($scope.gateway_id);
             });
         };
 
         $scope.getSMSProviders();
-        $scope.getSMSGateways($scope.gateway_id);
 
         $scope.createSMSgateway = function () {
             // This is called to save the SMS gateway
@@ -99,14 +118,8 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
             });
         };
 
-        $scope.deleteSMSgateway = function (name) {
-            ConfigFactory.delSMSGateway(name, function () {
-                $scope.getSMSGateways();
-            });
-        };
-
-        $scope.deleteOption = function (optionname) {
-            delete $scope.opts[optionname];
+        $scope.deleteOption = function (optionName) {
+            delete $scope.opts[optionName];
         };
 
         $scope.addOption = function () {
@@ -115,8 +128,8 @@ myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
             $scope.newvalue = "";
         };
 
-        $scope.deleteHeader = function (headername) {
-            delete $scope.headers[headername];
+        $scope.deleteHeader = function (headerName) {
+            delete $scope.headers[headerName];
         };
 
         $scope.addHeader = function () {
