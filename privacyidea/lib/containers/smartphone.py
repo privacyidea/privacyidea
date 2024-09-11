@@ -21,6 +21,8 @@ import base64
 import logging
 from datetime import timezone
 from urllib.parse import quote
+
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from flask import json
 
 from privacyidea.api.lib.utils import getParam
@@ -327,7 +329,8 @@ class SmartphoneContainer(TokenContainerClass):
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
         pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
-        pub_key_encr_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_encr_container_str)
+        pub_key_encr_container_bytes = base64.urlsafe_b64decode(pub_key_encr_container_str)
+        pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
         container_client_str = getParam(params, "container_client", optional=True)
         container_client = json.loads(container_client_str) if container_client_str else {}
         scope = getParam(params, "scope", optional=True)
@@ -349,8 +352,7 @@ class SmartphoneContainer(TokenContainerClass):
         # container_info = self.get_container_info_dict()
         # key_algorithm = container_info.get("key_algorithm", "secp384r1")
         public_key_encr_server, private_key_encr_server = generate_keypair_ecc("x25519")
-        public_key_encr_server_str, private_key_encr_server_str = ecc_key_pair_to_b64url_str(public_key_encr_server,
-                                                                                             private_key_encr_server)
+        public_key_encr_server_str = base64.urlsafe_b64encode(public_key_encr_server.public_bytes_raw()).decode('utf-8')
 
         # Get encryption algorithm and mode
         container_info = self.get_container_info_dict()

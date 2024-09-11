@@ -2,6 +2,8 @@ import base64
 import json
 from datetime import datetime, timezone
 
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
@@ -1027,7 +1029,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         scope = params["container_sync_url"]
 
         public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
-        pub_key_enc_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_enc_smph)
+        pub_key_enc_smph_str = base64.urlsafe_b64encode(public_key_enc_smph.public_bytes_raw()).decode('utf-8')
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
         if client_container:
@@ -1135,7 +1137,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # check container dict results
         container_dict_enc = res["container_dict"]
         # decrypt container info
-        pub_key_server, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=res["public_server_key"])
+        pub_key_server = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(res["public_server_key"]))
         session_key = ecdh_key_exchange(priv_enc_key_smph, pub_key_server)
         container_dict_enc = decrypt_ecc(container_dict_enc, session_key, "", res["encryption_params"])
         container_dict = json.loads(container_dict_enc)

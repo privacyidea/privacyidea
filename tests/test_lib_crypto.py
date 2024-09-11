@@ -1,10 +1,13 @@
 """
 This test file tests the lib.crypto and lib.security.default
 """
+import base64
+
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+from cryptography.hazmat.primitives.serialization import load_der_public_key, load_der_private_key
 from mock import call
 import binascii
 
@@ -434,6 +437,30 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         decrypted_message = decrypt_ecc(secret, derived_key, "", enc_params)
 
         self.assertEqual(message, decrypted_message)
+
+    def test_10_ecdh_encryption_decryption_serialization(self):
+        pub_key_server, priv_key_server = generate_keypair_ecc("x25519")
+        pub_key_client, priv_key_client = generate_keypair_ecc("x25519")
+
+        # serialize pub_key_client RAW
+        pub_key_client_str = base64.urlsafe_b64encode(pub_key_client.public_bytes_raw()).decode("utf-8")
+        pub_key_client = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(pub_key_client_str))
+
+        derived_key = ecdh_key_exchange(priv_key_server, pub_key_client)
+
+        message = b"Hello World"
+        secret, enc_params = encrypt_ecc(message, derived_key, "AES", "")
+        decrypted_message = decrypt_ecc(secret, derived_key, "", enc_params)
+
+        self.assertEqual(message, decrypted_message)
+
+    def test_10_key_serialization(self):
+        client_key_str = "ewclUQlk4dD33-iQt5BIrbn3WhXHpSCv1bvY4-RpCxU="
+        client_key_bytes = base64.urlsafe_b64decode(client_key_str.encode('utf-8'))
+        client_key_b64 = base64.urlsafe_b64decode(client_key_str)
+        client_key_decoded = client_key_str.encode('utf-8')
+        client_key = X25519PublicKey.from_public_bytes(client_key_bytes)
+        #client_key = load_der_private_key(client_key_decoded, None)
 
 
 class RandomTestCase(MyTestCase):

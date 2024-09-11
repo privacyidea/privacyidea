@@ -1437,7 +1437,7 @@ class APIContainer(MyApiTestCase):
         scope = params["container_sync_url"]
 
         public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
-        pub_key_enc_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_enc_smph)
+        pub_key_enc_smph_str = base64.urlsafe_b64encode(public_key_enc_smph.public_bytes_raw()).decode('utf-8')
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
