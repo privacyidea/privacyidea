@@ -1038,7 +1038,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str}
         if client_container:
-            params.update({"container_client": json.dumps(client_container)})
+            params.update({"container_dict_client": json.dumps(client_container)})
         return params, private_enc_key_smph
 
     def test_43_init_synchronize_smartphone_success(self):
@@ -1088,7 +1088,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("AES", res["encryption_algorithm"])
         self.assertIn("encryption_params", res.keys())
         self.assertIn("public_server_key", res.keys())
-        self.assertIn("container_dict", res.keys())
+        self.assertIn("container_dict_server", res.keys())
 
     def test_46_finalize_synchronize_smartphone_with_tokens(self):
         # Registration
@@ -1132,10 +1132,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("AES", res["encryption_algorithm"])
         self.assertIn("encryption_params", res.keys())
         self.assertIn("public_server_key", res.keys())
-        self.assertIn("container_dict", res.keys())
+        self.assertIn("container_dict_server", res.keys())
 
         # check container dict results
-        container_dict_enc = res["container_dict"]
+        container_dict_enc = res["container_dict_server"]
         # decrypt container info
         pub_key_server = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(res["public_server_key"]))
         session_key = ecdh_key_exchange(priv_enc_key_smph, pub_key_server)

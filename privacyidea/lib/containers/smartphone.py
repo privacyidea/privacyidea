@@ -313,7 +313,7 @@ class SmartphoneContainer(TokenContainerClass):
                 {
                     "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
                     "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
-                    "container_dict": {"serial": "SMPH0001", "type": "smartphone", ...}
+                    "container_dict_client": {"serial": "SMPH0001", "type": "smartphone", ...}
                 }
 
         :return: Dictionary with the result of the synchronization.
@@ -323,7 +323,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
                     "encryption_algorithm": "AES",
                     "encryption_params": {"mode": "GCM", "init_vector": "init_vector", "tag": "tag"},
-                    "container_dict_encrypted": <encrypted container dict from server>
+                    "container_dict_server": <encrypted container dict from server>
                 }
         """
         # Get params
@@ -331,7 +331,7 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
         pub_key_encr_container_bytes = base64.urlsafe_b64decode(pub_key_encr_container_str)
         pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
-        container_client_str = getParam(params, "container_client", optional=True)
+        container_client_str = getParam(params, "container_dict_client", optional=True)
         container_client = json.loads(container_client_str) if container_client_str else {}
         scope = getParam(params, "scope", optional=True)
 
@@ -370,7 +370,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         res = {"encryption_algorithm": encrypt_algorithm,
                "encryption_params": encryption_params,
-               "container_dict": container_dict_encrypted,
+               "container_dict_server": container_dict_encrypted,
                "public_server_key": public_key_encr_server_str}
         return res
 

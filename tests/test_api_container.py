@@ -1,5 +1,7 @@
 import base64
 
+import json
+
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, get_container_realms)
 from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
@@ -1439,10 +1441,13 @@ class APIContainer(MyApiTestCase):
         public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
         pub_key_enc_smph_str = base64.urlsafe_b64encode(public_key_enc_smph.public_bytes_raw()).decode('utf-8')
 
-        message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
+        container_dict = json.dumps({"serial": serial, "type": "smartphone"})
+
+        message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}|{container_dict}"
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str}
+        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str,
+                  "container_dict_client": container_dict}
         return params
 
     def test_29_sync_init_success(self):
