@@ -53,12 +53,12 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
         $scope.opts = {};
         $scope.headers = {};
 
-        $scope.getSMSGateways = function (gwid) {
-            ConfigFactory.getSMSGateways(gwid, function (data) {
-                $scope.smsgateways = data.result.value;
-                //debug: console.log("Fetched all SMS gateways");
-                //debug: console.log($scope.smsgateways);
-                if (gwid) {
+        $scope.getSMSGateway = function () {
+            if ($scope.gateway_id) {
+                ConfigFactory.getSMSGateways($scope.gateway_id, function (data) {
+                    $scope.smsgateways = data.result.value;
+                    //debug: console.log("Fetched all SMS gateways");
+                    //debug: console.log($scope.smsgateways);
                     $scope.form = $scope.smsgateways[0];
                     $scope.form.module = $scope.form.providermodule;
                     let option_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
@@ -74,8 +74,8 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
                         });
                     // fill all parameters (headers)
                     $scope.headers = $scope.form.headers;
-                }
-            });
+                });
+            }
         };
 
         // Get all provider definitions
@@ -84,7 +84,7 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
                 $scope.smsproviders = data.result.value;
                 //debug: console.log("Fetched all SMS providers");
                 //debug: console.log($scope.smsproviders);
-                $scope.getSMSGateways($scope.gateway_id);
+                $scope.getSMSGateway();
             });
         };
 
@@ -113,6 +113,7 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
             delete $scope.form.headers;
             ConfigFactory.setSMSGateway($scope.form, function () {
                 $state.go("config.smsgateway.list");
+                $scope.deselectGateway();
                 $('html,body').scrollTop(0);
                 $scope.reload();
             });
@@ -138,6 +139,13 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
             $scope.newheadervalue = "";
         };
 
+        $scope.deselectGateway = function () {
+            $scope.form = {};
+            $scope.gateway_id = null;
+            $scope.opts = {};
+            $scope.headers = {};
+        };
+
         // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getSMSGateways);
+        $scope.$on("piReload", $scope.getSMSGateway);
     }]);
