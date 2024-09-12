@@ -31,7 +31,7 @@ from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_us
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
-                                Realm)
+                                Realm, TokenContainerTemplate)
 
 log = logging.getLogger(__name__)
 
@@ -934,3 +934,57 @@ def create_endpoint_url(base_url, endpoint):
     else:
         endpoint_url = base_url
     return endpoint_url
+
+
+def get_container_template_classes():
+    """
+    Returns a dictionary of all available container template classes in the format: { type: class }.
+    New container template types have to be added here.
+    """
+    # className: module
+    classes = {
+        "ContainerTemplateBase": "privacyidea.lib.containertemplate.containertemplatebase",
+        "SmartphoneContainerTemplate": "privacyidea.lib.containertemplate.smartphonetemplate",
+        "YubikeyContainerTemplate": "privacyidea.lib.containertemplate.yubikeytemplate"
+    }
+
+    ret = {}
+    for cls, mod in classes.items():
+        try:
+            m = importlib.import_module(mod)
+            c = getattr(m, cls)
+            ret[c.get_class_type().lower()] = c
+        except Exception as ex:  # pragma: no cover
+            log.warning(f"Error importing module {cls}: {ex}")
+
+    return ret
+
+
+def create_container_template(container_type, template_name, options):
+    """
+    Create a new container template.
+    :param container_type: The type of the container
+    :param template_name: The name of the template
+    :param options: The options for the template
+    :return: The created template object
+    """
+    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
+
+
+def create_container_template_from_db_object(db_template: TokenContainerTemplate):
+    """
+    Create a TokenContainerTemplate object from the given db object.
+
+    :param db_template: The db object to create the container template from
+    :return: The created container template object or None if the container template type is not supported
+    """
+
+    for ctypes, cls in get_container_template_classes().items():
+        if ctypes.lower() == db_template.container_type.lower():
+            try:
+                template = cls(db_template)
+            except Exception as ex:  # pragma: no cover
+                log.warning(f"Error creating container template from db object: {ex}")
+                return None
+            return template
+    return None

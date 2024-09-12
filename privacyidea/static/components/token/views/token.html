@@ -26,7 +26,8 @@
                         </a>
                     </li>
                     <li ng-class="{active: $state.includes('token.containerlist')
-                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')}">
+                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')
+                        || $state.includes('token.containertemplates')}">
                         <a ui-sref="token.containerlist" ng-click="tokenMenu=false">
                             <span class="glyphicon glyphicon-folder-close"
                                   aria-hidden="true"></span>
@@ -186,6 +187,30 @@
                             <span translate>Create Container</span>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.containertemplates')}">
+                        <a ui-sref="token.containertemplates.list">
+                            <span class="glyphicon glyphicon-duplicate"></span>
+                            <span translate>Templates</span>
+                        </a>
+                    </li>
+                    <ul ng-show="$state.includes('token.containertemplates')"
+                        class="nav nav-pills nav-stacked pi-submenu nav-capitalize">
+                        <li role="presentation"
+                            ng-class="{active: $state.includes('token.containertemplates.list')}">
+                            <a ui-sref="token.containertemplates.list">
+                                <span class="glyphicon glyphicon-list"></span>
+                                <span translate>List Templates</span>
+                            </a>
+                        </li>
+                        <li role="presentation"
+                            ng-class="{active: $state.includes('token.containertemplates.details')}">
+                            <a ui-sref="token.containertemplates.details">
+                                <span class="glyphicon glyphicon-plus"></span>
+                                <span translate>Create New Template</span>
+                            </a>
+                        </li>
+                    </ul>
                 </ul>
             </div>
         </div>

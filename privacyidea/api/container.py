@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import json
 import logging
 
 from flask import Blueprint, request, g
@@ -31,13 +32,15 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        delete_container_by_serial, assign_user, unassign_user, add_token_to_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
                                        remove_multiple_tokens_from_container,
-                                       create_container_dict, create_endpoint_url)
+                                       create_container_dict, create_endpoint_url, get_container_classes,
+                                       create_container_template, create_container_template_from_db_object)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.models import TokenContainerTemplate
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -745,3 +748,75 @@ def sync_finalize(container_serial: str):
     container.update_last_updated()
 
     return send_result(res)
+
+
+# TEMPLATES
+@container_blueprint.route('/templates', methods=['GET'])
+@log_with(log)
+def get_template():
+    """
+    Get all container templates
+    """
+    # TODO: Add pagination and optionally filter by type
+    db_templates = TokenContainerTemplate.query.all()
+    template_obj_list = [create_container_template_from_db_object(template) for template in db_templates]
+
+    # convert to dict
+    template_list = []
+    for template in template_obj_list:
+        template_dict = {"name": template.name,
+                         "container_type": template.container_type,
+                         "template_options": template.template_options}
+        template_list.append(template_dict)
+
+    return send_result(template_list)
+
+
+@container_blueprint.route('<string:container_type>/template/options', methods=['GET'])
+@log_with(log)
+def get_template_options(container_type):
+    """
+    Get the options for the given container type
+    """
+    classes = get_container_classes()
+    if classes and container_type.lower() in classes.keys():
+        g.audit_object.log({"success": True})
+        return send_result(classes[container_type.lower()].get_container_policy_info())
+    else:
+        raise ParameterError("Invalid container type")
+
+
+@container_blueprint.route('<string:container_type>/template', methods=['POST'])
+@log_with(log)
+def set_template(container_type):
+    """
+    Set the template for the given container type
+    """
+    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
+        raise ParameterError("Invalid container type")
+
+    json = request.json
+    template_id = json.get('template_id')
+
+    audit_log_data = {"container_type": container_type,
+                      "success": True}
+    g.audit_object.log(audit_log_data)
+
+
+@container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
+@log_with(log)
+def create_template_with_name(container_type, template_name):
+    """
+    Set the template for the given container type
+    """
+    params = request.all_data
+    template_opions = json.dumps(getParam(params, "template_options", required))
+    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
+        raise ParameterError("Invalid container type")
+    template_id = create_container_template(container_type, template_name, template_opions)
+
+    audit_log_data = {"container_type": container_type,
+                      "action_detail": f"template_name={template_name}",
+                      "success": True}
+    g.audit_object.log(audit_log_data)
+    return send_result(template_id)

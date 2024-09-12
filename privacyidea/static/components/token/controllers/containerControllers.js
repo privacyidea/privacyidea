@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
  * SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
  * SPDX-License-Identifier: AGPL-3.0-or-later
-**/
+ **/
 
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
     'AuthFactory', 'ConfigFactory', 'UserFactory', '$state',
@@ -446,7 +446,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.deregisterContainer = function () {
-            ContainerFactory.terminateRegistration($scope.containerSerial, function(){
+            ContainerFactory.terminateRegistration($scope.containerSerial, function () {
                 $scope.showQR = false;
                 $scope.getContainer();
             });
@@ -624,4 +624,141 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         // ----------- Initial calls -------------
         $scope.getContainer();
+    }]);
+
+myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
+    'ConfigFactory', 'TokenFactory', '$location',
+    function containerTemplateListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location) {
+        $scope.templatesPerPage = $scope.token_page_size;
+        $scope.loggedInUser = AuthFactory.getUser();
+        $scope.params = {sortdir: "asc"};
+        $scope.templatedata = [];
+
+        if ($location.path() === "token.containertemplates") {
+            $location.path("token.containertemplates.list");
+        }
+
+        // Change the pagination
+        $scope.pageChanged = function () {
+            //debug: console.log('Page changed to: ' + $scope.params.page);
+            $scope.get();
+        };
+
+        // Get all containers
+        $scope.get = function () {
+            $scope.params.sortby = $scope.sortby;
+            if ($scope.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
+            }
+            $scope.params.pagesize = $scope.token_page_size;
+
+            ContainerFactory.getTemplates($scope.params,
+                function (data) {
+                    $scope.templatedata = data.result.value;
+                });
+        };
+        $scope.get();
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.get);
+    }]);
+
+myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
+    'ConfigFactory', 'TokenFactory', '$location', '$state',
+    function containerTemplateDetailsController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state) {
+        $scope.loggedInUser = AuthFactory.getUser();
+        $scope.params = {};
+        $scope.templatedata = [];
+
+        $scope.formData = {
+            containerTypes: {},
+        };
+        $scope.form = {
+            containerType: "generic",
+            description: "",
+            token_types: ""
+        };
+
+        $scope.tokens = [];
+
+        $scope.$watch('form', function (newVal, oldVal) {
+            if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
+                $scope.form.token_types = $scope.formData.containerTypes[newVal.containerType]["token_types_display"];
+            }
+        }, true);
+
+        // Get the supported token types for each container type once
+        ContainerFactory.getTokenTypes(function (data) {
+            $scope.formData.containerTypes = data.result.value;
+
+            angular.forEach($scope.formData.containerTypes, function (_, containerType) {
+                if (containerType === 'generic') {
+                    $scope.formData.containerTypes[containerType]["token_types_display"] = 'All';
+                } else {
+                    $scope.formData.containerTypes[containerType]["token_types_display"] = $scope.tokenTypesToDisplayString(
+                        $scope.formData.containerTypes[containerType].token_types);
+                }
+            });
+            $scope.form.token_types = $scope.formData.containerTypes[$scope.form.containerType]["token_types_display"];
+        });
+
+        // converts the supported token types to a display string
+        $scope.tokenTypesToDisplayString = function (containerTokenTypes) {
+            let displayString = "";
+            // create comma separated list out of token names
+            angular.forEach(containerTokenTypes, function (type) {
+                displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
+            });
+            displayString = displayString.slice(0, -2);
+
+            return displayString;
+        };
+
+        $scope.createTemplate = function () {
+            $scope.params.type = $scope.form.containerType;
+            $scope.params.template_options = {};
+
+            ContainerFactory.createTemplate($scope.params, function (data) {
+                $state.go("token.containertemplates.list");
+            });
+        };
+
+        <!-- Token Functions -->
+        $scope.formInit = {
+            tokenTypes: {},  // will be set later with response from server
+            timesteps: [30, 60],
+            otplens: [6, 8],
+            hashlibs: ["sha1", "sha256", "sha512"],
+            service_ids: {}
+        };
+
+        // Read the tokentypes from the server
+        TokenFactory.getEnrollTokens(function (data) {
+            //console.log("getEnrollTokens");
+            //console.log(data);
+            $scope.formInit["tokenTypes"] = data.result.value;
+            // set the default tokentype
+            if (!$scope.formInit.tokenTypes.hasOwnProperty(
+                $scope.default_tokentype)) {
+                // if HOTP does not exist, we set another default type
+                for (const tkey in $scope.formInit.tokenTypes) {
+                    // set the first key to be the default tokentype
+                    $scope.form.type = tkey;
+                    // Set the 2step enrollment value
+                    $scope.setTwostepEnrollmentDefault();
+                    // Initialize token specific settings
+                    $scope.changeTokenType();
+                    break;
+                }
+            }
+        });
+
+        $scope.addToken = function () {
+            $scope.tokens.push({});
+        };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.get);
     }]);

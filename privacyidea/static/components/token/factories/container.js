@@ -205,6 +205,25 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 }, function (error) {
                     AuthFactory.authError(error.data);
                 });
+            },
+            getTemplates: function (params, callback) {
+                $http.get(containerUrl + "/templates", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            createTemplate: function (params, callback) {
+                $http.post(containerUrl + "/" + params.type + "/template/" + params.name, params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
             }
         }
     }]);

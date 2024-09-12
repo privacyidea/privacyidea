@@ -110,4 +110,17 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     templateUrl: tokenPath + "token.containerdetails.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "containerDetailsController"
                 })
+                .state('token.containertemplates', {
+                    url: "/container/templates"
+                })
+                .state('token.containertemplates.list', {
+                    url: "/list",
+                    templateUrl: tokenPath + "token.container.templates.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerTemplateListController"
+                })
+                .state('token.containertemplates.details', {
+                    url: "/details",
+                    templateUrl: tokenPath + "token.container.templates.details.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerTemplateDetailsController"
+                })
         }]);
