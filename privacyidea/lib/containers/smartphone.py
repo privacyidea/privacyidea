@@ -371,7 +371,7 @@ class SmartphoneContainer(TokenContainerClass):
         container_dict = self.synchronize_container_details(container_client)
 
         # encrypt container dict
-        session_key = ecdh_key_exchange(private_key_encr_server, pub_key_encr_container)
+        session_key = private_key_encr_server.exchange(pub_key_encr_container)
         container_dict_bytes = json.dumps(container_dict).encode('utf-8')
         container_dict_encrypted, encryption_params = encrypt_ecc(container_dict_bytes, session_key, encrypt_algorithm,
                                                                   encrypt_mode)

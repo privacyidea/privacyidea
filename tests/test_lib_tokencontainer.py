@@ -1138,7 +1138,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_dict_enc = res["container_dict_server"]
         # decrypt container info
         pub_key_server = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(res["public_server_key"]))
-        session_key = ecdh_key_exchange(priv_enc_key_smph, pub_key_server)
+        session_key = priv_enc_key_smph.exchange(pub_key_server)
         container_dict_enc = decrypt_ecc(container_dict_enc, session_key, "", res["encryption_params"])
         container_dict = json.loads(container_dict_enc)
 
