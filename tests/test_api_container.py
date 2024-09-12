@@ -1483,7 +1483,7 @@ class APIContainer(MyApiTestCase):
         self.assertEqual("AES", json["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
         self.assertIn("public_server_key", result_entries)
-        self.assertIn("container_dict", result_entries)
+        self.assertIn("container_dict_server", result_entries)
         self.assertIn("container_sync_url", result_entries)
 
         delete_policy("policy")

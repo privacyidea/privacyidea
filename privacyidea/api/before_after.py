@@ -26,7 +26,7 @@ It also contains the error handlers.
 """
 
 from .lib.utils import (send_error, get_all_params, verify_auth_token)
-from .container import container_blueprint, container_sync_blueprint
+from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param

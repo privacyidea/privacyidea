@@ -225,8 +225,16 @@ class SmartphoneContainer(TokenContainerClass):
 
         :return: The public key of the server in a dictionary like {"public_key": <pub key base 64 url encoded>}.
         """
-        # Verifies the challenge response
-        self.check_challenge_response(params)
+        # Get params
+        signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
+        pub_key_container_str = getParam(params, "public_client_key", optional=False)
+        pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
+        registration_url = getParam(params, "container_registration_url", optional=False)
+
+        # Verifies challenge
+        valid = self.validate_challenge(signature, pub_key_container, url=registration_url)
+        if not valid:
+            raise privacyIDEAError('Could not verify signature!')
 
         # Generate private + public key for the server
         container_info = self.get_container_info_dict()
@@ -474,24 +482,3 @@ class SmartphoneContainer(TokenContainerClass):
                "time_stamp": time_stamp_iso,
                "scope": scope}
         return res
-
-    def check_challenge_response(self, params):
-        """
-        Check the response of a challenge. Verifies that all required parameters are provided.
-        Afterward, verifies the challenge.
-
-        :param params: The parameters from the smartphone for the challenge response as dictionary
-        :return: True if the challenge response is valid, raises a privacyIDEAError otherwise.
-        """
-        # Get params
-        signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
-        pub_key_container_str = getParam(params, "public_client_key", optional=False)
-        pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
-        registration_url = getParam(params, "container_registration_url", optional=False)
-
-        # Required Checks: Challenge, passphrase, signature
-        valid = self.validate_challenge(signature, pub_key_container, url=registration_url)
-        if not valid:
-            raise privacyIDEAError('Could not verify signature!')
-
-        return valid

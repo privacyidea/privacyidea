@@ -544,6 +544,32 @@ class TokenContainerClass:
     def get_container_details(self, no_token=False):
         """
         Returns a dictionary containing all properties, contained tokens, and owners
+
+        :param no_token: If True, the token details are not included
+        :return: Dictionary with the container details
+
+        Example response
+
+        ::
+
+            {
+                "type": "smartphone",
+                "serial": "SMPH00038DD3",
+                "description": "My smartphone",
+                "last_seen": "2024-09-11T08:56:37.200336+00:00",
+                "last_updated": "2024-09-11T08:56:37.200336+00:00",
+                "states": ["active"],
+                "info": {
+                            "hash_algorithm": "SHA256",
+                            "key_algorithm": "secp384r1"
+                        },
+                "realms": ["deflocal"],
+                "users": [{"user_name": "testuser",
+                           "user_realm": "deflocal",
+                           "user_resolver": "internal",
+                           "user_id": 1}],
+                "tokens": [{"serial": "TOTP000152D1", "type": "totp", "active": True, ...}]
+            }
         """
         details = {"type": self.type,
                    "serial": self.serial,

@@ -40,7 +40,6 @@ from privacyidea.lib.policy import ACTION, Match, SCOPE
 from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)
-container_sync_blueprint = Blueprint('container_sync_blueprint', __name__)
 log = logging.getLogger(__name__)
 
 __doc__ = """
