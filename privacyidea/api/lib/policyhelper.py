@@ -82,8 +82,8 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
 
     # Get the firebase configuration from the policies
     firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                 user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+                                 user_object=user_obj if user_obj else None).action_values(unique=True,
+                                                                                           allow_white_space_in_action=True)
     if len(firebase_config) == 1:
         params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
     else:
@@ -108,6 +108,47 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
                      user_object=user_obj if user_obj else None) \
         .action_values(unique=True, allow_white_space_in_action=True)
+    if len(ttl) == 1:
+        params[PUSH_ACTION.TTL] = list(ttl)[0]
+    else:
+        params[PUSH_ACTION.TTL] = "10"
+    return params
+
+
+def get_pushtoken_add_config_soft(g, params=None):
+    """
+    This helper function modifies the request parameters in regards
+    to enrollment policies for push tokens.
+
+    :param params: The request parameter
+    :param user_object: User object in the request
+    :return: modified request parameters
+    """
+    params = params or {}
+    from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+
+    # Get the firebase configuration from the policies
+    firebase_config = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
+                                    user_object=None).action_values(unique=True, allow_white_space_in_action=True)
+    if len(firebase_config) == 1:
+        params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
+
+    # Get the sslverify definition from the policies
+    ssl_verify = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
+                               user_object=None).action_values(unique=True)
+    if len(ssl_verify) == 1:
+        params[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
+    else:
+        params[PUSH_ACTION.SSL_VERIFY] = "1"
+
+    # Get the TTL and the registration URL from the policies
+    registration_url = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
+                                     user_object=None).action_values(unique=True, allow_white_space_in_action=True)
+    if len(registration_url) == 1:
+        params[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
+
+    ttl = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
+                        user_object=None).action_values(unique=True, allow_white_space_in_action=True)
     if len(ttl) == 1:
         params[PUSH_ACTION.TTL] = list(ttl)[0]
     else:

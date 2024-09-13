@@ -23,6 +23,7 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.policyhelper import get_pushtoken_add_config_soft
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
                                            check_admin_tokenlist, check_container_action)
 from privacyidea.api.lib.utils import send_result, getParam, required
@@ -40,7 +41,6 @@ from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.models import TokenContainerTemplate
 
@@ -729,6 +729,7 @@ def sync_finalize(container_serial: str):
         The provided enroll information depends on the token type as well as the returned information for the tokens
         to be updated.
     """
+    request.all_data = get_pushtoken_add_config_soft(g, request.all_data)
     params = request.all_data
 
     # Get synchronization url for the second step
@@ -739,13 +740,13 @@ def sync_finalize(container_serial: str):
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
     params.update({'scope': synchronize_url})
 
-    # Get registration url for push tokens
-    push_policy = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL).policies()
-    if len(push_policy) > 0:
-        push_registration_url = push_policy[0]["action"][PUSH_ACTION.REGISTRATION_URL]
-        push_firebase_configuration = push_policy[0]["action"].get(PUSH_ACTION.FIREBASE_CONFIG, None)
-        params.update({PUSH_ACTION.REGISTRATION_URL: push_registration_url,
-                       PUSH_ACTION.FIREBASE_CONFIG: push_firebase_configuration})
+    # # Get push configuration
+    # push_policy = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL).policies()
+    # if len(push_policy) > 0:
+    #     push_registration_url = push_policy[0]["action"][PUSH_ACTION.REGISTRATION_URL]
+    #     push_firebase_configuration = push_policy[0]["action"].get(PUSH_ACTION.FIREBASE_CONFIG, None)
+    #     params.update({PUSH_ACTION.REGISTRATION_URL: push_registration_url,
+    #                    PUSH_ACTION.FIREBASE_CONFIG: push_firebase_configuration})
 
     # 2nd synchronize step
     container = find_container_by_serial(container_serial)
@@ -822,11 +823,12 @@ def create_template_with_name(container_type, template_name):
         raise ParameterError("Invalid container type")
 
     # check if name already exists
-    existing_templates = get_templates_by_query(template_name)
+    existing_templates = get_templates_by_query(template_name)["templates"]
 
     if len(existing_templates) > 0:
         # update existing template
-        template_db = create_container_template_from_db_object(existing_templates[0])
+        template_db = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
+        template_db = create_container_template_from_db_object(template_db)
         template_db.container_type = container_type
         template_db.template_options = template_options
         template_id = template_db.id
