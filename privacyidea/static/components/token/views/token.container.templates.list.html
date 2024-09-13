@@ -46,8 +46,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <tbody>
                 <tr ng-repeat="template in templatedata.templates">
                     <td>
-                        <a ui-sref="token.containertemplates.edit({templateName: template.name})"
-                           ng-click="editTemplate()">{{ template.name }}
+                        <a
+                           ng-click="editTemplate(template.name)">{{ template.name }}
                            </a>
                     </td>
                     <td>

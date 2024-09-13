@@ -805,7 +805,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         $scope.get = function () {
             ContainerFactory.getTemplates({"name": $stateParams.templateName},
                 function (data) {
-                    $scope.templateData = data.result.value[0]["templates"][0];
+                    $scope.templateData = data.result.value["templates"][0];
                     $scope.selectedTokens = $scope.templateData.template_options.tokens;
                     $scope.getTokenTypes();
                 });
