@@ -368,7 +368,7 @@ class SmartphoneContainer(TokenContainerClass):
         encrypt_mode = container_info.get("encrypt_mode", "ECB")
 
         # Get container dict with token secrets
-        container_dict = self.synchronize_container_details(container_client)
+        container_dict = self.synchronize_container_details(container_client, params)
 
         # encrypt container dict
         session_key = private_key_encr_server.exchange(pub_key_encr_container)
@@ -382,7 +382,7 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict):
+    def synchronize_container_details(self, container_client: dict, params: dict):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -441,7 +441,7 @@ class SmartphoneContainer(TokenContainerClass):
         add_list = []
         for serial in missing_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
-            enroll_url = token.get_enroll_url(user=User())
+            enroll_url = token.get_enroll_url(User(), params)
             add_list.append(enroll_url)
 
         # Get info for same serials: token details

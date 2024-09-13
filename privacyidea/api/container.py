@@ -33,12 +33,14 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
                                        remove_multiple_tokens_from_container,
                                        create_container_dict, create_endpoint_url, get_container_classes,
-                                       create_container_template, create_container_template_from_db_object)
+                                       create_container_template, create_container_template_from_db_object,
+                                       get_templates_by_query)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.models import TokenContainerTemplate
 
@@ -737,6 +739,14 @@ def sync_finalize(container_serial: str):
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
     params.update({'scope': synchronize_url})
 
+    # Get registration url for push tokens
+    push_policy = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL).policies()
+    if len(push_policy) > 0:
+        push_registration_url = push_policy[0]["action"][PUSH_ACTION.REGISTRATION_URL]
+        push_firebase_configuration = push_policy[0]["action"].get(PUSH_ACTION.FIREBASE_CONFIG, None)
+        params.update({PUSH_ACTION.REGISTRATION_URL: push_registration_url,
+                       PUSH_ACTION.FIREBASE_CONFIG: push_firebase_configuration})
+
     # 2nd synchronize step
     container = find_container_by_serial(container_serial)
     res = container.finalize_sync(params)
@@ -757,19 +767,16 @@ def get_template():
     """
     Get all container templates
     """
-    # TODO: Add pagination and optionally filter by type
-    db_templates = TokenContainerTemplate.query.all()
-    template_obj_list = [create_container_template_from_db_object(template) for template in db_templates]
+    # TODO: Add pagination
+    params = request.all_data
+    name = getParam(params, "name", optional=True)
+    container_type = getParam(params, "container_type", optional=True)
+    page = int(getParam(params, "page", optional=True, default=0) or 0)
+    pagesize = int(getParam(params, "pagesize", optional=True, default=0) or 0)
 
-    # convert to dict
-    template_list = []
-    for template in template_obj_list:
-        template_dict = {"name": template.name,
-                         "container_type": template.container_type,
-                         "template_options": template.template_options}
-        template_list.append(template_dict)
+    templates_dict = get_templates_by_query(name, container_type, page, pagesize)
 
-    return send_result(template_list)
+    return send_result(templates_dict)
 
 
 @container_blueprint.route('<string:container_type>/template/options', methods=['GET'])
@@ -810,10 +817,23 @@ def create_template_with_name(container_type, template_name):
     Set the template for the given container type
     """
     params = request.all_data
-    template_opions = json.dumps(getParam(params, "template_options", required))
+    template_options = json.dumps(getParam(params, "template_options", required))
     if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
         raise ParameterError("Invalid container type")
-    template_id = create_container_template(container_type, template_name, template_opions)
+
+    # check if name already exists
+    existing_templates = get_templates_by_query(template_name)
+
+    if len(existing_templates) > 0:
+        # update existing template
+        template_db = create_container_template_from_db_object(existing_templates[0])
+        template_db.container_type = container_type
+        template_db.template_options = template_options
+        template_id = template_db.id
+
+    else:
+        # create new template
+        template_id = create_container_template(container_type, template_name, template_options)
 
     audit_log_data = {"container_type": container_type,
                       "action_detail": f"template_name={template_name}",

@@ -887,7 +887,7 @@ class HotpTokenClass(TokenClass):
             # Certain from HOTP inherited tokenclasses might not set currently_in_challenge
             return False
 
-    def get_enroll_url(self, user):
+    def get_enroll_url(self, user, params):
         """
         Return the URL to enroll this token.
 
@@ -896,6 +896,6 @@ class HotpTokenClass(TokenClass):
         """
         token_secret = self.token.get_otpkey().getKey().decode("utf-8")
         self.init_details.update({"otpkey": token_secret})
-        init_details = self.get_init_detail(None, user)
+        init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("googleurl").get("value")
         return enroll_url

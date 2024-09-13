@@ -1202,10 +1202,10 @@ class PushTokenClass(TokenClass):
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 
-    def get_enroll_url(self, user):
+    def get_enroll_url(self, user, params):
         """
         Return the URL to enroll this token. It is not supported by all token types.
         """
-        init_details = self.get_init_detail(None, user)
+        init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("pushurl").get("value")
         return enroll_url
