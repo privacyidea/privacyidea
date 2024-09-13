@@ -52,3 +52,12 @@ class ContainerTemplateBase:
     @property
     def template_options(self):
         return self._db_template.options
+
+    @template_options.setter
+    def template_options(self, options):
+        self._db_template.options = options
+        self._db_template.save()
+
+    @property
+    def id(self):
+        return self._db_template.id

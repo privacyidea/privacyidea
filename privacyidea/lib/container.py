@@ -18,6 +18,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import importlib
+import json
 import logging
 import os
 
@@ -236,25 +237,7 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
-        if page < 1:
-            page = 1
-        if pagesize < 1:
-            pagesize = 10
-
-        pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
-        db_containers = pagination.items
-
-        prev = None
-        if pagination.has_prev:
-            prev = page - 1
-        nxt = None
-        if pagination.has_next:
-            nxt = page + 1
-
-        ret["prev"] = prev
-        ret["next"] = nxt
-        ret["current"] = page
-        ret["count"] = pagination.total
+        ret, db_containers = create_pagination(page, pagesize, sql_query)
     else:  # No pagination
         db_containers = sql_query.all()
 
@@ -262,6 +245,38 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     ret["containers"] = container_list
 
     return ret
+
+
+def create_pagination(page, pagesize, sql_query):
+    """
+        Creates the pagination of a sql query.
+
+        :param page: The number of the page to view. Starts with 1
+        :param pagesize: The number of objects that shall be shown on one page
+        :param sql_query: The sql query to paginate
+        :return: A dictionary with pagination information and a list of database objects
+    """
+    ret = {}
+    if page < 1:
+        page = 1
+    if pagesize < 1:
+        pagesize = 10
+
+    pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
+    db_objects = pagination.items
+
+    prev = None
+    if pagination.has_prev:
+        prev = page - 1
+    nxt = None
+    if pagination.has_next:
+        nxt = page + 1
+
+    ret["prev"] = prev
+    ret["next"] = nxt
+    ret["current"] = page
+    ret["count"] = pagination.total
+    return ret, db_objects
 
 
 def find_container_for_token(serial):
@@ -908,17 +923,6 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     return res
 
 
-def synchronize_container(container_serial, params):
-    """
-    Synchronizes a physical container with privacyIDEA.
-    """
-    signature = getParam(params, "signature", required=True)
-
-    container = find_container_by_serial(container_serial)
-    container.synchronize(params)
-    return True
-
-
 def create_endpoint_url(base_url, endpoint):
     """
     Creates the url for an endpoint.
@@ -988,3 +992,43 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
                 return None
             return template
     return None
+
+
+def get_templates_by_query(name: str = None, container_type: str = None, page: int = 0, pagesize: int = 0):
+    """
+    Returns a list of all templates or a list filtered by the given parameters.
+
+    :param name: The name of the template, optional
+    :param container_type: The type of the container, optional
+    :param page: The number of the page to view. 0 if no pagination shall be used
+    :param pagesize: The size of the page. 0 if no pagination shall be used
+    :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
+             'next', 'current', 'count')
+    """
+    sql_query = TokenContainerTemplate.query
+    if name:
+        sql_query = sql_query.filter(TokenContainerTemplate.name == name)
+    if container_type:
+        sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
+
+    # paginate if requested
+    if page > 0 or pagesize > 0:
+        ret, db_templates = create_pagination(page, pagesize, sql_query)
+    else:
+        ret = {}
+        db_templates = sql_query.all()
+
+    # create class objects from db objects
+    template_obj_list = [create_container_template_from_db_object(template) for template in db_templates]
+
+    # convert to dict
+    template_list = []
+    for template in template_obj_list:
+        template_dict = {"name": template.name,
+                         "container_type": template.container_type,
+                         "template_options": json.loads(template.template_options)}
+        template_list.append(template_dict)
+
+    ret["templates"] = template_list
+
+    return ret

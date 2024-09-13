@@ -16,25 +16,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <div class="form-group">
-    <h3 translate>Create New Container Template</h3>
+    <h3 translate>Edit Template {{ templateData.name }}</h3>
 
     <div class="form-group">
-        <label for="name" translate>Name</label>
-        <input type="text" class="form-control" id="name"
-               placeholder="{{ 'A unique name for this policy'|translate }}"
-               ng-model="selection.templateName"/>
-    </div>
-
-    <div class="form-group">
-        <label for="containertype" translate>Container Type</label>
-        <select class="form-control"
-                id="containertype"
-                ng-model="selection.containerType"
-                ng-options="type as attr.description for (type, attr) in typeProperties.containerTypes">
-        </select>
+        Container Type: {{ templateData.container_type }}
     </div>
     <div class="form-group">
-        <span translate>Supported Token Types</span>: {{ selection.allowedTokensDisplay }}
+        <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
     </div>
 
     <div class="form-group">
@@ -71,9 +59,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </table>
 
         <select class="form-control"
-                ng-change="changeTokenType()"
                 ng-model="tokenType"
-                ng-options="type as desc for (type, desc) in selection.allowedTokensSelection">
+                ng-options="type as desc for (type, desc) in allowedTokenTypes.displaySelection">
         </select>
         <button class="btn btn-default btn-capitalize"
                 ng-click="addToken(tokenType)"
@@ -84,13 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
     <div class="form-group">
         <button class="btn btn-capitalize btn-primary"
-                ng-click="createTemplate()"
-                ng-show=""
-                translate>
-            Create Template
-        </button>
-        <button class="btn btn-capitalize btn-primary"
-                ng-click="createTemplate()"
+                ng-click="saveTemplate()"
                 translate>
             Save Template
         </button>
