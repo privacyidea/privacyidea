@@ -1689,11 +1689,11 @@ class TokenTestCase(MyTestCase):
         totp = init_token(totp_params)
 
         hotp_init = hotp.get_init_detail(hotp_params, User())
-        hotp_enroll_url = hotp.get_enroll_url(User())
+        hotp_enroll_url = hotp.get_enroll_url(User(), {})
         self.assertEqual(hotp_init["googleurl"]["value"], hotp_enroll_url)
 
         totp_init = totp.get_init_detail(totp_params, User())
-        totp_enroll_url = totp.get_enroll_url(User())
+        totp_enroll_url = totp.get_enroll_url(User(), {})
         self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
 
 class TokenOutOfBandTestCase(MyTestCase):

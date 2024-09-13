@@ -1214,7 +1214,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         totp_token.enable(False)
 
         # synchronize details
-        synced_container_details = smartphone.synchronize_container_details(client_container)
+        synced_container_details = smartphone.synchronize_container_details(client_container, {})
 
         # check container details
         self.assertEqual("lost", synced_container_details["container"]["states"][0])
@@ -1230,7 +1230,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                 self.assertFalse(token["active"])
 
         # Pass empty client container
-        synced_container_details = smartphone.synchronize_container_details({})
+        synced_container_details = smartphone.synchronize_container_details({}, {})
         # check tokens
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(2, len(add_tokens))

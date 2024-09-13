@@ -448,7 +448,7 @@ class SmartphoneContainer(TokenContainerClass):
         update_dict = []
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
-            token_dict = {"serial": serial, "active": token.is_active()}
+            token_dict = token.get_as_dict()
             otp = serial_otp_map.get(serial)
             if otp:
                 token_dict["otp"] = otp
