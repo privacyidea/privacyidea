@@ -33,13 +33,12 @@ jobs:
     name: 'Run tests with Python'
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
-    # we need to fix the ubuntu version until we drop Python 2.7 and 3.6
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       # don't cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
-        # current supported Python versions (and 2.7 and 3.6 for legacy support)
+        # current supported Python versions
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
@@ -67,6 +66,7 @@ jobs:
       # create the virtual environment
       run: |
         python -m pip install --upgrade pip setuptools
+        pip install -r requirements.txt
         pip install -r tests/requirements.txt
 
     - name: Test with pytest
