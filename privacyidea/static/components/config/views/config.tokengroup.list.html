@@ -13,7 +13,8 @@
                 {{ group.id }}
             </td>
             <td>
-                <a ui-sref="config.tokengroup.edit({groupname:groupname})">
+                <a ui-sref="config.tokengroup.edit({groupname:groupname})"
+                   ng-click="editTokengroup(groupname)">
                         {{ groupname }}</a>
             </td>
             <td>
