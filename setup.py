@@ -102,7 +102,7 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='https://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     packages=find_packages(),
     scripts=get_scripts("tools"),
     entry_points={
@@ -158,7 +158,6 @@ setup(
                  " Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.7',
                  'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
                  'Programming Language :: Python :: 3.10',

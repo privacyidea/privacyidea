@@ -210,6 +210,7 @@ class TestPIManageConfigImportExport:
             assert "testresolver" not in res_dict
         result = runner.invoke(pi_manage, ["config", "import", "-i", outfile])
         assert not result.exception
+        print(result.output)
         with app.app_context():
             res_dict = get_resolver_list()
             assert "testresolver" in res_dict

@@ -174,10 +174,7 @@ def create_app(config_name="development",
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
-    def get_locale():
-        return get_accepted_language(request)
-
-    Babel(app, locale_selector=get_locale)
+    Babel(app, locale_selector=get_accepted_language)
 
     # Setup logging
     log_read_func = {
