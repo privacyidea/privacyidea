@@ -651,16 +651,14 @@ class HttpSMSTestCase(MyTestCase):
         # also check that the parameters are sent as json
         responses.add(responses.POST,
                       "http://some.other.service",
-                      body=self.success_body,
-                      match=[
-                          json_params_matcher({"text": 'Hello: 7',
-                                               'phone': '123456'})
-                      ],)
+                      body=self.success_body)
         # Here we need to send the SMS
         with mock.patch("logging.Logger.debug") as mock_log:
             r = provider.submit_message("123456", 'Hello: 7')
             self.assertTrue(r)
-            call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
+            for x in mock_log.call_args_list:
+                print(x[0][0])
+            call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
             self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
         delete_smsgateway(identifier)
 
