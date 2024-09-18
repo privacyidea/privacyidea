@@ -4,6 +4,16 @@
         <img width="{{ qrCodeWidth }}"
              ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'centered' : 'not-centered'"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
+        <p translate ng-show="enrolledToken.googleurl.value">
+            Click <a href="{{ enrolledToken.googleurl.value }}">here</a> or scan
+            the QR Code, if you
+            want to add the Token to your smartphone authenticator app.
+        </p>
+        <p translate>
+            The QR Code contains the secret key of your token. You need to
+            protect it. <b>If you are in doubt, that someone else saw it, please
+            regenerate the QR Code, when no one else is watching.</b>
+        </p>
     </div>
     <div ng-hide="form['2stepinit']"
          ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
