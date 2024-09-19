@@ -11,8 +11,8 @@ import mock
 
 from mock import patch, MagicMock
 
-from privacyidea.lib.container import init_container, find_container_by_serial, get_all_containers, \
-    delete_container_by_serial, add_token_to_container
+from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
+                                       delete_container_by_serial, add_token_to_container)
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
@@ -1072,14 +1072,11 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
 
-        options = {"g": {},
-                   "handler_def": {},
-                   "request": req,
-                   "response": resp}
+        options = {"g": {}, "request": req, "response": resp,
+                   'handler_def': {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}}
 
         # Container has no token
         # Check if the condition matches
-        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
@@ -1103,6 +1100,68 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Clean up
         delete_container_by_serial(container_serial, User(), "admin")
         remove_token(token_serial)
+
+    def test_17_user_token_number(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        init_token({"serial": "pw01", "type": "pw", "otppin": "test", "otpkey": "secret"}, user=user)
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+    def test_18_compare_condition_no_int(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        # If the condition is not an integer, the error when converting is caught and false is returned
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: ">notaninteger"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -2086,7 +2145,6 @@ class ContainerEventTestCase(MyTestCase):
         containers = get_all_containers()['containers']
         self.assertEqual(1, len(containers))
         self.assertEqual(0, len(containers[0].get_tokens()))
-
 
     def test_02_delete_container(self):
         # create container
