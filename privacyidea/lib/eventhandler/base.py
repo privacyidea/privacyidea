@@ -756,7 +756,7 @@ class BaseEventHandler(object):
 
         if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
-            cond = (conditions.get(CONDITION.USER_TOKEN_NUMBER))
+            cond = conditions.get(CONDITION.USER_TOKEN_NUMBER)
             if not compare_condition(cond, num_tokens):
                 return False
 
