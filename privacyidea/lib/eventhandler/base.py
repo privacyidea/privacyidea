@@ -300,7 +300,7 @@ class BaseEventHandler(object):
                 {
                     "type": "str",
                     "desc": _("Action is triggered, if the user has this number "
-                              "of tokens assigned."),
+                              "of tokens assigned. > and < can be used, like <8."),
                     "group": GROUP.USER
                 },
             CONDITION.USER_CONTAINER_NUMBER:
