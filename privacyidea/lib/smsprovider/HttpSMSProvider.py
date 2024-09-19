@@ -82,7 +82,9 @@ class HttpSMSProvider(ISMSProvider):
             for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
-                    v = v.format(otp=message, phone=phone)
+                    # We can not do .format() due to curly brackets in JSON
+                    v = v.replace("{otp}", message)
+                    v = v.replace("{phone}", phone)
                     try:
                         parameter[k] = json.loads(v)
                     except json.decoder.JSONDecodeError:
