@@ -1739,19 +1739,16 @@ def webauthntoken_request(request, action):
     :rtype:
     """
 
-    webauthn = False
     scope = None
 
     # Check if this is an enrollment request for a WebAuthn token.
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        webauthn = True
         scope = SCOPE.ENROLL
 
-    # Check if a WebAuthn token is being authorized.
+    # Check if a WebAuthn token is being used for authentication.
     if is_webauthn_assertion_response(request.all_data):
-        webauthn = True
-        scope = SCOPE.AUTHZ
+        scope = SCOPE.AUTH
 
     # Check if this is an auth request (as opposed to an enrollment), and it
     # is not a WebAuthn authorization, and the request is either for
@@ -1769,13 +1766,12 @@ def webauthntoken_request(request, action):
             and not is_webauthn_assertion_response(request.all_data) \
             and ('serial' not in request.all_data
                  or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
-        webauthn = True
         scope = SCOPE.AUTH
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
-    if webauthn:
+    if scope:
         actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
-
+        actions.update(WebAuthnTokenClass.get_class_info('policy').get(SCOPE.AUTHZ))
         if WEBAUTHNACTION.TIMEOUT in actions:
             timeout_policies = Match \
                 .user(g,
