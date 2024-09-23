@@ -1806,7 +1806,7 @@ def webauthntoken_request(request, action):
         if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
             allowed_aaguids_pols = Match \
                 .user(g,
-                      scope=scope,
+                      scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
                       action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,
