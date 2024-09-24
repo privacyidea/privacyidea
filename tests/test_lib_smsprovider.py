@@ -644,7 +644,7 @@ class HttpSMSTestCase(MyTestCase):
                                      "SEND_DATA_AS_JSON": "yes",
                                      "text": "{otp}",
                                      "phone": "{phone}",
-                                     "receiverlist": '[{"phone": "one"}, {"phone": "two"}]'},
+                                     "receiverlist": '[{"phone": "{phone}", "message": "{otp}"}]'},
                             headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
         provider = create_sms_instance(identifier=identifier)
@@ -660,8 +660,11 @@ class HttpSMSTestCase(MyTestCase):
             for x in mock_log.call_args_list:
                 print(x[0][0])
             call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
-            # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456, 'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
+            # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456,
+            #                      'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
             self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*receiverlist.*', call)
+            self.assertEqual(call, "passing JSON data: {'text': 'Hello: 7', 'phone': 123456, "
+                                   "'receiverlist': [{'phone': '123456', 'message': 'Hello: 7'}]}")
         delete_smsgateway(identifier)
 
 
