@@ -346,10 +346,11 @@ class IdResolver (UserIdResolver):
                 return False
             # we need to check credentials with kerberos differently since we
             # can not use bind for every user
-            if self.getUserInfo(uid).get('upn') is not None \
-                and self.getUserInfo(uid).get('upn') != "None" \
-                and self.getUserInfo(uid).get('upn') != "":
-                name = gssapi.Name(self.getUserInfo(uid).get('upn').upper())
+            upn = self.getUserInfo(uid).get('upn')
+            if upn is not None \
+                and upn != "None" \
+                and upn != "":
+                name = gssapi.Name(upn.upper())
             else:
                 name = gssapi.Name(self.getUserInfo(uid).get('username'))
             try:
