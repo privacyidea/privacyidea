@@ -34,8 +34,9 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
                                        remove_multiple_tokens_from_container,
                                        create_container_dict, create_endpoint_url, get_container_classes,
-                                       create_container_template, create_container_template_from_db_object,
-                                       get_templates_by_query)
+                                       create_container_template,
+                                       get_templates_by_query, create_container_tokens_from_template, get_template_obj,
+                                       set_template_options)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
@@ -161,6 +162,7 @@ def init():
     :jsonparam: serial: Optional serial
     :jsonparam: user: Optional username to assign the container to. Requires realm param to be present as well.
     :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
+    :jsonparam: template: The name of a template to create the container from, optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -172,6 +174,11 @@ def init():
 
     serial = init_container(request.all_data)
     res = {"container_serial": serial}
+
+    # Template handling
+    template = getParam(request.all_data, "template", optional=True)
+    if template:
+        create_container_tokens_from_template(serial, template)
 
     # Audit log
     container = find_container_by_serial(serial)
@@ -729,24 +736,23 @@ def sync_finalize(container_serial: str):
         The provided enroll information depends on the token type as well as the returned information for the tokens
         to be updated.
     """
+    # Get push config (without error throwing)
     request.all_data = get_pushtoken_add_config_soft(g, request.all_data)
     params = request.all_data
 
     # Get synchronization url for the second step
     server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
     if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot synchronize container.")
+    if len(server_url_policies) > 1:
+        # TODO: Error or only log or check for priority and raise error in case of same priority?
+        log.debug(
+            f"Multiple enrollment policies {ACTION.PI_SERVER_URL}. "
+            f"The first one {server_url_policies[0]['action'][ACTION.PI_SERVER_URL]} is used.")
+        # raise PolicyError(f"Multiple enrollment policies {ACTION.PI_SERVER_URL}. Cannot synchronize container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
     params.update({'scope': synchronize_url})
-
-    # # Get push configuration
-    # push_policy = Match.generic(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL).policies()
-    # if len(push_policy) > 0:
-    #     push_registration_url = push_policy[0]["action"][PUSH_ACTION.REGISTRATION_URL]
-    #     push_firebase_configuration = push_policy[0]["action"].get(PUSH_ACTION.FIREBASE_CONFIG, None)
-    #     params.update({PUSH_ACTION.REGISTRATION_URL: push_registration_url,
-    #                    PUSH_ACTION.FIREBASE_CONFIG: push_firebase_configuration})
 
     # 2nd synchronize step
     container = find_container_by_serial(container_serial)
@@ -794,23 +800,6 @@ def get_template_options(container_type):
         raise ParameterError("Invalid container type")
 
 
-@container_blueprint.route('<string:container_type>/template', methods=['POST'])
-@log_with(log)
-def set_template(container_type):
-    """
-    Set the template for the given container type
-    """
-    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
-        raise ParameterError("Invalid container type")
-
-    json = request.json
-    template_id = json.get('template_id')
-
-    audit_log_data = {"container_type": container_type,
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-
-
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
 @log_with(log)
 def create_template_with_name(container_type, template_name):
@@ -818,7 +807,10 @@ def create_template_with_name(container_type, template_name):
     Set the template for the given container type
     """
     params = request.all_data
-    template_options = json.dumps(getParam(params, "template_options", required))
+    template_options = getParam(params, "template_options", optional=True) or {}
+    if not isinstance(template_options, dict):
+        raise ParameterError("'template_options' must be a dictionary!")
+
     if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
         raise ParameterError("Invalid container type")
 
@@ -827,12 +819,7 @@ def create_template_with_name(container_type, template_name):
 
     if len(existing_templates) > 0:
         # update existing template
-        template_db = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
-        template_db = create_container_template_from_db_object(template_db)
-        template_db.container_type = container_type
-        template_db.template_options = template_options
-        template_id = template_db.id
-
+        template_id = set_template_options(template_name, template_options)
     else:
         # create new template
         template_id = create_container_template(container_type, template_name, template_options)
@@ -842,3 +829,14 @@ def create_template_with_name(container_type, template_name):
                       "success": True}
     g.audit_object.log(audit_log_data)
     return send_result(template_id)
+
+
+@container_blueprint.route('template/<string:template_name>', methods=['DELETE'])
+@log_with(log)
+def delete_template(template_name):
+    """
+    Deletes the template of the given name.
+    """
+    template = get_template_obj(template_name)
+    template.delete()
+    return send_result(True)

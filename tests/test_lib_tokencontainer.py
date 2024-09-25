@@ -16,15 +16,23 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        set_container_states, add_container_states,
                                        remove_multiple_tokens_from_container, remove_token_from_container,
                                        add_multiple_tokens_to_container,
-                                       add_token_to_container, create_endpoint_url)
+                                       add_token_to_container, create_endpoint_url, create_container_template,
+                                       get_templates_by_query, get_template_obj, set_template_options,
+                                       create_container_template_from_db_object)
 from privacyidea.lib.container import get_container_classes
+from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
+from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
+from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
 from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc, \
     b64url_str_key_pair_to_ecc_obj, ecdh_key_exchange
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
                                    TokenAdminError, privacyIDEAError)
+from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.tokens.pushtoken import PushTokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
 from .base import MyTestCase
 
 
@@ -1234,3 +1242,181 @@ class TokenContainerManagementTestCase(MyTestCase):
         # check tokens
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(2, len(add_tokens))
+
+    def test_50_create_delete_template_success(self):
+        template_name = "test"
+        template_id = create_container_template(container_type="generic",
+                                                template_name=template_name,
+                                                options={"tokens": [{"type": "hotp"}]})
+        self.assertGreater(template_id, 0)
+
+        template = get_template_obj(template_name)
+        template.delete()
+
+    def test_51_create_template_fail(self):
+        template_name = "test"
+
+        # wrong options type input
+        self.assertRaises(ParameterError, create_container_template, container_type="smartphone",
+                          template_name=template_name,
+                          options="random")
+
+    def test_52_set_template_options_success(self):
+        template_name = "test"
+        template_id = create_container_template(container_type="smartphone",
+                                                template_name=template_name,
+                                                options={"tokens": [{"type": "hotp"}]})
+
+        template_options = {
+            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}]}
+
+        template_id_options = set_template_options(template_name, template_options)
+        self.assertEqual(template_id, template_id_options)
+
+        # check template options
+        template = get_template_obj(template_name)
+        self.assertEqual(json.dumps(template_options), template.template_options)
+
+        template = get_template_obj(template_name)
+        template.delete()
+
+    def test_53_set_template_options_fails(self):
+        template_name = "test"
+        initial_options = {"tokens": [{"type": "hotp"}]}
+
+        # Smartphone
+        create_container_template(container_type="smartphone",
+                                  template_name=template_name,
+                                  options=initial_options)
+
+        # wrong input type
+        template_options = json.dumps({
+            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}]})
+
+        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
+        template = get_template_obj(template_name)
+        self.assertEqual(json.dumps(initial_options), template.template_options)
+
+        # wrong token type
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "spass"}]}
+        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
+        template = get_template_obj(template_name)
+        self.assertEqual(json.dumps(initial_options), template.template_options)
+
+        template = get_template_obj(template_name)
+        template.delete()
+
+        # Yubikey
+        create_container_template(container_type="yubikey",
+                                  template_name=template_name,
+                                  options=initial_options)
+
+        # wrong token type
+        template_options = {"tokens": [{"type": "totp", "genkey": True}, {"type": "spass"}]}
+        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
+        template = get_template_obj(template_name)
+        self.assertEqual(json.dumps(initial_options), template.template_options)
+
+        template = get_template_obj(template_name)
+        template.delete()
+
+    def test_54_create_container_template_from_db_object_success(self):
+        # Generic
+        template_db = TokenContainerTemplate(name="test", container_type="generic", options="")
+        template_db.save()
+        template = create_container_template_from_db_object(template_db)
+        self.assertIsInstance(template, ContainerTemplateBase)
+        template.delete()
+
+        # Smartphone
+        template_db = TokenContainerTemplate(name="test", container_type="smartphone", options="")
+        template_db.save()
+        template = create_container_template_from_db_object(template_db)
+        self.assertIsInstance(template, SmartphoneContainerTemplate)
+        template.delete()
+
+        # Yubikey
+        template_db = TokenContainerTemplate(name="test", container_type="yubikey", options="")
+        template_db.save()
+        template = create_container_template_from_db_object(template_db)
+        self.assertIsInstance(template, YubikeyContainerTemplate)
+        template.delete()
+
+    def test_55_create_container_template_from_db_object_fails(self):
+        # Invalid type
+        template_db = TokenContainerTemplate(name="test", container_type="random", options="")
+        template_db.save()
+        template = create_container_template_from_db_object(template_db)
+        self.assertIsNone(template)
+        template_db.delete()
+
+    def test_56_get_template_obj_success(self):
+        template_name = "test"
+        create_container_template(container_type="smartphone",
+                                  template_name=template_name,
+                                  options={"tokens": [{"type": "hotp"}]})
+
+        template = get_template_obj(template_name)
+        self.assertIsInstance(template, SmartphoneContainerTemplate)
+        self.assertEqual(template_name, template.name)
+
+        template.delete()
+
+    def test_57_get_template_obj_fail(self):
+        # Pass non-existing template name
+        self.assertRaises(ResourceNotFoundError, get_template_obj, "non-existing")
+
+    def test_58_get_template_by_query(self):
+        create_container_template(container_type="smartphone",
+                                  template_name="smph",
+                                  options={"tokens": [{"type": "totp"}]})
+        create_container_template(container_type="generic",
+                                  template_name="generic",
+                                  options={"tokens": [{"type": "spass"}]})
+        create_container_template(container_type="yubikey",
+                                  template_name="yubi",
+                                  options={"tokens": [{"type": "hotp"}]})
+
+        # Get all templates
+        templates_res = get_templates_by_query()
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(3, len(templates_res["templates"]))
+
+        # Get smartphone templates
+        templates_res = get_templates_by_query(container_type="smartphone")
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(1, len(templates_res["templates"]))
+        self.assertEqual("smph", templates_res["templates"][0]["name"])
+
+        # Filter by name
+        templates_res = get_templates_by_query(name="generic")
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(1, len(templates_res["templates"]))
+        self.assertEqual("generic", templates_res["templates"][0]["name"])
+
+        # Clean up
+        templates_res = get_templates_by_query()
+        for template in templates_res["templates"]:
+            template_obj = get_template_obj(template["name"])
+            template_obj.delete()
+
+    def test_59_get_templates_by_query_pagination(self):
+        # Create templates
+        for i in range(20):
+            create_container_template(container_type="smartphone",
+                                      template_name=f"smph{i}",
+                                      options={"tokens": [{"type": "totp"}]})
+
+        # Get all templates
+        templates_res = get_templates_by_query(page=0, pagesize=10)
+        self.assertEqual(20, templates_res["count"])
+        self.assertEqual(10, len(templates_res["templates"]))
+        self.assertEqual(2, templates_res["next"])
+        self.assertIsNone(templates_res["prev"])
+        self.assertEqual(1, templates_res["current"])
+
+        # Clean up
+        templates_res = get_templates_by_query()
+        for template in templates_res["templates"]:
+            template_obj = get_template_obj(template["name"])
+            template_obj.delete()

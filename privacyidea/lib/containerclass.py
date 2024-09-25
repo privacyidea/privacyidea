@@ -623,7 +623,9 @@ class TokenContainerClass:
         """
         Returns the token types that are supported by the container class.
         """
-        return get_token_types()
+        supported_token_types = get_token_types()
+        supported_token_types.sort()
+        return supported_token_types
 
     @classmethod
     def get_class_prefix(cls):

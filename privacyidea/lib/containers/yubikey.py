@@ -58,7 +58,9 @@ class YubikeyContainer(TokenContainerClass):
         """
         Returns the token types that are supported by the container class.
         """
-        return ["hotp", "certificate", "webauthn", "yubico", "yubikey"]
+        supported_token_types = ["hotp", "certificate", "webauthn", "yubico", "yubikey"]
+        supported_token_types.sort()
+        return supported_token_types
 
     @classmethod
     def get_class_prefix(cls):

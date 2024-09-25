@@ -1,3 +1,27 @@
+# (c) NetKnights GmbH 2024,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
+# SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+import json
+
+from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.error import ParameterError
+
+
 class TemplateOptionsBase:
     TOKEN_COUNT = "token_count"
     TOKEN_TYPES = "token_types"
@@ -31,6 +55,13 @@ class ContainerTemplateBase:
         """
         return "generic"
 
+    @classmethod
+    def get_supported_token_types(cls):
+        """
+        Returns the supported token types for this container template.
+        """
+        return TokenContainerClass.get_supported_token_types()
+
     @property
     def name(self):
         return self._db_template.name
@@ -55,9 +86,24 @@ class ContainerTemplateBase:
 
     @template_options.setter
     def template_options(self, options):
+        if not isinstance(options, dict):
+            raise ParameterError("options must be a dict")
+
+        # Validates token types in options
+        supported_token_types = self.get_supported_token_types()
+        tokens = options.get("tokens", [])
+        for token in tokens:
+            token_type = token.get("type", None)
+            if token.get("type", None) not in supported_token_types:
+                raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
+
+        options = json.dumps(options)
         self._db_template.options = options
         self._db_template.save()
 
     @property
     def id(self):
         return self._db_template.id
+
+    def delete(self):
+        self._db_template.delete()

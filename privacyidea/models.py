@@ -1575,7 +1575,6 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
     def __init__(self, object_id, name="", object_type="", description=""):
-
         self.name = name
         self.object_type = object_type
         self.object_id = object_id
@@ -3605,6 +3604,7 @@ class TokenContainerRealm(MethodsMixin, db.Model):
 
     __table_args__ = (db.UniqueConstraint('container_id', 'realm_id'),
                       {'mysql_row_format': 'DYNAMIC'})
+
 
 class TokenContainerTemplate(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainertemplate'

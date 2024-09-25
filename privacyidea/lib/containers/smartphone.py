@@ -93,7 +93,9 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Returns the token types that are supported by the container class.
         """
-        return ["hotp", "totp", "push", "daypassword", "sms"]
+        supported_token_types = ["hotp", "totp", "push", "daypassword", "sms"]
+        supported_token_types.sort()
+        return supported_token_types
 
     @classmethod
     def get_class_prefix(cls):
@@ -402,6 +404,8 @@ class SmartphoneContainer(TokenContainerClass):
                                 {"otp": ["1234", "9876"], "type": "hotp"}]
                 }
 
+        :param params: Further parameters like configuration from the policies.
+
         :return: container dictionary like
 
             ::
@@ -440,9 +444,12 @@ class SmartphoneContainer(TokenContainerClass):
         # Get info for missing serials: enroll url
         add_list = []
         for serial in missing_serials:
+            # TODO: Maybe we should do a rollover here (reinit with same serial) or dismiss it to avoid duplicates
             token = get_tokens_from_serial_or_user(serial, None)[0]
             enroll_url = token.get_enroll_url(User(), params)
-            add_list.append(enroll_url)
+            # if no enroll url is provided the token might be already enrolled
+            if enroll_url:
+                add_list.append(enroll_url)
 
         # Get info for same serials: token details
         update_dict = []

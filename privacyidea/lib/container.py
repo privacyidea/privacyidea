@@ -28,7 +28,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token, get_tokens,
-                                   convert_token_objects_to_dicts)
+                                   convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
@@ -392,6 +392,24 @@ def init_container(params):
 
     container.set_states(['active'])
     return serial
+
+
+def create_container_tokens_from_template(container_serial, template_name):
+    """
+    Create tokens for the container from the given template.
+    """
+    container = find_container_by_serial(container_serial)
+    templates_dict = get_templates_by_query(name=template_name, page=0, pagesize=0)
+    template = templates_dict["templates"][0]
+    options = template["template_options"]
+    tokens = options["tokens"]
+
+    for token_info in tokens:
+        if not token_info.get("genkey"):
+            # TODO: Better way to ensure that all required parameters are set.
+            token_info["genkey"] = True
+        token = init_token(token_info)
+        container.add_token(token)
 
 
 def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user"):
@@ -964,15 +982,35 @@ def get_container_template_classes():
     return ret
 
 
-def create_container_template(container_type, template_name, options):
+def create_container_template(container_type: str, template_name: str, options: dict):
     """
     Create a new container template.
     :param container_type: The type of the container
     :param template_name: The name of the template
-    :param options: The options for the template
+    :param options: The options for the template as dictionary
     :return: The created template object
     """
+    if isinstance(options, dict):
+        options = json.dumps(options)
+    else:
+        raise ParameterError("Options must be a dict!")
     return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
+
+
+def set_template_options(template_name: str, options: dict):
+    """
+    Set the options for the given template.
+
+    :param template_name: The name of the template
+    :param options: The options for the template as dictionary
+    :return: True on success
+    """
+    if not isinstance(options, dict):
+        raise ParameterError("Options must be a dict!")
+
+    template = get_template_obj(template_name)
+    template.template_options = options
+    return template.id
 
 
 def create_container_template_from_db_object(db_template: TokenContainerTemplate):
@@ -1032,3 +1070,18 @@ def get_templates_by_query(name: str = None, container_type: str = None, page: i
     ret["templates"] = template_list
 
     return ret
+
+
+def get_template_obj(template_name: str):
+    """
+    Returns the template object for the given template name.
+    Raises a ResourceNotFoundError if no template with this name exists.
+
+    :param template_name: The name of the template
+    :return: The template object
+    """
+    db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
+    if not db_template:
+        raise ResourceNotFoundError(f"Template {template_name} does not exist.")
+    template = create_container_template_from_db_object(db_template)
+    return template

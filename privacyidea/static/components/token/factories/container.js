@@ -198,7 +198,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             terminateRegistration: function (container_serial, callback) {
-                $http.delete(containerUrl + "sync/register/" + container_serial + "/terminate", {
+                $http.delete(containerUrl + "/register/" + container_serial + "/terminate", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
@@ -218,6 +218,15 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
             },
             createTemplate: function (params, callback) {
                 $http.post(containerUrl + "/" + params.type + "/template/" + params.name, params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            deleteTemplate: function (template_name, callback) {
+                $http.delete(containerUrl + "/template/" + template_name, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
