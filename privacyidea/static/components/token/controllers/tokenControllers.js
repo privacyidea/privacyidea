@@ -530,7 +530,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 "otpkey": $scope.clientpart.replace(/ /g, ""),
                 "otpkeyformat": "base32check",
                 "serial": $scope.enrolledToken.serial,
-                "type": $scope.form.type
+                "type": $scope.form.type,
+                // Send the rollover parameter as well to avoid a possible PIN check
+                "rollover": $scope.form.rollover
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 $scope.clientpart = "";
