@@ -408,7 +408,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove</span>
                     </button>
-                    <button class="btn btn-transparent btn-sm btn-danger btn-sm" ng-click="deleteOneToken(token.serial, true)"
+                    <button class="btn btn-transparent btn-sm btn-danger" ng-click="deleteOneToken(token.serial, true)"
                             ng-disabled="!checkRight('delete')"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
                         <span class="glyphicon glyphicon-trash"></span>
