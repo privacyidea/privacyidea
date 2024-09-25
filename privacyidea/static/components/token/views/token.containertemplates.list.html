@@ -41,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <th translate>
                         Type
                     </th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -52,6 +53,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     </td>
                     <td>
                         {{ template.container_type }}
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-transparent"
+                                ng-click="deleteTemplate(template.name)">
+                            <span class="glyphicon glyphicon-remove">
+                            </span>
+                            <translate>Delete</translate>
+                        </button>
                     </td>
                 </tr>
             </tbody>

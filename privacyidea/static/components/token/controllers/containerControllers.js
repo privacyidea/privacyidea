@@ -29,16 +29,18 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.form = {
             containerType: "generic",
             description: "",
-            token_types: ""
+            token_types: "",
+            template: ""
         };
 
         $scope.containerRegister = false;
         $scope.initRegistration = false;
         $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
 
-        $scope.$watch('form', function (newVal, oldVal) {
-            if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
-                $scope.form.token_types = $scope.formData.containerTypes[newVal.containerType]["token_types_display"];
+        $scope.$watch('form.containerType', function (newVal, oldVal) {
+            if (newVal && $scope.formData.containerTypes[newVal]) {
+                $scope.form.token_types = $scope.formData.containerTypes[newVal]["token_types_display"];
+                $scope.getTemplates();
             }
         }, true);
 
@@ -122,9 +124,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
         }
 
+        $scope.getTemplates = function () {
+            let params = {"container_type": $scope.form.containerType};
+            ContainerFactory.getTemplates(params, function (data) {
+                $scope.templates = data.result.value.templates;
+            });
+        };
+        $scope.getTemplates();
+
         $scope.createContainer = function () {
             let ctype = $scope.form.containerType;
             let params = {"type": ctype};
+            if ($scope.form.template) {
+                params["template"] = $scope.form.template.name;
+            }
             if ($scope.newUser.user) {
                 params["user"] = fixUser($scope.newUser.user);
                 params["realm"] = $scope.newUser.realm;
@@ -663,15 +676,21 @@ myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'C
                     $scope.templatedata = data.result.value;
                 });
         };
+
+        $scope.deleteTemplate = function (templateName) {
+            ContainerFactory.deleteTemplate(templateName, $scope.get);
+        };
+
         $scope.get();
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.get);
     }]);
 
-myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
-    'ConfigFactory', 'TokenFactory', '$location', '$state',
-    function containerTemplateDetailsController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state) {
+myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
+    'ConfigFactory', 'TokenFactory', '$location', '$state', 'instanceUrl', 'versioningSuffixProvider',
+    function containerTemplateCreateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
+                                               TokenFactory, $location, $state, instanceUrl, versioningSuffixProvider) {
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {};
         $scope.templatedata = [];
@@ -689,6 +708,9 @@ myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q',
         };
 
         $scope.selectedTokens = [];
+
+        $scope.instanceUrl = instanceUrl;
+        $scope.fileVersionSuffix = versioningSuffixProvider.$get();
 
         $scope.edit = false;
         if ($location.path() === "token.containertemplates.edit") {
@@ -726,8 +748,22 @@ myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q',
 
                 $scope.selection.allowedTokensSelection = {};
                 angular.forEach($scope.selection.allowedTokenTypes, function (tokenType) {
-                    $scope.selection.allowedTokensSelection[tokenType] = $scope.tokenSettings.tokenTypes[tokenType];
+                    let displayString = $scope.tokenSettings.tokenTypes[tokenType];
+                    if (displayString) {
+                        $scope.selection.allowedTokensSelection[tokenType] = displayString;
+                    }
                 });
+
+                // Set default type
+                const types = Object.keys($scope.selection.allowedTokensSelection);
+                if (types.indexOf('hotp')) {
+                    // Set hotp as default
+                    $scope.tokenSettings.selectedTokenType = 'hotp';
+                }
+                else {
+                    // Set the first token type as default
+                    $scope.tokenSettings.selectedTokenType = types[0];
+                }
             });
         };
 
@@ -759,7 +795,8 @@ myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q',
             timesteps: [30, 60],
             otplens: [6, 8],
             hashlibs: ["sha1", "sha256", "sha512"],
-            service_ids: {}
+            service_ids: {},
+            selectedTokenType: ""
         };
 
         // Read the tokentypes from the server
@@ -778,6 +815,28 @@ myApp.controller("containerTemplateDetailsController", ['$scope', '$http', '$q',
 
         $scope.removeToken = function (index) {
             $scope.selectedTokens.splice(index, 1);
+        };
+
+        $scope.editTokenProperties = function (index) {
+            $scope.selectedTokens[index].edit = true;
+            $scope.form = {};
+            angular.forEach($scope.selectedTokens[index], function (value, key) {
+                if (key !== 'edit') {
+                    $scope.form[key] = value;
+                }
+            })
+        };
+
+        $scope.saveTokenProperties = function (index) {
+            delete $scope.selectedTokens[index].edit;
+            // Save any additional properties here
+            angular.forEach($scope.form, function (value, key) {
+                $scope.selectedTokens[index][key] = value;
+            });
+        };
+
+        $scope.cancelTokenProperties = function (index) {
+            delete $scope.selectedTokens[index].edit;
         };
 
         // Initial call
@@ -801,6 +860,9 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         };
 
         $scope.selectedTokens = [];
+        $scope.tokenType = "";
+
+        $scope.colorMap = {"": "", "add": "table-add", "remove": "table-remove"};
 
         $scope.get = function () {
             ContainerFactory.getTemplates({"name": $stateParams.templateName},
@@ -819,16 +881,29 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
 
                 if ($scope.templateData.container_type == 'generic') {
                     $scope.allowedTokenTypes.displayPhrase = 'All';
-                }
-                else {
-                    $scope.allowedTokenTypes.displayPhrase =  $scope.tokenTypesToDisplayString(
-                            $scope.allowedTokenTypes.list);
+                } else {
+                    $scope.allowedTokenTypes.displayPhrase = $scope.tokenTypesToDisplayString(
+                        $scope.allowedTokenTypes.list);
                 }
 
                 $scope.allowedTokenTypes.displaySelection = {};
                 angular.forEach($scope.allowedTokenTypes.list, function (tokenType) {
-                    $scope.allowedTokenTypes.displaySelection [tokenType] = $scope.tokenSettings.tokenTypes[tokenType];
+                    let displayString = $scope.tokenSettings.tokenTypes[tokenType];
+                    if (displayString) {
+                        $scope.allowedTokenTypes.displaySelection [tokenType] = $scope.tokenSettings.tokenTypes[tokenType];
+                    }
                 });
+
+                // Set default type
+                const types = Object.keys($scope.allowedTokenTypes.displaySelection);
+                if (types.indexOf('hotp')) {
+                    // Set hotp as default
+                    $scope.tokenSettings.selectedType = 'hotp';
+                }
+                else {
+                    // Set the first token type as default
+                    $scope.tokenSettings.selectedType = types[0];
+                }
             });
         };
 
@@ -847,6 +922,11 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         $scope.saveTemplate = function () {
             $scope.params.name = $scope.templateData.name;
             $scope.params.type = $scope.templateData.container_type;
+            angular.forEach($scope.selectedTokens, function (token) {
+                if (token.state) {
+                    delete token.state;
+                }
+            });
             $scope.params.template_options = {"tokens": $scope.selectedTokens};
 
             ContainerFactory.createTemplate($scope.params, function (data) {
@@ -860,7 +940,8 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
             timesteps: [30, 60],
             otplens: [6, 8],
             hashlibs: ["sha1", "sha256", "sha512"],
-            service_ids: {}
+            service_ids: {},
+            selectedType: ""
         };
 
         // Read the tokentypes from the server
@@ -874,11 +955,41 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         };
 
         $scope.addToken = function (tokenType) {
-            $scope.selectedTokens.push({"type": tokenType});
+            $scope.selectedTokens.push({"type": tokenType, "state": "add"});
+        };
+
+        $scope.undoRemove = function (index) {
+            $scope.selectedTokens[index].state = "";
         };
 
         $scope.removeToken = function (index) {
-            $scope.selectedTokens.splice(index, 1);
+            if ($scope.selectedTokens[index].state === "add") {
+                $scope.selectedTokens.splice(index, 1);
+            } else {
+                $scope.selectedTokens[index].state = "remove";
+            }
+        };
+
+        $scope.editTokenProperties = function (index) {
+            $scope.selectedTokens[index].edit = true;
+            $scope.form = {};
+            angular.forEach($scope.selectedTokens[index], function (value, key) {
+                if (key !== 'edit') {
+                    $scope.form[key] = value;
+                }
+            })
+        };
+
+        $scope.saveTokenProperties = function (index) {
+            delete $scope.selectedTokens[index].edit;
+            // Save any additional properties here
+            angular.forEach($scope.form, function (value, key) {
+                $scope.selectedTokens[index][key] = value;
+            });
+        };
+
+        $scope.cancelTokenProperties = function (index) {
+            delete $scope.selectedTokens[index].edit;
         };
 
         // Initial call

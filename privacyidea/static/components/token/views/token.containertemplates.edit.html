@@ -41,39 +41,79 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </th>
             </tr>
             </thead>
-            <tr ng-repeat="token in selectedTokens track by $index">
+            <tr ng-class="colorMap[token.state]" ng-repeat-start="token in selectedTokens track by $index">
                 <td>
                     {{ token.type }}
                 </td>
                 <td>
-                    placeholder for some properties
+                    <div ng-repeat="(key, value) in token" ng-hide="key==='type' || key==='edit' || key==='state'">
+                        {{ key }}: {{ value }}
+                    </div>
+                    <button class="btn btn-capitalize btn-primary btn-transparent"
+                            ng-click="editTokenProperties($index)"
+                            ng-disabled="token.state==='remove'"
+                            translate>
+                        Edit
+                    </button>
                 </td>
                 <td>
-                    <button class="btn btn-capitalize btn-primary btn-transparent"
+                    <button class="btn btn-capitalize btn-danger btn-transparent"
                             ng-click="removeToken($index)"
-                            translate>
-                        Remove
+                            ng-hide="token.state==='remove'">
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <translate>Remove</translate>
                     </button>
+                    <button class="btn btn-capitalize btn-success btn-transparent"
+                            ng-click="undoRemove($index)"
+                            ng-show="token.state==='remove'">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <translate>Add</translate>
+                    </button>
+                </td>
+            </tr>
+            <tr ng-repeat-end ng-show="token.type && token.edit">
+                <td colspan="3">
+                    <div class="well">
+                        <ng-include src="instanceUrl +
+                    '/static/components/token/views/token.enroll.' + token.type + '.html' + fileVersionSuffix">
+                        </ng-include>
+                        <button class="btn btn-default"
+                                ng-click="saveTokenProperties($index)"
+                                translate>
+                            Save
+                        </button>
+                        <button class="btn btn-default"
+                                ng-click="cancelTokenProperties($index)"
+                                translate>
+                            Cancel
+                        </button>
+                    </div>
                 </td>
             </tr>
         </table>
 
-        <select class="form-control"
-                ng-model="tokenType"
-                ng-options="type as desc for (type, desc) in allowedTokenTypes.displaySelection">
-        </select>
-        <button class="btn btn-default btn-capitalize"
-                ng-click="addToken(tokenType)"
-                translate>
-            Add Token
-        </button>
+        <div>
+            <span translate>
+                Select a token type to add:
+            </span>
+            <select class="form-control"
+                    ng-model="tokenSettings.selectedType"
+                    ng-options="type as desc for (type, desc) in allowedTokenTypes.displaySelection">
+            </select>
+            <button class="btn btn-default btn-capitalize"
+                    ng-click="addToken(tokenSettings.selectedType)"
+                    translate>
+                Add Token
+            </button>
+        </div>
+
     </div>
 
-    <div class="form-group">
+    <div class="form-group text-center">
         <button class="btn btn-capitalize btn-primary"
-                ng-click="saveTemplate()"
-                translate>
-            Save Template
+                ng-click="saveTemplate()">
+            <span class="glyphicon glyphicon-floppy-disk"></span>
+            <translate>Save</translate>
         </button>
     </div>
 </div>

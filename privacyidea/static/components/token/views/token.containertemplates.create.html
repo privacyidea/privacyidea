@@ -53,46 +53,67 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </th>
             </tr>
             </thead>
-            <tr ng-repeat="token in selectedTokens track by $index">
+            <tr ng-repeat-start="token in selectedTokens track by $index">
                 <td>
                     {{ token.type }}
                 </td>
                 <td>
-                    placeholder for some properties
+                    <div ng-repeat="(key, value) in token" ng-hide="key==='type' || key==='edit'">
+                        {{ key }}: {{ value }}
+                    </div>
+                    <button class="btn btn-capitalize btn-primary btn-transparent"
+                            ng-click="editTokenProperties($index)"
+                            translate>
+                        Edit
+                    </button>
                 </td>
                 <td>
                     <button class="btn btn-capitalize btn-primary btn-transparent"
                             ng-click="removeToken($index)"
                             translate>
-                        Remove
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <translate>Remove</translate>
                     </button>
+                </td>
+            </tr>
+            <tr ng-repeat-end ng-show="token.type && token.edit">
+                <td colspan="3">
+                    <div class="well">
+                        <ng-include src="instanceUrl +
+                    '/static/components/token/views/token.enroll.' + token.type + '.html' + fileVersionSuffix">
+                        </ng-include>
+                        <button class="btn btn-default"
+                                ng-click="saveTokenProperties($index)"
+                                translate>
+                            Save
+                        </button>
+                    </div>
                 </td>
             </tr>
         </table>
 
-        <select class="form-control"
-                ng-change="changeTokenType()"
-                ng-model="tokenType"
-                ng-options="type as desc for (type, desc) in selection.allowedTokensSelection">
-        </select>
-        <button class="btn btn-default btn-capitalize"
-                ng-click="addToken(tokenType)"
-                translate>
-            Add Token
-        </button>
+        <div>
+            <span translate>
+                Select a token type to add:
+            </span>
+            <select class="form-control"
+                    ng-model="tokenSettings.selectedTokenType"
+                    ng-options="type as desc for (type, desc) in selection.allowedTokensSelection">
+            </select>
+            <button class="btn btn-default btn-capitalize"
+                    ng-click="addToken(tokenSettings.selectedTokenType)"
+                    translate>
+                Add Token
+            </button>
+        </div>
+
     </div>
 
     <div class="form-group">
         <button class="btn btn-capitalize btn-primary"
                 ng-click="createTemplate()"
-                ng-show=""
                 translate>
             Create Template
-        </button>
-        <button class="btn btn-capitalize btn-primary"
-                ng-click="createTemplate()"
-                translate>
-            Save Template
         </button>
     </div>
 </div>

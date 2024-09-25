@@ -204,7 +204,12 @@
                             </a>
                         </li>
                         <li role="presentation"
-                            ng-class="{active: $state.includes('token.containertemplates.details')}">
+                            ng-class="{active: $state.includes('token.containertemplates.edit')}"
+                            ng-show="$state.includes('token.containertemplates.edit')"><a>
+                            Template {{ $stateParams.templateName }}</a>
+                        </li>
+                        <li role="presentation"
+                            ng-class="{active: $state.includes('token.containertemplates.create')}">
                             <a ui-sref="token.containertemplates.details">
                                 <span class="glyphicon glyphicon-plus"></span>
                                 <span translate>Create New Template</span>

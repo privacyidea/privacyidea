@@ -54,6 +54,22 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </div>
         </div>
 
+        <!-- Template -->
+        <div class="form-group">
+            <hr class="horizontal-line-invisible">
+            <h4 translate>Use a Template</h4>
+            <div class="form-group">
+                <label for="templateName" translate>
+                    Template Name
+                </label>
+                <select class="form-control"
+                        id="templateName"
+                        ng-model="form.template"
+                        ng-options="template as template.name for template in templates">
+                </select>
+            </div>
+        </div>
+
         <!-- Init registration -->
         <div class="form-group" ng-show="checkRight('container_register')">
             <hr class="horizontal-line-invisible">
