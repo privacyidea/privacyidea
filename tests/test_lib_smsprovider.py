@@ -643,7 +643,8 @@ class HttpSMSTestCase(MyTestCase):
                                      "RETURN_SUCCESS": "ID",
                                      "SEND_DATA_AS_JSON": "yes",
                                      "text": "{otp}",
-                                     "phone": "{phone}"},
+                                     "phone": "{phone}",
+                                     "receiverlist": '[{"phone": "{phone}", "message": "{otp}"}]'},
                             headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
         provider = create_sms_instance(identifier=identifier)
@@ -651,17 +652,19 @@ class HttpSMSTestCase(MyTestCase):
         # also check that the parameters are sent as json
         responses.add(responses.POST,
                       "http://some.other.service",
-                      body=self.success_body,
-                      match=[
-                          json_params_matcher({"text": 'Hello: 7',
-                                               'phone': '123456'})
-                      ],)
+                      body=self.success_body)
         # Here we need to send the SMS
         with mock.patch("logging.Logger.debug") as mock_log:
             r = provider.submit_message("123456", 'Hello: 7')
             self.assertTrue(r)
-            call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
-            self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
+            for x in mock_log.call_args_list:
+                print(x[0][0])
+            call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
+            # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456,
+            #                      'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
+            self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*receiverlist.*', call)
+            self.assertEqual(call, "passing JSON data: {'text': 'Hello: 7', 'phone': 123456, "
+                                   "'receiverlist': [{'phone': '123456', 'message': 'Hello: 7'}]}")
         delete_smsgateway(identifier)
 
 
