@@ -6,8 +6,10 @@ import base64
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey, Ed448PrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
-from cryptography.hazmat.primitives.serialization import load_der_public_key, load_der_private_key
+from cryptography.hazmat.primitives.asymmetric.x448 import X448PublicKey, X448PrivateKey
 from mock import call
 import binascii
 
@@ -299,6 +301,18 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         pub_key, priv_key = generate_keypair_ecc("x25519")
         self.assertTrue(isinstance(pub_key, X25519PublicKey))
         self.assertTrue(isinstance(priv_key, X25519PrivateKey))
+
+        pub_key, priv_key = generate_keypair_ecc("x448")
+        self.assertTrue(isinstance(pub_key, X448PublicKey))
+        self.assertTrue(isinstance(priv_key, X448PrivateKey))
+
+        pub_key, priv_key = generate_keypair_ecc("ed25519")
+        self.assertTrue(isinstance(pub_key, Ed25519PublicKey))
+        self.assertTrue(isinstance(priv_key, Ed25519PrivateKey))
+
+        pub_key, priv_key = generate_keypair_ecc("ed448")
+        self.assertTrue(isinstance(pub_key, Ed448PublicKey))
+        self.assertTrue(isinstance(priv_key, Ed448PrivateKey))
 
     def test_02_generate_keypair_ecc_fail(self):
         self.assertRaises(ParameterError, generate_keypair_ecc, "unknown")

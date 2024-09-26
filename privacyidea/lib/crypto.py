@@ -43,6 +43,7 @@ calling function handle the data.
 This lib.crypto is tested in tests/test_lib_crypto.py
 """
 import hmac
+import importlib
 import logging
 from hashlib import sha256
 import secrets
@@ -906,27 +907,72 @@ def generate_keypair(rsa_keysize=2048):
     return pem_pub, pem_priv
 
 
+def get_elliptic_curve_instance(curve_name: str):
+    """
+    Returns an instance of the elliptic curve class for the given curve name.
+    It does not support x25519, x448, ed25519, ed448.
+
+    :param curve_name: The name of the elliptic curve to use, e.g. 'secp384r1'
+    :return: An EllipticCurve instance or None if the curve is not supported
+    """
+    class_instance = None
+    mod = "cryptography.hazmat.primitives.asymmetric.ec"
+    try:
+        m = importlib.import_module(mod)
+        cls = curve_name.upper()
+        class_obj = getattr(m, cls)
+        class_instance = class_obj()
+    except Exception as ex:  # pragma: no cover
+        log.warning(f"Error importing module {cls}: {ex}")
+
+    return class_instance
+
+
+def get_private_key_class(curve_name):
+    """
+    Returns the private key class of the given curve.
+    Only supports x25519, x448, ed25519, ed448
+
+    :param curve_name: The name of the elliptic curve to use, e.g. 'x25519'
+    :return: The private key class object (e.g. X25519PrivateKey) or None if the curve is not supported
+    """
+    class_obj = None
+    mod = "cryptography.hazmat.primitives.asymmetric"
+    try:
+        cls = f"{curve_name.capitalize()}PrivateKey"
+        m = importlib.import_module(f"{mod}.{curve_name.lower()}")
+        class_obj = getattr(m, cls)
+    except Exception as ex:  # pragma: no cover
+        log.warning(f"Error importing module {cls}: {ex}")
+
+    return class_obj
+
+
 def generate_keypair_ecc(curve_name: str):
     """
     Generates a key pair using the given elliptic curve.
 
     :param curve_name: The name of the elliptic curve to use, e.g. 'secp384r1'
-    :return: A tuple of (public_key, private_key) elliptic curve key objects
+    :return: A tuple of (public_key, private_key) which are either instance of the generic classes
+             EllipticCurvePrivateKey and EllipticCurvePublicKey or of a specific class for the curve such as
+             X25519PrivateKey and X25519PublicKey.
     """
-
-    if curve_name == "x25519":
-        private_key = X25519PrivateKey.generate()
-        public_key = private_key.public_key()
+    # private key
+    # first try to use the generic class passing the curve instance
+    curve = get_elliptic_curve_instance(curve_name)
+    if curve:
+        private_key = ec.generate_private_key(curve)
     else:
-        curve = ec.EllipticCurve
-        curve.name = curve_name
-
-        try:
-            private_key = ec.generate_private_key(curve)
-        except UnsupportedAlgorithm:
+        # try to use the specific class
+        key_class = get_private_key_class(curve_name)
+        if key_class:
+            private_key = key_class.generate()
+        else:
             raise ParameterError(f"Unsupported elliptic curve {curve_name}!")
 
-        public_key = private_key.public_key()
+    # Generate public key based on private key
+    public_key = private_key.public_key()
+
     return public_key, private_key
 
 
@@ -939,7 +985,8 @@ def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None, privat
     :param public_key: An EllipticCurvePublicKey object or None if only a private key shall be encoded
     :return: A tuple of two strings (private_key, public_key) in base64 encoding
     """
-    # TODO: Check if PEM is urlsafe or if an additional url safe encoding is needed
+    # Note: PEM only uses b64 not urlsafe
+    # TODO: Make this applicable for different encoding formats?
     private_key_str = ""
     if private_key:
         private_key_b64 = private_key.private_bytes(encoding=serialization.Encoding.PEM,
