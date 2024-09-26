@@ -1507,8 +1507,8 @@ class WebAuthnAssertionResponse(object):
         :type origin: basestring
         :param allow_credentials: Which existing credentials to allow for the authentication.
         :type allow_credentials: list of basestring
-        :param uv_required: Whether user verification is required.
-        :type uv_required: bool
+        :param uv_required: Whether user verification is required, preferred or discouraged.
+        :type uv_required: USER_VERIFICATION_LEVEL
         :param expected_assertion_client_extensions: A dict whose keys indicate which client extensions are expected.
         :type expected_assertion_client_extensions: dict
         :param expected_assertion_authenticator_extensions: A dict whose keys indicate which auth exts to expect.
