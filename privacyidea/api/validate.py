@@ -400,13 +400,14 @@ def check():
     password = getParam(request.all_data, "pass")
     otp_only = getParam(request.all_data, "otponly")
     token_type = getParam(request.all_data, "type")
+
+    # Add all params to the options
+    options: dict = {}
+    for key, value in request.all_data.items():
+            options[key] = value
     options = {"g": g,
                "clientip": g.client_ip,
                "user": user}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-        if value and key not in ["g", "clientip", "user"]:
-            options[key] = value
 
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
@@ -417,18 +418,18 @@ def check():
     success = False
 
     # Passkey/FIDO2: Identify the user by the credential ID
-    credential_id = get_optional(request.all_data, "id")
+    credential_id = get_optional(request.all_data, "credential_id")
     # If only the credential ID is given, try to use it to identify the token
-    if credential_id and not user and not serial:
+    if credential_id:
         # Find the token that responded to the challenge
         transaction_id = get_required(request.all_data, "transaction_id")
         request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
-
         try:
             token = find_fido2_token_by_credential_id(credential_id)
             if not token.user:
                 return send_result(False, rid=2, details={
                     "message": "No user found for the token with the given credential ID!"})
+            user = token.user
         except ResourceNotFoundError:
             return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
 
@@ -441,52 +442,52 @@ def check():
             # TODO what is returned could be configurable, attribute mapping
             details = {"username": token.user.login}
     # End Passkey
-
-    # If no serial or user is available at this point, we have to raise an error
-    # because the entity that wants to authenticate can not be identified
-    if not serial and not user:
-        raise ParameterError(_("You need to specify a serial or a user."))
-    if "*" in serial:
-        raise ParameterError(_("Invalid serial number."))
-    if "%" in user:
-        raise ParameterError(_("Invalid user."))
-
-    if serial:
-        if user:
-            # check if the given token belongs to the user
-            if not get_tokens(user=user, serial=serial, count=True):
-                raise ParameterError('Given serial does not belong to given user!')
-        if not otp_only:
-            success, details = check_serial_pass(serial, password, options=options)
-        else:
-            success, details = check_otp(serial, password)
-        result = success
-
     else:
-        options["token_type"] = token_type
-        success, details = check_user_pass(user, password, options=options)
-        result = success
-        if request.path.endswith("samlcheck"):
-            result = {"auth": success,
-                      "attributes": {}}
-            if return_saml_attributes():
-                if success or return_saml_attributes_on_fail():
-                    # privacyIDEA's own attribute map
-                    user_info = user.info
-                    result["attributes"] = {"username": user_info.get("username"),
-                                            "realm": user.realm,
-                                            "resolver": user.resolver,
-                                            "email": user_info.get("email"),
-                                            "surname": user_info.get("surname"),
-                                            "givenname": user_info.get("givenname"),
-                                            "mobile": user_info.get("mobile"),
-                                            "phone": user_info.get("phone")}
-                    # additional attributes
-                    for k, v in user_info.items():
-                        result["attributes"][k] = v
+        # If no serial or user is available at this point, we have to raise an error
+        # because the entity that wants to authenticate can not be identified
+        if not serial and not user:
+            raise ParameterError(_("You need to specify a serial, user or credential_id."))
+        if "*" in serial:
+            raise ParameterError(_("Invalid serial number."))
+        if "%" in user:
+            raise ParameterError(_("Invalid user."))
 
-    serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
-        if 'multi_challenge' in details else details.get('serial')
+        if serial:
+            if user:
+                # Check if the given token belongs to the user
+                if not get_tokens(user=user, serial=serial, count=True):
+                    raise ParameterError('Given serial does not belong to given user!')
+            if not otp_only:
+                success, details = check_serial_pass(serial, password, options=options)
+            else:
+                success, details = check_otp(serial, password)
+            result = success
+
+        else:
+            options["token_type"] = token_type
+            success, details = check_user_pass(user, password, options=options)
+            result = success
+            if request.path.endswith("samlcheck"):
+                result = {"auth": success,
+                          "attributes": {}}
+                if return_saml_attributes():
+                    if success or return_saml_attributes_on_fail():
+                        # privacyIDEA's own attribute map
+                        user_info = user.info
+                        result["attributes"] = {"username": user_info.get("username"),
+                                                "realm": user.realm,
+                                                "resolver": user.resolver,
+                                                "email": user_info.get("email"),
+                                                "surname": user_info.get("surname"),
+                                                "givenname": user_info.get("givenname"),
+                                                "mobile": user_info.get("mobile"),
+                                                "phone": user_info.get("phone")}
+                        # Additional attributes
+                        for k, v in user_info.items():
+                            result["attributes"][k] = v
+
+    serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+        if 'multi_challenge' in details else details.get('serial'))
     r = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,

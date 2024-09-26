@@ -108,14 +108,13 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                         publicKey: {
                             challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
                             rpId: data.rpId,
-                            // see note below
                             userVerification: "preferred",
                         },
                     }).then(credential => {
                         console.log(credential);
                         let params = {
                             transaction_id: data.transaction_id,
-                            id: credential.id,
+                            credential_id: credential.id,
                             authenticatorData: $scope.bytesToBase64(new Uint8Array(credential.response.authenticatorData)),
                             clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
                             signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),

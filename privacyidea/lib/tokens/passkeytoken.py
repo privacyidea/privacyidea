@@ -143,7 +143,7 @@ class PasskeyTokenClass(TokenClass):
 
         elif attestation and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Finalize the registration by verifying the registration data from the authenticator
-            cred_id = get_required(param, "id")
+            cred_id = get_required(param, "credential_id")
             cred_id_raw = get_required(param, "rawId")
             authenticator_attachment = get_required(param, "authenticatorAttachment")
             transaction_id = get_required(param, "transaction_id")
