@@ -97,11 +97,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 Select a token type to add:
             </span>
             <select class="form-control"
-                    ng-model="tokenSettings.selectedType"
+                    ng-model="formInit.selectedType"
                     ng-options="type as desc for (type, desc) in allowedTokenTypes.displaySelection">
             </select>
             <button class="btn btn-default btn-capitalize"
-                    ng-click="addToken(tokenSettings.selectedType)"
+                    ng-click="addToken(formInit.selectedType)"
                     translate>
                 Add Token
             </button>

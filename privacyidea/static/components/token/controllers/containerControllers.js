@@ -458,7 +458,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
-        $scope.deregisterContainer = function () {
+        $scope.unregisterContainer = function () {
             ContainerFactory.terminateRegistration($scope.containerSerial, function () {
                 $scope.showQR = false;
                 $scope.getContainer();
@@ -694,6 +694,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {};
         $scope.templatedata = [];
+        $scope.colorMap = {"": "", "add": "table-add", "remove": "table-remove"};
 
         $scope.typeProperties = {
             containerTypes: {},
@@ -748,7 +749,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
 
                 $scope.selection.allowedTokensSelection = {};
                 angular.forEach($scope.selection.allowedTokenTypes, function (tokenType) {
-                    let displayString = $scope.tokenSettings.tokenTypes[tokenType];
+                    let displayString = $scope.formInit.tokenTypes[tokenType];
                     if (displayString) {
                         $scope.selection.allowedTokensSelection[tokenType] = displayString;
                     }
@@ -758,11 +759,10 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
                 const types = Object.keys($scope.selection.allowedTokensSelection);
                 if (types.indexOf('hotp')) {
                     // Set hotp as default
-                    $scope.tokenSettings.selectedTokenType = 'hotp';
-                }
-                else {
+                    $scope.formInit.selectedTokenType = 'hotp';
+                } else {
                     // Set the first token type as default
-                    $scope.tokenSettings.selectedTokenType = types[0];
+                    $scope.formInit.selectedTokenType = types[0];
                 }
             });
         };
@@ -780,6 +780,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
         };
 
         $scope.createTemplate = function () {
+            $scope.saveOpenProperties();
             $scope.params.name = $scope.selection.templateName;
             $scope.params.type = $scope.selection.containerType;
             $scope.params.template_options = {"tokens": $scope.selectedTokens};
@@ -790,7 +791,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
         };
 
         <!-- Token Functions -->
-        $scope.tokenSettings = {
+        $scope.formInit = {
             tokenTypes: {},  // will be set later with response from server
             timesteps: [30, 60],
             otplens: [6, 8],
@@ -804,20 +805,36 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
             TokenFactory.getEnrollTokens(function (data) {
                 //console.log("getEnrollTokens");
                 //console.log(data);
-                $scope.tokenSettings["tokenTypes"] = data.result.value;
+                $scope.formInit["tokenTypes"] = data.result.value;
                 $scope.getContainerTypes();
             });
         };
 
         $scope.addToken = function (tokenType) {
-            $scope.selectedTokens.push({"type": tokenType});
+            $scope.form = {
+                type: tokenType,
+                timeStep: 30,
+                otplen: 6,
+                genkey: true,
+                hashlib: "sha1"
+            };
+            $scope.selectedTokens.push($scope.form);
         };
 
         $scope.removeToken = function (index) {
             $scope.selectedTokens.splice(index, 1);
         };
 
+        $scope.saveOpenProperties = function () {
+            angular.forEach($scope.selectedTokens, function (token, i) {
+                if (token.edit) {
+                    $scope.saveTokenProperties(i);
+                }
+            });
+        };
+
         $scope.editTokenProperties = function (index) {
+            $scope.saveOpenProperties();
             $scope.selectedTokens[index].edit = true;
             $scope.form = {};
             angular.forEach($scope.selectedTokens[index], function (value, key) {
@@ -833,10 +850,6 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
             angular.forEach($scope.form, function (value, key) {
                 $scope.selectedTokens[index][key] = value;
             });
-        };
-
-        $scope.cancelTokenProperties = function (index) {
-            delete $scope.selectedTokens[index].edit;
         };
 
         // Initial call
@@ -888,9 +901,9 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
 
                 $scope.allowedTokenTypes.displaySelection = {};
                 angular.forEach($scope.allowedTokenTypes.list, function (tokenType) {
-                    let displayString = $scope.tokenSettings.tokenTypes[tokenType];
+                    let displayString = $scope.formInit.tokenTypes[tokenType];
                     if (displayString) {
-                        $scope.allowedTokenTypes.displaySelection [tokenType] = $scope.tokenSettings.tokenTypes[tokenType];
+                        $scope.allowedTokenTypes.displaySelection [tokenType] = $scope.formInit.tokenTypes[tokenType];
                     }
                 });
 
@@ -898,11 +911,10 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                 const types = Object.keys($scope.allowedTokenTypes.displaySelection);
                 if (types.indexOf('hotp')) {
                     // Set hotp as default
-                    $scope.tokenSettings.selectedType = 'hotp';
-                }
-                else {
+                    $scope.formInit.selectedType = 'hotp';
+                } else {
                     // Set the first token type as default
-                    $scope.tokenSettings.selectedType = types[0];
+                    $scope.formInit.selectedType = types[0];
                 }
             });
         };
@@ -935,7 +947,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         };
 
         <!-- Token Functions -->
-        $scope.tokenSettings = {
+        $scope.formInit = {
             tokenTypes: {},  // will be set later with response from server
             timesteps: [30, 60],
             otplens: [6, 8],
@@ -949,7 +961,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
             TokenFactory.getEnrollTokens(function (data) {
                 //console.log("getEnrollTokens");
                 //console.log(data);
-                $scope.tokenSettings["tokenTypes"] = data.result.value;
+                $scope.formInit["tokenTypes"] = data.result.value;
                 $scope.getContainerTypes();
             });
         };
