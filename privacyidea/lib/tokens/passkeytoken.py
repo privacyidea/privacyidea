@@ -68,7 +68,7 @@ class PasskeyTokenClass(TokenClass):
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
-        First step of enrollment:Returns the registration data for the passkey token.
+        First step of enrollment: Returns the registration data for the passkey token.
         Also creates a challenge in the database which has to be verified in the second step.
         """
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:

@@ -68,9 +68,9 @@ In case if authenticating a serial number:
 import threading
 
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.user import get_user_from_param, log_used_user
+from privacyidea.lib.user import get_user_from_param, log_used_user, User
 from .lib.utils import send_result, getParam, get_required, get_optional
-from ..lib.decorators import (check_user_or_serial_in_request)
+from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from .lib.utils import required
 from privacyidea.lib import _
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
@@ -162,7 +162,7 @@ def before_request():
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
-@check_user_or_serial_in_request(request)
+@check_user_serial_or_cred_id_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
     """
@@ -244,7 +244,7 @@ def offlinerefill():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(webauthntoken_auth, request=request)
-#@check_user_or_serial_in_request(request)
+@check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
@@ -395,34 +395,30 @@ def check():
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
-    user = request.User
-    serial = getParam(request.all_data, "serial")
-    password = getParam(request.all_data, "pass")
-    otp_only = getParam(request.all_data, "otponly")
-    token_type = getParam(request.all_data, "type")
+    user: User = request.User
+    serial: str = getParam(request.all_data, "serial")
+    password: str = getParam(request.all_data, "pass")
+    otp_only: bool = getParam(request.all_data, "otponly")
+    token_type: str = getParam(request.all_data, "type")
 
     # Add all params to the options
     options: dict = {}
     for key, value in request.all_data.items():
             options[key] = value
-    options = {"g": g,
-               "clientip": g.client_ip,
-               "user": user}
+    options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
 
-    user = request.all_data.get("user", "").strip()
-    serial = request.all_data.get("serial", "").strip()
-    success = False
+    success: bool = False
 
     # Passkey/FIDO2: Identify the user by the credential ID
-    credential_id = get_optional(request.all_data, "credential_id")
+    credential_id: str = get_optional(request.all_data, "credential_id")
     # If only the credential ID is given, try to use it to identify the token
     if credential_id:
         # Find the token that responded to the challenge
-        transaction_id = get_required(request.all_data, "transaction_id")
+        transaction_id: str = get_required(request.all_data, "transaction_id")
         request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
         try:
             token = find_fido2_token_by_credential_id(credential_id)
@@ -443,15 +439,6 @@ def check():
             details = {"username": token.user.login}
     # End Passkey
     else:
-        # If no serial or user is available at this point, we have to raise an error
-        # because the entity that wants to authenticate can not be identified
-        if not serial and not user:
-            raise ParameterError(_("You need to specify a serial, user or credential_id."))
-        if "*" in serial:
-            raise ParameterError(_("Invalid serial number."))
-        if "%" in user:
-            raise ParameterError(_("Invalid user."))
-
         if serial:
             if user:
                 # Check if the given token belongs to the user
@@ -503,7 +490,7 @@ def check():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
-@check_user_or_serial_in_request(request)
+@check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
