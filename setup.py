@@ -42,6 +42,7 @@ install_requires = [
     "Flask-Script>=2.0.5",
     "Flask-SQLAlchemy>=2.0,<3.0",
     "Flask-Versioned>=0.9.4",
+    "feedparser>=6.0.11",
     "google-auth>=1.23.0",
     "grpcio>=1.46",
     "huey[redis]>=1.11.0",
