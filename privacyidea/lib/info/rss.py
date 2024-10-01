@@ -25,11 +25,14 @@ RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
 
 
 import feedparser
+import logging
+
+log = logging.getLogger(__name__)
 
 RSS_NEWS = {}
 
 
-def parse_rss(rss):
+def _parse_rss(rss):
     feed = []
     for item in rss.entries:
         feed.append({"title": item.title,
@@ -39,13 +42,15 @@ def parse_rss(rss):
     return feed
 
 
-for k, v in RSS_FEEDS.items():
-    try:
-        d = feedparser.parse(v)
-        RSS_NEWS[k] = parse_rss(d)
-    except Exception as e:
-        print(f"Error parsing {k}: {e}")
+def get_news(rss_feeds=RSS_FEEDS):
+    rss_news = {}
 
-print(RSS_NEWS)
+    for k, v in rss_feeds.items():
+        try:
+            d = feedparser.parse(v)
+            rss_news[k] = _parse_rss(d)
+        except Exception as e:
+            log.error(f"Error parsing {k}: {e}")
 
+    return rss_news
 
