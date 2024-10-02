@@ -22,7 +22,6 @@ import json
 import logging
 import os
 
-from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
@@ -394,21 +393,87 @@ def init_container(params):
     return serial
 
 
-def create_container_tokens_from_template(container_serial, template_name):
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):
     """
     Create tokens for the container from the given template.
+
+    :param container_serial: The serial of the container
+    :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
+    contains the details for a token to be enrolled
+    :param request: The request object
     """
     container = find_container_by_serial(container_serial)
-    templates_dict = get_templates_by_query(name=template_name, page=0, pagesize=0)
-    template = templates_dict["templates"][0]
-    options = template["template_options"]
-    tokens = options["tokens"]
 
-    for token_info in tokens:
-        if not token_info.get("genkey"):
-            # TODO: Better way to ensure that all required parameters are set.
-            token_info["genkey"] = True
-        token = init_token(token_info)
+    users = container.get_users()
+    if len(users) > 0:
+        container_owner = users[0]
+    else:
+        container_owner = User()
+
+    for token_info in template_tokens:
+        print(token_info.get("type"))
+
+        user = None
+        if token_info.get("user"):
+            token_info["user"] = container_owner.login
+            token_info["realm"] = container_owner.realm
+            token_info["resolver"] = container_owner.resolver
+            user = container_owner
+
+        request.all_data = {}
+        request.all_data.update(token_info)
+
+        # Get policies for the token
+        from privacyidea.api.lib.prepolicy import (check_max_token_realm, verify_enrollment, required_piv_attestation,
+                                                   webauthntoken_enroll, webauthntoken_request, webauthntoken_allowed,
+                                                   indexedsecret_force_attribute, pushtoken_add_config,
+                                                   u2ftoken_verify_cert, u2ftoken_allowed, tantoken_count,
+                                                   sms_identifiers, papertoken_count, init_token_length_contents,
+                                                   init_token_defaults, check_external, check_otp_pin, encrypt_pin,
+                                                   init_random_pin, twostep_enrollment_parameters,
+                                                   twostep_enrollment_activation, enroll_pin, init_subject_components,
+                                                   init_ca_template, init_ca_connector, init_tokenlabel,
+                                                   check_token_init, check_max_token_user, require_description)
+        try:
+            verify_enrollment(request)
+            required_piv_attestation(request)
+            webauthntoken_enroll(request, None)
+            webauthntoken_request(request, None)
+            webauthntoken_allowed(request, None)
+            indexedsecret_force_attribute(request, None)
+            pushtoken_add_config(request, None)
+            u2ftoken_verify_cert(request, None)
+            u2ftoken_allowed(request, None)
+            tantoken_count(request, None)
+            sms_identifiers(request, None)
+            papertoken_count(request, None)
+            init_token_length_contents(request, None)
+            init_token_defaults(request, None)
+            check_external(request, None)
+            check_otp_pin(request, None)
+            encrypt_pin(request, None)
+            init_random_pin(request, None)
+            twostep_enrollment_parameters(request, None)
+            twostep_enrollment_activation(request, None)
+            enroll_pin(request, None)
+            init_subject_components(request, None)
+            init_ca_template(request, None)
+            init_ca_connector(request, None)
+            init_tokenlabel(request, None)
+            check_token_init(request, None)
+            check_max_token_user(request, None)
+            require_description(request, None)
+            check_max_token_realm(request, None)
+        except PolicyError as ex:
+            log.warning(f"Error creating token {token_info} from template: {ex}")
+            continue
+
+        init_params = request.all_data
+        try:
+            token = init_token(init_params, user)
+        except Exception as ex:
+            log.warning(f"Error creating token {token_info} from template: {ex}")
+            continue
         container.add_token(token)
 
 

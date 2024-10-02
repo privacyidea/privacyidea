@@ -73,7 +73,7 @@ from sqlalchemy.sql.functions import FunctionElement
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
@@ -2292,7 +2292,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
-                    transactionid=transaction_id, options=options)
+                transactionid=transaction_id, options=options)
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
@@ -2524,7 +2524,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         further_challenge = False
         for token_object in challenge_response_token_list:
             if token_object.check_challenge_response(passw=passw,
-                                                    options=options) >= 0:
+                                                     options=options) >= 0:
                 reply_dict["serial"] = token_object.token.serial
                 matching_challenge = True
                 messages = []
@@ -2904,3 +2904,39 @@ def challenge_text_replace(message, user, token_obj):
 
     message = message.format_map(defaultdict(str, tags))
     return message
+
+
+def regenerate_enroll_url(serial, request):
+    """
+    Returns the enroll URL for a token with the given serial number that is already enrolled.
+    Loads the configurations from the policies.
+    If the rollout state of a token is 'enrolled' None is returned.
+
+    :param serial: The serial number of the token
+    :param request: The request object
+    :return: The enroll URL or None
+    """
+    token = get_one_token(serial=serial)
+    token_owner = token.user or User()
+    request.User = token_owner
+    request.all_data["serial"] = serial
+    request.all_data["type"] = token.get_type()
+
+    # Get policies for the token
+    from privacyidea.api.lib.prepolicy import (verify_enrollment, required_piv_attestation, pushtoken_add_config,
+                                               tantoken_count, sms_identifiers, papertoken_count, init_token_defaults,
+                                               init_tokenlabel)
+    try:
+        verify_enrollment(request)
+        required_piv_attestation(request)
+        pushtoken_add_config(request, None)
+        tantoken_count(request, None)
+        sms_identifiers(request, None)
+        papertoken_count(request, None)
+        init_token_defaults(request, None)
+        init_tokenlabel(request, None)
+    except PolicyError as ex:
+        log.warning(f"{ex}")
+
+    enroll_url = token.get_enroll_url(token_owner, request.all_data)
+    return enroll_url

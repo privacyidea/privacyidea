@@ -23,7 +23,6 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.policyhelper import get_pushtoken_add_config_soft
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
                                            check_admin_tokenlist, check_container_action)
 from privacyidea.api.lib.utils import send_result, getParam, required
@@ -42,7 +41,7 @@ from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
-from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.user import get_user_from_param, User
 from privacyidea.models import TokenContainerTemplate
 
 container_blueprint = Blueprint('container_blueprint', __name__)
@@ -162,7 +161,7 @@ def init():
     :jsonparam: serial: Optional serial
     :jsonparam: user: Optional username to assign the container to. Requires realm param to be present as well.
     :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
-    :jsonparam: template: The name of a template to create the container from, optional
+    :jsonparam: template: The template to create the container from (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -176,9 +175,10 @@ def init():
     res = {"container_serial": serial}
 
     # Template handling
-    template = getParam(request.all_data, "template", optional=True)
-    if template:
-        create_container_tokens_from_template(serial, template)
+    template = getParam(request.all_data, "template", optional=True) or {}
+    template_tokens = template.get("template_options", {}).get("tokens", [])
+    if template_tokens:
+        create_container_tokens_from_template(serial, template_tokens, request)
 
     # Audit log
     container = find_container_by_serial(serial)
@@ -736,8 +736,6 @@ def sync_finalize(container_serial: str):
         The provided enroll information depends on the token type as well as the returned information for the tokens
         to be updated.
     """
-    # Get push config (without error throwing)
-    request.all_data = get_pushtoken_add_config_soft(g, request.all_data)
     params = request.all_data
 
     # Get synchronization url for the second step
@@ -756,7 +754,7 @@ def sync_finalize(container_serial: str):
 
     # 2nd synchronize step
     container = find_container_by_serial(container_serial)
-    res = container.finalize_sync(params)
+    res = container.finalize_sync(params, request)
     res.update({'container_sync_url': synchronize_url})
 
     # Update last seen & last updated
@@ -774,7 +772,6 @@ def get_template():
     """
     Get all container templates
     """
-    # TODO: Add pagination
     params = request.all_data
     name = getParam(params, "name", optional=True)
     container_type = getParam(params, "container_type", optional=True)
@@ -804,7 +801,8 @@ def get_template_options(container_type):
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
-    Set the template for the given container type
+    creates a template for the given name. If a template with this name already exists, the template options will be
+    updated.
     """
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}

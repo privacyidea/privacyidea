@@ -11,7 +11,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import init_token, get_tokens_paginate
+from privacyidea.lib.token import init_token, get_tokens_paginate, get_one_token
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase
@@ -160,7 +160,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1"}, user=container_owner)
         token_serial = token.get_serial()
         result = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"])
 
         delete_policy("policy")
@@ -206,8 +206,9 @@ class APIContainerAuthorization(MyApiTestCase):
         token_serial = token.get_serial()
         container.add_token(token)
 
-        result = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
-                                       method='POST')
+        result = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial},
+                                         self.at_user,
+                                         method='POST')
         self.assertTrue(result["result"]["value"])
         delete_policy("policy")
 
@@ -338,7 +339,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
         result = self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"])
         delete_policy("policy")
 
@@ -359,7 +360,7 @@ class APIContainerAuthorization(MyApiTestCase):
         container = find_container_by_serial(container_serial)
         container.add_token(token)
         result = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"])
         delete_policy("policy")
 
@@ -517,7 +518,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token3 = init_token({"genkey": "1", "realm": self.realm1})
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         result = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
         delete_policy("policy")
@@ -525,7 +526,7 @@ class APIContainerAuthorization(MyApiTestCase):
         # Add token to container during enrollment fails
         set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
         result = self.request_assert_200("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
-                                                       "container_serial": container_serial}, self.at, method='POST')
+                                                         "container_serial": container_serial}, self.at, method='POST')
         token_serial = result["detail"]["serial"]
         tokens = get_tokens_paginate(serial=token_serial)
         self.assertEqual(container_serial, tokens["tokens"][0]["container_serial"])
@@ -553,7 +554,7 @@ class APIContainerAuthorization(MyApiTestCase):
         token3 = init_token({"genkey": "1", "realm": self.realm1})
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         result = self.request_assert_200(f"/container/{container_serial}/addall", {"serial": token_serials}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertFalse(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
 
@@ -563,8 +564,8 @@ class APIContainerAuthorization(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm2})
         result = self.request_assert_200("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
-                                                       "container_serial": container_serial}, self.at,
-                                       method='POST')
+                                                         "container_serial": container_serial}, self.at,
+                                         method='POST')
         token_serial = result["detail"]["serial"]
         tokens = get_tokens_paginate(serial=token_serial)
         self.assertEqual("", tokens["tokens"][0]["container_serial"])
@@ -578,7 +579,7 @@ class APIContainerAuthorization(MyApiTestCase):
         # single token
         add_token_to_container(container_serial, token_serial, user_role='admin')
         result = self.request_assert_200(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"])
 
         # multiple tokens
@@ -587,7 +588,7 @@ class APIContainerAuthorization(MyApiTestCase):
         add_token_to_container(container_serial, token2.get_serial(), user_role='admin')
         token_serials = ','.join([token_serial, token2.get_serial()])
         result = self.request_assert_200(f"/container/{container_serial}/removeall", {"serial": token_serials}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertTrue(result["result"]["value"][token_serial])
         self.assertTrue(result["result"]["value"][token2.get_serial()])
         delete_policy("policy")
@@ -624,7 +625,7 @@ class APIContainerAuthorization(MyApiTestCase):
         add_token_to_container(container_serial, token3.get_serial(), user_role='admin')
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         result = self.request_assert_200(f"/container/{container_serial}/removeall", {"serial": token_serials}, self.at,
-                                       method='POST')
+                                         method='POST')
         self.assertFalse(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
         delete_policy("policy")
@@ -840,7 +841,7 @@ class APIContainer(MyApiTestCase):
         # Assign without realm
         payload = {"user": "hans"}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
@@ -848,7 +849,7 @@ class APIContainer(MyApiTestCase):
         # Assign user with non-existing realm
         payload = {"user": "hans", "realm": "non_existing"}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
@@ -857,7 +858,7 @@ class APIContainer(MyApiTestCase):
         self.setUp_user_realm2()
         payload = {"realm": self.realm2}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
@@ -875,7 +876,7 @@ class APIContainer(MyApiTestCase):
         # Assign another user fails
         payload = {"user": "cornelius", "realm": self.realm1}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(301, error["code"])
         self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
@@ -892,7 +893,7 @@ class APIContainer(MyApiTestCase):
 
         # Unassign
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
 
     def test_06_assign_without_realm(self):
@@ -905,7 +906,7 @@ class APIContainer(MyApiTestCase):
 
         # Assign
         result = self.request_assert_success(f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
         # Used default realm is correct
         container = find_container_by_serial(container_serial)
@@ -917,7 +918,7 @@ class APIContainer(MyApiTestCase):
         container_serial = init_container({"type": "generic"})
         payload = {"user": "root"}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
@@ -929,7 +930,7 @@ class APIContainer(MyApiTestCase):
         # Unassign without realm
         payload = {"user": "root"}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
@@ -937,7 +938,7 @@ class APIContainer(MyApiTestCase):
         # Unassign user with non-existing realm
         payload = {"user": "hans", "realm": "non_existing"}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
@@ -946,7 +947,7 @@ class APIContainer(MyApiTestCase):
         self.setUp_user_realm2()
         payload = {"realm": self.realm2}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
@@ -954,7 +955,7 @@ class APIContainer(MyApiTestCase):
         # Unassign not assigned user
         payload = {"user": "cornelius", "realm": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertFalse(result["result"]["value"])
 
     def test_08_set_realms_success(self):
@@ -996,7 +997,7 @@ class APIContainer(MyApiTestCase):
 
         # Missing realm parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/realms',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'realms'", error["message"])
@@ -1017,13 +1018,13 @@ class APIContainer(MyApiTestCase):
         # Set description
         payload = {"description": "new description"}
         result = self.request_assert_success(f'/container/{container_serial}/description',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
 
         # Set empty description
         payload = {"description": ""}
         result = self.request_assert_success(f'/container/{container_serial}/description',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
 
     def test_11_set_description_fail(self):
@@ -1032,14 +1033,14 @@ class APIContainer(MyApiTestCase):
 
         # Missing description parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/description',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'description'", error["message"])
 
         # Description parameter is None
         result = self.request_assert_error(400, f'/container/{container_serial}/description',
-                                         {"description": None}, self.at, 'POST')
+                                           {"description": None}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'description'", error["message"])
@@ -1055,7 +1056,7 @@ class APIContainer(MyApiTestCase):
         # Set states
         payload = {"states": "active,damaged,lost"}
         result = self.request_assert_success(f'/container/{container_serial}/states',
-                                           payload, self.at, 'POST')
+                                             payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
         self.assertTrue(result["result"]["value"]["active"])
         self.assertTrue(result["result"]["value"]["damaged"])
@@ -1067,7 +1068,7 @@ class APIContainer(MyApiTestCase):
 
         # Missing states parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/states',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'states'", error["message"])
@@ -1079,7 +1080,7 @@ class APIContainer(MyApiTestCase):
         # Set exclusive states
         payload = {"states": "active,disabled"}
         result = self.request_assert_error(400, f'/container/{container_serial}/states',
-                                         payload, self.at, 'POST')
+                                           payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: The state list ['active', 'disabled'] contains exclusive states!", error["message"])
@@ -1098,7 +1099,7 @@ class APIContainer(MyApiTestCase):
 
         # Missing value parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/info/key1',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'value'", error["message"])
@@ -1137,42 +1138,42 @@ class APIContainer(MyApiTestCase):
 
         # Add single token
         result = self.request_assert_success(f'/container/{container_serial}/add',
-                                           {"serial": hotp_01_serial}, self.at, 'POST')
+                                             {"serial": hotp_01_serial}, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
 
         # Remove single token
         result = self.request_assert_success(f'/container/{container_serial}/remove',
-                                           {"serial": hotp_01_serial}, self.at, 'POST')
+                                             {"serial": hotp_01_serial}, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
 
         # Add multiple tokens
         result = self.request_assert_success(f'/container/{container_serial}/addall',
-                                           {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
-                                           self.at, 'POST')
+                                             {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
+                                             self.at, 'POST')
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
 
         # Remove multiple tokens with spaces in list
         result = self.request_assert_success(f'/container/{container_serial}/removeall',
-                                           {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
-                                           self.at, 'POST')
+                                             {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
+                                             self.at, 'POST')
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
 
         # Add multiple tokens with spaces in list
         result = self.request_assert_success(f'/container/{container_serial}/addall',
-                                           {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
-                                           self.at, 'POST')
+                                             {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
+                                             self.at, 'POST')
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
 
         # Remove multiple tokens
         result = self.request_assert_success(f'/container/{container_serial}/removeall',
-                                           {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
-                                           self.at, 'POST')
+                                             {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
+                                             self.at, 'POST')
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
@@ -1185,7 +1186,7 @@ class APIContainer(MyApiTestCase):
 
         # Add token without serial
         result = self.request_assert_error(400, f'/container/{container_serial}/add',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'serial'", error["message"])
@@ -1202,7 +1203,7 @@ class APIContainer(MyApiTestCase):
 
         # Remove token without serial
         result = self.request_assert_error(400, f'/container/{container_serial}/remove',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'serial'", error["message"])
@@ -1253,22 +1254,22 @@ class APIContainer(MyApiTestCase):
 
         # Filter for type
         result = self.request_assert_success('/container/',
-                                           {"type": "generic", "pagesize": 15},
-                                           self.at, 'GET')
+                                             {"type": "generic", "pagesize": 15},
+                                             self.at, 'GET')
         for container in result["result"]["value"]["containers"]:
             self.assertEqual(container["type"], "generic")
 
         # Filter for token serial
         result = self.request_assert_success('/container/',
-                                           {"token_serial": token_serial, "pagesize": 15},
-                                           self.at, 'GET')
+                                             {"token_serial": token_serial, "pagesize": 15},
+                                             self.at, 'GET')
         self.assertTrue(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         self.assertEqual(result["result"]["value"]["count"], 1)
 
         # Test output
         result = self.request_assert_success('/container/',
-                                           {"container_serial": container_serials[1], "pagesize": 15, "page": 1},
-                                           self.at, 'GET')
+                                             {"container_serial": container_serials[1], "pagesize": 15, "page": 1},
+                                             self.at, 'GET')
         containerdata = result["result"]["value"]
         # Pagination
         self.assertEqual(1, containerdata["count"])
@@ -1304,14 +1305,14 @@ class APIContainer(MyApiTestCase):
 
         # Filter for non-existing type
         result = self.request_assert_success('/container/',
-                                           {"type": "non-existing", "pagesize": 15},
-                                           self.at, 'GET')
+                                             {"type": "non-existing", "pagesize": 15},
+                                             self.at, 'GET')
         self.assertEqual(0, result["result"]["value"]["count"])
 
         # Filter for non existing token serial
         result = self.request_assert_success('/container/',
-                                           {"token_serial": "non-existing", "pagesize": 15},
-                                           self.at, 'GET')
+                                             {"token_serial": "non-existing", "pagesize": 15},
+                                             self.at, 'GET')
         self.assertGreater(result["result"]["value"]["count"], 0)
 
     def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
@@ -1340,8 +1341,8 @@ class APIContainer(MyApiTestCase):
 
         # Initialize
         result = self.request_assert_success('container/register/initialize',
-                                           data,
-                                           self.at, 'POST')
+                                             data,
+                                             self.at, 'POST')
         # Check if the response contains the expected values
         init_response_data = result["result"]["value"]
         self.assertIn("container_url", init_response_data)
@@ -1357,8 +1358,8 @@ class APIContainer(MyApiTestCase):
                                                                              "time_stamp"],
                                                                          passphrase="top_secret")
         result = self.request_assert_success('container/register/finalize',
-                                           params,
-                                           None, 'POST')
+                                             params,
+                                             None, 'POST')
 
         # Check if the response contains the expected values
         self.assertIn("public_server_key", result["result"]["value"])
@@ -1380,7 +1381,7 @@ class APIContainer(MyApiTestCase):
         # Policy with server url not defined
         container_serial = init_container({"type": "smartphone"})
         result = self.request_assert_error(403, 'container/register/initialize',
-                                         {"container_serial": container_serial}, self.at, 'POST')
+                                           {"container_serial": container_serial}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(303, error["code"])
 
@@ -1389,14 +1390,14 @@ class APIContainer(MyApiTestCase):
 
         # Missing container serial
         result = self.request_assert_error(400, 'container/register/initialize',
-                                         {}, self.at, 'POST')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
 
         # Invalid container serial
         result = self.request_assert_error(404, 'container/register/initialize',
-                                         {"container_serial": "invalid_serial"}, self.at, 'POST')
+                                           {"container_serial": "invalid_serial"}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1407,7 +1408,7 @@ class APIContainer(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
         container_serial = init_container({"type": "smartphone"})
         result = self.request_assert_error(403, 'container/register/finalize',
-                                         {"container_serial": container_serial}, None, 'POST')
+                                           {"container_serial": container_serial}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(303, error["code"])
 
@@ -1415,14 +1416,14 @@ class APIContainer(MyApiTestCase):
 
         # Missing container serial
         result = self.request_assert_error(400, 'container/register/finalize',
-                                         {}, None, 'POST')
+                                           {}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
 
         # Invalid container serial
         result = self.request_assert_error(404, 'container/register/finalize',
-                                         {"container_serial": "invalid_serial"}, None, 'POST')
+                                           {"container_serial": "invalid_serial"}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1433,7 +1434,7 @@ class APIContainer(MyApiTestCase):
 
         # Invalid container serial
         result = self.request_assert_error(404, f'container/register/invalidSerial/terminate',
-                                         {}, self.at, 'DELETE')
+                                           {}, self.at, 'DELETE')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1461,7 +1462,7 @@ class APIContainer(MyApiTestCase):
         smartphone_serial = init_container({"type": "smartphone"})
 
         result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
-                                           {}, None, 'GET')
+                                             {}, None, 'GET')
         result_entries = result["result"]["value"].keys()
         self.assertIn("nonce", result_entries)
         self.assertIn("time_stamp", result_entries)
@@ -1478,13 +1479,13 @@ class APIContainer(MyApiTestCase):
 
         # Init
         result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
-                                           {}, None, 'GET')
+                                             {}, None, 'GET')
 
         params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_smph)
 
         # Finalize
         result = self.request_assert_success(f'container/sync/{smartphone_serial}/finalize',
-                                           params, None, 'POST')
+                                             params, None, 'POST')
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -1598,12 +1599,119 @@ class APIContainer(MyApiTestCase):
         delete_policy("push_1")
         delete_policy("push_2")
 
-    def test_33_sync_finalize_fail(self):
+    def test_33_finalize_synchronize_smartphone_missing_token_enroll_policies(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # tokens
+        push_fb = init_token({"genkey": "1", "type": "push"})
+        smartphone.add_token(push_fb)
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        # Init
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://test/"})
+        result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
+                                             {}, None, 'GET')
+
+        params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
+                                                                 priv_key_smph)
+
+        # Finalize with missing push config
+        result = self.request_assert_success(f'container/sync/{smartphone_serial}/finalize',
+                                             params, None, 'POST')
+        result_entries = result["result"]["value"].keys()
+        self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
+        self.assertIn("encryption_params", result_entries)
+        self.assertIn("public_server_key", result_entries)
+        self.assertIn("container_dict_server", result_entries)
+        self.assertIn("container_sync_url", result_entries)
+
+        # check token info
+        container_dict_server_enc = result["result"]["value"]["container_dict_server"]
+        pub_key_server = X25519PublicKey.from_public_bytes(
+            base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
+        shared_key = private_enc_key_smph.exchange(pub_key_server)
+        container_dict_server = json.loads(decrypt_ecc(container_dict_server_enc, shared_key, "AES",
+                                                       result["result"]["value"]["encryption_params"]).decode("utf-8"))
+        tokens_dict = container_dict_server["tokens"]
+        self.assertIn("add", tokens_dict)
+        self.assertIn("update", tokens_dict)
+        tokens = tokens_dict["add"]
+        # Only hotp token to be added
+        self.assertEqual(1, len(tokens))
+        self.assertIn("otpauth://hotp/", tokens[0])
+
+        delete_policy('policy')
+
+    def test_34_finalize_synchronize_smartphone_token_policies(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # set label, issuer and require pin policies
+        set_policy('token_enroll', scope=SCOPE.ENROLL,
+                   action={ACTION.TOKENLABEL: '{user}',
+                           ACTION.TOKENISSUER: '{realm}',
+                           'hotp_' + ACTION.FORCE_APP_PIN: True})
+
+        # Get initial enroll url
+        self.setUp_user_realms()
+        hotp_params = {"type": "hotp",
+                       "genkey": True,
+                       "realm": self.realm1,
+                       "user": "hans"}
+        result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
+        initial_enroll_url = result["detail"]["googleurl"]["value"]
+        self.assertIn("pin=True", initial_enroll_url)
+        self.assertIn(f"issuer={self.realm1}", initial_enroll_url)
+        self.assertIn("hans", initial_enroll_url)
+        hotp = get_one_token(serial=result["detail"]["serial"])
+        smartphone.add_token(hotp)
+
+        # Init
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://test/"})
+        result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
+                                             {}, None, 'GET')
+
+        params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
+                                                                 priv_key_smph)
+
+        # Finalize
+        result = self.request_assert_success(f'container/sync/{smartphone_serial}/finalize',
+                                             params, None, 'POST')
+        result_entries = result["result"]["value"].keys()
+        self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
+        self.assertIn("encryption_params", result_entries)
+        self.assertIn("public_server_key", result_entries)
+        self.assertIn("container_dict_server", result_entries)
+        self.assertIn("container_sync_url", result_entries)
+
+        # check token info
+        container_dict_server_enc = result["result"]["value"]["container_dict_server"]
+        pub_key_server = X25519PublicKey.from_public_bytes(
+            base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
+        shared_key = private_enc_key_smph.exchange(pub_key_server)
+        container_dict_server = json.loads(decrypt_ecc(container_dict_server_enc, shared_key, "AES",
+                                                       result["result"]["value"]["encryption_params"]).decode("utf-8"))
+        tokens_dict = container_dict_server["tokens"]
+        self.assertIn("add", tokens_dict)
+        self.assertIn("update", tokens_dict)
+        tokens = tokens_dict["add"]
+        # Only hotp token to be added
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(initial_enroll_url, tokens[0])
+
+        delete_policy('policy')
+        delete_policy('token_enroll')
+
+    def test_35_sync_finalize_fail(self):
         smartphone_serial = init_container({"type": "smartphone"})
 
         # missing policy
         result = self.request_assert_error(403, f'container/sync/{smartphone_serial}/finalize',
-                                         {}, None, 'POST')
+                                           {}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(303, error["code"])
 
@@ -1612,35 +1720,63 @@ class APIContainer(MyApiTestCase):
         # missing input parameters
         params = {"public_enc_key_client": "123"}
         result = self.request_assert_error(400, f'container/sync/{smartphone_serial}/finalize',
-                                         params, None, 'POST')
+                                           params, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
 
         params = {"public_enc_key_client": "123"}
         result = self.request_assert_error(400, f'container/sync/{smartphone_serial}/finalize',
-                                         params, None, 'POST')
+                                           params, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
 
         delete_policy("policy")
 
-    def test_34_create_with_template(self):
-        # Create a template
-        template_name = "test"
-        create_container_template(container_type="smartphone",
-                                  template_name=template_name,
-                                  options={"tokens": [{"type": "hotp", "genkey": True}]})
 
-        # Create a container from the template
-        result = self.request_assert_success('/container/init',
-                                             {"type": "smartphone", "template": template_name},
-                                             self.at, 'POST')
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
+class APIContainerTemplate(MyApiTestCase):
 
-    def test_35_create_delete_template_success(self):
+    def request_assert_success(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"])
+            return res.json
+
+    def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status_code, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["status"])
+            return res.json
+
+    def request_assert_405(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(405, res.status_code, res.json)
+            return res.json
+
+    def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
+        headers = {'Authorization': auth_token} if auth_token else {}
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(404, res.status_code, res.json)
+
+    def test_01_create_delete_template_success(self):
         template_name = "test"
         # Create template without tokens
         data = json.dumps({"template_options": {"tokens": []}})
@@ -1653,18 +1789,18 @@ class APIContainer(MyApiTestCase):
                                              {}, self.at, 'DELETE')
         self.assertTrue(result["result"]["value"])
 
-    def test_36_create_template_fail(self):
+    def test_02_create_template_fail(self):
         # Create template without name
         self.request_assert_404_no_result(f'/container/smartphone/template',
                                           {}, self.at, 'POST')
 
-    def test_37_delete_template_fail(self):
+    def test_03_delete_template_fail(self):
         # Delete non existing template
         template_name = "random"
         self.request_assert_405(f'container/template/{template_name}',
                                 {}, None, 'POST')
 
-    def test_38_update_template_options_success(self):
+    def test_04_update_template_options_success(self):
         # Create a template
         template_name = "test"
         template_id = create_container_template(container_type="generic",
@@ -1679,12 +1815,12 @@ class APIContainer(MyApiTestCase):
                                              params, self.at, 'POST')
         self.assertEqual(template_id, result["result"]["value"])
 
-    def test_39_update_template_options_fail(self):
+    def test_05_update_template_options_fail(self):
         # Create a template
         template_name = "test"
         create_container_template(container_type="generic",
-                                                template_name=template_name,
-                                                options={"tokens": [{"type": "hotp"}]})
+                                  template_name=template_name,
+                                  options={"tokens": [{"type": "hotp"}]})
 
         # Update with wrong options type
         params = json.dumps({"template_options": json.dumps({
@@ -1693,3 +1829,164 @@ class APIContainer(MyApiTestCase):
         result = self.request_assert_error(400, f'/container/generic/template/{template_name}',
                                            params, self.at, 'POST')
         self.assertEqual(905, result["result"]["error"]["code"])
+
+    def test_06_create_container_with_template_success(self):
+        # Create a template
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
+        create_container_template(container_type=template_params["type"],
+                                  template_name=template_params["name"],
+                                  options=template_params["template_options"])
+
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+
+    def test_07_create_container_with_template_no_tokens(self):
+        # Create a template with no tokens
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {}}
+
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(0, len(tokens))
+
+        # Create a template without template options
+        template_params = {"name": "test",
+                           "type": "smartphone"}
+
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(0, len(tokens))
+
+    def test_08_create_container_with_template_missing_policies(self):
+        # Create a template
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
+        create_container_template(container_type=template_params["type"],
+                                  template_name=template_params["name"],
+                                  options=template_params["template_options"])
+
+        # Create a container from the template
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+
+    def test_09_create_container_with_template_push(self):
+        # PUSH (poll-only)
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "push", "genkey": True}]}}
+
+        set_policy("push_1", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
+        set_policy("push_2", scope=SCOPE.ENROLL, action={PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
+
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("push", tokens[0].get_type())
+
+        delete_policy("push_1")
+        delete_policy("push_2")
+
+    def test_10_create_container_with_template_max_tokens(self):
+        # Limit number of tokens per user
+        set_policy("max_token", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 2})
+        self.setUp_user_realms()
+        hans = User(login="hans", realm=self.realm1)
+
+        # First hotp token of hans
+        init_token({"genkey": "1", "type": "hotp"}, user=hans)
+
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
+        request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        # second hotp token of hans can be created with the template
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("hotp", tokens[0].get_type())
+
+        # third hotp token of hans can NOT be created
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(0, len(tokens))
+
+        delete_policy("max_token")
+
+    def test_11_create_container_with_template_otp_pin(self):
+        # Set otp pin policy
+        set_policy("otp_pin", scope=SCOPE.ADMIN, action={ACTION.OTPPINMAXLEN: 6, ACTION.OTPPINMINLEN: 2})
+        # Set admin policies
+        set_policy("admin", scope=SCOPE.ADMIN, action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
+
+        # pin according to the policies
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1234"}]}}
+        request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("hotp", tokens[0].get_type())
+
+        # pin too short
+        template_params = {"name": "test",
+                           "type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1"}]}}
+        request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(0, len(tokens))
+
+        delete_policy("otp_pin")
+        delete_policy("admin")

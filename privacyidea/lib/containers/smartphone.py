@@ -33,8 +33,8 @@ from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc, ecdh_key_exchange)
 from privacyidea.lib.error import privacyIDEAError
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
-from privacyidea.lib.user import User
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list, \
+    regenerate_enroll_url
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
 
@@ -312,7 +312,7 @@ class SmartphoneContainer(TokenContainerClass):
                "key_algorithm": key_algorithm}
         return res
 
-    def finalize_sync(self, params):
+    def finalize_sync(self, params, request):
         """
         Finalizes the synchronization of a container with the pi server.
         Here the actual data exchange happens.
@@ -325,6 +325,8 @@ class SmartphoneContainer(TokenContainerClass):
                     "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
                     "container_dict_client": {"serial": "SMPH0001", "type": "smartphone", ...}
                 }
+
+        :param request: The request object.
 
         :return: Dictionary with the result of the synchronization.
 
@@ -370,7 +372,8 @@ class SmartphoneContainer(TokenContainerClass):
         encrypt_mode = container_info.get("encrypt_mode", "ECB")
 
         # Get container dict with token secrets
-        container_dict = self.synchronize_container_details(container_client, params)
+        # TODO: Is this function applicable to all container types?
+        container_dict = self.synchronize_container_details(container_client, params, request)
 
         # encrypt container dict
         session_key = private_key_encr_server.exchange(pub_key_encr_container)
@@ -384,7 +387,7 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict, params: dict):
+    def synchronize_container_details(self, container_client: dict, params: dict, request):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -405,6 +408,7 @@ class SmartphoneContainer(TokenContainerClass):
                 }
 
         :param params: Further parameters like configuration from the policies.
+        :param request: The request object.
 
         :return: container dictionary like
 
@@ -443,10 +447,19 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Get info for missing serials: enroll url
         add_list = []
+        request.all_data = params
         for serial in missing_serials:
-            # TODO: Maybe we should do a rollover here (reinit with same serial) or dismiss it to avoid duplicates
-            token = get_tokens_from_serial_or_user(serial, None)[0]
-            enroll_url = token.get_enroll_url(User(), params)
+            # TODO: Maybe we should do a rollover here (reinit with same serial)
+            # TODO: Check if there is a better approach.
+            #  Ensure that the enroll information for other tokens not using an url is also returned.
+            try:
+                enroll_url = regenerate_enroll_url(serial, request)
+            except Exception as e:
+                log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
+                          f"container {self.serial}: {e}")
+                continue
+            # token = get_tokens_from_serial_or_user(serial, None)[0]
+            # enroll_url = token.get_enroll_url(User(), params)
             # if no enroll url is provided the token might be already enrolled
             if enroll_url:
                 add_list.append(enroll_url)
