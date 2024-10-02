@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </select>
         </div>
         <div class="form-group">
-            <span translate>Supported Token Types</span>: {{ form.token_types }}
+            <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
         </div>
 
         <!-- Description -->
@@ -65,8 +65,28 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <select class="form-control"
                         id="templateName"
                         ng-model="form.template"
-                        ng-options="template as template.name for template in templates">
+                        ng-change="selectTemplate()"
+                        ng-options="templateName for (templateName, template) in templates">
                 </select>
+                <button class="btn btn-default" ng-hide="editTemplate"
+                        ng-disabled="form.template.name==='defaultSelection'"
+                        ng-click="editTemplate=true" translate>
+                    Edit
+                </button>
+                <button class="btn btn-default" ng-show="editTemplate" ng-click="editTemplate=false" translate>
+                    Hide
+                </button>
+                <div class="form-group" ng-show="editTemplate">
+                    <div class="form-group">
+                        <div container-template-details
+                             selection="selection"
+                             form-init="tokenSettings"
+                             allowed-token-types="allowedTokenTypes"
+                             function-obj="functionObject"
+                             mark-add-remove="true"
+                        ></div>
+                    </div>
+                </div>
             </div>
         </div>
 

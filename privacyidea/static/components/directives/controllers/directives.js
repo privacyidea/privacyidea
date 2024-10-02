@@ -688,3 +688,190 @@ myApp.directive("registerContainer", ["instanceUrl", "versioningSuffixProvider",
             }
         };
     }]);
+
+myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory) {
+        return {
+            scope: {
+                formInit: "=",
+                selection: "=",
+                allowedTokenTypes: "=",
+                functionObj: "=",
+                markAddRemove: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.containertemplate.details.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
+                scope.instanceUrl = instanceUrl;
+                scope.fileVersionSuffix = versioningSuffixProvider.$get();
+                scope.colorMap = {"": "", "add": "table-add", "remove": "table-remove"};
+                scope.systemDefault = {};
+                scope.questions = [];
+                scope.num_questions = 5;
+                scope.defaultForm = {
+                        type: "hotp",
+                        timeStep: 30,
+                        otplen: 6,
+                        genkey: true,
+                        hashlib: "sha1",
+                        user: true
+                    };
+                scope.form = {
+                        type: "hotp",
+                        timeStep: 30,
+                        otplen: 6,
+                        genkey: true,
+                        hashlib: "sha1",
+                        user: true
+                    };
+
+                scope.addToken = function (tokenType) {
+                    scope.form = {
+                        type: tokenType,
+                        timeStep: 30,
+                        otplen: 6,
+                        genkey: true,
+                        hashlib: "sha1",
+                        user: true
+                    };
+                    if (scope.markAddRemove) {
+                        scope.form.state = "add";
+                    }
+                    scope.selection.tokens.push(scope.form);
+                };
+
+                scope.removeToken = function (index) {
+                    if (scope.markAddRemove && scope.selection.tokens[index].state !== "add") {
+                        scope.selection.tokens[index].state = "remove";
+                    } else {
+                        scope.selection.tokens.splice(index, 1);
+                    }
+                };
+
+                scope.saveOpenProperties = function () {
+                    angular.forEach(scope.selection.tokens, function (token, i) {
+                        if (token.edit) {
+                            scope.saveTokenProperties(i);
+                        }
+                    });
+                };
+
+                // Allow the controller to also call this function
+                scope.functionObj.saveOpenProperties = scope.saveOpenProperties;
+
+                scope.editTokenProperties = function (index) {
+                    scope.saveOpenProperties();
+
+                    let tokenType = scope.selection.tokens[index].type;
+                    scope.selection.tokens[index].edit = true;
+                    scope.form = {
+                        type: tokenType,
+                        timeStep: 30,
+                        otplen: 6,
+                        genkey: true,
+                        hashlib: "sha1",
+                        user: true
+                    };
+                    angular.forEach(scope.selection.tokens[index], function (value, key) {
+                        if (key !== 'edit') {
+                            scope.form[key] = value;
+                        }
+                    })
+
+                    // load token type specific stuff
+                    scope.hidePin = ["sshkey", "certificate"].indexOf(tokenType) >= 0;
+                    if (tokenType === "hotp") {
+                        scope.form.hashlib = scope.systemDefault['hotp.hashlib'] || 'sha1';
+                    } else if (tokenType === "totp") {
+                        scope.form.hashlib = scope.systemDefault['totp.hashlib'] || 'sha1';
+                        scope.form.timeStep = parseInt(scope.systemDefault['totp.timeStep'] || '30');
+                    } else if (tokenType === "daypassword") {
+                        // preset DayPassword hashlib
+                        scope.form.hashlib = scope.systemDefault['daypassword.hashlib'] || 'sha1';
+                        scope.form.timeStep = parseInt(scope.systemDefault['daypassword.timeStep'] || '60');
+                    } else if (tokenType === "applspec") {
+                        if (Object.keys(scope.formInit.service_ids).length === 0) {
+                            ConfigFactory.getServiceid("", function (data) {
+                                scope.formInit.service_ids = {};
+                                let serviceids = data.result.value;
+                                angular.forEach(serviceids, function (serviceid_data, name) {
+                                    scope.formInit.service_ids[name] = name + ": " + serviceid_data.description;
+                                });
+                            });
+                        }
+                    } else if (tokenType === "certificate") {
+                        if (!scope.CAConnectors && !scope.CATemplates) {
+                            ConfigFactory.getCAConnectorNames(function (data) {
+                                const CAConnectors = data.result.value;
+                                scope.CAConnectors = [];
+                                scope.CATemplates = {};
+                                angular.forEach(CAConnectors, function (value, key) {
+                                    scope.CAConnectors.push(value.connectorname);
+                                    scope.form.ca = value.connectorname;
+                                    scope.CATemplates[value.connectorname] = value;
+                                });
+                            });
+                        }
+                    } else if (tokenType === "radius" && !scope.radiusIdentifiers) {
+                        ConfigFactory.getRadiusNames(function (data) {
+                            scope.radiusIdentifiers = data.result.value;
+                        });
+                    } else if (tokenType === "remote" && !scope.privacyIDEAServers) {
+                        ConfigFactory.getPrivacyidea(function (data) {
+                            scope.privacyIDEAServers = data.result.value;
+                        });
+                    } else if (tokenType === "4eyes" && !scope.realms) {
+                        if (AuthFactory.getRole() === 'admin') {
+                            ConfigFactory.getRealms(function (data) {
+                                scope.realms = data.result.value;
+                            });
+                        }
+                    } else if (tokenType === "yubikey") {
+                        scope.form.otplen = 44;
+                    } else if (tokenType === "indexedsecret") {
+                        // in case of indexedsecret we do never generate a key from the UI
+                        scope.form.genkey = false;
+                    } else if (tokenType === "vasco") {
+                        scope.form.genkey = false;
+                    }
+                };
+
+                // If the user is admin, he can read the config.
+                ConfigFactory.loadSystemConfig(function (data) {
+                    /* Default config values like
+                        radius.server, radius.secret...
+                       are stored in systemDefault and $scope.form
+                     */
+                    scope.systemDefault = data.result.value;
+                    // TODO: The entries should be handled automatically.
+                    const entries = ["radius.server", "radius.secret", "remote.server",
+                        "radius.identifier", "email.mailserver",
+                        "email.mailfrom", "yubico.id", "tiqr.regServer"];
+                    entries.forEach(function (entry) {
+                        if (!scope.form[entry]) {
+                            // preset the UI
+                            scope.form[entry] = scope.systemDefault[entry];
+                        }
+                    });
+                    // Default HOTP hashlib
+                    scope.form.hashlib = scope.systemDefault["hotp.hashlib"] || 'sha1';
+                    // Now add the questions
+                    angular.forEach(scope.systemDefault, function (value, key) {
+                        if (key.indexOf("question.question.") === 0) {
+                            scope.questions.push(value);
+                        }
+                    });
+                    scope.num_answers = scope.systemDefault["question.num_answers"];
+                });
+
+                scope.saveTokenProperties = function (index) {
+                    delete scope.selection.tokens[index].edit;
+                    // Save any additional properties here
+                    angular.forEach(scope.form, function (value, key) {
+                        scope.selection.tokens[index][key] = value;
+                    });
+                };
+
+            }
+        };
+    }]);

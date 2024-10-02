@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <label for="name" translate>Name</label>
         <input type="text" class="form-control" id="name"
                placeholder="{{ 'A unique name for this policy'|translate }}"
+               required
                ng-model="selection.templateName"/>
     </div>
 
@@ -30,69 +31,21 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <select class="form-control"
                 id="containertype"
                 ng-model="selection.containerType"
-                ng-options="type as attr.description for (type, attr) in typeProperties.containerTypes">
+                ng-options="type as attr.description for (type, attr) in containerTypes">
         </select>
     </div>
     <div class="form-group">
-        <span translate>Supported Token Types</span>: {{ selection.allowedTokensDisplay }}
+        <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
     </div>
 
     <div class="form-group">
-        <h4 translate>Tokens</h4>
-
-        <table class="table table-bordered table-responsive table-capitalize-header">
-
-            </thead>
-            <tr ng-repeat="token in selectedTokens track by $index">
-                <td>
-                    {{ token.type }}
-                </td>
-                <td>
-                    <div class="form-group">
-                        <button class="btn btn-capitalize btn-primary btn-transparent"
-                                ng-hide="token.edit"
-                                ng-click="editTokenProperties($index)">
-                            <span class="glyphicon glyphicon-pencil"></span>
-                            <span translate>Edit</span>
-                        </button>
-                        <button class="btn btn-capitalize btn-primary btn-transparent"
-                                ng-show="token.edit"
-                                ng-click="saveTokenProperties($index)">
-                            <span class="glyphicon glyphicon-eye-close"></span>
-                            <span translate>Hide Details</span>
-                        </button>
-                        <button class="btn btn-capitalize btn-danger btn-transparent"
-                                ng-click="removeToken($index)"
-                                translate>
-                            <span class="glyphicon glyphicon-remove"></span>
-                            <translate>Remove Token</translate>
-                        </button>
-                    </div>
-                    <div class="well" ng-show="token.edit">
-                        <ng-include src="instanceUrl + '/static/components/token/views/token.enroll.'
-                                         + token.type + '.html' + fileVersionSuffix">
-                        </ng-include>
-
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <div>
-            <span translate>
-                Select a token type to add:
-            </span>
-            <select class="form-control"
-                    ng-model="formInit.selectedTokenType"
-                    ng-options="type as desc for (type, desc) in selection.allowedTokensSelection">
-            </select>
-            <button class="btn btn-default btn-capitalize"
-                    ng-click="addToken(formInit.selectedTokenType)"
-                    translate>
-                Add Token
-            </button>
-        </div>
-
+        <div container-template-details
+             selection="selection"
+             form-init="tokenSettings"
+             allowed-token-types="allowedTokenTypes"
+             function-obj="functionObject"
+             mark-add-remove="false"
+        ></div>
     </div>
 
     <div class="form-group">
@@ -103,4 +56,5 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             Create Template
         </button>
     </div>
+
 </div>
