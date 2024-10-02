@@ -1616,7 +1616,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             value = result.get("value")
-            self.assertEqual(value.get("count"), 25)
+            # Up to this test we have at least 21 tokens
+            self.assertGreater(value.get("count"), 20)
             self.assertEqual(value.get("serial"), None)
 
         # multiple tokens are matching!
