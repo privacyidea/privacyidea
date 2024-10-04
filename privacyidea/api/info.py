@@ -40,6 +40,7 @@ The user or admin must be authenticated to access this API.
 To see how to authenticate read :ref:`rest_auth`.
 """
 
+
 @info_blueprint.route('/rss', methods=['GET'])
 @log_with(log, log_entry=False)
 def rss():
@@ -48,11 +49,10 @@ def rss():
 
     :param channel: The channel to get the news from. If not given, the news from all channels are returned.
     :type channel: str
-    
+
     :return: JSON response with the news
     """
     param = request.all_data
     channel = getParam(param, "channel")
     r = get_news(channel=channel)
     return send_result(r)
-
