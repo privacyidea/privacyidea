@@ -1,7 +1,15 @@
+
+<div ng-show="showDefaultSelection">
+    <input type="checkbox"
+       ng-model="selection.default"
+       id="defaultTemplate">
+    <label for="defaultTemplate" translate>Set as default template</label>
+</div>
+
 <h4 translate>Tokens</h4>
 
-<table class="table table-bordered table-responsive table-capitalize-header">
-    </thead>
+<table class="table table-bordered table-responsive table-capitalize-header"
+       ng-show="selection.tokens.length > 0">
     <tr ng-repeat="token in selection.tokens track by $index"
         ng-class="colorMap[token.state]">
         <td>

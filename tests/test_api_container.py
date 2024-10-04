@@ -4,7 +4,8 @@ import json
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, get_container_realms, create_container_template)
+                                       add_container_realms, get_container_realms, create_container_template,
+                                       get_template_obj)
 from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
@@ -101,7 +102,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
@@ -123,7 +124,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user, method='POST')
         delete_policy("policy")
@@ -147,7 +148,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user, method='POST')
         delete_policy("policy")
@@ -186,7 +187,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
 
         # User has 'add' rights but is not the owner of the container
-        another_container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})
+        another_container_serial, _ = init_container({"type": "generic", "user": user.login, "realm": user.realm})
         self.request_denied_assert_403(f"/container/{another_container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
@@ -233,7 +234,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
 
         # User has 'remove' rights but is not the owner of the container
-        another_container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        another_container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         add_token_to_container(another_container_serial, my_token_serial, user_role='admin')
         self.request_denied_assert_403(f"/container/{another_container_serial}/remove", {"serial": my_token_serial},
                                        self.at_user, method='POST')
@@ -243,7 +244,7 @@ class APIContainerAuthorization(MyApiTestCase):
         # Note: This will not set the user root but the user selfservice, because the user attribute is changed in
         # before_request()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
                                 self.at_user)
         delete_policy("policy")
@@ -274,7 +275,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User is not allowed to unassign users from a container that is not his own
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         assign_user(container_serial, user, user_role='admin')
         self.request_denied_assert_403(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
@@ -378,28 +379,28 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_29_admin_assign_user_allowed(self):
         self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign",
                                 {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_30_admin_assign_user_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_31_admin_remove_user_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "root", "realm": self.realm1})
         self.request_assert_200(f"/container/{container_serial}/unassign",
                                 {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_32_admin_remove_user_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "root", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
@@ -475,7 +476,7 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_42_helpdesk_description_allowed(self):
         self.setUp_user_realm2()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1, self.realm2])
-        container_serial = init_container({"type": "generic", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "realm": self.realm1})
         self.request_assert_200(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                 method='POST')
         delete_policy("policy")
@@ -562,7 +563,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # Add token to container during enrollment fails
         set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
-        container_serial = init_container({"type": "generic", "realm": self.realm2})
+        container_serial, _ = init_container({"type": "generic", "realm": self.realm2})
         result = self.request_assert_200("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
                                                          "container_serial": container_serial}, self.at,
                                          method='POST')
@@ -634,7 +635,7 @@ class APIContainerAuthorization(MyApiTestCase):
         # Allow to assign a user to a container without any realm
         self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm1)
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/assign",
                                 {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
@@ -644,19 +645,19 @@ class APIContainerAuthorization(MyApiTestCase):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
 
         # helpdesk of user realm realm2: container in realm2, but user from realm1
-        container_serial = init_container({"type": "generic", "realm": self.realm2})
+        container_serial, _ = init_container({"type": "generic", "realm": self.realm2})
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
 
         # helpdesk of user realm realm2: user from realm2, but container in realm1
-        container_serial = init_container({"type": "generic", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm2", "user": "root", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_52_helpdesk_remove_user_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm1)
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_assert_200(f"/container/{container_serial}/unassign",
                                 {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
@@ -664,7 +665,7 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_53_helpdesk_remove_user_denied(self):
         self.setUp_user_realm2()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
 
@@ -681,7 +682,7 @@ class APIContainerAuthorization(MyApiTestCase):
         self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
 
         # Set realm for container without any realm
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.request_assert_200(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
         delete_policy("policy")
 
@@ -728,7 +729,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # container with token from another realm: reduce token info
         set_policy("policy2", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
-        container_serial = init_container({"type": "generic", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "realm": self.realm1})
         token_1 = init_token({"genkey": 1, "realm": self.realm1})
         token_2 = init_token({"genkey": 1, "realm": self.realm2})
         add_token_to_container(container_serial, token_1.get_serial(), user_role='admin')
@@ -836,7 +837,7 @@ class APIContainer(MyApiTestCase):
 
     def test_03_assign_user_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Assign without realm
         payload = {"user": "hans"}
@@ -865,7 +866,7 @@ class APIContainer(MyApiTestCase):
 
     def test_04_assign_multiple_users_fails(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.setUp_user_realms()
         payload = {"user": "hans", "realm": self.realm1}
 
@@ -883,7 +884,7 @@ class APIContainer(MyApiTestCase):
 
     def test_05_assign_unassign_user_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.setUp_user_realms()
         payload = {"user": "hans", "realm": self.realm1}
 
@@ -899,7 +900,7 @@ class APIContainer(MyApiTestCase):
     def test_06_assign_without_realm(self):
         # If no realm is passed the default realm is set in before_request
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         self.setUp_user_realm2()
         self.setUp_user_realm3()
         payload = {"user": "hans"}
@@ -915,7 +916,7 @@ class APIContainer(MyApiTestCase):
         self.assertTrue(owner.realm == self.realm2)
 
         # Assign without realm where default realm is not correct
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         payload = {"user": "root"}
         result = self.request_assert_error(400, f'/container/{container_serial}/assign',
                                            payload, self.at, 'POST')
@@ -925,7 +926,7 @@ class APIContainer(MyApiTestCase):
 
     def test_07_unassign_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Unassign without realm
         payload = {"user": "root"}
@@ -962,7 +963,7 @@ class APIContainer(MyApiTestCase):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Set existing realms
         payload = {"realms": self.realm1 + "," + self.realm2}
@@ -983,7 +984,7 @@ class APIContainer(MyApiTestCase):
         self.assertNotIn(self.realm2, result["value"].keys())
 
         # Automatically add the user realms
-        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        container_serial, _ = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"][self.realm1])
@@ -993,7 +994,7 @@ class APIContainer(MyApiTestCase):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Missing realm parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/realms',
@@ -1013,7 +1014,7 @@ class APIContainer(MyApiTestCase):
 
     def test_10_set_description_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial, _ = init_container({"type": "generic", "description": "test container"})
 
         # Set description
         payload = {"description": "new description"}
@@ -1029,7 +1030,7 @@ class APIContainer(MyApiTestCase):
 
     def test_11_set_description_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial, _ = init_container({"type": "generic", "description": "test container"})
 
         # Missing description parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/description',
@@ -1051,7 +1052,7 @@ class APIContainer(MyApiTestCase):
 
     def test_12_set_states_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial, _ = init_container({"type": "generic", "description": "test container"})
 
         # Set states
         payload = {"states": "active,damaged,lost"}
@@ -1064,7 +1065,7 @@ class APIContainer(MyApiTestCase):
 
     def test_13_set_states_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial, _ = init_container({"type": "generic", "description": "test container"})
 
         # Missing states parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/states',
@@ -1087,7 +1088,7 @@ class APIContainer(MyApiTestCase):
 
     def test_14_set_container_info_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
+        container_serial, _ = init_container({"type": "generic", "description": "test container"})
 
         # Set info
         self.request_assert_success(f'/container/{container_serial}/info/key1',
@@ -1095,7 +1096,7 @@ class APIContainer(MyApiTestCase):
 
     def test_15_set_container_info_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Missing value parameter
         result = self.request_assert_error(400, f'/container/{container_serial}/info/key1',
@@ -1111,24 +1112,9 @@ class APIContainer(MyApiTestCase):
         self.request_assert_404_no_result(f'/container/{container_serial}/info/',
                                           {"value": "value1"}, self.at, 'POST')
 
-    def test_16_update_last_seen(self):
-        # Arrange
-        container_serial = init_container({"type": "generic", "description": "test container"})
-
-        # Update last seen success
-        self.request_assert_success(f'/container/{container_serial}/lastseen',
-                                    {}, self.at, 'POST')
-
-        # Update last seen invalid container serial
-        self.request_assert_error(404, f'/container/wrong_serial/lastseen',
-                                  {}, self.at, 'POST')
-
-        # Update last seen without container serial
-        self.request_assert_405('/container/lastseen', {}, self.at, 'POST')
-
     def test_17_add_remove_token_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         hotp_01 = init_token({"genkey": "1"})
         hotp_01_serial = hotp_01.get_serial()
         hotp_02 = init_token({"genkey": "1"})
@@ -1180,7 +1166,7 @@ class APIContainer(MyApiTestCase):
 
     def test_18_add_token_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         hotp_01 = init_token({"genkey": "1"})
         hotp_01_serial = hotp_01.get_serial()
 
@@ -1196,7 +1182,7 @@ class APIContainer(MyApiTestCase):
 
     def test_19_remove_token_fail(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         hotp_01 = init_token({"genkey": "1"})
         hotp_01_serial = hotp_01.get_serial()
         add_token_to_container(container_serial, hotp_01_serial, user_role="admin")
@@ -1235,7 +1221,7 @@ class APIContainer(MyApiTestCase):
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
         for t in types:
-            serial = init_container({"type": t, "description": "test container"})
+            serial, _ = init_container({"type": t, "description": "test container"})
             container_serials.append(serial)
         # Add token to container 1
         container = find_container_by_serial(container_serials[1])
@@ -1282,8 +1268,8 @@ class APIContainer(MyApiTestCase):
         self.assertEqual("generic", res_container["type"])
         self.assertEqual(container_serials[1], res_container["serial"])
         self.assertEqual("test container", res_container["description"])
-        self.assertIn("last_seen", res_container.keys())
-        self.assertIn("last_updated", res_container.keys())
+        self.assertIn("last_authentication", res_container.keys())
+        self.assertIn("last_synchronization", res_container.keys())
         self.assertIn("active", res_container["states"])
         # Tokens
         self.assertEqual(1, len(res_container["tokens"]))
@@ -1332,8 +1318,9 @@ class APIContainer(MyApiTestCase):
         return params, private_key_smph
 
     def test_24_register_smartphone_success(self):
-        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
-        smartphone_serial = init_container({"type": "smartphone"})
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/",
+                                                         ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        smartphone_serial, _ = init_container({"type": "smartphone"})
         data = {"container_serial": smartphone_serial,
                 "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
@@ -1349,6 +1336,18 @@ class APIContainer(MyApiTestCase):
         self.assertIn("nonce", init_response_data)
         self.assertIn("time_stamp", init_response_data)
         self.assertIn("key_algorithm", init_response_data)
+        # Check if the url contains all relevant data
+        qr_url = init_response_data["container_url"]["value"]
+        self.assertIn(f"pia://container/{smartphone_serial}", qr_url)
+        self.assertIn("issuer=privacyIDEA", qr_url)
+        self.assertIn("ttl=24", qr_url)
+        self.assertIn("nonce=", qr_url)
+        self.assertIn("time=", qr_url)
+        self.assertIn("url=http://localhost/container/register/finalize", qr_url)
+        self.assertIn(f"serial={smartphone_serial}", qr_url)
+        self.assertIn("key_algorithm=", qr_url)
+        self.assertIn("hash_algorithm", qr_url)
+        self.assertIn("passphrase=Enter%20your%20passphrase", qr_url)
 
         # Finalize
         params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
@@ -1379,7 +1378,7 @@ class APIContainer(MyApiTestCase):
 
     def test_26_register_init_fail(self):
         # Policy with server url not defined
-        container_serial = init_container({"type": "smartphone"})
+        container_serial, _ = init_container({"type": "smartphone"})
         result = self.request_assert_error(403, 'container/register/initialize',
                                            {"container_serial": container_serial}, self.at, 'POST')
         error = result["result"]["error"]
@@ -1406,7 +1405,7 @@ class APIContainer(MyApiTestCase):
     def test_27_register_finalize_fail(self):
         # Policy with server url disabled defined
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
-        container_serial = init_container({"type": "smartphone"})
+        container_serial, _ = init_container({"type": "smartphone"})
         result = self.request_assert_error(403, 'container/register/finalize',
                                            {"container_serial": container_serial}, None, 'POST')
         error = result["result"]["error"]
@@ -1459,7 +1458,7 @@ class APIContainer(MyApiTestCase):
 
     def test_29_sync_init_success(self):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
-        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone_serial, _ = init_container({"type": "smartphone"})
 
         result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
                                              {}, None, 'GET')
@@ -1707,7 +1706,7 @@ class APIContainer(MyApiTestCase):
         delete_policy('token_enroll')
 
     def test_35_sync_finalize_fail(self):
-        smartphone_serial = init_container({"type": "smartphone"})
+        smartphone_serial, _ = init_container({"type": "smartphone"})
 
         # missing policy
         result = self.request_assert_error(403, f'container/sync/{smartphone_serial}/finalize',
@@ -1815,6 +1814,9 @@ class APIContainerTemplate(MyApiTestCase):
                                              params, self.at, 'POST')
         self.assertEqual(template_id, result["result"]["value"])
 
+        template = get_template_obj(template_name)
+        template.delete()
+
     def test_05_update_template_options_fail(self):
         # Create a template
         template_name = "test"
@@ -1829,6 +1831,9 @@ class APIContainerTemplate(MyApiTestCase):
         result = self.request_assert_error(400, f'/container/generic/template/{template_name}',
                                            params, self.at, 'POST')
         self.assertEqual(905, result["result"]["error"]["code"])
+
+        template = get_template_obj(template_name)
+        template.delete()
 
     def test_06_create_container_with_template_success(self):
         # Create a template
@@ -1847,6 +1852,12 @@ class APIContainerTemplate(MyApiTestCase):
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
         self.assertEqual(1, len(tokens))
+        container_info = container.get_container_info_dict()
+        self.assertIn("template", container_info.keys())
+        self.assertEqual("test", container_info["template"])
+
+        template = get_template_obj(template_params["name"])
+        template.delete()
 
     def test_07_create_container_with_template_no_tokens(self):
         # Create a template with no tokens

@@ -31,7 +31,7 @@ from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_us
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
-                                Realm, TokenContainerTemplate)
+                                Realm, TokenContainerTemplate, TokenContainerInfo)
 
 log = logging.getLogger(__name__)
 
@@ -155,8 +155,8 @@ def find_container_by_serial(serial: str):
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
-                            sortdir='asc'):
+def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, realms=None,
+                            template=None, sortby='serial', sortdir='asc'):
     """
     Generates a sql query to filter containers by the given parameters.
 
@@ -165,6 +165,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     :param ctype: container type, optional
     :param token_serial: serial of a token which is assigned to the container, optional
     :param realms: list of realms to filter by, optional
+    :param template: The name of the template the container was created with, optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :return: sql query
@@ -193,6 +194,11 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
         container_ids = [r.container_id for r in container_realms]
         sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
 
+    if template:
+        info = TokenContainerInfo.query.filter(TokenContainerInfo.key == "template").filter(TokenContainerInfo.value == template).all()
+        container_ids = [i.container_id for i in info]
+        sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+
     if isinstance(sortby, str):
         # Check that the sort column exists and convert it to a Token column
         cols = TokenContainer.__table__.columns
@@ -211,7 +217,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
 
 
 def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
-                       sortdir='asc', page=0, pagesize=0):
+                       sortdir='asc', template=None, page=0, pagesize=0):
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -226,13 +232,14 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :param realms: list of realms the container is assigned to, optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
+    :param template: The name of the template the container was created with, optional
     :param page: The number of the page to view. Starts with 1 ;-)
     :param pagesize: The size of the page
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realms=realms,
-                                        sortby=sortby, sortdir=sortdir)
+                                        template=template, sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -374,6 +381,23 @@ def init_container(params):
     db_container.save()
 
     container = create_container_from_db_object(db_container)
+
+    # Template handling
+    template = params.get("template") or {}
+    template_tokens = []
+    # Check if a template was used
+    if template.get("name"):
+        # check if the template was modified, otherwise save the template name
+        stored_templates = get_templates_by_query(name=template["name"])["templates"]
+        if len(stored_templates) > 0:
+            original_template = stored_templates[0]
+            original_template_used = compare_template_dicts(template, original_template)
+            if original_template_used:
+                container.template = original_template["name"]
+                container.add_container_info("template", template["name"])
+        # create tokens from template
+        template_tokens = template.get("template_options", {}).get("tokens", [])
+
     user = params.get("user")
     realm = params.get("realm")
     realms = []
@@ -390,7 +414,7 @@ def init_container(params):
             log.warning(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
-    return serial
+    return serial, template_tokens
 
 
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):
@@ -938,8 +962,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
                     "type": "generic",
                     "serial": "CONT0001",
                     "description": "Container description",
-                    "last_seen": "2021-06-01T12:00:00+00:00",
-                    "last_updated": "2021-06-01T12:00:00+00:00",
+                    "last_authentication": "2021-06-01T12:00:00+00:00",
+                    "last_synchronization": "2021-06-01T12:00:00+00:00",
                     "states": ["active"],
                     "users": [
                         {
@@ -957,7 +981,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
                             ...
                         }],
                     "info": {"hash_algorithm": "SHA256", ...},
-                    "realms": ["realm1", "realm2"]
+                    "realms": ["realm1", "realm2"],
+                    "template": "template1"
                 }, ...
             ]
     """
@@ -966,8 +991,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
         tmp: dict = {"type": container.type,
                      "serial": container.serial,
                      "description": container.description,
-                     "last_seen": container.last_seen,
-                     "last_updated": container.last_updated}
+                     "last_authentication": container.last_authentication,
+                     "last_synchronization": container.last_synchronization}
         tmp_users: dict = {}
         users: list = []
         for user in container.get_users():
@@ -990,16 +1015,20 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
         tmp["states"] = container.get_states()
 
         infos: dict = {}
+        black_key_list = ["private_key_server", "public_key_server", "public_key_container"]
         for info in container.get_container_info():
             if info.type:
                 infos[info.key + ".type"] = info.type
-            infos[info.key] = info.value
+            if info.key not in black_key_list:
+                infos[info.key] = info.value
         tmp["info"] = infos
 
         realms = []
         for realm in container.realms:
             realms.append(realm.name)
         tmp["realms"] = realms
+
+        tmp["template"] = container.template.name if container.template else None
 
         res.append(tmp)
 
@@ -1047,19 +1076,21 @@ def get_container_template_classes():
     return ret
 
 
-def create_container_template(container_type: str, template_name: str, options: dict):
+def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False):
     """
     Create a new container template.
     :param container_type: The type of the container
     :param template_name: The name of the template
     :param options: The options for the template as dictionary
+    :param default: If True, the template is set as default
     :return: The created template object
     """
     if isinstance(options, dict):
         options = json.dumps(options)
     else:
         raise ParameterError("Options must be a dict!")
-    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options).save()
+    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options,
+                                  default=default).save()
 
 
 def set_template_options(template_name: str, options: dict):
@@ -1097,12 +1128,14 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
     return None
 
 
-def get_templates_by_query(name: str = None, container_type: str = None, page: int = 0, pagesize: int = 0):
+def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
+                           pagesize: int = 0):
     """
     Returns a list of all templates or a list filtered by the given parameters.
 
     :param name: The name of the template, optional
     :param container_type: The type of the container, optional
+    :param default: Filters for default templates if True or non-default if False, optional
     :param page: The number of the page to view. 0 if no pagination shall be used
     :param pagesize: The size of the page. 0 if no pagination shall be used
     :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
@@ -1113,6 +1146,8 @@ def get_templates_by_query(name: str = None, container_type: str = None, page: i
         sql_query = sql_query.filter(TokenContainerTemplate.name == name)
     if container_type:
         sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
+    if default is not None:
+        sql_query = sql_query.filter(TokenContainerTemplate.default == default)
 
     # paginate if requested
     if page > 0 or pagesize > 0:
@@ -1129,7 +1164,8 @@ def get_templates_by_query(name: str = None, container_type: str = None, page: i
     for template in template_obj_list:
         template_dict = {"name": template.name,
                          "container_type": template.container_type,
-                         "template_options": json.loads(template.template_options)}
+                         "template_options": json.loads(template.template_options),
+                         "default": template.default}
         template_list.append(template_dict)
 
     ret["templates"] = template_list
@@ -1150,3 +1186,50 @@ def get_template_obj(template_name: str):
         raise ResourceNotFoundError(f"Template {template_name} does not exist.")
     template = create_container_template_from_db_object(db_template)
     return template
+
+
+def set_default_template(name: str):
+    """
+    Sets the template of the given name as default and all other templates for the container type as non-default.
+
+    :param name: The name of the template to be the new default template
+    """
+    default_template = get_template_obj(name)
+
+    # Get all default templates for the container type and reset them to non-default
+    old_default_templates = get_templates_by_query(container_type=default_template.container_type, default=True)
+    for template in old_default_templates["templates"]:
+        template_obj = get_template_obj(template["name"])
+        template_obj.default = False
+
+    # Set new default template
+    default_template.default = True
+
+
+def compare_template_dicts(template_a: dict, template_b: dict):
+    """
+    Compares two template dictionaries for equality.
+    Returns True if the templates contain the same content, False otherwise.
+    """
+    equal = True
+
+    if template_a is None or template_b is None:
+        return False
+
+    # compare options
+    options_a = template_a.get("template_options", {})
+    options_b = template_b.get("template_options", {})
+
+    # compare tokens
+    tokens_a = options_a.get("tokens", [])
+    tokens_b = options_b.get("tokens", [])
+    if len(tokens_a) != len(tokens_b):
+        # different number of tokens, templates can not be equal
+        return False
+
+    unique_tokens_a = [token for token in tokens_a if token not in tokens_b]
+    unique_tokens_b = [token for token in tokens_b if token not in tokens_a]
+    if len(unique_tokens_a) > 0 or len(unique_tokens_b) > 0:
+        return False
+
+    return equal

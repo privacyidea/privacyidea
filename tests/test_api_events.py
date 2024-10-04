@@ -568,7 +568,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertIsNotNone(container_serial)
 
         # Get container serial from request
-        container_serial = init_container({"type": "Generic", "description": "test description!!"})
+        container_serial, _ = init_container({"type": "Generic", "description": "test description!!"})
         payload = {"container_serial": container_serial, "states": ["active"]}
         request = self.app.test_request_context(f'/container/{container_serial}/states',
                                                 method='POST',

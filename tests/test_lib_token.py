@@ -1003,7 +1003,7 @@ class TokenTestCase(MyTestCase):
             self.assertIn(token["tokentype"], ["totp"])
 
         # Filter by container_serial
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         token = init_token({"type": "hotp", "genkey": 1})
         add_token_to_container(container_serial, token.get_serial(), user_role="admin")
         tokens_pag = get_tokens_paginate(container_serial=container_serial)

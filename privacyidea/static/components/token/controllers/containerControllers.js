@@ -189,10 +189,15 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             ContainerFactory.getTemplates(params, function (data) {
                 let templatesList = data.result.value.templates;
                 $scope.templates = {"No Template": {"name": "defaultSelection"}};
+                $scope.form.template = $scope.templates["No Template"];
                 angular.forEach(templatesList, function (template) {
                     $scope.templates[template.name] = template;
+                    if (template.default) {
+                        // select default template
+                        $scope.form.template = template;
+                        $scope.selectTemplate();
+                    }
                 });
-                $scope.form.template = $scope.templates["No Template"];
             });
         };
 
@@ -321,17 +326,17 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
     }]);
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory',
-    'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout',
+    'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                        TokenFactory, $state, $rootScope, $timeout) {
+                                        TokenFactory, $state, $rootScope, $timeout, $location) {
         $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
 
         $scope.container = {
             users: [],
-            last_seen: "",
-            last_updated: "",
+            last_authentication: "",
+            last_synchronization: "",
         };
         $scope.containerOwner = {};
         // Get possible container states
@@ -373,8 +378,19 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 if (data.result.value.containers.length > 0) {
                     $scope.container = data.result.value.containers[0];
                     $scope.containerOwner = $scope.container.users[0];
-                    $scope.container.last_seen = new Date($scope.container.last_seen);
-                    $scope.container.last_updated = new Date($scope.container.last_updated);
+
+                    // If the last authentication or synchronization date is not set, display a dash
+                    if ($scope.container.last_authentication != null) {
+                        $scope.container.last_authentication = new Date($scope.container.last_authentication);
+                    } else {
+                        $scope.container.last_authentication = "-";
+                    }
+                    if ($scope.container.last_synchronization != null) {
+                        $scope.container.last_synchronization = new Date($scope.container.last_synchronization);
+                    } else {
+                        $scope.container.last_synchronization = "-";
+                    }
+
 
                     angular.forEach($scope.container.states, function (state) {
                         $scope.excludeStates(state);
@@ -548,7 +564,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.pollContainerDetails = function () {
-            if ($scope.container.info['registration_state'] === "client_wait") {
+            let details_base_path = "/token/container/details";
+            if ($scope.container.info['registration_state'] === "client_wait" && $location.path().indexOf(details_base_path) > -1) {
+                // stop polling if the page changed or the container was (un)registered
                 $scope.getContainer();
                 $timeout($scope.pollContainerDetails, 2500);
             }
@@ -844,6 +862,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
             $scope.params.name = $scope.selection.templateName;
             $scope.params.type = $scope.selection.containerType;
             $scope.params.template_options = {"tokens": $scope.selection.tokens};
+            $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
                 $state.go("token.containertemplates.list");
@@ -896,6 +915,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                 function (data) {
                     $scope.templateData = data.result.value["templates"][0];
                     $scope.selection.tokens = $scope.templateData.template_options.tokens;
+                    $scope.selection.default = $scope.templateData.default;
                     $scope.getTokenAndContainerTypes();
                 });
         };
@@ -935,6 +955,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                 }
             });
             $scope.params.template_options = {"tokens": tokenList};
+            $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
                 $state.go("token.containertemplates.list");

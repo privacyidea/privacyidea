@@ -36,7 +36,7 @@ from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
-                                TokenContainerInfo, TokenContainerRealm)
+                                TokenContainerInfo, TokenContainerRealm, TokenContainerTemplate)
 
 log = logging.getLogger(__name__)
 
@@ -75,10 +75,15 @@ class TokenContainerClass:
         return self._db_container.type
 
     @property
-    def last_seen(self):
+    def last_authentication(self):
+        """
+        Returns the timestamp of the last seen field in the database.
+        It is the time when a token of the container was last used for authentication.
+        From this layer on it is hence called 'last_authentication'.
+        """
         return self._db_container.last_seen
 
-    def update_last_seen(self):
+    def update_last_authentication(self):
         """
         Updates the timestamp of the last seen field in the database.
         """
@@ -86,14 +91,22 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def last_updated(self):
+    def last_synchronization(self):
+        """
+        Returns the timestamp of the last updated field in the database.
+        It is the time when the container was last synchronized with the privacyIDEA server.
+        From this layer on it is hence called 'last_synchronization'.
+        """
         return self._db_container.last_updated
 
-    def update_last_updated(self):
+    def update_last_synchronization(self, timestamp=None):
         """
         Updates the timestamp of the last updated field in the database.
         """
-        self._db_container.last_updated = datetime.now(timezone.utc)
+        if timestamp:
+            self._db_container.last_updated = timestamp
+        else:
+            self._db_container.last_updated = datetime.now(timezone.utc)
         self._db_container.save()
 
     @property
@@ -149,7 +162,6 @@ class TokenContainerClass:
                         log.info(f"Realm {realm} is already assigned to container {self.serial}.")
                         result[realm] = False
         self._db_container.save()
-        self.update_last_updated()
 
         return result
 
@@ -178,7 +190,6 @@ class TokenContainerClass:
         self._db_container.tokens.remove(token)
         self._db_container.save()
         self.tokens = [t for t in self.tokens if t.get_serial() != serial]
-        self.update_last_updated()
         return True
 
     def add_token(self, token: TokenClass):
@@ -196,7 +207,6 @@ class TokenContainerClass:
             self.tokens.append(token)
             self._db_container.tokens = [t.token for t in self.tokens]
             self._db_container.save()
-            self.update_last_updated()
             return True
         return False
 
@@ -230,7 +240,6 @@ class TokenContainerClass:
             # Add user realm to container realms
             realm_db = Realm.query.filter_by(name=user.realm).first()
             self._db_container.realms.append(realm_db)
-            self.update_last_updated()
             return True
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
@@ -247,8 +256,6 @@ class TokenContainerClass:
                                                     user_id=user_id,
                                                     resolver=resolver_name).delete()
         db.session.commit()
-        if count > 0:
-            self.update_last_updated()
         return count > 0
 
     def get_users(self):
@@ -320,7 +327,6 @@ class TokenContainerClass:
             else:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
                 res[state] = True
-        self.update_last_updated()
         return res
 
     def add_states(self, state_list: List[str]):
@@ -357,7 +363,6 @@ class TokenContainerClass:
                         f"because it is excluded by the new state {state}.")
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
                 res[state] = True
-        self.update_last_updated()
         return res
 
     @classmethod
@@ -430,6 +435,29 @@ class TokenContainerClass:
         if container_infos.count() == 0:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
         return res
+
+    @property
+    def template(self):
+        """
+        Returns the template the container is based on.
+        """
+        return self._db_container.template
+
+    @template.setter
+    def template(self, template_name: str):
+        """
+        Set the template the container is based on.
+        """
+        success = False
+        db_template = TokenContainerTemplate.query.filter_by(name=template_name).first()
+        if db_template:
+            if db_template.container_type == self.type:
+                self._db_container.template = db_template
+                self._db_container.save()
+                success = True
+            else:
+                log.info(f"Template {template_name} is not compatible with container type {self.type}.")
+        return success
 
     def init_registration(self, params):
         """
@@ -556,8 +584,8 @@ class TokenContainerClass:
                 "type": "smartphone",
                 "serial": "SMPH00038DD3",
                 "description": "My smartphone",
-                "last_seen": "2024-09-11T08:56:37.200336+00:00",
-                "last_updated": "2024-09-11T08:56:37.200336+00:00",
+                "last_authentication": "2024-09-11T08:56:37.200336+00:00",
+                "last_synchronization": "2024-09-11T08:56:37.200336+00:00",
                 "states": ["active"],
                 "info": {
                             "hash_algorithm": "SHA256",
@@ -574,8 +602,8 @@ class TokenContainerClass:
         details = {"type": self.type,
                    "serial": self.serial,
                    "description": self.description,
-                   "last_seen": self.last_seen,
-                   "last_updated": self.last_updated,
+                   "last_authentication": self.last_authentication,
+                   "last_synchronization": self.last_synchronization,
                    "states": self.get_states()}
 
         infos = {}

@@ -406,7 +406,7 @@ class ACTION(object):
     CONTAINER_LIST = "container_list"
     CONTAINER_REGISTER = "container_register"
     PI_SERVER_URL = "privacyIDEA_server_url"
-    CONTAINER_REGISTRATION_TIMEOUT = "container_registration_timeout"
+    CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
 
 
@@ -2427,11 +2427,10 @@ def get_static_policy_definitions(scope=None):
                           'It is used to build URLs the container can contact for registration and synchronisation.'),
                 'group': GROUP.CONTAINER
             },
-            ACTION.CONTAINER_REGISTRATION_TIMEOUT: {
+            ACTION.CONTAINER_REGISTRATION_TTL: {
                 'type': 'int',
-                'value': list(range(1, 120)),
                 'desc': _('The time in minutes the user has to do the second step of the registration.'
-                          'The default is two minutes'),
+                          'The default is ten minutes'),
                 'group': GROUP.CONTAINER
             }
         },

@@ -3414,13 +3414,15 @@ class TokenContainer(MethodsMixin, db.Model):
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
-    last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    last_seen = db.Column(db.DateTime, default=None)
+    last_updated = db.Column(db.DateTime, default=None)
     states = db.relationship('TokenContainerStates', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
     info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
                                 cascade="all, delete-orphan")
     realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
+    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id'))
+    template = db.relationship('TokenContainerTemplate', back_populates='containers')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
@@ -3613,8 +3615,11 @@ class TokenContainerTemplate(MethodsMixin, db.Model):
     options = db.Column(db.Unicode(2000), default='')
     name = db.Column(db.Unicode(200), default='')
     container_type = db.Column(db.Unicode(100), default='Generic', nullable=False)
+    default = db.Column(db.Boolean, default=False, nullable=False)
+    containers = db.relationship('TokenContainer', back_populates='template')
 
-    def __init__(self, name=None, container_type="Generic", options=None):
+    def __init__(self, name=None, container_type="Generic", options=None, default=False):
         self.name = name
         self.container_type = container_type
         self.options = options
+        self.default = default

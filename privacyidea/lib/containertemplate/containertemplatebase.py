@@ -105,5 +105,14 @@ class ContainerTemplateBase:
     def id(self):
         return self._db_template.id
 
+    @property
+    def default(self):
+        return self._db_template.default
+
+    @default.setter
+    def default(self, value):
+        self._db_template.default = value
+        self._db_template.save()
+
     def delete(self):
         self._db_template.delete()

@@ -35,7 +35,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        create_container_dict, create_endpoint_url, get_container_classes,
                                        create_container_template,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
-                                       set_template_options)
+                                       set_template_options, set_default_template)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
@@ -171,17 +171,15 @@ def init():
             # The container has to be in one realm the admin is allowed to manage
             request.all_data["realm"] = allowed_realms[0]
 
-    serial = init_container(request.all_data)
+    serial, template_tokens = init_container(request.all_data)
     res = {"container_serial": serial}
+    container = find_container_by_serial(serial)
 
     # Template handling
-    template = getParam(request.all_data, "template", optional=True) or {}
-    template_tokens = template.get("template_options", {}).get("tokens", [])
     if template_tokens:
         create_container_tokens_from_template(serial, template_tokens, request)
 
     # Audit log
-    container = find_container_by_serial(serial)
     owners = container.get_users()
     if len(owners) == 1:
         g.audit_object.log({"user": owners[0].login,
@@ -506,31 +504,6 @@ def set_realms(container_serial):
     return send_result(result)
 
 
-@container_blueprint.route('<string:container_serial>/lastseen', methods=['POST'])
-@event('container_update_last_seen', request, g)
-@log_with(log)
-def update_last_seen(container_serial):
-    """
-    Updates the date and time for the last_seen property.
-
-    :param: container_serial: Serial of the container
-    """
-    container = find_container_by_serial(container_serial)
-    container.update_last_seen()
-
-    # Audit log
-    owners = container.get_users()
-    if len(owners) == 1:
-        g.audit_object.log({"user": owners[0].login,
-                            "realm": owners[0].realm,
-                            "resolver": owners[0].resolver})
-    audit_log_data = {"container_serial": container_serial,
-                      "container_type": container.type,
-                      "success": True}
-    g.audit_object.log(audit_log_data)
-    return send_result(True)
-
-
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
 @admin_required
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_INFO)
@@ -590,9 +563,11 @@ def registration_init():
     params.update({'container_registration_url': registration_url})
 
     # Get validity time for the registration
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TIMEOUT).policies()
+    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
     if len(server_url_policies) > 0:
-        params.update({'registration_timeout': server_url_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TIMEOUT]})
+        registration_ttl = int(server_url_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
+        if registration_ttl > 0:
+            params.update({'registration_ttl': registration_ttl})
 
     # Initialize registration
     res_registration = container.init_registration(params)
@@ -639,9 +614,6 @@ def registration_finalize():
     # Validate registration
     res = container.finalize_registration(params)
     res.update({'container_sync_url': sync_url})
-
-    # Update last seen
-    container.update_last_seen()
 
     return send_result(res)
 
@@ -757,10 +729,8 @@ def sync_finalize(container_serial: str):
     res = container.finalize_sync(params, request)
     res.update({'container_sync_url': synchronize_url})
 
-    # Update last seen & last updated
-    # Should we also update the last seen here or only if a token is used to authenticate?
-    container.update_last_seen()
-    container.update_last_updated()
+    # Update last sync time
+    container.update_last_synchronization()
 
     return send_result(res)
 
@@ -778,7 +748,7 @@ def get_template():
     page = int(getParam(params, "page", optional=True, default=0) or 0)
     pagesize = int(getParam(params, "pagesize", optional=True, default=0) or 0)
 
-    templates_dict = get_templates_by_query(name, container_type, page, pagesize)
+    templates_dict = get_templates_by_query(name=name, container_type=container_type, page=page, pagesize=pagesize)
 
     return send_result(templates_dict)
 
@@ -806,6 +776,7 @@ def create_template_with_name(container_type, template_name):
     """
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}
+    default_template = getParam(params, "default", optional=True, default=False)
     if not isinstance(template_options, dict):
         raise ParameterError("'template_options' must be a dictionary!")
 
@@ -820,7 +791,11 @@ def create_template_with_name(container_type, template_name):
         template_id = set_template_options(template_name, template_options)
     else:
         # create new template
-        template_id = create_container_template(container_type, template_name, template_options)
+        template_id = create_container_template(container_type, template_name, template_options, default_template)
+
+    # Set template as default for this container type
+    if default_template:
+        set_default_template(template_name)
 
     audit_log_data = {"container_type": container_type,
                       "action_detail": f"template_name={template_name}",

@@ -42,7 +42,7 @@ log = logging.getLogger(__name__)
 
 
 def create_container_registration_url(nonce, time_stamp, registration_url, container_serial, key_algorithm,
-                                      hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA"):
+                                      hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA", ttl=10):
     """
     Create a URL for binding a container to a physical container.
 
@@ -55,6 +55,7 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     :param extra_data: Extra data to be included in the URL.
     :param passphrase: Passphrase Prompt to be displayed to the user in the app.
     :param issuer: Issuer of the registration, e.g. 'privacyIDEA'.
+    :param ttl: Time to live of the URL in seconds.
     :return: URL for binding a container to a physical container.
     """
     url_nonce = quote(nonce.encode("utf-8"))
@@ -66,7 +67,7 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
 
-    url = (f"pia://container/{url_label}?issuer={url_issuer}&nonce={url_nonce}&time={url_time_stamp}"
+    url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
            f"&url={registration_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
            f"&hash_algorithm={url_hash_algorithm}&passphrase={url_passphrase}{url_extra_data}")
     return url
@@ -160,7 +161,7 @@ class SmartphoneContainer(TokenContainerClass):
                              "passphrase_ad": passphrase_ad}
 
         # Get timeout (in minutes)
-        timeout = getParam(params, 'timeout', optional=True)
+        registration_ttl = getParam(params, 'registration_ttl', optional=True)
 
         # Delete all other challenges for this container
         # Even if the container is already registered and a new QR code is generated it shall reset the registration
@@ -170,8 +171,9 @@ class SmartphoneContainer(TokenContainerClass):
             challenge.delete()
         # Create challenge
         db_challenge = Challenge(serial=self.serial, challenge=nonce, data=json.dumps(passphrase_params))
-        if timeout:
-            db_challenge.validitytime = timeout * 60
+        if registration_ttl:
+            # Set validity time for the challenge in seconds
+            db_challenge.validitytime = registration_ttl * 60
         db_challenge.save()
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
@@ -189,6 +191,7 @@ class SmartphoneContainer(TokenContainerClass):
                                                    key_algorithm=key_algorithm,
                                                    hash_algorithm=hash_algorithm,
                                                    passphrase=passphrase_prompt,
+                                                   ttl=registration_ttl,
                                                    extra_data=extra_data)
         # Generate QR code
         qr_img = create_img(qr_url)

@@ -697,7 +697,8 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 selection: "=",
                 allowedTokenTypes: "=",
                 functionObj: "=",
-                markAddRemove: "="
+                markAddRemove: "=",
+                showDefaultSelection: "="
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.containertemplate.details.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {
@@ -708,14 +709,7 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 scope.systemDefault = {};
                 scope.questions = [];
                 scope.num_questions = 5;
-                scope.defaultForm = {
-                        type: "hotp",
-                        timeStep: 30,
-                        otplen: 6,
-                        genkey: true,
-                        hashlib: "sha1",
-                        user: true
-                    };
+
                 scope.form = {
                         type: "hotp",
                         timeStep: 30,

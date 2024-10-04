@@ -857,7 +857,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_12_check_token_is_in_container(self):
         # Prepare the container and token
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         token_serial = "SPASS01"
         init_token({"serial": "SPASS01", "type": "spass"})
 
@@ -907,7 +907,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_13_check_container_state(self):
         # Prepare the container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
         container.set_states(["disabled", "lost"])
 
@@ -967,7 +967,7 @@ class BaseEventHandlerTestCase(MyTestCase):
                          realm=self.realm1)
 
         # init container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
         container.add_user(test_user)
 
@@ -1019,7 +1019,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_15_check_container_type(self):
         # Init container
-        container_serial = init_container({"type": "smartphone"})
+        container_serial, _ = init_container({"type": "smartphone"})
         container = find_container_by_serial(container_serial)
 
         # event handler
@@ -1054,7 +1054,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_16_check_container_has_token(self):
         # Init container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Init token
         token_serial = "SPASS01"
@@ -2090,7 +2090,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_02_delete_container(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Setup request
         options = self.setup_request(container_serial=container_serial)
@@ -2115,7 +2115,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_03_assign_and_unassign_container(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
         # create user
         self.setUp_user_realms()
@@ -2169,7 +2169,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_04_set_states(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
 
         # Setup request
@@ -2224,7 +2224,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_05_add_states(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
         initial_states = container.get_states()
 
@@ -2272,7 +2272,7 @@ class ContainerEventTestCase(MyTestCase):
     def test_06_set_description(self):
         # create container
         initial_description = "Initial description"
-        container_serial = init_container({"type": "generic", "description": initial_description})
+        container_serial, _ = init_container({"type": "generic", "description": initial_description})
         container = find_container_by_serial(container_serial)
 
         # Setup request and options
@@ -2304,7 +2304,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_07_remove_tokens(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
 
         # create token
@@ -2342,7 +2342,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_08_set_add_del_container_info(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
 
         # Setup request and options
         options = self.setup_request(container_serial=container_serial)
@@ -2405,7 +2405,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_09_enable_disable_all_tokens(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
 
         # create tokens
@@ -2881,7 +2881,7 @@ class TokenEventTestCase(MyTestCase):
         remove_token(t.token.serial)
 
         # Enroll token and assign to container
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         options['request'].all_data = {"container_serial": container_serial}
         options['handler_def']["options"] = {"tokentype": "spass",
                                              "user": False,

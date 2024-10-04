@@ -541,7 +541,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "HOTP",
@@ -931,7 +931,7 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
-        container_serial = init_container({"type": "generic"})
+        container_serial, _ = init_container({"type": "generic"})
         add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
