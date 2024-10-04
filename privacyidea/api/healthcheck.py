@@ -57,8 +57,8 @@ def resolversz():
         result["sqlresolvers"] = check_resolvers(sqlresolvers_list)
         result["status"] = "OK"
         return send_result(result), 200
-    except Exception as e:
-        return f"Error: {str(e)}", 500
+    except:
+        return 500
 
 
 def check_resolvers(resolvers_list):
