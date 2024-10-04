@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 RSS_NEWS = {}
 
 
-def get_news(rss_feeds=None):
+def get_news(rss_feeds=None, channel=None):
     def _parse_rss(rss):
         feed = []
         for item in rss.entries:
@@ -43,6 +43,8 @@ def get_news(rss_feeds=None):
         return feed
 
     rss_feeds = rss_feeds or RSS_FEEDS
+    if channel:
+        rss_feeds = {channel: rss_feeds[channel]}
     rss_news = {}
 
     for k, v in rss_feeds.items():

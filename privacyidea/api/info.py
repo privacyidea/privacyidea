@@ -18,7 +18,7 @@
 #
 
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.info.rss import get_news
+from privacyidea.lib.info.rss import get_news, RSS_FEEDS
 import logging
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.log import log_with
@@ -42,13 +42,17 @@ To see how to authenticate read :ref:`rest_auth`.
 
 @info_blueprint.route('/rss', methods=['GET'])
 @log_with(log, log_entry=False)
-def rss(channel: str = None):
+def rss():
     """
     Get the news from the configured RSS feeds.
+
+    :param channel: The channel to get the news from. If not given, the news from all channels are returned.
+    :type channel: str
+    
     :return: JSON response with the news
     """
     param = request.all_data
     channel = getParam(param, "channel")
-    r = get_news(channel)
+    r = get_news(channel=channel)
     return send_result(r)
 
