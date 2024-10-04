@@ -44,7 +44,7 @@ def readyz():
 @healthz_blueprint.route('/resolversz', methods=['GET'])
 def resolversz():
     """
-    Resolver check endpoint that tests if params will create a working resolver.
+    Resolver check endpoint that tests the connection to all LDAP and SQL resolvers individually.
     """
     result = {
         "status": "fail",
