@@ -55,4 +55,3 @@ def get_news(rss_feeds=None, channel=None):
             log.error(f"Error parsing {k}: {e}")
 
     return rss_news
-
