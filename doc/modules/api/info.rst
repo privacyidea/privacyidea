@@ -1,14 +1,14 @@
 .. use the docstring from the module file
-.. automodule:: privacyidea.api.audit
+.. automodule:: privacyidea.api.info
 
-.. _rest_audit:
+.. _rest_info:
 
-Audit endpoint
-..............
+Info endpoint
+.............
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:
-   :blueprints: audit_blueprint
+   :blueprints: info_blueprint
 
    :include-empty-docstring:
 

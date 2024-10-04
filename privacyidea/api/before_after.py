@@ -68,6 +68,7 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
@@ -107,6 +108,7 @@ def teardown_request(exc):
 @container_blueprint.before_request
 @audit_blueprint.before_request
 @system_blueprint.before_request
+@info_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -301,6 +303,7 @@ def before_request():
 @tokengroup_blueprint.after_request
 @serviceid_blueprint.after_request
 @container_blueprint.after_request
+@info_blueprint.after_request
 @jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
@@ -329,6 +332,7 @@ def after_request(response):
 @tokengroup_blueprint.app_errorhandler(AuthError)
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
+@info_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     if "audit_object" in g:
         message = ''
@@ -366,6 +370,7 @@ def auth_error(error):
 @tokengroup_blueprint.app_errorhandler(PolicyError)
 @serviceid_blueprint.app_errorhandler(PolicyError)
 @container_blueprint.app_errorhandler(PolicyError)
+@info_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
@@ -390,6 +395,7 @@ def policy_error(error):
 @tokengroup_blueprint.errorhandler(ResourceNotFoundError)
 @serviceid_blueprint.errorhandler(ResourceNotFoundError)
 @container_blueprint.app_errorhandler(ResourceNotFoundError)
+@info_blueprint.app_errorhandler(ResourceNotFoundError)
 def resource_not_found_error(error):
     """
     This function is called when an ResourceNotFoundError occurs.
@@ -419,6 +425,7 @@ def resource_not_found_error(error):
 @tokengroup_blueprint.app_errorhandler(privacyIDEAError)
 @serviceid_blueprint.app_errorhandler(privacyIDEAError)
 @container_blueprint.app_errorhandler(privacyIDEAError)
+@info_blueprint.app_errorhandler(privacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.
@@ -449,6 +456,7 @@ def privacyidea_error(error):
 @tokengroup_blueprint.app_errorhandler(500)
 @serviceid_blueprint.app_errorhandler(500)
 @container_blueprint.app_errorhandler(500)
+@info_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

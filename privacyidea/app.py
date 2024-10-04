@@ -67,6 +67,7 @@ from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
 from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
@@ -79,6 +80,23 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
 
 migrate = Migrate()
+
+
+class PiResponseClass(Response):
+    """Custom Response class overwriting the flask.Response.
+    To avoid caching problems with the json property in the Response class,
+    the property is overwritten using a non-caching approach.
+    """
+    @property
+    def json(self):
+        """This will contain the parsed JSON data if the mimetype indicates
+        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
+        will be ``None``.
+        Caching of the json data is disabled.
+        """
+        return self.get_json(cache=False)
+
+    default_mimetype = 'application/json'
 
 
 def create_app(config_name="development",
@@ -170,6 +188,7 @@ def create_app(config_name="development",
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
     app.register_blueprint(container_blueprint, url_prefix='/container')
     app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
+    app.register_blueprint(info_blueprint, url_prefix='/info')
 
     # Set up Plug-Ins
     db.init_app(app)
