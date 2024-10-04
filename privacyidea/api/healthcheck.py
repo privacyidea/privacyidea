@@ -2,6 +2,9 @@ from flask import Blueprint, current_app
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
+import logging
+
+log = logging.getLogger(__name__)
 
 healthz_blueprint = Blueprint('healthz_blueprint', __name__)
 
@@ -57,8 +60,9 @@ def resolversz():
         result["sqlresolvers"] = check_resolvers(sqlresolvers_list)
         result["status"] = "OK"
         return send_result(result), 200
-    except:
-        return 500
+    except Exception as e:
+        log.debug(f"Exception in /resolversz endpoint: {e}")
+        return send_result({"status": "error"}), 500
 
 
 def check_resolvers(resolvers_list):
