@@ -70,6 +70,7 @@ import threading
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
+from ..lib.container import find_container_for_token
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
@@ -432,18 +433,34 @@ def check():
                 if success or return_saml_attributes_on_fail():
                     # privacyIDEA's own attribute map
                     result["attributes"] = {"username": ui.get("username"),
-                                                "realm": user.realm,
-                                                "resolver": user.resolver,
-                                                "email": ui.get("email"),
-                                                "surname": ui.get("surname"),
-                                                "givenname": ui.get("givenname"),
-                                                "mobile": ui.get("mobile"),
-                                                "phone": ui.get("phone")}
+                                            "realm": user.realm,
+                                            "resolver": user.resolver,
+                                            "email": ui.get("email"),
+                                            "surname": ui.get("surname"),
+                                            "givenname": ui.get("givenname"),
+                                            "mobile": ui.get("mobile"),
+                                            "phone": ui.get("phone")}
                     # additional attributes
                     for k, v in ui.items():
                         result["attributes"][k] = v
-    serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
-        if 'multi_challenge' in details else details.get('serial')
+
+    # update last authentication for all tokens
+    if 'multi_challenge' in details:
+        serial_list = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+    elif "serial" in details:
+        serial_list = [details.get("serial")]
+    else:
+        serial_list = []
+
+    for serial in serial_list:
+        try:
+            container = find_container_for_token(serial)
+            if container:
+                container.update_last_authentication()
+        except Exception as e:
+            log.info(f"Could not find container for token {serial}: {e}")
+
+    serials = ",".join(serial_list)
     r = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
