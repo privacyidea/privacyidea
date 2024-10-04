@@ -32,17 +32,17 @@ log = logging.getLogger(__name__)
 RSS_NEWS = {}
 
 
-def _parse_rss(rss):
-    feed = []
-    for item in rss.entries:
-        feed.append({"title": item.title,
-                     "link": item.link,
-                     "pub_date": item.published,
-                     "summary": item.summary})
-    return feed
+def get_news(rss_feeds=None):
+    def _parse_rss(rss):
+        feed = []
+        for item in rss.entries:
+            feed.append({"title": item.title,
+                         "link": item.link,
+                         "pub_date": item.published,
+                         "summary": item.summary})
+        return feed
 
-
-def get_news(rss_feeds=RSS_FEEDS):
+    rss_feeds = rss_feeds or RSS_FEEDS
     rss_news = {}
 
     for k, v in rss_feeds.items():
