@@ -48,7 +48,6 @@ class APIHealthcheckTestCase(MyApiTestCase):
 
     @ldap3mock.activate
     def test_resolversz(self):
-        ldap3mock.DIRECTORY = "../tests/testdata/tmp_directory"
         ldap3mock.setLDAPDirectory(LDAPDirectory)
 
         ldapr = save_resolver({
