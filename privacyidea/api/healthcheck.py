@@ -32,6 +32,18 @@ def livez():
     return send_result({"status": "OK"}), 200
 
 
+@healthz_blueprint.route('/startupz', methods=['GET'])
+def startupz():
+    """
+    Startup check endpoint that indicates if the app has started.
+    """
+    app = current_app._get_current_object()
+    if app.config.get('APP_READY'):
+        return send_result({"status": "started"}), 200
+    else:
+        return send_result({"status": "not started"}), 503
+
+
 @healthz_blueprint.route('/readyz', methods=['GET'])
 def readyz():
     """

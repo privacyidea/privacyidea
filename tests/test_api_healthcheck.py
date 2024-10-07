@@ -1,8 +1,8 @@
+from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from tests import ldap3mock
 from tests.base import MyApiTestCase
-from tests.pkcs11mock import PKCS11Mock
 from tests.test_api_validate import LDAPDirectory
 
 
@@ -16,6 +16,22 @@ class APIHealthcheckTestCase(MyApiTestCase):
             self.assertIn("value", result, f"Expected 'value' key in result, got {result}")
             self.assertEqual(result.get("value").get("status"), "OK",
                              f"Expected 'OK' as value, got {result.get('value')}")
+
+    def test_startupz(self):
+        def check_status(expected_status_code, expected_ready_status, app_ready_value):
+            self.app.config['APP_READY'] = app_ready_value
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, expected_status_code,
+                             f"Expected status code {expected_status_code}, got {res.status_code}")
+            result = res.json.get("result")
+            self.assertIsNotNone(result, "Expected JSON result, got None")
+            self.assertIn("value", result, f"Expected 'value' in result, got {result}")
+            self.assertEqual(result.get("value").get("status"), expected_ready_status,
+                             f"Expected status '{expected_ready_status}', got {result.get('value').get('status')}")
+
+        with self.app.test_request_context('/healthz/startupz', method='GET'):
+            check_status(503, "not started", False)
+            check_status(200, "started", True)
 
     def test_readyz_and_healthz(self):
         def check_status(expected_status_code, expected_ready_status, app_ready_value):
