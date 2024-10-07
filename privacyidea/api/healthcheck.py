@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app
 
 from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 import logging
 
@@ -15,10 +16,12 @@ def healthz():
     Health check endpoint that indicates if the app is healthy (running and ready to serve requests).
     """
     app = current_app._get_current_object()
-    if app.config.get('APP_READY'):
-        return send_result({"status": "healthy"}), 200
-    else:
+    if not app.config.get('APP_READY'):
         return send_result({"status": "not healthy"}), 503
+    elif not get_hsm().is_ready:
+        return send_result({"status": "not healthy"}), 503
+    else:
+        return send_result({"status": "healthy"}), 200
 
 
 @healthz_blueprint.route('/livez', methods=['GET'])
@@ -26,7 +29,7 @@ def livez():
     """
     Liveness check endpoint that indicates if the app is running.
     """
-    return send_result("OK"), 200
+    return send_result({"status": "OK"}), 200
 
 
 @healthz_blueprint.route('/readyz', methods=['GET'])
@@ -35,10 +38,12 @@ def readyz():
     Readiness check endpoint that indicates if the app is ready to serve requests.
     """
     app = current_app._get_current_object()
-    if app.config.get('APP_READY'):
-        return send_result({"status": "ready"}), 200
-    else:
+    if not app.config.get('APP_READY'):
         return send_result({"status": "not ready"}), 503
+    elif not get_hsm().is_ready:
+        return send_result({"status": "not ready"}), 503
+    else:
+        return send_result({"status": "ready"}), 200
 
 
 @healthz_blueprint.route('/resolversz', methods=['GET'])
