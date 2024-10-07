@@ -73,7 +73,25 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     return url
 
 
+class SmartphoneOptions:
+    """
+    Options for the smartphone container.
+    """
+    ALLOW_ROLLOVER = "allow_rollover"
+    KEY_ALGORITHM = "key_algorithm"
+    HASH_ALGORITHM = "hash_algorithm"
+    ENCRYPT_ALGORITHM = "encrypt_algorithm"
+    ENCRYPT_MODE = "encrypt_mode"
+    FORCE_BIOMETRIC = "force_biometric"
+
+
 class SmartphoneContainer(TokenContainerClass):
+    options = {SmartphoneOptions.FORCE_BIOMETRIC: [True, False],
+               SmartphoneOptions.ALLOW_ROLLOVER: [True, False],
+               SmartphoneOptions.KEY_ALGORITHM: ["secp384r1", "secp256r1", "secp521r1"],
+               SmartphoneOptions.HASH_ALGORITHM: ["SHA256", "SHA384", "SHA512"],
+               SmartphoneOptions.ENCRYPT_ALGORITHM: ["AES"],
+               SmartphoneOptions.ENCRYPT_MODE: ["GCM", "CBC"]}
 
     def __init__(self, db_container):
         super().__init__(db_container)
@@ -88,6 +106,13 @@ class SmartphoneContainer(TokenContainerClass):
         Returns the type of the container class.
         """
         return "smartphone"
+
+    @classmethod
+    def get_class_options(cls):
+        """
+        Returns the options for the container class.
+        """
+        return cls.options
 
     @classmethod
     def get_supported_token_types(cls):
@@ -315,10 +340,9 @@ class SmartphoneContainer(TokenContainerClass):
                "key_algorithm": key_algorithm}
         return res
 
-    def finalize_sync(self, params, request):
+    def check_synchronization_challenge(self, params):
         """
-        Finalizes the synchronization of a container with the pi server.
-        Here the actual data exchange happens.
+        Checks if the one who is requesting the synchronization is allowed to receive these information.
 
         :param params: Dictionary with the parameters for the synchronization.
 
@@ -329,25 +353,12 @@ class SmartphoneContainer(TokenContainerClass):
                     "container_dict_client": {"serial": "SMPH0001", "type": "smartphone", ...}
                 }
 
-        :param request: The request object.
-
-        :return: Dictionary with the result of the synchronization.
-
-            ::
-                {
-                    "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
-                    "encryption_algorithm": "AES",
-                    "encryption_params": {"mode": "GCM", "init_vector": "init_vector", "tag": "tag"},
-                    "container_dict_server": <encrypted container dict from server>
-                }
+        :return: True if a valid challenge exists, raises a privacyIDEAError otherwise.
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
         pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
-        pub_key_encr_container_bytes = base64.urlsafe_b64decode(pub_key_encr_container_str)
-        pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
         container_client_str = getParam(params, "container_dict_client", optional=True)
-        container_client = json.loads(container_client_str) if container_client_str else {}
         scope = getParam(params, "scope", optional=True)
 
         try:
@@ -363,6 +374,28 @@ class SmartphoneContainer(TokenContainerClass):
         if not valid_challenge:
             raise privacyIDEAError('Could not verify signature!')
 
+        return valid_challenge
+
+    def encrypt_dict(self, container_dict: dict, params: dict):
+        """
+        Encrypt a container dictionary.
+
+        :param container_dict: The container dictionary to be encrypted.
+        :param params: Dictionary with the parameters for the encryption from the client.
+        :return: Dictionary with the encrypted container dictionary and further encryption parameters like
+
+            ::
+                {
+                    "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
+                    "encryption_algorithm": "AES",
+                    "encryption_params": {"mode": "GCM", "init_vector": "init_vector", "tag": "tag"},
+                    "container_dict_server": <encrypted container dict from server>
+                }
+        """
+        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
+        pub_key_encr_container_bytes = base64.urlsafe_b64decode(pub_key_encr_container_str)
+        pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
+
         # Generate encryption key pair for the server
         # container_info = self.get_container_info_dict()
         # key_algorithm = container_info.get("key_algorithm", "secp384r1")
@@ -373,10 +406,6 @@ class SmartphoneContainer(TokenContainerClass):
         container_info = self.get_container_info_dict()
         encrypt_algorithm = container_info.get("encrypt_algorithm", "SHA256")
         encrypt_mode = container_info.get("encrypt_mode", "ECB")
-
-        # Get container dict with token secrets
-        # TODO: Is this function applicable to all container types?
-        container_dict = self.synchronize_container_details(container_client, params, request)
 
         # encrypt container dict
         session_key = private_key_encr_server.exchange(pub_key_encr_container)
@@ -390,7 +419,7 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict, params: dict, request):
+    def synchronize_container_details(self, container_client: dict):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -409,9 +438,6 @@ class SmartphoneContainer(TokenContainerClass):
                     "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
                                 {"otp": ["1234", "9876"], "type": "hotp"}]
                 }
-
-        :param params: Further parameters like configuration from the policies.
-        :param request: The request object.
 
         :return: container dictionary like
 
@@ -448,25 +474,6 @@ class SmartphoneContainer(TokenContainerClass):
         missing_serials = list(set(server_token_serials).difference(set(client_serials)))
         same_serials = list(set(server_token_serials).intersection(set(client_serials)))
 
-        # Get info for missing serials: enroll url
-        add_list = []
-        request.all_data = params
-        for serial in missing_serials:
-            # TODO: Maybe we should do a rollover here (reinit with same serial)
-            # TODO: Check if there is a better approach.
-            #  Ensure that the enroll information for other tokens not using an url is also returned.
-            try:
-                enroll_url = regenerate_enroll_url(serial, request)
-            except Exception as e:
-                log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
-                          f"container {self.serial}: {e}")
-                continue
-            # token = get_tokens_from_serial_or_user(serial, None)[0]
-            # enroll_url = token.get_enroll_url(User(), params)
-            # if no enroll url is provided the token might be already enrolled
-            if enroll_url:
-                add_list.append(enroll_url)
-
         # Get info for same serials: token details
         update_dict = []
         for serial in same_serials:
@@ -477,7 +484,7 @@ class SmartphoneContainer(TokenContainerClass):
                 token_dict["otp"] = otp
             update_dict.append(token_dict)
 
-        container_dict["tokens"] = {"add": add_list, "update": update_dict}
+        container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
 
         return container_dict
 

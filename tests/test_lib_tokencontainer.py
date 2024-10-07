@@ -18,7 +18,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        add_multiple_tokens_to_container,
                                        add_token_to_container, create_endpoint_url, create_container_template,
                                        get_templates_by_query, get_template_obj, set_template_options,
-                                       create_container_template_from_db_object, compare_template_dicts)
+                                       create_container_template_from_db_object, compare_template_dicts,
+                                       set_default_template)
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
@@ -58,9 +59,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Init container with user and realm
         self.setUp_user_realms()
         serial, _ = init_container({"type": "generic",
-                                 "container_serial": self.generic_serial,
-                                 "user": "hans",
-                                 "realm": self.realm1})
+                                    "container_serial": self.generic_serial,
+                                    "user": "hans",
+                                    "realm": self.realm1})
         container = find_container_by_serial(serial)
         self.assertEqual(self.realm1, container.realms[0].name)
         self.assertEqual("hans", container.get_users()[0].login)
@@ -1086,179 +1087,173 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         self.assertRaises(ParameterError, smartphone.init_sync, {})
 
-    # TODO: Check if is is ok to check the token enroll policies in the lib layer and modify tests accordingly (move
-    #  these tests to api tests since a request object is required)
-    # def test_45_finalize_synchronize_smartphone_success(self):
-    #     # Registration
-    #     smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
-    #     smartphone = find_container_by_serial(smartphone_serial)
-    #
-    #     # Init sync
-    #     params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
-    #     init_result = smartphone.init_sync(params)
-    #     result_entries = init_result.keys()
-    #     self.assertIn("nonce", result_entries)
-    #     self.assertIn("time_stamp", result_entries)
-    #     self.assertIn("key_algorithm", result_entries)
-    #
-    #     # Mock smartphone
-    #     init_result.update({'container_sync_url': params["scope"]})
-    #     smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
-    #
-    #     # Finalize sync
-    #     smph_params.update({'scope': params["scope"]})
-    #     res = smartphone.finalize_sync(smph_params)
-    #     self.assertEqual("AES", res["encryption_algorithm"])
-    #     self.assertIn("encryption_params", res.keys())
-    #     self.assertIn("public_server_key", res.keys())
-    #     self.assertIn("container_dict_server", res.keys())
-    #
-    # def test_46_finalize_synchronize_smartphone_with_tokens(self):
-    #     # Registration
-    #     smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
-    #     smartphone = find_container_by_serial(smartphone_serial)
-    #
-    #     # tokens
-    #     hotp_server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
-    #     hotp_token = init_token({"genkey": "1", "type": "hotp"})
-    #     _, _, otp_dict = hotp_token.get_multi_otp(2)
-    #     hotp_otps = list(otp_dict["otp"].values())
-    #     totp_token = init_token({"genkey": "1", "type": "totp"})
-    #     # the function uses the local time, hence we have to pass the utc time
-    #     time_now = datetime.now(timezone.utc)
-    #     _, _, otp_dict = totp_token.get_multi_otp(2, curTime=time_now)
-    #     totp_otps = [otp["otpval"] for otp in list(otp_dict["otp"].values())]
-    #
-    #     smartphone.add_token(hotp_server_token)
-    #     smartphone.add_token(totp_token)
-    #
-    #     # Init sync
-    #     params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
-    #     init_result = smartphone.init_sync(params)
-    #     result_entries = init_result.keys()
-    #     self.assertIn("nonce", result_entries)
-    #     self.assertIn("time_stamp", result_entries)
-    #     self.assertIn("key_algorithm", result_entries)
-    #
-    #     # Mock smartphone
-    #     init_result.update({'container_sync_url': params["scope"]})
-    #     # In the first step the smph does not know the container. hence it only sends the token infos
-    #     random_otp = "123456"
-    #     client_container = {"tokens": [{"type": "hotp", "otp": hotp_otps}, {"type": "totp", "otp": totp_otps},
-    #                                    {"type": "hotp", "otp": [random_otp]}]}
-    #     smph_params, priv_enc_key_smph = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph,
-    #                                                                client_container)
-    #
-    #     # Finalize sync
-    #     smph_params.update({'scope': params["scope"]})
-    #     res = smartphone.finalize_sync(smph_params)
-    #     self.assertEqual("AES", res["encryption_algorithm"])
-    #     self.assertIn("encryption_params", res.keys())
-    #     self.assertIn("public_server_key", res.keys())
-    #     self.assertIn("container_dict_server", res.keys())
-    #
-    #     # check container dict results
-    #     container_dict_enc = res["container_dict_server"]
-    #     # decrypt container info
-    #     pub_key_server = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(res["public_server_key"]))
-    #     session_key = priv_enc_key_smph.exchange(pub_key_server)
-    #     container_dict_enc = decrypt_ecc(container_dict_enc, session_key, "", res["encryption_params"])
-    #     container_dict = json.loads(container_dict_enc)
-    #
-    #     # check entries
-    #     container_details = container_dict["container"]
-    #     self.assertIn("active", container_details["states"])
-    #     # tokens
-    #     token_details = container_dict["tokens"]
-    #     add_tokens = token_details["add"]
-    #     self.assertEqual(1, len(add_tokens))
-    #     self.assertIn(hotp_server_token.get_serial(), add_tokens[0])
-    #     update_tokens = token_details["update"]
-    #     self.assertEqual(1, len(update_tokens))
-    #     self.assertEqual(totp_token.get_serial(), update_tokens[0]["serial"])
-    #     self.assertTrue(update_tokens[0]["active"])
-    #
-    # def test_47_synchronize_without_registration(self):
-    #     smartphone_serial, _ = init_container({"type": "smartphone"})
-    #     smartphone = find_container_by_serial(smartphone_serial)
-    #
-    #     # Init sync
-    #     params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
-    #     init_result = smartphone.init_sync(params)
-    #
-    #     # Mock smartphone
-    #     init_result.update({'container_sync_url': params["scope"]})
-    #     _, priv_sig_key_smph = generate_keypair_ecc("secp384r1")
-    #     smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
-    #
-    #     # Finalize sync
-    #     smph_params.update({'scope': params["scope"]})
-    #     self.assertRaises(privacyIDEAError, smartphone.finalize_sync, smph_params)
-    #
-    # def test_48_synchronize_with_invalid_signature(self):
-    #     # Registration
-    #     smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
-    #     smartphone = find_container_by_serial(smartphone_serial)
-    #
-    #     # Init sync
-    #     params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
-    #     init_result = smartphone.init_sync(params)
-    #     result_entries = init_result.keys()
-    #     self.assertIn("nonce", result_entries)
-    #     self.assertIn("time_stamp", result_entries)
-    #     self.assertIn("key_algorithm", result_entries)
-    #
-    #     # Mock smartphone with another serial
-    #     init_result.update({'container_sync_url': params["scope"]})
-    #     smph_params, _ = self.mock_smartphone_sync(init_result, "SMPH9999", priv_sig_key_smph)
-    #
-    #     # Finalize sync
-    #     smph_params.update({'scope': params["scope"]})
-    #     self.assertRaises(privacyIDEAError, smartphone.finalize_sync, smph_params)
-    #
-    # def test_49_synchronize_container_details(self):
-    #     # Arrange
-    #     smartphone_serial, _ = init_container({"type": "smartphone"})
-    #     smartphone = find_container_by_serial(smartphone_serial)
-    #     hotp_token = init_token({"genkey": True, "type": "hotp"})
-    #     _, _, otp_dict = hotp_token.get_multi_otp(2)
-    #     hotp_otps = list(otp_dict["otp"].values())
-    #     totp_token = init_token({"genkey": True, "type": "totp"})
-    #
-    #     smartphone.add_token(hotp_token)
-    #     smartphone.add_token(totp_token)
-    #
-    #     # clients tokens with different properties
-    #     client_container = {"container": {"states": ["active"]},
-    #                         "tokens": [{"serial": totp_token.get_serial(), "active": True}, {"otp": hotp_otps}]}
-    #
-    #     # manipulate container and tokens in the meantime
-    #     smartphone.set_states(["lost"])
-    #     totp_token.enable(False)
-    #
-    #     # synchronize details
-    #     synced_container_details = smartphone.synchronize_container_details(client_container, {})
-    #
-    #     # check container details
-    #     self.assertEqual("lost", synced_container_details["container"]["states"][0])
-    #     # check tokens
-    #     add_tokens = synced_container_details["tokens"]["add"]
-    #     self.assertEqual(0, len(add_tokens))
-    #     updated_tokens = synced_container_details["tokens"]["update"]
-    #     for token in updated_tokens:
-    #         self.assertIn(token["serial"], [hotp_token.get_serial(), totp_token.get_serial()])
-    #         if token["serial"] == hotp_token.get_serial():
-    #             self.assertTrue(token["active"])
-    #         elif token["serial"] == totp_token.get_serial():
-    #             self.assertFalse(token["active"])
-    #
-    #     # Pass empty client container
-    #     synced_container_details = smartphone.synchronize_container_details({}, {})
-    #     # check tokens
-    #     add_tokens = synced_container_details["tokens"]["add"]
-    #     self.assertEqual(2, len(add_tokens))
+    def test_45_check_synchronization_challenge_smartphone_success(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
 
-    def test_50_create_delete_template_success(self):
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        allowed = smartphone.check_synchronization_challenge(smph_params)
+        self.assertTrue(allowed)
+
+    def test_46_finalize_synchronize_smartphone_with_tokens(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # tokens
+        hotp_server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        hotp_token = init_token({"genkey": "1", "type": "hotp"})
+        _, _, otp_dict = hotp_token.get_multi_otp(2)
+        hotp_otps = list(otp_dict["otp"].values())
+        totp_token = init_token({"genkey": "1", "type": "totp"})
+        # the function uses the local time, hence we have to pass the utc time
+        time_now = datetime.now(timezone.utc)
+        _, _, otp_dict = totp_token.get_multi_otp(2, curTime=time_now)
+        totp_otps = [otp["otpval"] for otp in list(otp_dict["otp"].values())]
+
+        smartphone.add_token(hotp_server_token)
+        smartphone.add_token(totp_token)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        # In the first step the smph does not know the container. hence it only sends the token infos
+        random_otp = "123456"
+        client_container = {"tokens": [{"type": "hotp", "otp": hotp_otps}, {"type": "totp", "otp": totp_otps},
+                                       {"type": "hotp", "otp": [random_otp]}]}
+        smph_params, priv_enc_key_smph = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph,
+                                                                   client_container)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        allowed = smartphone.check_synchronization_challenge(smph_params)
+        self.assertTrue(allowed)
+        container_dict = smartphone.synchronize_container_details(client_container)
+
+        # check entries
+        container_details = container_dict["container"]
+        self.assertIn("active", container_details["states"])
+        # tokens
+        token_details = container_dict["tokens"]
+        add_tokens = token_details["add"]
+        self.assertEqual(1, len(add_tokens))
+        self.assertIn(hotp_server_token.get_serial(), add_tokens[0])
+        update_tokens = token_details["update"]
+        self.assertEqual(1, len(update_tokens))
+        self.assertEqual(totp_token.get_serial(), update_tokens[0]["serial"])
+        self.assertTrue(update_tokens[0]["active"])
+
+        # Encrypt container dict
+        res = smartphone.encrypt_dict(container_dict, smph_params)
+        self.assertIn("encryption_algorithm", res.keys())
+        self.assertIn("encryption_params", res.keys())
+        self.assertIn("container_dict_server", res.keys())
+        self.assertIn("public_server_key", res.keys())
+
+    def test_47_synchronize_without_registration(self):
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+
+        # Mock smartphone
+        init_result.update({'container_sync_url': params["scope"]})
+        _, priv_sig_key_smph = generate_keypair_ecc("secp384r1")
+        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        self.assertRaises(privacyIDEAError, smartphone.check_synchronization_challenge, smph_params)
+
+    def test_48_synchronize_with_invalid_signature(self):
+        # Registration
+        smartphone_serial, priv_sig_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Init sync
+        params = {"scope": f"container/sync/{smartphone_serial}/finalize"}
+        init_result = smartphone.init_sync(params)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("key_algorithm", result_entries)
+
+        # Mock smartphone with another serial
+        init_result.update({'container_sync_url': params["scope"]})
+        smph_params, _ = self.mock_smartphone_sync(init_result, "SMPH9999", priv_sig_key_smph)
+
+        # Finalize sync
+        smph_params.update({'scope': params["scope"]})
+        self.assertRaises(privacyIDEAError, smartphone.check_synchronization_challenge, smph_params)
+
+    def test_49_synchronize_container_details(self):
+        # Arrange
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        hotp_token = init_token({"genkey": True, "type": "hotp"})
+        _, _, otp_dict = hotp_token.get_multi_otp(2)
+        hotp_otps = list(otp_dict["otp"].values())
+        totp_token = init_token({"genkey": True, "type": "totp"})
+
+        smartphone.add_token(hotp_token)
+        smartphone.add_token(totp_token)
+
+        # clients tokens with different properties
+        client_container = {"container": {"states": ["active"]},
+                            "tokens": [{"serial": totp_token.get_serial(), "active": True}, {"otp": hotp_otps}]}
+
+        # manipulate container and tokens in the meantime
+        smartphone.set_states(["lost"])
+        totp_token.enable(False)
+
+        # synchronize details
+        synced_container_details = smartphone.synchronize_container_details(client_container)
+
+        # check container details
+        self.assertEqual("lost", synced_container_details["container"]["states"][0])
+        # check tokens
+        add_tokens = synced_container_details["tokens"]["add"]
+        self.assertEqual(0, len(add_tokens))
+        updated_tokens = synced_container_details["tokens"]["update"]
+        for token in updated_tokens:
+            self.assertIn(token["serial"], [hotp_token.get_serial(), totp_token.get_serial()])
+            if token["serial"] == hotp_token.get_serial():
+                self.assertTrue(token["active"])
+            elif token["serial"] == totp_token.get_serial():
+                self.assertFalse(token["active"])
+
+        # Pass empty client container
+        synced_container_details = smartphone.synchronize_container_details({})
+        # check tokens
+        add_tokens = synced_container_details["tokens"]["add"]
+        self.assertEqual(2, len(add_tokens))
+
+
+class TokenContainerTemplateTestCase(MyTestCase):
+    def test_01_create_delete_template_success(self):
         template_name = "test"
         template_id = create_container_template(container_type="generic",
                                                 template_name=template_name,
@@ -1268,7 +1263,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         template = get_template_obj(template_name)
         template.delete()
 
-    def test_51_create_template_fail(self):
+    def test_02_create_template_fail(self):
         template_name = "test"
 
         # wrong options type input
@@ -1276,14 +1271,55 @@ class TokenContainerManagementTestCase(MyTestCase):
                           template_name=template_name,
                           options="random")
 
-    def test_52_set_template_options_success(self):
+    def test_03_get_class_type(self):
+        # smartphone
+        create_container_template(container_type="smartphone",
+                                  template_name="smph",
+                                  options={"tokens": [{"type": "hotp"}]})
+        smph = get_template_obj("smph")
+        self.assertEqual("smartphone", smph.get_class_type())
+        smph.delete()
+
+        # generic
+        create_container_template(container_type="generic",
+                                  template_name="generic",
+                                  options={"tokens": [{"type": "hotp"}]})
+        generic = get_template_obj("generic")
+        self.assertEqual("generic", generic.get_class_type())
+        generic.delete()
+
+        # yubikey
+        create_container_template(container_type="yubikey",
+                                  template_name="yubikey",
+                                  options={"tokens": [{"type": "hotp"}]})
+        yubikey = get_template_obj("yubikey")
+        self.assertEqual("yubikey", yubikey.get_class_type())
+        yubikey.delete()
+
+    def test_04_get_and_set_name(self):
+        initial_name = "test"
+        create_container_template(container_type="generic",
+                                  template_name=initial_name,
+                                  options={"tokens": [{"type": "hotp"}]})
+        template = get_template_obj("test")
+        # Check initial name
+        self.assertEqual(initial_name, template.name)
+
+        # change name
+        template.name = "new_name"
+        self.assertEqual("new_name", template.name)
+
+        template.delete()
+
+    def test_05_set_template_options_success(self):
         template_name = "test"
         template_id = create_container_template(container_type="smartphone",
                                                 template_name=template_name,
                                                 options={"tokens": [{"type": "hotp"}]})
 
         template_options = {
-            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}]}
+            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}],
+            "allow_rollover": True}
 
         template_id_options = set_template_options(template_name, template_options)
         self.assertEqual(template_id, template_id_options)
@@ -1295,7 +1331,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         template = get_template_obj(template_name)
         template.delete()
 
-    def test_53_set_template_options_fails(self):
+    def test_06_set_template_options_fails(self):
         template_name = "test"
         initial_options = {"tokens": [{"type": "hotp"}]}
 
@@ -1335,7 +1371,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         template = get_template_obj(template_name)
         template.delete()
 
-    def test_54_create_container_template_from_db_object_success(self):
+    def test_07_create_container_template_from_db_object_success(self):
         # Generic
         template_db = TokenContainerTemplate(name="test", container_type="generic", options="")
         template_db.save()
@@ -1357,7 +1393,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsInstance(template, YubikeyContainerTemplate)
         template.delete()
 
-    def test_55_create_container_template_from_db_object_fails(self):
+    def test_08_create_container_template_from_db_object_fails(self):
         # Invalid type
         template_db = TokenContainerTemplate(name="test", container_type="random", options="")
         template_db.save()
@@ -1365,7 +1401,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsNone(template)
         template_db.delete()
 
-    def test_56_get_template_obj_success(self):
+    def test_09_get_template_obj_success(self):
         template_name = "test"
         create_container_template(container_type="smartphone",
                                   template_name=template_name,
@@ -1377,13 +1413,14 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         template.delete()
 
-    def test_57_get_template_obj_fail(self):
+    def test_10_get_template_obj_fail(self):
         # Pass non-existing template name
         self.assertRaises(ResourceNotFoundError, get_template_obj, "non-existing")
 
-    def test_58_get_template_by_query(self):
+    def test_11_get_template_by_query(self):
         create_container_template(container_type="smartphone",
                                   template_name="smph",
+                                  default=True,
                                   options={"tokens": [{"type": "totp"}]})
         create_container_template(container_type="generic",
                                   template_name="generic",
@@ -1409,13 +1446,19 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(templates_res["templates"]))
         self.assertEqual("generic", templates_res["templates"][0]["name"])
 
+        # Filter by default
+        templates_res = get_templates_by_query(default=True)
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(1, len(templates_res["templates"]))
+        self.assertEqual("smph", templates_res["templates"][0]["name"])
+
         # Clean up
         templates_res = get_templates_by_query()
         for template in templates_res["templates"]:
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
-    def test_59_get_templates_by_query_pagination(self):
+    def test_12_get_templates_by_query_pagination(self):
         # Create templates
         for i in range(20):
             create_container_template(container_type="smartphone",
@@ -1436,7 +1479,7 @@ class TokenContainerManagementTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
-    def test_60_compare_templates(self):
+    def test_13_compare_templates(self):
         # same templates but different order of entries
         template_a = {"template_options": {"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},
                                                       {"type": "totp", "genkey": True, "hashlib": "sha256"}]}}
@@ -1458,3 +1501,84 @@ class TokenContainerManagementTestCase(MyTestCase):
         equal = compare_template_dicts(template_b, template_a)
         self.assertFalse(equal)
 
+    def test_14_set_default_template(self):
+        # Set default template
+        template1_name = "test"
+        create_container_template(container_type="smartphone",
+                                  template_name=template1_name,
+                                  options={"tokens": [{"type": "hotp"}]})
+        template1 = get_template_obj(template1_name)
+
+        set_default_template(template1_name)
+        # Check if default template is set
+        self.assertTrue(template1.default)
+
+        # Set another template from the same type as default
+        template2_name = "test2"
+        create_container_template(container_type="smartphone",
+                                  template_name=template2_name,
+                                  options={"tokens": [{"type": "hotp"}]})
+        template2 = get_template_obj(template2_name)
+
+        set_default_template(template2_name)
+        # Check if default template is set
+        self.assertTrue(template2.default)
+        self.assertFalse(template1.default)
+
+        # Set default template for another type
+        template3_name = "test3"
+        create_container_template(container_type="generic",
+                                  template_name=template3_name,
+                                  options={"tokens": [{"type": "hotp"}]})
+        template3 = get_template_obj(template3_name)
+
+        set_default_template(template3_name)
+        # Check if default template is set
+        self.assertTrue(template2.default)
+        self.assertFalse(template1.default)
+        self.assertTrue(template3.default)
+
+        # Clean up
+        template1.delete()
+        template2.delete()
+        template3.delete()
+
+    def test_15_create_container_with_template_success(self):
+        # Create template
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="generic",
+                                  template_name="test",
+                                  options=template_options)
+
+        # Create container with template
+        container_params = {"type": "generic", "template": {"name": "test", "container_type": "generic",
+                                                            "template_options": template_options}}
+        container_serial, template_tokens = init_container(container_params)
+        self.assertEqual(template_options["tokens"], template_tokens)
+
+        # Delete template
+        template = get_template_obj("test")
+        template.delete()
+        container = find_container_by_serial(container_serial)
+        self.assertIsNone(container.template)
+
+        # Clean up
+        container.delete()
+
+    def test_16_create_container_with_template_fail(self):
+        # template and container type differ: container is created but not with template options
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="generic",
+                                  template_name="test",
+                                  options=template_options)
+
+        container_params = {"type": "smartphone", "template": {"name": "test", "container_type": "generic",
+                                                               "template_options": template_options}}
+        container_serial, template_tokens = init_container(container_params)
+        container = find_container_by_serial(container_serial)
+        self.assertEqual([], template_tokens)
+        self.assertIsNone(container.template)
+
+        # Clean up
+        container.delete()
+        get_template_obj("test").delete()

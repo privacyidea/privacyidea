@@ -23,30 +23,18 @@ from privacyidea.lib.error import ParameterError
 
 
 class TemplateOptionsBase:
-    TOKEN_COUNT = "token_count"
-    TOKEN_TYPES = "token_types"
     TOKENS = "tokens"
     USER_MODIFIABLE = "user_modifiable"
 
 
 class ContainerTemplateBase:
     template_option_values = {
-        TemplateOptionsBase.TOKEN_COUNT: int,
-        TemplateOptionsBase.TOKEN_TYPES: ["any"],
-        TemplateOptionsBase.USER_MODIFIABLE: bool
+        TemplateOptionsBase.TOKENS: [],
+        TemplateOptionsBase.USER_MODIFIABLE: [True, False]
     }
 
     def __init__(self, db_template):
         self._db_template = db_template
-
-    def get_template_options(self):
-        return self.template_option_values.keys()
-
-    def get_template_option_value(self, option):
-        return self.template_option_values[option]
-
-    def get_type_specific_options(self):
-        return []
 
     @classmethod
     def get_class_type(cls):
@@ -75,10 +63,17 @@ class ContainerTemplateBase:
     def container_type(self):
         return self._db_template.container_type
 
-    @container_type.setter
-    def container_type(self, value):
-        self._db_template.type = value
-        self._db_template.save()
+    @classmethod
+    def get_template_class_options(cls):
+        return cls.template_option_values
+
+    @classmethod
+    def get_template_option_keys(cls):
+        return cls.template_option_values.keys()
+
+    @classmethod
+    def get_type_specific_options(cls):
+        return []
 
     @property
     def template_options(self):
@@ -88,6 +83,8 @@ class ContainerTemplateBase:
     def template_options(self, options):
         if not isinstance(options, dict):
             raise ParameterError("options must be a dict")
+        validated_options = {}
+        input_option_keys = list(options.keys())
 
         # Validates token types in options
         supported_token_types = self.get_supported_token_types()
@@ -96,9 +93,20 @@ class ContainerTemplateBase:
             token_type = token.get("type", None)
             if token.get("type", None) not in supported_token_types:
                 raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
+        validated_options["tokens"] = tokens
+        input_option_keys.pop(input_option_keys.index("tokens"))
 
-        options = json.dumps(options)
-        self._db_template.options = options
+        # Validates other options
+        allowed_options = self.get_template_class_options()
+        for option in input_option_keys:
+            if option not in allowed_options.keys():
+                raise ParameterError(f"Unsupported option {option} for {self.get_class_type()} templates!")
+            if options[option] not in allowed_options[option]:
+                raise ParameterError(
+                    f"Unsupported value {options[option]} for option {option} in {self.get_class_type()} templates!")
+            validated_options[option] = options[option]
+
+        self._db_template.options = json.dumps(validated_options)
         self._db_template.save()
 
     @property

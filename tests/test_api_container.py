@@ -1838,9 +1838,9 @@ class APIContainerTemplate(MyApiTestCase):
     def test_06_create_container_with_template_success(self):
         # Create a template
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
-        create_container_template(container_type=template_params["type"],
+        create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
@@ -1852,9 +1852,8 @@ class APIContainerTemplate(MyApiTestCase):
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
         self.assertEqual(1, len(tokens))
-        container_info = container.get_container_info_dict()
-        self.assertIn("template", container_info.keys())
-        self.assertEqual("test", container_info["template"])
+        container_template = container.template
+        self.assertEqual(template_params["name"], container_template.name)
 
         template = get_template_obj(template_params["name"])
         template.delete()
@@ -1862,7 +1861,7 @@ class APIContainerTemplate(MyApiTestCase):
     def test_07_create_container_with_template_no_tokens(self):
         # Create a template with no tokens
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {}}
 
         request_params = json.dumps({"type": "smartphone", "template": template_params})
@@ -1876,7 +1875,7 @@ class APIContainerTemplate(MyApiTestCase):
 
         # Create a template without template options
         template_params = {"name": "test",
-                           "type": "smartphone"}
+                           "container_type": "smartphone"}
 
         request_params = json.dumps({"type": "smartphone", "template": template_params})
         result = self.request_assert_success('/container/init',
@@ -1890,9 +1889,9 @@ class APIContainerTemplate(MyApiTestCase):
     def test_08_create_container_with_template_missing_policies(self):
         # Create a template
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
-        create_container_template(container_type=template_params["type"],
+        create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
@@ -1909,7 +1908,7 @@ class APIContainerTemplate(MyApiTestCase):
     def test_09_create_container_with_template_push(self):
         # PUSH (poll-only)
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "push", "genkey": True}]}}
 
         set_policy("push_1", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
@@ -1938,7 +1937,7 @@ class APIContainerTemplate(MyApiTestCase):
         init_token({"genkey": "1", "type": "hotp"}, user=hans)
 
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
         request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
                                      "template": template_params})
@@ -1972,7 +1971,7 @@ class APIContainerTemplate(MyApiTestCase):
 
         # pin according to the policies
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1234"}]}}
         request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
                                      "template": template_params})
@@ -1987,7 +1986,7 @@ class APIContainerTemplate(MyApiTestCase):
 
         # pin too short
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1"}]}}
         request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
                                      "template": template_params})
@@ -2001,3 +2000,25 @@ class APIContainerTemplate(MyApiTestCase):
 
         delete_policy("otp_pin")
         delete_policy("admin")
+
+    def test_12_get_template_options(self):
+        result = self.request_assert_success('/container/template/options', {}, self.at, 'GET')
+        list_keys = list(result["result"]["value"].keys())
+
+        generic_keys = list(result["result"]["value"]["generic"].keys())
+        self.assertIn("generic", list_keys)
+        self.assertIn("tokens", generic_keys)
+        self.assertIn("user_modifiable", generic_keys)
+
+        smph_keys = list(result["result"]["value"]["smartphone"].keys())
+        self.assertIn("smartphone", list_keys)
+        self.assertIn("tokens", smph_keys)
+        self.assertIn("user_modifiable", smph_keys)
+        self.assertIn("allow_rollover", smph_keys)
+        self.assertIn("force_biometric", smph_keys)
+
+        yubikey_keys = list(result["result"]["value"]["yubikey"].keys())
+        self.assertIn("yubikey", list_keys)
+        self.assertIn("tokens", smph_keys)
+        self.assertIn("user_modifiable", smph_keys)
+        self.assertIn("pin_policy", yubikey_keys)

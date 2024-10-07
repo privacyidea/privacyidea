@@ -32,17 +32,17 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        delete_container_by_serial, assign_user, unassign_user, add_token_to_container,
                                        add_multiple_tokens_to_container, remove_token_from_container,
                                        remove_multiple_tokens_from_container,
-                                       create_container_dict, create_endpoint_url, get_container_classes,
+                                       create_container_dict, create_endpoint_url,
                                        create_container_template,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
-                                       set_template_options, set_default_template)
+                                       set_template_options, set_default_template, get_container_template_classes)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
+from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param, User
-from privacyidea.models import TokenContainerTemplate
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -709,6 +709,8 @@ def sync_finalize(container_serial: str):
         to be updated.
     """
     params = request.all_data
+    container_client_str = getParam(params, "container_dict_client", optional=True)
+    container_client = json.loads(container_client_str) if container_client_str else {}
 
     # Get synchronization url for the second step
     server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
@@ -724,9 +726,23 @@ def sync_finalize(container_serial: str):
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
     params.update({'scope': synchronize_url})
 
-    # 2nd synchronize step
+    # 2nd synchronization step: Validate challenge and get container diff between client and server
     container = find_container_by_serial(container_serial)
-    res = container.finalize_sync(params, request)
+    container.check_synchronization_challenge(params)
+    container_dict = container.synchronize_container_details(container_client)
+
+    # Get enroll information for missing tokens
+    enroll_info = []
+    for serial in container_dict["tokens"]["add"]:
+        try:
+            enroll_info.append(regenerate_enroll_url(serial, request, g))
+        except Exception as e:
+            log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
+                      f"container {container_serial}: {e}")
+    container_dict["tokens"]["add"] = enroll_info
+
+    # Optionally encrypt dict
+    res = container.encrypt_dict(container_dict, params)
     res.update({'container_sync_url': synchronize_url})
 
     # Update last sync time
@@ -740,7 +756,26 @@ def sync_finalize(container_serial: str):
 @log_with(log)
 def get_template():
     """
-    Get all container templates
+    Get all container templates filtered by the given parameters.
+
+    :jsonparam name: Name of the template, optional
+    :jsonparam container_type: Type of the container, optional
+    :jsonparam page: Number of the page (starts with 1), optional
+    :jsonparam pagesize: Number of templates displayed per page, optional
+
+    :return: Dictionary with at least an entry "templates" and further entries if pagination is used.
+
+        ::
+            {
+                "templates": [{"name": "template1", "container_type": "smartphone",
+                               "template_options": {"tokens": [{"type": "hotp", "genkey": True}, ...]}, ...},
+                               {"name": "template2", "container_type": "yubikey", ...},
+                               ...],
+                "count": 25,
+                "current": 1,
+                "prev": null,
+                "next": 2,
+            }
     """
     params = request.all_data
     name = getParam(params, "name", optional=True)
@@ -753,26 +788,33 @@ def get_template():
     return send_result(templates_dict)
 
 
-@container_blueprint.route('<string:container_type>/template/options', methods=['GET'])
+@container_blueprint.route('template/options', methods=['GET'])
 @log_with(log)
-def get_template_options(container_type):
+def get_template_options():
     """
-    Get the options for the given container type
+    Get the template options for all container types
     """
-    classes = get_container_classes()
-    if classes and container_type.lower() in classes.keys():
-        g.audit_object.log({"success": True})
-        return send_result(classes[container_type.lower()].get_container_policy_info())
-    else:
-        raise ParameterError("Invalid container type")
+    template_options = {}
+    template_classes = get_container_template_classes()
+
+    for container_type in template_classes:
+        template_options[container_type] = template_classes[container_type].get_template_class_options()
+
+    return send_result(template_options)
 
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
-    creates a template for the given name. If a template with this name already exists, the template options will be
+    Creates a template for the given name. If a template with this name already exists, the template options will be
     updated.
+
+    :param container_type: Type of the container
+    :param template_name: Name of the template
+    :jsonparam template_options: Dictionary with the template options
+    :jsonparam default: Set this template as default for the container type
+    :return: ID of the created template or the template that was updated
     """
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}
@@ -789,6 +831,7 @@ def create_template_with_name(container_type, template_name):
     if len(existing_templates) > 0:
         # update existing template
         template_id = set_template_options(template_name, template_options)
+        log.info(f"A template with the name '{template_name}' already exists. Updating template options.")
     else:
         # create new template
         template_id = create_container_template(container_type, template_name, template_options, default_template)

@@ -2906,7 +2906,7 @@ def challenge_text_replace(message, user, token_obj):
     return message
 
 
-def regenerate_enroll_url(serial, request):
+def regenerate_enroll_url(serial, request, g):
     """
     Returns the enroll URL for a token with the given serial number that is already enrolled.
     Loads the configurations from the policies.
@@ -2914,6 +2914,7 @@ def regenerate_enroll_url(serial, request):
 
     :param serial: The serial number of the token
     :param request: The request object
+    :param g: The g object
     :return: The enroll URL or None
     """
     token = get_one_token(serial=serial)
@@ -2921,11 +2922,11 @@ def regenerate_enroll_url(serial, request):
     request.User = token_owner
     request.all_data["serial"] = serial
     request.all_data["type"] = token.get_type()
+    g.serial = serial
 
     # Get policies for the token
     from privacyidea.api.lib.prepolicy import (verify_enrollment, required_piv_attestation, pushtoken_add_config,
-                                               tantoken_count, sms_identifiers, papertoken_count, init_token_defaults,
-                                               init_tokenlabel)
+                                               tantoken_count, sms_identifiers, papertoken_count, init_tokenlabel)
     try:
         verify_enrollment(request)
         required_piv_attestation(request)
@@ -2933,7 +2934,6 @@ def regenerate_enroll_url(serial, request):
         tantoken_count(request, None)
         sms_identifiers(request, None)
         papertoken_count(request, None)
-        init_token_defaults(request, None)
         init_tokenlabel(request, None)
     except PolicyError as ex:
         log.warning(f"{ex}")

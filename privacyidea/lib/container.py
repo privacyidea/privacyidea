@@ -385,8 +385,8 @@ def init_container(params):
     # Template handling
     template = params.get("template") or {}
     template_tokens = []
-    # Check if a template was used
-    if template.get("name"):
+    # Check if a template of a valid type is used
+    if template.get("container_type") == ctype:
         # check if the template was modified, otherwise save the template name
         stored_templates = get_templates_by_query(name=template["name"])["templates"]
         if len(stored_templates) > 0:
@@ -394,7 +394,6 @@ def init_container(params):
             original_template_used = compare_template_dicts(template, original_template)
             if original_template_used:
                 container.template = original_template["name"]
-                container.add_container_info("template", template["name"])
         # create tokens from template
         template_tokens = template.get("template_options", {}).get("tokens", [])
 
@@ -435,7 +434,6 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         container_owner = User()
 
     for token_info in template_tokens:
-        print(token_info.get("type"))
 
         user = None
         if token_info.get("user"):
@@ -1175,11 +1173,11 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
 
 def get_template_obj(template_name: str):
     """
-    Returns the template object for the given template name.
+    Returns the template class object for the given template name.
     Raises a ResourceNotFoundError if no template with this name exists.
 
     :param template_name: The name of the template
-    :return: The template object
+    :return: The template class object
     """
     db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
     if not db_template:

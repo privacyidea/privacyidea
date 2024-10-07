@@ -42,6 +42,7 @@ log = logging.getLogger(__name__)
 
 
 class TokenContainerClass:
+    options = {}
 
     @log_with(log)
     def __init__(self, db_container):
@@ -54,6 +55,14 @@ class TokenContainerClass:
                 token_list.append(token_object)
 
         self.tokens = token_list
+        self.options = {}
+
+    @classmethod
+    def get_class_options(cls):
+        """
+        Returns the options for the container class.
+        """
+        return cls.options
 
     @property
     def serial(self):
@@ -484,12 +493,11 @@ class TokenContainerClass:
         """
         return {}
 
-    def finalize_sync(self, params):
+    def check_synchronization_challenge(self, params):
         """
-        Finalizes the synchronization of a container with the pi server.
-        Here the actual data exchange happens.
+        Checks if the one who is requesting the synchronization is allowed to receive these information.
         """
-        return {}
+        return True
 
     def create_challenge(self, params):
         """
@@ -668,3 +676,10 @@ class TokenContainerClass:
         Returns a description of the container class.
         """
         return _("General purpose container that can hold any type and any number of token.")
+
+    def encrypt_dict(self, container_dict: dict, params: dict):
+        """
+        Encrypts a dictionary with the public key of the container.
+        It is not supported by all container classes. Classes not supporting the encryption return the original data.
+        """
+        return container_dict
