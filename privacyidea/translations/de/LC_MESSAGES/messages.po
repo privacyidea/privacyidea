@@ -1010,7 +1010,7 @@ msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
 msgstr ""
-"Wenn einem Benutzer kein Token zugewiesen ist, werden sein Passwort gegen "
+"Wenn einem Benutzer kein Token zugewiesen ist, wird sein Passwort gegen "
 "die hier eingestellte RADIUS-Server-Konfiguration geprüft."
 
 #: lib/policy.py:2476
