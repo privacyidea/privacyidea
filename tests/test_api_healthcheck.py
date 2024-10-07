@@ -28,7 +28,8 @@ class APIHealthcheckTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertIsNotNone(result, "Expected 'result' in response JSON, but got None")
             self.assertIn("value", result, f"Expected 'value' key in result, got {result}")
-            self.assertEqual(result.get("value"), "OK", f"Expected 'OK' as value, got {result.get('value')}")
+            self.assertEqual(result.get("value"), "OK",
+                             f"Expected 'OK' as value, got {result.get('value')}")
 
     def test_readyz(self):
         def check_readyz_status(expected_status_code, expected_ready_status, app_ready_value):
@@ -50,11 +51,13 @@ class APIHealthcheckTestCase(MyApiTestCase):
     def test_resolversz(self):
         def check_resolvers(res, expected_status_code, expected_status, ldap_expected_status,
                             sql_expected_status):
-            assert res.status_code == expected_status_code, f"Expected status code {expected_status_code}, got {res.status_code}"
+            assert res.status_code == expected_status_code, (f"Expected status code {expected_status_code}, "
+                                                             f"got {res.status_code}")
             result = res.json.get("result")
             assert result is not None, "Expected JSON result, got None"
             assert result.get("value").get(
-                "status") == expected_status, f"Expected '{expected_status}' status, got {result.get('value').get('status')}"
+                "status") == expected_status, (f"Expected '{expected_status}' status, "
+                                               f"got {result.get('value').get('status')}")
 
             ldap_resolvers = result.get("value").get("ldapresolvers")
             sql_resolvers = result.get("value").get("sqlresolvers")
@@ -62,16 +65,18 @@ class APIHealthcheckTestCase(MyApiTestCase):
             assert ldap_resolvers is not None, "Expected 'ldapresolvers' in result, but got None"
             assert sql_resolvers is not None, "Expected 'sqlresolvers' in result, but got None"
 
-            assert all(status == ldap_expected_status for status in
-                       ldap_resolvers.values()), f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
-            assert all(status == sql_expected_status for status in
-                       sql_resolvers.values()), f"At least one SQL resolver does not have '{sql_expected_status}' status."
+            assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
+                f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
+            assert all(status == sql_expected_status for status in sql_resolvers.values()), \
+                f"At least one SQL resolver does not have '{sql_expected_status}' status."
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
 
         with self.app.test_request_context('/healthz/resolversz', method='GET'):
             res = self.app.full_dispatch_request()
-            check_resolvers(res, 200, "OK", ldap_expected_status="fail", sql_expected_status="fail")
+            check_resolvers(res, 200, "OK",
+                            ldap_expected_status="fail",
+                            sql_expected_status="fail")
 
             ldapr = save_resolver({
                 'LDAPURI': 'ldap://localhost',
@@ -116,4 +121,6 @@ class APIHealthcheckTestCase(MyApiTestCase):
             self.assertGreater(sqlr, 0, "SQL resolver creation failed.")
 
             res = self.app.full_dispatch_request()
-            check_resolvers(res, 200, "OK", ldap_expected_status="OK", sql_expected_status="OK")
+            check_resolvers(res, 200, "OK",
+                            ldap_expected_status="OK",
+                            sql_expected_status="OK")
