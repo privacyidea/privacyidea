@@ -4,6 +4,7 @@ import json
 import datetime
 import codecs
 from mock import mock
+import pytest
 import requests
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
@@ -1322,6 +1323,12 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("dumm01")
 
         # Load GPG encrypted OATH CSV
+        # Skip if the gpg-binary isn't installed
+        try:
+            import gnupg
+            gnupg.GPG()
+        except OSError as _e:
+            pytest.skip("No gpg binary found.")
         with self.app.test_request_context('/token/load/import.oath.asc',
                                            method="POST",
                                            data={"type": "oathcsv",

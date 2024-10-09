@@ -1,7 +1,0 @@
--c ../requirements.txt
-pytest
-responses
-mock
-pytest-cov
-testfixtures
-pyparsing
