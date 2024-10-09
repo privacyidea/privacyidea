@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, request
+from flask import Flask
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -134,7 +134,7 @@ def create_app(config_name="development",
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
     app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
 
-    app.register_blueprint(validate_blueprint)
+    app.register_blueprint(validate_blueprint, url_prefix='/validate')
     app.register_blueprint(token_blueprint, url_prefix='/token')
     app.register_blueprint(system_blueprint, url_prefix='/system')
     app.register_blueprint(resolver_blueprint, url_prefix='/resolver')
