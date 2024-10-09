@@ -36,6 +36,7 @@ import sqlalchemy as sa
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
+from privacyidea.api.healthcheck import healthz_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -129,6 +130,7 @@ def create_app(config_name="development",
               "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
+    app.config['APP_READY'] = False
     if config_name:
         app.config.from_object(config[config_name])
 
@@ -184,6 +186,7 @@ def create_app(config_name="development",
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
     app.register_blueprint(container_blueprint, url_prefix='/container')
+    app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
 
     # Set up Plug-Ins
     db.init_app(app)
@@ -293,5 +296,6 @@ def create_app(config_name="development",
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
+    app.config['APP_READY'] = True
 
     return app
