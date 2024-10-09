@@ -1643,10 +1643,8 @@ def u2ftoken_allowed(request, action):
             .action_values(unique=False)
 
         if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
-            log.warning("The U2F device {0!s} is not "
-                        "allowed to be registered due to policy "
-                        "restriction".format(
-                serial))
+            log.warning("The U2F device {0!s} is not allowed to be registered due to policy restriction"
+                        .format(serial))
             raise PolicyError("The U2F device is not allowed "
                               "to be registered due to policy "
                               "restriction.")
