@@ -571,7 +571,7 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(IPNetwork(proxynet) for proxynet in p_list)
+                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
             else:
                 # No mapping client, so we take the whole network
                 proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))

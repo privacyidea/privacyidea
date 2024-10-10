@@ -6,7 +6,6 @@ import passlib
 
 from privacyidea.lib.user import User
 from .base import MyApiTestCase
-import json
 from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
 from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
@@ -133,7 +132,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Get the token
         with self.app.test_request_context('/machine/token',
                                            method='GET',
-                                           data={"serial": serial},
+                                           query_string={"serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -672,7 +671,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Get the token
         with self.app.test_request_context('/machine/token',
                                            method='GET',
-                                           data={"serial": serial},
+                                           query_string={"serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

@@ -44,11 +44,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''This file is part of the privacyidea service
+"""
+This file is part of the privacyidea service
 It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
-'''
-import hmac, hashlib
+"""
+import hmac
+import hashlib
 import defusedxml.ElementTree as etree
 import re
 import binascii
@@ -617,8 +619,6 @@ class GPGImport(object):
             self.private_keys = self.gpg.list_keys(True)
         else:
             log.warning("Directory {} does not exists!".format(self.gnupg_home))
-
-
 
     def get_publickeys(self):
         """

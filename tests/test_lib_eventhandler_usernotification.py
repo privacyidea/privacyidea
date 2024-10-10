@@ -9,10 +9,9 @@ from datetime import datetime, timedelta
 
 import mock
 from dateutil.tz import tzlocal
-from flask import Request
+from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.app import PiResponseClass as Response
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.eventhandler.usernotification import (UserNotificationEventHandler,
                                                            NOTIFY_TYPE)
@@ -230,9 +229,9 @@ class UserNotificationTestCase(MyTestCase):
     def test_05_check_conditions(self):
 
         uhandler = UserNotificationEventHandler()
-        resp = Response()
         # The actual result_status is false and the result_value is false.
-        resp.data = """{"result": {"value": false, "authentication": "REJECT", "status": false}}"""
+        resp = Response(response="""{"result": {"value": false, "authentication": "REJECT", "status": false}}""",
+                        mimetype='application/json')
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
         req = Request(env)
@@ -1428,6 +1427,7 @@ class UserNotificationTestCase(MyTestCase):
     "version": "privacyIDEA 3.0.1.dev2",
     "versionnumber": "3.0.1.dev2"
 }}""".format(PNG_IMAGE, OAUTH_URL)
+        resp.content_type = "application/json"
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1501,6 +1501,7 @@ class UserNotificationTestCase(MyTestCase):
             "versionnumber": "3.0.1.dev2"
         }}
         """.format(PNG_IMAGE, OAUTH_URL)
+        resp.content_type = "application/json"
         options = {"g": g,
                    "request": req,
                    "response": resp,

@@ -123,7 +123,7 @@ class APIAuditTestCase(MyApiTestCase):
         # check, that we see all audit entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": self.realm1a},
+                                           query_string={"realm": self.realm1a},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -147,7 +147,7 @@ class APIAuditTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": self.realm2b},
+                                           query_string={"realm": self.realm2b},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -190,7 +190,7 @@ class APIAuditTestCase(MyApiTestCase):
         # check, that we see all audit entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": self.realm1a},
+                                           query_string={"realm": self.realm1a},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -201,7 +201,7 @@ class APIAuditTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": self.realm2b},
+                                           query_string={"realm": self.realm2b},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -229,10 +229,10 @@ class APIAuditTestCase(MyApiTestCase):
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        helpdesk_authorization = None
         with self.app.test_request_context('/auth',
-                                           method='POST', data={'username': 'selfservice@adminrealm',
-                                                                'password': 'test'}):
+                                           method='POST',
+                                           data={'username': 'selfservice@adminrealm',
+                                                 'password': 'test'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             json_response = res.json
@@ -244,25 +244,25 @@ class APIAuditTestCase(MyApiTestCase):
         # check, that we only see allowed audit realms
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"action": "**",
-                                                 "action_detail": "**",
-                                                 "administrator": "**",
-                                                 "client": "**",
-                                                 "date": "**",
-                                                 "info": "**",
-                                                 "page": "1",
-                                                 "page_size": "10",
-                                                 "policies": "**",
-                                                 "privacyidea_server": "**",
-                                                 "realm": "**",
-                                                 "resolver": "**",
-                                                 "serial": "**",
-                                                 "sortorder": "desc",
-                                                 "success": "**",
-                                                 "tokentype": "**",
-                                                 "user": "**",
-                                                 "container_serial": "**",
-                                                 "container_type": "**"},
+                                           query_string={"action": "**",
+                                                         "action_detail": "**",
+                                                         "administrator": "**",
+                                                         "client": "**",
+                                                         "date": "**",
+                                                         "info": "**",
+                                                         "page": "1",
+                                                         "page_size": "10",
+                                                         "policies": "**",
+                                                         "privacyidea_server": "**",
+                                                         "realm": "**",
+                                                         "resolver": "**",
+                                                         "serial": "**",
+                                                         "sortorder": "desc",
+                                                         "success": "**",
+                                                         "tokentype": "**",
+                                                         "user": "**",
+                                                         "container_serial": "**",
+                                                         "container_type": "**"},
                                            headers={'Authorization': helpdesk_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -311,10 +311,10 @@ class APIAuditTestCase(MyApiTestCase):
         # set policy: normal users in realm1a are allowed to view audit log
         set_policy("audit01", scope=SCOPE.USER, action=ACTION.AUDIT, realm=self.realm1a)
 
-        user_authorization = None
         with self.app.test_request_context('/auth',
-                                           method='POST', data={'username': 'selfservice@{0!s}'.format(self.realm1a),
-                                                                'password': 'test'}):
+                                           method='POST',
+                                           data={'username': 'selfservice@{0!s}'.format(self.realm1a),
+                                                 'password': 'test'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             json_response = res.json
@@ -325,25 +325,25 @@ class APIAuditTestCase(MyApiTestCase):
         # check, that the normal user only sees his own entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"action": "**",
-                                                 "action_detail": "**",
-                                                 "administrator": "**",
-                                                 "client": "**",
-                                                 "date": "**",
-                                                 "info": "**",
-                                                 "page": "1",
-                                                 "page_size": "10",
-                                                 "policies": "**",
-                                                 "privacyidea_server": "**",
-                                                 "realm": "**",
-                                                 "resolver": "**",
-                                                 "serial": "**",
-                                                 "sortorder": "desc",
-                                                 "success": "**",
-                                                 "tokentype": "**",
-                                                 "user": "**",
-                                                 "container_serial": "**",
-                                                 "container_type": "**"},
+                                           query_string={"action": "**",
+                                                         "action_detail": "**",
+                                                         "administrator": "**",
+                                                         "client": "**",
+                                                         "date": "**",
+                                                         "info": "**",
+                                                         "page": "1",
+                                                         "page_size": "10",
+                                                         "policies": "**",
+                                                         "privacyidea_server": "**",
+                                                         "realm": "**",
+                                                         "resolver": "**",
+                                                         "serial": "**",
+                                                         "sortorder": "desc",
+                                                         "success": "**",
+                                                         "tokentype": "**",
+                                                         "user": "**",
+                                                         "container_serial": "**",
+                                                         "container_type": "**"},
                                            headers={'Authorization': user_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -360,25 +360,25 @@ class APIAuditTestCase(MyApiTestCase):
         # try to explicitly query another realm
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"action": "**",
-                                                 "action_detail": "**",
-                                                 "administrator": "**",
-                                                 "client": "**",
-                                                 "date": "**",
-                                                 "info": "**",
-                                                 "page": "1",
-                                                 "page_size": "10",
-                                                 "policies": "**",
-                                                 "privacyidea_server": "**",
-                                                 "realm": self.realm2b,
-                                                 "resolver": "**",
-                                                 "serial": "**",
-                                                 "sortorder": "desc",
-                                                 "success": "**",
-                                                 "tokentype": "**",
-                                                 "user": "**",
-                                                 "container_serial": "**",
-                                                 "container_type": "**"},
+                                           query_string={"action": "**",
+                                                         "action_detail": "**",
+                                                         "administrator": "**",
+                                                         "client": "**",
+                                                         "date": "**",
+                                                         "info": "**",
+                                                         "page": "1",
+                                                         "page_size": "10",
+                                                         "policies": "**",
+                                                         "privacyidea_server": "**",
+                                                         "realm": self.realm2b,
+                                                         "resolver": "**",
+                                                         "serial": "**",
+                                                         "sortorder": "desc",
+                                                         "success": "**",
+                                                         "tokentype": "**",
+                                                         "user": "**",
+                                                         "container_serial": "**",
+                                                         "container_type": "**"},
                                            headers={'Authorization': user_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

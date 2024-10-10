@@ -8,7 +8,8 @@ from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.utils import int_to_hex
-from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, verify_certificate_path, ACTION,
+from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
+                                                     verify_certificate_path,
                                                      CertificateTokenClass)
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 import os
@@ -17,8 +18,7 @@ import mock
 from OpenSSL import crypto
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
-from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
-                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+from .mscamock import CAServiceMock
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -347,14 +347,14 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02_create_token_from_request(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
-                              "cacert": CACERT,
-                              "type": "local",
-                              "caconnector": "localCA",
-                              "openssl.cnf": OPENSSLCNF,
-                              "CSRDir": "",
-                              "CertificateDir": "",
-                              "WorkingDir": cwd + "/" + WORKINGDIR})
+        save_caconnector({"cakey": CAKEY,
+                          "cacert": CACERT,
+                          "type": "local",
+                          "caconnector": "localCA",
+                          "openssl.cnf": OPENSSLCNF,
+                          "CSRDir": "",
+                          "CertificateDir": "",
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
 
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
@@ -398,14 +398,14 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02a_fail_request_with_attestation(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
-                              "cacert": CACERT,
-                              "type": "local",
-                              "caconnector": "localCA",
-                              "openssl.cnf": OPENSSLCNF,
-                              "CSRDir": "",
-                              "CertificateDir": "",
-                              "WorkingDir": cwd + "/" + WORKINGDIR})
+        save_caconnector({"cakey": CAKEY,
+                          "cacert": CACERT,
+                          "type": "local",
+                          "caconnector": "localCA",
+                          "openssl.cnf": OPENSSLCNF,
+                          "CSRDir": "",
+                          "CertificateDir": "",
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
 
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
@@ -422,14 +422,14 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02b_success_request_with_attestation(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
-                              "cacert": CACERT,
-                              "type": "local",
-                              "caconnector": "localCA",
-                              "openssl.cnf": OPENSSLCNF,
-                              "CSRDir": "",
-                              "CertificateDir": "",
-                              "WorkingDir": cwd + "/" + WORKINGDIR})
+        save_caconnector({"cakey": CAKEY,
+                          "cacert": CACERT,
+                          "type": "local",
+                          "caconnector": "localCA",
+                          "openssl.cnf": OPENSSLCNF,
+                          "CSRDir": "",
+                          "CertificateDir": "",
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
 
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
@@ -469,14 +469,14 @@ class CertificateTokenTestCase(MyTestCase):
         self.setUp_user_realms()
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
-                              "cacert": CACERT,
-                              "type": "local",
-                              "caconnector": "localCA",
-                              "openssl.cnf": OPENSSLCNF,
-                              "CSRDir": "",
-                              "CertificateDir": "",
-                              "WorkingDir": cwd + "/" + WORKINGDIR})
+        save_caconnector({"cakey": CAKEY,
+                          "cacert": CACERT,
+                          "type": "local",
+                          "caconnector": "localCA",
+                          "openssl.cnf": OPENSSLCNF,
+                          "CSRDir": "",
+                          "CertificateDir": "",
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
 
         db_token = Token(self.serial3, tokentype="certificate")
         db_token.save()

@@ -59,7 +59,7 @@ class APIMonitoringTestCase(MyApiTestCase):
 
         # End value in the past will return no data.
         with self.app.test_request_context('/monitoring/key1',
-                                           data={"end": "2010-01-01"},
+                                           query_string={"end": "2010-01-01"},
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
@@ -71,7 +71,7 @@ class APIMonitoringTestCase(MyApiTestCase):
         # check with start timestamp after the 2nd value.
         # This should return the 3rd and 4th.
         with self.app.test_request_context('/monitoring/key1',
-                                           data={"start": ts},
+                                           query_string={"start": ts},
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
