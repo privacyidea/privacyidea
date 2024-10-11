@@ -55,8 +55,8 @@ class APIHealthcheckTestCase(MyApiTestCase):
             check_status(503, "not ready", False)
             check_status(200, "ready", True)
         with self.app.test_request_context('/healthz/', method='GET'):
-            check_status(503, "not healthy", False)
-            check_status(200, "healthy", True)
+            check_status(503, "not ready", False)
+            check_status(200, "ready", True)
 
     @ldap3mock.activate
     def test_resolversz(self):
