@@ -45,9 +45,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
         <div class="form-group">
             <hr class="horizontal-line-invisible">
-            <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container
-                to
-                user</h4>
+            <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>
+                Assign the Container to a User
+            </h4>
             <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
                 <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
                 </div>
@@ -65,29 +65,38 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <select class="form-control"
                         id="templateName"
                         ng-model="form.template"
-                        ng-change="selectTemplate()"
-                        ng-options="templateName for (templateName, template) in templates">
+                        ng-change="selectTemplate(false)"
+                        ng-options="templateName for (templateName, template) in templates[form.containerType]">
                 </select>
                 <button class="btn btn-default" ng-hide="editTemplate"
-                        ng-disabled="form.template.name==='defaultSelection'"
+                        ng-disabled="form.template.name==='noTemplate'"
                         ng-click="editTemplate=true" translate>
                     Edit
                 </button>
                 <button class="btn btn-default" ng-show="editTemplate" ng-click="editTemplate=false" translate>
                     Hide
                 </button>
-                <div class="form-group" ng-show="editTemplate">
-                    <div class="form-group">
-                        <div container-template-details
-                             selection="selection"
-                             form-init="tokenSettings"
-                             allowed-token-types="allowedTokenTypes"
-                             function-obj="functionObject"
-                             mark-add-remove="true"
-                             show-default-selection="false"
-                        ></div>
-                    </div>
+                <div class="well" ng-show="editTemplate">
+                    <div container-template-details
+                         selection="form"
+                         form-init="tokenSettings"
+                         allowed-token-types="allowedTokenTypes"
+                         function-obj="functionObject"
+                         mark-add-remove="true"
+                         show-default-selection="false"
+                         default-options="defaultTemplateOptions"
+                         class="form-group"
+                    ></div>
+                    <span translate>Note: Changes will only be applied to this container and not to the template.</span>
                 </div>
+            </div>
+        </div>
+
+         <!-- Options: only display if no template is used and options are available -->
+        <div class="form-group" ng-show="form.template.name === 'noTemplate'">
+            <div container-options
+                 selection="form"
+                 default-options="defaultTemplateOptions">
             </div>
         </div>
 

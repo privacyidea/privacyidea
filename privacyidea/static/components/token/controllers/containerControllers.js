@@ -21,13 +21,17 @@
 
 myApp.service('ContainerUtils', function () {
 
-    this.createDisplayList = function (stringList) {
+    this.createDisplayList = function (stringList, capitalize) {
         // Creates a comma separated list as a single string out of a list of string objects.
         // Each string is capitalized.
 
         let displayList = "";
         angular.forEach(stringList, function (element) {
-            displayList += element.charAt(0).toUpperCase() + element.slice(1) + ", ";
+            let firstChar = element.charAt(0);
+            if (capitalize) {
+                firstChar = firstChar.toUpperCase();
+            }
+            displayList += firstChar + element.slice(1) + ", ";
         });
         displayList = displayList.slice(0, -2);
 
@@ -70,8 +74,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.form = {
             containerType: "generic",
             description: "",
-            template: ""
+            options: {},
+            template: {},
+            tokens: []
         };
+        $scope.containerClassOptions = {};
 
         $scope.containerRegister = false;
         $scope.initRegistration = false;
@@ -92,7 +99,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             selectedType: ""
         };
 
-        $scope.selection = {tokens: []};
         $scope.functionObject = {};
         $scope.editTemplate = false;
 
@@ -102,9 +108,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     $scope.formData.containerTypes, $scope.tokenSettings.tokenTypes);
                 $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
 
-                $scope.getTemplates();
+                $scope.selectTemplate(true);
                 $scope.editTemplate = false;
-                $scope.selection = {tokens: []};
             }
         }, true);
 
@@ -119,7 +124,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         $scope.formData.containerTypes[containerType]["token_types_display"] = 'All';
                     } else {
                         $scope.formData.containerTypes[containerType]["token_types_display"] = ContainerUtils.createDisplayList(
-                            $scope.formData.containerTypes[containerType].token_types);
+                            $scope.formData.containerTypes[containerType].token_types, true);
                     }
                 });
 
@@ -184,28 +189,85 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
         }
 
+        $scope.defaultTemplateOptions = {};
+        $scope.defaultTemplates = {};
+        $scope.templates = {};
         $scope.getTemplates = function () {
-            let params = {"container_type": $scope.form.containerType};
-            ContainerFactory.getTemplates(params, function (data) {
+            ContainerFactory.getTemplates({}, function (data) {
                 let templatesList = data.result.value.templates;
-                $scope.templates = {"No Template": {"name": "defaultSelection"}};
-                $scope.form.template = $scope.templates["No Template"];
+                angular.forEach(["generic", "smartphone", "yubikey"], function (containerType) {
+                    $scope.templates[containerType] = {"No Template": {"name": "noTemplate"}};
+                });
+                $scope.form.template = $scope.templates["generic"]["No Template"];
                 angular.forEach(templatesList, function (template) {
-                    $scope.templates[template.name] = template;
+                    $scope.templates[template.container_type][template.name] = template;
                     if (template.default) {
-                        // select default template
-                        $scope.form.template = template;
-                        $scope.selectTemplate();
+                        // save default options
+                        $scope.defaultTemplateOptions[template.container_type] = template.template_options.options;
+                        $scope.defaultTemplates[template.container_type] = template;
+                        if (template.container_type == $scope.form.containerType) {
+                            // select default template for selected container type
+                            $scope.selectTemplate(true);
+                        }
                     }
                 });
             });
         };
 
+        $scope.selectTemplate = function (defaultSelection) {
+            if (defaultSelection) {
+                // select default template if one exists or no template otherwise
+                $scope.form.template = $scope.defaultTemplates[$scope.form.containerType];
+                if (!$scope.form.template) {
+                    $scope.form.template = $scope.templates[$scope.form.containerType]["No Template"];
+                }
+            }
+
+            if ($scope.form.template.name === "noTemplate") {
+                // close edit dialog
+                $scope.editTemplate = false;
+            }
+
+            // set tokens and options according to the selected template
+            // for the options each key needs to be set to not overwrite the default options from the directive for
+            // keys without a value in the template
+            let templateOptions = $scope.form.template.template_options;
+            if (templateOptions !== undefined) {
+                $scope.form.tokens = templateOptions.tokens || [];
+                let options = templateOptions.options || {};
+                angular.forEach($scope.form.options, function(value, key) {
+                    if (options[key] !== undefined) {
+                        $scope.form.options[key] = options[key];
+                    } else {
+                        $scope.form.options[key] = "-";
+                    }
+                });
+            } else {
+                // no template is used or the template has no options
+                $scope.form.tokens = [];
+                angular.forEach($scope.form.options, function (value, key) {
+                   $scope.form.options[key] = "-";
+                });
+            }
+        };
+
         $scope.createContainer = function () {
             let ctype = $scope.form.containerType;
             let params = {"type": ctype};
-            if ($scope.form.template && $scope.form.template.name !== "defaultSelection") {
+            if ($scope.form.template && $scope.form.template.name !== "noTemplate") {
                 params["template"] = $scope.form.template;
+                params["template"]["template_options"]["options"] = $scope.form.options;
+                params["template"]["template_options"]["tokens"] = [];
+                if ($scope.form.tokens.length > 0) {
+                    angular.forEach($scope.form.tokens, function (token) {
+                        if (token.state === "add") {
+                            delete token.state;
+                        }
+                        if (token.state !== "remove") {
+                            params["template"]["template_options"]["tokens"].push(token);
+                        }
+                    });
+                }
             }
             if ($scope.newUser.user) {
                 params["user"] = fixUser($scope.newUser.user);
@@ -243,10 +305,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 $scope.tokenSettings["tokenTypes"] = data.result.value;
                 $scope.getContainerTypes();
             });
-        };
-
-        $scope.selectTemplate = function () {
-            $scope.selection.tokens = $scope.templates[$scope.form.template.name].template_options.tokens;
         };
 
         $scope.getTemplates();
@@ -743,236 +801,4 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         // ----------- Initial calls -------------
         $scope.getContainer();
-    }]);
-
-myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
-    'ConfigFactory', 'TokenFactory', '$location', '$state',
-    function containerTemplateListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state) {
-        $scope.templatesPerPage = $scope.token_page_size;
-        $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {sortdir: "asc"};
-        $scope.templatedata = [];
-
-        if ($location.path() === "token.containertemplates") {
-            $location.path("token.containertemplates.list");
-        }
-
-        // Change the pagination
-        $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
-            $scope.get();
-        };
-
-        $scope.editTemplate = function (templateName) {
-            $state.go("token.containertemplates.edit", {"templateName": templateName});
-        };
-
-        // Get all containers
-        $scope.get = function () {
-            $scope.params.sortby = $scope.sortby;
-            if ($scope.reverse) {
-                $scope.params.sortdir = "desc";
-            } else {
-                $scope.params.sortdir = "asc";
-            }
-            $scope.params.pagesize = $scope.token_page_size;
-
-            ContainerFactory.getTemplates($scope.params,
-                function (data) {
-                    $scope.templatedata = data.result.value;
-                });
-        };
-
-        $scope.deleteTemplate = function (templateName) {
-            ContainerFactory.deleteTemplate(templateName, $scope.get);
-        };
-
-        $scope.get();
-
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.get);
-    }]);
-
-myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
-    'ConfigFactory', 'TokenFactory', '$location', '$state', 'ContainerUtils',
-    function containerTemplateCreateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                               TokenFactory, $location, $state, ContainerUtils) {
-        $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {};
-        $scope.templatedata = [];
-
-        $scope.containerTypes = {};
-        $scope.selection = {
-            templateName: "",
-            containerType: "generic",
-            tokens: []
-        };
-
-        $scope.allowedTokenTypes = {
-            list: [],
-            displayPhrase: "All",
-            displaySelection: {},
-        };
-
-        $scope.functionObject = {};
-
-        $scope.tokenSettings = {
-            tokenTypes: {},  // will be set later with response from server
-            timesteps: [30, 60],
-            otplens: [6, 8],
-            hashlibs: ["sha1", "sha256", "sha512"],
-            service_ids: {},
-            selectedTokenType: ""
-        };
-
-        $scope.$watch('selection.containerType', function (newType, oldType) {
-            if (newType && $scope.containerTypes[newType]) {
-                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.selection.containerType,
-                    $scope.containerTypes, $scope.tokenSettings.tokenTypes);
-                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
-            }
-        }, true);
-
-        // Get the supported token types for each container type once
-        $scope.getContainerTypes = function () {
-            ContainerFactory.getTokenTypes(function (data) {
-                // Get all container types and corresponding token types
-                $scope.containerTypes = data.result.value;
-
-                // Create display string for supported token types of each container type
-                angular.forEach($scope.containerTypes, function (val, containerType) {
-                    if (containerType == 'generic') {
-                        $scope.containerTypes[containerType].token_types_display = 'All';
-                    } else {
-                        $scope.containerTypes[containerType].token_types_display = ContainerUtils.createDisplayList(
-                            $scope.containerTypes[containerType].token_types);
-                    }
-                });
-
-                // Sets the supported token types for the selected container type in different formats
-                // (list, display list, display selection of each type, default type for the selection)
-                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.selection.containerType,
-                    $scope.containerTypes, $scope.tokenSettings.tokenTypes);
-                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
-            });
-        };
-
-        $scope.createTemplate = function () {
-            $scope.functionObject.saveOpenProperties();
-            $scope.params.name = $scope.selection.templateName;
-            $scope.params.type = $scope.selection.containerType;
-            $scope.params.template_options = {"tokens": $scope.selection.tokens};
-            $scope.params.default = $scope.selection.default;
-
-            ContainerFactory.createTemplate($scope.params, function (data) {
-                $state.go("token.containertemplates.list");
-            });
-        };
-
-        // Read the tokentypes from the server
-        $scope.getAllContainerAndTokenTypes = function () {
-            TokenFactory.getEnrollTokens(function (data) {
-                $scope.tokenSettings["tokenTypes"] = data.result.value;
-                $scope.getContainerTypes();
-            });
-        };
-
-        // Initial call
-        $scope.getAllContainerAndTokenTypes();
-
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getAllContainerAndTokenTypes);
-    }]);
-
-myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
-    'ConfigFactory', 'TokenFactory', '$location', '$state', '$stateParams', 'ContainerUtils',
-    function containerTemplateEditController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                             TokenFactory, $location, $state, $stateParams, ContainerUtils) {
-        $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {};
-        $scope.templateData = {};
-
-        $scope.allowedTokenTypes = {
-            list: [],
-            displayPhrase: "All",
-            displaySelection: [],
-        };
-
-        $scope.tokenSettings = {
-            tokenTypes: {},
-            timesteps: [30, 60],
-            otplens: [6, 8],
-            hashlibs: ["sha1", "sha256", "sha512"],
-            service_ids: {},
-            selectedType: ""
-        };
-
-        $scope.selection = {tokens: []};
-        $scope.functionObject = {};
-
-        $scope.get = function () {
-            ContainerFactory.getTemplates({"name": $stateParams.templateName},
-                function (data) {
-                    $scope.templateData = data.result.value["templates"][0];
-                    $scope.selection.tokens = $scope.templateData.template_options.tokens;
-                    $scope.selection.default = $scope.templateData.default;
-                    $scope.getTokenAndContainerTypes();
-                });
-        };
-
-        // Get the supported token types for each container type once
-        $scope.getContainerTypes = function () {
-            ContainerFactory.getTokenTypes(function (data) {
-                let containerTypes = data.result.value;
-
-                // Create display string for supported token types by the template
-                if ($scope.templateData.container_type == 'generic') {
-                    containerTypes[$scope.templateData.container_type].token_types_display = 'All';
-                } else {
-                    containerTypes[$scope.templateData.container_type].token_types_display =
-                        ContainerUtils.createDisplayList(containerTypes[$scope.templateData.container_type].token_types);
-                }
-
-                // Sets the supported token types for the template in different formats (list, display list,
-                // display selection of each type, default type for the selection)
-                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.templateData.container_type,
-                    containerTypes, $scope.tokenSettings.tokenTypes);
-                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
-            });
-        };
-
-        $scope.saveTemplate = function () {
-            $scope.functionObject.saveOpenProperties();
-            $scope.params.name = $scope.templateData.name;
-            $scope.params.type = $scope.templateData.container_type;
-            let tokenList = [];
-            angular.forEach($scope.selection.tokens, function (token) {
-                if (token.state !== "remove") {
-                    if (token.state) {
-                        delete token.state;
-                    }
-                    tokenList.push(token);
-                }
-            });
-            $scope.params.template_options = {"tokens": tokenList};
-            $scope.params.default = $scope.selection.default;
-
-            ContainerFactory.createTemplate($scope.params, function (data) {
-                $state.go("token.containertemplates.list");
-            });
-        };
-
-        // Read the token types and container types from the server
-        $scope.getTokenAndContainerTypes = function () {
-            TokenFactory.getEnrollTokens(function (data) {
-                $scope.tokenSettings["tokenTypes"] = data.result.value;
-                $scope.getContainerTypes();
-            });
-        };
-
-        // Initial call
-        $scope.get();
-
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.get);
     }]);

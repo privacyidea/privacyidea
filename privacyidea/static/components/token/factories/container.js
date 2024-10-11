@@ -233,6 +233,25 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 }, function (error) {
                     AuthFactory.authError(error.data);
                 });
+            },
+            getClassOptions: function (params, callback) {
+                $http.get(containerUrl + "/classoptions", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            compareTemplateWithContainers: function (template_name, callback) {
+                $http.get(containerUrl + "/template/" + template_name + "/compare", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
             }
         }
     }]);

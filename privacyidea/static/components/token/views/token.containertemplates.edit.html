@@ -26,16 +26,151 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </div>
 
     <div class="form-group">
+        <div container-template-details
+             selection="selection"
+             form-init="tokenSettings"
+             allowed-token-types="allowedTokenTypes"
+             function-obj="functionObject"
+             mark-add-remove="true"
+             show-default-selection="true"
+             default-options="initialOptions"
+        ></div>
+    </div>
+
+    <hr class="horizontal-line-invisible">
+    <div class="form-group">
+        <h4 translate>Containers Created With This Template</h4>
         <div class="form-group">
-            <div container-template-details
-                 selection="selection"
-                 form-init="tokenSettings"
-                 allowed-token-types="allowedTokenTypes"
-                 function-obj="functionObject"
-                 mark-add-remove="true"
-                 show-default-selection="true"
-            ></div>
+            <button class="btn btn-default btn-capitalize"
+                    ng-hide="showContainers"
+                    ng-click="showContainers=true"
+                    translate>
+                Show
+            </button>
+            <button class="btn btn-default btn-capitalize"
+                    ng-show="showContainers"
+                    ng-click="showContainers=false"
+                    translate>
+                Hide
+            </button>
+            <button class="btn btn-default btn-capitalize"
+                    ng-show="showContainers"
+                    ng-click="compareContainersWithTemplate()"
+                    translate>
+                Compare
+            </button>
         </div>
+        <table class="table table-bordered table-striped table-capitalize-header"
+               ng-show="showContainers">
+            <thead>
+            <tr>
+                <th class="pifilter">
+                    <button class="btn btn-default unsorted"
+                            pi-sort-by="serial"
+                            translate>Serial
+                    </button>
+                </th>
+                <th translate>
+                    Type
+                </th>
+                <th translate>
+                    Description
+                </th>
+                <th ng-show="loggedInUser.role == 'admin'" translate>
+                    User
+                </th>
+                <th ng-show="loggedInUser.role == 'admin'" translate>
+                    Realm
+                </th>
+                <th ng-show="loggedInUser.role == 'admin'" translate>
+                    Container Realms
+                </th>
+                <th ng-show="showDiff" translate>
+                    Differences to the template
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="container in containerData.containers track by $index">
+                <td>
+                    <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
+                </td>
+                <td class="table-capitalize">
+                    {{ container.type }}
+                </td>
+                <td>
+                    {{ container.description }}
+                </td>
+                <td ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="user.details({username: container.users[0].user_name,
+                            realmname: container.users[0].user_realm,
+                            resolvername: token.resolver,
+                            editable: false})">
+                        {{ container.users[0].user_name }}</a>
+                </td>
+                <td ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
+                </td>
+                <td ng-show="loggedInUser.role == 'admin'">
+                <span ng-repeat="c_realm in container.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ c_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
+                </td>
+                <td ng-show="showDiff">
+                    <span translate>Options:</span>
+                    <table class="table table-transparent">
+                        <tbody>
+                        <tr>
+                            <td translate>
+                                Missing
+                            </td>
+                            <td>
+                                {{ templateContainerDiff[container.serial]["options"]["missing"] }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td translate>
+                                Additional
+                            </td>
+                            <td>
+                                {{ templateContainerDiff[container.serial]["options"]["additional"] }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td translate>
+                                Different
+                            </td>
+                            <td>
+                                {{ templateContainerDiff[container.serial]["options"]["different"] }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <span translate>Tokens:</span>
+                    <table class="table table-transparent">
+                        <tbody>
+                        <tr>
+                            <td translate>
+                                Missing
+                            </td>
+                            <td>
+                                {{ templateContainerDiff[container.serial]["tokens"]["missing"] }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td translate>
+                                Additional
+                            </td>
+                            <td>
+                                {{ templateContainerDiff[container.serial]["tokens"]["additional"] }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <div class="form-group text-center">

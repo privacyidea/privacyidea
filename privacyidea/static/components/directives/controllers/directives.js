@@ -690,7 +690,8 @@ myApp.directive("registerContainer", ["instanceUrl", "versioningSuffixProvider",
     }]);
 
 myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
-    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory) {
+    "ContainerFactory",
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, ContainerFactory) {
         return {
             scope: {
                 formInit: "=",
@@ -698,7 +699,8 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 allowedTokenTypes: "=",
                 functionObj: "=",
                 markAddRemove: "=",
-                showDefaultSelection: "="
+                showDefaultSelection: "=",
+                defaultOptions: "="
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.containertemplate.details.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {
@@ -711,13 +713,21 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 scope.num_questions = 5;
 
                 scope.form = {
-                        type: "hotp",
-                        timeStep: 30,
-                        otplen: 6,
-                        genkey: true,
-                        hashlib: "sha1",
-                        user: true
-                    };
+                    type: "hotp",
+                    timeStep: 30,
+                    otplen: 6,
+                    genkey: true,
+                    hashlib: "sha1",
+                    user: true
+                };
+
+                scope.keyLength = function (obj) {
+                    if (obj === undefined) {
+                        return 0;
+                    } else {
+                        return Object.keys(obj).length;
+                    }
+                }
 
                 scope.addToken = function (tokenType) {
                     scope.form = {
@@ -741,6 +751,11 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                         scope.selection.tokens.splice(index, 1);
                     }
                 };
+
+                scope.reAddToken = function (index) {
+                    // Marking a token to be removed should be undone.
+                    delete scope.selection.tokens[index].state;
+                }
 
                 scope.saveOpenProperties = function () {
                     angular.forEach(scope.selection.tokens, function (token, i) {
@@ -868,4 +883,61 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
 
             }
         };
+    }]);
+
+myApp.directive("containerOptions", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
+    "ContainerFactory",
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, ContainerFactory) {
+        return {
+            scope: {
+                selection: "=",
+                defaultOptions: "=",
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.container.options.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+                scope.containerClassOptions = {};
+
+                scope.$watch('selection.containerType', function (newType, oldType) {
+                    // Set the default options for the new container type
+                    scope.setSelection(newType);
+                });
+
+                scope.setSelection = function (containerType) {
+                    scope.selection.options = {};
+                    angular.forEach(scope.containerClassOptions[containerType], function (value, key) {
+                        if (scope.defaultOptions !== undefined && scope.defaultOptions[containerType] !== undefined &&
+                            scope.defaultOptions[containerType][key] !== undefined) {
+                            scope.selection.options[key] = scope.defaultOptions[containerType][key];
+                        } else {
+                            scope.selection.options[key] = "-";
+                        }
+                    });
+                };
+
+                scope.keyLength = function (obj) {
+                    if (obj === undefined) {
+                        return 0;
+                    } else {
+                        return Object.keys(obj).length;
+                    }
+                }
+
+                scope.getContainerClassOptions = function () {
+                    ContainerFactory.getClassOptions({"only_selectable": true}, function (data) {
+                        scope.containerClassOptions = data.result.value;
+                        angular.forEach(scope.containerClassOptions, function (options, containerType) {
+                            angular.forEach(options, function (value, key) {
+                                scope.containerClassOptions[containerType][key] = ["-"].concat(scope.containerClassOptions[containerType][key]);
+                                if (scope.selection.containerType === containerType && scope.selection.options[key] === undefined) {
+                                    scope.selection.options[key] = "-";
+                                }
+                            });
+                        });
+                        scope.setSelection(scope.selection.containerType);
+                    });
+                };
+
+                scope.getContainerClassOptions();
+            }
+        }
     }]);
