@@ -172,32 +172,22 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     """
     sql_query = TokenContainer.query
     if user:
-        # Get all containers for the given user
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
+
     if serial:
         sql_query = sql_query.filter(TokenContainer.serial == serial)
 
     if ctype:
         sql_query = sql_query.filter(TokenContainer.type == ctype)
+
     if token_serial:
-        token = Token.query.filter(Token.serial == token_serial).first()
-        if token:
-            token_container_token = TokenContainerToken.query.filter(TokenContainerToken.token_id == token.id).all()
-            container_ids = [t.container_id for t in token_container_token]
-            sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
-        else:
-            log.info(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
+        sql_query = sql_query.join(TokenContainer.tokens).filter(Token.serial == token_serial)
 
     if realms:
-        realm_ids = [realm.id for realm in Realm.query.filter(Realm.name.in_(realms)).all()]
-        container_realms = TokenContainerRealm.query.filter(TokenContainerRealm.realm_id.in_(realm_ids)).all()
-        container_ids = [r.container_id for r in container_realms]
-        sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+        sql_query = sql_query.join(TokenContainer.realms).filter(Realm.name.in_(realms))
 
     if template:
-        info = TokenContainerInfo.query.filter(TokenContainerInfo.key == "template").filter(TokenContainerInfo.value == template).all()
-        container_ids = [i.container_id for i in info]
-        sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+        sql_query = sql_query.join(TokenContainer.template).filter(TokenContainerTemplate.name == template)
 
     if isinstance(sortby, str):
         # Check that the sort column exists and convert it to a Token column
@@ -394,7 +384,10 @@ def init_container(params):
             original_template_used = compare_template_dicts(template, original_template)
             if original_template_used:
                 container.template = original_template["name"]
-        # create tokens from template
+        # set container options from template
+        options = template.get("template_options", {}).get("options", {})
+        [container.add_container_info(key, options[key]) for key in options]
+        # tokens from template
         template_tokens = template.get("template_options", {}).get("tokens", [])
 
     user = params.get("user")
@@ -1214,13 +1207,15 @@ def compare_template_dicts(template_a: dict, template_b: dict):
     if template_a is None or template_b is None:
         return False
 
-    # compare options
-    options_a = template_a.get("template_options", {})
-    options_b = template_b.get("template_options", {})
+    # get template options
+    template_options_a = template_a.get("template_options", {})
+    template_options_b = template_b.get("template_options", {})
+
+    # TODO compare options
 
     # compare tokens
-    tokens_a = options_a.get("tokens", [])
-    tokens_b = options_b.get("tokens", [])
+    tokens_a = template_options_a.get("tokens", [])
+    tokens_b = template_options_b.get("tokens", [])
     if len(tokens_a) != len(tokens_b):
         # different number of tokens, templates can not be equal
         return False
@@ -1231,3 +1226,59 @@ def compare_template_dicts(template_a: dict, template_b: dict):
         return False
 
     return equal
+
+
+def compare_template_with_container(template: TokenContainerTemplate, container: TokenContainer):
+    """
+    Compares the template with the container.
+
+    :param template: The template object
+    :param container: The container object
+    :return A dictionary with the differences between the template and the container in the format:
+
+        ::
+            {
+                "tokens": {
+                            "missing": ["hotp"],
+                            "additional": ["totp"]
+                            },
+                "options": {
+                            "missing": ["hash_algorithm"],
+                            "different": ["encryption_algorithm"],
+                            "additional": ["key_algorithm"]
+                            }
+            }
+    """
+    result = {"tokens": {"missing": [], "additional": []},
+              "options": {"missing": [], "different": [], "additional": []}}
+    template_options = json.loads(template.template_options)
+
+    # compare template options with container info
+    container_info = container.get_container_info_dict()
+    for template_key, template_value in template_options.get("options", {}).items():
+        if template_key not in container_info.keys():
+            result["options"]["missing"].append(template_key)
+        elif container_info[template_key] != template_value:
+            result["options"]["different"].append(template_key)
+    for container_key, value in container_info.items():
+        if container_key not in template_options.get("options", {}).keys():
+            result["options"]["additional"].append(container_key)
+
+    # compare tokens
+    template_tokens = template_options.get("tokens", [])
+    template_token_types = [token["type"] for token in template_tokens]
+    template_token_count = {ttype: template_token_types.count(ttype) for ttype in template_token_types}
+    container_token_types = [token.type for token in container.get_tokens()]
+    container_token_count = {ttype: container_token_types.count(ttype) for ttype in container_token_types}
+
+    for ttype, count_template in template_token_count.items():
+        count_container = container_token_count.get(ttype, 0)
+        if count_template > count_container:
+            result["tokens"]["missing"].extend([ttype] * (count_template - count_container))
+
+    for ttype, count_container in container_token_count.items():
+        count_template = template_token_count.get(ttype, 0)
+        if count_template < count_container:
+            result["tokens"]["additional"].extend([ttype] * (count_container - count_template))
+
+    return result

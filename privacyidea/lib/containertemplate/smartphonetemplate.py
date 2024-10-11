@@ -21,10 +21,6 @@ from privacyidea.lib.containertemplate.containertemplatebase import ContainerTem
 
 
 class SmartphoneContainerTemplate(ContainerTemplateBase):
-    _custom_option_values = SmartphoneContainer.get_class_options()
-
-    template_option_values = ContainerTemplateBase.template_option_values.copy()
-    template_option_values.update(_custom_option_values)
 
     def __init__(self, db_template):
         super().__init__(db_template)

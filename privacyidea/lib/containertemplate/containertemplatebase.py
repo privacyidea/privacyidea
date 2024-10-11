@@ -79,12 +79,14 @@ class ContainerTemplateBase:
     def template_options(self):
         return self._db_template.options
 
+    def get_template_options_as_dict(self):
+        return json.loads(self.template_options)
+
     @template_options.setter
     def template_options(self, options):
         if not isinstance(options, dict):
             raise ParameterError("options must be a dict")
         validated_options = {}
-        input_option_keys = list(options.keys())
 
         # Validates token types in options
         supported_token_types = self.get_supported_token_types()
@@ -94,17 +96,19 @@ class ContainerTemplateBase:
             if token.get("type", None) not in supported_token_types:
                 raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
         validated_options["tokens"] = tokens
-        input_option_keys.pop(input_option_keys.index("tokens"))
 
         # Validates other options
         allowed_options = self.get_template_class_options()
-        for option in input_option_keys:
+        container_options = options.get("options", {})
+        validated_container_options = {}
+        for option in list(container_options.keys()):
             if option not in allowed_options.keys():
                 raise ParameterError(f"Unsupported option {option} for {self.get_class_type()} templates!")
-            if options[option] not in allowed_options[option]:
+            if container_options[option] not in allowed_options[option]:
                 raise ParameterError(
-                    f"Unsupported value {options[option]} for option {option} in {self.get_class_type()} templates!")
-            validated_options[option] = options[option]
+                    f"Unsupported value {container_options[option]} for option {option} in {self.get_class_type()} templates!")
+            validated_container_options[option] = container_options[option]
+        validated_options["options"] = validated_container_options
 
         self._db_template.options = json.dumps(validated_options)
         self._db_template.save()
@@ -121,6 +125,10 @@ class ContainerTemplateBase:
     def default(self, value):
         self._db_template.default = value
         self._db_template.save()
+
+    @property
+    def containers(self):
+        return self._db_template.containers
 
     def delete(self):
         self._db_template.delete()

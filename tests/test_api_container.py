@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime, timezone
 import json
 
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
@@ -6,7 +7,9 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, get_container_realms, create_container_template,
                                        get_template_obj)
-from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc
+from privacyidea.lib.containers.smartphone import SmartphoneOptions
+from privacyidea.lib.containers.yubikey import YubikeyOptions
+from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc, geturandom
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -1299,7 +1302,7 @@ class APIContainer(MyApiTestCase):
         result = self.request_assert_success('/container/',
                                              {"token_serial": "non-existing", "pagesize": 15},
                                              self.at, 'GET')
-        self.assertGreater(result["result"]["value"]["count"], 0)
+        self.assertEqual(result["result"]["value"]["count"], 0)
 
     def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
         message = f"{nonce}|{registration_time}|{registration_url}|{serial}"
@@ -1376,6 +1379,19 @@ class APIContainer(MyApiTestCase):
                                     {},
                                     self.at, 'DELETE')
 
+    def test_25_register_terminate_client_success(self):
+        smartphone_serial, priv_key_client = self.test_24_register_smartphone_success()
+        nonce = geturandom(20, hex=True)
+        time = datetime.now(timezone.utc).isoformat()
+        message = f"nonce|time"
+        signature = sign_ecc(message.encode("utf-8"), priv_key_client, "sha256")
+
+        # Terminate
+        data = {"message": message, "signature": signature}
+        self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
+                                    data,
+                                    self.at, 'DELETE')
+
     def test_26_register_init_fail(self):
         # Policy with server url not defined
         container_serial, _ = init_container({"type": "smartphone"})
@@ -1425,6 +1441,40 @@ class APIContainer(MyApiTestCase):
                                            {"container_serial": "invalid_serial"}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
+
+        delete_policy("policy")
+
+    def test_27_register_twice_fails(self):
+        # register container successfully
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://test/",
+                                                         ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        data = {"container_serial": smartphone_serial,
+                "passphrase_ad": False,
+                "passphrase_prompt": "Enter your passphrase",
+                "passphrase_response": "top_secret"}
+
+        # Initialize
+        result = self.request_assert_success('container/register/initialize',
+                                             data,
+                                             self.at, 'POST')
+        init_response_data = result["result"]["value"]
+
+        # Finalize
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         registration_url="http://test/container/register/finalize",
+                                                                         nonce=init_response_data["nonce"],
+                                                                         registration_time=init_response_data[
+                                                                             "time_stamp"],
+                                                                         passphrase="top_secret")
+        self.request_assert_success('container/register/finalize',
+                                    params,
+                                    None, 'POST')
+
+        # try register second time with same data
+        self.request_assert_error(400, 'container/register/finalize',
+                                  params,
+                                  None, 'POST')
 
         delete_policy("policy")
 
@@ -1723,13 +1773,64 @@ class APIContainer(MyApiTestCase):
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
 
-        params = {"public_enc_key_client": "123"}
+        # missing registration
+        public_key_smph, priv_key_smph = generate_keypair_ecc("secp384r1")
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+        # Init
+        result = self.request_assert_success(f'container/sync/{smartphone_serial}/init',
+                                             {}, None, 'GET')
+        params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_smph)
+
+        # Finalize
         result = self.request_assert_error(400, f'container/sync/{smartphone_serial}/finalize',
                                            params, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
+        self.assertEqual(10, result["result"]["error"]["code"])
 
         delete_policy("policy")
+
+    def test_36_get_class_options_all(self):
+        result = self.request_assert_success('/container/classoptions', {}, self.at, 'GET')
+        result = result["result"]["value"]
+
+        self.assertIn("generic", result)
+
+        self.assertIn("smartphone", result)
+        smartphone_options = result["smartphone"]
+        smartphone_required_keys = [SmartphoneOptions.KEY_ALGORITHM, SmartphoneOptions.ENCRYPT_KEY_ALGORITHM,
+                                    SmartphoneOptions.HASH_ALGORITHM, SmartphoneOptions.ENCRYPT_ALGORITHM,
+                                    SmartphoneOptions.ENCRYPT_MODE, SmartphoneOptions.FORCE_BIOMETRIC,
+                                    SmartphoneOptions.ALLOW_ROLLOVER]
+        for key in smartphone_required_keys:
+            self.assertIn(key, smartphone_options)
+
+        self.assertIn("yubikey", result)
+        yubikey_options = result["yubikey"]
+        self.assertIn(YubikeyOptions.PIN_POLICY, yubikey_options)
+
+    def test_37_get_class_options_smartphone(self):
+        result = self.request_assert_success('/container/classoptions', {"container_type": "smartphone"}, self.at,
+                                             'GET')
+        result = result["result"]["value"]
+
+        self.assertNotIn("generic", result)
+        self.assertNotIn("yubikey", result)
+
+        self.assertIn("smartphone", result)
+        smartphone_options = result["smartphone"]
+        smartphone_required_keys = [SmartphoneOptions.KEY_ALGORITHM, SmartphoneOptions.ENCRYPT_KEY_ALGORITHM,
+                                    SmartphoneOptions.HASH_ALGORITHM, SmartphoneOptions.ENCRYPT_ALGORITHM,
+                                    SmartphoneOptions.ENCRYPT_MODE, SmartphoneOptions.FORCE_BIOMETRIC,
+                                    SmartphoneOptions.ALLOW_ROLLOVER]
+        for key in smartphone_required_keys:
+            self.assertIn(key, smartphone_options)
+
+    def test_38_get_class_options_invalid_type(self):
+        result = self.request_assert_error(400, '/container/classoptions',
+                                           {"container_type": "invalid"}, self.at,
+                                           'GET')
+        error = result["result"]["error"]
+        self.assertEqual(905, error["code"])
 
 
 class APIContainerTemplate(MyApiTestCase):
@@ -2014,7 +2115,7 @@ class APIContainerTemplate(MyApiTestCase):
         self.assertIn("smartphone", list_keys)
         self.assertIn("tokens", smph_keys)
         self.assertIn("user_modifiable", smph_keys)
-        self.assertIn("allow_rollover", smph_keys)
+        self.assertIn("allow_client_rollover", smph_keys)
         self.assertIn("force_biometric", smph_keys)
 
         yubikey_keys = list(result["result"]["value"]["yubikey"].keys())

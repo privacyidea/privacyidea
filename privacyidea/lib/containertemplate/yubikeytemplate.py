@@ -20,20 +20,17 @@ from privacyidea.lib.containers.yubikey import YubikeyContainer
 from privacyidea.lib.containertemplate.containertemplatebase import TemplateOptionsBase, ContainerTemplateBase
 
 
-class YubikeyTemplateOptions(TemplateOptionsBase):
-    PIN_POLICY = "pin_policy"
-
-
 class YubikeyContainerTemplate(ContainerTemplateBase):
-    _custom_option_values = {
-        YubikeyTemplateOptions.PIN_POLICY: ""
-    }
-
-    template_option_values = ContainerTemplateBase.template_option_values.copy()
-    template_option_values.update(_custom_option_values)
 
     def __init__(self, db_template):
         super().__init__(db_template)
+
+    @classmethod
+    def get_template_class_options(cls):
+        _custom_option_values = YubikeyContainer.get_class_options()
+        template_option_values = ContainerTemplateBase.template_option_values.copy()
+        template_option_values.update(_custom_option_values)
+        return template_option_values
 
     def get_type_specific_options(self):
         return [x for x in self.template_option_values.keys()

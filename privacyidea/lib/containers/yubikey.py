@@ -34,7 +34,12 @@ def verify_auth_token(params):
     return True
 
 
+class YubikeyOptions:
+    PIN_POLICY = "pin_policy"
+
+
 class YubikeyContainer(TokenContainerClass):
+    options = {YubikeyOptions.PIN_POLICY: []}
 
     def __init__(self, db_container):
         super().__init__(db_container)

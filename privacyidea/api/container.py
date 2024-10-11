@@ -35,9 +35,12 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        create_container_dict, create_endpoint_url,
                                        create_container_template,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
-                                       set_template_options, set_default_template, get_container_template_classes)
+                                       set_template_options, set_default_template, get_container_template_classes,
+                                       get_container_classes, create_container_from_db_object,
+                                       compare_template_with_container)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import PolicyError, ParameterError
+from privacyidea.lib.crypto import verify_ecc
+from privacyidea.lib.error import PolicyError, ParameterError, privacyIDEAError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
@@ -82,12 +85,13 @@ def list_containers():
     psize = int(getParam(param, "pagesize", optional=True) or 0)
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
+    template = getParam(param, "template", optional=True)
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
     allowed_token_realms = getattr(request, "pi_allowed_realms", None)
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
-                                realms=allowed_container_realms,
+                                realms=allowed_container_realms, template=template,
                                 sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
@@ -633,6 +637,40 @@ def registration_terminate(container_serial: str):
     return send_result(res)
 
 
+@container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['DELETE'])
+@event('container_register_terminate', request, g)
+@log_with(log)
+def registration_terminate_client(container_serial: str):
+    """
+    Terminates the synchronization of a container with privacyIDEA.
+    This endpoint can only be called from clients that are registered at the container, providing a valid signature.
+
+    :param container_serial: Serial of the container
+    :jsonparam signature: Signature of the client
+    :jsonparam message: Message
+    """
+    message = getParam(request.all_data, "message", required)
+    signature = getParam(request.all_data, "signature", required)
+
+    # Get required parameters from the container
+    container = find_container_by_serial(container_serial)
+    container_info = container.get_container_info_dict()
+    public_client_key = container_info.get("public_client_key")
+    registration_state = container_info.get("registration_state")
+    hash_algorithm = container_info.get("hash_algorithm")
+    if registration_state != "registered":
+        raise privacyIDEAError("Container is not registered.")
+
+    try:
+        verify_ecc(message.encode("utf-8"), signature, public_client_key, hash_algorithm)
+    except Exception:
+        raise privacyIDEAError(f"Could not verify the signature!")
+
+    res = container.terminate_registration()
+
+    return send_result(res)
+
+
 @container_blueprint.route('sync/<string:container_serial>/init', methods=['GET'])
 @event('container_create_challenge', request, g)
 @log_with(log)
@@ -751,6 +789,38 @@ def sync_finalize(container_serial: str):
     return send_result(res)
 
 
+@container_blueprint.route('classoptions', methods=['GET'])
+def get_class_options():
+    """
+    Get the class options for the container type or for all container classes if no type is given.
+    Raises a ParameterError if the container type is not found.
+
+    :jsonparam container_type: Type of the container, optional
+    :jsonparam only_selectable: If set to True, only options with at least two selectable values are returned, optional
+    :return: Dictionary with the class options for the given container type or for all container types like
+
+        ::
+            {
+                "generic": {},
+                "smartphone": {"key_algorithm": ["secp384r1", "secp256r1", ...], "encrypt_algorithm": ["AES", ...], ...},
+                "yubikey": {"pin_policy": [""]}
+            }
+    """
+    container_type = getParam(request.all_data, "container_type", optional=True)
+    only_selectable = getParam(request.all_data, "only_selectable", optional=True, default=False)
+    options = {}
+    container_classes = get_container_classes()
+    if container_type:
+        if container_type not in container_classes:
+            raise ParameterError(f"Container type {container_type} not found.")
+        options[container_type] = container_classes[container_type].get_class_options(only_selectable)
+    else:
+        # Get options for all container types
+        for ctype in container_classes:
+            options[ctype] = container_classes[ctype].get_class_options(only_selectable)
+    return send_result(options)
+
+
 # TEMPLATES
 @container_blueprint.route('/templates', methods=['GET'])
 @log_with(log)
@@ -856,3 +926,19 @@ def delete_template(template_name):
     template = get_template_obj(template_name)
     template.delete()
     return send_result(True)
+
+
+@container_blueprint.route('template/<string:template_name>/compare', methods=['GET'])
+@log_with(log)
+def compare_template_with_containers(template_name):
+    """
+    Compares a template with it's created containers.
+    """
+    template = get_template_obj(template_name)
+    container_list = [create_container_from_db_object(db_container) for db_container in template.containers]
+
+    result = {}
+    for container in container_list:
+        result[container.serial] = compare_template_with_container(template, container)
+
+    return send_result(result)

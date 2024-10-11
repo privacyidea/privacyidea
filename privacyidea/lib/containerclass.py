@@ -58,11 +58,39 @@ class TokenContainerClass:
         self.options = {}
 
     @classmethod
-    def get_class_options(cls):
+    def get_class_options(cls, only_selectable=False):
         """
         Returns the options for the container class.
         """
-        return cls.options
+        if only_selectable:
+            class_options = {key: values for key, values in cls.options.items() if len(values) > 1}
+        else:
+            class_options = cls.options
+        return class_options
+
+    def set_default_option(self, key):
+        """
+        Checks if all options (key algorithm, hash algorithm, ...) are set in the container info.
+        Otherwise, the default values are set.
+
+        :param key: The key to be checked.
+        :return: The used value for the key or None if the key does not exist in the class options.
+        """
+        class_options = self.get_class_options()
+        key_options = class_options.get(key)
+
+        if key_options is None:
+            # The key does not exist in the class options
+            return None
+
+        # Check if value is already set for this key in the container info
+        container_info = self.get_container_info_dict()
+        value = container_info.get(key)
+        if not value:
+            # key not defined: set default value
+            value = class_options[key][0]
+            self.add_container_info(key, value)
+        return value
 
     @property
     def serial(self):

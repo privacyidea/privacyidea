@@ -19,8 +19,9 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        add_token_to_container, create_endpoint_url, create_container_template,
                                        get_templates_by_query, get_template_obj, set_template_options,
                                        create_container_template_from_db_object, compare_template_dicts,
-                                       set_default_template)
+                                       set_default_template, compare_template_with_container)
 from privacyidea.lib.container import get_container_classes
+from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
@@ -669,15 +670,19 @@ class TokenContainerManagementTestCase(MyTestCase):
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, container_data["count"])
 
-        # Filter for non-existing token serial: returns all containers
+        # Filter for non-existing token serial
         container_data = get_all_containers(token_serial="non_existing_token", pagesize=15)
-        self.assertEqual(6, len(container_data["containers"]))
+        self.assertEqual(0, len(container_data["containers"]))
 
         # Filter by realms
         container_data = get_all_containers(realms=["realm1"], pagesize=15)
         self.assertEqual(4, len(container_data["containers"]))
         for container in container_data["containers"]:
             self.assertEqual("realm1", container.realms[0].name)
+
+        # Filter for non-existing realm
+        container_data = get_all_containers(realms=["non_existing_realm"], pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
 
         # Filter by user
         user_hans = User(login="hans", realm=self.realm1)
@@ -687,19 +692,28 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(container_data["containers"][0].get_users()))
         self.assertEqual("hans", container_data["containers"][0].get_users()[0].login)
 
+        # Filter for non-existing user
+        user_invalid = User(login="invalid", realm="random")
+        container_data = get_all_containers(user=user_invalid, pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
         # Create container with template
         template_params = {"name": "test",
-                           "type": "smartphone",
+                           "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
-        create_container_template(container_type=template_params["type"],
+        create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
-        cserial, _ = init_container({"type": "smartphone"})
-        container = find_container_by_serial(cserial)
-        container.add_container_info("template", template_params["name"])
+        cserial, _ = init_container({"type": "smartphone", "template": template_params})
+
         # check filter by template
         container_data = get_all_containers(template="test")
         self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual("test", container_data["containers"][0].template.name)
+
+        # check filter by non-existing template
+        container_data = get_all_containers(template="random")
+        self.assertEqual(0, len(container_data["containers"]))
 
         # Test pagination
         container_data = get_all_containers(page=2, pagesize=2)
@@ -837,6 +851,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("time_stamp", result_entries)
         self.assertIn("key_algorithm", result_entries)
 
+        # check container info is set
+        container_info = smartphone.get_container_info_dict()
+        self.assertEqual("secp384r1", container_info[SmartphoneOptions.KEY_ALGORITHM])
+        self.assertEqual("SHA256", container_info[SmartphoneOptions.HASH_ALGORITHM])
+        self.assertEqual("AES", container_info[SmartphoneOptions.ENCRYPT_ALGORITHM])
+        self.assertEqual("x25519", container_info[SmartphoneOptions.ENCRYPT_KEY_ALGORITHM])
+        self.assertEqual("GCM", container_info[SmartphoneOptions.ENCRYPT_MODE])
+
         return smartphone_serial, result
 
     def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
@@ -917,11 +939,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # check container_info is empty
         container_info = smartphone.get_container_info_dict()
-        self.assertEqual(4, len(container_info))
-        self.assertIn("key_algorithm", container_info.keys())
-        self.assertIn("hash_algorithm", container_info.keys())
-        self.assertIn("encrypt_algorithm", container_info.keys())
-        self.assertIn("encrypt_algorithm", container_info.keys())
+        self.assertEqual(0, len(container_info))
 
     def test_37_register_smartphone_success(self):
         # Prepare
@@ -1319,7 +1337,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         template_options = {
             "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}],
-            "allow_rollover": True}
+            "options": {SmartphoneOptions.ALLOW_ROLLOVER: True}}
 
         template_id_options = set_template_options(template_name, template_options)
         self.assertEqual(template_id, template_id_options)
@@ -1545,7 +1563,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
     def test_15_create_container_with_template_success(self):
         # Create template
-        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        template_options = {"options": {"key_algorithm": "secp384r1"},
+                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="generic",
                                   template_name="test",
                                   options=template_options)
@@ -1556,10 +1575,13 @@ class TokenContainerTemplateTestCase(MyTestCase):
         container_serial, template_tokens = init_container(container_params)
         self.assertEqual(template_options["tokens"], template_tokens)
 
+        # check container properties
+        container = find_container_by_serial(container_serial)
+        self.assertEqual("secp384r1", container.get_container_info_dict()["key_algorithm"])
+
         # Delete template
         template = get_template_obj("test")
         template.delete()
-        container = find_container_by_serial(container_serial)
         self.assertIsNone(container.template)
 
         # Clean up
@@ -1582,3 +1604,32 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # Clean up
         container.delete()
         get_template_obj("test").delete()
+
+    def test_17_compare_container_with_template(self):
+        # create template
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}],
+                            "options": {"key_algorithm": "secp384r1", "hash_algorithm": "SHA256"}}
+        create_container_template(container_type="generic",
+                                  template_name="test",
+                                  options=template_options)
+        template = get_template_obj("test")
+
+        # create container with tokens
+        container_params = {"type": "generic", "template": {"name": "test", "container_type": "generic",
+                                                               "template_options": template_options}}
+        container_serial, template_tokens = init_container(container_params)
+        container = find_container_by_serial(container_serial)
+        for token_details in [{"type": "hotp", "genkey": True}, {"type": "spass"}, {"type": "spass"}]:
+            token = init_token(token_details)
+            container.add_token(token)
+        container.set_container_info({"hash_algorithm": "SHA1", "encrypt_algorithm": "AES"})
+
+        # compare template and container: equal
+        result = compare_template_with_container(template, container)
+        token_result = result["tokens"]
+        self.assertEqual(["totp"], token_result["missing"])
+        self.assertEqual(['spass', 'spass'], token_result["additional"])
+        options_result = result["options"]
+        self.assertEqual(1, len(options_result["missing"]))
+        self.assertEqual(1, len(options_result["different"]))
+        self.assertEqual(1, len(options_result["additional"]))

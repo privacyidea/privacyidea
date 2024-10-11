@@ -77,28 +77,27 @@ class SmartphoneOptions:
     """
     Options for the smartphone container.
     """
-    ALLOW_ROLLOVER = "allow_rollover"
+    ALLOW_ROLLOVER = "allow_client_rollover"
     KEY_ALGORITHM = "key_algorithm"
     HASH_ALGORITHM = "hash_algorithm"
+    ENCRYPT_KEY_ALGORITHM = "encrypt_key_algorithm"
     ENCRYPT_ALGORITHM = "encrypt_algorithm"
     ENCRYPT_MODE = "encrypt_mode"
     FORCE_BIOMETRIC = "force_biometric"
 
 
 class SmartphoneContainer(TokenContainerClass):
-    options = {SmartphoneOptions.FORCE_BIOMETRIC: [True, False],
-               SmartphoneOptions.ALLOW_ROLLOVER: [True, False],
-               SmartphoneOptions.KEY_ALGORITHM: ["secp384r1", "secp256r1", "secp521r1"],
-               SmartphoneOptions.HASH_ALGORITHM: ["SHA256", "SHA384", "SHA512"],
+    # The first value in the list is the default value
+    options = {SmartphoneOptions.FORCE_BIOMETRIC: [False, True],
+               SmartphoneOptions.ALLOW_ROLLOVER: [False, True],
+               SmartphoneOptions.KEY_ALGORITHM: ["secp384r1"],
+               SmartphoneOptions.HASH_ALGORITHM: ["SHA256"],
+               SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: ["x25519"],
                SmartphoneOptions.ENCRYPT_ALGORITHM: ["AES"],
-               SmartphoneOptions.ENCRYPT_MODE: ["GCM", "CBC"]}
+               SmartphoneOptions.ENCRYPT_MODE: ["GCM"]}
 
     def __init__(self, db_container):
         super().__init__(db_container)
-        self.add_container_info("key_algorithm", "secp384r1")
-        self.add_container_info("hash_algorithm", "SHA256")
-        self.add_container_info("encrypt_algorithm", "AES")
-        self.add_container_info("encrypt_mode", "GCM")
 
     @classmethod
     def get_class_type(cls):
@@ -106,13 +105,6 @@ class SmartphoneContainer(TokenContainerClass):
         Returns the type of the container class.
         """
         return "smartphone"
-
-    @classmethod
-    def get_class_options(cls):
-        """
-        Returns the options for the container class.
-        """
-        return cls.options
 
     @classmethod
     def get_supported_token_types(cls):
@@ -203,10 +195,15 @@ class SmartphoneContainer(TokenContainerClass):
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
 
-        # get algorithms
-        container_info = self.get_container_info_dict()
-        key_algorithm = container_info.get("key_algorithm", "secp384r1")
-        hash_algorithm = container_info.get("hash_algorithm", "SHA256")
+        # set all options and get algorithms
+        class_options = self.get_class_options()
+        options = {}
+        for key in list(class_options.keys()):
+            value = self.set_default_option(key)
+            if value is not None:
+                options[key] = value
+        key_algorithm = options[SmartphoneOptions.KEY_ALGORITHM]
+        hash_algorithm = options[SmartphoneOptions.HASH_ALGORITHM]
 
         # Generate URL
         qr_url = create_container_registration_url(nonce=nonce,
@@ -364,7 +361,7 @@ class SmartphoneContainer(TokenContainerClass):
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
         except KeyError:
-            raise privacyIDEAError("The container is not registered!")
+            raise privacyIDEAError("The container is not registered or was unregistered!")
         pub_key_sig_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
 
         # Validate challenge
