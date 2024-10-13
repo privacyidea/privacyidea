@@ -44,7 +44,6 @@ install_requires = [
     "google-auth",
     "grpcio",
     "huey[redis]",
-    "importlib_metadata; python_version=='3.7'",
     "ldap3<2.9",
     "MarkupSafe",
     "netaddr",
