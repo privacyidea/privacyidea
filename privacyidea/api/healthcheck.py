@@ -118,7 +118,8 @@ def readyz():
 @healthz_blueprint.route('/resolversz', methods=['GET'])
 def resolversz():
     """
-    Resolver check endpoint that tests the connection to all LDAP and SQL resolvers.
+    Resolver check endpoint that tests the connection to all resolvers types defined in the dictionary keys.
+    For now LDAP and SQL resolvers are tested.
 
     The endpoint returns a JSON object with the status of each resolver (either "OK"
     or "fail"). It attempts to establish a connection to each resolver, and if any
@@ -129,44 +130,25 @@ def resolversz():
     """
     result = {
         "status": "fail",
-        "ldapresolvers": {},
-        "sqlresolvers": {}
+        "ldapresolver": {},
+        "sqlresolver": {}
     }
 
     try:
-        ldapresolvers_list = get_resolver_list(filter_resolver_type="ldapresolver")
-        sqlresolvers_list = get_resolver_list(filter_resolver_type="sqlresolver")
+        for resolver_key in result.keys():
+            if resolver_key == "status":
+                continue
+            resolvers_list = get_resolver_list(filter_resolver_type=resolver_key)
+            for resolver_name, resolver_data in resolvers_list.items():
+                if resolver_data:
+                    resolver_class = get_resolver_class(resolver_key)
+                    success, _ = resolver_class.testconnection(resolver_data.get("data"))
+                    result[resolver_key][resolver_name] = "OK" if success else "fail"
+                else:
+                    result[resolver_key][resolver_name] = "fail"
 
-        result["ldapresolvers"] = check_resolvers(ldapresolvers_list)
-        result["sqlresolvers"] = check_resolvers(sqlresolvers_list)
         result["status"] = "OK"
         return send_result(result), 200
     except Exception as e:
         log.debug(f"Exception in /resolversz endpoint: {e}")
         return send_result({"status": "error"}), 503
-
-
-def check_resolvers(resolvers_list):
-    """
-    Test the connections for the given resolver list.
-
-    This function iterates over the list of resolvers and tests the connection
-    for each resolver. It returns a dictionary with the resolver names as keys
-    and their connection statuses ("OK" or "fail") as values.
-
-    :param resolvers_list: List of resolvers to be tested.
-    :type resolvers_list: list
-    :return: Dictionary with resolver names and their statuses.
-    :rtype: dict
-    """
-    resolvers_stats = {}
-
-    for i, resolver_name in enumerate(resolvers_list):
-        resolver_data = resolvers_list.get(resolver_name)
-        resolver_class = get_resolver_class(resolver_data.get("type"))
-        success, _ = resolver_class.testconnection(resolver_data.get("data"))
-
-        resolver_status = "OK" if success else "fail"
-        resolvers_stats[f"{resolver_name}"] = resolver_status
-
-    return resolvers_stats

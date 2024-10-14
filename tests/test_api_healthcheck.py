@@ -70,11 +70,11 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 "status") == expected_status, (f"Expected '{expected_status}' status, "
                                                f"got {result.get('value').get('status')}")
 
-            ldap_resolvers = result.get("value").get("ldapresolvers")
-            sql_resolvers = result.get("value").get("sqlresolvers")
+            ldap_resolvers = result.get("value").get("ldapresolver")
+            sql_resolvers = result.get("value").get("sqlresolver")
 
-            assert ldap_resolvers is not None, "Expected 'ldapresolvers' in result, but got None"
-            assert sql_resolvers is not None, "Expected 'sqlresolvers' in result, but got None"
+            assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
+            assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
 
             assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
                 f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
