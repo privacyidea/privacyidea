@@ -1,3 +1,13 @@
+Version 3.10.1, 2024-09-27
+
+  Fixes:
+  * UI: Follow general button design for Container in token view (#4089)
+  * UI: Audit action filter now working properly (#4093)
+  * UI: Fix empty configuration views (#4068)
+  * WebAuthn: Properly check user verification during authentication (#4083)
+  * Enhance comparison for event condition `user_token_number` (#4049)
+  * Fix token rollover with 2step enrollment and PIN policies (#4037)
+
 Version 3.10, 2024-09-03
 
   Features:

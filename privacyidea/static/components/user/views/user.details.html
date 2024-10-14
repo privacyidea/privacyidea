@@ -209,11 +209,11 @@
                 </td>
                 <td>
                     <fieldset ng-disabled="!token.tokentype">
-                        <button class="btn btn-transparent btn-danger"
+                        <button class="btn btn-transparent btn-warning"
                                 ng-hide="showDialog[token.serial]"
                                 ng-disabled="!checkRight('unassign')"
                                 ng-click="unassign(token.serial)">
-                            <span class="glyphicon glyphicon-remove"></span>
+                            <span class="glyphicon glyphicon-resize-full" translate></span>
                             <span translate>Unassign</span>
                         </button>
                         <button class="btn btn-transparent btn-danger" ng-click="deleteToken(token.serial, true)"

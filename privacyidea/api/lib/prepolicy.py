@@ -667,12 +667,13 @@ def twostep_enrollment_activation(request=None, action=None):
     user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
-    token_exists = False
+    rollover = getParam(request.all_data, "rollover", optional=True)
+    token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
-            token_type = tokensobject_list[0].token.tokentype
-            token_exists = True
+            token = tokensobject_list[0]
+            token_type = token.get_tokentype()
     token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
@@ -688,8 +689,9 @@ def twostep_enrollment_activation(request=None, action=None):
             # The user is allowed to pass 2stepinit=1
             pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1 (if the token does not exist yet)
-            if not token_exists:
+            # We force 2stepinit to be 1 if the token does not exist yet or
+            # if a token rollover is triggered and the token is not in 'clientwait' state
+            if not token or (token.rollout_state != ROLLOUTSTATE.CLIENTWAIT and rollover):
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
@@ -716,8 +718,6 @@ def twostep_enrollment_parameters(request=None, action=None):
 
     This policy function is used to decorate the ``/token/init`` endpoint.
     """
-    policy_object = g.policy_object
-    user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
     if serial:
@@ -1806,7 +1806,7 @@ def webauthntoken_request(request, action):
         if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
             allowed_aaguids_pols = Match \
                 .user(g,
-                      scope=scope,
+                      scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
                       action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,
