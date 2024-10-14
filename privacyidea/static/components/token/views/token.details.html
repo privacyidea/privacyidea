@@ -496,8 +496,7 @@
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
-
-                <button class="btn btn-primary" ng-disabled="!testPassword"
+                <button class="btn btn-primary" ng-disabled="!testPassword && token.tokentype != 'passkey'"
                         id="testOtpButton"
                         uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">

@@ -523,7 +523,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
 
     :param tokentype: The type of the token. If None, all tokens are returned.
     :type tokentype: basestring
-    :param token_type_list: A list of token types. I None or empty, all token types are returned.
+    :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
@@ -2969,7 +2969,8 @@ def get_credential_ids_for_user(user: User) -> list:
     :return: A list of credential ids
     """
     credential_ids = []
-    for token in get_tokens(user=user):
-        if token.get_tokentype() in ["webauthn", "passkey"] and token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
-            credential_ids.append(token.token.get_otpkey().getKey())
+    for token in get_tokens(user=user, token_type_list=["passkey"]):
+        if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+            cred_id = token.token.get_otpkey().getKey().decode("utf-8")
+            credential_ids.append(cred_id)
     return credential_ids

@@ -90,11 +90,12 @@ class PasskeyTokenClass(TokenClass):
 
             # To avoid registering the same authenticator multiple times, get other passkey token of the user
             # and set their credential ids in exclude_credentials
-            registered_credential_ids = get_optional(params, "registered_credential_ids")
+            registered_credential_ids = [base64url_to_bytes(cred_id) for cred_id in
+                                         get_optional(params, "registered_credential_ids")]
             excluded_credentials: list[PublicKeyCredentialDescriptor] = []
             if registered_credential_ids:
-                 excluded_credentials = ([PublicKeyCredentialDescriptor(id=cred)
-                                          for cred in registered_credential_ids])
+                excluded_credentials = ([PublicKeyCredentialDescriptor(id=cred)
+                                         for cred in registered_credential_ids])
 
             registration_options = generate_registration_options(
                 rp_id=get_required(params, WEBAUTHNACTION.RELYING_PARTY_ID),

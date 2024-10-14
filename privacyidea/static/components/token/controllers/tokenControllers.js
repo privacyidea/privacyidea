@@ -483,30 +483,47 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             if ($scope.enrolledToken.rollout_state === "clientwait") {
                 $scope.pollTokenInfo();
             }
-            // passkey
+            // Passkey
             $scope.bytesToBase64 = function (bytes) {
                 const binString = Array.from(bytes, (byte) =>
                     String.fromCodePoint(byte),).join("");
                 return btoa(binString);
             };
+            $scope.base64URLToBytes = function (base64URLString) {
+                const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
+                const padLength = (4 - (base64.length % 4)) % 4;
+                const padded = base64.padEnd(base64.length + padLength, '=');
+                const binary = atob(padded);
+                const buffer = new ArrayBuffer(binary.length);
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return buffer;
+            }
 
             if ($scope.enrolledToken.passkey_registration) {
-                console.log("passkey_registration");
-                console.log($scope.enrolledToken.passkey_registration);
-                let opt = JSON.parse($scope.enrolledToken.passkey_registration);
+                let options = JSON.parse($scope.enrolledToken.passkey_registration);
+                let excludedCredentials = [];
+                for (const cred of options.excludeCredentials) {
+                    excludedCredentials.push({
+                        id: $scope.base64URLToBytes(cred.id),
+                        type: cred.type,
+                    });
+                }
                 navigator.credentials.create({
                     publicKey: {
-                        rp: opt.rp,
+                        rp: options.rp,
                         user: {
-                            id: Uint8Array.from(opt.user.id, c => c.charCodeAt(0)),
-                            name: opt.user.name,
-                            displayName: opt.user.displayName
+                            id: Uint8Array.from(options.user.id, c => c.charCodeAt(0)),
+                            name: options.user.name,
+                            displayName: options.user.displayName
                         },
-                        challenge: Uint8Array.from(opt.challenge, c => c.charCodeAt(0)),
-                        pubKeyCredParams: opt.pubKeyCredParams,
-                        excludeCredentials: opt.excludeCredentials,
-                        authenticatorSelection: opt.authenticatorSelection,
-                        timeout: opt.timeout,
+                        challenge: Uint8Array.from(options.challenge, c => c.charCodeAt(0)),
+                        pubKeyCredParams: options.pubKeyCredParams,
+                        excludeCredentials: excludedCredentials,
+                        authenticatorSelection: options.authenticatorSelection,
+                        timeout: options.timeout,
                         "extensions": {
                             "credProps": true
                         }
@@ -528,12 +545,18 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                     }
 
                     TokenFactory.initToken(params, function (response) {
-                        console.log("initToken");
-                        console.log(response);
+                    });
+                }, function (error) {
+                    console.log("Error while registering passkey");
+                    console.log(error);
+                    inform.add("Error while registering passkey, the token will not be created!",
+                        {type: "danger", ttl: 10000});
+                    TokenFactory.delete(data.detail.serial, function (response) {
+                        $state.go('token.list');
                     });
                 });
             }
-            // end passkey
+            // End Passkey
             $('html,body').scrollTop(0);
         }
 

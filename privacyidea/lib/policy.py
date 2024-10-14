@@ -3058,7 +3058,7 @@ class Match(object):
         The client IP is matched implicitly.
         From the token object we try to determine the user as the owner.
         If the token has no owner, we try to determine the tokenrealm.
-        We fallback to realm=None
+        We fall back to realm=None
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``

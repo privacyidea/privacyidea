@@ -88,7 +88,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
         // End container
 
-        // passkey test
+        // Passkey test button
         $scope.bytesToBase64 = function (bytes) {
             const binString = Array.from(bytes, (byte) =>
                 String.fromCodePoint(byte),).join("");
@@ -100,7 +100,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 console.log("isConditionalMediationAvailable: " + available);
             });
         $scope.testPasskey = function () {
-            // TODO send the HTTP_ORIGIN here and bind it to the challenge to double check?
             $http.post(validateUrl + "/initialize", {}).then(function (response) {
                     let data = response.data.detail;
                     console.log(data);
@@ -120,8 +119,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                             signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
                             userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
                         };
-                        $http.post(validateUrl + "/check", params, {
-                            }
+                        $http.post(validateUrl + "/check", params, {}
                         ).then(function (response) {
                             let data = response.data;
                             console.log(data);
@@ -141,7 +139,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             )
             ;
         };
-// end passkey test
+// End Passkey test button
 
         $scope.tokenSerial = $stateParams.tokenSerial;
 // This is the parent object

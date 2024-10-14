@@ -68,6 +68,8 @@ In case if authenticating a serial number:
 import threading
 
 from flask import (Blueprint, request, g, current_app)
+from huey.consumer_options import option
+
 from privacyidea.lib.user import get_user_from_param, log_used_user, User
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -403,8 +405,7 @@ def check():
 
     # Add all params to the options
     options: dict = {}
-    for key, value in request.all_data.items():
-            options[key] = value
+    options.update(request.all_data)
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     g.audit_object.log({"user": user.login,
@@ -419,7 +420,6 @@ def check():
     if credential_id:
         # Find the token that responded to the challenge
         transaction_id: str = get_required(request.all_data, "transaction_id")
-        request.all_data["HTTP_ORIGIN"] = get_required(request.environ, "HTTP_ORIGIN")
         try:
             token = find_fido2_token_by_credential_id(credential_id)
             if not token.user:
