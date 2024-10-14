@@ -118,7 +118,7 @@ def readyz():
 @healthz_blueprint.route('/resolversz', methods=['GET'])
 def resolversz():
     """
-    Resolver check endpoint that tests the connection to all resolvers types defined in the dictionary keys.
+    Resolver check endpoint that tests the connection to all resolvers types defined in resolver_types.
     For now LDAP and SQL resolvers are tested.
 
     The endpoint returns a JSON object with the status of each resolver (either "OK"
@@ -133,18 +133,18 @@ def resolversz():
     total_status = "OK"
 
     try:
-        for resolver_key in resolver_types:
-            result[resolver_key] = {}
-            resolvers_list = get_resolver_list(filter_resolver_type=resolver_key)
+        for resolver_type in resolver_types:
+            result[resolver_type] = {}
+            resolvers_list = get_resolver_list(filter_resolver_type=resolver_type)
             for resolver_name, resolver_data in resolvers_list.items():
                 if resolver_data:
-                    resolver_class = get_resolver_class(resolver_key)
+                    resolver_class = get_resolver_class(resolver_type)
                     success, _ = resolver_class.testconnection(resolver_data.get("data"))
                     if not success:
                         total_status = "fail"
-                    result[resolver_key][resolver_name] = "OK" if success else "fail"
+                    result[resolver_type][resolver_name] = "OK" if success else "fail"
                 else:
-                    result[resolver_key][resolver_name] = "fail"
+                    result[resolver_type][resolver_name] = "fail"
 
         result["status"] = total_status
         return send_result(result), 200
