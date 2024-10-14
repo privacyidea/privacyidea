@@ -128,26 +128,25 @@ def resolversz():
     :return: A tuple containing the resolver status and HTTP response code.
     :rtype: tuple
     """
-    result = {
-        "status": "fail",
-        "ldapresolver": {},
-        "sqlresolver": {}
-    }
+    result = {}
+    resolver_types = ["ldapresolver", "sqlresolver"]
+    total_status = "OK"
 
     try:
-        for resolver_key in result.keys():
-            if resolver_key == "status":
-                continue
+        for resolver_key in resolver_types:
+            result[resolver_key] = {}
             resolvers_list = get_resolver_list(filter_resolver_type=resolver_key)
             for resolver_name, resolver_data in resolvers_list.items():
                 if resolver_data:
                     resolver_class = get_resolver_class(resolver_key)
                     success, _ = resolver_class.testconnection(resolver_data.get("data"))
+                    if not success:
+                        total_status = "fail"
                     result[resolver_key][resolver_name] = "OK" if success else "fail"
                 else:
                     result[resolver_key][resolver_name] = "fail"
 
-        result["status"] = "OK"
+        result["status"] = total_status
         return send_result(result), 200
     except Exception as e:
         log.debug(f"Exception in /resolversz endpoint: {e}")
