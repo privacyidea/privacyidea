@@ -8,36 +8,37 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 
-PWFILE = "tests/testdata/passwords"
-from .base import MyTestCase
-from . import ldap3mock
-from ldap3.core.exceptions import LDAPOperationResult
-from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
-import mock
-import ldap3
-import responses
-import datetime
-import uuid
-import pytest
-import json
-import ssl
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
-from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
-from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
-from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
-
+from requests import HTTPError
+from privacyidea.lib.utils import to_bytes, to_unicode
+from privacyidea.models import ResolverConfig
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver,
                                       CENSORED)
-from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.models import ResolverConfig
-from privacyidea.lib.utils import to_bytes, to_unicode
-from requests import HTTPError
+from privacyidea.lib.resolvers.TokenResolver import TokenResolver
+from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
+from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
+from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
+import ssl
+import json
+import uuid
+import datetime
+import responses
+import ldap3
+import mock
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
+from ldap3.core.exceptions import LDAPOperationResult
+from . import ldap3mock
+from .base import MyTestCase
+import jwt
+PWFILE = "tests/testdata/passwords"
+
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -58,7 +59,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": objectGUIDs[0],
                                 'mobile': ["1234", "45678"]}},
-                {"dn": 'cn=bob,ou=example,o=test',
+                 {"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
                                 "sn": "Marley",
                                 "givenName": "Robert",
@@ -69,7 +70,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "accountExpires": 9223372036854775807,
                                 "objectGUID": objectGUIDs[1],
                                 'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
+                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
                                 "givenName": "Corny",
                                 "sn": "keule",
@@ -92,26 +93,26 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                  "oid": "4"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[0],
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[1],
-                                'oid': "1"}},
+                        "attributes": {'cn': 'bob',
+                                       "sn": "Marley",
+                                       "givenName": "Robert",
+                                       "email": "bob@example.com",
+                                       "mobile": "123456",
+                                       "homeDirectory": "/home/bob",
+                                       'userPassword': 'bobpwééé',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[0],
+                                       'oid': "3"}},
+                       {"dn": 'cn=manager,ou=example,o=test',
+                        "attributes": {'cn': 'manager',
+                                       "givenName": "Corny",
+                                       "sn": "keule",
+                                       "email": "ck@o",
+                                       "mobile": "123354",
+                                       'userPassword': 'ldaptest',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[1],
+                                       'oid': "1"}},
                        {"dn": 'cn=salesman,ou=example,o=test',
                         "attributes": {'cn': 'salesman',
                                        'givenName': 'hans',
@@ -122,27 +123,27 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1
 LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[0] + "}",
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[1] + "}",
-                                'oid': "1"}}
-                       ]
+                                   "attributes": {'cn': 'bob',
+                                                  "sn": "Marley",
+                                                  "givenName": "Robert",
+                                                  "email": "bob@example.com",
+                                                  "mobile": "123456",
+                                                  "homeDirectory": "/home/bob",
+                                                  'userPassword': 'bobpwééé',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[0] + "}",
+                                                  'oid': "3"}},
+                                  {"dn": 'cn=manager,ou=example,o=test',
+                                   "attributes": {'cn': 'manager',
+                                                  "givenName": "Corny",
+                                                  "sn": "keule",
+                                                  "email": "ck@o",
+                                                  "mobile": "123354",
+                                                  'userPassword': 'ldaptest',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[1] + "}",
+                                                  'oid': "1"}}
+                                  ]
 
 
 class SQLResolverTestCase(MyTestCase):
@@ -163,7 +164,7 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-    }
+                  }
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -669,8 +670,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_ACCESSTOKEN)
         y = SCIMResolver()
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+                      self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+                      self.SECRET, 'Mapping': "{}"})
 
         rid = y.getResolverId()
         self.assertEqual(rid, self.AUTHSERVER)
@@ -689,8 +690,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_ACCESSTOKEN)
         y = SCIMResolver()
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+                      self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+                      self.SECRET, 'Mapping': "{}"})
 
         r = y.checkPass("uid", "password")
         self.assertFalse(r)
@@ -706,8 +707,8 @@ class SCIMResolverTestCase(MyTestCase):
 
         y = SCIMResolver()
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{username: 'userName'}"})
+                      self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+                      self.SECRET, 'Mapping': "{username: 'userName'}"})
 
         r = y.getUserInfo("bjensen")
         self.assertEqual(r.get("username"), "bjensen")
@@ -733,8 +734,8 @@ class SCIMResolverTestCase(MyTestCase):
 
         y = SCIMResolver()
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+                      self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+                      self.SECRET, 'Mapping': "{}"})
 
         r = y.getUserList()
         self.assertEqual(len(r), 2)
@@ -750,7 +751,7 @@ class SCIMResolverTestCase(MyTestCase):
                       status=402, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
         # Failed to retrieve access token
-        #SCIMResolver._get_user(resource_server=self.RESOURCESERVER,
+        # SCIMResolver._get_user(resource_server=self.RESOURCESERVER,
         #                       access_token="", userid="jbensen")
         self.assertRaises(Exception, SCIMResolver._get_user,
                           resource_server=self.RESOURCESERVER,
@@ -765,7 +766,7 @@ class SCIMResolverTestCase(MyTestCase):
                       status=402, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
         # Failed to retrieve access token
-        #SCIMResolver._search_users(resource_server=self.RESOURCESERVER,
+        # SCIMResolver._search_users(resource_server=self.RESOURCESERVER,
         #                           access_token="")
         self.assertRaises(Exception, SCIMResolver._search_users,
                           resource_server=self.RESOURCESERVER,
@@ -823,7 +824,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'DN',
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -893,7 +894,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'DN',
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -944,7 +945,6 @@ class LDAPResolverTestCase(MyTestCase):
         res = y.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
-
     @ldap3mock.activate
     def test_01_broken_uidtype(self):
         # checkPass with wrong UIDtype
@@ -964,7 +964,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'unknownType',
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -1002,7 +1002,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'oid',
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -1055,7 +1055,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertTrue(res[0], res)
         self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1], res[1])
@@ -1078,11 +1078,11 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertTrue(res[0], res)
         self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
-        #'Your LDAP config seems to be OK, 3 user objects found.'
+        # 'Your LDAP config seems to be OK, 3 user objects found.'
 
     @ldap3mock.activate
     def test_04_testconnection_fail(self):
@@ -1102,7 +1102,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertFalse(res[0], res)
         self.assertTrue("Wrong credentials" in res[1], res)
@@ -1126,7 +1126,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertFalse(res[0], res)
         self.assertTrue("Authtype unknown not supported" in res[1], res)
@@ -1223,7 +1223,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'oid',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         r = y._trim_result([{"type": "searchResEntry",
                              "DN": "blafoo"},
                             {"type": "searchResEntry",
@@ -1253,7 +1253,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
@@ -1286,7 +1286,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
@@ -1357,7 +1357,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         res = y.getUserList({"accountExpires": 1})
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0].get("username"), "alice")
@@ -1386,17 +1386,17 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         user = "achmed"
 
         # First we add the user with add_user
-        r = y.add_user({"username" : user,
-                        "surname" : "Ali",
-                        "email" : "achmed.ali@example.com",
-                        "password" : "testing123",
+        r = y.add_user({"username": user,
+                        "surname": "Ali",
+                        "email": "achmed.ali@example.com",
+                        "password": "testing123",
                         'mobile': ["1234", "45678"],
-                        "givenname" : "Achmed"})
+                        "givenname": "Achmed"})
         self.assertTrue(r)
 
         # Find the new users user_id
@@ -1468,7 +1468,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'OBJECT_CLASSES': classes,
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         user = "achmed"
         uid_bin = uuid.uuid4().bytes
@@ -1587,16 +1587,16 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                  '"phone" : "telephoneNumber", '
+                  '"mobile" : "mobile"'
+                  ', "email" : "mail", '
+                  '"surname" : "sn", '
+                  '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'START_TLS': '1',
                   'TLS_VERIFY': '1'
-        }
+                  }
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
@@ -1609,7 +1609,6 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
 
-
     @ldap3mock.activate
     def test_24_ldaps(self):
         # Check that use_ssl and tls are actually passed to the Connection
@@ -1621,11 +1620,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                  '"phone" : "telephoneNumber", '
+                  '"mobile" : "mobile"'
+                  ', "email" : "mail", '
+                  '"surname" : "sn", '
+                  '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_VERIFY': '1'
@@ -1696,11 +1695,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                  '"phone" : "telephoneNumber", '
+                  '"mobile" : "mobile"'
+                  ', "email" : "mail", '
+                  '"surname" : "sn", '
+                  '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_CA_FILE': '/unknown/path/to/ca_certs.crt',
@@ -1928,7 +1927,6 @@ class LDAPResolverTestCase(MyTestCase):
             # We get all three entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertEqual(len(ret), 3)
 
-
         # We imitate a hypothetical later ldap3 version and raise an exception *after having returned all entries*!
         # As ``getUserList`` stops consuming the generator after the size limit has been reached, we can only
         # test this using testconnection.
@@ -1972,7 +1970,6 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(ret[1] in ['Your LDAP config seems to be OK, 1 user objects found.',
                                        'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
                             ret[1])
-
 
     @ldap3mock.activate
     def test_30_login_with_objectGUID(self):
@@ -2055,7 +2052,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(&(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'LDAPSEARCHFILTER': '(&(cn=*))',  # we use this weird search filter to get a unique resolver ID
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -2111,7 +2108,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(|(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'LDAPSEARCHFILTER': '(|(cn=*))',  # we use this weird search filter to get a unique resolver ID
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -2170,18 +2167,18 @@ class LDAPResolverTestCase(MyTestCase):
     def test_35_persistent_serverpool(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         params = {'LDAPURI': 'ldap://localhost, ldap://127.0.0.1, ldap://127.0.1.1',
-                      'LDAPBASE': 'o=test',
-                      'BINDDN': 'cn=manager,ou=example,o=test',
-                      'BINDPW': 'ldaptest',
-                      'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
-                                  '"mobile" : "mobile", "email": "mail", '
-                                  '"surname" : "sn", "givenname": "givenName" }',
-                      'UIDTYPE': 'DN',
-                      'CACHE_TIMEOUT': '0', # to disable the per-process cache
-                      'resolver': 'testpool',
-                      'type': 'ldapresolver'}
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                  '"mobile" : "mobile", "email": "mail", '
+                  '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'CACHE_TIMEOUT': '0',  # to disable the per-process cache
+                  'resolver': 'testpool',
+                  'type': 'ldapresolver'}
         y1 = LDAPResolver()
         y1.loadConfig(params)
         y2 = LDAPResolver()
@@ -2221,6 +2218,7 @@ class LDAPResolverTestCase(MyTestCase):
             pool.get_current_server(None)
             mock_method.assert_called_once()
 
+
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):
@@ -2238,6 +2236,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], "Not implemented")
 
+
 class ResolverTestCase(MyTestCase):
     """
     Test the Passwdresolver
@@ -2247,10 +2246,10 @@ class ResolverTestCase(MyTestCase):
 
     def test_01_create_resolver(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": "/etc/passwd",
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": "/etc/passwd",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
 
         # description with missing main key
@@ -2411,10 +2410,10 @@ class ResolverTestCase(MyTestCase):
         # Create a resolver with an empty filename
         # will use the filename /etc/passwd
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": "",
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": "",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
         y = get_resolver_object(self.resolvername1)
         y.loadFile()
@@ -2422,10 +2421,10 @@ class ResolverTestCase(MyTestCase):
 
         # Load a file with an empty line
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE,
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE,
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
         y = get_resolver_object(self.resolvername1)
         y.loadFile()
@@ -2498,28 +2497,28 @@ class ResolverTestCase(MyTestCase):
         # --------------------------------
         # First we create an LDAP resolver
         rid = save_resolver({"resolver": "myLDAPres",
-                               "type": "ldapresolver",
-                               'LDAPURI': 'ldap://localhost',
-                               'LDAPBASE': 'o=test',
-                               'BINDDN': 'cn=manager,ou=example,o=test',
-                               'BINDPW': 'ldaptest',
-                               'LOGINNAMEATTRIBUTE': 'cn',
-                               'LDAPSEARCHFILTER': '(cn=*)',
-                               'USERINFO': '{ "username": "cn",'
-                                           '"phone" : "telephoneNumber", '
-                                           '"mobile" : "mobile"'
-                                           ', "email" : "mail", '
-                                           '"surname" : "sn", '
-                                           '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN',
-                               'CACHE_TIMEOUT': 0
-        })
+                             "type": "ldapresolver",
+                             'LDAPURI': 'ldap://localhost',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                             '"phone" : "telephoneNumber", '
+                             '"mobile" : "mobile"'
+                             ', "email" : "mail", '
+                             '"surname" : "sn", '
+                             '"givenname" : "givenName" }',
+                             'UIDTYPE': 'DN',
+                             'CACHE_TIMEOUT': 0
+                             })
 
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list()
         self.assertTrue("myLDAPres" in reso_list, reso_list)
         ui = ResolverConfig.query.filter(
-            ResolverConfig.Key=='USERINFO').first().Value
+            ResolverConfig.Key == 'USERINFO').first().Value
         # Check that the email is contained in the UI
         self.assertTrue("email" in ui, ui)
 
@@ -2528,18 +2527,18 @@ class ResolverTestCase(MyTestCase):
         rid = save_resolver({"resolver": "myLDAPres",
                              "type": "ldapresolver",
                              'LDAPURI': 'ldap://localhost',
-                               'LDAPBASE': 'o=test',
-                               'BINDDN': 'cn=manager,ou=example,o=test',
-                               'BINDPW': 'ldaptest',
-                               'LOGINNAMEATTRIBUTE': 'cn',
-                               'LDAPSEARCHFILTER': '(cn=*)',
-                               'USERINFO': '{ "username": "cn",'
-                                           '"phone" : "telephoneNumber", '
-                                           '"surname" : "sn", '
-                                           '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                             '"phone" : "telephoneNumber", '
+                             '"surname" : "sn", '
+                             '"givenname" : "givenName" }',
+                             'UIDTYPE': 'DN',
                              'CACHE_TIMEOUT': 0
-        })
+                             })
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
         reso_conf = reso_list.get("myLDAPres").get("data")
@@ -2863,3 +2862,166 @@ class HTTPResolverTestCase(MyTestCase):
             'Received an error while searching for user: PepePerez',
             instance.getUserInfo, 'PepePerez'
         )
+
+
+class TokenResolverTestCase(MyTestCase):
+    """
+    Test the Token Resolver
+    """
+    num_users = 9
+    parameters = {'methodAllowed': 'HS256',
+                  'secret': '',
+                  'responseMapping': '{ "username": "username", "userid": "userid" }',
+                  }
+
+    """
+    Test the Passwdresolver
+    """
+    resolvername1 = "tokenresolver1"
+    resolvername2 = "tokenresolver2"
+    resolvername3 = "tokenresolver3"
+
+    def test_01_create_token_resolver(self):
+        rid = save_resolver({
+            "resolver": self.resolvername1,
+            "type": "tokenresolver"})
+        self.assertTrue(rid > 0, rid)
+
+    def test_01a_create_token_resolver_with_parameters(self):
+        rid = save_resolver({
+            "resolver": self.resolvername2,
+            "type": "tokenresolver",
+            "methodAllowed": "HS256",
+            "secret": "",
+            "responseMapping": '{ "username": "{username}", "userid": "{userid}" }'})
+        self.assertTrue(rid > 0, rid)
+
+    def test_02_get_resolver_list(self):
+        reso_list = get_resolver_list(filter_resolver_name=self.resolvername1)
+        self.assertTrue(self.resolvername1 in reso_list, "resolver1 not found in list")
+        self.assertTrue(self.resolvername2 not in reso_list, "resolver2 found in list")
+    
+    def test_03_token_resolver_defintion(self):
+        y = get_resolver_object(self.resolvername1)
+        rtype = y.getResolverType()
+        self.assertEqual(rtype, "tokenresolver")
+
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue(rtype in rdesc.keys(), "Token Resolver configuration not found")
+
+        descriptor = rdesc.get("tokenresolver")
+        self.assertTrue(descriptor is not None, "Token Resolver Descriptor not found")
+        self.assertTrue("config" in descriptor, "Token Resolver Configuration not found")
+        
+        config = descriptor.get("config")
+        self.assertTrue("methodAllowed" in config, "Token Resolver Configuration methodAllowed not found")
+        self.assertTrue("secret" in config, "Token Resolver Configuration secret not found")
+        self.assertTrue("responseMapping" in config, "Token Resolver Configuration responseMapping not found")
+
+        self.assertTrue("clazz" in descriptor, "Token Resolver Class not found")
+        self.assertEqual(descriptor.get("clazz"), "useridresolver.TokenResolver.IdResolver", "Token Resolver Class not found")
+
+    def test_04_get_resolver_config(self):
+        reso_config = get_resolver_config(self.resolvername2)
+        self.assertTrue("methodAllowed" in reso_config, reso_config)
+        self.assertTrue("secret" in reso_config, reso_config)
+        self.assertTrue("responseMapping" in reso_config, reso_config)
+
+    def test_05_if_a_resolver_exists(self):
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 in reso_list)
+        self.assertTrue(self.resolvername2 in reso_list)
+        self.assertTrue(self.resolvername3 not in reso_list)
+
+    def test_06_create_resolver_object(self):
+        reso_obj = get_resolver_object(self.resolvername1)
+        self.assertTrue(isinstance(reso_obj, TokenResolver), type(reso_obj))
+
+        reso_obj = get_resolver_object(self.resolvername2)
+        self.assertTrue(isinstance(reso_obj, TokenResolver), type(reso_obj))
+        self.assertTrue(reso_obj.methodAllowed == "HS256")
+        self.assertTrue(reso_obj.secret == "")
+        self.assertTrue(reso_obj.responseMapping == {"username": "{username}", "userid": "{userid}"})
+
+        # resolver, that does not exist
+        reso_obj = get_resolver_object("unknown")
+        self.assertTrue(reso_obj is None, reso_obj)
+
+    def test_07_test_connection(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "")
+        success, response = reso_obj.testconnection({
+            "methodAllowed": reso_obj.methodAllowed,
+            "responseMapping": str(reso_obj.responseMapping),
+            "testToken": testToken})
+        self.assertTrue(success)
+        self.assertEqual(response, {"username": "John Doe", "userid": "12334"})
+
+        badToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "wrong secret")
+        success, response = reso_obj.testconnection({
+            "methodAllowed": reso_obj.methodAllowed,
+            "responseMapping": str(reso_obj.responseMapping),
+            "testToken": badToken})
+        self.assertFalse(success)
+        self.assertTrue(response is not None)
+
+    def test_08_check_password(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.secret = "secret"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "secret")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+
+        badToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "wrong secret")
+        result = reso_obj.checkPass("12334", badToken)
+        self.assertFalse(result)
+
+    def test_08a_check_password_with_asymmetrical_key(self):
+        # Keys generated for testing only
+        private_key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDQ7DZSCiFstUUPZawzOEMa7rb36+LQDmutmW7KdhxFSZGfilIPQOf2/jEkqFjMoGXM0eRjI+mq6U8Th6FuE4wTFcQEMTGzW7y7w62VZtEQcCVeVfod5Z08yEb67XI9TImV5Ww8fGWCwrkh7YEonE6H0yQVeTaiDwP933swgO6a4wIDAQABAoGBAMFWVs6E4XmgJlChXkHoBvGdh2TWvgab0bnNC2IA+xiDhGeHsXi8L+26PfAWelai+JIaiqfUTCEF10/Ta+hZ3nz+Zo1NigNmvOvr08C0GmFho/zV3+pjbnAuYZMF6knAmF6CGiihOZ5PC88551ZTKqe07kkZcY/tkxSWoEd754kBAkEA8fUMuR6ut1xWa4AMKD2+pULsKVmrrgs/v0sjXcvH2p+D1H4iYPhov2ybm8S8tbi2SJISOy8lPfygsqXaUQ44UQJBAN0MV6iaSpLiDmMWJir6BUF9uHkGbSM88ZnYAfFjVAB5/wtBD1q7nZs/syx2JeNFknaWensBENP82lCBmTM5RvMCQGsqUTdQ6quV/0Tf0wKjzmPeD0GFUO/mVZbBjemGT396dWZRc6Klg6d9UDKe4cJPDJV59Q83o3QgB4D4yohqFvECQHvqhl2DGRkcVppfeUgQXs/m7XoTCy185aeruvMaDqYxvbMOZtAjauf0HrpnBThR8Rg/pSu9XjSog64r6LkZe9cCQQDQ/Gq2UrixVGcBqct7ug8udoeVyTswQQjDaiHZXRkfGYIAQxGkAMwXxHg8/3u1kzpmX945IjfLqBOVC5eMaRvY\n-----END RSA PRIVATE KEY-----"
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.secret = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQ7DZSCiFstUUPZawzOEMa7rb36+LQDmutmW7KdhxFSZGfilIPQOf2/jEkqFjMoGXM0eRjI+mq6U8Th6FuE4wTFcQEMTGzW7y7w62VZtEQcCVeVfod5Z08yEb67XI9TImV5Ww8fGWCwrkh7YEonE6H0yQVeTaiDwP933swgO6a4wIDAQAB\n-----END PUBLIC KEY-----"
+        reso_obj.methodAllowed = "RS256"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, private_key, algorithm="RS256")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        reso_obj.userid = ""
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+        reso_obj.username = ""
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+
+    def test_09_get_user_info(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.methodAllowed = "HS256"
+        reso_obj.secret = "secret"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "secret")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserInfo("12334"), {"username": "John Doe", "userid": "12334"})
+
+        # Ensure that an unverified user will return the username and id passed in
+        reso_obj = get_resolver_object(self.resolvername1)
+        self.assertEqual(reso_obj.getUserInfo("12334"), {"username": "12334", "userid": "12334"})
+        self.assertEqual(reso_obj.getUserId("John Doe"), "John Doe")
+        self.assertEqual(reso_obj.getUserId(12334), 12334)
+        self.assertEqual(reso_obj.getUsername("12334"), "12334")
+
+    def test_10_delete_resolver(self):
+        # get the list of the resolvers
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 in reso_list, reso_list)
+        self.assertTrue(self.resolvername2 in reso_list, reso_list)
+
+        # delete the resolvers
+        delete_resolver(self.resolvername1)
+        delete_resolver(self.resolvername2)
+
+        # check list empty
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 not in reso_list, reso_list)
+        self.assertTrue(self.resolvername2 not in reso_list, reso_list)
+        self.assertTrue(len(reso_list) == 0, reso_list)

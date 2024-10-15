@@ -640,7 +640,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         };
 
         // TODO: This information needs to be fetched from the server
-        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver'];
+        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver', 'tokenresolver'];
         // TODO: This information needs to be fetched from the server
         $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
         // TODO: This information needs to be fetched from the server
@@ -1233,9 +1233,71 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.testResolver = function () {
             ConfigFactory.testResolver($scope.params, function (data) {
                 if (data.result.value === true) {
-                    inform.add(data.detail.description, {type: "success", ttl: 10000});
+                    inform.add(data.detail.description, { type: "success", ttl: 10000 });
                 } else {
-                    inform.add(data.detail.description, {type: "danger", ttl: 10000});
+                    inform.add(data.detail.description, { type: "danger", ttl: 10000 });
+                }
+            });
+        };
+    }]);
+
+myApp.controller("TokenResolverController", ["$scope", "ConfigFactory", "$state",
+    "$stateParams", "inform",
+    function ($scope, ConfigFactory,
+        $state, $stateParams,
+        inform) {
+        $scope.params = {
+            type: "tokenresolver",
+            responseMapping: "",
+            allowedMethod: "HS256",
+            responseMapping: "",
+        };
+
+        $scope.method_allowed_options = [
+            { value: "HS256", name: "HMAC using SHA-256" },
+            { value: "HS384", name: "HMAC using SHA-384" },
+            { value: "HS512", name: "HMAC using SHA-512" },
+            { value: "ES256", name: "ECDSA signature algorithm using SHA-256" },
+            { value: "ES256K", name: "ECDSA signature algorithm with secp256k1 curve using SHA-256" },
+            { value: "ES384", name: "ECDSA signature algorithm using SHA-384" },
+            { value: "ES512", name: "ECDSA signature algorithm using SHA-512" },
+            { value: "RS256", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-256" },
+            { value: "RS384", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-384" },
+            { value: "RS512", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-512" },
+            { value: "PS256", name: "RSASSA-PSS signature using SHA-256 and MGF1 padding with SHA-256" },
+            { value: "PS384", name: "RSASSA-PSS signature using SHA-384 and MGF1 padding with SHA-384" },
+            { value: "PS512", name: "RSASSA-PSS signature using SHA-512 and MGF1 padding with SHA-512" },
+        ];
+
+        $scope.resolvername = $stateParams.resolvername;
+        if ($scope.resolvername) {
+            /* If we have a resolvername, we do an Edit
+                 and we need to fill all the $scope.params */
+            ConfigFactory.getResolver($scope.resolvername, function (data) {
+                var resolver = data.result.value[$scope.resolvername];
+                $scope.params = resolver.data;
+                $scope.params.type = "tokenresolver";
+            });
+        }
+
+        $scope.setResolver = function () {
+            // Do Not Persist the Test Token to the Database
+            delete $scope.params["testToken"];
+            ConfigFactory.setResolver($scope.resolvername, $scope.params, function (
+                data
+            ) {
+                $scope.set_result = data.result.value;
+                $scope.getResolvers();
+                $state.go("config.resolvers.list");
+            });
+        };
+
+        $scope.testResolver = function () {
+            ConfigFactory.testResolver($scope.params, function (data) {
+                if (data.result.value === true) {
+                    inform.add(data.detail.description, { type: "success", ttl: 10000 });
+                } else {
+                    inform.add(data.detail.description, { type: "danger", ttl: 10000 });
                 }
             });
         };

@@ -124,8 +124,7 @@ class LoggingTestCase(MyTestCase):
                     "pin": "pin"}, user=User("cornelius", "sqliterealm"))
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
-        g.logged_in_user = {"username": "admin", "role": "admin",
-                            "realm": "super"}
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": "super"}
         env = EnvironBuilder(method='POST', headers={}, path='/auth').get_environ()
         req = Request(env)
         req.user_agent = UserAgentMock()
