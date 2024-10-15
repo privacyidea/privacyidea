@@ -461,7 +461,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge has not been answered yet, the /validate/polltransaction endpoint returns false
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -475,7 +475,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge has been answered, the /validate/polltransaction endpoint returns true
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -495,7 +495,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge does not exist anymore, the /validate/polltransaction endpoint returns false
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -869,7 +869,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(CHALLENGE_SESSION.DECLINED, challenge.session)
 
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -1837,7 +1837,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge has not been answered yet, the /validate/polltransaction endpoint returns false
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -1851,7 +1851,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge has been answered, the /validate/polltransaction endpoint returns true
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -1871,7 +1871,7 @@ class PushTokenTestCase(MyTestCase):
 
         # As the challenge does not exist anymore, the /validate/polltransaction endpoint returns false
         with self.app.test_request_context('/validate/polltransaction', method='GET',
-                                           data={'transaction_id': transaction_id}):
+                                           query_string={'transaction_id': transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])

@@ -15,7 +15,7 @@ SCRIPTS = [
     'privacyidea-fix-access-rights',
     'privacyidea-migrate-linotp.py',
     'privacyidea-pip-update',
-    'privacyidea-queue-huey',
+#    'privacyidea-queue-huey',
     'privacyidea-sync-owncloud.py',
     'privacyidea-update-counter.py',
     'privacyidea-update-linotp-counter.py',

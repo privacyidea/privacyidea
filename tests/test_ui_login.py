@@ -3,6 +3,7 @@ This file tests the web UI Login
 
 implementation is contained webui/login.py
 """
+from flask_babel import refresh
 from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, PolicyClass, delete_all_policies
 from privacyidea.lib.utils import to_unicode
@@ -130,6 +131,10 @@ class LanguageTestCase(MyApiTestCase):
             self.assertEqual(res.json['result']['value']['totp'], 'TOTP: Time based One Time Passwords.')
 
     def test_02_check_for_german_translation(self):
+        # It seems flask_babel caches the language between test requests, so we
+        # have to refresh it
+        refresh()
+
         with self.app.test_request_context('/auth/rights',
                                            method='GET',
                                            headers={

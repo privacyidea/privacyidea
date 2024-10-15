@@ -601,24 +601,24 @@ class TokenEventHandler(BaseEventHandler):
                         application = handler_options.get("application")
                         application_options = {}
                         count = handler_options.get("count", None)
-                        if not (count is None):
+                        if count is not None:
                             application_options.update({"count": count})
                         rounds = handler_options.get("rounds", None)
-                        if not (rounds is None):
+                        if rounds is not None:
                             application_options.update({"rounds": rounds})
                         slot = handler_options.get("slot", None)
-                        if not (slot is None):
+                        if slot is not None:
                             application_options.update({"slot": slot})
                         partition = handler_options.get("partition", None)
-                        if not (partition is None):
+                        if partition is not None:
                             application_options.update({"partition": partition})
                         user = handler_options.get("user", None)
-                        if not (user is None):
+                        if user is not None:
                             application_options.update({"user": user})
-                        mt = attach_token(serial, application, machine_id=machine, options=application_options)
+                        attach_token(serial, application, machine_id=machine, options=application_options)
                     except Exception as exx:
-                        log.warning("Misconfiguration: Failed to attach token to machine."
-                                    " Token serial: {!0s}".format(serial))
+                        log.warning(f"Misconfiguration: Failed to attach token "
+                                    f"to machine. Token serial: {serial}")
         else:
             log.info("Action {0!s} requires serial number. But no serial "
                      "number could be found in request {1!s}.".format(action, request))
@@ -635,7 +635,7 @@ class TokenEventHandler(BaseEventHandler):
                 # Some tokentypes need additional parameters
                 if handler_options.get("additional_params"):
                     add_params = yaml.safe_load(handler_options.get("additional_params"))
-                    if type(add_params) == dict:
+                    if isinstance(add_params, dict):
                         init_param.update(add_params)
 
                 if tokentype == "sms":

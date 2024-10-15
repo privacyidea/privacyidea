@@ -49,15 +49,17 @@ DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs', 'i
 login_blueprint = Blueprint('login_blueprint', __name__)
 
 
-def get_accepted_language(req):
-    # if we are not in the request context, return None to use the default locale
-    if not req:
+def get_accepted_language():
+    """Return the accepted language from the request"""
+    # If we are not in the request context, return None to use the default locale
+    if not request:
         return None
     # read pi.cfg and checks if preferred language is set. Otherwise, default list is selected.
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     # try to match the language from the users accept header the browser transmits.
     # (The best match wins)
-    return req.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
+    return request.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
+
 
 @login_blueprint.before_request
 def before_request():
@@ -101,7 +103,7 @@ def single_page_application():
     translation_warning = current_app.config.get("PI_TRANSLATION_WARNING", False)
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
-    browser_lang = get_accepted_language(request)
+    browser_lang = get_accepted_language()
     # The page title can be configured in pi.cfg
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
