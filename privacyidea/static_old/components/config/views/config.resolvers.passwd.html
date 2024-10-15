@@ -1,0 +1,49 @@
+<div>
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername"
+            translate>Edit Passwd Resolver {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername"
+            translate>Create a new Passwd Resolver</h2>
+
+    <form name="formResolverAddPassword" role="form" validate>
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label"
+                    translate>Resolver name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername"
+                       class="form-control"
+                       ng-model="resolvername" required placeholder="resolver1"
+                       ng-pattern="inputNamePatterns.withoutTest.pattern"
+                       title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="resolverfile"
+                   class="col-sm-3 control-label"
+                    translate>File name</label>
+
+            <div class="col-sm-9">
+                <input name="resolverfile" id="resolverfile"
+                       class="form-control"
+                       ng-model="params.fileName" required
+                       placeholder="/etc/passwd"/>
+            </div>
+        </div>
+        <div class="text-center">
+            <button ng-click="setResolver()"
+                    ng-show="checkRight('resolverwrite')"
+                    ng-disabled="formResolverAddPassword.$invalid"
+                    class="btn btn-primary"
+                    translate>Save resolver
+            </button>
+        </div>
+
+    </form>
+
+</div>

@@ -1,0 +1,147 @@
+<h3 translate>Import tokens from a file</h3>
+
+<form name="formImportToken" role="form" validate>
+    <select id="filetype"
+            class="form-control"
+            ng-change="changeFileType()"
+            ng-model="form.type"
+            ng-options="type for type in formInit.fileTypes"
+            >
+    </select>
+
+    <div ng-show="form.type==='aladdin-xml'">
+        <p class="help-block" translate>
+            Here you can upload an XML file from Aladdin or SafeNet as it was
+            used with Aladdin TMS or SafeNet SAM.
+        </p>
+    </div>
+
+    <div ng-show="form.type==='OATH CSV'">
+        <p class="help-block" translate>
+            Here you can upload a csv file for your OATH token.
+            The file is supposed to contain one token per line.
+        </p>
+
+        <p class="help-block" translate>
+            For HOTP and TOTP tokens:
+        </p>
+
+        <p class="help-block col-md-offset-1">
+            <em translate>serial number, seed, type, otplen, timeStep</em>
+        </p>
+
+        <p class="help-block" translate>
+            For OCRA tokens:
+        </p>
+
+        <p class="help-block col-md-offset-1">
+            <em translate>serial number, seed, type, ocrasuite</em>
+        </p>
+
+        <p class="help-block" translate>
+            type (default hotp), otplen (default 6), timeStep (default 30) and
+            ocrasuite are optional.
+        </p></div>
+
+    <div ng-show="form.type==='Yubikey CSV'">
+        <p class="help-block" translate>
+            Here you can upload a csv file for your Yubikey token.
+            The file is supposed to contain one token per line.
+        </p>
+        <p class="help-block" translate>
+            If you are enrolling the Yubikey in HOTP mode, you should use the
+            PSKC file format in the newer version of the Yubikey GUI.
+        </p>
+    </div>
+
+    <div ng-show="form.type==='pskc'">
+        <p class="help-block" translate>
+            This is an RFC6030 OATH compliant PSKC file.
+            Values in the PSKC files may be unencrypted or
+            <em>either</em> encrypted with a
+            <em>Pre Shared Key</em> or <em>password</em>. If the values are
+            encrypted, please specify the Pre Shared Key in hex format or the
+            password.
+        </p>
+        <p class="help-block" translate>
+            As the values are encrypted with AES128-CBC, you need to give a
+            32 characters long hex string.
+        </p>
+        <input class="form-control"
+               placeholder="{{ 'Pre Shared Key' | translate }}"
+               ng-keypress="form.password = ''"
+               ng-model="form.psk" minlength="0" maxlength="32">
+        <input class="form-control"
+               placeholder="{{ 'Password' | translate }}"
+               ng-keypress="form.psk = ''"
+               ng-model="form.password">
+        <div></div>
+        <div class="mt-5px">
+            <p class="help help-block" translate>
+                You can choose how the authenticity of the tokens to be imported should be verified.
+            </p>
+            <select class="form-control"
+                    ng-model="form.validateMAC">
+                <option ng-repeat="(key, desc) in verify_pskc_opts"
+                        value="{{ key }}">
+                    {{ desc }}
+                </option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mt-5px">
+        <p class="help help-block" translate>
+            You can choose a realm to which the tokens should be imported.
+            You can also change the realms of each token later.
+        </p>
+        <select class="form-control"
+           ng-model="form.realm">
+            <option ng-repeat="(realmname, realm) in realms"
+                    >{{ realmname }}</option>
+        </select>
+    </div>
+    <div>
+        <uib-accordion close-others="false">
+        <div uib-accordion-group
+             class="panel-default"
+             is-open="isOpen"
+             ng-repeat="(keyid, key) in pgpkeys">
+            <uib-accordion-heading ng-click="isOpen=!isOpen">
+                <span translate>PGP Key</span> {{ keyid }}
+                <span class="pull-right glyphicon" aria-hidden="true"
+                   ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                </span>
+            </uib-accordion-heading>
+            <p class="help-block" translate>
+                Please pass the public key and the fingerprint to the token
+                provider.
+            </p>
+            <pre>{{ key.armor }}</pre>
+            <span translate>Fingerprint</span>:
+            {{ key.fingerprint }}
+        </div>
+        </uib-accordion>
+    </div>
+
+    <div class="text-center">
+        <button class="btn btn-primary" ngf-select="upload($file)"
+                translate>Select file and import
+        </button>
+    </div>
+</form>
+
+<div ng-show="uploadedFile">
+    <div>
+        <span translate>Progress</span>: {{ uploadProgress }}%
+    </div>
+    <div>
+        <span translate>Uploaded File</span>: {{ uploadedFile }}
+    </div>
+    <div>
+        <span translate>Uploaded Tokens</span>: {{ uploadedTokens }}
+    </div>
+    <div>
+        <span translate>Skipped Tokens</span>: {{ notImportedTokens }}
+    </div>
+</div>

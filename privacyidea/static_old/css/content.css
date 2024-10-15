@@ -1,0 +1,97 @@
+.filtered {
+    color: orange;
+}
+
+.sortUp:after {
+    content: '\25B2';
+}
+.sortDown:after {
+    content: '\25BC';
+}
+
+.unsorted:after {
+    content: '\25CF';
+}
+
+.policyaction {
+    min-width: 150px;
+}
+
+/* User Add
+*/
+.css-form input.ng-invalid {
+   background-color: #FA787E;
+}
+
+.inform-fixed {
+    /* set the space from the top */
+    top: 45px;
+    /* move inform in front of navbar (with z-index 1030) */
+    z-index: 1032;
+}
+
+/*
+.ng-invalid.radio label,
+.ng-invalid.checkbox label,
+.ng-invalid.radio-inline label,
+.ng-invalid.checkbox-inline label {
+  color: #a94442;
+}
+*/
+
+input.ng-invalid:not(#username):not(#password),
+select.ng-invalid {
+    background: rgba(169, 68, 66, 0.05);
+  border-color: #a94442;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+}
+input.ng-invalid:focus:not(#username):not(#password),
+select.ng-invalid:focus:not(#username):not(#password){
+  border-color: #843534;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;
+}
+
+/* Style all Elements with an `ng-click`-attribute (JS-callbacks) with the pointer cursor */
+*[ng-click] {
+  cursor: pointer;
+}
+
+/* Utilize the available screen real-estate on large screens. */
+@media (min-width: 1440px) {
+    .container {
+        width: 95%;
+    }
+}
+
+/* Make elements sticky. */
+.sticky {
+position: sticky;
+position: -webkit-sticky;
+top: 0px;
+}
+
+/* Style checkboxes to match up with their labels */
+input[type="radio"],
+input[type="checkbox"] {
+    margin-bottom: 5px;
+    vertical-align: bottom;
+
+    /* 14px font-size * 1.42857143 line-height */
+    height: 20px;
+}
+
+.mt-5px {
+    margin-top: 5px;
+}
+
+.centered {
+    display: table;
+    margin: auto;
+}
+
+/* for YubiKey otplen input */
+input[type=number]#otplen {
+    width: 3em;
+}

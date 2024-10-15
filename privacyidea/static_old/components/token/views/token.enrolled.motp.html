@@ -1,0 +1,27 @@
+
+<div class="row">
+    <div class="col-sm-6">
+        <img width="250" ng-src="{{ enrolledToken.motpurl.img }}"/>
+    </div>
+    <div class="col-sm-6">
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'The OTP key'|translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
+                {{ enrolledToken.otpkey.value }}
+            </div>
+        </uib-accordion>
+        <p translate>
+            Click <a href="{{ enrolledToken.motpurl.value }}">here</a> or scan
+            the QR Code, if you
+            want to add the Token to your mOTP App like Token2.
+        </p>
+    </div>
+</div>

@@ -1,0 +1,55 @@
+<h2 translate>SMS Token settings</h2>
+<p class="help-block" translate>
+    The SMS Token is an event based token. After the user has tried to
+    authenticate with the OTP PIN, an SMS with an OTP value is sent to the
+    users mobile phone. Then user can authenticate with this OTP value in a
+    second step.
+</p>
+<p class="help-block" translate>
+    Here you can define how the SMS will be sent - via which kind of gateway.
+</p>
+
+<div class="form-group">
+    <label for="idenfifier" translate>SMS Gateway configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.smsgateway">SMS Gateway configuration</a>.</p>
+    <select class="form-control"
+            ng-model="form['sms.identifier']"
+            name="identifier"
+            ng-options="identifier for identifier in smsIdentifiers">
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="smsValidity" translate>OTP validity time</label>
+    <p class="help-block" translate>
+        The time in seconds for which the sent OTP value is valid for
+        authentication.
+    </p>
+    <input type="text"
+           class="form-control"
+           placeholder="300"
+           ng-model="form['sms.providerTimeout']" name="smsValidity">
+</div>
+
+
+<h3 translate>Obsolete settings</h3>
+<div class="form-group">
+    <label for="smsProvider" translate>SMS Provider</label>
+    <select class="form-control"
+           ng-disabled="true"
+           ng-model="form['sms.Provider']" name="smsProvider"
+        ng-options="select for select in formInit.smsProviders">
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="smsConfig" translate>Provider Config</label>
+    <textarea type="text" rows="6"
+           ng-disabled="true"
+           class="form-control"
+           placeholder="{'USERNAME': 'Your User',\n 'PASSWORD': 'Your Password'}"
+           ng-model="form['sms.providerConfig']" name="smsConfig"></textarea>
+</div>
+
+

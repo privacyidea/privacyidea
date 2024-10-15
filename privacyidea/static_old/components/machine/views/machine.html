@@ -1,0 +1,32 @@
+<div class="well">
+
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="pa-sidebar panel">
+                <ul class="nav nav-pills nav-stacked">
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('machine.list')}"><a
+                            ui-sref="machine.list"
+                            translate>All Machines</a></li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('machine.details')}"
+                        ng-show="$state.includes('machine.details')"><a>Machine
+                    {{ $stateParams.machineid }}</a></li>
+                    <li translate>Quick links</li>
+                    <li>
+                        <a ui-sref="config.mresolvers"
+                                translate>Edit Machine Resolvers</a>
+                    </li>
+                    <li translate>
+                        Number of machines: {{ $scope.machinecount }}
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div ui-view class="col-lg-9 slide panel">
+        </div>
+    </div>
+
+</div>

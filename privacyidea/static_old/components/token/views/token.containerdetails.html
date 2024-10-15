@@ -1,0 +1,627 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<h3 name="Container Details">
+    <translate>Container details for {{ containerSerial }}</translate>
+</h3>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td translate>Type</td>
+            <td class="table-capitalize">{{ container.type }}</td>
+            <td>
+                <!-- Delete container -->
+                <button class="btn btn-danger" ng-click="deleteContainerButton=true"
+                        ng-disabled="!checkRight('container_delete')"
+                        ng-hide="deleteContainerButton || (!checkRight('container_delete') && hide_buttons)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+                <!-- Opens on delete -->
+                <fieldset ng-hide="!deleteContainerButton || (!checkRight('container_delete') && hide_buttons)"
+                          ng-disabled="!checkRight('container_delete')">
+                    <button class="btn btn-danger"
+                            ng-disabled="!checkRight('container_delete')"
+                            ng-hide="!checkRight('container_delete') && hide_buttons"
+                            ng-click="deleteContainerMode(deleteTokens=false)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete Container</span>
+                    </button>
+                    <!-- only allowed if delete token action is set -->
+                    <button class="btn btn-danger"
+                            ng-disabled="!checkRight('container_delete') || !checkRight('delete') ||
+                                         getAllTokenSerials().length === 0"
+                            ng-hide="!checkRight('container_delete') && hide_buttons"
+                            ng-click="deleteContainerMode(deleteTokens=true)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete Container and Tokens</span>
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="deleteContainerButton=false">
+                        <span translate>Cancel</span>
+                    </button>
+                </fieldset>
+            </td>
+        </tr>
+        <tr>
+            <td translate> State</td>
+            <td>
+                <table class="table-transparent">
+                    <tr ng-repeat="(stateType, val) in stateTypes"
+                        ng-show="displayState[stateType]">
+                        <td>
+                            <input type="checkbox" id="state_type_cb"
+                                   ng-model="containerStates[stateType]"
+                                   ng-disabled="!checkRight('container_state')">
+                            <label for="state_type_cb">{{ stateType }}</label>
+                        </td>
+                        <td ng-repeat="exclusiveState in stateTypes[stateType]">
+                            <input type="checkbox" id="state_exclusive_cb"
+                                   ng-model="containerStates[exclusiveState]"
+                                   ng-disabled="!checkRight('container_state')">
+                            <label for="state_exclusive_cb">{{ exclusiveState }}</label>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td>
+                <button class="btn btn-primary"
+                        id="saveStates" ng-click="saveStates()"
+                        ng-disabled="!stateSelectionChanged || !checkRight('container_state')"
+                        ng-hide="(!stateSelectionChanged || !checkRight('container_state')) && hide_buttons"
+                        translate> Save States
+                </button>
+            </td>
+        </tr>
+        <tr ng-show="loggedInUser.role==='admin' &&
+                     checkRight('container_description')"
+            token-data-edit text="{{ 'Description'|translate }}"
+            button-text="{{ 'Set description'|translate }}"
+            token-data="{{ container.description }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('container_description') }}"
+            editable-as-user=true
+            token-key="description"
+            callback-cancel="getContainer()"
+            callback="setDescription(value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr ng-show="loggedInUser.role==='user'"
+            token-data-edit text="{{ 'Description'|translate }}"
+            button-text="{{ 'Set description'|translate }}"
+            token-data="{{ container.description }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('container_description') }}"
+            editable-as-user=true
+            token-key="description"
+            callback-cancel="getContainer()"
+            callback="setDescription(value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr ng-hide="true">
+            <!-- Hide container info since it is not yet used. -->
+            <td translate> Info</td>
+            <td>
+                <ul>
+                    <li ng-repeat="(k,v) in container.info">
+                        {{ k + ": " + v }}<br>
+                    </li>
+                </ul>
+            </td>
+            <td>
+                <!-- Container info is an admin only action -->
+                <div ng-hide="(!loggedInUser.isAdmin || !checkRight('container_info'))&& hide_buttons">
+                    <button class="btn btn-primary"
+                            id="ciEditButton"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
+                            ng-hide="editContainerInfo"
+                            ng-click="startEditContainerInfo()"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            id="ciSaveButton"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
+                            ng-show="editContainerInfo"
+                            ng-click="saveContainerInfo()"
+                            translate>Save Container Info
+                    </button>
+                    <button class="btn btn-danger"
+                            id="ciCancelButton"
+                            ng-show="editContainerInfo"
+                            ng-click="editContainerInfo=false"
+                            translate>Cancel
+                    </button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td translate> Realms</td>
+            <td>
+                <span ng-hide="editContainerRealms">
+                    <ul>
+                        <li ng-repeat="realm in container.realms">{{ realm }}</li>
+                    </ul>
+                </span>
+                <span ng-show="editContainerRealms">
+                    <span ng-repeat="(realmname, realm) in realms">
+                        <label for="{{ realmname }}">
+                            <input type="checkbox"
+                                   ng-disabled="userRealms.indexOf(realmname) >= 0"
+                                   ng-model="selectedRealms[realmname]"
+                                   name="group"
+                                   id="{{ realmname }}"
+                                   ng-checked="selectedRealms[realmname]">
+                            {{ realmname }}
+                        </label><br>
+                    </span>
+                </span>
+            </td>
+            <td>
+                <!-- Container realms is an admin only action -->
+                <fieldset ng-disabled="!loggedInUser.isAdmin">
+                    <button class="btn btn-primary"
+                            id="cRealmsEditButton"
+                            ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin) && hide_buttons)"
+                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_realms')"
+                            ng-click="startEditRealms()"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            id="cRealmsSaveButton"
+                            ng-show="editContainerRealms"
+                            ng-click="saveRealms()"
+                            translate>Save realms
+                    </button>
+                    <button class="btn btn-danger"
+                            id="cRealmsCancelButton"
+                            ng-show="editContainerRealms"
+                            ng-click="cancelEditRealms();"
+                            translate>Cancel
+                    </button>
+                </fieldset>
+            </td>
+        </tr>
+        <tr ng-hide="true">
+            <!-- Hide last seen since it is not yet used with the planned functionality. -->
+            <td translate> Last Seen</td>
+            <td>{{ container.last_seen | date:'yyyy-MM-dd H:mm:ss'}}</td>
+            <td></td>
+        </tr>
+        <tr ng-hide="true">
+            <!-- Hide last updated since it is not yet used with the planned functionality. -->
+            <td translate> Last Updated</td>
+            <td>{{ container.last_updated | date:'yyyy-MM-dd H:mm:ss'}}</td>
+            <td></td>
+        </tr>
+    </table>
+</div>
+
+<!-- =================== USER ASSIGN ================= -->
+<div>
+    <h4 ng-show="containerOwner" translate>Assigned User</h4>
+    <table ng-show="containerOwner"
+           class="table table-striped table-bordered">
+        <tr>
+            <td translate>Username</td>
+            <td><a ui-sref="user.details({username: containerOwner.user_name,
+            realmname: containerOwner.user_realm,
+            resolvername: containerOwner.user_resolver})">
+                {{ containerOwner.user_name }}
+            </a></td>
+            <td>
+                <button id="unassignAdminButton"
+                        ng-click="unassignUser()"
+                        ng-show="checkRight('container_unassign_user')"
+                        class="btn btn-warning">
+                    <span class="glyphicon glyphicon-resize-full"></span>
+                    <span translate>Unassign User</span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td translate>Realm</td>
+            <td><a ui-sref="config.realms.list">{{ containerOwner.user_realm }}</a>
+            </td>
+        </tr>
+        <tr>
+            <td translate>Resolver</td>
+            <td><a ui-sref="config.resolvers.list">{{ containerOwner.user_resolver }}</a>
+            </td>
+        </tr>
+        <tr>
+            <td translate>User Id</td>
+            <td>{{ containerOwner.user_id }}</td>
+        </tr>
+    </table>
+</div>
+
+<div ng-show="checkRight('container_assign_user')">
+    <h4 ng-hide="containerOwner.user_id" translate>
+        Assign User</h4>
+    <form ng-hide="containerOwner.user_id"
+          name="formAssignContainer"
+          role="form" validate>
+        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false></div>
+
+        <div class="text-center">
+            <button type="button" ng-click="assignUser()"
+                    id="assignButton"
+                    ng-disabled="formAssignToken.$invalid"
+                    class="btn btn-primary">
+                <span class="glyphicon glyphicon-resize-small"></span>
+                <span translate>Assign User</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- =================== Tokens ================= -->
+
+<h4 translate>Tokens in the Container</h4>
+
+<div class="table-responsive" ng-show="container.tokens.length > 0">
+    <table class="table table-bordered table-striped table-capitalize-header">
+        <thead>
+        <tr>
+            <th translate>serial</th>
+            <th translate>type</th>
+            <th>
+                <translate>Active</translate>
+                <span class="label label-success"
+                      ng-show="loggedInUser.role=='admin'"
+                      ng-click="enableAllTokens()"
+                      translate>
+                    Enable All
+                </span>
+                <span class="label label-danger"
+                      ng-show="loggedInUser.role=='admin'"
+                      ng-click="disableAllTokens()" translate>
+                    Disable All
+                </span>
+            </th>
+            <th translate>Window</th>
+            <th translate>Description</th>
+            <th translate>Failcounter</th>
+            <th translate>Maxfail</th>
+            <th translate>Otplen</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> User</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Realm</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Token realms</th>
+            <th>Container</th>
+            <th>
+                <div ng-show="loggedInUser.isAdmin">
+                    <button ng-click="removeAllTokens(token.serial)"
+                            class="btn btn-transparent btn-danger btn-header"
+                            ng-hide="showDialogAll"
+                            ng-disabled="!checkRight('container_remove_token') || getAllTokenSerials().length === 0">
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <span translate>Remove All</span>
+                    </button>
+                    <button class="btn btn-transparent btn-danger btn-header" ng-click="showDialogAll=true"
+                            ng-disabled="!checkRight('delete') || getAllTokenSerials().length === 0"
+                            ng-hide="(!checkRight('delete') && hide_buttons) || showDialogAll">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete All</span>
+                    </button>
+                    <span ng-show="showDialogAll" translate> Delete all tokens?</span><br>
+                    <button class="btn btn-danger" ng-click="deleteAllTokens(getContainer)"
+                            ng-show="showDialogAll">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete</span>
+                    </button>
+                    <button class="btn btn-danger" ng-click="showDialogAll=false"
+                            ng-show="showDialogAll">
+                        <span translate>Cancel</span>
+                    </button>
+                </div>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="token in container.tokens">
+            <td>
+                <a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
+                   ng-show="token.tokentype">
+                    {{ token.serial }}
+                </a>
+                <span ng-hide="token.tokentype">
+                    {{ token.serial }}
+                </span>
+            </td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <span class="label label-success"
+                      ng-show="token.active"
+                      ng-click="disableToken(token.serial)"
+                      translate>
+                    active
+                </span>
+                <span class="label label-danger"
+                      ng-hide="token.active != false"
+                      ng-click="enableToken(token.serial)"
+                      translate>
+                    disabled
+                </span>
+            </td>
+            <td>{{ token.count_window }}</td>
+            <td>{{ token.description }}</td>
+            <td>
+                <span class="label"
+                      ng-click="checkRight('reset')
+                                && resetFailcount(token.serial)"
+                      ng-class="{'label-success': token.failcount<=0,
+                                    'label-warning': token.failcount>0,
+                                    'label-danger': token.failcount>=token.maxfail}">
+                    {{ token.failcount }}
+                </span>
+            </td>
+            <td>{{ token.maxfail }}</td>
+            <td>{{ token.otplen }}</td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token_add.username,
+                            realmname: token_add.user_realm,
+                            resolvername: token_add.resolver,
+                            editable: token_add.user_editable})">
+                    {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                    {{ t_realm }}</a>&nbsp;
+            </td>
+
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                {{ token.user_id }}
+            </td>
+            <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">
+                    {{ token.container_serial }}
+                </a>
+            </td>
+            <td>
+                <fieldset ng-disabled="!token.tokentype">
+                    <button class="btn btn-transparent btn-danger"
+                            ng-hide="showDialog[token.serial]"
+                            ng-disabled="!checkRight('container_remove_token')"
+                            ng-click="removeOneToken(token.serial)">
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <span translate>Remove</span>
+                    </button>
+                    <button class="btn btn-transparent btn-danger" ng-click="deleteOneToken(token.serial, true)"
+                            ng-disabled="!checkRight('delete')"
+                            ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete</span>
+                    </button>
+                    <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
+                    <button class="btn btn-danger"
+                            ng-click="deleteOneToken(token.serial, false)"
+                            ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                            ng-disabled="!checkRight('delete')">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete</span>
+                    </button>
+                    <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
+                            ng-show="showDialog[token.serial]">
+                        <span translate>Cancel</span>
+                    </button>
+                </fieldset>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div class="text-center">
+    <button ng-click="enrollToken()" class="btn btn-primary"
+            ng-disabled="!checkEnroll()"
+            ng-hide="!checkEnroll() && hide_buttons"
+            id="enrollButton"
+            translate>Enroll New Token
+    </button>
+    <button ng-click="activateAddTokens()" class="btn btn-primary"
+            id="addTokensButton"
+            ng-hide="addTokens || (!checkRight('container_add_token') && hide_buttons)"
+            ng-disabled="!checkRight('container_add_token')"
+            translate>Add Tokens to Container
+    </button>
+    <button class="btn btn-primary" ng-click="addTokens=false"
+            ng-show="addTokens && checkRight('container_add_token')">
+        <span translate>Hide Add Token List</span>
+    </button>
+</div>
+
+<!--- ------ Add tokens to container: show token list ------ --->
+<div ng-show="addTokens && checkRight('container_add_token')">
+    <h4> Add Tokens to the Container </h4>
+    <div class="form-group">
+        <div>
+            <input type="checkbox"
+                   ng-model="showTokensWithoutContainer">
+            <translate> Only show tokens that are not in a container.</translate>
+        </div>
+        <div ng-show="!showTokensWithoutContainer">
+            Note: If you add a token to this container it will be removed from the previous container.
+        </div>
+    </div>
+    <div uib-pagination ng-show="tokendata.count > tokensPerPage"
+         total-items="tokendata.count" ng-model="tokenParams.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         items-per-page="{{ tokensPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()">
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-capitalize-header" id="tabletokenlist">
+            <thead>
+            <tr>
+                <th class="pifilter">
+                    <button class="btn btn-default unsorted btn-capitalize"
+                            pi-sort-by="serial"
+                            translate>serial
+                    </button>
+                    <pi-filter ng-model="serialFilter"
+                               ng-change="get('livesearch')"
+                               ng-keypress="($event.which==13)?get():return"
+                    ></pi-filter>
+                </th>
+                <th class="pifilter">
+                    <button class="btn btn-default unsorted btn-capitalize"
+                            pi-sort-by="tokentype"
+                            translate>type
+                    </button>
+                    <pi-filter ng-model="typeFilter"
+                               ng-change="get('livesearch')"
+                               ng-keypress="($event.which==13)?get():return"
+                    ></pi-filter>
+                </th>
+                <th>
+                    <button pi-sort-by="active"
+                            class="btn btn-default
+                            unsorted btn-capitalize"
+                            translate>active
+                    </button>
+                </th>
+                <th class="pifilter">
+                    <button pi-sort-by="description"
+                            class="btn btn-default
+                       unsorted btn-capitalize"
+                            translate>description
+                    </button>
+                    <pi-filter ng-model="descriptionFilter"
+                               ng-change="get('livesearch')"
+                               ng-keypress="($event.which==13)?get():return"
+                    ></pi-filter>
+                </th>
+                <th>
+                    <button pi-sort-by="failcount"
+                            class="btn btn-default
+                         unsorted btn-capitalize"
+                            translate>failcounter
+                    </button>
+                </th>
+                <th class="pifilter">
+                    <button pi-sort-by="rollout_state"
+                            class="btn btn-default
+                       unsorted btn-capitalize"
+                            translate>rollout state
+                    </button>
+                    <pi-filter ng-model="rolloutStateFilter"
+                               ng-change="get('livesearch')"
+                               ng-keypress="($event.which==13)?get():return"
+                    ></pi-filter>
+                </th>
+                <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
+                <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+                <th class="pifilter" ng-show="loggedInUser.role == 'admin'">
+                    <translate>Token realms</translate>
+                    <pi-filter ng-model="tokenrealmFilter"
+                               ng-change="get('livesearch')"
+                               ng-keypress="($event.which==13)?get():return"
+                    ></pi-filter>
+                </th>
+                <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                    translate>UserId
+                </th>
+                <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                    translate>Resolver
+                </th>
+                <th>Container</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token_add in tokendata.tokens">
+                <td><a ui-sref="token.details({tokenSerial:token_add.serial, currentToken:token_add})">
+                    {{ token_add.serial }}</a></td>
+                <td>{{ token_add.tokentype }}</td>
+                <td>
+                <span class="label label-success" ng-show="token_add.active"
+                      ng-click="disableToken(token_add.serial)"
+                      title="{{ 'Disable token'|translate }}"
+                      translate>active
+                </span>
+                    <span class="label label-danger" ng-hide="token_add.active"
+                          ng-click="enableToken(token_add.serial)"
+                          title="{{ 'Enable token'|translate }}"
+                          translate>disabled
+                </span>
+                </td>
+                <!--<td>{{ token_add.count_window }}</td>-->
+                <td>{{ token_add.description }}</td>
+
+                <td><span class="label"
+                          title="{{ 'Reset Failcounter'|translate }}"
+                          ng-click="resetFailcount(token_add.serial)"
+                          ng-class="{'label-success': token_add.failcount<=0,
+                   'label-warning': token_add.failcount>0,
+                   'label-danger': token_add.failcount>=token_add.maxfail}">
+            {{ token_add.failcount }}
+            </span></td>
+                <!--<td>{{ token_add.maxfail }}</td>-->
+                <!--<td>{{ token_add.otplen }}</td>-->
+                <td>{{ token_add.rollout_state }}</td>
+                <td ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="user.details({username: token_add.username,
+                            realmname: token_add.user_realm,
+                            resolvername: token_add.resolver,
+                            editable: token_add.user_editable})">
+                        {{ token_add.username }}</a>
+                </td>
+                <td ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="config.realms.list">{{ token_add.user_realm }}</a>
+                </td>
+
+                <td ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="config.realms.list" ng-repeat="t_realm in token_add.realms">
+                        {{ t_realm }}</a>&nbsp;
+                </td>
+
+                <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                    {{ token_add.user_id }}
+                </td>
+                <td ng-show="loggedInUser.isAdmin &&
+            user_details_in_tokenlist">
+                    <a ui-sref="config.resolvers.list">{{ token_add.resolver }}</a>
+                </td>
+                <td>
+                    <a ui-sref="token.containerdetails({containerSerial: token_add.container_serial})">{{ token_add.container_serial }}</a>
+                </td>
+                <td>
+                    <button ng-click="addToken(token_add.serial)"
+                            class="btn btn-transparent btn-primary"
+                            ng-disabled="token_add.container_serial===containerSerial || !checkRight('container_add_token')"
+                            ng-hide="(token_add.container_serial===containerSerial || !checkRight('container_add_token')) && hide_buttons">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <span translate>Add</span>
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

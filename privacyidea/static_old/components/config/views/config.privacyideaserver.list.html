@@ -1,0 +1,38 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Identifier</th>
+            <th translate>URL</th>
+            <th translate>Verify TLS</th>
+            <th translate>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(identifier, server) in privacyideaServers">
+            <td>
+                <a ui-sref="config.privacyideaserver.edit({identifier:identifier})">
+                        {{ identifier }}</a>
+            </td>
+            <td>
+                {{ server.url }}
+            </td>
+            <td>
+                {{ server.tls }}
+            </td>
+            <td>
+                {{ server.description | limitTo: 20 }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('privacyideaserver_write')"
+                        ng-click="delPrivacyideaServer(identifier)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

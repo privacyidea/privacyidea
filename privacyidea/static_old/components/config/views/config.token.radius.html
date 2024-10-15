@@ -1,0 +1,20 @@
+<h2 translate>RADIUS Token settings</h2>
+<p class="help-block" translate>
+    The RADIUS token forwards the authentication request to another RADIUS
+    server.
+</p>
+
+<div class="form-group">
+    <label for="idenfifier" translate>RADIUS server configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.radius">RADIUS server configuration</a>.</p>
+    <select class="form-control"
+            ng-model="form['radius.identifier']"
+            name="identifier"
+            ng-options="identifier as identifier for (identifier, config) in
+            radiusIdentifiers">
+    </select>
+</div>
+
+
+

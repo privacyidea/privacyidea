@@ -1,0 +1,21 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                <li role="presentation"
+                    ng-show="checkRight('periodictask_read')"
+                    ng-class="{ active: $state.includes('config.periodictasks.list')}">
+                    <a ui-sref="config.periodictasks.list" translate>
+                        All Periodic Tasks</a></li>
+                <li role="presentation"
+                    ng-show="checkRight('periodictask_write')"
+                    ng-class="{ active: $state.includes('config.periodictasks.add')}">
+                    <a ui-sref="config.periodictasks.add"
+                       translate>Create new Periodic Task</a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>

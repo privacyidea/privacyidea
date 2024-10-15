@@ -1,0 +1,29 @@
+<p ng-show="enrolledToken.certificate" translate>
+    The certificate was enrolled successfully.
+</p>
+<p ng-show="enrolledToken.rollout_state == 'pending'" translate>
+    Your certificate request is taken under submission and waiting for
+    administrative approval.
+</p>
+<p ng-show="enrolledToken.rollout_state == 'failed'" translate>
+    Your CSR to the certificate authority failed.
+</p>
+<p ng-show="enrolledToken.certificate">
+    <a download="{{ enrolledToken.serial }}.pem"
+       ng-href="{{ certificateBlob }}">
+        <span class="glyphicon glyphicon-bookmark"
+                          aria-hidden="true"></span>
+        <span translate>Download the certificate</span></a>.
+</p>
+<!-- If the keys were generated on the server,
+     we can download a PKCS12 file -->
+<p ng-show="enrolledToken.pkcs12">
+    <a download="{{ enrolledToken.serial }}.p12"
+       ng-href="{{ pkcs12Blob }}">
+        <span class="glyphicon glyphicon-bookmark"
+                          aria-hidden="true"></span>
+        <span translate>Download the PKCS12 file</span></a>.
+</p>
+<pre ng-show="enrolledToken.certificate">
+{{ enrolledToken.certificate }}
+</pre>

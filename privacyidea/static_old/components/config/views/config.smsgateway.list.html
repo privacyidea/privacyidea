@@ -1,0 +1,34 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Name</th>
+            <th translate>Description</th>
+            <th translate>Providermodule</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="smsgateway in smsgateways">
+            <td>
+                <a ui-sref="config.smsgateway.edit({gateway_id: smsgateway.id})">
+                    {{ smsgateway.name }}</a>
+            </td>
+            <td>
+                {{  smsgateway.description }}
+            </td>
+            <td>
+                {{ smsgateway.providermodule }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('smsgateway_write')"
+                        ng-click="deleteSMSgateway(smsgateway.name)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

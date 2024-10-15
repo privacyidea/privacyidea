@@ -1,0 +1,138 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div uib-pagination ng-show="containerdata.count > containersPerPage"
+     total-items="containerdata.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="{{ containersPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()">
+</div>
+
+<span translate>Total Containers: {{ containerdata.count }}</span>
+
+<div class="form-group">
+    <label>
+        <button class="btn btn-default"
+                ng-disabled="expandedRows.length == containerdata.containers.length"
+                ng-click="expandTokenView(-1)"
+                translate>
+            Open all containers
+        </button>
+    </label>
+    <label class="col">
+        <button class="btn btn-default"
+                ng-disabled="expandedRows.length == 0"
+                ng-click="collapseTokenView(-1)"
+                translate>
+            Close all containers
+        </button>
+    </label>
+</div>
+
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-capitalize-header" id="tableContainerList">
+        <thead>
+        <tr>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial"
+                        translate>Serial
+                </button>
+            </th>
+            <th translate>
+                Type
+            </th>
+            <th translate>
+                Description
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>
+                User
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>
+                Realm
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>
+                Container Realms
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat-start="container in containerdata.containers track by $index">
+            <td>
+                <button class="btn btn-default"
+                        ng-if="expandedRows.includes($index)"
+                        ng-click="collapseTokenView($index)">-
+                </button>
+                <button class="btn btn-default"
+                        ng-if="!expandedRows.includes($index)"
+                        ng-disabled="container.tokens.length == 0"
+                        ng-click="expandTokenView($index)">+
+                </button>
+                <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
+            </td>
+            <td class="table-capitalize">
+                {{ container.type }}
+            </td>
+            <td>
+                {{ container.description }}
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: container.users[0].user_name,
+                            realmname: container.users[0].user_realm,
+                            resolvername: token.resolver,
+                            editable: false})">
+                    {{ container.users[0].user_name }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <span ng-repeat="c_realm in container.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ c_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
+            </td>
+        </tr>
+        <!-- Tokens of each container -->
+        <tr ng-if="expandedRows.includes($index)" ng-repeat-end="">
+            <td colspan="6">
+                <b><span translate>Contained Tokens: </span></b>
+                <table class="table table-bordered table-striped"  id="tableContainerTokenList"
+                       ng-if="container.tokens.length > 0">
+                    <tbody>
+                    <tr ng-repeat="token in container.tokens">
+                        <td><a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
+                               ng-click="$rootScope.returnTo=token.list;"
+                               ng-show="token.tokentype">
+                            {{ "[" + token.tokentype + "] " + token.serial + ": " + token.description}}</a>
+                            <span ng-hide="token.tokentype">
+                                {{ token.serial }}
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>

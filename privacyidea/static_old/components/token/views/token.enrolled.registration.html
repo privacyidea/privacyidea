@@ -1,0 +1,18 @@
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'Registration Code' | translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
+		<div>{{ enrolledToken.registrationcode }}</div>
+            </div>
+        </uib-accordion>
+
+        <p class="help-block" translate>
+            You may pass this registration code to the user.
+        </p>

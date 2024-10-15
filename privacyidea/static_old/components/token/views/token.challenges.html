@@ -1,0 +1,70 @@
+<p><translate>Total Challenges:</translate>
+    {{ challengedata.count }}
+</p>
+
+<div uib-pagination ng-show="challengedata.count > 15"
+     total-items="challengedata.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="15"
+     max-size="5"
+     boundary-links="true" ng-change="challengePageChanged()"></div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped" id="tabletokenchallenges">
+        <thead>
+        <tr>
+            <th>
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="timestamp"
+                        translate>timestamp
+                </button>
+            </th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial"
+                        translate>serial
+                </button>
+                <pi-filter ng-model="serialFilter"
+                           ng-change="get()"></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="transaction_id"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Transaction ID
+                </button>
+            </th>
+            <th>
+                <button pi-sort-by="expiration"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Expiration
+                </button>
+            </th>
+            <th>
+                <button pi-sort-by="received_count"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Received
+                </button>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="challenge in challengedata.challenges">
+            <td>
+               {{ challenge.timestamp }}
+            </td>
+            <td><a ui-sref="token.details({tokenSerial:challenge.serial})"
+                   ng-click="$rootScope.returnTo=token.challenges;">
+                {{ challenge.serial }}</a></td>
+            <td>{{ challenge.transaction_id }}</td>
+            <td>{{ challenge.expiration }}</td>
+            <td>{{ challenge.received_count }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,36 @@
+<td>{{ text }}</td>
+
+<td><span ng-hide="editFlag"
+        ng-click="tokenLocked == 'false' ? editFlag = true: null">
+    {{ tokenData }}
+    </span>
+    <form name="tokenDataForm" role="form" ng-show="editFlag" validate>
+        <input type="text" ng-model='tokenData' ng-pattern='inputPattern'
+               class="form-control" autofocus />
+    </form>
+</td>
+
+<td>
+    <div ng-hide="loggedInUser.role == 'user' && editableAsUser != 'true' ">
+        <div ng-hide="tokenLocked == 'true'">
+            <button ng-show="editFlag"
+                    class="btn btn-primary"
+                    ng-click="callback({key: tokenKey, value: tokenData}); editFlag =
+                    false;"
+                    ng-disabled="tokenDataForm.$invalid"
+                    >{{ buttonText }}
+            </button>
+            <button class="btn btn-danger"
+                    ng-show="editFlag"
+                    ng-click="callbackCancel(); editFlag = false;"
+                    translate>Cancel
+            </button>
+            <button ng-hide="editFlag || (setRight == 'false' && hideButtons == 'true')"
+                    class="btn btn-primary"
+                    ng-click="editFlag = true;"
+                    ng-disabled="setRight == 'false'"
+                    translate>Edit
+            </button>
+        </div>
+    </div>
+</td>

@@ -1,0 +1,40 @@
+.navbar-brand {
+    padding: 5px 15px;
+}
+
+.navbar-nav .btn-group {
+    padding-top: 7px;
+    padding-bottom: 7px;
+}
+.spin {
+    padding: 15px;
+    -webkit-animation: spin 1s infinite linear;
+    animation: spin 1s infinite linear;
+}
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+/* Condense the menu on small tablets and when the browser covers only half of the screen */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .navbar-collapse ul.navbar-nav > li > a > translate {
+        display: none;
+    }
+}

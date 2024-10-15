@@ -1,0 +1,17 @@
+<p class="help-block" translate>
+    The Questionnaire token will let you define answers to questions.
+    When authenticating with this type of token, you will be asked a random
+    question and then need to provide the previously defined answer.
+</p>
+
+<h4 translate>Questionnaire</h4>
+<p class="help-block" translate>
+    Please answer at least {{ num_answers }} of the following questions.
+</p>
+
+<div class="form-group" ng-repeat="question in questions">
+    <label>{{ question }}</label>
+    <input type="text"
+           class="form-control"
+           ng-model="form.questions[question]">
+</div>

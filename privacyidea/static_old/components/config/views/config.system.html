@@ -1,0 +1,218 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.system.edit')}">
+                        <a ui-sref="config.system.edit">
+                            <span class="glyphicon glyphicon-wrench"></span>
+                            <span translate>System Config</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="checkRight('system_documentation')"
+                        ng-class="{ active: $state.includes('config.system.doc')}">
+                        <a ng-click="getSystemDocumentation()"
+                            ui-sref="config.system.doc"><span
+                            class="glyphicon glyphicon-download"></span>
+                        <span translate>Get System Documentation</span></a></li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.smtp')}"
+                        ng-show="checkRight('smtpserver_read')">
+                        <a ui-sref="config.smtp">
+                            <span class="glyphicon glyphicon-envelope"></span>
+                            <span translate>SMTP servers</span>
+                        </a>
+                        <ul  class="nav nav-pills nav-stacked pi-submenu"
+                             ng-show="$state.includes('config.smtp')">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smtp.list')}">
+                                <a ui-sref="config.smtp.list"
+                                        translate>List SMTP server definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smtp.add')}"
+                                ng-show="checkRight('smtpserver_write')">
+                                <a ui-sref="config.smtp.add" translate>
+                                    New SMTP server</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/smtpserver_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about SMTP-Servers</span></a></li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.radius')}"
+                        ng-show="checkRight('radiusserver_read')">
+                        <a ui-sref="config.radius">
+                            <span class="glyphicon glyphicon-off"></span>
+                            <span translate>RADIUS servers</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.radius')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.radius.list')}">
+                                <a ui-sref="config.radius.list"
+                                        translate>List RADIUS server definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.radius.add')}"
+                                ng-show="checkRight('radiusserver_write')">
+                                <a ui-sref="config.radius.add" translate>
+                                    New RADIUS server</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/radiusserver_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about RADIUS-Server</span></a></li>
+                        </ul>
+
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.privacyideaserver')}"
+                        ng-show="checkRight('privacyideaserver_read')">
+                        <a ui-sref="config.privacyideaserver">
+                            <span class="glyphicon glyphicon-forward"></span>
+                            <span translate>privacyIDEA servers</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.privacyideaserver')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.privacyideaserver.list')}">
+                                <a ui-sref="config.privacyideaserver.list"
+                                        translate>List privacyIDEA server
+                                    definitions</a></li>
+                            <li role="presentation"
+                                ng-show="checkRight('privacyideaserver_write')"
+                                ng-class="{ active: $state.includes('config.privacyideaserver.add')}">
+                                <a ui-sref="config.privacyideaserver.add" translate>
+                                    New privacyIDEA server
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.smsgateway')}"
+                        ng-show="checkRight('smsgateway_read')">
+                        <a ui-sref="config.smsgateway">
+                            <span class="glyphicon glyphicon-signal"></span>
+                            <span translate>SMS Gateways</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.smsgateway')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smsgateway.list')}">
+                                <a ui-sref="config.smsgateway.list" translate>
+                                    All SMS Gateways</a></li>
+                            <li role="presentation"
+                                ng-show="checkRight('smsgateway_write')"
+                                ng-class="{ active: $state.includes('config.smsgateway.add')}">
+                                <a ui-sref="config.smsgateway.add" translate>
+                                    Create new SMS Gateway definition
+                                </a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/sms_gateway_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about SMS-Gateways</span></a></li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.tokengroup')}"
+                        ng-show="checkRight('tokengroup_list')">
+                        <a ui-sref="config.tokengroup">
+                            <span class="glyphicon glyphicon-phone"></span>
+                            <span translate>Tokengroups</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.tokengroup')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.tokengroup.list')}">
+                                <a ui-sref="config.tokengroup.list"
+                                        translate>List Tokengroup definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.tokengroup.add')}"
+                                ng-show="checkRight('tokengroup_add')">
+                                <a ui-sref="config.tokengroup.add" translate>
+                                    New Tokengroup definition</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/tokengroups.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help on Tokengroups</span></a></li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.serviceid')}"
+                        ng-show="checkRight('serviceid_list')">
+                        <a ui-sref="config.serviceid">
+                            <span class="glyphicon glyphicon-cutlery"></span>
+                            <span translate>Service IDs</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.serviceid')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.serviceid.list')}">
+                                <a ui-sref="config.serviceid.list"
+                                        translate>List Service ID definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.serviceid.add')}"
+                                ng-show="checkRight('serviceid_add')">
+                                <a ui-sref="config.serviceid.add" translate>
+                                    New Service ID definition</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/serviceids.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help on Service IDs</span></a></li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('config.caconnectors')}">
+                        <a ui-sref="config.caconnectors.list">
+                            <span class="glyphicon glyphicon-bookmark"
+                              aria-hidden="true"></span>
+                            <span translate>CAs</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.caconnectors')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active:
+                                $state.includes('config.caconnectors.list')}">
+                                <a ui-sref="config.caconnectors.list" translate>
+                                    All CA Connectors</a></li>
+                            <li role="presentation"
+                                ng-class="{ active:
+                                $state.includes('config.caconnectors.edit')}"
+                                    ng-show="$state.includes('config.caconnectors.edit')">
+                                <a ui-sref="config.caconnector.edit" translate>
+                                    Edit CA Connector {{ connectorname }}</a></li>
+
+                            <li class="nav nav-pills nav-header" translate
+                                ng-show="checkRight('caconnectorwrite')">
+                                New Connectors</li>
+                            <!-- Here we can get all connectors and iterated over
+                                 the resolver types.
+                            -->
+                            <li ng-repeat="connectortype in availableCAConnectorTypes"
+                                    role="presentation"
+                                ng-show="checkRight('caconnectorwrite')"
+                                ng-class="{active:
+                                $state.includes('config.caconnectors.add'+connectortype) }">
+                                <a ui-sref="config.caconnectors.add{{ connectortype }}"
+                                   translate>
+                                    New {{ connectortype | uppercase }} CA Connector</a>
+                            </li>
+                        </ul>
+                    </li>
+            </ul>
+        </div>
+    </div>
+
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+
+</div>

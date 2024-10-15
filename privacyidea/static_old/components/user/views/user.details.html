@@ -1,0 +1,385 @@
+<div class="panel">
+    <!--
+     The controller provides $scope.User with
+        description: "PulseAudio daemon,,,"
+        email: ""
+        givenname: "PulseAudio"
+        mobile: ""
+        phone: ""
+        surname: "daemon"
+        userid: "115"
+        username: "pulse"
+    -->
+    <h2>
+        <translate>Details for user {{ username }} in realm</translate>
+        <a ui-sref="config.realms.list">{{ realmname }}</a></h2>
+    <a class="btn btn-default" ui-sref="audit.log({user: username})">
+        <translate>View user in Audit log</translate>
+    </a>
+    </h2>
+
+    <div class="panel-body">
+
+        <div class="col-xs-6">
+            <div ng-repeat="field in leftColumn">
+                <ng-form name="formLeft" class="css-form">
+                    <ng-include
+                            src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                </ng-form>
+            </div>
+        </div>
+        <div class="col-xs-6">
+            <div ng-repeat="field in rightColumn">
+                <ng-form name="formLeft" class="css-form">
+                    <ng-include
+                            src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                </ng-form>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="panel-body">
+        <div class="text-center" ng-show="editable">
+            <button ng-click="editUser=true; getUserDetails()"
+                    class="btn btn-primary"
+                    ng-show="!editUser && checkRight('updateuser')">
+                <span class="glyphicon glyphicon-edit"></span>
+                <span translate>Edit user</span>
+            </button>
+            <button ng-click="editUser=false; updateUser()"
+                    class="btn btn-primary"
+                    ng-show="editUser">
+                <span class="glyphicon glyphicon-save"></span>
+                <span translate>Save user</span>
+            </button>
+            <button ng-click="editUser=false; getUserDetails()"
+                    class="btn btn-danger"
+                    ng-show="editUser" translate>Cancel
+            </button>
+            <button ng-click="deleteUserAsk()"
+                    class="btn btn-danger"
+                    ng-show="!editUser && checkRight('deleteuser')">
+                <span class="glyphicon glyphicon-trash"></span>
+                <span translate>Delete user</span>
+            </button>
+        </div>
+    </div>
+
+    <!--
+    <div class="panel-body">
+        <div class="text-center">
+            Allowed custom attributes:
+            {{ allowedCustomAttributes }}
+        </div>
+    </div>
+    -->
+
+    <div ng-show="allowedCustomAttributes.hasOwnProperty('set') || allowedCustomAttributes.hasOwnProperty('delete')">
+        <h3 translate>Custom attributes for user {{ username }}</h3>
+        <table class="table table-hover">
+            <tr ng-repeat="(attribute_key, attribute_value) in custom_attributes">
+                <td class="col-sm-4">
+                    <b>{{ attribute_key }}</b>
+                </td>
+                <td class=col-sm-4>
+                    {{ attribute_value }}
+                </td>
+                <td class=col-sm-2>
+                    <button ng-click="deleteCustomAttribute(attribute_key)"
+                            ng-show="allowedCustomAttributes['delete'].includes(attribute_key) || allowedCustomAttributes['delete'].includes('*')"
+                            class="btn btn-danger">Delete
+                    </button>
+                </td>
+            </tr>
+        </table>
+        <div ng-show="allowedCustomAttributes.hasOwnProperty('set')">
+            <h4 translate>Add custom attribute</h4>
+            <table class="table table-hover">
+                <tr>
+                    <td class="col-sm-4">
+                        <select class="form-control"
+                                id="attr_key"
+                                ng-change="onCustomAttributeKeyChange()"
+                                ng-model="selectedAttrKey"
+                                ng-options="attribute_key as attribute_key for (attribute_key, attribute_values) in allowedCustomAttributes['set']"
+                        >
+                        </select>
+                        <label class="sr-only" for="new_custom_attribute_key" translate="Custom attribute name"></label>
+                        <input class="form-control"
+                               ng-show="selectedAttrKey==='*'"
+                               ng-model="newCustomAttributeKey"
+                               id="new_custom_attribute_key"
+                               placeholder="Custom attribute name">
+                    </td>
+                    <td class="col-sm-4">
+                        <select class="form-control"
+                                ng-show="customAttributeValueSelectVisible"
+                                id="attr_value"
+                                ng-model="selectedAttrValue"
+                                ng-options="attribute_value as attribute_value for attribute_value in allowed_values"
+                        >
+                        </select>
+                        <input class="form-control"
+                               ng-show="selectedAttrValue==='*'"
+                               ng-model="newCustomAttributeValue">
+                    </td>
+                    <td class="col-sm-2">
+                        <button ng-click="addCustomAttribute()"
+                                ng-enables="newCustomAttributeKey || selectedAttrKey"
+                                class="btn btn-success">Add
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===================== Tokens ===================== -->
+    <h3 ng-show="showTokenOfUser" translate>Tokens for user {{ username }}</h3>
+    <h3 ng-show="!showTokenOfUser" translate>Token of {{username}} without a container</h3>
+    <!-- Tokens for user -->
+    <div uib-pagination ng-show="tokendata.count > 5 && showTokenOfUser"
+         total-items="tokendata.count" ng-model="params.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         items-per-page="{{ tokensPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()"></div>
+
+    <div class="table-responsive form-group" ng-show="showTokenOfUser">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Serial</th>
+                <th translate>Type</th>
+                <th translate>Active</th>
+                <th translate>Window</th>
+                <th translate>Description</th>
+                <th translate>Failcounter</th>
+                <th translate>Maxfail</th>
+                <th translate>Otplen</th>
+                <th>Container</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token in tokendata.tokens">
+                <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                       ng-click="$rootScope.returnTo=user.list;">
+                    {{ token.serial }}</a></td>
+                <td>{{ token.tokentype }}</td>
+                <td>
+                    <span class="label label-success" ng-show="token.active"
+                          ng-click="disable(token.serial)"
+                          title="{{ 'Disable token'|translate }}"
+                          translate>active
+                    </span>
+                    <span class="label label-danger" ng-hide="token.active"
+                          ng-click="enable(token.serial)"
+                          title="{{ 'Enable token'|translate }}"
+                          translate>disabled
+                    </span>
+                </td>
+                <td>{{ token.count_window }}</td>
+                <td>{{ token.description }}</td>
+                <td>
+                    <span class="label"
+                          title="{{ 'Reset Failcounter'|translate }}"
+                          ng-click="reset(token.serial)"
+                          ng-class="{'label-success': token.failcount<=0,
+                           'label-warning': token.failcount>0,
+                           'label-danger': token.failcount>=token.maxfail}">
+                        {{ token.failcount }}
+                    </span>
+                </td>
+                <td>{{ token.maxfail }}</td>
+                <td>{{ token.otplen }}</td>
+                <td>
+                    <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
+                       ng-show="checkRight('container_list')">
+                        {{ token.container_serial }}
+                    </a>
+                    <span ng-hide="checkRight('container_list')">
+                        {{ token.container_serial }}
+                    </span>
+                </td>
+                <td>
+                    <fieldset ng-disabled="!token.tokentype">
+                        <button class="btn btn-transparent btn-danger"
+                                ng-hide="showDialog[token.serial]"
+                                ng-disabled="!checkRight('unassign')"
+                                ng-click="unassign(token.serial)">
+                            <span class="glyphicon glyphicon-remove"></span>
+                            <span translate>Unassign</span>
+                        </button>
+                        <button class="btn btn-transparent btn-danger" ng-click="deleteToken(token.serial, true)"
+                                ng-disabled="!checkRight('delete')"
+                                ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Delete</span>
+                        </button>
+                        <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
+                        <button class="btn btn-danger"
+                                ng-click="deleteToken(token.serial, false)"
+                                ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                                ng-disabled="!checkRight('delete')">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Delete</span>
+                        </button>
+                        <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
+                                ng-show="showDialog[token.serial]">
+                            <span translate>Cancel</span>
+                        </button>
+                    </fieldset>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-responsive form-group" ng-show="!showTokenOfUser">
+        <table class="table table-bordered table-striped table-capitalize-header">
+            <thead>
+            <tr>
+                <th translate>Selection</th>
+                <th translate>Serial</th>
+                <th translate>Type</th>
+                <th translate>Active</th>
+                <th translate>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token in tokenWithoutContainer">
+                <td>
+                    <input type="checkbox" ng-model="tokenSelection[token.serial][token.tokentype]">
+                </td>
+                <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                       ng-click="$rootScope.returnTo=user.list;">
+                    {{ token.serial }}</a></td>
+                <td>{{ token.tokentype }}</td>
+                <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                    <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+                </td>
+                <td>{{ token.description }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div select-or-create-container
+         ng-show="!showTokenOfUser"
+         container-serial="containerSerial"
+         enable-user-assignment=true
+         check-user-assignment=true
+         user-name="username"
+         user-realm="realmname"
+         token-types="selectedTokenTypes">
+    </div>
+    <div class="text-center">
+        <button class="btn btn-primary"
+                ng-click="enrollToken()"
+                ng-show="showTokenOfUser"
+                ng-disabled="!checkEnroll()"
+                id="enrollButton"
+                translate>Enroll New Token
+        </button>
+        <button class="btn btn-primary"
+                ng-click="addTokensToContainerMode()"
+                ng-show="showTokenOfUser"
+                ng-disabled="!enableAddTokenToContainer || !checkRight('container_add_token')"
+                id="putInContainerButton"
+                translate>Add Tokens to Container
+        </button>
+        <button class="btn btn-success"
+                ng-click="addTokensToContainerAction()"
+                ng-show="!showTokenOfUser"
+                ng-disabled="!containerSelected || !checkRight('container_add_token')"
+                translate>Add Tokens
+        </button>
+        <button class="btn btn-danger"
+                ng-click="cancelAddTokensToContainerMode()"
+                ng-show="!showTokenOfUser"
+                translate>Cancel
+        </button>
+    </div>
+
+    <div ng-show="checkRight('assign')">
+        <h3 translate>Assign a new token {{ newToken.serial }}</h3>
+
+        <form name="formAssignToken" role="form" validate>
+            <div assign-token new-token-object="newToken"></div>
+            <div class="text-center">
+                <button type="button" ng-click="assignToken()"
+                        id="assignButton"
+                        ng-disabled="formAssignToken.$invalid"
+                        class="btn btn-primary" translate>Assign Token
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <ng-include
+            src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
+    </ng-include>
+    <!-- ===================== Containers ===================== -->
+    <h3 ng-show="containerdata.length > 0" translate>Containers for user {{ username }}</h3>
+
+    <div uib-pagination ng-show="containerdata.count > containersPerPage"
+         total-items="containerdata.count" ng-model="containerParams.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         items-per-page="{{ containersPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()">
+    </div>
+
+    <div class="table-responsive" ng-show="containerdata.length > 0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped" id="tableContainerList">
+                <thead>
+                <tr>
+                    <th translate>
+                        Serial
+                    </th>
+                    <th translate>
+                        Type
+                    </th>
+                    <th translate>
+                        Description
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="container in containerdata">
+                    <td>
+                        <a ui-sref="token.containerdetails({containerSerial: container.serial})"
+                           ng-show="checkRight('container_list')">
+                            {{ container.serial }}</a>
+                        <span ng-hide="checkRight('container_list')">
+                            container.serial
+                        </span>
+                    </td>
+                    <td class="table-capitalize">
+                        {{ container.type }}
+                    </td>
+                    <td>
+                        {{ container.description }}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

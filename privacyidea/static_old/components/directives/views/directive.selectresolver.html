@@ -1,0 +1,19 @@
+<div class="form-group">
+    <span ng-repeat="resolver in resolvers">
+        <label for="{{ resolver.resolvername }}">
+            <input type="checkbox"
+                   ng-model="selectedResolvers[resolver.resolvername].selected"
+                   name="group"
+                   id="{{ resolver.resolvername }}"
+                   ng-checked="selectedResolvers[resolver.resolvername].selected"
+                   ng-change="selectionChanged(selectedResolvers)">
+            {{ resolver.resolvername }}
+            <input type="number" size="3" width="3ex"
+                   max="999" min="1"
+                   ng-show="selectedResolvers[resolver.resolvername].selected"
+                   ng-model="selectedResolvers[resolver.resolvername].priority"
+                   placeholder="priority"/>
+            ({{ resolver.type }})
+        </label><br>
+    </span>
+</div>

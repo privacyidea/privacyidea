@@ -1,0 +1,38 @@
+
+<div class="well">
+    <nav class="navbar navbar-default">
+    <div class="container">
+        <button type="button" class="navbar-toggle"
+                data-toggle="collapse" data-target=".myConfigNavbar"
+                aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+        <div class="navbar-collapse collapse myConfigNavbar">
+            <ul class="nav navbar-nav nav-capitalize">
+                <li ng-class="{active: $state.includes('component.clienttype')}">
+                    <a ui-sref="component.clienttype">
+                    <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                    <span translate>Client Application Type</span></a></li>
+            </ul>
+
+            <ul class="nav navbar-nav nav-capitalize">
+                <li ng-class="{active: $state.includes('component.subscriptions')}">
+                    <a ui-sref="component.subscriptions">
+                    <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                    <span translate>Subscriptions</span></a></li>
+            </ul>
+
+        </div>
+
+    </div>
+    </nav>
+
+    <div ui-view class="slide"></div>
+
+</div>

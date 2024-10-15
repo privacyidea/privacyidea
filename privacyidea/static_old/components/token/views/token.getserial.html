@@ -1,0 +1,113 @@
+<h3 name="Token Details" translate>Get Serial number by OTP value
+</h3>
+<p class="help-block" translate>
+    By entering an OTP value you can get the serial number of the token.
+    You can also enter additional optional parameters, to narrow down the
+    search for the token. So you can only search within certain token types
+    or in assigned or unassigned tokens.
+</p>
+
+<form name="formGetSerial" role="form" validate>
+    <div class="form-group">
+        <label for="otp" translate>OTP Value</label>
+        <input name="otp" ng-model="otp"
+               ng-disabled="step==='count'"
+               ng-required="1"
+               class="form-control"
+               ng-change="newOtp=true"
+               placeholder="{{ 'enter some OTP value'|translate }}">
+    </div>
+
+    <div class="form-group">
+            <label for="tokentype" translate>Token Type</label>
+    <select class="form-control"
+            name="tokentype"
+            ng-disabled="step==='count'"
+            ng-model="params.type"
+            ng-options="type as desc for (type, desc) in formInit.tokenTypes"
+            >
+    </select>
+    </div>
+
+    <div class="form-group">
+            <label for="assigned" translate>Assignment State</label>
+    <select class="form-control"
+            name="assigned"
+            ng-disabled="step==='count'"
+            ng-model="assigned"
+            ng-options="assi as desc for (assi, desc) in formInit.assigned"
+            >
+    </select>
+    </div>
+
+    <div class="form-group">
+        <label for="serial" translate>Serial Substring</label>
+        <input name="serial" ng-model="params.serial"
+               class="form-control"
+               ng-disabled="step==='count'"
+               placeholder="{{ 'an optional serial substring'|translate }}">
+    </div>
+
+    <div class="form-group">
+        <label for="window" translate>Count Window</label>
+        <input name="window" ng-model="params.window"
+               type="number"
+               class="form-control"
+               ng-disabled="step==='count'"
+               placeholder="{{'The number of lookahead OTP values. Default 10.'
+               |translate }}">
+    </div>
+
+    <div class="text-center" ng-show="step==='init'">
+        <button ng-click="step='count'; getSerial()"
+                ng-disabled="formGetSerial.$invalid"
+                class="btn btn-primary"
+                translate>Get Serial Number
+        </button>
+    </div>
+</form>
+<p>
+</p>
+
+<div ng-hide="newOtp">
+
+    <div class="alert alert-warning" ng-show="step==='count'">
+        <span translate>
+        Your search would include {{ count }} tokens. This can take a lot of
+        time and could even timeout. Do you want to run the search? You
+            might also cancel this and narrow down the search!</span>
+        <button ng-click="step='searching'; getSerial()"
+                class="btn btn-primary" translate>
+            Run search
+        </button>
+        <button ng-click="step='init'" class="btn btn-warning" translate>
+            Cancel
+        </button>
+    </div>
+
+    <div class="alert alert-warning" ng-show="step==='searching'">
+        <span translate>
+            Searching token...
+        </span>
+    </div>
+
+<div class="alert alert-success" ng-show="serial && step==='found'">
+    <span translate>
+        The Serial number for the OTP value {{ otp }} is
+    <a ui-sref="token.details({tokenSerial:serial})">{{ serial }}</a>.
+    </span>
+    <button ng-click="step='init'" class="btn btn-primaty" translate>
+        OK
+    </button>
+</div>
+
+<div class="alert alert-warning" ng-show="serial===null && step==='found'">
+    <span translate>
+        No Serial number could be found for OTP value {{ otp }}.
+    </span>
+    <button ng-click="step='init'" class="btn btn-primary" translate>
+        OK
+    </button>
+</div>
+
+</div>

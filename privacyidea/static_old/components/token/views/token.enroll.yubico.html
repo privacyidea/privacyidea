@@ -1,0 +1,22 @@
+<p class="help-block" translate>
+    The Yubico Cloud mode forwards the authentication request to the
+    YubiCloud. The Yubikey needs to be registered with the YubiCloud.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div ng-hide="form['yubico.id'] || loggedInUser.role==='user'" translate class="bg-danger">
+    For Yubico tokens to work properly you need to set the
+    <a ui-sref="config.tokens({tokentype:'yubico'})">Yubico Token Config</a>!
+</div>
+
+<div class="form-group">
+    <label for="yubicoID" translate>Yubikey Identifier</label>
+    <input type="text"
+           autofocus
+           required
+           class="form-control"
+           placeholder="{{ 'Enter the 12 digit Yubikey identifier..
+           .'|translate }}"
+           ng-model="form['yubico.tokenid']" name="yubicoID">
+</div>

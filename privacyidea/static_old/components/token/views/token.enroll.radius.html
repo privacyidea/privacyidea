@@ -1,0 +1,53 @@
+<p class="help-block" translate>
+    The RADIUS token forwards the authentication request to another
+    RADIUS server. You can choose if the PIN should be stripped and
+    checked locally.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div ng-hide="form['radius.server']" translate class="bg-info">
+    To ease the enrolling of RADIUS tokens you can
+    set default values in the
+    <a ui-sref="config.tokens({tokentype:'radius'})">RADIUS Token Config</a>.
+</div>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="form['radius.local_checkpin']"
+           name="localPin" id="localPin">
+    <label for="localPin" translate>Check the PIN locally</label>
+</div>
+
+<div class="form-group" ng-show="form['radius.local_checkpin']">
+    <label for="otplen" translate>OTP Length</label>
+    <p class="help help-block">If the PIN is split and verified locally, you
+        need to define, how long the password is, that is sent to the RADIUS
+        server.
+    </p>
+    <input type="number" ng-model="form.otplen"/>
+</div>
+
+
+<div class="form-group">
+    <label for="idenfifier" translate>RADIUS server configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.radius">RADIUS server configuration</a>.
+        The RADIUS request will be forwarded to this RADIUS server.
+    </p>
+    <select class="form-control"
+            ng-model="form['radius.identifier']"
+            name="identifier"
+            ng-options="identifier for identifier in radiusIdentifiers">
+    </select>
+
+<div class="form-group">
+    <label for="radiusUser" translate>RADIUS User</label>
+    <p class="help help-block" translate>This is the username that is sent
+        to the RADIUS server. It can be different from the owner of this
+        RADIUS token.</p>
+    <input type="text" ng-model="form['radius.user']"
+           class="form-control"
+           required
+           plasceholder="{{ 'The username on the RADIUS server'|translate }}"
+           name="radiusUser">
+</div>

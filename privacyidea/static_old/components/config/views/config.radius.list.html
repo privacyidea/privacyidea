@@ -1,0 +1,40 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Identifier</th>
+            <th translate>IP/FQDN</th>
+            <th translate>Dictionary</th>
+            <th translate>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(identifier, server) in radiusServers">
+            <td>
+                <a ui-sref="config.radius.edit({identifier:identifier})">
+                        {{ identifier }}</a>
+            </td>
+            <td>
+                {{ server.server }}:{{ server.port }}
+            </td>
+            <td>
+                {{ server.dictionary }}
+            </td>
+            <td>
+                {{ server.description | limitTo: 20 }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('radiusserver_write')"
+                        ng-click="delRadiusServer(identifier)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+
+</div>

@@ -1,0 +1,31 @@
+<h2 translate>U2F Token settings</h2>
+<p class="help-block" translate>
+    The U2F token is a hardware token, that communicates with the browser.
+    You need to set the correct appId, which in fact is the URL of your
+    privacyIDEA installation.
+</p>
+
+<div class="form-group">
+    <label for="u2fAppId" translate>appId</label>
+    <p class="help-block" translate>
+        The URL of your privacyIDEA installation.
+    </p>
+    <p class="help-block" translate>
+        This must be a valid FQDN with also a valid top level domain -
+        otherwise you might receive a U2F Error 2 (Bad Request).
+    </p>
+
+    <input type="url"
+           required
+           placeholder="https://pi.server.com"
+           class="form-control"
+           ng-model="form['u2f.appId']" name="u2fAppId">
+    <div ng-hide="form['u2f.appId'].indexOf('https:') == 0" translate
+            class="alert alert-warning">
+        The AppID needs to start with "https".
+    </div>
+    <div ng-show="form['u2f.appId'][form['u2f.appId'].length-1] == '/'"
+         class="alert alert-warning" translate>
+        The AppID must not end with a "/".
+    </div>
+</div>

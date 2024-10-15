@@ -1,0 +1,379 @@
+<div>
+
+<h2 class="form-signin-heading"
+        ng-show="resolvername"
+        translate>Edit LDAP Resolver {{ resolvername }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="resolvername"
+        translate>Create a new LDAP Resolver</h2>
+
+<form name="formResolverAddLdap" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="resolvername" class="col-sm-3 control-label"
+                translate>Resolver name</label>
+
+        <div class="col-sm-9">
+            <input name="resolvername" id="resolvername" class="form-control"
+                   ng-model="resolvername" required placeholder="resolver1"
+                   ng-pattern="inputNamePatterns.withoutTest.pattern"
+                   title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                   autofocus/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serveruri" class="col-sm-3 control-label" translate>
+            Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="serveruri" class="form-control"
+                   ng-model="params.LDAPURI" required
+                   placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
+        </div>
+    </div>
+    <div class="form-group"
+         ng_show="params.LDAPURI.includes(',')">
+        <label for="ldap_pooling_strategy"
+            class="col-sm-3 control-label" translate>
+            Pooling strategy
+        </label>
+        <div class="col-sm-4">
+            <select class="form-control"
+                    name="ldap_pooling_strategy" id="ldap_pooling_strategy"
+                    ng-model="params.SERVERPOOL_STRATEGY">
+                    <option ng-repeat="o in ldap_pooling_strategy_options"
+                            value="{{o}}">
+                        {{o}}
+                    </option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group"
+        ng_show="params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:'">
+        <label for="starttls"
+            class="col-sm-3 control-label" translate>
+            STARTTLS
+        </label>
+        <div class="col-sm-9">
+            <input name="starttls" id="starttls"
+                   ng-model="params.START_TLS"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Use STARTTLS on a plain LDAP connection usually on port 389.
+            </p>
+        </div>
+    </div>
+    <div class="form-group"
+        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+                 params.START_TLS">
+        <label for="tls_version"
+            class="col-sm-3 control-label" translate>
+            TLS Version
+        </label>
+        <div class="col-sm-4">
+            <select class="form-control"
+                    name="tls_version" id="tls_version"
+                    ng-model="params.TLS_VERSION">
+                    <!--ng-init="selection ='Server Default'"-->
+                    <option ng-repeat="o in tls_version_options"
+                            ng-selected="{{o.name==params.TLS_VERSION}}"
+                            value="{{o.value}}">
+                        {{o.name}}
+                    </option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group"
+        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+                 params.START_TLS">
+        <label for="tls"
+            class="col-sm-3 control-label" translate>
+            Verify TLS
+        </label>
+        <div class="col-sm-9">
+            <input name="tls" id="tls"
+                   ng-model="params.TLS_VERIFY"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Verify the TLS cerificate of the server.
+            </p>
+            <div class="well" ng-show="params.TLS_VERIFY">
+                <label for="tls_ca_file" class="control-label" translate>
+                    The file containing the CA certificate which signed the
+                    LDAP TLS certificate.
+                </label>
+                <input name="tls_ca_file" id="tls_ca_file"
+                       ng-model="params.TLS_CA_FILE"
+                       type="text"
+                       class="form-control"
+                       ng-show="params.TLS_VERIFY"
+                       placeholder="/etc/privacyidea/ldap-ca.crt"/>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="basedn" class="col-sm-3 control-label"
+               translate>Base DN</label>
+
+        <div class="col-sm-4">
+            <input name="basedn" class="form-control" id="basedn"
+                   ng-model="params.LDAPBASE" required
+                   placeholder="ou=users,dc=domain,dc=tld"/>
+        </div>
+
+        <label for="ldapscope" class="col-sm-2 control-label"
+               translate>Scope</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.SCOPE"
+                    name="ldapscope" id="ldapscope"
+                    ng-options="select for select in scopes">
+            </select>
+        </div>
+    </div>
+    <hr>
+    <div class="form-group">
+        <label for="authtype" class="col-sm-3 control-label"
+                translate>Bind Type</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.AUTHTYPE"
+                    name="authtype" id="authtype"
+                    ng-options="select for select in authtypes">
+            </select>
+        </div>
+    </div>
+    <div class="form-group"
+         ng-show="params.AUTHTYPE !== authtypes['Anonymous']">
+        <label for="binddn" class="col-sm-3 control-label" translate>Bind DN</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" class="form-control" id="binddn"
+                   ng-model="params.BINDDN"
+                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group"
+         ng-show="params.AUTHTYPE !== authtypes['Anonymous']">
+        <label for="bindpw" class="col-sm-3 control-label"
+               translate
+               ng-show="params.AUTHTYPE !== authtypes['SASL Kerberos']">Bind Password</label>
+        <label for="keytabfile" class="col-sm-3 control-label"
+               translate
+               ng-show="params.AUTHTYPE === authtypes['SASL Kerberos']">Keyfile Path</label>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE !== authtypes['SASL Kerberos']">
+            <input name="bindpw" class="form-control"
+                   id="bindpw"
+                   type="password"
+                   autocomplete="new-password"
+                   ng-model="params.BINDPW"
+                   placeholder="topsecret"/>
+        </div>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE === authtypes['SASL Kerberos']">
+            <input name="keytabfile" class="form-control"
+                   id="keytabfile"
+                   ng-model="params.KEYTABFILE"
+                   placeholder="/path/to/keyfile"/>
+        </div>
+    </div>
+    <hr>
+    <div class="form-group">
+        <label for="timeout" class="col-sm-3 control-label"
+                translate>Timeout (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="timeout" class="form-control"
+                   ng-model="params.TIMEOUT" required
+                   placeholder="5"/>
+        </div>
+        <label for="cachetimeout" class="col-sm-3 control-label"
+                translate>Cache Timeout (seconds)</label>
+
+        <div class="col-sm-3"
+             ng-class="{'has-error': !params.CACHE_TIMEOUT }">
+            <input name="cachetimeout" class="form-control"
+                   ng-model="params.CACHE_TIMEOUT" required
+                   ng-class="{'has-error': !params.CACHE_TIMEOUT }"
+                   placeholder="120"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="sizelimit" class="col-sm-3 control-label"
+                translate>Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serverpool-rounds" class="col-sm-3 control-label"
+                translate>Server pool retry rounds</label>
+
+        <div class="col-sm-3">
+            <input name="serverpool-rounds" class="form-control"
+                   ng-model="params.SERVERPOOL_ROUNDS"
+                   placeholder="2" />
+        </div>
+        <label for="serverpool-skip" class="col-sm-3 control-label"
+                translate>Server pool skip timeout (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="serverpool-skip" class="form-control"
+                   ng-model="params.SERVERPOOL_SKIP"
+                   placeholder="30" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serverpool-persistent" class="col-sm-3 control-label" translate>
+            Per-process server pool
+        </label>
+        <div class="col-sm-9">
+            <input name="serverpool-persistent"
+                   ng-model="params.SERVERPOOL_PERSISTENT"
+                   type="checkbox" />
+            <p class="help-block" translate>
+                This setting activates a LDAP server pool that is persisted between requests.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="editable"
+            class="col-sm-3 control-label" translate>
+            Edit user store
+        </label>
+        <div class="col-sm-9">
+        <input name="editable" id="editable"
+               ng-model="params.EDITABLE"
+               type="checkbox"/>
+            <p class="help-block" translate>
+                The user data in this database can be modified from within
+                privacyIDEA.
+            </p>
+
+            <div class="well" ng-show="params.EDITABLE">
+                <label for="object_classes" class="control-label" translate>
+                    Object classes of a new created user object
+                </label>
+                <input name="object_classes" id="object_classes"
+                       class="form-control"
+                       ng-model="params.OBJECT_CLASSES" />
+                <label for="dn_template" class="control-label" translate>
+                    DN of a new created user object
+                </label>
+                <input name="dn_template" id="dn_template"
+                       class="form-control"
+                       placeholder="CN=<username>,<basendn>"
+                       ng-model="params.DN_TEMPLATE" />
+            </div>
+        </div>
+    </div>
+    <div class="well">
+        <div class="form-group">
+            <button class="btn btn-info" ng-click="presetLDAP()" translate>
+                Preset OpenLDAP
+            </button>
+            <button class="btn btn-info" ng-click="presetAD()" translate>
+                Preset Active Directory
+            </button>
+        </div>
+        <div class="form-group">
+            <label for="loginnameattr"
+                   class="col-sm-3 control-label">Loginname Attribute</label>
+
+            <div class="col-sm-9">
+
+                <input name="loginnameattr" class="form-control"
+                       ng-model="params.LOGINNAMEATTRIBUTE" required
+                       placeholder="sAMAccountName"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ldapsearchfilter"
+                   class="col-sm-3 control-label"
+                    translate>Search Filter</label>
+
+            <div class="col-sm-9">
+                <input name="ldapsearchfilter" class="form-control"
+                       ng-model="params.LDAPSEARCHFILTER" required
+                       placeholder="(sAMAccountName=*)(objectClass=person)"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="mapping"
+                   class="col-sm-3 control-label"
+                    translate>Attribute mapping</label>
+
+            <div class="col-sm-9">
+                <input name="mapping" class="form-control"
+                       ng-model="params.USERINFO" required
+                       placeholder='{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }'
+                        />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="multivalueattributes" class="col-sm-3 control-label"
+                translate>Multivalue Attributes</label>
+            <div class="col-sm-9">
+                <input name="multivalueattributes" class="form-control"
+                       ng-model="params.MULTIVALUEATTRIBUTES"
+                       placeholder='["mobile"]'/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="uidtype"
+                   class="col-sm-3 control-label"
+                    translate>UID Type</label>
+
+            <div class="col-sm-9">
+                <input name="uidtype" class="form-control"
+                       ng-model="params.UIDTYPE" required
+                       placeholder='DN'
+                        />
+            </div>
+        </div>
+        <div class="form-group">
+            <input name="noreferrals" id="noreferrals"
+                   ng-model="params.NOREFERRALS"
+                   type="checkbox"/>
+            <label for="noreferrals"
+                    translate>No anonymous referral chasing</label>
+        </div>
+        <div class="form-group">
+            <input name="noschemas" id="noschemas"
+                   ng-model="params.NOSCHEMAS"
+                   type="checkbox"/>
+            <label for="noschemas"
+                   translate>No retrieval of schema information</label>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="testResolver(1)"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-success"
+                translate>Quick Resolver Test
+        </button>
+        <!-- the size_limit "0" will be passed to the testconnection and mean
+         no user limit. It will return the complete number of users. -->
+        <button ng-click="testResolver(0)"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-success"
+                translate>Test LDAP Resolver
+        </button>
+        <button ng-click="setLDAPResolver()"
+                ng-show="checkRight('resolverwrite')"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-primary"
+                translate>Save resolver
+        </button>
+    </div>
+
+</form>
+</div>

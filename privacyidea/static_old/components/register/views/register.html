@@ -1,0 +1,97 @@
+<div class="well">
+    <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert"
+                    aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            <translate>
+                Here you may register a new user account
+            </translate>
+        </div>
+    <div class="container">
+
+         <form name="formRegister" class="form-signin" role="form" novalidate>
+
+            <h2 class="form-signin-heading" translate>Register
+            </h2>
+                <div class="form-group"
+                     ng-class="{'has-error': !newUser.username }">
+                <label for="username" translate>Username</label>
+                <input name="username" id="loginname"
+                       class="form-control"
+                       ng-model="newUser.username" required
+                       placeholder="{{ 'Username'|translate }}"
+                       autofocus/>
+                    </div>
+
+                <div class="form-group"
+                     ng-class="{'has-error': !newUser.surname }">
+                <label for="surname" translate>Surname</label>
+                <input name="surname" id="surname"
+                       class="form-control"
+                       ng-model="newUser.surname" required
+                       placeholder="{{ 'Surname'|translate }}"
+                       />
+                    </div>
+
+             <div class="form-group"
+                  ng-class="{'has-error': !newUser.givenname }">
+             <label for="givenname" translate>Given name</label>
+                <input name="givenname" id="givenname"
+                       class="form-control"
+                       ng-model="newUser.givenname" required
+                       placeholder="{{ 'Given name'|translate }}"
+                       />
+                 </div>
+
+             <div class="form-group"
+                  ng-class="{'has-error': !newUser.email }">
+                <label for="email" translate>Email</label>
+                <input name="email" id="email"
+                       class="form-control"
+                       ng-model="newUser.email" ng-required="true"
+                       placeholder="{{ 'Email'|translate }}"
+                       />
+                 </div>
+
+             <div class="form-group">
+                <label for="mobile" translate>Mobile</label>
+                <input name="mobile" id="mobile" class="form-control"
+                       ng-model="newUser.mobile"
+                       placeholder="{{ 'Mobile'|translate }}"
+                       />
+                 </div>
+
+             <div class="form-group">
+             <label for="phone" translate>Phone</label>
+                <input name="phone" id="phone" class="form-control"
+                       ng-model="newUser.phone"
+                       placeholder="{{ 'Phone'|translate }}"
+                       />
+                 </div>
+
+             <div class="form-group"
+                  ng-class="{'has-error': !newUser.password }">
+                <label for="password" translate>Password</label>
+                <input name="password" type="password"
+                       autocomplete="new-password"
+                       id="pw1" class="form-control round-top"
+                       ng-model="newUser.password" required
+                       equals="{{ password2 }}"
+                       placeholder="{{ 'Password'|translate }}"/>
+                <input name="password" type="password"
+                       autocomplete="new-password"
+                       id="pw2" class="form-control round-bottom"
+                       ng-model="password2"
+                       equals="{{ newUser.password }}"
+                       placeholder="{{ 'Password'|translate }}"/>
+                </div>
+                <div class="text-center">
+                    <button ng-click="registerUser()"
+                            ng-disabled="formRegister.$invalid"
+                            class="btn btn-primary btn-block" translate>Register
+                    </button>
+                </div>
+
+            </form>
+    </div>
+</div>

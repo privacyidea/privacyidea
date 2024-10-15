@@ -1,0 +1,26 @@
+<div class="row">
+    <div class="col-lg-3 sticky">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                <li role="presentation"
+                    ng-show="checkRight('policyread')"
+                    ng-class="{ active: $state.includes('config.policies.list')}">
+                    <a ui-sref="config.policies.list" translate>
+                        All Policies</a></li>
+                <li role="presentation"
+                    ng-show="checkRight('policywrite')"
+                    ng-class="{ active: $state.includes('config.policies.add')}">
+                    <a ui-sref="config.policies.add"
+                       translate>Create new Policy</a>
+                </li>
+                <hr>
+                <li role="presentation">
+                    <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                       privacyideaVersionNumber+'/policies/index.html'}}">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Help about Policies</span></a></li>
+            </ul>
+        </div>
+    </div>
+    <div ui-view class="col-lg-9 slide panel"></div>
+</div>

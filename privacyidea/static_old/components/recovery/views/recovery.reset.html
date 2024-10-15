@@ -1,0 +1,31 @@
+<div class="well">
+    <div class="container">
+         <form name="formResetPassword" class="form-signin" role="form"
+               novalidate>
+             <h2 class="form-signin-heading" translate>Reset your Password
+            </h2>
+             <p class="help-block">Please enter a new password.</p>
+            <div class="form-group">
+                    <label for="password" translate>Password</label>
+                    <input name="password" ng-model="params.password"
+                               required
+                               type=password class="form-control"
+                               equals="{{ password2 }}"
+                               placeholder="{{ 'Type a password'|translate }}">
+                    <input name="password2" ng-model="password2"
+                               required
+                               type=password class="form-control"
+                               equals="{{ params.password }}"
+                               placeholder="{{ 'Repeat password'|translate }}">
+            </div>
+
+             <div class="text-center">
+                    <button ng-click="resetPassword()"
+                            ng-disabled="formResetPassword.$invalid"
+                            class="btn btn-primary btn-block"
+                            translate>Reset Password
+                    </button>
+            </div>
+         </form>
+    </div>
+</div>

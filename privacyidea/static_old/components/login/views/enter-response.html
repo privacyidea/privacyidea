@@ -1,0 +1,34 @@
+<div class="well">
+    <form name="formResponse" class="form-signin" role="form" novalidate>
+        <div class="center" ng-show="challenge_multiple_tokens">
+            <p>{{ challenge_message }}</p>
+        </div>
+        <div class="center"
+            ng-if="image">
+            <img width="250" ng-src="{{ image }}" />
+        </div>
+
+        <div ng-hide="hideResponseInput">
+            <h2 class="form-signin-heading" translate>Response</h2>
+
+            <input type="hidden" name="username" id="username"
+                   ng-model="login.username">
+            <input type="hidden" name="transactionid" id="transactionid"
+                   ng-model="transactionid">
+
+
+            <label for="otp" class="sr-only" translate>Response</label>
+            <input name="otp" type="password" autocomplete="one-time-code"
+                   id="otp" class="form-control"
+                   ng-model="login.password" required
+                   placeholder="{{ challenge_message }}"/>
+
+            <div class="text-center">
+                <button ng-click="authenticate()"
+                        ng-disabled="authForm.$invalid"
+                        class="btn btn-primary btn-block" translate>Log In
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,62 @@
+<h2 translate>Yubikey Token settings</h2>
+<p class="help-block" translate>
+    This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.
+    The Yubikey emits a 44 character on time password.
+</p>
+
+<p class="help-block" translate>
+    The authentication request can be handled by the default privacyIDEA
+    <a href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html" target="_blank">
+        validate API</a> but can also be handled by the
+    <a href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
+       target="_blank">
+        Yubico Validation Protocol</a>.
+</p>
+
+<div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Client ID</th>
+                <th translate>API Key</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="(ApiId, value) in form"
+                ng-if="ApiId.indexOf('yubikey.apiid.') == 0">
+                <td>{{ ApiId }}</td>
+                <td>{{ value }}</td>
+                <td>
+                    <button class="btn btn-danger" translate
+                        ng-click="deleteSystemEntry(ApiId)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td><input type="text" required
+                           class="form-control"
+                           placeholder="{{ 'Client ID'|translate }}"
+                           ng-model="newApiId"
+                           name="yubikeyApiId"></td>
+                <td><input type="text" required
+                           class="form-control"
+                           placeholder="{{ 'API Key'|translate }}"
+                           ng-model="form['yubikey.apiid.'+newApiId]"
+                           name="yubikeyApiKey">
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="yubikeyCreateNewKey(newApiId)">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                        <span translate>Create new API key</span>
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+</div>
+
+
+
+

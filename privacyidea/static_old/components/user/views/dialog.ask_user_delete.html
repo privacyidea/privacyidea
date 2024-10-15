@@ -1,0 +1,34 @@
+<div>
+<!-- Modal -->
+<div class="modal fade" id="dialogUserDelete" tabindex="-1"
+     role="dialog"
+     aria-labelledby="myModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel"
+                translate>Delete User</h4>
+      </div>
+      <div class="modal-body" translate>
+        Do you really want to delete the user in the user store?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default"
+                data-dismiss="modal" translate>No</button>
+        <button type="button"
+                class="btn btn-danger"
+                data-dismiss="modal"
+                ng-click="deleteUser()">
+            <span class="glyphicon glyphicon-trash"></span>
+            <span translate>Delete User</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div>

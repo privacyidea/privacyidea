@@ -1,0 +1,47 @@
+
+<h2 class="form-signin-heading"
+        ng-show="servicename"
+        translate>Edit Service ID {{ servicename }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="servicename"
+        translate>Create a new Service ID {{ params.servicename }}</h2>
+
+<form name="formServiceid" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group" ng-hide="servicename">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.servicename" required
+                   placeholder="myNewService"
+                   ng-pattern="inputNamePatterns.simple.pattern"
+                       title="{{ inputNamePatterns.simple.title | translate }}"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                for this service definition.</p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label"
+               translate>Description</label>
+        <div class="col-sm-9">
+            <input name="description" class="form-control"
+                   ng-model="params.description"
+                   placeholder="some wise words"/>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('serviceid_add')">
+        <button ng-click="saveServiceid()"
+                ng-disabled="formServiceid.$invalid"
+                class="btn btn-primary"
+                translate>Save Service ID
+        </button>
+    </div>
+
+</form>
+

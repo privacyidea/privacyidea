@@ -1,0 +1,63 @@
+<div uib-pagination ng-show="userCount > usersPerPage"
+     total-items="userCount" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="{{ usersPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-capitalize-header" id="tableuserlist">
+        <thead>
+        <tr>
+            <th class="pifilter"><translate>username</translate>
+                <pi-filter ng-model="params.usernameFilter"
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                           ></pi-filter>
+            </th>
+            <th class="pifilter"><translate>surname</translate>
+                <pi-filter ng-model="params.surnameFilter"
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter"><translate>givenname</translate>
+                <pi-filter ng-model="params.givennameFilter"
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter"><translate>email</translate>
+                <pi-filter ng-model="params.emailFilter"
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
+            </th>
+            <th translate>phone</th>
+            <th translate>mobile</th>
+            <th translate>description</th>
+            <th translate>id</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="user in userlist">
+            <td><a ui-sref="user.details({username:user.username,
+                    realmname:selectedRealm,
+                    resolvername:user.resolver,
+                    editable:user.editable})">
+                {{ user.username }}</a></td>
+            <td>{{ user.surname }}</td>
+            <td>{{ user.givenname }}</td>
+            <td><a href="mailto:{{ user.email }}">
+                {{ user.email }}</a></td>
+            <td>{{ user.phone }}</td>
+            <td>{{ user.mobile }}</td>
+            <td>{{ user.description }}</td>
+            <td>{{ user.userid }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

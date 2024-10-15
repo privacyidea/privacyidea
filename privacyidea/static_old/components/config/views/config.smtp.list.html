@@ -1,0 +1,45 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Identifier</th>
+            <th translate>IP/FQDN</th>
+            <th translate>Sender</th>
+            <th translate>StartTLS</th>
+            <th translate>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(identifier, server) in smtpServers">
+            <td>
+                <a ui-sref="config.smtp.edit({identifier:identifier})">
+                        {{ identifier }}</a>
+            </td>
+            <td>
+                {{ server.server }}:{{ server.port }}
+            </td>
+            <td>
+                {{ server.sender }}
+            </td>
+            <td>
+                <span class="glyphicon glyphicon-ok"
+                    ng-show="server.tls"></span>
+            </td>
+            <td>
+                {{ server.description | limitTo: 20 }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('smtpserver_write')"
+                        ng-click="delSmtpServer(identifier)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+
+</div>

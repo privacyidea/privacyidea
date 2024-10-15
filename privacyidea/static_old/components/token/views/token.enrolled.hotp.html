@@ -1,0 +1,60 @@
+<div class="row">
+    <div ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'"
+         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
+        <img width="{{ qrCodeWidth }}"
+             ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'centered' : 'not-centered'"
+             ng-src="{{ enrolledToken.googleurl.img }}"/>
+    </div>
+    <div ng-hide="form['2stepinit']"
+         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
+        <uib-accordion close-others="oneAtATime" ng-show="show_seed">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'The OTP key' | translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
+                Hex: {{ enrolledToken.otpkey.value }}<br/>
+                Base32: {{ enrolledToken.otpkey.value_b32 }}
+            </div>
+        </uib-accordion>
+
+        <div class="col-sm-12" ng-hide="$state.includes('token.wizard')">
+        <p translate ng-show="enrolledToken.googleurl.value">
+            Click <a href="{{ enrolledToken.googleurl.value }}">here</a> or scan
+            the QR Code, if you
+            want to add the Token to your smartphone authenticator app.
+        </p>
+        <p translate>
+            The QR Code contains the secret key of your token. You need to
+            protect it. <b>If you are in doubt, that someone else saw it, please
+            regenerate the QR Code, when no one else is watching.</b>
+        </p>
+        <button ng-click="regenerateToken()" class="btn btn-warning" translate>
+            Regenerate QR Code
+        </button>
+        </div>
+    </div>
+    <div class="col-sm-6" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
+        <p translate>
+            Your token {{ enrolledToken.serial }} is not completely enrolled, yet.
+        </p>
+        <p translate>
+            Please scan the QR code with the privacyIDEA authenticator app and enter
+            the generated code below.
+        </p>
+        <div class="form-group">
+            <label for="clientpart" translate>Client Part</label>
+            <input type="text" ng-model="$parent.clientpart"
+                   autofocus
+                   class="form-control"
+                   name="clientpart">
+            <button type="button" ng-click="sendClientPart()"
+                    class="btn btn-primary" translate>Enroll Token</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,28 @@
+<h2 translate>EMail Token settings</h2>
+<p class="help-block" translate>
+    The EMail token is a challenge response token that sends the OTP value to
+    the given email address, when the correct OTP PIN was presented by the user.
+</p>
+
+<div class="form-group">
+    <label for="idenfifier" translate>SMTP server configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.smtp">SMTP server configuration</a>.</p>
+    <select class="form-control"
+            ng-model="form['email.identifier']"
+            name="identifier"
+            ng-options="identifier as identifier for (identifier, config) in
+            smtpIdentifiers">
+    </select>
+</div>
+<div class="form-group">
+    <label for="mailvalid" translate>OTP validity time</label>
+    <p class="help-block" translate>
+        The time in seconds for which the sent OTP value is valid for
+        authentication.
+    </p>
+    <input type="text"
+           class="form-control"
+           ng-model="form['email.validtime']" name="mailvalid">
+</div>
+

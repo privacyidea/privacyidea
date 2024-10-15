@@ -1,0 +1,17 @@
+<h3 translate>Assign a new token {{ newTokenObject.serial }}</h3>
+
+<p class="help help-block" translate>
+    If you were handed a token device, you may connect this device to your
+    account. Turn over the token, you may find a serial number printed on the
+    token. Please enter this serial number and make up a token pin.
+</p>
+
+<form name="formAssignToken" role="form" validate>
+    <div assign-token new-token-object="newToken"></div>
+    <div class="text-center">
+        <button type="button" ng-click="assignToken()"
+                ng-disabled="formAssignToken.$invalid"
+                class="btn btn-primary" translate>Assign Token
+        </button>
+    </div>
+</form>

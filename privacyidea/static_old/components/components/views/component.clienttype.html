@@ -1,0 +1,29 @@
+<div class="well">
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Application Type</th>
+                <th translate>Client</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="(apptype, clients) in clientdata">
+                <td>{{ apptype }}</td>
+                <td>
+                    <p ng-repeat="client in clients">
+                        {{ client.ip }}
+                        [{{ client.hostname }}]
+                        <span class="help help-block">
+                            <span translate>Last seen: </span>
+                            {{ client.lastseen | date:dateFormat }}
+                        </span>
+                    </p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>

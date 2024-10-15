@@ -1,0 +1,45 @@
+<h2 translate>TOTP Token settings</h2>
+<p class="help-block" translate>
+    The TOTP Token is a time based one time password token.
+    It is described in <a href="https://tools.ietf.org/html/rfc6238">RFC
+    6238</a>.
+</p>
+<p translate>
+    Here you can define settings, that will be set as default values, when
+    enrolling a TOTP token.
+</p>
+
+<div class="form-group">
+    <label for="totpStep" translate>Default Time Step</label>
+    <select class="form-control"
+           ng-model="form['totp.timeStep']" name="totpStep"
+        ng-options="select for select in formInit.totpSteps">
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="totpWindow" translate>Default Time Window</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="180"
+           ng-model="form['totp.timeWindow']" name="totpWindow">
+</div>
+
+<div class="form-group">
+    <label for="totpShift" translate>Default Time Shift</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="0"
+           ng-model="form['totp.timeShift']" name="totpShift">
+</div>
+
+<div class="form-group">
+    <label for="totpHashlib" translate>Default Hashlib</label>
+    <select class="form-control"
+           ng-model="form['totp.hashlib']" name="totpHashlib"
+        ng-options="select for select in formInit.hashlibs">
+    </select>
+</div>
+

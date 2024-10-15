@@ -1,0 +1,216 @@
+<div>
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername" translate>Edit LDAP Machine Resolver
+        {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername" translate>Create a new hosts Machine Resolver</h2>
+
+
+
+<form name="formMachineResolverAddLdap" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="resolvername" class="col-sm-3 control-label"
+                translate>Resolver name</label>
+
+        <div class="col-sm-9">
+            <input name="resolvername" id="resolvername" class="form-control"
+                   ng-model="resolvername" required placeholder="resolver1"
+                   ng-pattern="inputNamePatterns.withoutTest.pattern"
+                   title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                   autofocus/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serveruri" class="col-sm-3 control-label"
+                translate>
+            Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="serveruri" class="form-control" id="serveruri"
+                   ng-model="params.LDAPURI" required
+                   placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
+        </div>
+    </div>
+    <div class="form-group"
+        ng_show="params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:'">
+        <label for="starttls"
+            class="col-sm-3 control-label" translate>
+            STARTTLS
+        </label>
+        <div class="col-sm-9">
+            <input name="starttls" id="starttls"
+                   ng-model="params.START_TLS"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Use STARTTLS on a plain LDAP connection usually on port 389.
+            </p>
+        </div>
+    </div>
+    <div class="form-group"
+        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+                 params.START_TLS">
+        <label for="tls"
+            class="col-sm-3 control-label" translate>
+            Verify TLS
+        </label>
+        <div class="col-sm-9">
+            <input name="tls" id="tls"
+                   ng-model="params.TLS_VERIFY"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Verify the TLS cerificate of the server.
+            </p>
+            <div class="well" ng-show="params.TLS_VERIFY">
+                <label for="tls_ca_file" class="control-label" translate>
+                    The file containing the CA certificate which signed the
+                    LDAP TLS certificate.
+                </label>
+                <input name="tls_ca_file" id="tls_ca_file"
+                       ng-model="params.TLS_CA_FILE"
+                       type="text"
+                       class="form-control"
+                       ng-show="params.TLS_VERIFY"
+                       placeholder="/etc/privacyidea/ldap-ca.crt"/>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="basedn" class="col-sm-3 control-label"
+                translate>Base DN</label>
+
+        <div class="col-sm-9">
+            <input name="basedn" id="basedn" class="form-control"
+                   ng-model="params.LDAPBASE" required
+                   placeholder="ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="binddn" class="col-sm-3 control-label"
+                translate>Bind DN</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" id="binddn" class="form-control"
+                   ng-model="params.BINDDN"
+                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="bindpw" class="col-sm-3 control-label"
+                translate>Bind Password</label>
+
+        <div class="col-sm-3">
+            <input name="bindpw" class="form-control" id="bindpw"
+                   type="password"
+                   autocomplete="new-password"
+                   ng-model="params.BINDPW"
+                   placeholder="topsecret"/>
+        </div>
+
+        <label for="authtype" class="col-sm-3 control-label"
+                translate>Bind Type</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.AUTHTYPE"
+                    name="authtype" id="authtype"
+                    ng-options="select for select in authtypes">
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="timeout" class="col-sm-3 control-label" translate>
+            Timeout (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="timeout" class="form-control" id="timeout"
+                   ng-model="params.TIMEOUT" required
+                   placeholder="5"/>
+        </div>
+
+        <label for="sizelimit" class="col-sm-3 control-label"
+                translate>Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control" id="sizelimit"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
+        </div>
+    </div>
+
+    <div class="well">
+        <button class="btn btn-info" ng-click="presetAD()" translate>
+            Preset Active Directory
+        </button>
+        <div class="form-group">
+            <input name="noreferrals" id="noreferrals"
+                   ng-model="params.NOREFERRALS"
+                   type="checkbox"/>
+            <label for="noreferrals" translate>No anonymous referral chasing</label>
+        </div>
+        <div class="form-group">
+            <label for="machineIdAttribute"
+                   class="col-sm-3 control-label" translate>Machine ID Attribute</label>
+
+            <div class="col-sm-9">
+
+                <input name="machineIdAttribute" class="form-control"
+                       id="machineIdAttribute"
+                       ng-model="params.IDATTRIBUTE" required
+                       placeholder="{{ 'An Attribute or the DN to identify the machine'|translate }}"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ldapsearchfilter"
+                   class="col-sm-3 control-label" translate>Search Filter</label>
+
+            <div class="col-sm-9">
+                <input name="ldapsearchfilter" class="form-control"
+                       id="ldapsearchfilter"
+                       ng-model="params.SEARCHFILTER" required
+                       placeholder="(objectClass=computer)"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="hostnameattribute"
+                   class="col-sm-3 control-label" translate>Hostname Attribute</label>
+
+            <div class="col-sm-9">
+                <input name="hostnameattribute" class="form-control"
+                       id="hostnameattribute"
+                       ng-model="params.HOSTNAMEATTRIBUTE" required
+                       placeholder='dNSHostName'
+                        />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ipattribute"
+                   class="col-sm-3 control-label" translate>IP Address Attribute</label>
+
+            <div class="col-sm-9">
+                <input name="ipattribute" class="form-control"
+                       id="ipattribute"
+                       ng-model="params.IPATTRIBUTE"
+                       placeholder="{{ 'An Attribute that contains the IP address.'|translate }}"
+                        />
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="testResolver()"
+                ng-disabled="formMachineResolverAddLdap.$invalid"
+                class="btn btn-success" translate>Test LDAP Resolver
+        </button>
+        <button ng-click="setLDAPMachineResolver()"
+                ng-show="checkRight('mresolverwrite')"
+                ng-disabled="formMachineResolverAddLdap.$invalid"
+                class="btn btn-primary" translate>Save resolver
+        </button>
+    </div>
+
+</form>
+</div>

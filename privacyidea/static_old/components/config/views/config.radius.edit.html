@@ -1,0 +1,128 @@
+
+<h2 class="form-signin-heading"
+        ng-show="identifier"
+        translate>Edit RADIUS server {{ identifier }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="identifier"
+        translate>Create a new RADIUS server {{ params.identifier }}</h2>
+
+<form name="formRadius" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.identifier" required
+                   placeholder="myRadiusServer"
+                   ng-pattern="inputNamePatterns.withoutTestRequest.pattern"
+                   title="{{ inputNamePatterns.withoutTestRequest.title | translate }}"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                of the RADIUS server definition.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="server" class="col-sm-3 control-label" translate>
+            IP or FQDN</label>
+
+        <div class="col-sm-9">
+            <input name="server" class="form-control"
+                   ng-model="params.server" required
+                   placeholder="1.2.3.4"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="port" class="col-sm-3 control-label" translate>
+            Port</label>
+
+        <div class="col-sm-9">
+            <input name="port" class="form-control"
+                   ng-model="params.port"
+                   placeholder="1812"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="timeout" class="col-sm-3 control-label" translate>
+            Timeout</label>
+
+        <div class="col-sm-3">
+            <input name="timeout" class="form-control"
+                   ng-model="params.timeout"
+                   placeholder="5"/>
+        </div>
+        <label for="retries" class="col-sm-3 control-label" translate>
+            Retries</label>
+
+        <div class="col-sm-3">
+            <input name="retries" class="form-control"
+                   ng-model="params.retries"
+                   placeholder="3"/>
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <label for="secret" class="col-sm-3 control-label"
+               translate>Secret</label>
+        <div class="col-sm-9">
+            <input name="secret" class="form-control"
+                   type="secret"
+                   ng-model="params.secret"
+                   required
+                   placeholder="testing123"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="dictionary" class="col-sm-3 control-label"
+               translate>Dictionary</label>
+        <div class="col-sm-9">
+            <input name="dictionary" class="form-control"
+                   ng-model="params.dictionary"
+                   placeholder="/etc/privacyidea/dictionary"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label"
+               translate>Description</label>
+        <div class="col-sm-9">
+            <input name="description" class="form-control"
+                   ng-model="params.description"
+                   placeholder="some wise words"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-3">
+            <label for="username" translate>User</label>
+            <input type="text" class="form-control" class="col"
+               ng-model="params.username" name="username">
+        </div>
+
+        <div class="col-sm-3">
+            <label for="password" translate>Password</label>
+            <input type="password" class="form-control" class="col"
+                   autocomplete="new-password"
+                   ng-model="params.password" name="password">
+        </div>
+        <div class="col-sm-3">
+            <button class="btn btn-default" translate
+                    ng-click="testRadiusRequest()">
+                Send test RADIUS request
+            </button>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('radiusserver_write')">
+        <button ng-click="saveRadiusServer()"
+                ng-disabled="formRadius.$invalid"
+                class="btn btn-primary"
+                translate>Save RADIUS server
+        </button>
+    </div>
+
+</form>
+

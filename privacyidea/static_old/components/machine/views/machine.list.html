@@ -1,0 +1,44 @@
+<div uib-pagination ng-show="machinecount > machinesPerPage"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     total-items="machinecount" ng-model="params.page"
+     items-per-page="{{ machinesPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-capitalize-header" id="tablemachinelist">
+        <thead>
+        <tr>
+            <th class="pifilter"><translate>hostname</translate>
+                <pi-filter ng-model="params.hostnameFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th class="pifilter"><translate>IP Address</translate>
+                <pi-filter ng-model="params.ipFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th class="pifilter"><translate>Id</translate>
+                <pi-filter ng-model="params.idFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th class="pifilter"><translate>Machine Resolver</translate>
+                <pi-filter ng-model="params.resolverFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="machine in machinelist">
+            <td><a ui-sref="machine.details({machineid:machine.id,
+                    machineresolver:machine.resolver_name})">
+                {{ machine.hostname }}</a></td>
+            <td>{{ machine.ip }}</td>
+            <td>{{ machine.id }}</td>
+            <td>{{ machine.resolver_name }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

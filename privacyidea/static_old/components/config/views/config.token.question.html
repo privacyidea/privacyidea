@@ -1,0 +1,66 @@
+<h2 translate>Questionnaire Token settings</h2>
+
+<p class="help-block" translate>
+    The questionnaire lets you define a set of questions. The questionnaire
+    token needs to define answers to these questions and the user will be
+    presented with a random questions and needs to provide his previously
+    defined answer.
+</p>
+
+<div class="form-group">
+    <label for="questionAnswers" translate>Number of answers</label>
+    <p class="help-block" translate>
+        This is the number of answers a user needs to define to enroll a token.
+    </p>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="5"
+           ng-model="form['question.num_answers']" name="questionAnswers">
+</div>
+
+<h3 translate>Questionnaire</h3>
+<p class="help-block" translate>
+    These are the possible questions, a user may define answers to.
+</p>
+
+<div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Question</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="(key, value) in form"
+                ng-if="key.indexOf('question.question.') == 0">
+                <td>{{ value }}</td>
+                <td>
+                    <button class="btn btn-danger" translate
+                        ng-click="deleteSystemEntry(key)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td><input type="text"
+                           class="form-control"
+                           placeholder="{{ 'Question'|translate }}"
+                           ng-model="form['question.question.'+nextQuestion]"
+                           name="question">
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="addQuestion()">
+                        <span class="glyphicon glyphicon-question-sign"></span>
+                        <span translate>Add new question</span>
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+</div>
+
+
+
+

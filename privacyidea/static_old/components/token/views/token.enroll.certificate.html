@@ -1,0 +1,81 @@
+<p class="help-block" translate>
+    The Certificate Token lets you enroll an x509 ceritificate
+    by the given CA.
+</p>
+
+<h4 translate>Token data</h4>
+
+<ul class="nav nav-pills">
+    <li role="presentation"
+        ng-click="radioCSR='csrgenerate'"
+        ng-class="{active: radioCSR == 'csrgenerate'}">
+        <a translate>Generate Request</a>
+    </li>
+    <li role="presentation"
+        ng-click="radioCSR='csrupload'"
+        ng-class="{active: radioCSR == 'csrupload'}">
+        <a translate>Upload Request</a>
+    </li>
+    <li role="presentation"
+        ng-click="radioCSR='certupload'"
+        ng-class="{active: radioCSR == 'certupload'}">
+        <a translate>Upload Certificate</a>
+    </li>
+</ul>
+
+<div class="well well-lg">
+    <div class="form-group">
+        <label for="ca" translate>CA Connector</label>
+        <select class="form-control"
+                ng-model="form.ca"
+                name="ca"
+                ng-options="connectorname for connectorname in CAConnectors"></select>
+        <label for="template" translate>Certificate Template</label>
+        <select class="form-control"
+                ng-model="form.template"
+                name="template"
+                ng-options="template as template for (template, value) in
+                            CATemplates[form.ca].templates"></select>
+        {{ CATemplates[form.ca].templates[form.template] }}
+    </div>
+
+
+    <!--------------- Upload Certificate ---------------->
+    <div class="form-group" ng-show="radioCSR == 'certupload'">
+        <label for="certificate" translate>Certificate (PEM)</label>
+    <textarea type="text"
+              rows="5"
+              class="form-control"
+              placeholder="Paste the Certificate"
+              ng-model="form.certificate" name="certificate">
+    </textarea>
+    </div>
+
+    <!--------------- Upload Request ---------------->
+    <div class="form-group" ng-show="radioCSR == 'csrupload'">
+        <label for="request" translate>Certificate Signing Request (PEM)</label>
+    <textarea type="text"
+              rows="5"
+              class="form-control"
+              placeholder="Paste the Certificate Signing Request"
+              ng-model="form.request" name="request">
+    </textarea>
+    </div>
+
+    <!------------ Generate Request --------------------->
+    <div ng-show="radioCSR == 'csrgenerate'">
+
+        <div class="form-group">
+            <input type="hidden" ng-model="form.genkey" ng-value="1"
+                   name="generate" id="generate">
+
+            <div ng-show="form.genkey">
+                <p class="help-block" translate>
+                    The server will create the private RSA key and store it in
+                    the database. You can later download the PKCS#12 file.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,86 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped table-capitalize-header">
+        <thead>
+        <tr>
+            <th>
+                <button class="btn btn-default unsorted" pi-sort-by="priority" translate>Priority</button>
+            </th>
+            <th>
+                <button class="btn btn-default unsorted" pi-sort-by="active" translate>Active</button>
+            </th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="name" translate>Policy Name</button>
+                <pi-filter ng-model="filter.name" ng-change="$apply()"></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="scope" translate>Scope</button>
+                <pi-filter ng-model="filter.scope" ng-change="$apply()"></pi-filter>
+            </th>
+             <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="action" translate>Action</button>
+                <pi-filter ng-model="filter.action_desc" ng-change="$apply()"></pi-filter>
+            </th>
+            <th translate>Realm</th>
+            <th translate>User</th>
+            <th translate>Resolver</th>
+            <th translate>Client</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="policy in policies | filter:filter | orderBy:sortby:reverse">
+            <td>
+                <input type="number" ng-model="policy.priority"
+                       class="form-control" min="1"
+                       ng-show="checkRight('policywrite')"
+                       ng-change="priorityChanged(policy)" />
+                </span>
+                <span ng-show="!checkRight('policywrite')">
+                    {{ policy.priority }}
+                </span>
+            </td>
+            <td>
+                <span ng-show="policy.active"
+                      class="glyphicon glyphicon-ok"
+                      ng-click="disablePolicy(policy.name)">
+                </span>
+                <span ng-hide="policy.active"
+                      class="glyphicon glyphicon-minus"
+                      ng-click="enablePolicy(policy.name)">
+                </span>
+            </td>
+            <td>
+                <a ui-sref="config.policies.details({policyname: policy.name})">
+                    {{ policy.name }}</a>
+            </td>
+            <td>
+                {{ policy.scope }}
+            </td>
+            <td>
+                {{ policy.action_desc.join(' | ') | truncate: 120 }}
+            </td>
+            <td>
+                {{ policy.realm | json }}
+            </td>
+            <td>
+                {{ policy.user | json }}
+            </td>
+            <td>
+                {{ policy.resolver | json }}
+            </td>
+            <td>
+                {{ policy.client | json }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('policydelete')"
+                        aria-label='{{ "Do you really want to delete this policy?" |  translate }}'
+                        ng-click="confirmDelete(delPolicy, policy.name)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

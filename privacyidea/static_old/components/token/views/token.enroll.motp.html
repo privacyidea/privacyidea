@@ -1,0 +1,44 @@
+<p class="help-block" translate>
+The mOTP token is a time based OTP token for mobile devices.
+    You can
+    have the server generate the secret and scan the QR code.
+</p>
+
+<h4 translate>Token data</h4>
+<div class="form-group">
+    <input type="checkbox" ng-model="form.genkey"
+           name="generate" id="generate">
+    <label for="generate" translate>Generate OTP Key on the Server</label>
+
+    <div ng-show="form.genkey">
+        <p class="help-block" translate>
+            The server will create the secret key
+            and a QR Code
+            will be
+            displayed to you to be scanned with the Token2 app.
+        </p>
+    </div>
+</div>
+<div class="form-group" ng-hide="form.genkey">
+    <label for="otpkey" translate>OTP Key</label>
+    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+           autofocus
+           class="form-control"
+           placeholder="Enter OTP key..."
+           ng-model="form.otpkey" name="otpkey">
+</div>
+
+<div class="form-group">
+    <label for="motppin" translate>mOTP PIN</label>
+    <p class="help-block" translate>
+        The mOTP PIN is the PIN that needs to be entered on the mobile device.
+    </p>
+    <input name="motppin" ng-model="form.motppin"
+           type=password class="form-control"
+           equals="{{ motppin2 }}"
+           placeholder="{{ 'Type a password'|translate }}">
+    <input name="motppin2" ng-model="motppin2"
+           type=password class="form-control"
+           equals="{{ form.motppin }}"
+           placeholder="{{ 'Repeat password'|translate }}">
+</div>

@@ -1,0 +1,58 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="well">
+    <form name="formCreateContainer" role="form" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
+        <!-- Container Type -->
+        <div class="form-group">
+            <label for="containertype" translate>Container Type</label>
+            <select class="form-control"
+                id="containertype"
+                ng-model="form.containerType"
+                ng-options="type as attr.description for (type, attr) in formData.containerTypes">
+        </select>
+        </div>
+        <div class="form-group">
+            <span translate>Supported Token Types</span>: {{ form.token_types }}
+        </div>
+        <br>
+
+        <!-- Description -->
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('container_description')">
+            <label for="description" translate>Description</label>
+            <input type="text" class="form-control" id="description"
+                   autocomplete="new-password"
+                   placeholder="{{ 'Some nice words...'|translate }}"
+                   ng-model="form.description" />
+        </div>
+
+        <!-- User: will be $scope.newUser.user to use with fixUser() -->
+        <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container to user</h4>
+        <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
+            <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
+            </div>
+        </div>
+        <!-- Submit Button -->
+        <div class="text-center" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
+            <button type="button" ng-click="createContainer()"
+                    class="btn btn-primary">
+                <span>Create</span>
+            </button>
+        </div>
+    </form>
+</div>

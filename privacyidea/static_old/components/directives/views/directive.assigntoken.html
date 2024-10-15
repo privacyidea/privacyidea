@@ -1,0 +1,40 @@
+<!--
+This is the directive for assigning tokens to users.
+-->
+<div class="form-group">
+    <label for="serial" translate>Serial</label>
+    <input name="serial" type="text" ng-model="newTokenObject.serial"
+           autocomplete="new-password" required
+           placeholder="{{ 'start typing a serial number of a token that is notassigned, yet.'|translate}} "
+           ng-keypress="toggleLoadSerials($event.which==13)"
+           typeahead-wait-ms="100"
+           typeahead-focus-first="false"
+           uib-typeahead="serial for serial in loadSerials($viewValue)"
+           typeahead-no-results="noResults"
+           typeahead-loading="loadingSerials" class="form-control" >
+    <span ng-show="loggedInUser.role == 'admin'">
+        <div ng-show="loadingSerials">
+            <i class="glyphicon glyphicon-refresh"></i><span translate>Loading serials...</span>
+        </div>
+        <div ng-show="noResults">
+            <i class="glyphicon glyphicon-remove"></i><span translate>No serial found</span>
+        </div>
+    </span>
+</div>
+<div class="form-group">
+    <!-- we could add a checkRight("enrollpin") here,
+        but this would not be quite accurate, since this directive is
+        also used during assigning and not only during enrolling!
+        -->
+    <label for="otppin" translate>PIN/Password</label>
+    <input name="otppin" ng-model="newTokenObject.pin"
+            autocomplete="new-password"
+            type=password class="form-control"
+            equals="{{pin2}}"
+            placeholder="{{ 'Type a PIN or password'|translate }}">
+    <input name="otppin2" ng-model="pin2"
+            autocomplete="new-password"
+            type=password class="form-control"
+            equals="{{newTokenObject.pin}}"
+            placeholder="{{ 'Repeat PIN or password'|translate }}">
+</div>

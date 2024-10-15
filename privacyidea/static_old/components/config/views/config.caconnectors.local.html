@@ -1,0 +1,179 @@
+<div>
+
+    <h2 class="form-signin-heading"
+        ng-show="connectorname" translate>Edit Local CA Connector
+        {{ connectorname }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="connectorname" translate>Create a new Local CA Connector</h2>
+
+    <form name="formAddLocal" role="form" validate
+          class="form-horizontal">
+
+        <div class="form-group">
+            <label for="connectorname" class="col-sm-3
+            control-label" translate>Connector name</label>
+
+            <div class="col-sm-9">
+                <input name="connectorname" id="connectorname"
+                       class="form-control"
+                       ng-model="connectorname" required
+                       placeholder="MyConnector1"
+                       ng-pattern="inputNamePatterns.simple.pattern"
+                       title="{{ inputNamePatterns.simple.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+
+        <h3 translate>Base Config</h3>
+
+        <div class="form-group">
+            <label for="cacert"
+                   class="col-sm-3 control-label" translate>
+                CA Certificate</label>
+
+            <div class="col-sm-9">
+                <input name="cacert" id="cacert"
+                       class="form-control"
+                       ng-model="params.cacert" required
+                       placeholder="/etc/cacert.pem"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cakey"
+                   class="col-sm-3 control-label" translate>CA Key</label>
+
+            <div class="col-sm-9">
+                <input name="cakey" id="cakey"
+                       class="form-control"
+                       ng-model="params.cakey" required
+                       placeholder="/etc/cakey.pem"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="openssl.cnf"
+                   class="col-sm-3 control-label" translate>
+                OpenSSL config file</label>
+
+            <div class="col-sm-9">
+                <input name="openssl.cnf" id="openssl.cnf"
+                       class="form-control"
+                       ng-model="params['openssl.cnf']" required
+                       placeholder="/etc/openssl.cnf"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="templates"
+                   class="col-sm-3 control-label" translate>
+                Certificates Templates file
+            </label>
+            <div class="col-sm-9">
+                <input name="templates" id="templates"
+                       class="form-control"
+                       ng-model="params['templates']"
+                       placeholder="/etc/privacyidea/ca/templates.yaml"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="workingdir"
+                   class="col-sm-3 control-label" translate>Working Directory</label>
+
+            <div class="col-sm-9">
+                <input name="workingdir" id="workingdir"
+                       class="form-control"
+                       ng-model="params.WorkingDir"
+                       placeholder="/opt/myCA"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="csrdir"
+                   class="col-sm-3 control-label" translate>Certificate Signing
+                Request Directory</label>
+
+            <div class="col-sm-9">
+                <input name="csrdir" id="csrdir"
+                       class="form-control"
+                       ng-model="params.CSRDir"
+                       placeholder="/opt/myCA/csrs"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="certdir"
+                   class="col-sm-3 control-label" translate>Certificate Directory</label>
+
+            <div class="col-sm-9">
+                <input name="certdir" id="certdir"
+                       class="form-control"
+                       ng-model="params.CertificateDir"
+                       placeholder="/opt/myCA/certs"/>
+                <p class="help-block" translate>
+                    This is the directory were certificates get written to.
+                </p>
+            </div>
+        </div>
+
+        <h3 translate>CRL Configuration</h3>
+        <div class="form-group">
+            <label for="crl"
+                   class="col-sm-3 control-label" translate>
+                Certificate Revocation List
+            </label>
+            <div class="col-sm-9">
+                <input name="crl" id="crl"
+                       class="form-control"
+                       ng-model="params.CRL"
+                       placeholder="/opt/myCA/certs/crl.pem"/>
+                <p class="help-block" translate>
+                    This is the CRL file, which is written when a certificate
+                    is revoked or the CRL is created otherwise.
+                </p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="crl"
+                   class="col-sm-3 control-label" translate>
+                Validity Period
+            </label>
+            <div class="col-sm-3">
+                <input name="validity_period" id="validity_period"
+                       class="form-control"
+                       ng-model="params.CRL_Validity_Period"
+                       placeholder="30"/>
+                <p class="help-block" translate>
+                    Number of days the generated CRL should be valid.
+                </p>
+            </div>
+
+            <label for="crl"
+                   class="col-sm-3 control-label" translate>
+                Overlap Period
+            </label>
+            <div class="col-sm-3">
+                <input name="overlap_period" id="overlap_period"
+                       class="form-control"
+                       ng-model="params.CRL_Overlap_Period"
+                       placeholder="10"/>
+                <p class="help-block" translate>
+                    Number of days a new CRL should be generated before the
+                    current CRL expires.
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center" ng-show="checkRight('caconnectorwrite')">
+            <button ng-click="setCAConnector()"
+                    ng-disabled="formAddLocal.$invalid"
+                    class="btn btn-primary" translate>Save CA
+            </button>
+        </div>
+
+    </form>
+
+</div>

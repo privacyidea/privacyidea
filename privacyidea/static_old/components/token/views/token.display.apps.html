@@ -1,0 +1,9 @@
+<div class="form-group row">
+    <div ng-class="$state.includes('token.wizard') == true ? 'centered' : 'not-centered'">
+        <div ng-class="$state.includes('token.wizard') == true ? qr_col_md : 'col-md-3'"
+             ng-repeat="qr_img in qr_images">
+            <p><img width="{{ qrCodeWidth }}" class="centered img-responsive" ng-src="{{ qr_img.src }}" alt="{{ qr_img.alt }}"></p>
+            <p class="help-block text-center">{{ qr_img.help }}</p>
+        </div>
+    </div>
+</div>

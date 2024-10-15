@@ -1,0 +1,261 @@
+<div>
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername"
+            translate>Edit SQL Resolver {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername"
+            translate>Create a new SQL Resolver</h2>
+
+    <form name="formResolverAddSql" role="form"
+          class="form-horizontal">
+
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label"
+                    translate>Resolver name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername"
+                       class="form-control"
+                       ng-model="resolvername" required placeholder="resolver1"
+                       ng-pattern="inputNamePatterns.withoutTest.pattern"
+                       title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="driver" class="col-sm-3 control-label"
+                    translate>Driver</label>
+
+            <div class="col-sm-9">
+                <input id="driver" class="form-control"
+                       ng-model="params.Driver" required
+                       placeholder="mysql+pymysql"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="server" class="col-sm-3 control-label"
+                    translate>Server</label>
+
+            <div class="col-sm-3">
+                <input id="server" class="form-control"
+                       ng-model="params.Server" required
+                       placeholder="127.0.0.1"/>
+            </div>
+            <label for="port" class="col-sm-3 control-label"
+                    translate>Port</label>
+
+            <div class="col-sm-3">
+                <input id="port" class="form-control"
+                       ng-model="params.Port"
+                       placeholder="3306"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="database"
+                   class="col-sm-3 control-label"
+                    translate>Database</label>
+
+            <div class="col-sm-9">
+                <input id="database" class="form-control"
+                       ng-model="params.Database"
+                       placeholder="YourDataBase"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="user" class="col-sm-3 control-label">User</label>
+
+            <div class="col-sm-9">
+                <input id="user" class="form-control"
+                       ng-model="params.User"
+                       placeholder="user"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-sm-3 control-label" translate>
+                Password</label>
+
+            <div class="col-sm-9">
+                <input id="password" class="form-control"
+                       type="password" autocomplete="new-password"
+                       ng-model="params.Password"
+                       placeholder="topsecret"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="editable"
+                class="col-sm-3 control-label" translate>
+                Edit user store
+            </label>
+            <div class="col-sm-9">
+            <input name="editable" id="editable"
+                   ng-model="params.Editable"
+                   type="checkbox"/>
+                <p class="help-block" translate>
+                    The user data in this database can be modified from within
+                    privacyIDEA.
+                </p>
+            </div>
+        </div>
+        <div class="form-group" ng-show="params.Editable">
+            <label for="passwordhash" class="col-sm-3 control-label" translate>
+                Password Hash for editable users
+            </label>
+            <div class="col-sm-9">
+                <select class="form-control"
+                        ng-model="params.Password_Hash_Type"
+                        id="passwordhash"
+                        ng-options="hashtype for hashtype in hashtypes">
+                </select>
+                <p class="help-block" translate>
+                    The hashing algorithm for the passwords of newly created
+                    users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512, OTRS.
+                </p>
+            </div>
+        </div>
+
+        <div class="well">
+            <div class="form-group">
+                <button class="btn btn-info" ng-click="presetWordpress()">
+                    Wordpress
+                </button>
+                <button class="btn btn-info" ng-click="presetOTRS()">
+                    OTRS
+                </button>
+                <button class="btn btn-info" ng-click="presetTine()">
+                    Tine 2.0
+                </button>
+                <button class="btn btn-info" ng-click="presetOwncloud()">
+                    Owncloud
+                </button>
+                <button class="btn btn-info" ng-click="presetTypo3()">
+                    Typo3
+                </button>
+                <button class="btn btn-info" ng-click="presetDrupal()">
+                    Drupal
+                </button>
+            </div>
+            <div class="form-group">
+                <label for="table" class="col-sm-3 control-label"
+                        translate>Table</label>
+
+                <div class="col-sm-3">
+                    <input id="table" class="form-control"
+                           ng-model="params.Table" required
+                           placeholder="Users"/>
+                </div>
+
+                <label for="limit" class="col-sm-3 control-label"
+                        translate>Limit</label>
+
+                <div class="col-sm-3">
+                    <input id="limit" class="form-control"
+                           ng-model="params.Limit" required
+                           placeholder="500"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="mapping"
+                       class="col-sm-3 control-label"
+                        translate>Mapping</label>
+
+                <div class="col-sm-9">
+                    <input id="mapping" class="form-control"
+                           ng-model="params.Map" required
+                           placeholder='{ "userid" : "id", "username": "user", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" ,"password" : "password"}'
+                            />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="where"
+                       class="col-sm-3 control-label"
+                        translate>Where statement</label>
+
+                <div class="col-sm-9">
+                    <input id="where" class="form-control"
+                           ng-model="params.Where"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="encoding"
+                       class="col-sm-3 control-label"
+                        translate>Database Encoding</label>
+
+                <div class="col-sm-9">
+                    <input id="encoding" class="form-control"
+                           ng-model="params.Encoding" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="conparams"
+                       class="col-sm-3 control-label"
+                        translate>Connection Parameters</label>
+
+                <div class="col-sm-9">
+                    <input id="conparams" class="form-control"
+                           ng-model="params.conParams"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="poolsize"
+                       class="col-sm-3 control-label"
+                        translate>Pool size</label>
+
+                <div class="col-sm-9">
+                    <input id="poolsize" class="form-control"
+                           size="3" width="3ex"
+                           ng-model="params.poolSize"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pooltimeout"
+                       class="col-sm-3 control-label"
+                        translate>Pool timeout</label>
+
+                <div class="col-sm-9">
+                    <input id="pooltimeout" class="form-control"
+                           size="3" width="3ex"
+                           ng-model="params.poolTimeout"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="poolrecycle"
+                       class="col-sm-3 control-label"
+                        translate>Pool recycle timeout</label>
+
+                <div class="col-sm-9">
+                    <input id="poolrecycle" class="form-control"
+                           size="3" width="3ex"
+                           ng-model="params.poolRecycle"/>
+                </div>
+            </div>
+        </div>
+        <div class="text-center" ng-show="showResult">
+            <label class="label"
+                   ng-class="{'label-success':result.result,
+               'label-danger':!result.result}">
+                {{ result.description }}<span class="glyphicon glyphicon-remove"
+                                              ng-click="showResult=false"></span>
+            </label>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="testSQL()"
+                    ng-disabled="formResolverAddSql.$invalid"
+                    class="btn btn-success" translate>Test SQL Resolver
+            </button>
+            <button ng-click="setSQLResolver()"
+                    ng-show="checkRight('resolverwrite')"
+                    ng-disabled="formResolverAddSql.$invalid"
+                    class="btn btn-primary" translate>Save Resolver
+            </button>
+        </div>
+
+    </form>
+</div>

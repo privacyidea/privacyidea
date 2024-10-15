@@ -1,0 +1,79 @@
+<form name="formImportToken" role="form" validate>
+
+
+    <div class="text-center">
+        <button class="btn btn-primary"
+                ngf-select="upload($files)"
+                translate>Upload Subscription File
+        </button>
+    </div>
+</form>
+
+<div class="well"
+     ng-repeat="(key, subscription) in subscriptions">
+    <h3>{{ subscription.application }}</h3>
+    <p>
+        <div class="alert alert-success" ng-show="subscription.timedelta < -14"
+             translate>
+            Valid subscription</div>
+        <div class="alert alert-warning"
+              ng-show="subscription.timedelta < 0 &&
+                subscription.timedelta >= -14"
+             translate>
+            Subscription about to expire</div>
+        <div class="alert alert-danger"
+              ng-show="subscription.timedelta >= 0" translate>
+            Subscription expired</div>
+        <translate translate-context="subscription"
+                   translate-comment="level of subscription">
+            Level</translate>: {{ subscription.level }}<br>
+        <translate>Users</translate>: {{ subscription.num_users }}
+            ({{ subscription.active_users }}
+            <translate>distinct users with active tokens</translate>)<br>
+        <translate>Tokens</translate>: {{ subscription.num_tokens }}
+            ({{ subscription.active_tokens }}
+            <translate>active, assigned tokens</translate>) <br>
+        <translate>Clients</translate>: {{ subscription.num_clients }}<br>
+        <translate>From</translate>: {{ subscription.date_from }}<br>
+        <translate>To</translate>: {{ subscription.date_till }}
+    </p>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading" translate>
+                    Subscription issued to
+                </div>
+                <div class="panel-body">
+                    {{ subscription.for_name }}<br>
+                    <a href="mailto={{ subscription.for_email }}">
+                        {{ subscription.for_email }}</a><br>
+                    {{ subscription.for_address }}<br>
+                    {{ subscription.for_phone }}<br>
+                    <a href="{{ subscription.for_url }}">{{ subscription.for_url }}</a><br>
+                    {{ subscription.for_comment }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading" translate>
+                    Issuer
+                </div>
+                <div class="panel-body">
+                    {{ subscription.by_name }}<br>
+                    <a href="{{ subscription.by_url }}">{{ subscription.by_url }}</a><br>
+                    {{ subscription.by_address }}<br>
+                    <a href="mailto:{{ subscription.by_email }}">
+                        {{ subscription.by_email }}</a><br>
+                    {{ subscription.by_phone }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-danger" translate
+        ng-click="deleteSubscription(subscription.application)">
+        Delete
+    </button>
+</div>

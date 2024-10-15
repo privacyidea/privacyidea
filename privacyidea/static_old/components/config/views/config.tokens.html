@@ -1,0 +1,92 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'hotp'}">
+                    <a ui-sref="config.tokens({tokentype: 'hotp'})">HOTP</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'totp'}">
+                    <a ui-sref="config.tokens({tokentype: 'totp'})">TOTP</a>
+                </li>
+                <!--
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'motp'}">
+                    <a ui-sref="config.tokens({tokentype: 'motp'})">mOTP</a>
+                </li>
+                -->
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'u2f'}">
+                    <a ui-sref="config.tokens({tokentype: 'u2f'})">U2F</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'webauthn'}">
+                    <a ui-sref="config.tokens({tokentype: 'webauthn'})">WebAuthn</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'radius'}">
+                    <a ui-sref="config.tokens({tokentype: 'radius'})">RADIUS</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'remote'}">
+                    <a ui-sref="config.tokens({tokentype: 'remote'})">Remote</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'sms'}">
+                    <a ui-sref="config.tokens({tokentype: 'sms'})">SMS</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'tiqr'}">
+                    <a ui-sref="config.tokens({tokentype: 'tiqr'})">TiQR</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'email'}">
+                    <a ui-sref="config.tokens({tokentype: 'email'})">EMail</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'question'}">
+                    <a ui-sref="config.tokens({tokentype: 'question'})
+                    " translate>Questionnaire</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubico'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubikey'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a></li>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'daypassword'}">
+                    <a ui-sref="config.tokens({tokentype: 'daypassword'})">DayPassword</a>
+                <hr>
+                <li role="presentation">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/configuration/token_config.html'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token Settings</span></a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div class="col-lg-9 slide panel">
+        <form name="formTokenConfig" role="form" validate>
+            <ng-include
+                    src="instanceUrl +
+                    '/static/components/config/views/config.token.' +
+                    tokentype + '.html'">
+            </ng-include>
+
+            <div class="text-center"
+                ng-show="checkRight('configwrite')">
+                <button class="btn btn-primary"
+                        ng-click="saveTokenConfig()"
+                        ng-disabled="formTokenConfig.$invalid"
+                        translate>
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,160 @@
+<div uib-pagination ng-show="tokendata.count > tokensPerPage"
+     total-items="tokendata.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="{{ tokensPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
+
+
+<span translate>total tokens: {{ tokendata.count }}</span>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-capitalize-header" id="tabletokenlist">
+        <thead>
+        <tr>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted btn-capitalize"
+                        pi-sort-by="serial"
+                        translate>serial
+                </button>
+                <pi-filter ng-model="serialFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted btn-capitalize"
+                        pi-sort-by="tokentype"
+                        translate>type
+                </button>
+                <pi-filter ng-model="typeFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="active"
+                        class="btn btn-default
+                            unsorted btn-capitalize"
+                        translate>active
+                </button>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="description"
+                        class="btn btn-default
+                       unsorted btn-capitalize"
+                        translate>description
+                </button>
+                <pi-filter ng-model="descriptionFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="failcount"
+                        class="btn btn-default
+                         unsorted btn-capitalize"
+                        translate>failcounter
+                </button>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="rollout_state"
+                        class="btn btn-default
+                       unsorted btn-capitalize"
+                        translate>rollout state
+                </button>
+                <pi-filter ng-model="rolloutStateFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
+                <pi-filter ng-model="tokenrealmFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>UserId</th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>Resolver</th>
+            <th>Container</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="token in tokendata.tokens">
+            <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                   ng-click="$rootScope.returnTo=token.list;">
+                {{ token.serial }}</a></td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <span class="label label-success" ng-show="token.active"
+                      ng-click="disable(token.serial)"
+                      title="{{ 'Disable token'|translate }}"
+                      translate>active
+                </span>
+                <span class="label label-danger" ng-hide="token.active"
+                      ng-click="enable(token.serial)"
+                      title="{{ 'Enable token'|translate }}"
+                      translate>disabled
+                </span>
+            </td>
+            <!--<td>{{ token.count_window }}</td>-->
+            <td>{{ token.description }}</td>
+
+            <td><span class="label"
+                      title="{{ 'Reset Failcounter'|translate }}"
+                      ng-click="reset(token.serial)"
+                      ng-class="{'label-success': token.failcount<=0,
+                   'label-warning': token.failcount>0,
+                   'label-danger': token.failcount>=token.maxfail}">
+            {{ token.failcount }}
+            </span></td>
+            <!--<td>{{ token.maxfail }}</td>-->
+            <!--<td>{{ token.otplen }}</td>-->
+            <td>{{ token.rollout_state }}</td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token.username,
+                            realmname: token.user_realm,
+                            resolvername: token.resolver,
+                            editable: token.user_editable})">
+                {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <span ng-repeat="t_realm in token.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ t_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin' &&
+            user_details_in_tokenlist">
+                {{ token.user_id }}
+            </td>
+            <td ng-show="loggedInUser.role == 'admin' &&
+            user_details_in_tokenlist">
+                <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
+                   ng-show="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </a>
+                <span ng-hide="checkRight('container_list')">
+                    {{ token.container_serial}}
+                </span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

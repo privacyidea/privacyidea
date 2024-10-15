@@ -1,0 +1,47 @@
+<div class="row">
+    <div class="col-lg-3 sticky">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.resolvers.list')}">
+                    <a ui-sref="config.resolvers.list"
+                            translate>All Resolvers</a></li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.resolvers.edit')}"
+                        ng-show="$state.includes('config.resolvers.edit')">
+                    <a ui-sref="config.resolvers.edit"
+                            translate>Edit Resolver {{ resolvername }}</a></li>
+
+                <li class="nav nav-pills nav-header"
+                        ng-show="checkRight('resolverwrite')"
+                        translate>New Resolvers</li>
+                <!-- Here we can get all resolvers and iterated over
+                     the resolver types.
+                -->
+                <li ng-repeat="resolvertype in availableResolverTypes"
+                        role="presentation"
+                        ng-show="checkRight('resolverwrite')"
+                    ng-class="{active:
+                    $state.includes('config.resolvers.add'+resolvertype) }">
+                    <a ui-sref="config.resolvers.add{{ resolvertype }}"
+                            translate>
+                        New {{ resolvertype }}</a></li>
+                <hr>
+                <li role="presentation">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/configuration/useridresolvers.html'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about UserResolver</span></a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+        <!-- load the resolvers.list state by default
+        Das geht nicht, weil er dann auch auf den Unterseiten zurückspringt.
+        <div ng-init="$state.go('config.resolvers.list')">
+        </div>
+        -->
+    </div>
+</div>
+

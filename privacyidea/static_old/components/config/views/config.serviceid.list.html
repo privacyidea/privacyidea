@@ -1,0 +1,39 @@
+<p translate>Service IDs can be used to attach e.g. SSH keys to certain machines and services.
+To view attached tokens go to <a ui-sref="token.applications">token applications</a>.</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Id</th>
+            <th translate>Name</th>
+            <th translate>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(servicename, service) in serviceids">
+            <td>
+                {{ service.id }}
+            </td>
+            <td>
+                <a ui-sref="config.serviceid.edit({servicename:servicename})">
+                        {{ servicename }}</a>
+            </td>
+            <td>
+                {{ service.description | limitTo: 20 }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('serviceid_delete')"
+                        ng-click="confirmDelete(delServiceid, servicename)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+
+</div>

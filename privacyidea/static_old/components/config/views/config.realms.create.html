@@ -1,0 +1,101 @@
+<div ng-hide="!checkRight('resolverwrite')">
+    <h3 ng-hide="editRealm">
+        Create a New Realm
+    </h3>
+    <h3 ng-show="editRealm">
+        Edit Realm {{ realmName }}
+    </h3>
+
+    <div class="form-group">
+        <h4 translate>Realm Name</h4>
+        <input name="realmName" id="realmname"
+               class="form-control"
+               ng-model="realmName" required
+               placeholder="{{ 'new realm'|translate }}"
+               ng-pattern="inputNamePatterns.simple.pattern"
+               ng-disabled="editRealm"
+               title="{{ inputNamePatterns.simple.title | translate }}"
+               autofocus/>
+    </div>
+    <hr class="horizontal-line-invisible">
+
+    <div class="container">
+        <div class="row-no-gutters">
+            <div class="col-xs-4">
+                <h4 translate>Resolvers</h4>
+
+                <div select-resolver
+                     selected-resolvers="selectedResolvers['All']"
+                     resolvers="resolvers">
+                </div>
+
+                <button class="btn btn-default btn-sm"
+                        ng-click="applyDefaultResolversToNodes()"
+                        ng-show="numNodes > 1">
+                    Apply Selection to Nodes
+                </button>
+            </div>
+
+
+            <div class="col-xs-8" ng-show="numNodes > 1">
+                <div class="form-group">
+                    <h4 translate>Node-specific Resolver Configuration</h4>
+                    <label for="nodeSelection"><span translate>privacyIDEA Nodes</span>:</label>
+                    <div isteven-multi-select
+                         input-model="nodeNames"
+                         output-model="selectedNodes"
+                         button-label="icon name"
+                         item-label="icon name maker"
+                         tick-property="ticked"
+                         id="nodeSelection"
+                    >
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-responsive table-striped table-capitalize-header">
+                        <thead>
+                        <tr>
+                            <th>
+                                Resolver
+                            </th>
+                            <th ng-repeat="node in selectedNodes">
+                                {{ node.name }}
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="resolver in resolvers">
+                            <td>
+                                {{ resolver.resolvername }} ({{ resolver.type }})
+                            </td>
+                            <td ng-repeat="node in selectedNodes">
+                                <input type="checkbox"
+                                       ng-model="selectedResolvers[node.name][resolver.resolvername].selected"
+                                       name="group">
+                                <input type="number" size="3" width="3ex"
+                                       max="999" min="1"
+                                       ng-show="selectedResolvers[node.name][resolver.resolvername].selected"
+                                       ng-model="selectedResolvers[node.name][resolver.resolvername].priority"
+                                       placeholder="priority"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="horizontal-line-invisible">
+    <div class="form-group text-center">
+        <button ng-click="setRealmNodeValidate(realmName, selectedResolvers, selectedNodes)"
+                ng-hide="editRealm"
+                ng-disabled="realmName === undefined || realmName === '' || !checkRight('resolverwrite')"
+                class="btn btn-primary" translate>Create Realm
+        </button>
+        <button ng-click="setRealmNodeValidate(realmName, selectedResolvers, selectedNodes)" ng-show="editRealm"
+                class="btn btn-primary" translate>Save Realm
+        </button>
+    </div>
+</div>

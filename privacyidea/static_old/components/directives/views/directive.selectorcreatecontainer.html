@@ -1,0 +1,67 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="form-group">
+    <div class="form-group">
+        <select class="form-control"
+                id="containerSelect"
+                ng-disabled="disableSelection"
+                ng-change="changeContainerSelection()"
+                ng-model="containerSerial"
+                ng-options="container.serial as container.displayString for container in containers">
+        </select>
+    </div>
+    <!-- New container creation -->
+    <div class="form-group"
+         ng-show="containerSerial == 'createnew'">
+        <!-- Type -->
+        <label for="containerType" translate>New container type</label>
+        <select class="form-control"
+                id="containerType"
+                ng-change="changeContainerType()"
+                ng-model="newContainer.type"
+                ng-options="type as attr.description for (type, attr) in newContainer.types">
+        </select>
+        <div class="form-group">
+            <span translate>Supported Token Types</span>: {{ newContainer.token_types }}
+        </div>
+        <!-- Description -->
+        <label for="description" translate>Description of the container</label>
+        <input type="text" class="form-control" id="description"
+               autocomplete="new-password"
+               placeholder="{{ 'Some nice words...'|translate }}"
+               ng-model="newContainer.description"/>
+
+        <!-- User Assign (user provided from parent scope if available) -->
+        <div ng-show="showUserAssignment">
+            <input type="checkbox" ng-model="assignUserToContainer" id="checkboxAssignContainerToUser">
+            <label for="checkboxAssignContainerToUser" translate>Assign the new container to {{ userName }} in
+                realm {{ userRealm }}</label>
+        </div>
+        <!-- Button -->
+        <p>{{checkRight('container_create')}}</p>
+        <div class="text-center">
+            <button type="button"
+                    ng-click="createContainer()"
+                    ng-disabled="checkRight('container_create')"
+                    class="btn btn-default">
+                <span translate>Create Container</span>
+            </button>
+        </div>
+    </div>
+</div>

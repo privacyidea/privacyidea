@@ -1,0 +1,166 @@
+<div class="panel">
+    <h2 translate>Details for machine {{ machineid }} in Machine Resolver
+        {{ machineresolver }}
+    </h2>
+
+    <div class="panel-body">
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="hostname" translate>Hostname</label>
+
+                <div name="hostname">{{ machine.hostname }}</div>
+            </div>
+            <div class="form-group">
+                <label for="id" translate>Machine ID</label>
+
+                <div name="id">{{ machine.id}}</div>
+            </div>
+        </div>
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="ip" translate>IP Address</label>
+
+                <div name="ip">{{ machine.ip }}</div>
+            </div>
+            <div class="form-group">
+                <label for="resolver" translate>Machine Resolver</label>
+
+                <div name="resolver">
+                    <a ui-sref="machine.list({resolver:machine.resolver_name})">
+                    {{ machine.resolver_name }}</a></div>
+            </div>
+        </div>
+    </div>
+    <h3 translate>Tokens and Applications for machine {{ machineid }}</h3>
+
+    <div uib-pagination ng-show="tokenCount > tokensPerPage"
+         total-items="tokenCount" ng-model="params.page"
+         items-per-page="{{ tokensPerPage }}"
+         max-size="5"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         boundary-links="true" ng-change="pageChanged()"></div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Serial</th>
+                <th translate>Application</th>
+                <th translate>Options</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token in tokendata">
+                <td><a ui-sref="token.details({tokenSerial:token.serial,
+                        currentToken:token})"
+                       ng-click="$rootScope.returnTo=machine.list;">
+                    {{ token.serial }}</a> ({{ token.type  }})</td>
+                <td>{{ token.application }}</td>
+                <!-- Options -->
+                <td ng-hide="token.optionsEdit">
+                    <span ng-repeat="(optionname, option) in Applications[token.application].options">
+                        <b>{{ optionname | capitalize }}:</b>
+                        {{ token.options[optionname] }}<br>
+                    </span>
+                </td>
+                <!-- Edit options -->
+                <td ng-show="token.optionsEdit">
+                    <div class="form-group"
+                         ng-repeat="(optionname, option)
+                         in Applications[token.application].options">
+                        <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+                        <input class="form-control"
+                               ng-required="option.required && !option.value"
+                               ng-model="token.options[optionname]"
+                               ng-show="option.type==='str' && !option.value">
+                        <select class="form-control"
+                                ng-show="option.value"
+                                ng-required="option.required && option.value"
+                                ng-model="token.options[optionname]"
+                                ng-options="value for value in option.value"></select>
+                        <input type="checkbox"
+                               ng-model="token.options[optionname]"
+                               ng-show="option.type==='bool'">
+                        </select>
+                        <p class="help help-block">
+                              {{ option.description }}
+                        </p>
+                    </div>
+                </td>
+                <td ng-hide="token.optionsEdit">
+                    <button class="btn btn-primary"
+                            ng-click="token.optionsEdit=true"
+                            translate>Edit Options
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="detachMachineToken(token.serial,
+                            token.application, token.id)" translate>Detach
+                    </button>
+                </td>
+                <td ng-show="token.optionsEdit">
+                    <button class="btn btn-primary"
+                            ng-click="saveOptions(token.id, token.options);
+                            token.optionsEdit=false"
+                            translate>Save Options
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="token.optionsEdit=false"
+                            translate>Cancel
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div ng-show="checkRight('manage_machine_tokens')">
+    <h3>Attach a new token {{ newToken.serial }}</h3>
+
+    <form name="formAttachToken" role="form" validate>
+        <div attach-token new-token-object="newToken"></div>
+
+        <div class="form-group">
+            <label for="application" translate>Application</label>
+            <select class="form-control"
+                id="application"
+                ng-model="form.application"
+                ng-required="1"
+                ng-options="app for app in formInit.application"
+                >
+        </select>
+        </div>
+        <!-- Options for a new MachineToken -->
+        <div class="form-group"
+             ng-repeat="(optionname, option) in Applications[form.application].options">
+            <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+            <input class="form-control"
+                   ng-required="option.required && !option.value"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='str' && !option.value">
+            <select class="form-control"
+                    ng-show="option.value"
+                    ng-required="option.required && option.value"
+                    ng-model="form.options[optionname]"
+                    ng-options="value for value in option.value"></select>
+            <input type="checkbox"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='bool'">
+            </select>
+            <p class="help help-block">
+                  {{ option.description }}
+            </p>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="attachToken()"
+                    ng-disabled="formAttachToken.$invalid"
+                    class="btn btn-primary" translate>Attach Token
+            </button>
+        </div>
+    </form>
+    </div>
+</div>

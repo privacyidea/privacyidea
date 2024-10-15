@@ -1,0 +1,47 @@
+<p class="help-block" translate>
+    The Yubikey Token is an USB device that emits an event based One Time
+    Password. You can initialize the Yubikey using the YubiKey personalization
+    tools.
+
+    The secret hex key and the final OTP length are needed here.
+    For tokens compatible with the Yubico cloud service the OTP length must be
+    44 (12 characters UID and 32 characters OTP).
+    When programming the token for the Yubico cloud service, the Public Identity
+    Length must be 6 bytes, which will give you a UID with 12 characters.
+
+    The current OTP length of a programmed YubiKey can automatically be
+    determined by inserting it in the test field.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div class="form-group">
+    <label for="yubikeyTest" translate>Test Yubikey</label>
+    <input type="text"
+           id="yubikeyTest"
+           autofocus
+           class="form-control"
+           placeholder="{{ 'Push Yubikey button here...'|translate }}"
+           ng-model="tempData.yubikeyTest" name="yubikeyTest"
+           ng-change="yubikeyGetLen()">
+</div>
+
+<div class="form-group">
+    <label for="otpkey" translate>OTP Key</label>
+    <input id="otpkey"
+           type="text" ng-pattern="/^[0-9a-fA-F ]*$/"
+           ng-init="form.genkey=false"
+           autofocus
+           class="form-control"
+           placeholder="{{ 'Enter OTP key...'|translate }}"
+           required
+           ng-model="form.otpkey" name="otpkey">
+</div>
+<div class="form-group">
+    <label for="otplen" translate>OTP length</label>
+    <input type="number"
+           id="otplen"
+           max="99" min="32"
+           ng-model="form.otplen"
+           required />
+</div>

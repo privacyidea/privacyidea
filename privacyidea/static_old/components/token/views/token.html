@@ -1,0 +1,202 @@
+<div class="well">
+    <nav class="navbar navbar-default" ng-show="checkRight('container_list')">
+        <div class="container">
+            <!-- Hide menu bar on small screens, show button to toggle instead -->
+            <button type="button" class="navbar-toggle"
+                    data-toggle="collapse" data-target=".myTokenNavbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <div class="navbar-collapse collapse myTokenNavbar">
+                <ul class="nav navbar-nav nav-capitalize">
+                    <li ng-class="{active: $state.includes('token.list')
+                    || $state.includes('token.enroll') || $state.includes('token.import')
+                    || $state.includes('token.challenges') || $state.includes('token.applications')
+                    || $state.includes('token.getserial') || $state.includes('token.details')
+                    }">
+                        <a ui-sref="token.list" ng-click="tokenMenu=true">
+                            <span class="glyphicon glyphicon-phone"
+                                  aria-hidden="true">
+                            </span>
+                            <span translate>Tokens</span>
+                        </a>
+                    </li>
+                    <li ng-class="{active: $state.includes('token.containerlist')
+                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')}">
+                        <a ui-sref="token.containerlist" ng-click="tokenMenu=false">
+                            <span class="glyphicon glyphicon-folder-close"
+                                  aria-hidden="true"></span>
+                            <span translate>Containers</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!--/.nav-collapse -->
+        </div>
+    </nav>
+
+    <div class="row">
+
+        <!-- Token sidebar panel -->
+        <div class="col-lg-3 sticky" ng-hide="token_wizard || !tokenMenu">
+            <div class="pa-sidebar panel">
+                <ul class="nav nav-pills nav-stacked nav-capitalize">
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.list')}">
+                        <a ui-sref="token.list">
+                            <span class="glyphicon glyphicon-list"></span>
+                            <span translate>All tokens</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.details')}"
+                        ng-show="$state.includes('token.details')"><a>Token
+                        {{ $stateParams.tokenSerial }}</a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="checkEnroll()"
+                        ng-class="{active: $state.includes('token.enroll')}">
+                        <a ui-sref="token.enroll">
+                            <span class="glyphicon glyphicon-edit"></span>
+                            <span translate>Enroll Token</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="loggedInUser.role === 'user' && checkEnroll()
+                            && token_wizard_2nd"
+                        ng-class="{active: $state.includes('token.wizard')}">
+                        <a ui-sref="token.wizard">
+                            <span class="glyphicon glyphicon-star"></span>
+                            <span translate>Token enrollment
+                                wizard</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.assign')}"
+                        ng-show="loggedInUser.role == 'user' &&
+                            checkRight('assign')">
+                        <a ui-sref="token.assign">
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <span translate>Assign Token</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.import')}"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('importtokens')">
+                        <a ui-sref="token.import">
+                            <span class="glyphicon glyphicon-upload"></span>
+                            <span translate>Import Tokens</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.challenges')}"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('getchallenges')">
+                        <a ui-sref="token.challenges">
+                            <span class="glyphicon glyphicon-repeat"></span>
+                            <span translate>List Challenges</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.applications')}"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('tokenlist') &&
+                            checkRight('machinelist') &&
+                            checkRight('manage_machine_tokens')">
+                        <a ui-sref="token.applications">
+                            <span class="glyphicon glyphicon-hdd"></span>
+                            <span translate>Token Applications</span>
+                        </a>
+                    </li>
+                    <hr>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.lost')}"
+                        ng-show="($state.includes('token.details')||
+                        $state.includes('token.lost')) &&
+                        checkRight('losttoken')">
+                        <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                            <span translate>Lost Token</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('getserial')"
+                        ng-class="{active: $state.includes('token.getserial')}">
+                        <a ui-sref="token.getserial">
+                            <span class="glyphicon glyphicon-question-sign">
+                            </span>
+                            <span translate>Get Serial</span></a></li>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#tokens' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.enroll'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/tokens/tokentypes.html' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Tokentypes</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.import'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/workflows_and_tools/import/index.html' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token Import</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.details'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/token_details.html' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token Details</span></a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Container sidebar panel -->
+        <div class="col-lg-3 sticky" ng-show="!tokenMenu">
+            <div class="pa-sidebar panel">
+                <ul class="nav nav-pills nav-stacked nav-capitalize">
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.containerlist')}"
+                        ng-show="checkRight('container_list')">
+                        <a ui-sref="token.containerlist">
+                            <span class="glyphicon glyphicon-list"></span>
+                            <span translate> List Containers </span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.containerdetails')}"
+                        ng-show="$state.includes('token.containerdetails')"><a>Container
+                        {{ $stateParams.containerSerial }}</a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="checkRight('container_create')"
+                        ng-class="{active: $state.includes('token.containercreate')}">
+                        <a ui-sref="token.containercreate">
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <span translate>Create Container</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div ng-class="{'col-lg-9': !token_wizard || !tokenMenu, 'col-lg-12': token_wizard && tokenMenu}"
+             ui-view class="slide panel">
+        </div>
+    </div>
+
+</div>
+
+
+
+

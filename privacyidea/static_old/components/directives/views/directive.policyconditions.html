@@ -1,0 +1,79 @@
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+        <tr>
+            <th translate>Active</th>
+            <th translate>Section</th>
+            <th translate>Key</th>
+            <th translate>Comparator</th>
+            <th translate>Value</th>
+        </tr>
+        </thead>
+        <tr ng-repeat="condition in policyConditions">
+           <td>
+               <input type="checkbox" name="{{ conditionname }}"
+                      ng-model="condition[4]">
+           </td>
+           <td>
+               <span ng-show="editIndex != $index">
+                   <code title="{{ conditionDefs.sections[condition[0]].description }}">{{ condition[0] }}</code>
+               </span>
+               <span ng-show="editIndex == $index">
+                   <select ng-model="condition[0]" class="form-control">
+                       <option ng-repeat="(key, value) in conditionDefs.sections"
+                               ng-value="key"
+                               title="{{ value.description }}">{{ key }}</option>
+                   </select>
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[1] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <input type="text" ng-model="condition[1]" class="form-control" />
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index">
+                   <code title="{{ conditionDefs.comparators[condition[2]].description }}">{{ condition[2] }}</code>
+               </span>
+               <span ng-show="editIndex == $index">
+                   <select ng-model="condition[2]" class="form-control">
+                       <option ng-repeat="(key, value) in conditionDefs.comparators"
+                               ng-value="key"
+                               title="{{ value.description }}">{{ key }}</option>
+                   </select>
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[3] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <input type="text" ng-model="condition[3]" class="form-control" />
+               </span>
+           </td>
+           <td style="text-align: right;">
+               <button ng-show="editIndex != $index"
+                       class="btn btn-primary" ng-click="editCondition($index)">
+                   <span class="glyphicon glyphicon-edit"></span>
+                   <span translate>Edit</span>
+               </button>
+               <button ng-show="editIndex == $index"
+                       class="btn btn-primary" ng-click="editCondition($index)">
+                   <span class="glyphicon glyphicon-save"></span>
+                   <span translate>Save</span>
+               </button>
+               <button class="btn btn-danger" ng-click="deleteCondition($index)">
+                   <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+               </button>
+           </td>
+        </tr>
+        <tr>
+            <td colspan="6">
+                <button class="btn btn-default" ng-click="addCondition()">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    <span translate>Add a condition</span>
+                </button>
+            </td>
+        </tr>
+    </table>
+</div>

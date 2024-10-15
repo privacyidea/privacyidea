@@ -1,0 +1,71 @@
+<p class="help-block"
+   ng-hide="$state.includes('token.wizard')"
+   translate>The HOTP token is an event based token. You can paste a secret key or
+    have the server generate the secret and scan the QR code with a
+    smartphone app like the privacyIDEA Authenticator turning your
+    smartphone into an authentication device. You can also use other
+    authenticator apps like Google Authenticator. But note, that these
+    might have limitations in the supported hash algorithms or other parameters.
+</p>
+
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>
+
+<h4 ng-hide="$state.includes('token.wizard')" translate>Token data</h4>
+
+<div class="form-group" ng-hide="$state.includes('token.wizard')">
+    <div ng-hide="checkRight('hotp_force_server_generate')">
+        <input type="checkbox" ng-model="form.genkey"
+               name="generate" id="generate">
+        <label for="generate" translate>Generate OTP Key on the Server</label>
+    </div>
+
+    <div ng-show="form.genkey">
+        <p class="help-block" translate>
+            The server will create the OTP key
+            and a QR Code
+            will be
+            displayed to you to be scanned.
+        </p>
+    </div>
+</div>
+<div class="form-group"
+     ng-show="checkRight('hotp_2step=allow') || (!$state.includes('token.wizard') && checkRight('hotp_2step=force'))">
+    <input type="checkbox" ng-model="form['2stepinit']"
+           ng-disabled="checkRight('hotp_2step=force')"
+           name="twostep_enrollment" id="twostep_enrollment">
+    <label for="twostep_enrollment" translate>Use two-step enrollment with the privacyIDEA Authenticator App</label>
+</div>
+<div class="form-group" ng-hide="form.genkey">
+    <label for="otpkey" translate>OTP Key</label>
+    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+           autofocus
+           class="form-control"
+           placeholder="Enter OTP key..."
+           ng-model="form.otpkey" name="otpkey">
+</div>
+<div class="form-group"
+    ng-hide="checkRight('hotp_otplen')">
+    <label for="otplen" translate>OTP length</label>
+    <select class="form-control"
+            id="otplen"
+            ng-model="form.otplen"
+            ng-options="otplen for otplen in formInit.otplens">
+    </select>
+    <p class="help-block" ng-show="form.genkey" translate>
+        Some Authenticator Apps only support an OTP length of 6.
+    </p>
+</div>
+
+<div class="form-group"
+    ng-hide="checkRight('hotp_hashlib')">
+    <label for="hashlib" translate>Hash algorithm</label>
+    <select class="form-control"
+            id="hashlib"
+            ng-model="form.hashlib"
+            ng-options="hashlib for hashlib in formInit.hashlibs">
+    </select>
+    <p class="help-block" ng-show="form.genkey" translate>
+        Some Authenticator Apps only support the SHA1 algorithm.
+    </p>
+</div>

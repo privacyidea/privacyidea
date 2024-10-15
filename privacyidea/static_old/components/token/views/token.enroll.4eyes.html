@@ -1,0 +1,48 @@
+<p class="help-block" translate>
+    The 4 Eyes token will only authenticate if two or more users are
+    present at once. You can define how many existing tokens of the given
+    realms need to be present to perform a successful authentication.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div class="form-group">
+    <label for="separator" translate>Separator</label>
+    <input type="text"
+           class="form-control"
+           placeholder="|" maxlength="1"
+           ng-model="form['separator']" name="separator">
+    <p class="help-block" translate>
+        The separator that is used to separate the passwords of the
+        different tokens.
+    </p>
+</div>
+
+<div class="form-group">
+    <label for="selectedRealms" translate>Required Realms</label>
+    <p class="help help-block" translate>
+        Here you can select how many tokens of which realm are required to
+        perform a successful authentication.
+    </p>
+        <span  ng-repeat="(realmname, realm) in realms">
+                <input type="checkbox"
+                       label for="cb_realm_{{ realmname }}"
+                       ng-model="form['4eyes'][realmname].selected"
+                       name="group">
+                    <label name="cb_realm_{{ realmname }}"
+                       id="cb_realm_{{ realmname }}">{{ realmname }}</label>
+                <span class="help" ng-show="form['4eyes'][realmname].selected"
+                   translate>
+                    Number of required tokens
+                </span>
+                <input type="number" size="2" width="2ex"
+                       max="9" min="1"
+                       ng-show="form['4eyes'][realmname].selected"
+                       ng-model="form['4eyes'][realmname].count"
+                       />
+            <br>
+        </span>
+</div>
+
+
+

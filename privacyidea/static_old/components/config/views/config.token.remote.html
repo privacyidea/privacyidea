@@ -1,0 +1,23 @@
+<h2 translate>Remote Token settings</h2>
+<p class="help-block" translate>
+    The Remote token forwards the authentication request to another
+    privacyIDEA server.
+</p>
+
+<div class="form-group">
+    <input type="checkbox"
+           ng-model="form['remote.verify_ssl_certificate']"
+           ng-checked="isChecked(form['remote.verify_ssl_certificate'])"
+           name="remoteSSL"
+           id="remoteSSL">
+    <label for="remoteSSL" translate>Verify SSL certificate</label>
+</div>
+
+<div class="form-group">
+    <label for="remoteServer" translate>Default Remote Server</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="https://your.other.privacyidea.server"
+           ng-model="form['remote.server']" name="remoteServer">
+</div>

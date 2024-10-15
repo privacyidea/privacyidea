@@ -1,0 +1,45 @@
+<p class="help-block" translate>
+    The SMS Token sends an OTP value to the mobile phone of the user.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div ng-hide="loggedInUser.role==='user'" translate class="bg-info">
+    For SMS tokens to work properly you need to set the
+    <a ui-sref="config.tokens({tokentype:'sms'})">SMS Token Config</a>!
+</div>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="form.dynamic_phone"
+           name="dynamic_phone" id="dynamic_phone">
+    <label for="dynamic_phone" translate>Read number dynamically from user source on each request.</label>
+</div>
+<div ng-hide="form.dynamic_phone" class="form-group">
+    <label for="phone" translate>Phone number</label>
+    <input type="tel" id="phone"
+           autofocus
+           ng-required="! form.dynamic_phone"
+           class="form-control"
+           placeholder="+1234567890"
+           pattern="^(\+[1-9]+)?([0-9][, .-]?){1,14}$"
+           ng-model="form.phone" name="phone" />
+    <div>
+        <button class="btn btn-default btn-xs" ng-repeat="phone in phone_list"
+                ng-click="form.phone = phone;">
+            <span class="glyphicon glyphicon-phone"></span>
+            {{ phone }}
+        </button>
+    </div>
+</div>
+
+<div class="form-group" ng-show="smsGateways">
+    <label for="identifier" translate>A token specific SMS gateway</label>
+    <select class="form-control" id="identifier"
+            ng-model="form['sms.identifier']"
+            name="identifier"
+            ng-options="identifier for identifier in smsGateways">
+    </select>
+    <p class="help" translate>If this token should not use the system wide SMS gateway but an individual SMS gateway,
+        you can select the gateway here.</p>
+</div>
+

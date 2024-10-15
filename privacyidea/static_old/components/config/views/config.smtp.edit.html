@@ -1,0 +1,154 @@
+
+<h2 class="form-signin-heading"
+        ng-show="identifier"
+        translate>Edit SMTP server {{ identifier }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="identifier"
+        translate>Create a new SMTP server {{ params.identifier }}</h2>
+
+<form name="formSmtp" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.identifier" required
+                   placeholder="mySmtpServer"
+                   ng-pattern="inputNamePatterns.withoutTestEmail.pattern"
+                   title="{{ inputNamePatterns.withoutTestEmail.title | translate }}"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                of the SMTP server definition.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="server" class="col-sm-3 control-label" translate>
+            IP or FQDN</label>
+
+        <div class="col-sm-9">
+            <input name="server" class="form-control"
+                   ng-model="params.server" required
+                   placeholder="smtp://mail.example.com"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="port" class="col-sm-3 control-label" translate>
+            Port</label>
+
+        <div class="col-sm-9">
+            <input name="port" class="form-control"
+                   ng-model="params.port"
+                   placeholder="25"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="port" class="col-sm-3 control-label" translate>
+            Timeout</label>
+
+        <div class="col-sm-9">
+            <input name="timeout" class="form-control"
+                   ng-model="params.timeout"
+                   placeholder="10"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="sender" class="col-sm-3 control-label"
+               translate>Sender Email</label>
+
+        <div class="col-sm-9">
+            <input name="sender" class="form-control"
+                   ng-model="params.sender" required
+                   placeholder="privacyidea@example.com"/>
+            <p class="help-block" translate>This is the email address of the
+                sender. Usually this should be an email address identifying
+                your system.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="username" class="col-sm-3 control-label" translate>
+            Username</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" class="form-control"
+                   ng-model="params.username"
+                   placeholder="user@example.com"/>
+            <p class="help-block" translate>
+                If the SMTP server requires authentication you need to
+                specify the user.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="password" class="col-sm-3 control-label"
+               translate>Password</label>
+        <div class="col-sm-9">
+            <input name="password" class="form-control"
+                   type="password" autocomplete="new-password"
+                   ng-model="params.password"
+                   placeholder="topsecret"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label"
+               translate>Description</label>
+        <div class="col-sm-9">
+            <input name="description" class="form-control"
+                   ng-model="params.description"
+                   placeholder="some wise words"/>
+        </div>
+    </div>
+    <div class="form-group"
+        ng_show="params.server.toLowerCase().substring(0,6) !== 'smtps:'">
+        <div class="col-sm-3 control-label"></div>
+        <div class="col-sm-9">
+        <input type="checkbox"
+               ng-model="params.tls"
+               ng-checked="isChecked(params.tls)"
+               name="tls"
+               id="tls">
+        <label for="tls" translate>Use StartTLS</label>
+        </div>
+    </div>
+    <div class="form-group" ng-if="hasJobQueue">
+        <div class="col-sm-3 control-label"></div>
+        <div class="col-sm-9">
+        <input type="checkbox"
+               ng-model="params.enqueue_job"
+               ng-checked="isChecked(params.enqueue_job)"
+               name="enqueue_job"
+               id="enqueue_job">
+        <label for="enqueue_job" translate>Send mail from job queue</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="recipient" translate>Recipient for testing</label>
+        <div >
+        <div class="col-sm-8">
+            <input type="text" class="form-control" class="col"
+               ng-model="params.recipient" name="recipient">
+        </div>
+        <div class="col-sm-4">
+            <button class="btn btn-default" translate
+                    ng-click="sendTestEmail()">
+                Send Test Email
+            </button>
+        </div>
+        </div>
+    </div>
+
+    <div class="text-center"
+        ng-show="checkRight('smtpserver_write')">
+        <button ng-click="saveSMTPServer()"
+                ng-disabled="formSmtp.$invalid"
+                class="btn btn-primary"
+                translate>Save SMTP server
+        </button>
+    </div>
+
+</form>
+

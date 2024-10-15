@@ -1,0 +1,33 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped table-capitalize-header">
+        <thead>
+        <tr>
+            <th translate>Resolver name</th>
+            <th translate>type</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="resolver in machineResolvers">
+            <td><a ui-sref="config.mresolvers.edit{{ resolver.type }}
+                ({resolvername:resolver.resolvername})">
+                    {{ resolver.resolvername }}</a>
+            </td>
+            <td>
+                {{ resolver.type }}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                        ng-click="editResolver(resolver.resolvername,
+                        resolver.type)"
+                        translate>Edit</button>
+                <button class="btn btn-sm btn-danger"
+                        ng-show="checkRight('mresolverdelete')"
+                        aria-label="{{ 'Do you really want to delete this machine resolver?' | translate }}"
+                        ng-click="confirmDelete(delResolver, resolver.resolvername)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span></button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

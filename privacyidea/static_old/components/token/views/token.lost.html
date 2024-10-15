@@ -1,0 +1,56 @@
+<h3 name="Token Details">
+    <translate>Token {{ selectedToken.serial }} is lost?</translate>
+    <a class="btn btn-default" ui-sref="audit({serial:selectedToken.serial})">
+        <translate>View token in Audit log</translate></a>
+</h3>
+<p class="help-block" translate>
+    If the token is lost, you can enroll a temporary password based token and
+    give the password to the user. The OTP PIN of the old token is still the
+    same.
+</p>
+
+<p class="help-block" translate>
+    The user will have to authenticate with the old OTP PIN he knows and this
+    newly generated password.
+</p>
+
+<p class="help-block" translate>
+    The old token
+    <a ui-sref="token.details({tokenSerial:selectedToken.serial})">
+        {{ selectedToken.serial }}
+    </a>
+    will be disabled and can be deleted or enabled later.
+</p>
+
+<div class="text-center"
+     ng-hide="tokenLost">
+    <button ng-click="setTokenLost()"
+            class="btn btn-primary"
+            translate>Mark the token as lost
+    </button>
+</div>
+
+<div ng-show="tokenLost">
+    <p class="alert alert-success" translate>
+        The token was marked lost successfully.
+    </p>
+
+    <p class="help-block" translate>
+        The serial of the new token is
+        <a ui-sref="token.details({tokenSerial:lostResult.serial})">
+        {{ lostResult.serial }}</a>.
+    </p>
+
+    <p class="help-block" translate>
+        The password that needs to be combined with the OTP PIN:
+        <b>{{ lostResult.password }}</b>
+    </p>
+    <p class="help-block" translate>
+        The password can not be shown again, later!
+    </p>
+
+    <p class="help-block" translate>
+        The token is valid till {{ lostResult.end_date }}.
+    </p>
+
+</div>

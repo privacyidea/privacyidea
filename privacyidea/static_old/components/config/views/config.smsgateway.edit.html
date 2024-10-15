@@ -1,0 +1,173 @@
+<h2 class="form-signin-heading"
+    ng-show="gateway_id">
+    <translate>Edit SMS gateway {{ form.name }}</translate>
+</h2>
+
+<h2 class="form-signin-heading"
+        ng-hide="gateway_id" translate>Create a new SMS gateway</h2>
+
+<form name="formGatewayAdd" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="name" class="col-sm-3 control-label" translate>
+            Name</label>
+        <div class="col-sm-6">
+            <input name="name" id="name" class="form-control" required
+                   ng-model="form.name" placeholder=""
+                   autofocus
+                   />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="providermodule" class="col-sm-3 control-label" translate>
+            Providermodule</label>
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="module"
+                    ng-model="form.module" required
+                    ng-options="module as module for (module, value) in
+                    smsproviders"
+                    ng-change="getHandlerActions()"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label" translate>
+            Description</label>
+        <div class="col-sm-6">
+            <input name="description" id="description" class="form-control"
+                   ng-model="form.description" placeholder=""
+                   />
+        </div>
+    </div>
+
+        <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('smsgateway_write')">
+        <button ng-click="createSMSgateway()"
+                id="createTopGatewayButton"
+                ng-disabled="formGatewayAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save SMS gateway</span>
+        </button>
+    </div>
+
+
+    <!-- parameters -->
+    <h3 translate>Parameters</h3>
+    <table class="table table-hover">
+        <tr ng-repeat="(paramname, param) in smsproviders[form.module].parameters">
+            <td>
+                <b>{{ paramname }}</b>
+            </td>
+            <td>
+                <select class="form-control"
+                        ng-show="param.values"
+                        ng-required="param.required && param.values"
+                        ng-model="form['option.'+paramname]"
+                        ng-options="value for value in param.values">
+                </select>
+                <textarea type="text" rows="6"
+                        ng-required="param.required && param.type ==='text'"
+                        ng-show="param.type === 'text'"
+                        class="form-control"
+                        ng-model="form['option.'+paramname]">
+                </textarea>
+                <input class="form-control"
+                       ng-required="param.required && !param.values
+                       && param.type !== 'text'"
+                       ng-model="form['option.'+paramname]"
+                       ng-show="!param.values && param.type !=='text'">
+                <p class="help help-block">
+                    {{ param.description }}
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <!-- options -->
+    <div ng-show="smsproviders[form.module]['options_allowed']">
+    <h3 translate>Options</h3>
+        <table class="table table-hover">
+        <tr ng-repeat="(optionname, option) in opts">
+            <td>
+                <b>{{ optionname }}</b>
+            </td>
+            <td>
+                {{ option }}
+            </td>
+            <td>
+                <button ng-click="deleteOption(optionname)"
+                class="btn btn-danger">Delete</button>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <input class="form-control"
+                       ng-model="newoption">
+            </td>
+            <td>
+                <input class="form-control"
+                       ng-model="newvalue">
+            </td>
+            <td>
+                <button ng-click="addOption()"
+                        ng-disabled="newoption===''"
+                        class="btn btn-success">Add</button>
+            </td>
+        </tr>
+    </table>
+    </div>
+
+    <!-- headers -->
+    <div ng-show="smsproviders[form.module]['headers_allowed']">
+    <h3 translate>Headers</h3>
+        <table class="table table-hover">
+        <tr ng-repeat="(headername, header) in headers">
+            <td>
+                <b>{{ headername }}</b>
+            </td>
+            <td>
+                {{ header }}
+            </td>
+            <td>
+                <button ng-click="deleteHeader(headername)"
+                class="btn btn-danger">Delete</button>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <input class="form-control"
+                       ng-model="newheader">
+            </td>
+            <td>
+                <input class="form-control"
+                       ng-model="newheadervalue">
+            </td>
+            <td>
+                <button ng-click="addHeader()"
+                        ng-disabled="newheader===''"
+                        class="btn btn-success">Add</button>
+            </td>
+        </tr>
+    </table>
+    </div>
+    <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('smsgateway_write')">
+        <button ng-click="createSMSgateway()"
+                id="createBottomGatewayButton"
+                ng-disabled="formGatewayAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save SMS gateway</span>
+        </button>
+    </div>
+</form>

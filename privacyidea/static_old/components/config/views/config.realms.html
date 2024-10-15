@@ -1,0 +1,37 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked nav-capitalize">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.realms.list')}">
+                    <a ui-sref="config.realms.list"
+                            translate>All Realms</a></li>
+                <li ng-class="{ active: $state.includes('config.realms.edit')}"
+                    ng-show="$state.includes('config.realms.edit')">
+                    <a ui-sref="config.realms.edit" translate>
+                        Edit Realm {{ $stateParams.realmName }}
+                    </a>
+                </li>
+                <li ng-class="{ active: $state.includes('config.realms.create')}"
+                ng-show="checkRight('resolverwrite')">
+                    <a ui-sref="config.realms.create" translate>
+                        Create Realm
+                    </a>
+                </li>
+                <hr>
+                <li role="presentation">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/configuration/realms.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Realms</span></a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+        <!-- load the realms.list state by default-->
+        <div ng-init="$state.go('config.realms.list')">
+        </div>
+    </div>
+</div>
+

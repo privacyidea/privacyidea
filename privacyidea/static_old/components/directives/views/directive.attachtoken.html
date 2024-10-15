@@ -1,0 +1,20 @@
+<!--
+This is the directive for attach tokens to machines.
+-->
+<div class="form-group">
+    <label for="serial" translate>Serial</label>
+    <input name="serial" type="text" ng-model="newTokenObject.serial"
+           autocomplete="new-password"
+           placeholder="{{ 'start typing a serial number of a token.'|
+           translate }}"
+           typeahead-wait-ms="100"
+           uib-typeahead="serial for serial in loadSerials($viewValue)"
+           typeahead-no-results="noResults"
+           typeahead-loading="loadingSerials" class="form-control" >
+    <div ng-show="loadingSerials">
+        <i class="glyphicon glyphicon-refresh"></i><span translate>Loading serials...</span>
+    </div>
+    <div ng-show="noResults">
+        <i class="glyphicon glyphicon-remove"></i><span translate>No serial found</span>
+    </div>
+</div>

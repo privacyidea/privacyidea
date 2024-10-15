@@ -1,0 +1,98 @@
+
+<h2 class="form-signin-heading"
+        ng-show="identifier"
+        translate>Edit privacyIDEA server {{ identifier }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="identifier"
+        translate>Create a new privacyIDEA server {{ params.identifier }}</h2>
+
+<form name="formPrivacyidea" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.identifier" required
+                   placeholder="myRemotePrivacyIDEAServer"
+                   ng-pattern="inputNamePatterns.withoutTestRequest.pattern"
+                   title="{{ inputNamePatterns.withoutTestRequest.title | translate }}"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                of the privacyIDEA server definition.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="url" class="col-sm-3 control-label" translate>
+            URL of the privacyIDEA server</label>
+
+        <div class="col-sm-9">
+            <input name="url" class="form-control" id="url"
+                   ng-model="params.url" required
+                   placeholder="https://pi17.example.com/"/>
+            <p class="help-block" translate>
+                Please provide the base URL of the privacyIDEA server.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="tls" class="col-sm-3 control-label" translate>
+                Verify the certificate</label>
+        <div class="col-sm-9">
+            <input name="tls" id="tls"
+                   type="checkbox"
+                   ng-model="params.tls"/>
+            <p class="help-block" translate>
+                The certificate will be checked for a valid hostname and for
+                a trusted certificate. Do not uncheck this in productive use!
+            </p>
+
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label"
+               translate>Description</label>
+        <div class="col-sm-9">
+            <input name="description" class="form-control"
+                   id="description"
+                   ng-model="params.description"
+                   placeholder="some wise words"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-3">
+            <label for="username" translate>User</label>
+            <input type="text" class="form-control" class="col"
+                   id="username"
+               ng-model="params.username" name="username">
+        </div>
+
+        <div class="col-sm-3">
+            <label for="password" translate>Password</label>
+            <input type="password" class="form-control" class="col"
+                   autocomplete="new-password"
+                   id="password"
+                   ng-model="params.password" name="password">
+        </div>
+        <div class="col-sm-3">
+            <button class="btn btn-default" translate
+                    ng-click="testPrivacyideaServer()">
+                Send test request to privacyIDEA server
+            </button>
+        </div>
+    </div>
+
+    <div class="text-center"
+        ng-show="checkRight('privacyideaserver_write')">
+        <button ng-click="savePrivacyideaServer()"
+                ng-disabled="formPrivacyidea.$invalid"
+                class="btn btn-primary"
+                translate>Save privacyIDEA server
+        </button>
+    </div>
+
+</form>
+

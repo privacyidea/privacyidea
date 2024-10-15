@@ -1,0 +1,42 @@
+<h2 translate>Yubico Token settings</h2>
+<p class="help-block" translate>
+    The Yubico Token is a Yubikey that is registered with the YubiCloud
+    service. The Yubikey emits a 44 character one time password. The first 12
+    characters are a unique ID which is used to bind the device to the user.
+</p>
+
+<p class="help-block" translate>
+    The authentication request is forwarded to the YubiCloud. For accessing
+    the YubiCloud you need to enter an API Client ID and an API Key, which
+    you can request <a href="https://upgrade.yubico.com/getapikey/"
+                       target="_extern">here</a>.
+</p>
+
+<div class="form-group">
+    <label for="yubicoId" translate>API client ID</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="{{ 'The client ID'|translate }}"
+           ng-model="form['yubico.id']" name="yubicoId">
+</div>
+
+<div class="form-group">
+    <label for="yubicoKey" translate>API Key</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="{{ 'API Key'|translate }}"
+           ng-model="form['yubico.secret']" name="yubicoKey">
+</div>
+
+<div class="form-group">
+    <label for="yubicoURL" translate>Yubico URL</label>
+    <input type="url"
+           required
+           class="form-control"
+           placeholder="https://api.yubico.com/wsapi/2.0/verify"
+           ng-model="form['yubico.url']" name="yubicoURL">
+</div>
+
+

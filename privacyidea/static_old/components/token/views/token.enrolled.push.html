@@ -1,0 +1,26 @@
+<div class="row">
+    <div ng-show="enrolledToken.rollout_state === 'enrolled'"
+         ng-class="$state.includes('token.wizard') == true ? 'col-sm-12' : 'col-sm-6'">
+        <p translate>
+            Please note, that your smartphone needs internet access during the authentication process.
+        </p>
+    </div>
+    <div class="col-sm-6" ng-show="enrolledToken.rollout_state === 'clientwait'">
+        <p class="help-block" translate>
+            Please scan the QR code with the privacyIDEA Authenticator App
+            or click <a href="{{ enrolledToken.pushurl.value }}">this link</a> on your
+            smartphone.
+        </p>
+        <img width="{{ qrCodeWidth }}"
+             ng-src="{{ enrolledToken.pushurl.img }}"/>
+    </div>
+
+    <div class="col-sm-6" ng-show="enrolledToken.rollout_state === 'clientwait'">
+        <p translate>
+            Your token {{ enrolledToken.serial }} is not completely enrolled, yet.
+        </p>
+        <p translate>
+            It will send the missing registration data to the configured endpoint.
+        </p>
+    </div>
+</div>

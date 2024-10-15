@@ -1,0 +1,39 @@
+<p class="help-block" translate>The Application Specific Password Token is a static password,
+    that can be bound to certain services. This static password then can only be used to authenticate
+    at this service.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div class="form-group">
+    <div ng-hide=False>
+        <input type="checkbox" ng-model="form.genkey"
+               name="generate" id="generate">
+        <label for="generate" translate>Generate the static password on the Server</label>
+    </div>
+
+    <div ng-show="form.genkey">
+        <p class="help-block" translate>
+            The server will create the static password.
+        </p>
+    </div>
+</div>
+<div class="form-group" ng-hide="form.genkey">
+    <label for="otpkey" translate>Application specific password</label>
+    <input type="text"
+           autofocus
+           class="form-control"
+           placeholder="Enter static password..."
+           ng-model="form.otpkey" name="otpkey">
+</div>
+<div class="form-group">
+    <label for="service_id" translate>Service ID</label>
+
+    <select class="form-control"
+            required
+            id="sevice_id"
+            ng-model="form.service_id"
+            ng-options="type as desc for (type, desc) in formInit.service_ids">
+    </select>
+
+</div>

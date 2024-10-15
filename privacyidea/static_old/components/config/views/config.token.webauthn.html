@@ -1,0 +1,42 @@
+<h2 translate>WebAuthn Token settings</h2>
+<p class="help-block" translate>
+    The WebAuthn token is a hardware token, that communicates with the browser.
+    You may set a trust anchor directory, which is a path to a directory
+    containing certificates to trust for WebAuthn authenticator attestation.
+</p>
+
+<div class="form-group">
+    <label for="webAuthnTrustAnchorDir" translate>trust_anchor_dir</label>
+    <p class="help-block" translate>
+        The path to the directory containing the trust anchors.
+    </p>
+    <p class="help-block" translate>
+        This should be a path to a local directory on the server, that
+        privacyIDEA has read access to. It should contain certificate files.
+        Any certificates in this directory will be trusted to correctly attest
+        authenticators during enrollment.
+    </p>
+    <p class="help-block" translate>
+        This does not need to be set for WebAuthn to work, however without
+        this, privacyIDEA can not check, whether an attestation certificate is
+        actually trusted (it will still be checked for validity). Therefore it
+        is mandatory to set this, if webauthn_authenticator_attestation_level
+        is set to "trusted" by a policy for any user.
+    </p>
+
+    <input type="text"
+            placeholder="/etc/privacyidea/trusted_attestation_roots"
+            class="form-control"
+            ng-model="form['webauthn.trust_anchor_dir']"
+            name="webAuthnTrustAnchorDir">
+    <div ng-hide="form['webauthn.trust_anchor_dir'][0] == '/'"
+            class="alert alert-warning"
+            translate>
+        The trust_anchor_dir must be an absolute path.
+    </div>
+    <div ng-show="form['webauthn.trust_anchor_dir'][form['webauthn.trust_anchor_dir'].length - 1] == '/'"
+            class="alert alert-warning"
+            translate>
+        The trust_anchor_dir must not end with a "/".
+    </div>
+</div>

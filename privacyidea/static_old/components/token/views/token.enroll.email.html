@@ -1,0 +1,25 @@
+<p class="help-block" translate>
+    The Email Token sends the OTP value to the users email address.
+</p>
+
+<h4 translate>Token data</h4>
+<div ng-hide="form['email.mailserver'] || loggedInUser.role==='user'" translate class="bg-danger">
+    For Email tokens to work properly you need to set the
+    <a ui-sref="config.tokens({tokentype:'email'})">Email Token Config</a>!
+</div>
+
+
+<div class="form-group">
+    <input type="checkbox" ng-model="form.dynamic_email"
+           name="dynamic_email" id="dynamic_email">
+    <label for="dynamic_email" translate>Read email address dynamically from user source on each request.</label>
+</div>
+<div class="form-group" ng-hide="form.dynamic_email">
+    <label for="email" translate>Email Address</label>
+    <input type="email" id="email"
+           autofocus
+           ng-required="! form.dynamic_email"
+           class="form-control"
+           placeholder="Users email address..."
+           ng-model="form.email" name="email" />
+</div>

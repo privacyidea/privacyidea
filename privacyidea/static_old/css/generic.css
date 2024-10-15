@@ -1,0 +1,66 @@
+.table-transparent > thead > tr > th,
+.table-transparent > tbody > tr > th,
+.table-transparent > tfoot > tr > th,
+.table-transparent > thead > tr > td,
+.table-transparent > tbody > tr > td,
+.table-transparent > tfoot > tr > td {
+    padding: 0px 5px 0px 0px;
+}
+
+.table-capitalize-header > thead > tr > th {
+    text-transform: capitalize;
+}
+
+.table-capitalize {
+    text-transform: capitalize;
+}
+
+.nav-capitalize {
+    text-transform: capitalize;
+}
+
+.btn-capitalize {
+    text-transform: capitalize;
+}
+
+.btn-transparent {
+    color: #000000;
+    background-color: transparent;
+    border-color: #ddd;
+    padding: 0.2em 0.6em 0.3em;
+    font-size: 90%;
+}
+
+.btn-transparent.disabled:hover,
+.btn-transparent[disabled]:hover,
+fieldset[disabled] .btn-transparent:hover,
+.btn-transparent.disabled:focus,
+.btn-transparent[disabled]:focus,
+fieldset[disabled] .btn-transparent:focus,
+.btn-transparent.disabled.focus,
+.btn-transparent[disabled].focus,
+fieldset[disabled] .btn-transparent.focus {
+    color: #000000;
+    background-color: transparent;
+    border-color: #ddd;
+}
+
+.btn-header {
+    font-weight: bold;
+}
+
+.horizontal-line {
+    width: 95%;
+    height: 5px;
+    line-height: 80%;
+    border-top: 1px #ddd solid;
+    margin: 5px;
+}
+
+.horizontal-line-invisible {
+    width: 95%;
+    height: 5px;
+    line-height: 80%;
+    border-top: 1px rgba(72, 112, 150, 0) solid;
+    margin: 12px;
+}

@@ -1,0 +1,31 @@
+<p class="help-block" translate>
+The VASCO token is a proprietary OTP token. You can paste the VASCO token blob
+    in a hexlified format.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div class="form-group">
+    <label for="otpkey" translate>VASCO Token blob</label>
+    <textarea ng-pattern="/^[0-9a-fA-F]*$/"
+              autofocus
+              row="5"
+              class="form-control"
+              placeholder="blob..."
+              ng-change="setVascoSerial()"
+              ng-model="form.otpkey" name="otpkey" id="otpkey">
+    </textarea>
+</div>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="vasco.useIt"
+           name="useVascoSerial" id="useVascoSerial" ng-change="setVascoSerial()">
+    <label for="useVascoSerial" translate>use VASCO Serial</label>
+    <input class="form-control" type="text" ng-model="vascoSerial" name="serial"
+           id="serial" ng-disabled="true">
+</div>
+<div class="help-block" translate>
+    The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial
+    number within privacyIDEA, activate the checkbox. Otherwise privacyIDEA will create a new
+    unique serial number.
+</div>

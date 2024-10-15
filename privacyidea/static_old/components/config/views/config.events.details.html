@@ -1,0 +1,315 @@
+<h2 class="form-signin-heading"
+    ng-show="eventid">
+    <translate>Edit Event Handler {{ eventid }}</translate>
+
+    <span ng-show="checkRight('eventhandling_write')">
+    <button class="btn btn-danger"
+            ng-click="disableEvent(eventid)"
+            ng-show="form.active" translate>
+        Disable
+    </button>
+    <button class="btn btn-success"
+            ng-click="enableEvent(eventid)"
+            ng-show="!form.active" translate>
+        Enable
+    </button>
+    <button class="btn btn-danger"
+            aria-label="{{ 'Do you really want to delete this event?' | translate }}"
+            ng-click="confirmDelete(delEvent, eventid)">
+        <span class="glyphicon glyphicon-trash"></span>
+        <span translate>Delete</span>
+    </button>
+    </span>
+</h2>
+
+<h2 class="form-signin-heading"
+        ng-hide="eventid" translate>Create a new Event Handler</h2>
+
+<form name="formEventAdd" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="name" class="col-sm-3 control-label" translate>
+            Description</label>
+
+        <div class="col-sm-6">
+            <input id="name" class="form-control"
+                   ng-model="form.name"
+                   placeholder="Name"
+                   autofocus
+                   required/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="event" class="col-sm-3 control-label"
+                translate>Events</label>
+
+        <div class="col-sm-9">
+            <div isteven-multi-select
+                 required
+                 input-model="availableEvents"
+                 output-model="selectedEvents"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                    >
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="handlermodule" class="col-sm-3 control-label" translate>
+            Handlermodule</label>
+
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="handlermodule"
+                    ng-model="form.handlermodule" required
+                    ng-options="handlermodule as handlermodule for handlermodule in handlermodules"
+                    ng-change="handlerModuleChanged()"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="position" class="col-sm-3 control-label" translate>
+            Position</label>
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="position"
+                    ng-model="form.position" required
+                    ng-options="position as position for position in handlerPositions"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="ordering" class="col-sm-3 control-label" translate>
+            Order</label>
+        <div class="col-sm-6">
+            <input type="number" ng-model="form.ordering"
+                           class="form-control" min="0" />
+        </div>
+    </div>
+    <div class="text-center"
+         ng-show="checkRight('eventhandling_write')">
+        <button ng-click="createEvent()"
+                id="topSaveEventButton"
+                ng-disabled="formEventAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save Event Handler Definition</span>
+        </button>
+    </div>
+
+    <ul class="nav nav-tabs">
+        <li class="active">
+            <a href="#condition" target="_self"
+               data-toggle="tab" translate>Condition</a>
+        </li>
+        <li>
+            <a href="#action" target="_self"
+               data-toggle="tab" translate>Action</a>
+        </li>
+
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane active" id="condition">
+            <h3 translate>Condition</h3>
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="condition">
+                        <button class="btn btn-sm btn-success"
+                                ng-show="!onlySelectedVisible"
+                                ng-click="onlySelectedVisible=true">
+                            <translate>Show selected conditions only</translate>
+                        </button>
+                        <button class="btn btn-sm btn-success"
+                                ng-show="onlySelectedVisible"
+                                ng-click="onlySelectedVisible=false">
+                            <translate>Show all conditions</translate>
+                        </button>
+                    </label>
+                    <label for="toggleAccordion">
+                        <button class="btn btn-sm btn-success"
+                                ng-show="groupsOpen < conditionGroups.length"
+                                ng-click="openCloseAllGroups(true)">
+                            <translate>Open all groups</translate>
+                        </button>
+                        <button class="btn btn-sm btn-success"
+                                ng-show="groupsOpen > 0"
+                                ng-click="openCloseAllGroups(false)">
+                            <translate>Close all groups</translate>
+                        </button>
+                    </label>
+                </div>
+                <div class="col-sm-6">
+                    <div class="input-group">
+                        <label for="conditionfilter"></label>
+                        <input type="text" ng-model="condition_filter"
+                               id="conditionfilter"
+                               placeholder="{{ 'filter condition...'|translate }}"
+                               ng-change="openCloseAllGroups(condition_filter.length > 0)"
+                               class="form-control"
+                               aria-describedby="filter-delete">
+                        <span class="input-group-addon" id="filter-delete"
+                              ng-click="condition_filter=''; openCloseAllGroups(false)">
+                            <span class="glyphicon glyphicon-remove-circle"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="mt-5px">
+                        <uib-accordion close-others="false">
+                            <div uib-accordion-group
+                                 class="panel-default"
+                                 ng-repeat="conditionGroup in conditionGroups"
+                                 is-open="groupIsOpen[conditionGroup]">
+                                <uib-accordion-heading ng-click="groupIsOpen[conditionGroup]=!groupIsOpen[conditionGroup]">
+                                    <div>
+                                        {{ ( conditionGroup || 'miscellaneous') }}
+                                        <span class="pull-right glyphicon" aria-hidden="true"
+                                              ng-class="{'glyphicon-chevron-down': groupIsOpen[conditionGroup],
+                                                         'glyphicon-chevron-right': !groupIsOpen[conditionGroup]}">
+                                        </span>
+                                    </div>
+                                </uib-accordion-heading>
+                                <table class="table table-hover">
+                                    <tr ng-repeat="(conditionname, condition) in handlerConditions"
+                                        ng-show="checkOpenConditionGroup(condition, conditionname, condition_filter)"
+                                        ng-if="condition.group===null || conditionGroup===condition.group">
+                                        <td>
+                                            <input type="checkbox"
+                                                   name="conditionname"
+                                                   ng-model="conditionCheckBox[conditionname]"
+                                                   id="cb_{{ conditionname }}">
+                                            <label for="cb_{{ conditionname }}"
+                                                   ng-bind-html="conditionname | highlight: condition_filter">
+                                            </label>
+                                        </td>
+
+                                        <td>
+                                            <label for="condition_{{ conditionname }}_str_value"></label>
+                                            <select class="form-control"
+                                                    id="condition_{{ conditionname }}_str_value"
+                                                    ng-if="condition.type!=='multi' && condition.value"
+                                                    ng-disabled="!conditionCheckBox[conditionname]"
+                                                    ng-required="condition.required && condition.value"
+                                                    ng-model="conds[conditionname]"
+                                                    ng-options="value for value in condition.value">
+                                            </select>
+                                            <label for="condition_{{ conditionname }}_multi_str_value"></label>
+                                            <div isteven-multi-select
+                                                 id="condition_{{ conditionname }}_multi_str_value"
+                                                 ng-if="condition.type==='multi'"
+                                                 is-disabled="!conditionCheckBox[conditionname]"
+                                                 input-model="condition.value"
+                                                 output-model="conds[conditionname]"
+                                                 button-label="icon name"
+                                                 item-label="icon name maker"
+                                                 tick-property="ticked">
+                                            </div>
+                                            <label for="condition_{{ conditionname }}_text_value"></label>
+                                            <textarea type="text" rows="6"
+                                                      id="condition_{{ conditionname }}_text_value"
+                                                      ng-disabled="!conditionCheckBox[conditionname]"
+                                                      ng-required="condition.required && !condition.value"
+                                                      ng-if="condition.type==='text' && !condition.value"
+                                                      class="form-control"
+                                                      ng-model="conds[conditionname]">
+                                            </textarea>
+                                            <label for="condition_{{ conditionname }}_input_str_value"></label>
+                                            <input class="form-control"
+                                                   id="condition_{{ conditionname }}_input_str_value"
+                                                   ng-disabled="!conditionCheckBox[conditionname]"
+                                                   ng-required="condition.required && !condition.value"
+                                                   ng-model="conds[conditionname]"
+                                                   ng-if="(condition.type==='str' && !condition.value)
+                                    || condition.type==='regexp'">
+                                            <p class="help help-block"
+                                               ng-bind-html="condition.desc | highlight: condition_filter">
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </uib-accordion>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane" id="action">
+            <h3 translate>Action</h3>
+            <div class="form-group">
+                <label for="action" class="col-sm-3 control-label" translate>
+                    Action</label>
+                <div class="col-sm-6">
+                    <select class="form-control"
+                            id="action"
+                            ng-model="form.action" required
+                            ng-options="action for action in handlerActions"
+                            ng-change="actionChanged()"
+                    >
+                    </select>
+                </div>
+            </div>
+            <!-- options -->
+            <h4 translate>Options</h4>
+            <table class="table table-hover">
+                <tr ng-repeat="(optionname, option) in options"
+                    ng-show="!option.visibleIf ||
+                     opts[option.visibleIf]===option.visibleValue">
+                    <td>
+                        <b>{{ optionname }}</b>
+                    </td>
+                    <td>
+                        <select class="form-control"
+                                ng-show="option.value"
+                                ng-required="option.required && option.value"
+                                ng-model="opts[optionname]"
+                                ng-options="value for value in option.value">
+                        </select>
+                        <textarea type="text" rows="6"
+                                  ng-required="option.required && !option.value"
+                                  ng-show="option.type==='text' && !option.value"
+                                  class="form-control"
+                                  ng-model="opts[optionname]">
+                        </textarea>
+                        <input class="form-control"
+                               ng-required="option.required && !option.value"
+                               ng-model="opts[optionname]"
+                               ng-show="option.type==='str' && !option.value">
+
+                        <input type="checkbox"
+                               ng-model="opts[optionname]"
+                               ng-show="option.type==='bool' && !option.value">
+                        <p class="help help-block">
+                            {{ option.description }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('eventhandling_write')">
+        <button ng-click="createEvent()"
+                id="lowerSaveEventButton"
+                ng-disabled="formEventAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save Event Handler Definition</span>
+        </button>
+    </div>
+
+</form>

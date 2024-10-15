@@ -1,0 +1,47 @@
+
+<h2 class="form-signin-heading"
+        ng-show="groupname"
+        translate>Edit Tokengroup {{ groupname }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="groupname"
+        translate>Create a new Tokengroup {{ params.groupname }}</h2>
+
+<form name="formTokengroup" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group" ng-hide="groupname">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.groupname" required
+                   placeholder="myNewGroup"
+                   ng-pattern="inputNamePatterns.simple.pattern"
+                   title="{{ inputNamePatterns.simple.title | translate }}"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                for this group definition.</p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="col-sm-3 control-label"
+               translate>Description</label>
+        <div class="col-sm-9">
+            <input name="description" class="form-control"
+                   ng-model="params.description"
+                   placeholder="some wise words"/>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('tokengroup_add')">
+        <button ng-click="saveTokengroup()"
+                ng-disabled="formTokengroup.$invalid"
+                class="btn btn-primary"
+                translate>Save Tokengroup
+        </button>
+    </div>
+
+</form>
+

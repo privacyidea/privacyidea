@@ -1,0 +1,64 @@
+<div class="panel">
+    <form name="formAddUser" role="form" validate>
+        <h2 translate>Add a new user</h2>
+
+        <div ng-show="formInit.resolvernames.length">
+            <div class="panel-body">
+                <div class="col-xs-12">
+                    <div class="form-group">
+                        <label for="resolvername" translate>Resolver</label>
+                        <select class="form-control" required
+                                name="resolvername"
+                                id="resolvername"
+                                ng-model="resolvername"
+                                ng-change="getUserAttributesView(resolvername, userAttributes)"
+                                ng-options="resolvername for resolvername in formInit.resolvernames">
+                        </select>
+                    </div>
+                    <div class="help-block" translate>
+                        These are the resolvers marked as editable. You can add
+                        a user
+                        to the resolver. The user will appear in the realms,
+                        that
+                        contain this resolver.
+                    </div>
+                </div>
+
+                <div class="col-xs-6">
+                    <div ng-repeat="field in leftColumn">
+                        <ng-form name="formLeft" class="css-form">
+                            <ng-include
+                                    src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                        </ng-form>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div ng-repeat="field in rightColumn">
+                        <ng-form name="formLeft" class="css-form">
+                            <ng-include
+                                    src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                        </ng-form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button ng-click="createUser()" class="btn btn-primary"
+                        ng-disabled="formAddUser.$invalid">
+                    <span class="glyphicon glyphicon-edit"></span>
+                    <span translate>Save user</span>
+                </button>
+            </div>
+        </div>
+        <div ng-show="formInit.resolvernames.length==0">
+            <div class="help-block" translate>
+                You have no editable resolvers defined. So you can not write
+                to any user store. If you want to add users, you need to
+                <a ui-sref="config.resolvers.list">define an editable
+                    resolver</a>
+                (like SQLResolver) and check the
+                box "Edit user store".
+            </div>
+        </div>
+    </form>
+</div>

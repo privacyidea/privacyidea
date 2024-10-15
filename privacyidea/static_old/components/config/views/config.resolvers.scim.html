@@ -1,0 +1,97 @@
+<div>
+
+<h2 class="form-signin-heading"
+        ng-show="resolvername"
+        translate>Edit SCIM Resolver {{ resolvername }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="resolvername"
+        translate>Create a new SCIM Resolver</h2>
+
+<form name="formResolverAddScim" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="resolvername" class="col-sm-3 control-label"
+                translate>Resolver name</label>
+
+        <div class="col-sm-9">
+            <input name="resolvername" id="resolvername" class="form-control"
+                   ng-model="resolvername" required placeholder="resolver1"
+                   ng-pattern="inputNamePatterns.withoutTest.pattern"
+                   title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                   autofocus/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="authserver" class="col-sm-3 control-label"
+                translate>
+            Authentication Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="authserver" class="form-control"
+                   ng-model="params.Authserver" required
+                   placeholder="http://localhost:8080/osiam-auth-server"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="resourceserver" class="col-sm-3 control-label"
+                translate>
+            Resource Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="resourceserver" class="form-control"
+                   ng-model="params.Resourceserver" required
+                   placeholder="http://localhost:8080/osiam-resource-server"/>
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <label for="client" class="col-sm-3 control-label"
+                translate>Client</label>
+
+        <div class="col-sm-9">
+            <input name="client" class="form-control"
+                   ng-model="params.Client" required
+                   placeholder="hostname"/>
+        </div>
+    </div>
+
+        <div class="form-group">
+        <label for="secret" class="col-sm-3 control-label"
+                translate>Secret</label>
+
+        <div class="col-sm-9">
+            <input name="secret" class="form-control"
+                   ng-model="params.Secret" required
+                   placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"/>
+        </div>
+    </div>
+
+
+    <div class="text-center" ng-show="showResult">
+        <label class="label"
+               ng-class="{'label-success':result.result,
+               'label-danger':!result.result}">
+            {{ result.description }}<span class="glyphicon glyphicon-remove"
+                                          ng-click="showResult=false"></span>
+        </label>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="testResolver()"
+                ng-disabled="formResolverAddScim.$invalid"
+                class="btn btn-success"
+                translate>Test SCIM Resolver
+        </button>
+        <button ng-click="setSCIMResolver()"
+                ng-show="checkRight('resolverwrite')"
+                ng-disabled="formResolverAddScim.$invalid"
+                class="btn btn-primary"
+                translate>Save resolver
+        </button>
+    </div>
+
+</form>
+</div>

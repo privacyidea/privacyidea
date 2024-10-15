@@ -1,0 +1,95 @@
+<div class="well" ng-show="hsmReady === 'True'">
+
+    <div class="container" ng-show="!loginWithCredentials">
+        <form name="formRemoteUserLogin" class="form-signin" role="form">
+            <div class="text-center">
+                <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                     width="90px">
+            </div>
+            <h2 class="form-signin-heading" translate>Login as
+                {{ remoteUser }}</h2>
+
+            <p translate>
+                You are authenticated by the web server as user
+                <b>{{ remoteUser }}</b>.
+                You may login as this user to privacyIDEA without any further
+                credentials.
+            </p>
+
+            <div class="text-center">
+                <button ng-click="authenticate_remote_user()"
+                        class="btn btn-primary btn-block" translate>Log In
+                </button>
+                <button ng-hide="forceRemoteUser === 'True'"
+                        ng-click="loginWithCredentials = true"
+                        class="btn btn-info btn-block" translate>
+                    Login with credentials
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div ng-show="loginWithCredentials">
+        <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert"
+                    aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            <translate>
+                Enter your username and password and click Log In to
+                authenticate.
+            </translate>
+        </div>
+
+        <div class="container">
+            <div class="text-center">
+                    <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                         width="90px">
+                </div>
+            <div class="text-center">
+                <h2 ng-hide="piLoginText" class="form-signin-heading" translate>Please sign in</h2>
+                <h2 ng-show="piLoginText" class="form-signin-heading">{{ piLoginText }}</h2>
+            </div>
+            <form name="formSignin" class="form-signin" role="form" novalidate>
+                <label for="username" class="sr-only" translate>Username</label>
+                <input name="username" id="username"
+                       class="form-control round-top"
+                       ng-model="login.username" required
+                       placeholder="{{ 'Username'|translate }}"
+                       autofocus/>
+                <label for="realm" class="sr-only" translate>Realm</label>
+                <select class="form-control round-none"
+                        name="realm"
+                        placeholder="Realm"
+                        ng-show="piRealms.length > 0"
+                        id="realm"
+                        ng-model="login.realm"
+                        ng-options="realm for realm in piRealms">
+                    <!-- We add a placeholder, if we do not have an empty realm -->
+                    <option ng-hide="piRealms[0]===''" value="" selected translate>Choose a realm...</option>
+                </select>
+                <label for="password" class="sr-only" translate>Password</label>
+                <input name="password" type="password"
+                       id="password" class="form-control round-bottom"
+                       ng-model="login.password" required
+                       placeholder="{{ 'Password'|translate }}"/>
+
+                <div class="text-center">
+                    <button ng-click="authenticate_first();"
+                            ng-disabled="formSignin.$invalid"
+                            class="btn btn-primary btn-block" translate>Log In
+                    </button>
+                    <p class="text-right" ng-show="passwordReset === 'True'">
+                        <a ui-sref="recovery" translate>Reset Password</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="well" ng-show="hsmReady === 'False'">
+    <div class="alert alert-danger" role="alert" translate>
+        The HSM is not ready. privacyIDEA can not work properly. Please start
+        the HSM and reload this page.
+    </div>
+</div>

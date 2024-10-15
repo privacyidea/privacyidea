@@ -1,0 +1,86 @@
+
+<div class="well">
+    <nav class="navbar navbar-default">
+    <div class="container">
+        <button type="button" class="navbar-toggle"
+                data-toggle="collapse" data-target=".myConfigNavbar"
+                aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+        <div class="navbar-collapse collapse myConfigNavbar">
+            <ul class="nav navbar-nav nav-capitalize">
+                <li ng-class="{active: $state.includes('config.system')
+                || $state.includes('config.smtp') || $state.includes('config.radius')
+                || $state.includes('config.privacyideaserver') || $state.includes('config.smsgateway')
+                || $state.includes('config.tokengroup') || $state.includes('config.caconnectors')
+                }">
+                    <a ui-sref="config.system.edit">
+                    <span class="glyphicon glyphicon-briefcase"
+                          aria-hidden="true"></span>
+                    <span translate>System</span></a></li>
+                <li ng-class="{active: $state.includes('config.policies')}"
+                    ng-show="checkRight('policyread') || checkRight('policywrite') || checkRight('policydelete')">
+                    <a ui-sref="config.policies.list">
+                    <span class="glyphicon glyphicon-hand-up"
+                          aria-hidden="true"></span>
+                    <span translate>Policies</span></a></li>
+                <li ng-class="{active: $state.includes('config.events')}"
+                    ng-show="checkRight('eventhandling_read') || checkRight('eventhandling_write')">
+                    <a ui-sref="config.events.list">
+                    <span class="glyphicon glyphicon-flag"
+                          aria-hidden="true"></span>
+                    <span translate>Events</span></a></li>
+                <li ng-class="{active: $state.includes('config.periodictasks')}"
+                    ng-show="checkRight('periodictask_read') || checkRight('periodictask_write')">
+                    <a ui-sref="config.periodictasks.list">
+                        <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                        <span translate>Periodic Tasks</span></a></li>
+                <li ng-class="{active: $state.includes('config.tokens')}"
+                    ng-show="checkRight('configread') || checkRight('configwrite')">
+                    <a ui-sref="config.tokens">
+                    <span class="glyphicon glyphicon-phone"
+                          aria-hidden="true"></span>
+                    <span translate>Tokens</span></a></li>
+                <li ng-class="{active: $state.includes('config.mresolvers')}"
+                    ng-show="checkRight('mresolverread') || checkRight('mresolverwrite') || checkRight('mresolverdelete')">
+                    <a ui-sref="config.mresolvers.list">
+                    <span class="glyphicon glyphicon-tasks"
+                          aria-hidden="true"></span>
+                        <span translate>Machines</span>
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('config.resolvers')}"
+                    ng-show="checkRight('resolverread') || checkRight('resolverwrite') || checkRight('resolverdelete')">
+                    <a ui-sref="config.resolvers.list">
+                        <span class="glyphicon glyphicon-user"
+                          aria-hidden="true"></span>
+                        <span translate>Users</span>
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('config.realms')}"
+                    ng-show="checkRight('resolverread') || checkRight('resolverwrite') || checkRight('resolverdelete')">
+                    <a ui-sref="config.realms.list">
+                        <span class="glyphicon glyphicon-globe"
+                          aria-hidden="true"></span>
+                        <span translate>Realms</span>
+                    </a>
+                </li>
+            </ul>
+
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+    </nav>
+
+    <div ui-view class="slide"></div>
+
+</div>
+
+
+<ng-include src="instanceUrl + '/static/components/config/views/dialog.confirm_delete.html'">
+</ng-include>

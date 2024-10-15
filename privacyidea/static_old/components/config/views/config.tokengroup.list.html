@@ -1,0 +1,36 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Id</th>
+            <th translate>Name</th>
+            <th translate>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(groupname, group) in tokengroups">
+            <td>
+                {{ group.id }}
+            </td>
+            <td>
+                <a ui-sref="config.tokengroup.edit({groupname:groupname})">
+                        {{ groupname }}</a>
+            </td>
+            <td>
+                {{ group.description | limitTo: 20 }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('tokengroup_delete')"
+                        ng-click="delTokengroup(groupname)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+
+</div>
