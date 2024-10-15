@@ -1,5 +1,5 @@
 import {Component} from '@angular/core';
-import {AuthService} from '../services/auth.service';
+import {AuthService} from '../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
@@ -26,7 +26,7 @@ export class LoginComponent {
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token) {
           console.log('Login successful', response);
-          this.router.navigate(['/home']);
+          this.router.navigate(['/token']);
         } else {
           console.warn('Login failed. Challenge response required.');
         }
