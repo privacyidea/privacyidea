@@ -1,0 +1,31 @@
+<div class="login-container">
+  <img alt="logo" class="logo" height="1856" ngSrc="static/public/assets/privacyIDEA1.png" width="1857"/>
+  <h2 class="login-title">Login</h2>
+
+  <form (ngSubmit)="onSubmit()" class="login-form">
+
+    <mat-form-field appearance="outline">
+      <mat-label>Username</mat-label>
+      <input
+        [(ngModel)]="username"
+        id="username"
+        matInput
+        name="username"
+        required
+        type="text"/>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Password</mat-label>
+      <input
+        [(ngModel)]="password"
+        id="password"
+        matInput
+        name="password"
+        required
+        type="password"/>
+    </mat-form-field>
+
+    <button color="primary" mat-flat-button type="submit">Login</button>
+  </form>
+</div>

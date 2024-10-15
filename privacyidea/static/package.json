@@ -1,30 +1,40 @@
 {
-  "name": "privacyidea",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "dependencies": {
-    "angular": "^1.8.3",
-    "angular-gettext": "^2.4.2",
-    "angular-hotkeys": "^1.7.0",
-    "angular-inform": "0.0.19",
-    "angular-sanitize": "^1.8.3",
-    "angular-ui-bootstrap": "^2.5.6",
-    "angular-ui-router": "^1.0.30",
-    "bootstrap": "^3.4.1",
-    "isteven-angular-multiselect": "^4.0.0",
-    "jquery": "^3.7.1",
-    "ng-file-upload": "^12.2.13",
-    "ng-idle": "^1.3.2"
-  },
+  "name": "privacyidea-webui",
+  "version": "0.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/privacyidea/privacyidea.git"
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^18.2.0",
+    "@angular/cdk": "^18.2.8",
+    "@angular/common": "^18.2.0",
+    "@angular/compiler": "^18.2.0",
+    "@angular/core": "^18.2.0",
+    "@angular/forms": "^18.2.0",
+    "@angular/material": "^18.2.8",
+    "@angular/platform-browser": "^18.2.0",
+    "@angular/platform-browser-dynamic": "^18.2.0",
+    "@angular/router": "^18.2.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.3.0",
+    "zone.js": "^0.15.0"
   },
-  "keywords": [],
-  "author": "Cornelius Kölbel <cornelius@privacyidea.org>",
-  "license": "AGPL-3.0-only"
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^18.2.8",
+    "@angular/cli": "^18.2.8",
+    "@angular/compiler-cli": "^18.2.0",
+    "@types/jasmine": "~5.1.0",
+    "jasmine-core": "~5.2.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.5.2"
+  }
 }

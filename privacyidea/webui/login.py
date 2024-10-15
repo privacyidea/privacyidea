@@ -28,6 +28,7 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import os
 from flask import (Blueprint, render_template, request,
                    current_app, g)
 from privacyidea.api.lib.utils import send_html
@@ -77,6 +78,19 @@ def single_page_application():
         instance = ""
     # The backend URL should come from the configuration of the system.
     backend_url = ""
+
+    # Path to the Angular build directory
+    dist_dir = os.path.join(current_app.static_folder, 'dist', 'privacyidea-webui', 'browser')
+
+    # Dynamically get the filenames for the Angular build files
+    try:
+        for filename in os.listdir(dist_dir):
+            if filename.startswith('main') and filename.endswith('.js'):
+                main_js = 'dist/privacyidea-webui/browser/' + filename
+            elif filename.startswith('polyfills') and filename.endswith('.js'):
+                polyfills_js = 'dist/privacyidea-webui/browser/' + filename
+    except FileNotFoundError:
+        print("Error: Angular build files not found.")
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
@@ -191,7 +205,9 @@ def single_page_application():
         'login_text': login_text,
         'gdpr_link': gdpr_link,
         'logo': logo,
-        'page_title': page_title
+        'page_title': page_title,
+        'main_js': main_js,
+        'polyfills_js': polyfills_js,
     }
 
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"

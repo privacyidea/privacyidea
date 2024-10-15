@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>privacyIDEA Authentication System</title>
+  <base href=".">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <link href="{{ url_for('static', filename='dist/privacyidea-webui/browser/assets/favicon.ico') }}" rel="icon"
+        type="image/x-icon">
+</head>
+<body class="mat-typography">
+<app-root></app-root>
+
+<!-- Include dynamically generated JavaScript files -->
+{% if main_js %}
+<script src="{{ url_for('static', filename=main_js) }}" type="module"></script>
+{% endif %}
+
+{% if polyfills_js %}
+<script src="{{ url_for('static', filename=polyfills_js) }}" type="module"></script>
+{% endif %}
+
+</body>
+</html>
