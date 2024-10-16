@@ -1,0 +1,74 @@
+<div class="token-table">
+  <mat-form-field>
+    <mat-label>Filter</mat-label>
+    <input #input (keyup)="applyFilter($event)" matInput placeholder=" ">
+  </mat-form-field>
+
+  <table (matSortChange)="announceSortChange($event)" [dataSource]="dataSource" class="mat-elevation-z8" mat-table
+         matSort>
+
+    <ng-container matColumnDef="serial">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Serial</th>
+      <td *matCellDef="let element" mat-cell> {{ element.serial }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="tokentype">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Type</th>
+      <td *matCellDef="let element" mat-cell> {{ element.tokentype }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="active">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Status</th>
+      <td *matCellDef="let element" mat-cell> {{ element.active }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="description">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Description</th>
+      <td *matCellDef="let element" mat-cell> {{ element.description }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="failcount">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Fail Counter</th>
+      <td *matCellDef="let element" mat-cell> {{ element.failcount }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="rollout_state">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Rollout Status</th>
+      <td *matCellDef="let element" mat-cell> {{ element.rollout_state }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="username">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> User</th>
+      <td *matCellDef="let element" mat-cell> {{ element.username }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="realm">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Realm</th>
+      <td *matCellDef="let element" mat-cell> {{ element.user_realm }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="token_realm">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Token Realm</th>
+      <td *matCellDef="let element" mat-cell> {{ element.realms[0] }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="container_serial">
+      <th *matHeaderCellDef mat-header-cell mat-sort-header> Container</th>
+      <td *matCellDef="let element" mat-cell> {{ element.container_serial }}</td>
+    </ng-container>
+
+    <tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+    <tr *matRowDef="let row; columns: displayedColumns;" mat-row></tr>
+
+    <tr *matNoDataRow class="mat-row">
+      <td class="mat-cell" colspan="4">No data matching the filter "{{ input.value }}"</td>
+    </tr>
+
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20]"
+                 aria-label="Select page of periodic elements"
+                 showFirstLastButtons>
+  </mat-paginator>
+</div>
+

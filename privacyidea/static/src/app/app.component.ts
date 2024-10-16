@@ -2,6 +2,7 @@ import {Component} from '@angular/core';
 import {RouterLink, RouterOutlet} from '@angular/router';
 import {LoginComponent} from './components/login/login.component';
 import {FormsModule} from '@angular/forms';
+import {AuthService} from './services/auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -11,5 +12,11 @@ import {FormsModule} from '@angular/forms';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
+  constructor(private authService: AuthService) {
+    if (this.authService.isAuthenticatedUser()) {
+      console.log('User is already logged in');
+    }
+  }
+
   title = 'privacyidea-webui';
 }

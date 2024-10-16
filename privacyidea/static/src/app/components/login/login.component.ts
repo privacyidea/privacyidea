@@ -12,11 +12,12 @@ import {NgOptimizedImage} from '@angular/common';
   templateUrl: './login.component.html',
   standalone: true,
   imports: [FormsModule, MatFormField, MatInput, MatButton, MatLabel, NgOptimizedImage],
-  styleUrls: ['./login.component.css']
+  styleUrl: './login.component.css'
 })
 export class LoginComponent {
   username: string = '';
   password: string = '';
+  private authSecretKey = 'bearer_token';
 
   constructor(private authService: AuthService, private router: Router) {
   }
@@ -24,9 +25,11 @@ export class LoginComponent {
   onSubmit() {
     this.authService.authenticate(this.username, this.password).subscribe({
       next: (response: any) => {
-        if (response.result && response.result.value && response.result.value.token) {
+        if (response.result && response.result.value && response.result.value.token
+          && this.authService.isAuthenticatedUser()) {
           console.log('Login successful', response);
-          this.router.navigate(['/token']);
+          localStorage.setItem(this.authSecretKey, response.result.value.token);
+          this.router.navigate(['token']).then(r => console.log('Navigated to token page', r));
         } else {
           console.warn('Login failed. Challenge response required.');
         }
@@ -35,4 +38,10 @@ export class LoginComponent {
       }
     });
   }
+
+  logout(): void {
+    localStorage.removeItem(this.authSecretKey);
+    this.authService.deauthenticate();
+  }
+
 }
