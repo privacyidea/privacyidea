@@ -33,8 +33,7 @@ export interface TokenData {
 })
 export class TokenComponent {
   private _liveAnnouncer = inject(LiveAnnouncer);
-  private bearer_token = localStorage.getItem('bearer_token') != null ? localStorage.getItem('bearer token') : '';
-  private headerDict = {headers: {'PI-Authorization': this.bearer_token}}
+  private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token')}}
   dataSource = new MatTableDataSource<TokenData>();
   displayedColumns: string[] = ['serial', 'tokentype', 'active', 'description', 'failcount', 'rollout_state', 'username',
     'realm', 'token_realm', 'container_serial'];

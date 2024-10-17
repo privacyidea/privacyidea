@@ -7,14 +7,13 @@ import {AuthGuard} from './guards/auth.guard';
 export const routes: Routes = [
   {path: '', component: LoginComponent},
   {path: 'token', component: TokenComponent, canActivate: [AuthGuard]},
-  {path: '**', redirectTo: ''}
 ];
 
-
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, {useHash: false})],
   exports: [RouterModule],
 })
 export class AppRoutingModule {
-  constructor() {}
+  constructor() {
+  }
 }

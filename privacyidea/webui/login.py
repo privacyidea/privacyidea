@@ -50,6 +50,28 @@ DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs', 'i
 login_blueprint = Blueprint('login_blueprint', __name__)
 
 
+def get_build_filenames():
+    """
+    Get the filenames for the main.js and polyfills.js build files dynamically.
+
+    :return: A tuple containing the main.js and polyfills.js filenames.
+    """
+    dist_dir = os.path.join(current_app.static_folder, 'dist', 'privacyidea-webui', 'browser')
+    main_js = None
+    polyfills_js = None
+
+    try:
+        for filename in os.listdir(dist_dir):
+            if filename.startswith('main') and filename.endswith('.js'):
+                main_js = 'dist/privacyidea-webui/browser/' + filename
+            elif filename.startswith('polyfills') and filename.endswith('.js'):
+                polyfills_js = 'dist/privacyidea-webui/browser/' + filename
+    except FileNotFoundError:
+        print("Error: Angular build files not found.")
+
+    return main_js, polyfills_js
+
+
 def get_accepted_language(req):
     # if we are not in the request context, return None to use the default locale
     if not req:
@@ -59,6 +81,7 @@ def get_accepted_language(req):
     # try to match the language from the users accept header the browser transmits.
     # (The best match wins)
     return req.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
+
 
 @login_blueprint.before_request
 def before_request():
@@ -78,19 +101,6 @@ def single_page_application():
         instance = ""
     # The backend URL should come from the configuration of the system.
     backend_url = ""
-
-    # Path to the Angular build directory
-    dist_dir = os.path.join(current_app.static_folder, 'dist', 'privacyidea-webui', 'browser')
-
-    # Dynamically get the filenames for the Angular build files
-    try:
-        for filename in os.listdir(dist_dir):
-            if filename.startswith('main') and filename.endswith('.js'):
-                main_js = 'dist/privacyidea-webui/browser/' + filename
-            elif filename.startswith('polyfills') and filename.endswith('.js'):
-                polyfills_js = 'dist/privacyidea-webui/browser/' + filename
-    except FileNotFoundError:
-        print("Error: Angular build files not found.")
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
@@ -183,6 +193,8 @@ def single_page_application():
         gdpr_link = list(gdpr_link)[0]
     else:
         gdpr_link = ""
+
+    main_js, polyfills_js = get_build_filenames()
 
     render_context = {
         'instance': instance,

@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -36,6 +36,7 @@ import sqlalchemy as sa
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
+from privacyidea.api.lib.utils import send_html
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -49,7 +50,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
-from privacyidea.webui.login import login_blueprint, get_accepted_language
+from privacyidea.webui.login import login_blueprint, get_accepted_language, get_build_filenames
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
@@ -129,6 +130,13 @@ def create_app(config_name="development",
               "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
+
+    # Routed apps must fall back to index.html
+    @app.errorhandler(404)
+    def fall_back(path):
+        main_js, polyfills_js = get_build_filenames()
+        return send_html(render_template("index.html", main_js=main_js, polyfills_js=polyfills_js))
+
     if config_name:
         app.config.from_object(config[config_name])
 
