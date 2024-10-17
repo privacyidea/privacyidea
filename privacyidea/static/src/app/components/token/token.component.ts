@@ -8,6 +8,7 @@ import {LiveAnnouncer} from '@angular/cdk/a11y';
 import {AuthService} from '../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
+import {NgForOf} from '@angular/common';
 
 export interface TokenData {
   type: string;
@@ -26,7 +27,8 @@ export interface TokenData {
   selector: 'app-token',
   standalone: true,
   imports: [
-    MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule, MatSortModule
+    MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
+    MatSortModule, NgForOf
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.css'
@@ -36,7 +38,19 @@ export class TokenComponent {
   private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token')}}
   dataSource = new MatTableDataSource<TokenData>();
   displayedColumns: string[] = ['serial', 'tokentype', 'active', 'description', 'failcount', 'rollout_state', 'username',
-    'realm', 'token_realm', 'container_serial'];
+    'user_realm', 'token_realm', 'container_serial'];
+  columnDefinitions = [
+    {key: 'serial', label: 'Serial'},
+    {key: 'tokentype', label: 'Type'},
+    {key: 'active', label: 'Status'},
+    {key: 'description', label: 'Description'},
+    {key: 'failcount', label: 'Fail Counter'},
+    {key: 'rollout_state', label: 'Rollout Status'},
+    {key: 'username', label: 'User'},
+    {key: 'user_realm', label: 'Realm'},
+    {key: 'token_realm', label: 'Token Realm'},
+    {key: 'container_serial', label: 'Container'},
+  ];
 
   constructor(private authService: AuthService, private router: Router, private http: HttpClient) {
     if (!this.authService.isAuthenticatedUser()) {
