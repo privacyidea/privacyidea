@@ -3,6 +3,8 @@ from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+
+from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
@@ -3116,6 +3118,62 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertIn("previous otp used again", detail.get("message"))
         # clean up
         remove_token("totp_previous")
+
+    def test_37_challenge_response_hotp_with_container(self):
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.add_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        container_serial, _ = init_container({"type": "smartphone"})
+        container = find_container_by_serial(container_serial)
+        container.add_token(token)
+
+        # Set the failcounter
+        token.set_failcount(5)
+
+        # set a chalresp policy for HOTP
+        set_policy("policy", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: 'hotp'})
+
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            transaction_id = detail.get("transaction_id")
+
+        # Authentication is not yet successfully, hence the last_authentication time stamp shall not be updated yet
+        self.assertIsNone(container.last_authentication)
+
+        # send the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
+        # check last authentication
+        auth_time = datetime.datetime.now(datetime.timezone.utc)
+        last_auth = container.last_authentication
+        time_diff = abs((auth_time - last_auth).total_seconds())
+        self.assertLessEqual(time_diff, 1)
+
+        # delete the token
+        remove_token(serial=serial)
 
 
 class RegistrationValidity(MyApiTestCase):
