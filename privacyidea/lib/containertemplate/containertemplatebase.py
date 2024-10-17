@@ -23,12 +23,14 @@ from privacyidea.lib.error import ParameterError
 
 
 class TemplateOptionsBase:
+    OPTIONS = "options"
     TOKENS = "tokens"
     USER_MODIFIABLE = "user_modifiable"
 
 
 class ContainerTemplateBase:
     template_option_values = {
+        TemplateOptionsBase.OPTIONS: {},
         TemplateOptionsBase.TOKENS: [],
         TemplateOptionsBase.USER_MODIFIABLE: [True, False]
     }
@@ -53,11 +55,6 @@ class ContainerTemplateBase:
     @property
     def name(self):
         return self._db_template.name
-
-    @name.setter
-    def name(self, value):
-        self._db_template.name = value
-        self._db_template.save()
 
     @property
     def container_type(self):
@@ -122,7 +119,9 @@ class ContainerTemplateBase:
         return self._db_template.default
 
     @default.setter
-    def default(self, value):
+    def default(self, value: bool):
+        if not isinstance(value, bool):
+            raise ParameterError("Default must be a boolean")
         self._db_template.default = value
         self._db_template.save()
 

@@ -256,7 +256,12 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             let params = {"type": ctype};
             if ($scope.form.template && $scope.form.template.name !== "noTemplate") {
                 params["template"] = $scope.form.template;
-                params["template"]["template_options"]["options"] = $scope.form.options;
+                params["template"]["template_options"]["options"] = {};
+                angular.forEach($scope.form.options, function (value, key) {
+                    if (value !== "-") {
+                        params["template"]["template_options"]["options"][key] = value;
+                    }
+                });
                 params["template"]["template_options"]["tokens"] = [];
                 if ($scope.form.tokens.length > 0) {
                     angular.forEach($scope.form.tokens, function (token) {

@@ -70,8 +70,8 @@ class TokenContainerClass:
 
     def set_default_option(self, key):
         """
-        Checks if all options (key algorithm, hash algorithm, ...) are set in the container info.
-        Otherwise, the default values are set.
+        Checks if a value is set in the container info for the requested key.
+        If not, the default value is set, otherwise the already set value is kept.
 
         :param key: The key to be checked.
         :return: The used value for the key or None if the key does not exist in the class options.
@@ -115,10 +115,14 @@ class TokenContainerClass:
     def last_authentication(self):
         """
         Returns the timestamp of the last seen field in the database.
-        It is the time when a token of the container was last used for authentication.
+        It is the time when a token of the container was last used successfully for authentication.
         From this layer on it is hence called 'last_authentication'.
+        If the container was never used for authentication, the value is None.
         """
-        return self._db_container.last_seen
+        last_auth = self._db_container.last_seen
+        if last_auth:
+            last_auth = last_auth.replace(tzinfo=timezone.utc)
+        return last_auth
 
     def update_last_authentication(self):
         """
@@ -134,16 +138,16 @@ class TokenContainerClass:
         It is the time when the container was last synchronized with the privacyIDEA server.
         From this layer on it is hence called 'last_synchronization'.
         """
-        return self._db_container.last_updated
+        last_sync = self._db_container.last_updated
+        if last_sync:
+            last_sync = last_sync.replace(tzinfo=timezone.utc)
+        return last_sync
 
-    def update_last_synchronization(self, timestamp=None):
+    def update_last_synchronization(self):
         """
         Updates the timestamp of the last updated field in the database.
         """
-        if timestamp:
-            self._db_container.last_updated = timestamp
-        else:
-            self._db_container.last_updated = datetime.now(timezone.utc)
+        self._db_container.last_updated = datetime.now(timezone.utc)
         self._db_container.save()
 
     @property
@@ -500,32 +504,32 @@ class TokenContainerClass:
         """
         Initialize the registration of a pi container on a physical container.
         """
-        return {}
+        raise privacyIDEAError("Registration is not implemented for this container type.")
 
     def finalize_registration(self, params):
         """
         Finalize the registration of a pi container on a physical container.
         """
-        return {}
+        raise privacyIDEAError("Registration is not implemented for this container type.")
 
     def terminate_registration(self):
         """
         Terminate the registration of a pi container on a physical container.
         """
-        return
+        raise privacyIDEAError("Registration is not implemented for this container type.")
 
     def init_sync(self, params):
         """
         Initialize the synchronization of a container with the pi server.
         It creates a challenge for the container to allow the registration.
         """
-        return {}
+        raise privacyIDEAError("Synchronization is not implemented for this container type.")
 
     def check_synchronization_challenge(self, params):
         """
         Checks if the one who is requesting the synchronization is allowed to receive these information.
         """
-        return True
+        raise privacyIDEAError("Synchronization is not implemented for this container type.")
 
     def create_challenge(self, params):
         """
@@ -605,11 +609,10 @@ class TokenContainerClass:
 
         return valid_challenge
 
-    def get_container_details(self, no_token=False):
+    def get_as_dict(self):
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
-        :param no_token: If True, the token details are not included
         :return: Dictionary with the container details
 
         Example response
@@ -632,7 +635,7 @@ class TokenContainerClass:
                            "user_realm": "deflocal",
                            "user_resolver": "internal",
                            "user_id": 1}],
-                "tokens": [{"serial": "TOTP000152D1", "type": "totp", "active": True, ...}]
+                "tokens": ["TOTP000152D1", "HOTP00012345"]
             }
         """
         details = {"type": self.type,
@@ -640,14 +643,14 @@ class TokenContainerClass:
                    "description": self.description,
                    "last_authentication": self.last_authentication,
                    "last_synchronization": self.last_synchronization,
-                   "states": self.get_states()}
+                   "states": self.get_states(),
+                   "info": self.get_container_info_dict()}
 
-        infos = {}
-        for info in self.get_container_info():
-            if info.type:
-                infos[info.key + ".type"] = info.type
-            infos[info.key] = info.value
-        details["info"] = infos
+        template = self.template
+        template_name = ""
+        if template:
+            template_name = template.name
+        details["template"] = template_name
 
         realms = []
         for realm in self.realms:
@@ -659,21 +662,14 @@ class TokenContainerClass:
         for user in self.get_users():
             user_info["user_name"] = user.login
             user_info["user_realm"] = user.realm
-            user_info["user_resolver"] = user.resolverModel
+            user_info["user_resolver"] = user.resolver
             user_info["user_id"] = user.uid
             users.append(user_info)
         details["users"] = users
 
-        if not no_token:
-            token_dict_list = []
-            token_list = self.get_tokens()
-            for token in token_list:
-                token_dict_list.append(token.get_as_dict_with_user_and_containers())
-
-            details["tokens"] = token_dict_list
+        details["tokens"] = [token.get_serial() for token in self.get_tokens()]
 
         return details
-
 
     @classmethod
     def get_class_type(cls):

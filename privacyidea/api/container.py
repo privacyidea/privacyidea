@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import base64
 import json
 import logging
 
@@ -35,17 +36,17 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        create_container_dict, create_endpoint_url,
                                        create_container_template,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
-                                       set_template_options, set_default_template, get_container_template_classes,
+                                       set_default_template, get_container_template_classes,
                                        get_container_classes, create_container_from_db_object,
                                        compare_template_with_container)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.crypto import verify_ecc
+from privacyidea.lib.crypto import verify_ecc, b64url_str_key_pair_to_ecc_obj
 from privacyidea.lib.error import PolicyError, ParameterError, privacyIDEAError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
 from privacyidea.lib.token import regenerate_enroll_url
-from privacyidea.lib.user import get_user_from_param, User
+from privacyidea.lib.user import get_user_from_param
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -650,19 +651,20 @@ def registration_terminate_client(container_serial: str):
     :jsonparam message: Message
     """
     message = getParam(request.all_data, "message", required)
-    signature = getParam(request.all_data, "signature", required)
+    signature = base64.urlsafe_b64decode(getParam(request.all_data, "signature", required))
 
     # Get required parameters from the container
     container = find_container_by_serial(container_serial)
     container_info = container.get_container_info_dict()
-    public_client_key = container_info.get("public_client_key")
+    public_client_key = container_info.get("public_key_container")
+    pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=public_client_key)
     registration_state = container_info.get("registration_state")
     hash_algorithm = container_info.get("hash_algorithm")
     if registration_state != "registered":
         raise privacyIDEAError("Container is not registered.")
 
     try:
-        verify_ecc(message.encode("utf-8"), signature, public_client_key, hash_algorithm)
+        verify_ecc(message.encode("utf-8"), signature, pub_key_container, hash_algorithm)
     except Exception:
         raise privacyIDEAError(f"Could not verify the signature!")
 
@@ -900,7 +902,9 @@ def create_template_with_name(container_type, template_name):
 
     if len(existing_templates) > 0:
         # update existing template
-        template_id = set_template_options(template_name, template_options)
+        template = get_template_obj(template_name)
+        template.template_options = template_options
+        template_id = template.id
         log.info(f"A template with the name '{template_name}' already exists. Updating template options.")
     else:
         # create new template
@@ -933,6 +937,23 @@ def delete_template(template_name):
 def compare_template_with_containers(template_name):
     """
     Compares a template with it's created containers.
+
+    :param template_name: Name of the template
+    :return A dictionary with the differences between the template and each container in the format:
+
+        ::
+            {"SMPH0001": {
+                            "tokens": {
+                                        "missing": ["hotp"],
+                                        "additional": ["totp"]
+                                        },
+                            "options": {
+                                        "missing": ["hash_algorithm"],
+                                        "different": ["encryption_algorithm"],
+                                        "additional": ["key_algorithm"]
+                                        }
+                            }
+            }
     """
     template = get_template_obj(template_name)
     container_list = [create_container_from_db_object(db_container) for db_container in template.containers]

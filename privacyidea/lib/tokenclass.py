@@ -1722,40 +1722,6 @@ class TokenClass(object):
 
         return token_dict
 
-    def get_as_dict_with_user_and_containers(self):
-        """
-        This returns the token data as a dictionary including the user information and the container serials.
-
-        :return: The token data as dict
-        """
-        token_dict = self.get_as_dict()
-
-        # add user information
-        # In certain cases the LDAP or SQL server might not be reachable.
-        # Then an exception is raised
-        token_dict["username"] = ""
-        token_dict["user_realm"] = ""
-        try:
-            userobject = self.user
-            if userobject:
-                token_dict["username"] = userobject.login
-                token_dict["user_realm"] = userobject.realm
-                token_dict["user_editable"] = get_resolver_object(
-                    userobject.resolver).editable
-        except Exception as exx:
-            log.error("User information can not be retrieved: {0!s}".format(exx))
-            log.debug(traceback.format_exc())
-            token_dict["username"] = "**resolver error**"
-
-        # check if token is in a container
-        token_dict["container_serial"] = ""
-        from privacyidea.lib.container import find_container_for_token
-        container = find_container_for_token(self.get_serial())
-        if container:
-            token_dict["container_serial"] = container.serial
-
-        return token_dict
-
     @classmethod
     def api_endpoint(cls, request, g):
         """

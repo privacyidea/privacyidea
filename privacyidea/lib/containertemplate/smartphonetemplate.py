@@ -17,7 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from privacyidea.lib.containers.smartphone import SmartphoneContainer
-from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase, TemplateOptionsBase
+from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 
 
 class SmartphoneContainerTemplate(ContainerTemplateBase):
@@ -29,7 +29,7 @@ class SmartphoneContainerTemplate(ContainerTemplateBase):
     def get_template_class_options(cls):
         _custom_option_values = SmartphoneContainer.get_class_options()
 
-        template_option_values = ContainerTemplateBase.template_option_values.copy()
+        template_option_values = ContainerTemplateBase.get_template_class_options()
         template_option_values.update(_custom_option_values)
         return template_option_values
 

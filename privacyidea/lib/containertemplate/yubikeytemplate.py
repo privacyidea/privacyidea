@@ -17,7 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from privacyidea.lib.containers.yubikey import YubikeyContainer
-from privacyidea.lib.containertemplate.containertemplatebase import TemplateOptionsBase, ContainerTemplateBase
+from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 
 
 class YubikeyContainerTemplate(ContainerTemplateBase):

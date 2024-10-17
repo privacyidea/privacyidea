@@ -979,49 +979,27 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     """
     res: list = []
     for container in container_list:
-        tmp: dict = {"type": container.type,
-                     "serial": container.serial,
-                     "description": container.description,
-                     "last_authentication": container.last_authentication,
-                     "last_synchronization": container.last_synchronization}
-        tmp_users: dict = {}
-        users: list = []
-        for user in container.get_users():
-            tmp_users["user_name"] = user.login
-            tmp_users["user_realm"] = user.realm
-            tmp_users["user_resolver"] = user.resolver
-            tmp_users["user_id"] = user.uid
-            users.append(tmp_users)
-        tmp["users"] = users
+        container_dict = container.get_as_dict()
 
-        if not no_token:
-            token_serials = ",".join([token.get_serial() for token in container.get_tokens()])
+        if no_token:
+            del container_dict["tokens"]
+        else:
+            token_serials = ",".join(container_dict["tokens"])
             tokens_dict_list = []
             if len(token_serials) > 0:
                 tokens = get_tokens(serial=token_serials)
                 tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
                                                                   allowed_realms=allowed_token_realms)
-            tmp["tokens"] = tokens_dict_list
-
-        tmp["states"] = container.get_states()
+            container_dict["tokens"] = tokens_dict_list
 
         infos: dict = {}
         black_key_list = ["private_key_server", "public_key_server", "public_key_container"]
         for info in container.get_container_info():
-            if info.type:
-                infos[info.key + ".type"] = info.type
             if info.key not in black_key_list:
                 infos[info.key] = info.value
-        tmp["info"] = infos
+        container_dict["info"] = infos
 
-        realms = []
-        for realm in container.realms:
-            realms.append(realm.name)
-        tmp["realms"] = realms
-
-        tmp["template"] = container.template.name if container.template else None
-
-        res.append(tmp)
+        res.append(container_dict)
 
     return res
 
@@ -1074,29 +1052,24 @@ def create_container_template(container_type: str, template_name: str, options: 
     :param template_name: The name of the template
     :param options: The options for the template as dictionary
     :param default: If True, the template is set as default
-    :return: The created template object
+    :return: ID of the created template
     """
-    if isinstance(options, dict):
-        options = json.dumps(options)
-    else:
-        raise ParameterError("Options must be a dict!")
-    return TokenContainerTemplate(name=template_name, container_type=container_type, options=options,
-                                  default=default).save()
+    # Check container type
+    if container_type.lower() not in get_container_classes().keys():
+        raise EnrollmentError(f"Type '{container_type}' is not a valid type!")
 
-
-def set_template_options(template_name: str, options: dict):
-    """
-    Set the options for the given template.
-
-    :param template_name: The name of the template
-    :param options: The options for the template as dictionary
-    :return: True on success
-    """
-    if not isinstance(options, dict):
-        raise ParameterError("Options must be a dict!")
-
+    TokenContainerTemplate(name=template_name, container_type=container_type).save()
     template = get_template_obj(template_name)
-    template.template_options = options
+    try:
+        if options:
+            template.template_options = options
+        if default:
+            template.default = default
+    except Exception as ex:
+        # We need to delete the template on error, but still want to raise the original exception
+        template.delete()
+        raise ex
+
     return template.id
 
 
@@ -1153,9 +1126,12 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     # convert to dict
     template_list = []
     for template in template_obj_list:
+        template_options = {}
+        if template.template_options != "":
+            template_options = json.loads(template.template_options)
         template_dict = {"name": template.name,
                          "container_type": template.container_type,
-                         "template_options": json.loads(template.template_options),
+                         "template_options": template_options,
                          "default": template.default}
         template_list.append(template_dict)
 

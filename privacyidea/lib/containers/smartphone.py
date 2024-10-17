@@ -31,10 +31,9 @@ from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
-                                    ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc, ecdh_key_exchange)
+                                    ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc)
 from privacyidea.lib.error import privacyIDEAError
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list, \
-    regenerate_enroll_url
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
 

@@ -285,6 +285,46 @@ class APIContainerAuthorization(MyApiTestCase):
                                        self.at_user)
         delete_policy("policy")
 
+    def test_17_user_container_list_allowed(self):
+        # Arrange
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_LIST)
+
+        # container with token from another user: reduce token info
+        set_policy("policy2", scope=SCOPE.USER, action=ACTION.TOKENLIST)
+        container_serial, _ = init_container({"type": "generic"})
+        me = User("selfservice", self.realm1, self.resolvername1)
+        assign_user(container_serial, me, user_role='admin')
+
+        my_token = init_token({"genkey": "1"}, user=me)
+        my_token_serial = my_token.get_serial()
+        add_token_to_container(container_serial, my_token_serial, user_role='admin')
+
+        user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
+        another_token = init_token({"genkey": "1"}, user=user)
+        token_serial = another_token.get_serial()
+        add_token_to_container(container_serial, token_serial, user_role='admin')
+
+        # Act
+        result = self.request_assert_200('/container/', {"container_serial": container_serial}, self.at_user, 'GET')
+
+        # Assert
+        tokens = result["result"]["value"]["containers"][0]["tokens"]
+        # first token: all information
+        self.assertEqual(my_token.get_serial(), tokens[0]["serial"])
+        self.assertEqual("hotp", tokens[0]["tokentype"])
+        # second token: only serial
+        self.assertEqual(another_token.get_serial(), tokens[1]["serial"])
+        self.assertEqual(1, len(tokens[1].keys()))
+        self.assertNotIn("tokentype", tokens[1].keys())
+
+        delete_policy("policy")
+        delete_policy("policy2")
+
+    def test_18_user_container_list_denied(self):
+        # User does not have CONTAINER_LIST rights
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        self.request_denied_assert_403('/container/', {}, self.at_user, 'GET')
+
     def test_17_admin_create_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         result = self.request_assert_200('/container/init', {"type": "generic"}, self.at)
@@ -1379,20 +1419,20 @@ class APIContainer(MyApiTestCase):
                                     {},
                                     self.at, 'DELETE')
 
-    def test_25_register_terminate_client_success(self):
+    def test_26_register_terminate_client_success(self):
         smartphone_serial, priv_key_client = self.test_24_register_smartphone_success()
         nonce = geturandom(20, hex=True)
         time = datetime.now(timezone.utc).isoformat()
-        message = f"nonce|time"
-        signature = sign_ecc(message.encode("utf-8"), priv_key_client, "sha256")
+        message = f"{nonce}|{time}"
+        signature, _ = sign_ecc(message.encode("utf-8"), priv_key_client, "sha256")
 
         # Terminate
-        data = {"message": message, "signature": signature}
+        data = {"message": message, "signature": base64.urlsafe_b64encode(signature)}
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
                                     data,
                                     self.at, 'DELETE')
 
-    def test_26_register_init_fail(self):
+    def test_27_register_init_fail(self):
         # Policy with server url not defined
         container_serial, _ = init_container({"type": "smartphone"})
         result = self.request_assert_error(403, 'container/register/initialize',
@@ -1418,7 +1458,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_27_register_finalize_fail(self):
+    def test_28_register_finalize_fail(self):
         # Policy with server url disabled defined
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"}, active=False)
         container_serial, _ = init_container({"type": "smartphone"})
@@ -1444,7 +1484,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_27_register_twice_fails(self):
+    def test_29_register_twice_fails(self):
         # register container successfully
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://test/",
                                                          ACTION.CONTAINER_REGISTRATION_TTL: 24})
@@ -1478,7 +1518,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_28_register_terminate_fail(self):
+    def test_30_register_terminate_fail(self):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
 
         # Invalid container serial
@@ -1488,6 +1528,60 @@ class APIContainer(MyApiTestCase):
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
         delete_policy("policy")
+
+    def test_31_register_generic_fail(self):
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/",
+                                                         ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        generic_serial, _ = init_container({"type": "generic"})
+        data = {"container_serial": generic_serial,
+                "passphrase_ad": False,
+                "passphrase_prompt": "Enter your passphrase",
+                "passphrase_response": "top_secret"}
+
+        # Initialize
+        error = self.request_assert_error(400, 'container/register/initialize',
+                                          data,
+                                          self.at, 'POST')
+        self.assertEqual(10, error["result"]["error"]["code"])
+
+        # Finalize
+        data = {"container_serial": generic_serial}
+        error = self.request_assert_error(400, 'container/register/finalize',
+                                          data,
+                                          None, 'POST')
+        self.assertEqual(10, error["result"]["error"]["code"])
+
+        # Terminate
+        error = self.request_assert_error(400, f'container/register/{generic_serial}/terminate',
+                                          {}, self.at, 'DELETE')
+        self.assertEqual(10, error["result"]["error"]["code"])
+
+    def test_32_register_yubikey_fail(self):
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/",
+                                                         ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        yubi_serial, _ = init_container({"type": "yubikey"})
+        data = {"container_serial": yubi_serial,
+                "passphrase_ad": False,
+                "passphrase_prompt": "Enter your passphrase",
+                "passphrase_response": "top_secret"}
+
+        # Initialize
+        error = self.request_assert_error(400, 'container/register/initialize',
+                                          data,
+                                          self.at, 'POST')
+        self.assertEqual(10, error["result"]["error"]["code"])
+
+        # Finalize
+        data = {"container_serial": yubi_serial}
+        error = self.request_assert_error(400, 'container/register/finalize',
+                                          data,
+                                          None, 'POST')
+        self.assertEqual(10, error["result"]["error"]["code"])
+
+        # Terminate
+        error = self.request_assert_error(400, f'container/register/{yubi_serial}/terminate',
+                                          {}, self.at, 'DELETE')
+        self.assertEqual(10, error["result"]["error"]["code"])
 
     def mock_smartphone_sync(self, params, serial, private_key_sig_smph):
         nonce = params["nonce"]
@@ -1506,7 +1600,7 @@ class APIContainer(MyApiTestCase):
                   "container_dict_client": container_dict}
         return params, private_enc_key_smph
 
-    def test_29_sync_init_success(self):
+    def test_33_sync_init_success(self):
         set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
         smartphone_serial, _ = init_container({"type": "smartphone"})
 
@@ -1520,7 +1614,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_30_sync_finalize_success(self):
+    def test_34_sync_finalize_success(self):
         # Registration
         smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
 
@@ -1533,6 +1627,7 @@ class APIContainer(MyApiTestCase):
         params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_smph)
 
         # Finalize
+        sync_time = datetime.now(timezone.utc)
         result = self.request_assert_success(f'container/sync/{smartphone_serial}/finalize',
                                              params, None, 'POST')
         result_entries = result["result"]["value"].keys()
@@ -1542,9 +1637,15 @@ class APIContainer(MyApiTestCase):
         self.assertIn("container_dict_server", result_entries)
         self.assertIn("container_sync_url", result_entries)
 
+        # check last synchronization timestamp
+        smartphone = find_container_by_serial(smartphone_serial)
+        last_sync = smartphone.last_synchronization
+        time_diff = abs((sync_time - last_sync).total_seconds())
+        self.assertLessEqual(time_diff, 1)
+
         delete_policy("policy")
 
-    def test_31_finalize_synchronize_smartphone_with_push_fb(self):
+    def test_35_finalize_synchronize_smartphone_with_push_fb(self):
         # Registration
         smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -1598,7 +1699,7 @@ class APIContainer(MyApiTestCase):
         delete_policy("policy")
         delete_policy("push")
 
-    def test_32_finalize_synchronize_smartphone_with_push_poll_only(self):
+    def test_36_finalize_synchronize_smartphone_with_push_poll_only(self):
         # Registration
         smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -1648,7 +1749,7 @@ class APIContainer(MyApiTestCase):
         delete_policy("push_1")
         delete_policy("push_2")
 
-    def test_33_finalize_synchronize_smartphone_missing_token_enroll_policies(self):
+    def test_37_finalize_synchronize_smartphone_missing_token_enroll_policies(self):
         # Registration
         smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -1694,7 +1795,7 @@ class APIContainer(MyApiTestCase):
 
         delete_policy('policy')
 
-    def test_34_finalize_synchronize_smartphone_token_policies(self):
+    def test_38_finalize_synchronize_smartphone_token_policies(self):
         # Registration
         smartphone_serial, priv_key_smph = self.test_24_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -1755,7 +1856,7 @@ class APIContainer(MyApiTestCase):
         delete_policy('policy')
         delete_policy('token_enroll')
 
-    def test_35_sync_finalize_fail(self):
+    def test_39_sync_finalize_fail(self):
         smartphone_serial, _ = init_container({"type": "smartphone"})
 
         # missing policy
@@ -1789,7 +1890,39 @@ class APIContainer(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_36_get_class_options_all(self):
+    def test_40_generic_sync_fail(self):
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+        generic_serial, _ = init_container({"type": "generic"})
+
+        # Init
+        result = self.request_assert_error(400, f'container/sync/{generic_serial}/init',
+                                           {}, None, 'GET')
+        self.assertEqual(10, result["result"]["error"]["code"])
+
+        # Finalize
+        result = self.request_assert_error(400, f'container/sync/{generic_serial}/finalize',
+                                           {}, None, 'POST')
+        self.assertEqual(10, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_41_yubi_sync_fail(self):
+        set_policy("policy", scope=SCOPE.ENROLL, action={ACTION.PI_SERVER_URL: "http://localhost/"})
+        generic_serial, _ = init_container({"type": "generic"})
+
+        # Init
+        result = self.request_assert_error(400, f'container/sync/{generic_serial}/init',
+                                           {}, None, 'GET')
+        self.assertEqual(10, result["result"]["error"]["code"])
+
+        # Finalize
+        result = self.request_assert_error(400, f'container/sync/{generic_serial}/finalize',
+                                           {}, None, 'POST')
+        self.assertEqual(10, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_42_get_class_options_all(self):
         result = self.request_assert_success('/container/classoptions', {}, self.at, 'GET')
         result = result["result"]["value"]
 
@@ -1808,7 +1941,7 @@ class APIContainer(MyApiTestCase):
         yubikey_options = result["yubikey"]
         self.assertIn(YubikeyOptions.PIN_POLICY, yubikey_options)
 
-    def test_37_get_class_options_smartphone(self):
+    def test_43_get_class_options_smartphone(self):
         result = self.request_assert_success('/container/classoptions', {"container_type": "smartphone"}, self.at,
                                              'GET')
         result = result["result"]["value"]
@@ -1825,7 +1958,7 @@ class APIContainer(MyApiTestCase):
         for key in smartphone_required_keys:
             self.assertIn(key, smartphone_options)
 
-    def test_38_get_class_options_invalid_type(self):
+    def test_44_get_class_options_invalid_type(self):
         result = self.request_assert_error(400, '/container/classoptions',
                                            {"container_type": "invalid"}, self.at,
                                            'GET')
@@ -2006,6 +2139,9 @@ class APIContainerTemplate(MyApiTestCase):
         tokens = container.get_tokens()
         self.assertEqual(1, len(tokens))
 
+        template = get_template_obj(template_params["name"])
+        template.delete()
+
     def test_09_create_container_with_template_push(self):
         # PUSH (poll-only)
         template_params = {"name": "test",
@@ -2123,3 +2259,53 @@ class APIContainerTemplate(MyApiTestCase):
         self.assertIn("tokens", smph_keys)
         self.assertIn("user_modifiable", smph_keys)
         self.assertIn("pin_policy", yubikey_keys)
+
+    def test_13_get_template(self):
+        create_container_template(container_type="smartphone",
+                                  template_name="test1",
+                                  options={})
+        create_container_template(container_type="generic",
+                                  template_name="test2",
+                                  options={})
+        create_container_template(container_type="smartphone",
+                                  template_name="test3",
+                                  options={})
+
+        query_params = {"container_type": "smartphone", "pagesize": 15, "page": 1}
+        result = self.request_assert_success('/container/templates', query_params, self.at, 'GET')
+        self.assertEqual(2, result["result"]["value"]["count"])
+        self.assertEqual(1, result["result"]["value"]["current"])
+        self.assertEqual(2, len(result["result"]["value"]["templates"]))
+
+    def test_14_compare_template_with_containers(self):
+        template_options = {"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"},
+                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "push", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name="test", options=template_options)
+
+        # Create container with tokens and link with template
+        cserial, _ = init_container({"type": "smartphone"})
+        container = find_container_by_serial(cserial)
+        container.template = "test"
+
+        hotp = init_token({"type": "hotp", "genkey": True})
+        totp1 = init_token({"type": "totp", "genkey": True})
+        totp2 = init_token({"type": "totp", "genkey": True})
+        container.add_token(hotp)
+        container.add_token(totp1)
+        container.add_token(totp2)
+
+        # Compare template with container
+        result = self.request_assert_success(f"/container/template/test/compare", {}, self.at, "GET")
+        container_diff = result["result"]["value"][cserial]
+        token_diff = container_diff["tokens"]
+        self.assertListEqual(["push"], token_diff["missing"])
+        self.assertListEqual(["totp", "totp"], token_diff["additional"])
+        container_options_diff = container_diff["options"]
+        self.assertListEqual(["key_algorithm"], container_options_diff["missing"])
+
+        # Clean up
+        container.delete()
+        hotp.delete_token()
+        totp1.delete_token()
+        totp2.delete_token()
+        get_template_obj("test").delete()

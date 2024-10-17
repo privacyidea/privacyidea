@@ -3614,11 +3614,11 @@ class TokenContainerTemplate(MethodsMixin, db.Model):
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     options = db.Column(db.Unicode(2000), default='')
     name = db.Column(db.Unicode(200), default='')
-    container_type = db.Column(db.Unicode(100), default='Generic', nullable=False)
+    container_type = db.Column(db.Unicode(100), default='generic', nullable=False)
     default = db.Column(db.Boolean, default=False, nullable=False)
     containers = db.relationship('TokenContainer', back_populates='template')
 
-    def __init__(self, name=None, container_type="Generic", options=None, default=False):
+    def __init__(self, name, container_type="generic", options='', default=False):
         self.name = name
         self.container_type = container_type
         self.options = options

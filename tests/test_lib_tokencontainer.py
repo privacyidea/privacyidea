@@ -2,8 +2,6 @@ import base64
 import json
 from datetime import datetime, timezone
 
-from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
-
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
@@ -17,11 +15,12 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        remove_multiple_tokens_from_container, remove_token_from_container,
                                        add_multiple_tokens_to_container,
                                        add_token_to_container, create_endpoint_url, create_container_template,
-                                       get_templates_by_query, get_template_obj, set_template_options,
+                                       get_templates_by_query, get_template_obj,
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container)
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
+from privacyidea.lib.containers.yubikey import YubikeyOptions
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
@@ -880,7 +879,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Prepare with missing registration URL
-        self.assertRaises(ParameterError, smartphone.init_registration, {})
+        self.assertRaises(privacyIDEAError, smartphone.init_registration, {})
 
     def test_35_register_smartphone_finalize_unauthorized(self):
         # Mock smartphone with guessed params (no prepare)
@@ -971,6 +970,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         smartphone_serial, _ = self.test_37_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
+        # create challenges
+        params = {"scope": "container/synchronize/finalize"}
+        smartphone.init_sync(params)
+        smartphone.init_sync(params)
+        smartphone.init_sync(params)
+        challenges = get_challenges(serial=smartphone_serial)
+        self.assertEqual(3, len(challenges))
+
         # Terminate registration
         smartphone.terminate_registration()
         # Check that the container info is deleted
@@ -979,6 +986,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertNotIn("public_key_container", container_info_keys)
         self.assertNotIn("public_key_server", container_info_keys)
         self.assertNotIn("private_key_server", container_info_keys)
+
+        # check challenge
+        challenges = get_challenges(serial=smartphone_serial)
+        self.assertEqual(0, len(challenges))
 
     def test_39_register_smartphone_passphrase_success(self):
         # Prepare
@@ -1269,6 +1280,80 @@ class TokenContainerManagementTestCase(MyTestCase):
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(2, len(add_tokens))
 
+    def test_50_get_as_dict(self):
+        # Arrange
+        container_serial, _ = init_container({"type": "generic"})
+        container = find_container_by_serial(container_serial)
+        # Tokens
+        hotp = init_token({"genkey": True, "type": "hotp"})
+        container.add_token(hotp)
+        totp = init_token({"genkey": True, "type": "totp"})
+        container.add_token(totp)
+        # User
+        self.setUp_user_realms()
+        user = User(login="hans", realm=self.realm1)
+        container.add_user(user)
+        # Template
+        create_container_template(container_type="generic", template_name="test", options={})
+        container.template = "test"
+
+        # Act
+        container_dict = container.get_as_dict()
+
+        # Assert
+        self.assertEqual("generic", container_dict["type"])
+        self.assertEqual(container_serial, container_dict["serial"])
+        self.assertEqual("", container_dict["description"])
+        self.assertIsNone(container_dict["last_authentication"])
+        self.assertIsNone(container_dict["last_synchronization"])
+        self.assertListEqual(["active"], container_dict["states"])
+        self.assertEqual("test", container_dict["template"])
+        self.assertDictEqual({}, container_dict["info"])
+        self.assertListEqual([self.realm1], container_dict["realms"])
+        self.assertEqual("hans", container_dict["users"][0]["user_name"])
+        self.assertEqual(self.realm1, container_dict["users"][0]["user_realm"])
+        self.assertEqual(self.resolvername1, container_dict["users"][0]["user_resolver"])
+        self.assertListEqual([hotp.get_serial(), totp.get_serial()], container_dict["tokens"])
+
+    def test_51_get_as_dict_no_tokens_no_user(self):
+        # Arrange
+        container_serial, _ = init_container({"type": "generic"})
+        container = find_container_by_serial(container_serial)
+
+        # Act
+        container_dict = container.get_as_dict()
+
+        # Assert
+        self.assertEqual("generic", container_dict["type"])
+        self.assertEqual(container_serial, container_dict["serial"])
+        self.assertEqual("", container_dict["description"])
+        self.assertIsNone(container_dict["last_authentication"])
+        self.assertIsNone(container_dict["last_synchronization"])
+        self.assertListEqual(["active"], container_dict["states"])
+        self.assertEqual("", container_dict["template"])
+        self.assertDictEqual({}, container_dict["info"])
+        self.assertListEqual([], container_dict["realms"])
+        self.assertListEqual([], container_dict["users"])
+        self.assertListEqual([], container_dict["tokens"])
+
+    def test_52_set_default_options(self):
+        smph_serial, _ = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smph_serial)
+
+        # Invalid key
+        value = smartphone.set_default_option(YubikeyOptions.PIN_POLICY)
+        self.assertIsNone(value)
+
+        # valid key
+        value = smartphone.set_default_option(SmartphoneOptions.KEY_ALGORITHM)
+        self.assertEqual("secp384r1", value)
+
+        # change key
+        smartphone.set_container_info({SmartphoneOptions.KEY_ALGORITHM: "secp256r1"})
+        # set default value keeps the defined value
+        value = smartphone.set_default_option(SmartphoneOptions.KEY_ALGORITHM)
+        self.assertEqual("secp256r1", value)
+
 
 class TokenContainerTemplateTestCase(MyTestCase):
     def test_01_create_delete_template_success(self):
@@ -1281,6 +1366,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         template = get_template_obj(template_name)
         template.delete()
 
+        self.assertRaises(ResourceNotFoundError, get_template_obj, template_name)
+
     def test_02_create_template_fail(self):
         template_name = "test"
 
@@ -1288,6 +1375,20 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_container_template, container_type="smartphone",
                           template_name=template_name,
                           options="random")
+        self.assertRaises(ResourceNotFoundError, get_template_obj, template_name)
+
+        # wrong type
+        self.assertRaises(EnrollmentError, create_container_template, container_type="random",
+                          template_name=template_name,
+                          options={"tokens": [{"type": "hotp"}]})
+        self.assertRaises(ResourceNotFoundError, get_template_obj, template_name)
+
+        # wrong default type
+        self.assertRaises(ParameterError, create_container_template, container_type="smartphone",
+                          template_name=template_name,
+                          default="random",
+                          options={"tokens": [{"type": "hotp"}]})
+        self.assertRaises(ResourceNotFoundError, get_template_obj, template_name)
 
     def test_03_get_class_type(self):
         # smartphone
@@ -1314,7 +1415,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertEqual("yubikey", yubikey.get_class_type())
         yubikey.delete()
 
-    def test_04_get_and_set_name(self):
+    def test_04_get_name(self):
         initial_name = "test"
         create_container_template(container_type="generic",
                                   template_name=initial_name,
@@ -1323,73 +1424,133 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # Check initial name
         self.assertEqual(initial_name, template.name)
 
-        # change name
-        template.name = "new_name"
-        self.assertEqual("new_name", template.name)
-
         template.delete()
 
-    def test_05_set_template_options_success(self):
-        template_name = "test"
-        template_id = create_container_template(container_type="smartphone",
-                                                template_name=template_name,
-                                                options={"tokens": [{"type": "hotp"}]})
+    def test_05_get_supported_token_types(self):
+        pass
 
-        template_options = {
-            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}],
-            "options": {SmartphoneOptions.ALLOW_ROLLOVER: True}}
+    def test_06_template_options_success(self):
+        initial_options = {"tokens": [{"type": "hotp", "genkey": True}], "options": {}}
+        create_container_template(container_type="smartphone", template_name="test", options=initial_options)
+        template = get_template_obj("test")
 
-        template_id_options = set_template_options(template_name, template_options)
-        self.assertEqual(template_id, template_id_options)
+        # get options
+        options = template.template_options
+        self.assertIsInstance(options, str)
+        self.assertEqual(json.dumps(initial_options), options)
+        options_dict = template.get_template_options_as_dict()
+        self.assertIsInstance(options_dict, dict)
+        self.assertDictEqual(initial_options, options_dict)
 
-        # check template options
-        template = get_template_obj(template_name)
-        self.assertEqual(json.dumps(template_options), template.template_options)
+        # set options
+        new_options = {"tokens": [{"type": "hotp", "genkey": True},
+                                  {"type": "totp", "genkey": True, "hashlib": "sha256"}],
+                       "options": {SmartphoneOptions.ALLOW_ROLLOVER: True, SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+                                   SmartphoneOptions.HASH_ALGORITHM: "SHA256",
+                                   SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
+                                   SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
+                                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
+                                   SmartphoneOptions.FORCE_BIOMETRIC: False}}
+        template.template_options = new_options
+        options = template.template_options
+        self.assertEqual(json.dumps(new_options), options)
+        options_dict = template.get_template_options_as_dict()
+        self.assertIsInstance(options_dict, dict)
+        self.assertDictEqual(new_options, options_dict)
 
-        template = get_template_obj(template_name)
+        # Clean up
         template.delete()
 
-    def test_06_set_template_options_fails(self):
-        template_name = "test"
-        initial_options = {"tokens": [{"type": "hotp"}]}
+    def test_07_template_options_fail(self):
+        # smartphone
+        initial_options = {"tokens": [{"type": "hotp", "genkey": True}], "options": {}}
+        create_container_template(container_type="smartphone", template_name="test", options=initial_options)
+        template = get_template_obj("test")
 
-        # Smartphone
-        create_container_template(container_type="smartphone",
-                                  template_name=template_name,
-                                  options=initial_options)
+        # set options as string
+        new_options = {"tokens": [{"type": "hotp", "genkey": True},
+                                  {"type": "totp", "genkey": True, "hashlib": "sha256"}],
+                       "options": {}}
+        self.assertRaises(ParameterError, setattr, template, "template_options", json.dumps(new_options))
 
-        # wrong input type
-        template_options = json.dumps({
-            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}]})
+        # set invalid token type
+        invalid_options = {"tokens": [{"type": "spass"}]}
+        self.assertRaises(ParameterError, setattr, template, "template_options", invalid_options)
 
-        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
-        template = get_template_obj(template_name)
-        self.assertEqual(json.dumps(initial_options), template.template_options)
+        # set invalid option key
+        invalid_options = {"options": {"random": 123}}
+        self.assertRaises(ParameterError, setattr, template, "template_options", invalid_options)
 
-        # wrong token type
-        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "spass"}]}
-        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
-        template = get_template_obj(template_name)
-        self.assertEqual(json.dumps(initial_options), template.template_options)
-
-        template = get_template_obj(template_name)
-        template.delete()
+        # set invalid value for option key
+        invalid_options = {"options": {SmartphoneOptions.KEY_ALGORITHM: "random"}}
+        self.assertRaises(ParameterError, setattr, template, "template_options", invalid_options)
 
         # Yubikey
         create_container_template(container_type="yubikey",
-                                  template_name=template_name,
+                                  template_name="yubi",
                                   options=initial_options)
+        template_yubi = get_template_obj("yubi")
 
         # wrong token type
-        template_options = {"tokens": [{"type": "totp", "genkey": True}, {"type": "spass"}]}
-        self.assertRaises(ParameterError, set_template_options, template_name, template_options)
-        template = get_template_obj(template_name)
+        template_options = {"tokens": [{"type": "totp", "genkey": True}, {"type": "spass"}], "options": {}}
+        self.assertRaises(ParameterError, setattr, template_yubi, "template_options", template_options)
         self.assertEqual(json.dumps(initial_options), template.template_options)
 
+        # Clean up
+        template.delete()
+        template_yubi.delete()
+
+    def test_08_template_class_options(self):
+        pass
+
+    def test_09_template_default_success(self):
+        template_name = "test"
+        create_container_template(container_type="smartphone",
+                                  template_name=template_name,
+                                  default=True,
+                                  options={})
+
         template = get_template_obj(template_name)
+        self.assertTrue(template.default)
+
+        # set default
+        template.default = False
+        self.assertFalse(template.default)
+
         template.delete()
 
-    def test_07_create_container_template_from_db_object_success(self):
+    def test_10_template_default_fail(self):
+        template_name = "test"
+        create_container_template(container_type="smartphone",
+                                  template_name=template_name,
+                                  default=True,
+                                  options={})
+        template = get_template_obj(template_name)
+
+        # set wrong type to default
+        self.assertRaises(ParameterError, setattr, template, "default", "False")
+
+        template.delete()
+
+    def test_11_containers(self):
+        create_container_template(container_type="smartphone",
+                                  template_name="test",
+                                  options={})
+        template = get_template_obj("test")
+        # create container with a template
+        template_params = {"name": "test", "container_type": "smartphone", "template_options": {}}
+        smph1, _ = init_container({"type": "smartphone", "template": template_params})
+        smph2, _ = init_container({"type": "smartphone", "template": template_params})
+
+        containers = template.containers
+        self.assertEqual(2, len(containers))
+        self.assertIn(containers[0].serial, [smph1, smph2])
+        self.assertIn(containers[1].serial, [smph1, smph2])
+
+        # clean up
+        template.delete()
+
+    def test_12_create_container_template_from_db_object_success(self):
         # Generic
         template_db = TokenContainerTemplate(name="test", container_type="generic", options="")
         template_db.save()
@@ -1411,7 +1572,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertIsInstance(template, YubikeyContainerTemplate)
         template.delete()
 
-    def test_08_create_container_template_from_db_object_fails(self):
+    def test_13_create_container_template_from_db_object_fails(self):
         # Invalid type
         template_db = TokenContainerTemplate(name="test", container_type="random", options="")
         template_db.save()
@@ -1419,7 +1580,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertIsNone(template)
         template_db.delete()
 
-    def test_09_get_template_obj_success(self):
+    def test_14_get_template_obj_success(self):
         template_name = "test"
         create_container_template(container_type="smartphone",
                                   template_name=template_name,
@@ -1431,11 +1592,11 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         template.delete()
 
-    def test_10_get_template_obj_fail(self):
+    def test_15_get_template_obj_fail(self):
         # Pass non-existing template name
         self.assertRaises(ResourceNotFoundError, get_template_obj, "non-existing")
 
-    def test_11_get_template_by_query(self):
+    def test_16_get_template_by_query(self):
         create_container_template(container_type="smartphone",
                                   template_name="smph",
                                   default=True,
@@ -1445,7 +1606,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
                                   options={"tokens": [{"type": "spass"}]})
         create_container_template(container_type="yubikey",
                                   template_name="yubi",
-                                  options={"tokens": [{"type": "hotp"}]})
+                                  options={})
 
         # Get all templates
         templates_res = get_templates_by_query()
@@ -1476,7 +1637,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
-    def test_12_get_templates_by_query_pagination(self):
+    def test_17_get_templates_by_query_pagination(self):
         # Create templates
         for i in range(20):
             create_container_template(container_type="smartphone",
@@ -1497,7 +1658,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
-    def test_13_compare_templates(self):
+    def test_18_compare_templates(self):
         # same templates but different order of entries
         template_a = {"template_options": {"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},
                                                       {"type": "totp", "genkey": True, "hashlib": "sha256"}]}}
@@ -1519,7 +1680,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         equal = compare_template_dicts(template_b, template_a)
         self.assertFalse(equal)
 
-    def test_14_set_default_template(self):
+    def test_19_set_default_template(self):
         # Set default template
         template1_name = "test"
         create_container_template(container_type="smartphone",
@@ -1561,11 +1722,10 @@ class TokenContainerTemplateTestCase(MyTestCase):
         template2.delete()
         template3.delete()
 
-    def test_15_create_container_with_template_success(self):
+    def test_20_create_container_with_template_success(self):
         # Create template
-        template_options = {"options": {"key_algorithm": "secp384r1"},
-                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
-        create_container_template(container_type="generic",
+        template_options = {"options": {"key_algorithm": "secp384r1"}, "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="smartphone",
                                   template_name="test",
                                   options=template_options)
 
@@ -1587,7 +1747,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # Clean up
         container.delete()
 
-    def test_16_create_container_with_template_fail(self):
+    def test_21_create_container_with_template_fail(self):
         # template and container type differ: container is created but not with template options
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="generic",
@@ -1605,7 +1765,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
         container.delete()
         get_template_obj("test").delete()
 
-    def test_17_compare_container_with_template(self):
+    def test_22_compare_container_with_template(self):
         # create template
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}],
                             "options": {"key_algorithm": "secp384r1", "hash_algorithm": "SHA256"}}
@@ -1616,7 +1776,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         # create container with tokens
         container_params = {"type": "generic", "template": {"name": "test", "container_type": "generic",
-                                                               "template_options": template_options}}
+                                                            "template_options": template_options}}
         container_serial, template_tokens = init_container(container_params)
         container = find_container_by_serial(container_serial)
         for token_details in [{"type": "hotp", "genkey": True}, {"type": "spass"}, {"type": "spass"}]:
