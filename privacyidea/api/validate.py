@@ -452,13 +452,14 @@ def check():
     else:
         serial_list = []
 
-    for serial in serial_list:
-        try:
-            container = find_container_for_token(serial)
-            if container:
-                container.update_last_authentication()
-        except Exception as e:
-            log.info(f"Could not find container for token {serial}: {e}")
+    if success:
+        for serial in serial_list:
+            try:
+                container = find_container_for_token(serial)
+                if container:
+                    container.update_last_authentication()
+            except Exception as e:
+                log.info(f"Could not find container for token {serial}: {e}")
 
     serials = ",".join(serial_list)
     r = send_result(result, rid=2, details=details)
