@@ -568,7 +568,8 @@ def registration_init():
     params.update({'container_registration_url': registration_url})
 
     # Get validity time for the registration
-    registration_ttl_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
+    registration_ttl_policies = Match.generic(g, scope=SCOPE.ENROLL,
+                                              action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
     if len(registration_ttl_policies) > 0:
         registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
         if registration_ttl > 0:
@@ -624,11 +625,13 @@ def registration_finalize():
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
     registration_url = create_endpoint_url(server_url, "container/register/finalize")
     sync_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/init")
+    container_unregister_url = create_endpoint_url(server_url,
+                                                   f"container/register/{container_serial}/terminate/client")
     params.update({'container_registration_url': registration_url})
 
     # Validate registration
     res = container.finalize_registration(params)
-    res.update({'container_sync_url': sync_url})
+    res.update({'container_sync_url': sync_url, "container_unregister_url": container_unregister_url})
 
     return send_result(res)
 
