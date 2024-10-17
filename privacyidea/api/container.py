@@ -568,11 +568,21 @@ def registration_init():
     params.update({'container_registration_url': registration_url})
 
     # Get validity time for the registration
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
-    if len(server_url_policies) > 0:
-        registration_ttl = int(server_url_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
+    registration_ttl_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
+    if len(registration_ttl_policies) > 0:
+        registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
         if registration_ttl > 0:
             params.update({'registration_ttl': registration_ttl})
+
+    # Get ssl verify
+    ssl_verify_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_SSL_VERIFY).policies()
+    if len(ssl_verify_policies) > 0:
+        ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
+        if ssl_verify not in ["True", "False"]:
+            ssl_verify = 'True'
+    else:
+        ssl_verify = 'True'
+    params.update({'ssl_verify': ssl_verify})
 
     # Initialize registration
     res_registration = container.init_registration(params)

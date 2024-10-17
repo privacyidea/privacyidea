@@ -544,7 +544,7 @@ class TokenContainerClass:
         return False
 
     def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, transaction_id=None,
-                           url=None, scope=None, key=None, container=None):
+                           url=None, scope=None, key=None, container=None, device_id=None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -572,6 +572,8 @@ class TokenContainerClass:
                 if url:
                     message += f"|{url}"
                 message += f"|{self.serial}"
+                if device_id:
+                    message += f"|{device_id}"
                 if passphrase:
                     message += f"|{passphrase}"
                 if scope:

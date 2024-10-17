@@ -408,6 +408,7 @@ class ACTION(object):
     PI_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
+    CONTAINER_SSL_VERIFY = "container_ssl_verify"
 
 
 class TYPE(object):
@@ -2432,6 +2433,14 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The time in minutes the user has to do the second step of the registration.'
                           'The default is ten minutes'),
                 'group': GROUP.CONTAINER
+            },
+            ACTION.CONTAINER_SSL_VERIFY: {
+                'type': 'str',
+                'desc': _(
+                    'The container needs to verify the SSL certificate of the privacyIDEA server during registration '
+                    'and synchronization. (default True)'),
+                'group': GROUP.CONTAINER,
+                'value': ['True', 'False']
             }
         },
         SCOPE.AUTH: {

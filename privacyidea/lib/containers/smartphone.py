@@ -41,7 +41,8 @@ log = logging.getLogger(__name__)
 
 
 def create_container_registration_url(nonce, time_stamp, registration_url, container_serial, key_algorithm,
-                                      hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA", ttl=10):
+                                      hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA", ttl=10,
+                                      ssl_verify=True):
     """
     Create a URL for binding a container to a physical container.
 
@@ -55,6 +56,7 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     :param passphrase: Passphrase Prompt to be displayed to the user in the app.
     :param issuer: Issuer of the registration, e.g. 'privacyIDEA'.
     :param ttl: Time to live of the URL in seconds.
+    :param ssl_verify: Whether the smartphone shall verify the SSL certificate of the server.
     :return: URL for binding a container to a physical container.
     """
     url_nonce = quote(nonce.encode("utf-8"))
@@ -65,10 +67,11 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     url_passphrase = quote(passphrase.encode("utf-8"))
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
+    url_ssl_verify = quote(ssl_verify.encode("utf-8"))
 
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
            f"&url={registration_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
-           f"&hash_algorithm={url_hash_algorithm}&passphrase={url_passphrase}{url_extra_data}")
+           f"&hash_algorithm={url_hash_algorithm}&ssl_verify={url_ssl_verify}&passphrase={url_passphrase}{url_extra_data}")
     return url
 
 
@@ -159,12 +162,14 @@ class SmartphoneContainer(TokenContainerClass):
                 "time_stamp": "2020-08-25T14:00:00.000000+00:00",
                 "key_algorithm": "secp384r1",
                 "hash_algorithm": "SHA256",
+                "ssl_verify": <bool>,
                 "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
             }
         """
         registration_url = getParam(params, 'container_registration_url', optional=False)
         nonce = geturandom(20, hex=True)
         extra_data = getParam(params, 'extra_data', optional=True) or {}
+        ssl_verify = getParam(params, 'ssl_verify', optional=False)
 
         # Check if a passphrase is required for the registration
         passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
@@ -213,6 +218,7 @@ class SmartphoneContainer(TokenContainerClass):
                                                    hash_algorithm=hash_algorithm,
                                                    passphrase=passphrase_prompt,
                                                    ttl=registration_ttl,
+                                                   ssl_verify=ssl_verify,
                                                    extra_data=extra_data)
         # Generate QR code
         qr_img = create_img(qr_url)
@@ -246,6 +252,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "signature": <sign(message)>,
                     "message": <nonce|timestamp|registration_url|serial[|passphrase]>,
                     "public_key": <public key of the smartphone base 64 url safe encoded>,
+                    "device_id": <IMEI of the smartphone>,
                     "passphrase": <passphrase> (optional)
                 }
 
@@ -256,9 +263,10 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
         registration_url = getParam(params, "container_registration_url", optional=False)
+        device_id = getParam(params, "device_id", optional=False)
 
         # Verifies challenge
-        valid = self.validate_challenge(signature, pub_key_container, url=registration_url)
+        valid = self.validate_challenge(signature, pub_key_container, url=registration_url, device_id=device_id)
         if not valid:
             raise privacyIDEAError('Could not verify signature!')
 
@@ -274,6 +282,7 @@ class SmartphoneContainer(TokenContainerClass):
         self.add_container_info("public_key_container", pub_key_container_str)
         self.add_container_info("public_key_server", public_key_server_str)
         self.add_container_info("private_key_server", encryptPassword(private_key_server_str))
+        self.add_container_info("device_id", device_id)
         self.add_container_info("registration_state", "registered")
 
         res = {"public_server_key": public_key_server_str}

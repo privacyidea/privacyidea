@@ -835,7 +835,7 @@ class TokenContainerManagementTestCase(MyTestCase):
     def register_smartphone_initialize_success(self, registration_url, passphrase_params=None):
         smartphone_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
-        params = {"container_registration_url": registration_url}
+        params = {"container_registration_url": registration_url, "ssl_verify": "True"}
 
         # passphrase
         if passphrase_params:
@@ -844,11 +844,20 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Prepare
         result = smartphone.init_registration(params)
 
+        # Check result entries
         result_entries = result.keys()
         self.assertIn("nonce", result_entries)
-        self.assertIn("container_url", result_entries)
         self.assertIn("time_stamp", result_entries)
         self.assertIn("key_algorithm", result_entries)
+        self.assertIn("container_url", result_entries)
+
+        # Check url
+        url = result["container_url"]["value"]
+        self.assertIn(smartphone_serial, url)
+        self.assertIn("issuer=privacyIDEA", url)
+        self.assertIn("key_algorithm=secp384r1", url)
+        self.assertIn("hash_algorithm=SHA256", url)
+        self.assertIn("ssl_verify=True", url)
 
         # check container info is set
         container_info = smartphone.get_container_info_dict()
@@ -860,8 +869,9 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         return smartphone_serial, result
 
-    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
-        message = f"{nonce}|{registration_time}|{registration_url}|{serial}"
+    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, device_id,
+                                        passphrase=None):
+        message = f"{nonce}|{registration_time}|{registration_url}|{serial}|{device_id}"
         if passphrase:
             message += f"|{passphrase}"
 
@@ -870,7 +880,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str}
+        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
+                  "device_id": device_id}
 
         return params, private_key_smph
 
@@ -887,9 +898,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
         registration_url = "http://test/container/register/finalize"
         nonce = geturandom(20, hex=True)
+        device_id = geturandom(10, hex=True)
         time_stamp = datetime.now(timezone.utc)
         params, _ = self.mock_smartphone_register_params(nonce, time_stamp,
-                                                         registration_url, smartphone_serial)
+                                                         registration_url, smartphone_serial, device_id)
 
         # Try finalize registration
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
@@ -905,7 +917,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Mock smartphone with wrong nonce
         invalid_nonce = geturandom(20, hex=True)
         params, _ = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
-                                                         registration_url, smartphone_serial)
+                                                         registration_url, smartphone_serial, device_id)
         params.update({"container_registration_url": registration_url})
 
         # Try to finalize registration
@@ -913,7 +925,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock smartphone with invalid public key
         params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                         registration_url, smartphone_serial)
+                                                         registration_url, smartphone_serial, device_id)
         params.update({"container_registration_url": registration_url})
         public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
@@ -923,7 +935,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock smartphone with invalid passphrase
         params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                         registration_url, smartphone_serial,
+                                                         registration_url, smartphone_serial, device_id,
                                                          "different_secret")
         params.update({"container_registration_url": registration_url})
 
@@ -949,7 +961,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Mock smartphone
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
-                                                                         registration_url, smartphone_serial)
+                                                                         registration_url, smartphone_serial,
+                                                                         "1234")
         params.update({"container_registration_url": registration_url})
 
         # Finalize registration
@@ -962,6 +975,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
+        self.assertIn("device_id", container_info_keys)
         self.assertNotEqual("", container_info["public_key_container"], container_info["public_key_server"])
 
         return smartphone_serial, priv_sig_key_smph
@@ -1007,7 +1021,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock smartphone
         params, _ = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
-                                                         registration_url, smartphone_serial,
+                                                         registration_url, smartphone_serial, "1234",
                                                          passphrase_params["passphrase_response"])
         params.update({"container_registration_url": registration_url})
 
@@ -1034,13 +1048,13 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Finalize with old init data
         params, _ = self.mock_smartphone_register_params(init_result_old["nonce"], init_result_old["time_stamp"],
-                                                         registration_url, smartphone_serial)
+                                                         registration_url, smartphone_serial, "1234")
         params.update({"container_registration_url": registration_url})
         self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
 
         # Finalize with new init data
         params, _ = self.mock_smartphone_register_params(init_result_new["nonce"], init_result_new["time_stamp"],
-                                                         registration_url, smartphone_serial)
+                                                         registration_url, smartphone_serial, "1234")
         params.update({"container_registration_url": registration_url})
 
         # Finalize registration
@@ -1724,7 +1738,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
     def test_20_create_container_with_template_success(self):
         # Create template
-        template_options = {"options": {"key_algorithm": "secp384r1"}, "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        template_options = {"options": {"key_algorithm": "secp384r1"},
+                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone",
                                   template_name="test",
                                   options=template_options)

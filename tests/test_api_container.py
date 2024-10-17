@@ -1344,8 +1344,9 @@ class APIContainer(MyApiTestCase):
                                              self.at, 'GET')
         self.assertEqual(result["result"]["value"]["count"], 0)
 
-    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, passphrase=None):
-        message = f"{nonce}|{registration_time}|{registration_url}|{serial}"
+    def mock_smartphone_register_params(self, nonce, registration_time, registration_url, serial, device_id,
+                                        passphrase=None):
+        message = f"{nonce}|{registration_time}|{registration_url}|{serial}|{device_id}"
         if passphrase:
             message += f"|{passphrase}"
 
@@ -1355,7 +1356,7 @@ class APIContainer(MyApiTestCase):
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
         params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
-                  "passphrase": passphrase,
+                  "passphrase": passphrase, "device_id": device_id,
                   "message": message, "container_serial": serial}
 
         return params, private_key_smph
@@ -1398,7 +1399,8 @@ class APIContainer(MyApiTestCase):
                                                                          nonce=init_response_data["nonce"],
                                                                          registration_time=init_response_data[
                                                                              "time_stamp"],
-                                                                         passphrase="top_secret")
+                                                                         passphrase="top_secret",
+                                                                         device_id="1234")
         result = self.request_assert_success('container/register/finalize',
                                              params,
                                              None, 'POST')
@@ -1471,14 +1473,15 @@ class APIContainer(MyApiTestCase):
 
         # Missing container serial
         result = self.request_assert_error(400, 'container/register/finalize',
-                                           {}, None, 'POST')
+                                           {"device_id": "1234"}, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
 
         # Invalid container serial
         result = self.request_assert_error(404, 'container/register/finalize',
-                                           {"container_serial": "invalid_serial"}, None, 'POST')
+                                           {"container_serial": "invalid_serial", "device_id": "1234"},
+                                           None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1505,7 +1508,7 @@ class APIContainer(MyApiTestCase):
                                                                          registration_url="http://test/container/register/finalize",
                                                                          nonce=init_response_data["nonce"],
                                                                          registration_time=init_response_data[
-                                                                             "time_stamp"],
+                                                                             "time_stamp"], device_id="1234",
                                                                          passphrase="top_secret")
         self.request_assert_success('container/register/finalize',
                                     params,
