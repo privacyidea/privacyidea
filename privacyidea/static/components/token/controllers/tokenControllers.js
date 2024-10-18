@@ -499,7 +499,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
             if ($scope.containerSerial !== "createnew" && $scope.containerSerial !== "none") {
                 $scope.form.container_serial = $scope.containerSerial;
+            } else {
+                // Do not send the container_serial if it has no value
+                delete $scope.form.container_serial;
             }
+
 
             TokenFactory.enroll($scope.newUser,
                 $scope.form, $scope.callback,
