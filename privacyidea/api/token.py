@@ -297,7 +297,6 @@ def init():
     user = request.User
 
     token_object = init_token(param, user)
-    log.info("hallo")
     if token_object:
         g.audit_object.log({"success": True})
         # The token was created successfully, so we add token specific
