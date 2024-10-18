@@ -13,7 +13,7 @@ export class AuthService {
   constructor(private http: HttpClient) {
   }
 
-  authenticate(username: string, password: string, realm: string = ''): Observable<any> {
+  authenticate(username: string, password: string, realm: string = ''): Observable<{ result: { status: boolean } }> {
     const loginData = {username, password, realm};
 
     return this.http.post(this.authUrl, JSON.stringify(loginData), {
@@ -23,8 +23,7 @@ export class AuthService {
       }),
       withCredentials: true
     }).pipe(
-      tap(response => {
-        // @ts-ignore
+      tap((response: any) => {
         if (response && response.result && response.result.status) {
           this.isAuthenticated = true;
         }

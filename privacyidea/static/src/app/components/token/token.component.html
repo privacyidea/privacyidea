@@ -4,7 +4,7 @@
     <input #input (keyup)="applyFilter($event)" matInput placeholder=" ">
   </mat-form-field>
 
-  <table (matSortChange)="announceSortChange($event)" [dataSource]="dataSource" class="mat-elevation-z8" mat-table
+  <table (matSortChange)="announceSortChange($event)" [dataSource]="dataSource()" class="mat-elevation-z8" mat-table
          matSort>
     <ng-container *ngFor="let column of columnDefinitions" [matColumnDef]="column.key">
       <th *matHeaderCellDef mat-header-cell mat-sort-header> {{ column.label }}</th>

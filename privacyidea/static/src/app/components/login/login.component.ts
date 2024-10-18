@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, signal} from '@angular/core';
 import {AuthService} from '../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
@@ -15,15 +15,18 @@ import {NgOptimizedImage} from '@angular/common';
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
-  username: string = '';
-  password: string = '';
+  username = signal<string>('');
+  password = signal<string>('');
   private authSecretKey = 'bearer_token';
 
   constructor(private authService: AuthService, private router: Router) {
   }
 
   onSubmit() {
-    this.authService.authenticate(this.username, this.password).subscribe({
+    const usernameValue = this.username();
+    const passwordValue = this.password();
+
+    this.authService.authenticate(usernameValue, passwordValue).subscribe({
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token
           && this.authService.isAuthenticatedUser()) {
@@ -43,5 +46,4 @@ export class LoginComponent {
     localStorage.removeItem(this.authSecretKey);
     this.authService.deauthenticate();
   }
-
 }

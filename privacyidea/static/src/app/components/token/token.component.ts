@@ -1,4 +1,4 @@
-import {Component, inject, ViewChild} from '@angular/core';
+import {Component, inject, signal, ViewChild} from '@angular/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule} from '@angular/material/paginator';
@@ -10,18 +10,18 @@ import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {NgForOf} from '@angular/common';
 
-export interface TokenData {
-  type: string;
-  serial: string;
-  active: string;
-  description: string;
-  fail_counter: number;
-  rollout_status: string;
-  user: string;
-  realm: string;
-  token_realm: string;
-  container: string;
-}
+const columns = [
+  {key: 'serial', label: 'Serial'},
+  {key: 'tokentype', label: 'Type'},
+  {key: 'active', label: 'Status'},
+  {key: 'description', label: 'Description'},
+  {key: 'failcount', label: 'Fail Counter'},
+  {key: 'rollout_state', label: 'Rollout Status'},
+  {key: 'username', label: 'User'},
+  {key: 'user_realm', label: 'Realm'},
+  {key: 'token_realm', label: 'Token Realm'},
+  {key: 'container_serial', label: 'Container'},
+];
 
 @Component({
   selector: 'app-token',
@@ -35,33 +35,20 @@ export interface TokenData {
 })
 export class TokenComponent {
   private _liveAnnouncer = inject(LiveAnnouncer);
-  private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token')}}
-  dataSource = new MatTableDataSource<TokenData>();
-  displayedColumns: string[] = ['serial', 'tokentype', 'active', 'description', 'failcount', 'rollout_state', 'username',
-    'user_realm', 'token_realm', 'container_serial'];
-  columnDefinitions = [
-    {key: 'serial', label: 'Serial'},
-    {key: 'tokentype', label: 'Type'},
-    {key: 'active', label: 'Status'},
-    {key: 'description', label: 'Description'},
-    {key: 'failcount', label: 'Fail Counter'},
-    {key: 'rollout_state', label: 'Rollout Status'},
-    {key: 'username', label: 'User'},
-    {key: 'user_realm', label: 'Realm'},
-    {key: 'token_realm', label: 'Token Realm'},
-    {key: 'container_serial', label: 'Container'},
-  ];
+  private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
+  dataSource = signal(new MatTableDataSource());
+  displayedColumns: string[] = columns.map(column => column.key);
+  columnDefinitions = columns;
 
   constructor(private authService: AuthService, private router: Router, private http: HttpClient) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     }
 
-    // @ts-ignore
     this.http.get('http://127.0.0.1:5000/token', this.headerDict).subscribe({
       next: (response: any) => {
         console.log('Token data', response.result.value.tokens);
-        this.dataSource = new MatTableDataSource(response.result.value.tokens);
+        this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
       }, error: (error: any) => {
         console.error('Failed to get token data', error);
       }
@@ -72,8 +59,8 @@ export class TokenComponent {
   @ViewChild(MatSort) sort: MatSort;
 
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+    this.dataSource().paginator = this.paginator;
+    this.dataSource().sort = this.sort;
   }
 
   announceSortChange(sortState: Sort) {
@@ -86,6 +73,6 @@ export class TokenComponent {
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
+    this.dataSource().filter = filterValue.trim().toLowerCase();
   }
 }
