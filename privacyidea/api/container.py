@@ -560,15 +560,16 @@ def registration_init():
     res = {"container_serial": container_serial}
 
     # Get registration url for the second step
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
+    server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    container.add_container_info("server_url", server_url)
     registration_url = create_endpoint_url(server_url, "container/register/finalize")
     params.update({'container_registration_url': registration_url})
 
     # Get validity time for the registration
-    registration_ttl_policies = Match.generic(g, scope=SCOPE.ENROLL,
+    registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
                                               action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
     if len(registration_ttl_policies) > 0:
         registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
@@ -576,7 +577,7 @@ def registration_init():
             params.update({'registration_ttl': registration_ttl})
 
     # Get ssl verify
-    ssl_verify_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.CONTAINER_SSL_VERIFY).policies()
+    ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
     if len(ssl_verify_policies) > 0:
         ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
         if ssl_verify not in ["True", "False"]:
@@ -619,10 +620,10 @@ def registration_finalize():
     container = find_container_by_serial(container_serial)
 
     # Update params with registration url
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
-    if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    server_url = container.get_container_info_dict().get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
+        server_url = " "
     registration_url = create_endpoint_url(server_url, "container/register/finalize")
     sync_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/init")
     container_unregister_url = create_endpoint_url(server_url,
@@ -637,6 +638,7 @@ def registration_finalize():
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate', methods=['DELETE'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNREGISTER)
 @event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate(container_serial: str):
@@ -706,15 +708,19 @@ def sync_init(container_serial: str):
 
     Further entries are possible depending on the container type.
     """
+    container = find_container_by_serial(container_serial)
+    registration_state = container.get_container_info_dict().get("registration_state")
+    if registration_state != "registered":
+        raise privacyIDEAError(f"Container with serial {container_serial} is not registered.")
+
     # Get synchronization url for the second step
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
-    if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    server_url = container.get_container_info_dict().get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
+        server_url = " "
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
 
     # Create challenge
-    container = find_container_by_serial(container_serial)
     params = request.all_data
     params.update({'scope': synchronize_url})
     res = container.init_sync(request.all_data)
@@ -764,23 +770,17 @@ def sync_finalize(container_serial: str):
     params = request.all_data
     container_client_str = getParam(params, "container_dict_client", optional=True)
     container_client = json.loads(container_client_str) if container_client_str else {}
+    container = find_container_by_serial(container_serial)
 
     # Get synchronization url for the second step
-    server_url_policies = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.PI_SERVER_URL).policies()
-    if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot synchronize container.")
-    if len(server_url_policies) > 1:
-        # TODO: Error or only log or check for priority and raise error in case of same priority?
-        log.debug(
-            f"Multiple enrollment policies {ACTION.PI_SERVER_URL}. "
-            f"The first one {server_url_policies[0]['action'][ACTION.PI_SERVER_URL]} is used.")
-        # raise PolicyError(f"Multiple enrollment policies {ACTION.PI_SERVER_URL}. Cannot synchronize container.")
-    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+    server_url = container.get_container_info_dict().get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
+        server_url = " "
     synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
     params.update({'scope': synchronize_url})
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
-    container = find_container_by_serial(container_serial)
     container.check_synchronization_challenge(params)
     container_dict = container.synchronize_container_details(container_client)
 
@@ -838,6 +838,7 @@ def get_class_options():
 
 # TEMPLATES
 @container_blueprint.route('/templates', methods=['GET'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
 @log_with(log)
 def get_template():
     """
@@ -889,6 +890,7 @@ def get_template_options():
 
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_CREATE)
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
@@ -935,6 +937,7 @@ def create_template_with_name(container_type, template_name):
 
 
 @container_blueprint.route('template/<string:template_name>', methods=['DELETE'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_DELETE)
 @log_with(log)
 def delete_template(template_name):
     """
@@ -946,6 +949,8 @@ def delete_template(template_name):
 
 
 @container_blueprint.route('template/<string:template_name>/compare', methods=['GET'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def compare_template_with_containers(template_name):
     """

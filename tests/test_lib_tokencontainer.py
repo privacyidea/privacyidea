@@ -1044,7 +1044,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # second init
         init_result_new = smartphone.init_registration(
-            {"container_serial": smartphone_serial, "container_registration_url": registration_url})
+            {"container_serial": smartphone_serial, "container_registration_url": registration_url,
+             "ssl_verify": "True"})
 
         # Finalize with old init data
         params, _ = self.mock_smartphone_register_params(init_result_old["nonce"], init_result_old["time_stamp"],

@@ -215,6 +215,7 @@ class SCOPE(object):
     ENROLL = "enrollment"
     WEBUI = "webui"
     REGISTER = "register"
+    CONTAINER = "container"
 
 
 class ACTION(object):
@@ -405,10 +406,14 @@ class ACTION(object):
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
     CONTAINER_REGISTER = "container_register"
+    CONTAINER_UNREGISTER = "container_unregister"
     PI_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
     CONTAINER_SSL_VERIFY = "container_ssl_verify"
+    CONTAINER_TEMPLATE_CREATE = "container_template_create"
+    CONTAINER_TEMPLATE_DELETE = "container_template_delete"
+    CONTAINER_TEMPLATE_LIST = "container_template_list"
 
 
 class TYPE(object):
@@ -439,6 +444,7 @@ class GROUP(object):
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
     CONTAINER = "container"
+    REGISTRATION = "registration and synchronization"
 
 
 class MAIN_MENU(object):
@@ -2108,6 +2114,22 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_REGISTER: {'type': 'bool',
                                         'desc': _('Admin is allowed to register containers for synchronization.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
+                                        'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
+                                        'desc': _('Admin is allowed to create and edit container templates.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
+                                        'desc': _('Admin is allowed to delete templates.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
+                                        'desc': _('Admin is allowed to list templates and view their details.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
@@ -2288,6 +2310,22 @@ def get_static_policy_definitions(scope=None):
                                         'desc': _(
                                             'Users are allowed to register their own containers for synchronization.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
+                                          'desc': _('Users are allowed to unregister containers from synchronization.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
+                                               'desc': _('Users are allowed to create and edit container templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
+                                               'desc': _('Users are allowed to delete templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
+                                        'desc': _('Users are allowed to list templates and view their details.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
@@ -2421,26 +2459,6 @@ def get_static_policy_definitions(scope=None):
                 'multiple': True,
                 'value': [token_obj.get_class_type() for token_obj in get_token_classes() if
                           token_obj.can_verify_enrollment]
-            },
-            ACTION.PI_SERVER_URL: {
-                'type': 'str',
-                'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
-                          'It is used to build URLs the container can contact for registration and synchronisation.'),
-                'group': GROUP.CONTAINER
-            },
-            ACTION.CONTAINER_REGISTRATION_TTL: {
-                'type': 'int',
-                'desc': _('The time in minutes the user has to do the second step of the registration.'
-                          'The default is ten minutes'),
-                'group': GROUP.CONTAINER
-            },
-            ACTION.CONTAINER_SSL_VERIFY: {
-                'type': 'str',
-                'desc': _(
-                    'The container needs to verify the SSL certificate of the privacyIDEA server during registration '
-                    'and synchronization. (default True)'),
-                'group': GROUP.CONTAINER,
-                'value': ['True', 'False']
             }
         },
         SCOPE.AUTH: {
@@ -2827,6 +2845,28 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
+            }
+        },
+        SCOPE.CONTAINER: {
+            ACTION.PI_SERVER_URL: {
+                'type': 'str',
+                'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
+                          'It is used to build URLs the container can contact for registration and synchronisation.'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_REGISTRATION_TTL: {
+                'type': 'int',
+                'desc': _('The time in minutes the user has to do the second step of the registration.'
+                          'The default is ten minutes'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_SSL_VERIFY: {
+                'type': 'str',
+                'desc': _(
+                    'The container needs to verify the SSL certificate of the privacyIDEA server during registration '
+                    'and synchronization. (default True)'),
+                'group': GROUP.REGISTRATION,
+                'value': ['True', 'False']
             }
         }
 

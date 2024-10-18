@@ -234,6 +234,7 @@ class SmartphoneContainer(TokenContainerClass):
                            "time_stamp": time_stamp_iso,
                            "key_algorithm": key_algorithm,
                            "hash_algorithm": hash_algorithm,
+                           "ssl_verify": ssl_verify,
                            "passphrase_prompt": passphrase_prompt}
 
         return response_detail
@@ -292,12 +293,12 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Terminate the synchronisation of the container with privacyIDEA.
         """
-        # Delete keys
+        # Delete registration / synchronization info
         self.delete_container_info("public_key_container")
         self.delete_container_info("public_key_server")
         self.delete_container_info("private_key_server")
-
-        # Delete registration state
+        self.delete_container_info("device_id")
+        self.delete_container_info("server_url")
         self.delete_container_info("registration_state")
 
         # Delete challenges
