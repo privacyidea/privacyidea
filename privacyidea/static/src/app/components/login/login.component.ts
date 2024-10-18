@@ -30,9 +30,8 @@ export class LoginComponent {
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token
           && this.authService.isAuthenticatedUser()) {
-          console.log('Login successful', response);
           localStorage.setItem(this.authSecretKey, response.result.value.token);
-          this.router.navigate(['token']).then(r => console.log('Navigated to token page', r));
+          this.router.navigate(['token']);
         } else {
           console.warn('Login failed. Challenge response required.');
         }

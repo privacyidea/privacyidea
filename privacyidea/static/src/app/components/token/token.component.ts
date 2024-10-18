@@ -47,7 +47,7 @@ export class TokenComponent {
 
     this.http.get('http://127.0.0.1:5000/token', this.headerDict).subscribe({
       next: (response: any) => {
-        console.log('Token data', response.result.value.tokens);
+        console.log('Token data', response.result.value.tokens); // TODO map values correctly and remove this line
         this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
       }, error: (error: any) => {
         console.error('Failed to get token data', error);
@@ -55,12 +55,20 @@ export class TokenComponent {
     });
   }
 
-  @ViewChild(MatPaginator) paginator: MatPaginator;
-  @ViewChild(MatSort) sort: MatSort;
+  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
+  @ViewChild(MatSort) sort: MatSort | null = null;
 
   ngAfterViewInit() {
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
+    if (this.paginator) {
+      this.dataSource().paginator = this.paginator;
+    } else {
+      console.warn('Paginator not found');
+    }
+    if (this.sort) {
+      this.dataSource().sort = this.sort;
+    } else {
+      console.warn('Sort not found');
+    }
   }
 
   announceSortChange(sortState: Sort) {
