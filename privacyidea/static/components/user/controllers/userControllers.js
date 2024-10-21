@@ -380,10 +380,9 @@ angular.module("privacyideaApp")
                 }
                 let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
                 ContainerFactory.addTokenToContainer(params, function (data) {
-
+                    // Reload the token to show the container
+                    $scope._getUserToken();
                 });
-                // Reload the token to show the container
-                $scope._getUserToken();
                 $scope.showTokenOfUser = true;
                 $scope.containerSerial = null;
             };
