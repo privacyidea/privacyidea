@@ -3603,5 +3603,4 @@ class TokenContainerRealm(MethodsMixin, db.Model):
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"), primary_key=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
 
-    __table_args__ = (db.UniqueConstraint('container_id', 'realm_id'),
-                      {'mysql_row_format': 'DYNAMIC'})
+    __table_args__ = ({'mysql_row_format': 'DYNAMIC'})
