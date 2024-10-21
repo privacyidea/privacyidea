@@ -114,4 +114,4 @@ The body of the registration email. Use the ``{regkey}`` as tag for the
 registration key.
 
 
-.. [#pythonre] https://docs.python.org/2/library/re.html
+.. [#pythonre] https://docs.python.org/3/library/re.html
