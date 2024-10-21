@@ -37,7 +37,8 @@ class APIContainerAuthorization(MyApiTestCase):
     def request_denied_assert_403(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(403, res.status_code, res.json)
@@ -47,7 +48,8 @@ class APIContainerAuthorization(MyApiTestCase):
     def request_assert_200(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
@@ -723,7 +725,9 @@ class APIContainerAuthorization(MyApiTestCase):
         token_2 = init_token({"genkey": 1, "realm": self.realm2})
         add_token_to_container(container_serial, token_1.get_serial(), user_role='admin')
         add_token_to_container(container_serial, token_2.get_serial(), user_role='admin')
-        json = self.request_assert_200('/container/', {"container_serial": container_serial}, self.at, 'GET')
+        json = self.request_assert_200('/container/',
+                                       {"container_serial": container_serial},
+                                       self.at, 'GET')
         tokens = json["result"]["value"]["containers"][0]["tokens"]
         # first token: all information
         self.assertEqual(token_1.get_serial(), tokens[0]["serial"])
@@ -742,7 +746,8 @@ class APIContainer(MyApiTestCase):
     def request_assert_success(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
@@ -752,7 +757,8 @@ class APIContainer(MyApiTestCase):
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(status_code, res.status_code, res.json)
@@ -762,7 +768,8 @@ class APIContainer(MyApiTestCase):
     def request_assert_405(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
@@ -771,7 +778,8 @@ class APIContainer(MyApiTestCase):
     def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
@@ -1097,7 +1105,7 @@ class APIContainer(MyApiTestCase):
                                     {}, self.at, 'POST')
 
         # Update last seen invalid container serial
-        self.request_assert_error(404, f'/container/wrong_serial/lastseen',
+        self.request_assert_error(404, '/container/wrong_serial/lastseen',
                                   {}, self.at, 'POST')
 
         # Update last seen without container serial

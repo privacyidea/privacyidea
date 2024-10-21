@@ -6,7 +6,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token)
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
@@ -18,12 +18,10 @@ from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION,
                                               PUBLIC_KEY_SERVER,
                                               POLL_ONLY)
 from privacyidea.lib.utils import b32encode_and_unicode
-from datetime import datetime, timedelta
-from pytz import utc
-from base64 import b32decode, b32encode
+from datetime import datetime
+from base64 import b32encode
 import mock
 import responses
-from google.oauth2 import service_account
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
 
@@ -94,6 +92,7 @@ class TtypeAPITestCase(MyApiTestCase):
                                                  "session": "12345"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res.status_code)
+
 
 class TtypePushAPITestCase(MyApiTestCase):
     """
@@ -304,9 +303,9 @@ class TtypePushAPITestCase(MyApiTestCase):
         # now check that we receive the challenge when polling
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
-                                           data={"serial": serial,
-                                                 "timestamp": ts,
-                                                 "signature": b32encode(sig)}):
+                                           query_string={"serial": serial,
+                                                         "timestamp": ts,
+                                                         "signature": b32encode(sig)}):
             res = self.app.full_dispatch_request()
 
             # check that the serial was set in flask g (via before_request in ttype.py)
@@ -468,9 +467,9 @@ class TtypePushAPITestCase(MyApiTestCase):
                                                hashes.SHA256())
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
-                                           data={"serial": tokenobj.token.serial,
-                                                 "timestamp": timestamp,
-                                                 "signature": b32encode(sig)}):
+                                           query_string={"serial": tokenobj.token.serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
@@ -493,9 +492,9 @@ class TtypePushAPITestCase(MyApiTestCase):
                                                hashes.SHA256())
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
-                                           data={"serial": tokenobj.token.serial,
-                                                 "timestamp": timestamp,
-                                                 "signature": b32encode(sig)}):
+                                           query_string={"serial": tokenobj.token.serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")

@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, request, Response
+from flask import Flask
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -79,23 +79,6 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
 
 migrate = Migrate()
-
-
-class PiResponseClass(Response):
-    """Custom Response class overwriting the flask.Response.
-    To avoid caching problems with the json property in the Response class,
-    the property is overwritten using a non-caching approach.
-    """
-    @property
-    def json(self):
-        """This will contain the parsed JSON data if the mimetype indicates
-        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
-        will be ``None``.
-        Caching of the json data is disabled.
-        """
-        return self.get_json(cache=False)
-
-    default_mimetype = 'application/json'
 
 
 def create_app(config_name="development",
@@ -194,14 +177,7 @@ def create_app(config_name="development",
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
-    babel = Babel()
-    babel.init_app(app)
-
-    @babel.localeselector
-    def get_locale():
-        return get_accepted_language(request)
-
-    app.response_class = PiResponseClass
+    Babel(app, locale_selector=get_accepted_language)
 
     # Setup logging
     log_read_func = {

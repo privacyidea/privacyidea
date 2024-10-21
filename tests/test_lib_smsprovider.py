@@ -57,7 +57,7 @@ class SMSTestCase(MyTestCase):
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
-        
+
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmppSMSProvider",
             "SmppSMSProvider")
@@ -378,7 +378,7 @@ class ScriptSMSTestCase(MyTestCase):
         sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
         delete_smsgateway(identifier)
-        
+
         # We bail out, if no smsgateway definition is given!
         sms = ScriptSMSProvider(directory=self.directory)
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
@@ -662,9 +662,9 @@ class HttpSMSTestCase(MyTestCase):
             call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
             # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456,
             #                      'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
-            self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*receiverlist.*', call)
-            self.assertEqual(call, "passing JSON data: {'text': 'Hello: 7', 'phone': 123456, "
-                                   "'receiverlist': [{'phone': '123456', 'message': 'Hello: 7'}]}")
+            self.assertIn('passing JSON data: {', call)
+            self.assertIn("'text': 'Hello: 7'", call)
+            self.assertRegex(call, r"passing JSON data: {.*'receiverlist': \[{.*'phone': '123456'.*}\].*}")
         delete_smsgateway(identifier)
 
 

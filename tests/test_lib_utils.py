@@ -155,7 +155,7 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(AddrFormatError, parse_proxy, proxy_def)
         # 10.0.0.12 is not allowed to map because the proxy settings are invalid
         self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
-                         IPAddress("10.0.12"))
+                         IPAddress("10.0.0.12"))
 
         # check paths with several hops
         # 1.2.3.4 -------> 10.0.0.1 -------> 192.168.1.1 --------> privacyIDEA
