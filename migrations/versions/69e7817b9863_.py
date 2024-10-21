@@ -88,7 +88,6 @@ def upgrade():
                         sa.ForeignKeyConstraint(['container_id'], ['tokencontainer.id'], ),
                         sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
                         sa.PrimaryKeyConstraint('container_id', 'realm_id'),
-                        sa.UniqueConstraint('container_id', 'realm_id'),
                         mysql_row_format='DYNAMIC'
                         )
     except (OperationalError, ProgrammingError) as exx:

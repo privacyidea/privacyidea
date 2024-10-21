@@ -284,23 +284,23 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     if active is not None:
         # Filter active or inactive tokens
         if active is True:
-            sql_query = sql_query.where(Token.active.is_(True))
+            sql_query = sql_query.where(Token.active == True)
         else:
-            sql_query = sql_query.where(Token.active.is_(False))
+            sql_query = sql_query.where(Token.active == False)
 
     if revoked is not None:
         # Filter revoked or not revoked tokens
         if revoked is True:
-            sql_query = sql_query.where(Token.revoked.is_(True))
+            sql_query = sql_query.where(Token.revoked == True)
         else:
-            sql_query = sql_query.where(Token.revoked.is_(False))
+            sql_query = sql_query.where(Token.revoked == False)
 
     if locked is not None:
         # Filter revoked or not revoked tokens
         if locked is True:
-            sql_query = sql_query.where(Token.locked.is_(True))
+            sql_query = sql_query.where(Token.locked == True)
         else:
-            sql_query = sql_query.where(Token.locked.is_(False))
+            sql_query = sql_query.where(Token.locked == False)
 
     if maxfail is not None:
         # Filter tokens, that reached maxfail
@@ -309,7 +309,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         else:
             sql_query = sql_query.filter(Token.maxfail > Token.failcount)
 
-    if rollout_state is not None:
+    if rollout_state is not None and rollout_state.strip("*"):
         # Filter for tokens with the given rollout state
         if "*" in rollout_state:
             # match with "like"
