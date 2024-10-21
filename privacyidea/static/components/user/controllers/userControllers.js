@@ -335,7 +335,8 @@ angular.module("privacyideaApp")
             $scope.containerSelected = false;
             // Enable the button only if a container is selected
             $scope.$watch('containerSerial', function (newValue, oldValue) {
-                $scope.containerSelected = (newValue != null && newValue != undefined && newValue != "createnew");
+                $scope.containerSelected = (newValue !== null && newValue !== undefined
+                    && newValue != "createnew" && newValue != "none");
             });
 
             // Selection looks like this {"TOTP0001B29F":{"totp":true}, "OATH0002EB1F":{"hotp":false}}
