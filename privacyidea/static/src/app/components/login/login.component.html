@@ -1,11 +1,11 @@
-<div class="login-container">
-  <img alt="logo" class="logo" height="1856" ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
-       width="1857"/>
-  <h2 class="login-title">Login</h2>
+<div aria-label="Login Container" class="login-container">
+  <img alt="logo" aria-label="Logo" class="logo" height="1856"
+       ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png" width="1857"/>
+  <img alt="logo-text" aria-label="Logo Text" class="logo-text" height="559"
+       ngSrc="static/dist/privacyidea-webui/browser/assets/logo-text.png" width="2947"/>
 
-  <form (ngSubmit)="onSubmit()" class="login-form">
-
-    <mat-form-field appearance="outline">
+  <form (ngSubmit)="onSubmit()" aria-label="Login Form" class="login-form">
+    <mat-form-field appearance="outline" aria-label="Username Field">
       <mat-label>Username</mat-label>
       <input
         [(ngModel)]="username"
@@ -16,7 +16,7 @@
         type="text"/>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" aria-label="Password Field">
       <mat-label>Password</mat-label>
       <input
         [(ngModel)]="password"
@@ -27,6 +27,8 @@
         type="password"/>
     </mat-form-field>
 
-    <button color="primary" mat-flat-button type="submit">Login</button>
+    <button aria-label="Login Button" class="login-btn" extended mat-fab type="submit">Login
+      <mat-icon iconPositionEnd>login</mat-icon>
+    </button>
   </form>
 </div>

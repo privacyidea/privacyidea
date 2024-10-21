@@ -1,0 +1,35 @@
+<div class="header-container">
+  <div class="brand">
+    <img alt="logo" class="logo" height="1856" ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
+         width="1857"/>
+  </div>
+
+  <nav class="nav-menu">
+    <a (click)="navigateTo('/token')" class="active" extended mat-fab>
+      <mat-icon>shield</mat-icon>
+      Token</a>
+    <a extended href="#" mat-fab>
+      <mat-icon>supervised_user_circle</mat-icon>
+      User</a>
+    <a extended href="#" mat-fab>
+      <mat-icon>dns</mat-icon>
+      Machines</a>
+    <a extended href="#" mat-fab>
+      <mat-icon>miscellaneous_services</mat-icon>
+      Config</a>
+    <a extended href="#" mat-fab>
+      <mat-icon>manage_search</mat-icon>
+      Audit</a>
+    <a extended href="#" mat-fab>
+      <mat-icon>grid_view</mat-icon>
+      Components</a>
+  </nav>
+
+  <a (click)="refreshPage()" class="refresh-btn">
+    <mat-icon>refresh</mat-icon>
+  </a>
+
+  <button class="profile-btn" mat-fab>
+    <mat-icon>account_box</mat-icon>
+  </button>
+</div>

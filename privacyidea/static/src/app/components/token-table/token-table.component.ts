@@ -30,10 +30,10 @@ const columns = [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
     MatSortModule, NgForOf
   ],
-  templateUrl: './token.component.html',
-  styleUrl: './token.component.css'
+  templateUrl: './token-table.component.html',
+  styleUrl: './token-table.component.css'
 })
-export class TokenComponent {
+export class TokenTableComponent {
   private _liveAnnouncer = inject(LiveAnnouncer);
   private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
   dataSource = signal(new MatTableDataSource());

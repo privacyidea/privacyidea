@@ -1,12 +1,21 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
 import {LoginComponent} from './components/login/login.component';
-import {TokenComponent} from './components/token/token.component';
+import {TokenTableComponent} from './components/token-table/token-table.component';
+import {GridLayoutComponent} from './components/grid-layout/grid-layout.component';
 import {AuthGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
-  {path: '', component: LoginComponent},
-  {path: 'token', component: TokenComponent, canActivate: [AuthGuard]},
+  {path: 'login', component: LoginComponent},
+  {
+    path: '',
+    component: GridLayoutComponent,
+    children: [
+      {path: 'token', component: TokenTableComponent, canActivate: [AuthGuard]},
+      {path: '', redirectTo: '/login', pathMatch: 'full'},
+    ]
+  },
+  {path: '**', redirectTo: '/login'}
 ];
 
 @NgModule({

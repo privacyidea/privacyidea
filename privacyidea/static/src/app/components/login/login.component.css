@@ -7,13 +7,17 @@
 }
 
 .logo {
-  width: 12%;
+  width: 10%;
   height: auto;
+  border-radius: 50%;
+  box-shadow: var(--box-shadow);
   margin-bottom: 20px;
 }
 
-.login-title {
-  margin-bottom: 30px;
+.logo-text {
+  width: 20%;
+  height: auto;
+  margin-bottom: 20px;
 }
 
 .login-form {
@@ -28,6 +32,20 @@ mat-form-field {
   margin-bottom: 16px;
 }
 
-button {
-  width: 100%;
+.login-btn {
+  text-decoration: none;
+  color: #333;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  background: #f8f9fa;
+  box-shadow: var(--box-shadow-inset);
+  background: var(--background-secondary-inset);
 }
+
+.login-btn:hover {
+  box-shadow: var(--box-shadow);
+  background: var(--background-primary);
+  color: #fff;
+  transform: translateY(-2px);
+}
+

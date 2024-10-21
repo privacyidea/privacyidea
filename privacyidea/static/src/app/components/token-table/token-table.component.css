@@ -1,0 +1,26 @@
+table {
+  width: 100%;
+}
+
+.mat-mdc-form-field {
+  font-size: 14px;
+  width: 100%;
+}
+
+.token-table-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.token-table {
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  max-width: 1200px;
+  padding: 10px;
+  margin-top: 20px;
+  box-shadow: var(--box-shadow);
+  background-color: #E0E2EC;
+  border-radius: var(--border-radius);
+}
