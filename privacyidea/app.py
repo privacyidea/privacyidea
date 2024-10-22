@@ -306,6 +306,8 @@ class PrefixMiddleware(object):
         self.prefix = prefix
 
     def __call__(self, environ, start_response):
+        log = logging.getLogger(__name__)
+        log.info("PrefixMiddleware: %s, %s", environ['PATH_INFO'], environ['SCRIPT_NAME']);
         if environ['PATH_INFO'].startswith(self.prefix):
             environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
             environ['SCRIPT_NAME'] = self.prefix
