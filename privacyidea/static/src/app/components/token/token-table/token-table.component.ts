@@ -5,7 +5,7 @@ import {MatPaginator, MatPaginatorModule} from '@angular/material/paginator';
 import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
 import {LiveAnnouncer} from '@angular/cdk/a11y';
-import {AuthService} from '../../services/auth/auth.service';
+import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {NgForOf} from '@angular/common';
@@ -24,7 +24,7 @@ const columns = [
 ];
 
 @Component({
-  selector: 'app-token',
+  selector: 'app-token-table',
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,

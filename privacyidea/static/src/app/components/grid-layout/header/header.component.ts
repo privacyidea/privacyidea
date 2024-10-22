@@ -2,7 +2,7 @@ import {Component} from '@angular/core';
 import {NgOptimizedImage} from '@angular/common';
 import {MatFabAnchor, MatFabButton} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {Router} from '@angular/router';
+import {RouterLink} from '@angular/router';
 
 @Component({
   selector: 'app-header',
@@ -11,20 +11,15 @@ import {Router} from '@angular/router';
     NgOptimizedImage,
     MatFabButton,
     MatFabAnchor,
-    MatIconModule
+    MatIconModule,
+    RouterLink
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })
 export class HeaderComponent {
-  constructor(private router: Router) {
-  }
 
   refreshPage() {
     window.location.reload();
-  }
-
-  navigateTo(path: string): void {
-    this.router.navigate([path]);
   }
 }

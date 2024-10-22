@@ -14,7 +14,7 @@ body {
   --background-secondary: linear-gradient(145deg, #ffffff, #e6e6e6);
   --background-secondary-inset: linear-gradient(5deg, #e6e6e6, #ffffff);
   --background-green: linear-gradient(145deg, #a4cc00, #8aac00);
-  --box-shadow: 6px 6px 4px #d3d4d5, -8px -8px 16px #ffffff;
+  --box-shadow: 4px 4px 4px #d3d4d5, -8px -8px 16px #ffffff;
   --box-shadow-inset: inset 4px 4px 8px #d3d4d5, inset -8px -8px 16px #ffffff;
   --border-radius: 3px;
 }
