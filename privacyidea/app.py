@@ -148,9 +148,10 @@ def create_app(config_name="development",
     app.config.from_envvar(ENV_KEY, silent=True)
 
     prefix = app.config.get("PI_URL_PREFIX", "")
+    app.debug = True
     if prefix != "":
         sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
-        app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
+        #app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
 
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
