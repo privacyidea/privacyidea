@@ -147,10 +147,10 @@ def create_app(config_name="development",
     # If this file does not exist, we create an error!
     app.config.from_envvar(ENV_KEY, silent=True)
 
-    # prefix = app.config.get("PI_URL_PREFIX", "")
-    # if prefix != "":
-    #     sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
-    #     app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
+    prefix = app.config.get("PI_URL_PREFIX", "")
+    if prefix != "":
+        sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
+        app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
 
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
