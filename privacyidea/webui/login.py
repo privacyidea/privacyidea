@@ -73,12 +73,12 @@ def before_request():
 
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
-    instance = request.script_root
+    instance = "/mfa/"
     
     prefix = current_app.config.get("PI_URL_PREFIX", "")
-    sys.stdout.write("PREFIX: {0!s}".format(prefix))
-    if instance == "/":
-        instance = prefix
+    sys.stderr.write("PREFIX: {0!s}".format(prefix))
+    if instance == (prefix + "/"):
+        instance = prefix + instance[5:]
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
