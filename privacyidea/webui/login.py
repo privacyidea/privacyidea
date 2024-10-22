@@ -73,7 +73,11 @@ def before_request():
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
     instance = request.script_root
-    if instance == "/":
+    
+    prefix = current_app.config.get("PI_URL_PREFIX", "")
+    if instance.startswith(prefix) & instance[len(prefix):] == "/":
+        instance = prefix
+    elif instance == "/":
         instance = ""
     # The backend URL should come from the configuration of the system.
     backend_url = ""
