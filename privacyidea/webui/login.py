@@ -76,9 +76,12 @@ def single_page_application():
     instance = request.script_root
     
     prefix = current_app.config.get("PI_URL_PREFIX", "")
-    if instance == (prefix + "/"):
-        instance = prefix + instance[5:]
-        
+    if prefix == "" and instance == "/":
+        instance = ""    
+    elif instance.startswith(prefix) == False:
+        instance = prefix + instance
+    
+
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
