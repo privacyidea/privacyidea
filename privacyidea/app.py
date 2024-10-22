@@ -147,43 +147,46 @@ def create_app(config_name="development",
     # If this file does not exist, we create an error!
     app.config.from_envvar(ENV_KEY, silent=True)
 
+    prefix = app.config.get("PI_URL_PREFIX", "")
+    if prefix != "":
+        app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
+
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
     app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
-    prefix = app.config.get("PI_URL_PREFIX", "")
 
-    app.register_blueprint(validate_blueprint, url_prefix="${prefix}/validate")
-    app.register_blueprint(token_blueprint, url_prefix="${prefix}/token")
-    app.register_blueprint(system_blueprint, url_prefix="${prefix}/system")
-    app.register_blueprint(resolver_blueprint, url_prefix="${prefix}/resolver")
-    app.register_blueprint(realm_blueprint, url_prefix="${prefix}/realm")
-    app.register_blueprint(defaultrealm_blueprint, url_prefix="${prefix}/defaultrealm")
-    app.register_blueprint(policy_blueprint, url_prefix="${prefix}/policy")
-    app.register_blueprint(login_blueprint, url_prefix="${prefix}/")
-    app.register_blueprint(jwtauth, url_prefix="${prefix}/auth")
-    app.register_blueprint(user_blueprint, url_prefix="${prefix}/user")
-    app.register_blueprint(audit_blueprint, url_prefix="${prefix}/audit")
-    app.register_blueprint(machineresolver_blueprint, url_prefix="${prefix}/machineresolver")
-    app.register_blueprint(machine_blueprint, url_prefix="${prefix}/machine")
-    app.register_blueprint(application_blueprint, url_prefix="${prefix}/application")
-    app.register_blueprint(caconnector_blueprint, url_prefix="${prefix}/caconnector")
-    app.register_blueprint(cert_blueprint, url_prefix="${prefix}/certificate")
-    app.register_blueprint(ttype_blueprint, url_prefix="${prefix}/ttype")
-    app.register_blueprint(register_blueprint, url_prefix="${prefix}/register")
-    app.register_blueprint(smtpserver_blueprint, url_prefix="${prefix}/smtpserver")
-    app.register_blueprint(recover_blueprint, url_prefix="${prefix}/recover")
-    app.register_blueprint(radiusserver_blueprint, url_prefix="${prefix}/radiusserver")
-    app.register_blueprint(periodictask_blueprint, url_prefix="${prefix}/periodictask")
+    app.register_blueprint(validate_blueprint, url_prefix='/validate')
+    app.register_blueprint(token_blueprint, url_prefix='/token')
+    app.register_blueprint(system_blueprint, url_prefix='/system')
+    app.register_blueprint(resolver_blueprint, url_prefix='/resolver')
+    app.register_blueprint(realm_blueprint, url_prefix='/realm')
+    app.register_blueprint(defaultrealm_blueprint, url_prefix='/defaultrealm')
+    app.register_blueprint(policy_blueprint, url_prefix='/policy')
+    app.register_blueprint(login_blueprint, url_prefix='/')
+    app.register_blueprint(jwtauth, url_prefix='/auth')
+    app.register_blueprint(user_blueprint, url_prefix='/user')
+    app.register_blueprint(audit_blueprint, url_prefix='/audit')
+    app.register_blueprint(machineresolver_blueprint, url_prefix='/machineresolver')
+    app.register_blueprint(machine_blueprint, url_prefix='/machine')
+    app.register_blueprint(application_blueprint, url_prefix='/application')
+    app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
+    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
+    app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
+    app.register_blueprint(register_blueprint, url_prefix='/register')
+    app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
+    app.register_blueprint(recover_blueprint, url_prefix='/recover')
+    app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
+    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
     app.register_blueprint(privacyideaserver_blueprint,
-                           url_prefix="${prefix}/privacyideaserver")
-    app.register_blueprint(eventhandling_blueprint, url_prefix="${prefix}/event")
-    app.register_blueprint(smsgateway_blueprint, url_prefix="${prefix}/smsgateway")
-    app.register_blueprint(client_blueprint, url_prefix="${prefix}/client")
-    app.register_blueprint(subscriptions_blueprint, url_prefix="${prefix}/subscriptions")
-    app.register_blueprint(monitoring_blueprint, url_prefix="${prefix}/monitoring")
-    app.register_blueprint(tokengroup_blueprint, url_prefix="${prefix}/tokengroup")
-    app.register_blueprint(serviceid_blueprint, url_prefix="${prefix}/serviceid")
-    app.register_blueprint(container_blueprint, url_prefix="${prefix}/container")
+                           url_prefix='/privacyideaserver')
+    app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
+    app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
+    app.register_blueprint(client_blueprint, url_prefix='/client')
+    app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
+    app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
+    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
+    app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+    app.register_blueprint(container_blueprint, url_prefix='/container')
 
     # Set up Plug-Ins
     db.init_app(app)
@@ -295,3 +298,17 @@ def create_app(config_name="development",
               f"and the template folder {app.template_folder}")
 
     return app
+
+class PrefixMiddleware(object):
+    def __init__(self, app, prefix=''):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'].startswith(self.prefix):
+            environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+            environ['SCRIPT_NAME'] = self.prefix
+            return self.app(environ, start_response)
+        else:
+            start_response('404', [('Content-Type', 'text/plain')])
+        return ["This url does not belong to the app.".encode()]

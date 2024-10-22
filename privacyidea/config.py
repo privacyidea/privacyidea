@@ -45,6 +45,7 @@ class Config(object):
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "tests/testdata/private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "tests/testdata/public.pem")
+    PI_URL_PREFIX = os.environ.get('PI_URL_PREFIX')
     PI_LOGFILE = "privacyidea.log"
     PI_LOGLEVEL = logging.INFO
     CACHE_TYPE = "simple"
