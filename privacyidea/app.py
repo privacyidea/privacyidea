@@ -147,12 +147,6 @@ def create_app(config_name="development",
     # If this file does not exist, we create an error!
     app.config.from_envvar(ENV_KEY, silent=True)
 
-    prefix = app.config.get("PI_URL_PREFIX", "")
-    app.debug = True
-    if prefix != "":
-        sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
-        #app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
-
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
     app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
@@ -300,19 +294,3 @@ def create_app(config_name="development",
               f"and the template folder {app.template_folder}")
 
     return app
-
-class PrefixMiddleware(object):
-    def __init__(self, app, prefix=''):
-        self.app = app
-        self.prefix = prefix
-
-    def __call__(self, environ, start_response):
-        sys.stderr.write("PrefixMiddleware: %s, %s\n", environ['PATH_INFO'], environ['SCRIPT_ROOT'])
-        if environ['PATH_INFO'].startswith(self.prefix):
-            #environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
-            environ['SCRIPT_ROOT'] = self.prefix
-            # environ['SCRIPT_NAME'] = self.prefix
-            return self.app(environ, start_response)
-        else:
-            start_response('404', [('Content-Type', 'text/plain')])
-        return ["This url does not belong to the app.".encode()]
