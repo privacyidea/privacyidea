@@ -306,10 +306,11 @@ class PrefixMiddleware(object):
         self.prefix = prefix
 
     def __call__(self, environ, start_response):
-        sys.stderr.write("PrefixMiddleware: %s, %s\n", environ['PATH_INFO'], environ['SCRIPT_NAME'])
+        sys.stderr.write("PrefixMiddleware: %s, %s\n", environ['PATH_INFO'], environ['SCRIPT_ROOT'])
         if environ['PATH_INFO'].startswith(self.prefix):
             environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
-            environ['SCRIPT_NAME'] = self.prefix
+            environ['SCRIPT_ROOT'] = self.prefix
+            # environ['SCRIPT_NAME'] = self.prefix
             return self.app(environ, start_response)
         else:
             start_response('404', [('Content-Type', 'text/plain')])
