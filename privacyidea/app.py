@@ -147,10 +147,10 @@ def create_app(config_name="development",
     # If this file does not exist, we create an error!
     app.config.from_envvar(ENV_KEY, silent=True)
 
-    prefix = app.config.get("PI_URL_PREFIX", "")
-    if prefix != "":
-        sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
-        app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
+    # prefix = app.config.get("PI_URL_PREFIX", "")
+    # if prefix != "":
+    #     sys.stdout.write("Setting URL prefix to {0!s}\n".format(prefix))
+    #     app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix)
 
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
@@ -306,7 +306,7 @@ class PrefixMiddleware(object):
         self.prefix = prefix
 
     def __call__(self, environ, start_response):
-        sys.stdout.write("PrefixMiddleware: %s, %s\n", environ['PATH_INFO'], environ['SCRIPT_NAME'])
+        sys.stderr.write("PrefixMiddleware: %s, %s\n", environ['PATH_INFO'], environ['SCRIPT_NAME'])
         if environ['PATH_INFO'].startswith(self.prefix):
             environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
             environ['SCRIPT_NAME'] = self.prefix
