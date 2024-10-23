@@ -1,3 +1,18 @@
 <div aria-label="Token Layout" class="token-grid">
-  <app-token-table></app-token-table>
+  <mat-grid-list cols="19" rowHeight="80vh">
+    <mat-grid-tile [colspan]="1" [rowspan]="1"></mat-grid-tile>
+    <mat-grid-tile [colspan]="4" [rowspan]="1">
+      <div class="tile-content">
+        <app-token-card></app-token-card>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="13" [rowspan]="1">
+      <div class="tile-content">
+        <main>
+          <app-token-table></app-token-table>
+        </main>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="1" [rowspan]="1"></mat-grid-tile>
+  </mat-grid-list>
 </div>

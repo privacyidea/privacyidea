@@ -1,0 +1,8 @@
+.tile-content {
+  height: calc(100% - 40px);
+  width: calc(100% - 40px);
+}
+
+mat-grid-tile {
+  /* background-color: #ffff00; DEBUG */
+}

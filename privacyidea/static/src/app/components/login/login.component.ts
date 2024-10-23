@@ -7,12 +7,13 @@ import {MatInput} from '@angular/material/input';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButton, MatFabButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
+import {FooterComponent} from '../grid-layout/footer/footer.component';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   standalone: true,
-  imports: [FormsModule, MatFormField, MatInput, MatButton, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton],
+  imports: [FormsModule, MatFormField, MatInput, MatButton, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton, FooterComponent],
   styleUrl: './login.component.css'
 })
 export class LoginComponent {

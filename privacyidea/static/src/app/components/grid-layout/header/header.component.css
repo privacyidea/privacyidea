@@ -2,12 +2,12 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  background: #FAF9FD;
+  background: white;
   padding: 10px;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   box-shadow: var(--box-shadow);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .brand {
@@ -51,7 +51,6 @@
   padding: 10px;
   border: none;
   border-radius: var(--border-radius);
-  background: #FAF9FD;
   cursor: pointer;
   font-size: 24px;
 }
@@ -62,16 +61,16 @@
   padding: 10px;
   border: none;
   border-radius: var(--border-radius);
-  background: var(--background-primary-inset);
+  background: var(--background-primary);
   box-shadow: var(--box-shadow);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--font-size);
   color: white;
 }
 
 .profile-btn:hover {
-  box-shadow: var(--box-shadow);
-  background: var(--background-primary);
+  box-shadow: none;
+  background: var(--background-primary-inset);
   color: white;
-  transform: translateY(-2px);
+  transform: translateY(2px);
 }

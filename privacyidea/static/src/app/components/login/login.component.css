@@ -4,6 +4,7 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
+  background: #ffffff;
 }
 
 .logo {
@@ -34,18 +35,17 @@ mat-form-field {
 
 .login-btn {
   text-decoration: none;
-  color: #333;
+  color: #fff;
   padding: 10px;
   border-radius: var(--border-radius);
-  background: #f8f9fa;
-  box-shadow: var(--box-shadow-inset);
-  background: var(--background-secondary-inset);
+  box-shadow: var(--box-shadow);
+  background: var(--background-primary);
 }
 
 .login-btn:hover {
-  box-shadow: var(--box-shadow);
-  background: var(--background-primary);
+  box-shadow: none;
+  background: var(--background-primary-inset);
   color: #fff;
-  transform: translateY(-2px);
+  transform: translateY(2px);
 }
 

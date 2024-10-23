@@ -1,14 +1,14 @@
-import {Component, inject, signal, ViewChild} from '@angular/core';
+import {Component, signal, ViewChild} from '@angular/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule} from '@angular/material/paginator';
 import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
-import {LiveAnnouncer} from '@angular/cdk/a11y';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {NgForOf} from '@angular/common';
+import {MatCard, MatCardContent} from '@angular/material/card';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -28,13 +28,12 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, NgForOf
+    MatSortModule, NgForOf, MatCard, MatCardContent
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
 })
 export class TokenTableComponent {
-  private _liveAnnouncer = inject(LiveAnnouncer);
   private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
   dataSource = signal(new MatTableDataSource());
   displayedColumns: string[] = columns.map(column => column.key);
@@ -57,30 +56,47 @@ export class TokenTableComponent {
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
-
-  ngAfterViewInit() {
-    if (this.paginator) {
-      this.dataSource().paginator = this.paginator;
-    } else {
-      console.warn('Paginator not found');
-    }
-    if (this.sort) {
-      this.dataSource().sort = this.sort;
-    } else {
-      console.warn('Sort not found');
-    }
-  }
-
-  announceSortChange(sortState: Sort) {
-    if (sortState.direction) {
-      this._liveAnnouncer.announce(`Sorted ${sortState.direction}ending`);
-    } else {
-      this._liveAnnouncer.announce('Sorting cleared');
-    }
-  }
-
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource().filter = filterValue.trim().toLowerCase();
+  }
+
+  sortData(sort: Sort) {
+    if (!sort.active || sort.direction === '') {
+      this.dataSource().data = this.dataSource().data;
+      return;
+    }
+
+    function compare(a: string | number, b: string | number, isAsc: boolean) {
+      return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
+    }
+
+    this.dataSource().data = this.dataSource().data.slice().sort((a: any, b: any) => {
+      const isAsc = sort.direction === 'asc';
+      switch (sort.active) {
+        case 'serial':
+          return compare(a.serial, b.serial, isAsc);
+        case 'tokentype':
+          return compare(a.tokentype, b.tokentype, isAsc);
+        case 'active':
+          return compare(a.active, b.active, isAsc);
+        case 'description':
+          return compare(a.description, b.description, isAsc);
+        case 'failcount':
+          return compare(a.failcount, b.failcount, isAsc);
+        case 'rollout_state':
+          return compare(a.rollout_state, b.rollout_state, isAsc);
+        case 'username':
+          return compare(a.username, b.username, isAsc);
+        case 'user_realm':
+          return compare(a.user_realm, b.user_realm, isAsc);
+        case 'token_realm':
+          return compare(a.token_realm, b.token_realm, isAsc);
+        case 'container_serial':
+          return compare(a.container_serial, b.container_serial, isAsc);
+        default:
+          return 0;
+      }
+    });
   }
 }

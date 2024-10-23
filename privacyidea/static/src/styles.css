@@ -1,6 +1,6 @@
 html, body {
   height: 100%;
-  background: #f8f9fa;
+  background: #e6e6e6;
 }
 
 body {
@@ -9,12 +9,27 @@ body {
 }
 
 :root {
-  --background-primary: linear-gradient(145deg, #1f7299, #1a6081);
-  --background-primary-inset: linear-gradient(145deg, #1a6081, #1f7299);
+  --blue2: #1a6081;
+  --blue2-light: #1f7299;
+  --blur: 10px;
+  --light-distance: -4px;
+  --shadow-distance: 4px;
+  --font-size: 12px;
+  --background-primary: linear-gradient(145deg, var(--blue2-light), var(--blue2));
+  --background-primary-inset: linear-gradient(145deg, var(--blue2), var(--blue2-light));
+  --background-green: linear-gradient(145deg, #a4cc00, #8aac00);
   --background-secondary: linear-gradient(145deg, #ffffff, #e6e6e6);
   --background-secondary-inset: linear-gradient(5deg, #e6e6e6, #ffffff);
-  --background-green: linear-gradient(145deg, #a4cc00, #8aac00);
-  --box-shadow: 4px 4px 4px #d3d4d5, -8px -8px 16px #ffffff;
-  --box-shadow-inset: inset 4px 4px 8px #d3d4d5, inset -8px -8px 16px #ffffff;
-  --border-radius: 3px;
+  --background-blue: linear-gradient(145deg, var(--blue2), var(--blue2-light));
+  --background-blue-inset: linear-gradient(145deg, var(--blue2-light), var(--blue2));
+  --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) #b5b5b5, var(--light-distance) var(--light-distance) var(--blur) #ffffff;
+  --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) #b1b1b1, inset var(--light-distance) var(--light-distance) var(--blur) #ffffff;
+  --box-shadow-blue: inset 4px 4px 8px var(--blue2-light), inset -8px -8px 16px var(--blue2);
+  --box-shadow-blue-inset: inset 4px 4px 1px var(--blue2), inset -8px -8px 16px var(--blue2-light);
+  --border-radius: 4px;
+  --table-color: white;
+  --mdc-filled-text-field-container-color: var(--table-color);
+  --mdc-tab-indicator-active-indicator-color: #16536F;
+  --mdc-filled-text-field-focus-active-indicator-color: #16536F;
+  --mat-tab-header-active-focus-indicator-color: #16536F;
 }

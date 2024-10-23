@@ -27,6 +27,6 @@
   border-radius: var(--border-radius);
   background: var(--background-green);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--font-size);
   color: white;
 }
