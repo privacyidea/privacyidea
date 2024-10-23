@@ -129,7 +129,6 @@ def create_app(config_name="development",
               "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
-    app.debug = True
     if config_name:
         app.config.from_object(config[config_name])
 
