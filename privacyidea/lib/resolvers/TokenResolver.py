@@ -26,6 +26,8 @@
 #
 
 import yaml
+
+from privacyidea.models import TokenOwner
 from .UserIdResolver import UserIdResolver
 import jwt
 import logging
@@ -97,6 +99,32 @@ class TokenResolver(UserIdResolver):
         :rtype:  dict
         """
         return TokenResolver.getResolverClassDescriptor()
+    
+    def getUserList(self, searchDict=None):
+        """
+        :param searchDict: A dictionary with search parameters
+        :type searchDict: dict
+        :return: list of users, where each user is a dictionary
+        """
+        users = {}
+        if searchDict is None:
+            searchDict = {}
+
+        tokenOwners = TokenOwner.query.filter_by(resolver=self.name).all()
+        try:
+            if "username" in searchDict.keys() and searchDict["username"] != '*':
+                tokenOwners = TokenOwner.query.filter_by(resolver=self.name, user_id=searchDict["username"]).all()
+        except Exception as e:
+            log.error("Error getting tokenOwners with exception: {0!s}".format(e))
+            return users
+        
+        for tokenOwner in tokenOwners:
+            if tokenOwner.user_id != None:
+                if users.get(tokenOwner.user_id):
+                    continue
+                users[tokenOwner.user_id] = {"username": tokenOwner.user_id, "userid": tokenOwner.user_id}
+
+        return list(users.values())
 
     def getUserId(self, loginName):
         """

@@ -76,9 +76,9 @@ def single_page_application():
     instance = request.script_root
     
     prefix = current_app.config.get("PI_URL_PREFIX", "")
-    if prefix == "" and instance == "/":
+    if prefix is None and instance == "/":
         instance = ""    
-    elif instance.startswith(prefix) == False:
+    elif prefix is not None and instance is not None and instance.startswith(prefix) == False:
         instance = prefix + instance
     
 
