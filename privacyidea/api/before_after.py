@@ -330,7 +330,7 @@ def after_request(response):
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object != None:
         message = ''
 
         if hasattr(error, 'message'):
@@ -367,7 +367,7 @@ def auth_error(error):
 @serviceid_blueprint.app_errorhandler(PolicyError)
 @container_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object != None:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
     return send_error(error.message, error_code=error.id), 403
 
@@ -395,7 +395,7 @@ def resource_not_found_error(error):
     This function is called when an ResourceNotFoundError occurs.
     It sends a 404.
     """
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object != None:
         g.audit_object.log({"info": error.message})
     return send_error(error.message, error_code=error.id), 404
 
@@ -424,7 +424,7 @@ def privacyidea_error(error):
     This function is called when an privacyIDEAError occurs.
     These are not that critical exceptions.
     """
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object != None:
         g.audit_object.log({"info": str(error)})
     return send_error(str(error), error_code=error.id), 400
 
@@ -455,6 +455,6 @@ def internal_error(error):
     i.e. if a normal exception, that is not inherited from privacyIDEAError
     occurs.
     """
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object != None:
         g.audit_object.log({"info": str(error)})
     return send_error(str(error), error_code=-500), 500

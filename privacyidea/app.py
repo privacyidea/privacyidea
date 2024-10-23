@@ -147,8 +147,7 @@ def create_app(config_name="development",
     app.register_blueprint(jwtauth, url_prefix='/auth')
     app.register_blueprint(user_blueprint, url_prefix='/user')
     app.register_blueprint(audit_blueprint, url_prefix='/audit')
-    app.register_blueprint(machineresolver_blueprint,
-                           url_prefix='/machineresolver')
+    app.register_blueprint(machineresolver_blueprint, url_prefix='/machineresolver')
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')
     app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')

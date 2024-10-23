@@ -372,12 +372,12 @@ class HotpTokenClass(TokenClass):
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
-            self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+           self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
 
     @property
     def hashlib(self):
         hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("hotp.hashlib", 'sha1')
+            get_from_config("hotp.hashlib", 'sha1')
         return hashlibStr
 
     def _calc_otp(self, counter):
@@ -717,13 +717,11 @@ class HotpTokenClass(TokenClass):
         ret = {}
         if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
         return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
 
     @classmethod
-    def _get_default_settings(cls, g, role="user", username=None, userrealm=None,
-                              adminuser=None, adminrealm=None):
+    def _get_default_settings(cls, g, role="user", username=None, userrealm=None, adminuser=None, adminrealm=None):
         """
         Internal function that can be called either during enrollment via /token/init or during
         enrollment via validate/check.
@@ -865,7 +863,7 @@ class HotpTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
-        detail["messages"] = [ message ]
+        detail["messages"] = [message]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,

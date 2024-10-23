@@ -28,6 +28,7 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import sys
 from flask import (Blueprint, render_template, request,
                    current_app, g)
 from privacyidea.api.lib.utils import send_html
@@ -75,8 +76,14 @@ def before_request():
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
     instance = request.script_root
-    if instance == "/":
-        instance = ""
+    
+    prefix = current_app.config.get("PI_URL_PREFIX", "")
+    if prefix is None and instance == "/":
+        instance = ""    
+    elif prefix is not None and instance is not None and instance.startswith(prefix) == False:
+        instance = prefix + instance
+    
+
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 

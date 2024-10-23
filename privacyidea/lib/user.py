@@ -269,16 +269,13 @@ class User(object):
         else:
             uid = y.getUserId(self.login)
             if uid not in ["", None]:
-                log.info("user {0!r} found in resolver {1!r}".format(self.login,
-                                                                     resolvername))
+                log.info("user {0!r} found in resolver {1!r}".format(self.login, resolvername))
                 log.info("userid resolved to {0!r} ".format(uid))
                 self.resolver = resolvername
-                self.uid = uid
                 # We do not need to search other resolvers!
                 return True
             else:
-                log.debug("user {0!r} not found"
-                          " in resolver {1!r}".format(self.login, resolvername))
+                log.debug("user {0!r} not found in resolver {1!r}".format(self.login, resolvername))
                 return False
 
     def get_user_identifiers(self):
@@ -332,8 +329,8 @@ class User(object):
         :param attrvalue: The value of the attribute
         :return: The id of the attribute setting
         """
-        ua = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                                 Key=attrkey, Value=attrvalue, Type=attrtype).save()
+        ua = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id, Key=attrkey,
+                                 Value=attrvalue, Type=attrtype).save()
         return ua
 
     @property
@@ -668,6 +665,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     """
     realm = ""
     username = getParam(param, "user", optionalOrRequired)
+    userid = getParam(param, "userid")
 
     if username is None:
         username = ""
@@ -680,9 +678,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username != "":
         if realm is None or realm == "":
             realm = get_default_realm()
-
-    user_object = User(login=username, realm=realm,
-                       resolver=param.get("resolver"))
+    user_object = User(login=username, realm=realm, uid=userid, resolver=param.get("resolver"))
 
     return user_object
 
