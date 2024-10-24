@@ -103,6 +103,9 @@ Options
 You can define additional options. These are sent as parameters in the GET or
 POST request.
 
+The options can have JSON or strings as values. privacyIDEA will try to
+parse the values as JSON and either send JSON or strings to the HTTP gateway.
+
 .. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
    by the policy :ref:`smstext`.

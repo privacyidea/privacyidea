@@ -60,7 +60,7 @@ class WebHookHandler(BaseEventHandler):
     description = "This eventhandler can post webhooks"
 
     @property
-    def allowed_positions(cls):
+    def allowed_positions(self):
         """
         This returns the allowed positions of the event handler definition.
 
@@ -69,7 +69,7 @@ class WebHookHandler(BaseEventHandler):
         return ["post", "pre"]
 
     @property
-    def actions(cls):
+    def actions(self):
         """
         This method returns a dictionary of allowed actions and possible
         options in this handler module.

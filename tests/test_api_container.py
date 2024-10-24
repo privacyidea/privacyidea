@@ -26,43 +26,43 @@ class APIContainerTest(MyApiTestCase):
     CLIENT_FILE = "tests/testdata/google-services.json"
 
     def request_assert_success(self, url, data: dict, auth_token, method='POST'):
-        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
-                                           headers=headers):
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
             return res.json
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST'):
-        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
-                                           headers=headers):
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(status_code, res.status_code, res.json)
             self.assertFalse(res.json["result"]["status"])
             return res.json
 
     def request_assert_405(self, url, data: dict, auth_token, method='POST'):
-        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
-                                           headers=headers):
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
             return res.json
 
     def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
-        headers = {'Authorization': auth_token} if auth_token else {}
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
-                                           headers=headers):
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
 
@@ -96,7 +96,8 @@ class APIContainerAuthorization(MyApiTestCase):
     def request_denied_assert_403(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(403, res.status_code, res.json)
@@ -106,7 +107,8 @@ class APIContainerAuthorization(MyApiTestCase):
     def request_assert_200(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
-                                           data=data,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)

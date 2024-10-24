@@ -119,7 +119,7 @@ def save_resolver(params):
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
         resolver_id = Resolver.query.filter(func.lower(Resolver.name) ==
-                                  resolvername.lower()).first().id
+                                            resolvername.lower()).first().id
     else:
         resolver = Resolver(params.get("resolver"),
                             params.get("type"))

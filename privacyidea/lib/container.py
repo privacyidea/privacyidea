@@ -30,8 +30,8 @@ from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_us
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
-                                Realm, TokenContainerTemplate, TokenContainerInfo)
+from privacyidea.models import (db, TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
+                                TokenContainerRealm, Realm, TokenContainerTemplate, TokenContainerInfo)
 
 log = logging.getLogger(__name__)
 

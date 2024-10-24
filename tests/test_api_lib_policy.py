@@ -4072,8 +4072,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                "id": 1}
         resp = jsonify(res)
         from privacyidea.lib.crypto import Sign
-        sign_object = Sign(private_key=None,
-                           public_key=open("tests/testdata/public.pem", 'rb').read())
+        with open("tests/testdata/public.pem", 'rb') as f:
+            public_key = f.read()
+        sign_object = Sign(private_key=None, public_key=public_key)
 
         # check that we don't sign if 'PI_NO_RESPONSE_SIGN' is set
         current_app.config['PI_NO_RESPONSE_SIGN'] = True

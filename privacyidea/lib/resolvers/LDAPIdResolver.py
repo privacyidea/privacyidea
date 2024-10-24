@@ -1,6 +1,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2024-06-25 Raphael Topel <raphael.topel@esh.essen.de>
+#             Change AUTHTYPE.SASL_KERBEROS behaviour if upn is present in userinfo values for multidomain support
 #  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add censored password functionality
 #  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -344,7 +346,13 @@ class IdResolver (UserIdResolver):
                 return False
             # we need to check credentials with kerberos differently since we
             # can not use bind for every user
-            name = gssapi.Name(self.getUserInfo(uid).get('username'))
+            upn = self.getUserInfo(uid).get('upn')
+            if upn is not None \
+                and upn != "None" \
+                and upn != "":
+                name = gssapi.Name(upn.upper())
+            else:
+                name = gssapi.Name(self.getUserInfo(uid).get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
             except gssapi.exceptions.GSSError as e:

@@ -8,12 +8,8 @@ Ubuntu Packages
 
 There are ready made packages for Ubuntu.
 
-Packages of older releases of privacyIDEA up to version 2.23 are available for
-Ubuntu 14.04 LTS and Ubuntu 16.04 LTS from a public ppa repository [#ppa]_.
-Using these is deprecated.
-
 For recent releases of privacyIDEA starting from version 3.0 a repository is
-available which provides packages for Ubuntu 18.04 LTS, 20.04LTS and 22.04LTS [#ubuntu]_.
+available which provides packages for Ubuntu 18.04 LTS, 20.04 LTS, 22.04 LTS and 24.04 LTS [#ubuntu]_.
 
 .. note:: The packages ``privacyidea-apache2`` and ``privacyidea-nginx`` assume
    that you want to run a privacyIDEA system. These packages deactivate all
@@ -47,41 +43,30 @@ The fingerprint of the key is::
    pub 4096R/AE250082 2017-05-16 NetKnights GmbH <release@netknights.it>
    Key fingerprint = 0940 4ABB EDB3 586D EDE4 AD22 00F7 0D62 AE25 0082
 
-On Ubuntu 18.04LTS and 20.04LTS you can now add the signing key to your system::
+On Ubuntu 18.04 LTS and 20.04 LTS you can now add the signing key to your system::
 
    apt-key add NetKnights-Release.asc
 
-On Ubuntu 22.04LTS you can add the signing key by::
+On Ubuntu 22.04 LTS and 24.04 LTS you can add the signing key with::
 
    mv NetKnights-Release.asc /etc/apt/trusted.gpg.d/
 
-Now you need to add the repository for your release (either bionic/18.04LTS, focal/20.04LTS or jammy/22.04LTS)
+Now you need to add the repository for your release (either ``bionic/18.04 LTS``,
+``focal/20.04 LTS``, ``jammy/22.04 LTS`` or ``noble/24.04 LTS``)
 
-You can do this by running the command::
+You can do this by running the following command on Ubuntu 24.04::
 
-   add-apt-repository http://lancelot.netknights.it/community/bionic/stable
+   add-apt-repository http://lancelot.netknights.it/community/noble/stable
 
-or::
-
-   add-apt-repository http://lancelot.netknights.it/community/focal/stable
-
-or::
-
-   add-apt-repository http://lancelot.netknights.it/community/jammy/stable
+Change the code name to the running Ubuntu version accordingly.
 
 As an alternative you can add the repo in a dedicated file. Create a new
 file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
-following contents::
+following contents for Ubuntu 24.04::
 
-   deb http://lancelot.netknights.it/community/bionic/stable bionic main
+    deb http://lancelot.netknights.it/community/noble/stable noble main
 
-or::
-
-   deb http://lancelot.netknights.it/community/focal/stable focal main
-
-or::
-
-   deb http://lancelot.netknights.it/community/jammy/stable jammy main
+Change the code name to the running Ubuntu version accordingly.
 
 Installation of privacyIDEA 3.x
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,9 +100,12 @@ For further details see :ref:`rlm_perl`.
 
 .. rubric:: Footnotes
 
-.. [#ppa] https://launchpad.net/~privacyidea
 .. [#ubuntu] Starting with privacyIDEA 2.15 Ubuntu 16.04 packages are
-   provided. Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
-   are provided, Ubuntu 14.04 packages are dropped.
-   Starting with privacyIDEA 3.5 Ubuntu 20.04 packages are available.
-   Starting with privacyIDEA 3.8 Ubuntu 22.04 packages are available, Ubuntu 16.04 packages are dropped.
+    provided.
+
+    Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
+    are provided, Ubuntu 14.04 packages are dropped.
+
+    Starting with privacyIDEA 3.5 Ubuntu 20.04 packages are available.
+
+    Starting with privacyIDEA 3.8 Ubuntu 22.04 packages are available, Ubuntu 16.04 packages are dropped.

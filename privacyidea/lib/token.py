@@ -81,9 +81,9 @@ from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode,
                                    check_serial_valid, create_tag_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
-from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
-                                TokenContainerToken)
+from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
+                                TokenInfo, TokenOwner, TokenTokengroup,
+                                Tokengroup, TokenContainer, TokenContainerToken)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -617,6 +617,10 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     :type allowed_realms: list
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
+    :param description: Take the description of the token into the query
+    :type description: str
+    :param hidden_tokeninfo: List of token-info keys to remove from the results
+    :type hidden_tokeninfo: list
     :param container_serial: The serial number of a container
     :type container_serial: basestring
     :return: dict with tokens, prev, next and count
@@ -649,8 +653,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     else:
         sql_query = sql_query.order_by(sortby.asc())
 
-    pagination = sql_query.paginate(page, per_page=psize,
-                                    error_out=False)
+    pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
     tokens = pagination.items
     prev = None
     if pagination.has_prev:
@@ -710,6 +713,7 @@ def get_one_token(*args, silent_fail=False, **kwargs):
 
     :param silent_fail: Instead of raising an exception we return None silently
     :returns: Token object
+    :rtype: privacyidea.lib.tokenclass.TokenClass
     """
     result = get_tokens(*args, **kwargs)
     if not result:
@@ -2883,7 +2887,7 @@ def challenge_text_replace(message, user, token_obj):
     if tokentype == "sms":
         if is_true(token_obj.get_tokeninfo("dynamic_phone")):
             phone = token_obj.user.get_user_phone("mobile")
-            if type(phone) == list and phone:
+            if isinstance(phone, list) and phone:
                 # if there is a non-empty list, we use the first entry
                 phone = phone[0]
         else:
@@ -2894,7 +2898,7 @@ def challenge_text_replace(message, user, token_obj):
     if tokentype == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
             email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
-            if type(email) == list and email:
+            if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
                 email = email[0]
         else:

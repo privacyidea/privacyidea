@@ -364,9 +364,8 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except (TypeError, binascii.Error, OverflowError):
-        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
-        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
+    except (TypeError, binascii.Error):
+        # b32decode throws a binascii.Error when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -571,7 +570,7 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(IPNetwork(proxynet) for proxynet in p_list)
+                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
             else:
                 # No mapping client, so we take the whole network
                 proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))

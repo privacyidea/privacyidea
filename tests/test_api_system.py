@@ -1,7 +1,9 @@
 """ API testcases for the "/system/ endpoint """
-import os
-
+import gnupg
 import json
+import os
+import unittest
+from urllib.parse import urlencode
 
 from .base import MyApiTestCase
 
@@ -14,11 +16,16 @@ from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.models import db, NodeName
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
-from urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
 POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
+
+try:
+    _g = gnupg.GPG()
+    gpg_available = True
+except OSError as _e:
+    gpg_available = False
 
 
 class APIConfigTestCase(MyApiTestCase):
@@ -923,6 +930,7 @@ class APIConfigTestCase(MyApiTestCase):
             import base64
             base64.b64decode(value)
 
+    @unittest.skipIf(not gpg_available, "'gpg' binary not available")
     def test_19_get_gpg_keys(self):
         with self.app.test_request_context('/system/gpgkeys',
                                            method="GET",

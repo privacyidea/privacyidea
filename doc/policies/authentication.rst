@@ -459,7 +459,7 @@ You need to specify a list of FQDNs without the https scheme like:
 For more information on configuring U2F see :ref:`u2f_token`.
 
 
-.. [#pythonre] https://docs.python.org/2/library/re.html
+.. [#pythonre] https://docs.python.org/3/library/re.html
 
 .. _reset_all_user_tokens:
 

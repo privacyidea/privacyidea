@@ -2,7 +2,8 @@
 This test file tests the lib.importotp
 
 """
-import pytest
+import gnupg
+import unittest
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
@@ -13,6 +14,12 @@ from privacyidea.lib.token import remove_token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.utils import hexlify_and_unicode
+
+try:
+    _g = gnupg.GPG()
+    gpg_available = True
+except OSError as _e:
+    gpg_available = False
 
 XML_PSKC_PASSWORD_PREFIX = """<?xml version="1.0" encoding="UTF-8"?>
   <KeyContainer
@@ -737,6 +744,7 @@ class ImportOTPTestCase(MyTestCase):
 
 class GPGTestCase(MyTestCase):
 
+    @unittest.skipIf(not gpg_available, "'gpg' binary not available")
     def test_00_gpg_decrypt(self):
         GPG = GPGImport({"PI_GNUPG_HOME": "tests/testdata/gpg"})
         pubkeys = GPG.get_publickeys()
