@@ -71,7 +71,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_tokens_from_serial_or_user)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
@@ -108,6 +108,7 @@ from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enroll
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.api.lib.prepolicy import require_description
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -818,6 +819,9 @@ def set_description_api(serial=None):
     g.audit_object.log({"serial": serial})
     description = getParam(request.all_data, "description", optional=required)
     g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    request.all_data["type"] = tokenobject_list[0].type
+    require_description(request)
     res = set_description(serial, description, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
