@@ -1495,44 +1495,6 @@ def parse_string_to_dict(s, split_char=":"):
     return d
 
 
-def replace_function_event_handler(text, token_serial=None, tokenowner=None, logged_in_user=None):
-    if logged_in_user is not None:
-        login = logged_in_user.login
-        realm = logged_in_user.realm
-    else:
-        login = ""
-        realm = ""
-
-    if tokenowner is not None:
-        surname = tokenowner.info.get("surname")
-        givenname = tokenowner.info.get("givenname")
-        userrealm = tokenowner.realm
-    else:
-        surname = ""
-        givenname = ""
-        userrealm = ""
-
-    if token_serial is not None:
-        token_serial = token_serial
-    else:
-        token_serial = ""  # nosec B105 # Reset serial
-
-    try:
-        attributes = {
-            "logged_in_user": login,
-            "realm": realm,
-            "surname": surname,
-            "token_owner": givenname,
-            "user_realm": userrealm,
-            "token_serial": token_serial
-        }
-        new_text = text.format(**attributes)
-        return new_text
-    except(ValueError, KeyError) as err:
-        log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
-        return text
-
-
 def convert_imagefile_to_dataimage(imagepath):
     """
     This helper reads an image file and converts it to a dataimage string,

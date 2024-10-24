@@ -3738,7 +3738,7 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
                 'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
@@ -3756,7 +3756,7 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
                 'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
@@ -3782,7 +3782,9 @@ class WebhookTestCase(MyTestCase):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": "You can replace placeholder like {logged_in_user}"
+                "description": "You can use the following placeholders: {logged_in_user}, {realm}, {surname}, "
+                               "{token_owner}, {user_realm}, {token_serial}. "
+                               "However, tag availability is depending on the endpoint."
             },
             "data": {
                 "type": "str",
@@ -3861,7 +3863,7 @@ class WebhookTestCase(MyTestCase):
         self.assertFalse(res)
 
     @patch('requests.post')
-    def test_06_replace_function(self, mock_post):
+    def test_06_replace_function_json(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
@@ -3876,23 +3878,50 @@ class WebhookTestCase(MyTestCase):
                            "options": {"URL":
                                            'http://test.com',
                                        "content_type":
-                                           CONTENT_TYPE.URLENCODED,
+                                           CONTENT_TYPE.JSON,
                                        "replace":
                                            True,
                                        "data":
-                                           'This is {logged_in_user} from realm {realm}'
+                                           '{"{realm}": "This is {logged_in_user} from realm {realm}"}'
                                        }
                        }
                        }
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                'http://test.com', 'This is hans from realm realm1')
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'http://test.com', '{"realm1": "This is hans from realm realm1"}')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_07_replace_function_error(self, mock_post):
+    def test_07_replace_function_urlencoded(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL": 'https://test.com',
+                                       "content_type": CONTENT_TYPE.URLENCODED,
+                                       "replace": True,
+                                       "data": 'This is {logged_in_user} from realm {realm}'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'https://test.com', 'This is hans from realm realm1')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_08_replace_function_error(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3923,7 +3952,7 @@ class WebhookTestCase(MyTestCase):
                                            "replace":
                                                True,
                                            "data":
-                                               '{token_serial} {token_owner} {unknown_tag}'
+                                               '{"{token_serial}": "{token_owner} {unknown_tag}"}'
                                            }
                            }
                            }
@@ -3931,13 +3960,13 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
                                          " Please check the webhooks data option.")
-                text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                    'http://test.com', '{token_serial} {token_owner} {unknown_tag}')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'http://test.com', '{"{token_serial}": "{token_owner} {unknown_tag}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_typo(self, mock_post):
+    def test_09_replace_function_typo(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3968,7 +3997,7 @@ class WebhookTestCase(MyTestCase):
                                            "replace":
                                                True,
                                            "data":
-                                               'The token serial is {token_seril}'
+                                               '{"text": "The token serial is {token_seril}"}'
                                            }
                            }
                            }
@@ -3976,7 +4005,7 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
                                          " Please check the webhooks data option.")
-                text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                    'http://test.com', 'The token serial is {token_seril}')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'http://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
