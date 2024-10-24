@@ -2317,7 +2317,7 @@ def require_description(request=None, action=None):
                                   user_object=user_object).action_values(unique=False)
 
     token_types = list(action_values.keys())
-    type_value = request.all_data.get("type")
+    type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
         tok = None
         serial = getParam(params, "serial")
