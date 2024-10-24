@@ -1435,7 +1435,7 @@ def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
     It checks, if a policy scope=auth, action=apikeyrequired is set.
-    If so, the validate request will only performed, if a JWT token is passed
+    If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
     """
     user_object = request.User
