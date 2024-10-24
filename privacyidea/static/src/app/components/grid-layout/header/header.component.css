@@ -18,21 +18,22 @@
 
 .brand img {
   margin-left: 40px;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   box-shadow: var(--box-shadow);
 }
 
 .nav-menu {
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
 .nav-menu a {
   text-decoration: none;
   background: var(--background-secondary-inset);
-  color: #333;
+  color: #767676;
+  height: 60px;
   padding: 20px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow-inset);

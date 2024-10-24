@@ -12,6 +12,7 @@ body {
   --blue2: #1a6081;
   --blue2-light: #1f7299;
   --blur: 10px;
+  --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 4px;
   --font-size: 12px;
@@ -26,7 +27,6 @@ body {
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) #b1b1b1, inset var(--light-distance) var(--light-distance) var(--blur) #ffffff;
   --box-shadow-blue: inset 4px 4px 8px var(--blue2-light), inset -8px -8px 16px var(--blue2);
   --box-shadow-blue-inset: inset 4px 4px 1px var(--blue2), inset -8px -8px 16px var(--blue2-light);
-  --border-radius: 4px;
   --table-color: white;
   --mdc-filled-text-field-container-color: var(--table-color);
   --mdc-tab-indicator-active-indicator-color: #16536F;

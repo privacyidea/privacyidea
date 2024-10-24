@@ -23,7 +23,6 @@ mat-card {
 .card-button:hover {
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);
-  transform: translateY(2px);
   transition: 0ms;
 }
 
@@ -32,6 +31,6 @@ mat-card {
 }
 
 h4 {
-  padding: 4px;
+  padding: 8px;
 }
 

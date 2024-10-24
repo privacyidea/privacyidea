@@ -7,13 +7,13 @@ import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
-import {NgForOf} from '@angular/common';
+import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
   {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Status'},
+  {key: 'active', label: 'Active'},
   {key: 'description', label: 'Description'},
   {key: 'failcount', label: 'Fail Counter'},
   {key: 'rollout_state', label: 'Rollout Status'},
@@ -28,7 +28,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, NgForOf, MatCard, MatCardContent
+    MatSortModule, NgForOf, MatCard, MatCardContent, NgClass, NgIf
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
@@ -56,6 +56,7 @@ export class TokenTableComponent {
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
+
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource().filter = filterValue.trim().toLowerCase();
@@ -99,4 +100,6 @@ export class TokenTableComponent {
       }
     });
   }
+
+  protected readonly columns = columns;
 }

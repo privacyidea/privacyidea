@@ -3,6 +3,15 @@ table {
   background-color: var(--table-color);
 }
 
+a {
+  text-decoration: none;
+  color: #16536F;
+}
+
+.ng-tns-c508571215-2 {
+  color: dimgray;
+}
+
 .mat-mdc-form-field {
   font-size: var(--font-size);
   width: 100%;
@@ -19,8 +28,25 @@ table {
 }
 
 .token-table {
+  justify-content: center;
   padding: 33px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
+}
+
+.highlight-true{
+  background-color: #9ABF00;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+}
+
+.highlight-false {
+  background-color: #bf003a;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
 }
