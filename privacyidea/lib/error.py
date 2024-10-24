@@ -57,6 +57,9 @@ class ERROR:
     SERVER = 903
     USER = 904
     PARAMETER = 905
+    CONTAINER = 3000
+    CONTAINER_NOT_REGISTERED = 3001
+    CONTAINER_INVALID_CHALLENGE = 3002
 
 
 class privacyIDEAError(Exception):
@@ -196,5 +199,22 @@ class ParameterError(privacyIDEAError):
 
 class DatabaseError(privacyIDEAError):
     """Error in the database layer"""
+
     def __init__(self, description="database error!", eid=ERROR.DATABASE):
         privacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class ContainerError(privacyIDEAError):
+    def __init__(self, description="container error!", eid=ERROR.CONTAINER):
+        privacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class ContainerNotRegistered(ContainerError):
+    def __init__(self, description="container is not registered error!", eid=ERROR.CONTAINER_NOT_REGISTERED):
+        ContainerError.__init__(self, description=description, eid=eid)
+
+
+class ContainerInvalidChallenge(ContainerError):
+    def __init__(self, description="container challenge error!", eid=ERROR.CONTAINER_INVALID_CHALLENGE):
+        ContainerError.__init__(self, description=description, eid=eid)
+
