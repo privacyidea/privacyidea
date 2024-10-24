@@ -258,7 +258,7 @@ def create_pagination(page, pagesize, sql_query):
     if pagesize < 1:
         pagesize = 10
 
-    pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
+    pagination = sql_query.paginate(page=page, per_page=pagesize, error_out=False)
     db_objects = pagination.items
 
     prev = None

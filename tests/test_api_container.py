@@ -418,14 +418,14 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_22_user_container_unregister_allowed(self):
         container_serial = self.test_20_user_container_register_allowed()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNREGISTER)
-        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'DELETE')
+        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
         delete_policy("policy")
 
     def test_23_user_container_unregister_denied(self):
         container_serial = self.test_20_user_container_register_allowed()
         # User does not have CONTAINER_UNREGISTER rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
-        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'DELETE')
+        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
         delete_policy("policy")
 
         # User has CONTAINER_UNREGISTER rights but is not the owner of the container
@@ -436,7 +436,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNREGISTER)
         self.request_denied_assert_403(f'/container/register/{another_container_serial}/terminate', {}, self.at_user,
-                                       'DELETE')
+                                       'POST')
         delete_policy("policy")
         delete_policy("container_policy")
 
@@ -663,14 +663,14 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_54_admin_container_unregister_allowed(self):
         container_serial = self.test_52_admin_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER)
-        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'DELETE')
+        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_55_admin_container_unregister_denied(self):
         container_serial = self.test_52_admin_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
-        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'DELETE')
+        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_56_admin_container_template_create_allowed(self):
@@ -1060,14 +1060,14 @@ class APIContainerAuthorization(MyApiTestCase):
     def test_85_helpdesk_container_unregister_allowed(self):
         container_serial = self.test_83_helpdesk_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm1)
-        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'DELETE')
+        self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_86_helpdesk_container_unregister_denied(self):
         container_serial = self.test_83_helpdesk_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm2)
-        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'DELETE')
+        self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
 
@@ -1100,14 +1100,16 @@ class APIContainer(APIContainerTest):
 
         # Init without auth token
         payload = {"type": "Smartphone", "description": "test description!!"}
-        result = self.request_assert_error(401, '/container/init', payload, None, 'POST')
+        result = self.request_assert_error(401, '/container/init',
+                                           payload, None, 'POST')
         error = result["result"]["error"]
         self.assertEqual(4033, error["code"])
         self.assertEqual("Authentication failure. Missing Authorization header.", error["message"])
 
     def test_02_delete_container_fail(self):
         # Delete non-existing container
-        result = self.request_assert_error(404, '/container/wrong_serial', {}, self.at, 'DELETE')
+        result = self.request_assert_error(404, '/container/wrong_serial',
+                                           {}, self.at, 'DELETE')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])
         self.assertEqual("Unable to find container with serial wrong_serial.", error["message"])
@@ -1821,12 +1823,12 @@ class ContainerSynchronization(APIContainerTest):
         # Terminate
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
                                     {},
-                                    self.at, 'DELETE')
+                                    self.at, 'POST')
 
     def test_07_register_terminate_fail(self):
         # Invalid container serial
         result = self.request_assert_error(404, f'container/register/invalidSerial/terminate',
-                                           {}, self.at, 'DELETE')
+                                           {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
@@ -1874,7 +1876,7 @@ class ContainerSynchronization(APIContainerTest):
         # Terminate
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
                                     params,
-                                    self.at, 'DELETE')
+                                    None, 'POST')
 
     def test_11_register_terminate_client_missing_param(self):
         # Registration
@@ -1887,7 +1889,7 @@ class ContainerSynchronization(APIContainerTest):
 
         # Terminate without signature
         result = self.request_assert_error(400, f'container/register/{smartphone_serial}/terminate/client',
-                                           {}, self.at, 'DELETE')
+                                           {}, None, 'POST')
         self.assertEqual(905, result["result"]["error"]["code"])
 
     def test_12_register_terminate_client_invalid_serial(self):
@@ -1895,7 +1897,7 @@ class ContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(404,
                                            f'container/register/random/terminate/client',
                                            {},
-                                           self.at, 'DELETE')
+                                           self.at, 'POST')
         self.assertEqual(601, result["result"]["error"]["code"])
 
     def test_13_register_terminate_client_invalid_challenge(self):
@@ -1912,7 +1914,7 @@ class ContainerSynchronization(APIContainerTest):
 
         # Terminate
         result = self.request_assert_error(400, f'container/register/{smartphone_serial}/terminate/client',
-                                           params, self.at, 'DELETE')
+                                           params, self.at, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
 
     def test_14_register_terminate_client_not_registered(self):
@@ -1930,11 +1932,11 @@ class ContainerSynchronization(APIContainerTest):
         # server terminates
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
                                     {},
-                                    self.at, 'DELETE')
+                                    self.at, 'POST')
 
         # client tries to terminate
         result = self.request_assert_error(400, f'container/register/{smartphone_serial}/terminate/client',
-                                           params, self.at, 'DELETE')
+                                           params, self.at, 'POST')
         self.assertEqual(3001, result["result"]["error"]["code"])
 
     def test_15_register_generic_fail(self):
@@ -1961,7 +1963,7 @@ class ContainerSynchronization(APIContainerTest):
 
         # Terminate
         error = self.request_assert_error(400, f'container/register/{generic_serial}/terminate',
-                                          {}, self.at, 'DELETE')
+                                          {}, self.at, 'POST')
         self.assertEqual(10, error["result"]["error"]["code"])
 
         delete_policy('policy')
@@ -1990,7 +1992,7 @@ class ContainerSynchronization(APIContainerTest):
 
         # Terminate
         error = self.request_assert_error(400, f'container/register/{yubi_serial}/terminate',
-                                          {}, self.at, 'DELETE')
+                                          {}, self.at, 'POST')
         self.assertEqual(10, error["result"]["error"]["code"])
 
     @classmethod
@@ -2068,7 +2070,7 @@ class ContainerSynchronization(APIContainerTest):
         params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_smph, scope)
 
         # Unregister
-        self.request_assert_success(f'container/register/{smartphone_serial}/terminate', {}, self.at, 'DELETE')
+        self.request_assert_success(f'container/register/{smartphone_serial}/terminate', {}, self.at, 'POST')
 
         # Sync
         result = self.request_assert_error(400, f'container/{smartphone_serial}/sync',

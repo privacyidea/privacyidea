@@ -655,7 +655,7 @@ def registration_finalize():
     return send_result(res)
 
 
-@container_blueprint.route('register/<string:container_serial>/terminate', methods=['DELETE'])
+@container_blueprint.route('register/<string:container_serial>/terminate', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNREGISTER)
 @event('container_register_terminate', request, g)
 @log_with(log)
@@ -674,7 +674,7 @@ def registration_terminate(container_serial: str):
     return send_result(res)
 
 
-@container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['DELETE'])
+@container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['POST'])
 @event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate_client(container_serial: str):
