@@ -212,7 +212,7 @@ class SmartphoneContainer(TokenContainerClass):
         # Generate URL
         qr_url = create_container_registration_url(nonce=nonce,
                                                    time_stamp=time_stamp_iso,
-                                                   registration_url=server_url,
+                                                   server_url=server_url,
                                                    container_serial=self.serial,
                                                    key_algorithm=key_algorithm,
                                                    hash_algorithm=hash_algorithm,
