@@ -531,20 +531,20 @@ class TokenContainerClass:
         """
         raise privacyIDEAError("Synchronization is not implemented for this container type.")
 
-    def create_challenge(self, params):
-        """
-        Create a challenge for the container.
-        """
-        return {}
-
     def check_challenge_response(self, params):
         """
         Check the response of a challenge.
         """
         return False
 
-    def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, transaction_id=None,
-                           url=None, scope=None, key=None, container=None, device_id=None):
+    def create_challenge(self, scope, validity_time=2):
+        """
+        Create a challenge for the container.
+        """
+        return {}
+
+    def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
+                           url: str = None, key: str = None, container: str = None, device_id: str = None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -553,8 +553,12 @@ class TokenContainerClass:
 
         :param signature: Signature of the message
         :param public_key: Public key to verify the signature
-        :param transaction_id: Transaction ID of the challenge
-        :param url: URL of an endpoint the client can contact
+        :param scope: endpoint to reach if the challenge is valid
+        :param transaction_id: Transaction ID of the challenge, optional
+        :param url: URL to be included in the signature, optional
+        :param key: Key to be included in the signature, optional
+        :param container: Container to be included in the signature, optional
+        :param device_id: Device ID to be included in the signature, optional
         :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
@@ -568,16 +572,17 @@ class TokenContainerClass:
                 times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
                 extra_data = json.loads(challenge.data)
                 passphrase = extra_data.get("passphrase_response")
-                message = f"{nonce}|{times_stamp}"
+                challenge_scope = extra_data.get("scope")
+                if scope != challenge_scope:
+                    continue
+
+                message = f"{nonce}|{times_stamp}|{self.serial}|{scope}"
                 if url:
                     message += f"|{url}"
-                message += f"|{self.serial}"
                 if device_id:
                     message += f"|{device_id}"
                 if passphrase:
                     message += f"|{passphrase}"
-                if scope:
-                    message += f"|{scope}"
                 if key:
                     message += f"|{key}"
                 if container:
@@ -585,6 +590,10 @@ class TokenContainerClass:
 
                 container_info = self.get_container_info_dict()
                 hash_algorithm = container_info.get("hash_algorithm", "SHA256")
+
+                # log to find reason for invalid signature
+                log.debug(f"Message to verify: {message}")
+                log.debug(f"Used hash algorithm: {hash_algorithm}")
 
                 # Check signature
                 try:
@@ -602,8 +611,11 @@ class TokenContainerClass:
                         # TODO: Validate against AD
                         pass
                     else:
-                        if challenge_passphrase != passphrase:
-                            raise privacyIDEAError('Could not verify signature!')
+                        # not case-sensitive
+                        if challenge_passphrase.lower() != passphrase.lower():
+                            valid_challenge = False
+                            log.debug("Invalid passphrase!")
+                            break
 
                 # Valid challenge: delete it
                 challenge.delete()

@@ -38,10 +38,9 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
                                        set_default_template, get_container_template_classes,
                                        get_container_classes, create_container_from_db_object,
-                                       compare_template_with_container)
+                                       compare_template_with_container, register_init, unregister)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.crypto import verify_ecc, b64url_str_key_pair_to_ecc_obj
-from privacyidea.lib.error import PolicyError, ParameterError, privacyIDEAError
+from privacyidea.lib.error import PolicyError, ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, Match, SCOPE
@@ -559,22 +558,42 @@ def registration_init():
     container = find_container_by_serial(container_serial)
     res = {"container_serial": container_serial}
 
+    # Check registration state: registration init is only allowed for None and "client_wait"
+    registration_state = container.get_container_info_dict().get("registration_state")
+    if registration_state and registration_state != "client_wait":
+        raise ContainerNotRegistered(f"Container is already registered.")
+
     # Get registration url for the second step
     server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
     container.add_container_info("server_url", server_url)
-    registration_url = create_endpoint_url(server_url, "container/register/finalize")
-    params.update({'container_registration_url': registration_url})
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({"scope": scope,
+                   "server_url": server_url})
 
     # Get validity time for the registration
     registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
                                               action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
+    registration_ttl = 10
     if len(registration_ttl_policies) > 0:
         registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
-        if registration_ttl > 0:
-            params.update({'registration_ttl': registration_ttl})
+        if registration_ttl <= 0:
+            # default 10 min
+            registration_ttl = 10
+    params.update({'registration_ttl': registration_ttl})
+
+    # Get validity time for further challenges
+    challenge_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
+                                           action=ACTION.CONTAINER_CHALLENGE_TTL).policies()
+    challenge_ttl = 2
+    if len(challenge_ttl_policies) > 0:
+        challenge_ttl = int(challenge_ttl_policies[0]["action"][ACTION.CONTAINER_CHALLENGE_TTL])
+        if challenge_ttl <= 0:
+            # default 2 min
+            challenge_ttl = 2
+    container.add_container_info("challenge_ttl", challenge_ttl)
 
     # Get ssl verify
     ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
@@ -587,7 +606,9 @@ def registration_init():
     params.update({'ssl_verify': ssl_verify})
 
     # Initialize registration
-    res_registration = container.init_registration(params)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res_registration = register_init(container, params, user, user_role)
     res.update(res_registration)
     return send_result(res)
 
@@ -608,7 +629,7 @@ def registration_finalize():
         ::
 
             {
-                "container_sync_url": "http://pi/container/sync/SMP001/init"
+                "server_url": "https://pi.net"
             }
 
     Depending on the container type, more information might be provided.
@@ -624,15 +645,12 @@ def registration_finalize():
     if server_url is None:
         log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
         server_url = " "
-    registration_url = create_endpoint_url(server_url, "container/register/finalize")
-    sync_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/init")
-    container_unregister_url = create_endpoint_url(server_url,
-                                                   f"container/register/{container_serial}/terminate/client")
-    params.update({'container_registration_url': registration_url})
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({'scope': scope})
 
     # Validate registration
     res = container.finalize_registration(params)
-    res.update({'container_sync_url': sync_url, "container_unregister_url": container_unregister_url})
+    res.update({'server_url': server_url})
 
     return send_result(res)
 
@@ -648,7 +666,10 @@ def registration_terminate(container_serial: str):
     :param container_serial: Serial of the container
     """
     container = find_container_by_serial(container_serial)
-    res = container.terminate_registration()
+
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+    res = unregister(container, user, user_role)
 
     return send_result(res)
 
@@ -663,74 +684,73 @@ def registration_terminate_client(container_serial: str):
 
     :param container_serial: Serial of the container
     :jsonparam signature: Signature of the client
-    :jsonparam message: Message
     """
-    message = getParam(request.all_data, "message", required)
-    signature = base64.urlsafe_b64decode(getParam(request.all_data, "signature", required))
-
-    # Get required parameters from the container
+    params = request.all_data
     container = find_container_by_serial(container_serial)
-    container_info = container.get_container_info_dict()
-    public_client_key = container_info.get("public_key_container")
-    pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=public_client_key)
-    registration_state = container_info.get("registration_state")
-    hash_algorithm = container_info.get("hash_algorithm")
-    if registration_state != "registered":
-        raise privacyIDEAError("Container is not registered.")
 
-    try:
-        verify_ecc(message.encode("utf-8"), signature, pub_key_container, hash_algorithm)
-    except Exception:
-        raise privacyIDEAError(f"Could not verify the signature!")
+    server_url = container.get_container_info_dict().get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Container might not be registered correctly.")
+        server_url = " "
+    scope = create_endpoint_url(server_url, f"container/register/{container_serial}/terminate/client")
+    params.update({'scope': scope})
+    container.check_challenge_response(params)
 
     res = container.terminate_registration()
 
     return send_result(res)
 
 
-@container_blueprint.route('sync/<string:container_serial>/init', methods=['GET'])
+@container_blueprint.route('<string:container_serial>/challenge', methods=['POST'])
 @event('container_create_challenge', request, g)
 @log_with(log)
-def sync_init(container_serial: str):
+def create_challenge(container_serial: str):
     """
-    Creates a challenge for a container to synchronize with privacyIDEA.
+    Creates a challenge for a container.
 
     :param container_serial: Serial of the container
-    :return: dictionary with the required information for the synchronization
+    :jsonparam scope: Scope of the challenge, e.g. 'https://pi.com/container/SMPH001/sync'
+    :return: dictionary with the required information for the scope
 
     An example response looks like this:
 
     ::
 
         {
-            "container_sync_url": "http://pi/container/sync/SMP001/finalize"
+            "server_url": "https://pi.net"
+            "nonce": "123456",
+            "timestamp": "2024-10-23T05:45:02.484954+00:00",
         }
 
     Further entries are possible depending on the container type.
     """
-    container = find_container_by_serial(container_serial)
-    registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state != "registered":
-        raise privacyIDEAError(f"Container with serial {container_serial} is not registered.")
+    # Get params
+    scope = getParam(request.all_data, "scope", optional=False)
 
-    # Get synchronization url for the second step
-    server_url = container.get_container_info_dict().get("server_url")
+    container = find_container_by_serial(container_serial)
+    container_info = container.get_container_info_dict()
+    registration_state = container_info.get("registration_state")
+    if registration_state != "registered":
+        raise ContainerNotRegistered(f"Container is not registered.")
+
+    # Get server url for the second step
+    server_url = container_info.get("server_url")
     if server_url is None:
-        log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
+        log.debug("Server url is not set in the container info.")
         server_url = " "
-    synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
+
+    # validity time for the challenge: convert from minutes to seconds
+    challenge_ttl = int(container_info.get("challenge_ttl", "2")) * 60
 
     # Create challenge
-    params = request.all_data
-    params.update({'scope': synchronize_url})
-    res = container.init_sync(request.all_data)
-    res.update({'container_sync_url': synchronize_url})
+    res = container.create_challenge(scope, challenge_ttl)
+    res.update({'server_url': server_url})
 
     return send_result(res)
 
 
-@container_blueprint.route('sync/<string:container_serial>/finalize', methods=['POST'])
-def sync_finalize(container_serial: str):
+@container_blueprint.route('<string:container_serial>/sync', methods=['POST'])
+def synchronize(container_serial: str):
     """
     Validates the challenge if the container is authorized to synchronize. If successful, the server returns the
     container's state, including all attributes and tokens. The token secrets are also included.
@@ -777,11 +797,11 @@ def sync_finalize(container_serial: str):
     if server_url is None:
         log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
         server_url = " "
-    synchronize_url = create_endpoint_url(server_url, f"container/sync/{container_serial}/finalize")
-    params.update({'scope': synchronize_url})
+    scope = create_endpoint_url(server_url, f"container/{container_serial}/sync")
+    params.update({'scope': scope})
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
-    container.check_synchronization_challenge(params)
+    container.check_challenge_response(params)
     container_dict = container.synchronize_container_details(container_client)
 
     # Get enroll information for missing tokens
@@ -796,7 +816,7 @@ def sync_finalize(container_serial: str):
 
     # Optionally encrypt dict
     res = container.encrypt_dict(container_dict, params)
-    res.update({'container_sync_url': synchronize_url})
+    res.update({'server_url': server_url})
 
     # Update last sync time
     container.update_last_synchronization()

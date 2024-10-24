@@ -1081,8 +1081,13 @@ def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublic
         message = message.encode("utf-8")
     hash_algorithm = get_hash_algorithm_object(algorithm_name, default=hashes.SHA256())
     ecdsa_algorithm = ec.ECDSA(hash_algorithm)
-    public_key.verify(signature, message, ecdsa_algorithm)
-    return True, hash_algorithm.name
+    if public_key:
+        public_key.verify(signature, message, ecdsa_algorithm)
+        valid = True
+    else:
+        valid = False
+        log.debug("No public key provided for signature verification!")
+    return valid, hash_algorithm.name
 
 
 def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey):

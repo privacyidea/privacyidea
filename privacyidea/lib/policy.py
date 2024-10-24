@@ -409,6 +409,7 @@ class ACTION(object):
     CONTAINER_UNREGISTER = "container_unregister"
     PI_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
+    CONTAINER_CHALLENGE_TTL = "container_challenge_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
     CONTAINER_SSL_VERIFY = "container_ssl_verify"
     CONTAINER_TEMPLATE_CREATE = "container_template_create"
@@ -2851,13 +2852,19 @@ def get_static_policy_definitions(scope=None):
             ACTION.PI_SERVER_URL: {
                 'type': 'str',
                 'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
-                          'It is used to build URLs the container can contact for registration and synchronisation.'),
+                          'It is used to build URLs the container can contact for registration and synchronization.'),
                 'group': GROUP.REGISTRATION
             },
             ACTION.CONTAINER_REGISTRATION_TTL: {
                 'type': 'int',
                 'desc': _('The time in minutes the user has to do the second step of the registration.'
-                          'The default is ten minutes'),
+                          'The default is ten minutes.'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_CHALLENGE_TTL: {
+                'type': 'int',
+                'desc': _('The time in minutes the user has to answer a challenge.'
+                          'The default is two minutes.'),
                 'group': GROUP.REGISTRATION
             },
             ACTION.CONTAINER_SSL_VERIFY: {

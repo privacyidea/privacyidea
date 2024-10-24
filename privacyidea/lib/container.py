@@ -1021,6 +1021,41 @@ def create_endpoint_url(base_url, endpoint):
     return endpoint_url
 
 
+def register_init(container: TokenContainer, params: dict, user: User, user_role: str):
+    """
+    Register a container for synchronization. The user has to be an admin or the owner of the container.
+
+    :param container: The container object
+    :param params: The parameters for the registration
+    :param user: The user object
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
+    """
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    # registration
+    res_registration = container.init_registration(params)
+    return res_registration
+
+
+def unregister(container: TokenContainer, user: User, user_role: str):
+    """
+    Unregister a container from the synchronization. The user has to be an admin or the owner of the container.
+
+    :param container: The container object
+    :param user: The user object
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: True on success
+    """
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    # registration
+    res_registration = container.terminate_registration()
+    return res_registration
+
+
 def get_container_template_classes():
     """
     Returns a dictionary of all available container template classes in the format: { type: class }.

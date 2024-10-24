@@ -32,7 +32,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc)
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
@@ -40,7 +40,7 @@ from privacyidea.models import Challenge
 log = logging.getLogger(__name__)
 
 
-def create_container_registration_url(nonce, time_stamp, registration_url, container_serial, key_algorithm,
+def create_container_registration_url(nonce, time_stamp, server_url, container_serial, key_algorithm,
                                       hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA", ttl=10,
                                       ssl_verify=True):
     """
@@ -48,7 +48,7 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
 
     :param nonce: Nonce (some random bytes).
     :param time_stamp: Timestamp of the registration in iso format.
-    :param registration_url: URL of the endpoint to finalize the registration.
+    :param server_url: URL of the server reachable for the client.
     :param container_serial: Serial of the container.
     :param key_algorithm: Algorithm to use to generate the ECC key pair, e.g. 'secp384r1'.
     :param hash_algorithm: Hash algorithm to be used in the signing algorithm, e.g. 'SHA256'.
@@ -70,7 +70,7 @@ def create_container_registration_url(nonce, time_stamp, registration_url, conta
     url_ssl_verify = quote(ssl_verify.encode("utf-8"))
 
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
-           f"&url={registration_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
+           f"&url={server_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
            f"&hash_algorithm={url_hash_algorithm}&ssl_verify={url_ssl_verify}&passphrase={url_passphrase}{url_extra_data}")
     return url
 
@@ -140,12 +140,14 @@ class SmartphoneContainer(TokenContainerClass):
             ::
 
                 {
-                    "container_registration_url": url of the endpoint to finalize the registration,
-                    "passphrase_required": <bool>, (optional)
+                    "server_url": <str, url of the server reachable for the client>,
+                    "scope": <str, endpoint the client contacts to finalize the registration>,
+                    "ssl_verify": <bool, whether the client shall use ssl>,
+                    "registration_ttl": <int, time to live of the registration link in minutes>,
                     "passphrase_ad": <bool, whether the AD password shall be used>, (optional)
                     "passphrase_prompt": <str, the prompt for the passphrase displayed in the app>, (optional)
                     "passphrase_response": <str, passphrase>, (optional)
-                    "extra_data": ..., (optional)
+                    "extra_data": <dict, any additional data>, (optional)
                 }
 
         :return: A dictionary like:
@@ -163,13 +165,16 @@ class SmartphoneContainer(TokenContainerClass):
                 "key_algorithm": "secp384r1",
                 "hash_algorithm": "SHA256",
                 "ssl_verify": <bool>,
+                "ttl": <int>,
                 "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
             }
         """
-        registration_url = getParam(params, 'container_registration_url', optional=False)
-        nonce = geturandom(20, hex=True)
-        extra_data = getParam(params, 'extra_data', optional=True) or {}
+        # get params
+        scope = getParam(params, 'scope', optional=False)
+        server_url = getParam(params, 'server_url', optional=False)
         ssl_verify = getParam(params, 'ssl_verify', optional=False)
+        registration_ttl = getParam(params, 'registration_ttl', optional=False)
+        extra_data = getParam(params, 'extra_data', optional=True) or {}
 
         # Check if a passphrase is required for the registration
         passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
@@ -178,11 +183,9 @@ class SmartphoneContainer(TokenContainerClass):
         if passphrase_ad:
             if not passphrase_prompt:
                 passphrase_prompt = "Please enter your AD passphrase."
-        passphrase_params = {"passphrase_prompt": passphrase_prompt, "passphrase_response": passphrase_response,
-                             "passphrase_ad": passphrase_ad}
-
-        # Get timeout (in minutes)
-        registration_ttl = getParam(params, 'registration_ttl', optional=True)
+        challenge_params = {"scope": scope, "passphrase_prompt": passphrase_prompt,
+                            "passphrase_response": passphrase_response,
+                            "passphrase_ad": passphrase_ad}
 
         # Delete all other challenges for this container
         # Even if the container is already registered and a new QR code is generated it shall reset the registration
@@ -190,14 +193,11 @@ class SmartphoneContainer(TokenContainerClass):
         challenge_list = get_challenges(serial=self.serial)
         for challenge in challenge_list:
             challenge.delete()
+
         # Create challenge
-        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=json.dumps(passphrase_params))
-        if registration_ttl:
-            # Set validity time for the challenge in seconds
-            db_challenge.validitytime = registration_ttl * 60
-        db_challenge.save()
-        timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
-        time_stamp_iso = timestamp.isoformat()
+        res = self.create_challenge(scope=scope, validity_time=registration_ttl, data=challenge_params)
+        time_stamp_iso = res["time_stamp"]
+        nonce = res["nonce"]
 
         # set all options and get algorithms
         class_options = self.get_class_options()
@@ -212,7 +212,7 @@ class SmartphoneContainer(TokenContainerClass):
         # Generate URL
         qr_url = create_container_registration_url(nonce=nonce,
                                                    time_stamp=time_stamp_iso,
-                                                   registration_url=registration_url,
+                                                   registration_url=server_url,
                                                    container_serial=self.serial,
                                                    key_algorithm=key_algorithm,
                                                    hash_algorithm=hash_algorithm,
@@ -235,6 +235,7 @@ class SmartphoneContainer(TokenContainerClass):
                            "key_algorithm": key_algorithm,
                            "hash_algorithm": hash_algorithm,
                            "ssl_verify": ssl_verify,
+                           "ttl": registration_ttl,
                            "passphrase_prompt": passphrase_prompt}
 
         return response_detail
@@ -263,13 +264,13 @@ class SmartphoneContainer(TokenContainerClass):
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
-        registration_url = getParam(params, "container_registration_url", optional=False)
+        scope = getParam(params, "scope", optional=False)
         device_id = getParam(params, "device_id", optional=False)
 
         # Verifies challenge
-        valid = self.validate_challenge(signature, pub_key_container, url=registration_url, device_id=device_id)
+        valid = self.validate_challenge(signature, pub_key_container, scope=scope, device_id=device_id)
         if not valid:
-            raise privacyIDEAError('Could not verify signature!')
+            raise ContainerInvalidChallenge('Could not verify signature!')
 
         # Generate private + public key for the server
         container_info = self.get_container_info_dict()
@@ -306,51 +307,47 @@ class SmartphoneContainer(TokenContainerClass):
         for challenge in challenge_list:
             challenge.delete()
 
-    def init_sync(self, params):
+    def create_challenge(self, scope, validity_time=2, data={}):
         """
-        Initialize the synchronization of a container with the pi server.
-        It creates a challenge for the container to allow the registration.
+        Create a challenge for the container.
 
-        :param params: Dictionary with the parameters for the synchronization.
+        :param scope: The scope (endpoint) of the challenge, e.g. "container/SMPH001/sync"
+        :param validity_time: The validity time of the challenge in seconds.
+        :param data: Additional data for the challenge.
+        :return: A dictionary with the challenge data like
 
             ::
                 {
-                    "scope": "https://pi/container/synchronize/SMPH0001/finalize"
-                }
-
-        :return: Dictionary with the challenge nonce and the timestamp
-
-            ::
-                {
-                    "nonce": "nonce",
-                    "time_stamp": "2021-06-01T12:00:00+00:00",
-                    "key_algorithm": "secp384r1"
+                    "nonce": <nonce>,
+                    "time_stamp": <timestamp iso format>,
+                    "enc_key_algorithm": <encryption key algorithm>
                 }
         """
-        scope = getParam(params, "scope", optional=False)
-
         # Create challenge
         nonce = geturandom(20, hex=True)
-        data = json.dumps({"scope": scope})
-        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=data)
+        data["scope"] = scope
+        data_str = json.dumps(data)
+        if validity_time:
+            validity_time *= 60
+        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=data_str, validitytime=validity_time)
         db_challenge.save()
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
 
-        # Get key algorithms
+        # Get encryption info (optional)
         container_info = self.get_container_info_dict()
-        key_algorithm = container_info.get("key_algorithm", "secp384r1")
+        enc_key_algorithm = container_info.get(SmartphoneOptions.ENCRYPT_KEY_ALGORITHM)
 
         res = {"nonce": nonce,
                "time_stamp": time_stamp_iso,
-               "key_algorithm": key_algorithm}
+               "enc_key_algorithm": enc_key_algorithm}
         return res
 
-    def check_synchronization_challenge(self, params):
+    def check_challenge_response(self, params):
         """
-        Checks if the one who is requesting the synchronization is allowed to receive these information.
+        Checks if the response to a challenge is valid.
 
-        :param params: Dictionary with the parameters for the synchronization.
+        :param params: Dictionary with the parameters for the challenge.
 
             ::
                 {
@@ -363,14 +360,14 @@ class SmartphoneContainer(TokenContainerClass):
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
-        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
+        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=True)
         container_client_str = getParam(params, "container_dict_client", optional=True)
-        scope = getParam(params, "scope", optional=True)
+        scope = getParam(params, "scope", optional=False)
 
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
         except KeyError:
-            raise privacyIDEAError("The container is not registered or was unregistered!")
+            raise ContainerNotRegistered("The container is not registered or was unregistered!")
         pub_key_sig_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
 
         # Validate challenge
@@ -378,7 +375,7 @@ class SmartphoneContainer(TokenContainerClass):
                                                   key=pub_key_encr_container_str,
                                                   container=container_client_str)
         if not valid_challenge:
-            raise privacyIDEAError('Could not verify signature!')
+            raise ContainerInvalidChallenge('Could not verify signature!')
 
         return valid_challenge
 
@@ -403,15 +400,15 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
 
         # Generate encryption key pair for the server
-        # container_info = self.get_container_info_dict()
-        # key_algorithm = container_info.get("key_algorithm", "secp384r1")
-        public_key_encr_server, private_key_encr_server = generate_keypair_ecc("x25519")
+        container_info = self.get_container_info_dict()
+        enc_key_algorithm = container_info.get(SmartphoneOptions.ENCRYPT_KEY_ALGORITHM)
+        public_key_encr_server, private_key_encr_server = generate_keypair_ecc(enc_key_algorithm)
         public_key_encr_server_str = base64.urlsafe_b64encode(public_key_encr_server.public_bytes_raw()).decode('utf-8')
 
         # Get encryption algorithm and mode
         container_info = self.get_container_info_dict()
-        encrypt_algorithm = container_info.get("encrypt_algorithm", "SHA256")
-        encrypt_mode = container_info.get("encrypt_mode", "ECB")
+        encrypt_algorithm = container_info.get(SmartphoneOptions.ENCRYPT_ALGORITHM)
+        encrypt_mode = container_info.get(SmartphoneOptions.ENCRYPT_MODE)
 
         # encrypt container dict
         session_key = private_key_encr_server.exchange(pub_key_encr_container)
@@ -493,28 +490,3 @@ class SmartphoneContainer(TokenContainerClass):
         container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
 
         return container_dict
-
-    def create_challenge(self, params):
-        """
-        Create a challenge.
-
-        :param params: a dictionary containing container type specific parameters
-        :return: Dictionary with the challenge nonce and the timestamp
-
-            ::
-                {
-                    "nonce": "nonce",
-                    "time_stamp": "2021-06-01T12:00:00+00:00"
-                }
-        """
-        scope = getParam(params, "scope", optional=True)
-        nonce = geturandom(20, hex=True)
-        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=scope)
-        db_challenge.save()
-        timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
-        time_stamp_iso = timestamp.isoformat()
-
-        res = {"nonce": nonce,
-               "time_stamp": time_stamp_iso,
-               "scope": scope}
-        return res
