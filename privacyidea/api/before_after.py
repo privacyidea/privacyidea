@@ -156,8 +156,8 @@ def before_container_request():
     container_serial = getParam(request.all_data, "container_serial")
     auth_token_free_endpoints = ["/container/register/finalize",
                                  f"/container/register/{container_serial}/terminate/client",
-                                 f"/container/sync/{container_serial}/init",
-                                 f"/container/sync/{container_serial}/finalize"]
+                                 f"/container/{container_serial}/challenge",
+                                 f"/container/{container_serial}/sync"]
     is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path == endpoint]
 
     # Get auth token
