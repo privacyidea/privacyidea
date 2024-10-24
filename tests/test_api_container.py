@@ -30,7 +30,7 @@ class APIContainerTest(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
@@ -41,7 +41,7 @@ class APIContainerTest(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(status_code, res.status_code, res.json)
             self.assertFalse(res.json["result"]["status"])
@@ -52,7 +52,7 @@ class APIContainerTest(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
             return res.json
@@ -62,7 +62,7 @@ class APIContainerTest(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
 
@@ -98,7 +98,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(403, res.status_code, res.json)
             self.assertEqual(res.json["result"]["error"]["code"], 303)
@@ -109,7 +109,7 @@ class APIContainerAuthorization(MyApiTestCase):
                                            method=method,
                                            data=data if method == 'POST' else None,
                                            query_string=data if method == 'GET' else None,
-                                           headers={'Authorization': auth_token}):
+                                           headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
