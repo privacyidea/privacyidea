@@ -161,7 +161,8 @@ class WebHookHandler(BaseEventHandler):
                             else:
                                 return {k: v.format(**attributes)}
 
-                    webhook_text = replace_recursive(json.loads(webhook_text))
+                    new_json = replace_recursive(json.loads(webhook_text))
+                    webhook_text = json.dumps(new_json)
                 else:
                     # Content Type URLENCODED, simple format
                     webhook_text = webhook_text.format(**attributes)
