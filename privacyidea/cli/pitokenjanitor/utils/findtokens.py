@@ -206,8 +206,8 @@ def export_user_data(token_list, attributes=None):
         except Exception:
             sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial}.\n")
         if user:
-            uid = (f"'{user.info.get("username", "")}','{user.info.get("givenname", "")}',"
-                   f"'{user.info.get("surname", "")}','{user.uid}','{user.resolver}','{user.realm}'")
+            uid = (f"""'{user.info.get("username", "")}','{user.info.get("givenname", "")}',"""
+                   f"""'{user.info.get("surname", "")}','{user.uid}','{user.resolver}','{user.realm}'""")
             if attributes:
                 for att in attributes.split(","):
                     uid += f",'{user.info.get(att, "")}'"
