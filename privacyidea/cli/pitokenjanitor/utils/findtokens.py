@@ -207,7 +207,7 @@ def export_user_data(token_list, attributes=None):
             sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial}.\n")
         if user:
             uid = (f"'{user.info.get("username", "")}','{user.info.get("givenname", "")}',"
-                   f"'{ user.info.get("surname", "")}','{user.uid}','{user.resolver}','{user.realm}'")
+                   f"'{user.info.get("surname", "")}','{user.uid}','{user.resolver}','{user.realm}'")
             if attributes:
                 for att in attributes.split(","):
                     uid += f",'{user.info.get(att, "")}'"
@@ -391,7 +391,7 @@ def findtokens(ctx, has_not_tokeninfo_key, has_tokeninfo_key, tokenattribute, to
                                tokeninfo_filter=tvfilter, tokenattribute_filter=tafilter,
                                tokenowner_filter=tofilter, tokencontaner_filter=tcfilter,
                                orphaned=orphaned, tokentype=tokentype, realm=realm,
-                               token_owner=token_owner, resolver=resolver, rollout_state=rollout_state,
+                               resolver=resolver, rollout_state=rollout_state,
                                chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
                                has_tokeninfo_key=has_tokeninfo_key)
 
