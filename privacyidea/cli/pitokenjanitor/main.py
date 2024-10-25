@@ -29,6 +29,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
              add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 @click.option('--chunksize', default=100, help='The number of tokens to fetch in one request.')
+@click.pass_context
 def cli(ctx, chunksize):
     """
 \b

@@ -415,3 +415,245 @@ The command::
 will disable those tokens.
 
 This script can be well used with the :ref:`scripthandler`.
+
+.. _pitokenjanitor:
+
+The pi-token-janitor Script
+-------------------------
+
+.. index:: pi-token-janitor
+
+Starting with version 3.11 privacyIDEA comes the new version of the :ref:`privacyidea_token_janitor` script.
+The new script is called *pi-token-janitor*. The script can be used for three different tasks: to find
+tokens and perform actions on them, to load token data from the PSKC file or to update the token data.
+
+Find
+~~~~
+
+With the *find* command you can search for tokens in the database. You can use several options to filter the tokens.
+
+Tokenattribute
+**************
+'--tokenattribute' to find tokens with specific token attributes.
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=HOTP123456,tokentype=hotp'
+
+Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
+.. note:: You can also use regular expressions in the tokenattribute filter.
+
+Tokeninfo
+*********
+'--tokeninfo' to find tokens with tokeninfos.
+Example::
+
+    pitokenjanitor find --tokeninfo 'tokenkind=software,import_time<2021-06-01 18:00:00+0200'
+
+Search for all tokens with the tokeninfo-key ``tokenkind`` and the value ''software'' and with an import_time before
+the given date.
+.. note:: You can also use regular expressions in the tokeninfo filter.
+
+Tokencontaner
+**************
+'--tokencontainer' to find tokens in a specific token container.
+Example::
+
+    pitokenjanitor find --tokencontainer 'serial=SMPH00009272'
+
+Search for all tokens in the token container with the serial ``SMPH00009272``.
+.. note:: You can also use regular expressions in the tokencontainer filter.
+
+Has-tokeninfo-key/Has-not-tokeninfo-key
+****************************************
+'--has-tokeninfo-key' to find tokens with a specific tokeninfo-key or '--has-not-tokeninfo-key' to find tokens
+without a specific tokeninfo-key.
+Example::
+
+    pitokenjanitor find --has-tokeninfo-key 'import_time'
+
+Search for all tokens with the tokeninfo-key ``import_time``.
+'--has-not-tokeninfo-key' to find tokens without a specific tokeninfo-key.
+Example::
+
+    pitokenjanitor find --has-not-tokeninfo-key 'import_time'
+
+Tokenower
+*********
+'--tokenowner' to find tokens from a specific token owner(user). You can use things like the username, the realm or
+the resolver.
+Example::
+
+    pitokenjanitor find --tokenowner 'user_id=642cf598-d9cf-1037-8083-a1df7d38c897'
+
+Assigned
+********
+'--assigned' to find tokens that are assigned or unassigned.
+Example::
+
+    pitokenjanitor find --assigned False
+
+or::
+    pitokenjanitor find --assigned True
+
+Active
+******
+'--active' searches for tokens that are either active or inactive, this means enabled or disabled.
+
+Example::
+
+    pitokenjanitor find --active False
+
+or::
+    pitokenjanitor find --active True
+
+Orphaned
+********
+'--orphaned' searches for tokens, that are orphaned. Orphaned tokens are assigned to a user. But the user does not
+exist in the user store anymore. This can happen e.g. if an LDAP user gets deleted in the LDAP directory.
+
+Example::
+
+    pitokenjanitor find --orphaned 1
+
+Range-of-serials
+****************
+'--range-of-serials' to find tokens with serials in a specific range.
+
+Example::
+
+    pitokenjanitor find --range-of-serials 'HOTP00000000-HOTP99999999'
+
+.. note:: This matches the string as ASCII values. So consider case sensitivity.
+
+Listuser
+********
+Lists all users assinged to the found tokens.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listuser
+
+--csv
+.....
+The option '--csv' can be used to output the results in CSV format.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' --csv
+
+Listtoken
+*********
+Lists all tokens found.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listtoken
+
+--csv
+.....
+Lists all tokens found in CSV format.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listtoken --csv
+
+
+Export
+******
+Exports all tokens found.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export
+
+--format
+........
+The option '--format' can be used to output the results in a specific format. The format can be 'json', 'yaml' or 'xml'.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format json
+
+--b32
+.....
+The option '--b32' can be used to output the results in base32 format.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export --form CSV --b32
+
+..Note:: The option '--b32' only works with the CSV format.
+
+
+Set_tokenrealms
+***************
+Sets a tokenrealm for the found tokens.
+
+--tokenrealms
+.............
+This agent must be set to 'set-tokenrealms' to set the tokenrealms.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set-tokenrealms --tokenrealms defrealm
+
+Disables
+********
+Disables the found tokens.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' disable
+
+Delete
+******
+Deletes the found tokens.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' delete
+
+Unassign
+********
+Unassigns the found tokens.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' unassign
+
+Set_description
+***************
+Sets a description for the found tokens.
+
+--description
+.............
+This argument must be set to 'set_description' to set the description.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set_description --description 'example'
+
+Set_tokeninfo
+**************
+Sets a tokeninfo for the found tokens.
+
+--tokeninfo
+...........
+This argument must be set to set the tokeninfo.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set_tokeninfo --tokeninfo 'import_time=2021-06-01 18:00:00+0200,serial=OATH0004C900'
+
+Remove_tokeninfo
+****************
+Removes a tokeninfo from the found tokens.
+
+--tokeninfo_key
+...............
+This argument must be set to specify witch tokeninfo should be removed.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
+
