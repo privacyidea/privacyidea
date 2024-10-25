@@ -1,0 +1,20 @@
+<br/>
+<mat-list>
+  <mat-list-item>
+    <button class="card-button" mat-flat-button>
+      <mat-icon>folder</mat-icon>
+      Overview
+    </button>
+  </mat-list-item>
+  <mat-list-item>
+    <button class="card-button" mat-flat-button>
+      <mat-icon>create_new_folder</mat-icon>
+      Create
+    </button>
+  </mat-list-item>
+  <!--loop disabled items to fix animation-->
+  @for (a of [0, 0, 0, 0, 0, 0, 0]; track 0) {
+    <mat-list-item disabled>
+    </mat-list-item>
+  }
+</mat-list>

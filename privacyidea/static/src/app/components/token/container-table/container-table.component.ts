@@ -1,39 +1,65 @@
 import {Component, signal, ViewChild} from '@angular/core';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatTableDataSource, MatTableModule} from '@angular/material/table';
-import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
-import {MatInputModule} from '@angular/material/input';
-import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
+import {
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatNoDataRow,
+  MatRow,
+  MatRowDef,
+  MatTable,
+  MatTableDataSource
+} from '@angular/material/table';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
+import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
-import {MatCard, MatCardContent} from '@angular/material/card';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
-  {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Active'},
+  {key: 'type', label: 'Type'},
   {key: 'description', label: 'Description'},
-  {key: 'failcount', label: 'Fail Counter'},
-  {key: 'rollout_state', label: 'Rollout Status'},
-  {key: 'username', label: 'User'},
-  {key: 'user_realm', label: 'Realm'},
-  {key: 'tokengroup', label: 'Token Realm'},
-  {key: 'container_serial', label: 'Container'},
+  {key: 'users', label: 'User'},
+  {key: 'user_realms', label: 'Realm'},
+  {key: 'realms', label: 'Container Realms'},
 ];
 
 @Component({
-  selector: 'app-token-table',
+  selector: 'app-container-table',
   standalone: true,
   imports: [
-    MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, NgForOf, MatCard, MatCardContent, NgClass, NgIf
+    MatCell,
+    MatCellDef,
+    MatFormField,
+    MatHeaderCell,
+    MatHeaderRow,
+    MatHeaderRowDef,
+    MatInput,
+    MatLabel,
+    MatPaginator,
+    MatRow,
+    MatRowDef,
+    MatSort,
+    MatSortHeader,
+    MatTable,
+    NgForOf,
+    NgIf,
+    MatColumnDef,
+    MatHeaderCellDef,
+    MatNoDataRow,
+    NgClass
   ],
-  templateUrl: './token-table.component.html',
-  styleUrl: './token-table.component.css'
+  templateUrl: './container-table.component.html',
+  styleUrl: './container-table.component.css'
 })
-export class TokenTableComponent {
+export class ContainerTableComponent {
   private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
   dataSource = signal(new MatTableDataSource());
   displayedColumns: string[] = columns.map(column => column.key);
@@ -56,16 +82,16 @@ export class TokenTableComponent {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     }
 
-    this.http.get('http://127.0.0.1:5000/token', this.headerDict).subscribe({
+    this.http.get('http://127.0.0.1:5000/container', this.headerDict).subscribe({
       next: (response: any) => {
-        const tokens = response.result.value.tokens;
-        console.log('Token data', tokens); // TODO map values correctly and remove this line
-        this.length = tokens.length;
-        this.fullData = tokens;
-        this.currentData = tokens;
+        console.log('Container data', response.result.value.containers); // TODO map values correctly and remove this line
+        const containers = response.result.value.containers;
+        this.length = containers.length;
+        this.fullData = containers;
+        this.currentData = containers;
         this.updateDataSource(this.currentData);
       }, error: (error: any) => {
-        console.error('Failed to get token data', error);
+        console.error('Failed to get container data', error);
       }
     });
   }
@@ -112,24 +138,16 @@ export class TokenTableComponent {
       switch (sort.active) {
         case 'serial':
           return compare(a.serial, b.serial, isAsc);
-        case 'tokentype':
-          return compare(a.tokentype, b.tokentype, isAsc);
-        case 'active':
-          return compare(a.active, b.active, isAsc);
+        case 'type':
+          return compare(a.type, b.type, isAsc);
         case 'description':
           return compare(a.description, b.description, isAsc);
-        case 'failcount':
-          return compare(a.failcount, b.failcount, isAsc);
-        case 'rollout_state':
-          return compare(a.rollout_state, b.rollout_state, isAsc);
-        case 'username':
-          return compare(a.username, b.username, isAsc);
-        case 'user_realm':
-          return compare(a.user_realm, b.user_realm, isAsc);
-        case 'token_realm':
-          return compare(a.token_realm, b.token_realm, isAsc);
-        case 'container_serial':
-          return compare(a.container_serial, b.container_serial, isAsc);
+        case 'users':
+          return compare(a.users, b.users, isAsc);
+        case 'user_realms':
+          return compare(a.user_realms, b.user_realms, isAsc);
+        case 'realms':
+          return compare(a.realms, b.realms, isAsc);
         default:
           return 0;
       }
@@ -139,7 +157,6 @@ export class TokenTableComponent {
     this.updateDataSource(this.currentData);
   }
 
-  protected readonly columns = columns;
   pageEvent: PageEvent | undefined;
 
   handlePageEvent(e: PageEvent) {
@@ -155,4 +172,6 @@ export class TokenTableComponent {
 
     this.dataSource.set(new MatTableDataSource(data.slice(startIndex, endIndex)));
   }
+
+  protected readonly columns = columns;
 }

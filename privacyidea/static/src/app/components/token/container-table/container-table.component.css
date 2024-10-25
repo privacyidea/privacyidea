@@ -35,9 +35,9 @@ th:nth-child(even) {
   justify-content: space-between;
 }
 
-.token-table {
+.container-table {
   justify-content: center;
-  padding: 20px;
+  padding: 33px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);

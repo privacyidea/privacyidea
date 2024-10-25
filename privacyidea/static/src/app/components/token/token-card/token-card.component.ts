@@ -1,10 +1,12 @@
-import {Component} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatTabHeader, MatTabsModule} from '@angular/material/tabs';
+import {MatTabChangeEvent, MatTabHeader, MatTabsModule} from '@angular/material/tabs';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatButton, MatFabButton} from '@angular/material/button';
 import {MatDivider} from '@angular/material/divider';
+import {TokenTabComponent} from './token-tab/token-tab.component';
+import {ContainerTabComponent} from './container-tab/container-tab.component';
 
 @Component({
   selector: 'app-token-card',
@@ -19,11 +21,20 @@ import {MatDivider} from '@angular/material/divider';
     MatFabButton,
     MatButton,
     MatDivider,
-    MatTabHeader
+    MatTabHeader,
+    TokenTabComponent,
+    ContainerTabComponent,
   ],
   templateUrl: './token-card.component.html',
-  styleUrl: './token-card.component.css'
+  styleUrls: ['./token-card.component.css']
 })
 export class TokenCardComponent {
+  @Input() selectedTabIndex: number = 0;
+  @Output() tabChange: EventEmitter<number> = new EventEmitter<number>();
 
+  onTabChange(event: MatTabChangeEvent): void {
+    console.log('Tab changed', event.index);
+    this.selectedTabIndex = event.index;
+    this.tabChange.emit(this.selectedTabIndex);
+  }
 }

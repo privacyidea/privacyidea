@@ -1,4 +1,6 @@
 mat-card {
+  padding-top: 10px;
+  background: white;
   height: 100%;
   width: 100%;
   box-sizing: content-box;
@@ -7,30 +9,6 @@ mat-card {
   box-shadow: var(--box-shadow);
 }
 
-.card-button {
-  height: 40px;
-  width: calc(100% - 40px);
-  margin-left: 20px;
-  margin-right: 20px;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-blue);
-  box-shadow: var(--box-shadow-blue);
-  cursor: pointer;
-}
-
-.card-button:hover {
-  background: var(--background-blue-inset);
-  box-shadow: var(--box-shadow-blue-inset);
-  transition: 0ms;
-}
-
-.mat-divider {
-  border-top-color: #74777F;
-}
-
 h4 {
   padding: 8px;
 }
-

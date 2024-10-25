@@ -30,3 +30,8 @@
   font-size: var(--font-size);
   color: white;
 }
+
+a {
+  text-decoration: none;
+  color: #e6e6e6;
+}

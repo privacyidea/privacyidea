@@ -1,85 +1,20 @@
 <mat-card appearance="outlined">
   <mat-card-content class="mat-card">
-    <br/>
-    <mat-tab-group [disableRipple]="true" animationDuration="200ms" fitInkBarToContent mat-align-tabs="center"
-                   mat-stretch-tabs="true">
+    <mat-tab-group (selectedTabChange)="onTabChange($event)" [(selectedIndex)]="selectedTabIndex" animationDuration="200ms"
+                   fitInkBarToContent>
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>shield</mat-icon>
           <h4>Token</h4>
         </ng-template>
-        <br/>
-        <mat-list>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>policy</mat-icon>
-              Overview
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>add_moderator</mat-icon>
-              Enrollment
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>file_upload</mat-icon>
-              Import
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>cached</mat-icon>
-              Show Challenges
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>now_widgets</mat-icon>
-              Applications
-            </button>
-          </mat-list-item>
-          <br/>
-          <mat-divider/>
-          <br/>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>help_outline</mat-icon>
-              Identify Serial Number
-            </button>
-          </mat-list-item>
-          <br/>
-          <mat-divider/>
-          <br/>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>info_outline</mat-icon>
-              Help
-            </button>
-          </mat-list-item>
-        </mat-list>
+        <app-token-tab></app-token-tab>
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>folder</mat-icon>
           <h4>Container</h4>
         </ng-template>
-        <br/>
-        <mat-list>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>folder</mat-icon>
-              Overview
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button class="card-button" mat-flat-button>
-              <mat-icon>create_new_folder</mat-icon>
-              Create
-            </button>
-          </mat-list-item>
-        </mat-list>
+        <app-container-tab></app-container-tab>
       </mat-tab>
     </mat-tab-group>
   </mat-card-content>

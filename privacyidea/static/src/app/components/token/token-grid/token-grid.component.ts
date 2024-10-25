@@ -5,6 +5,7 @@ import {MatCard, MatCardContent, MatCardHeader} from '@angular/material/card';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {MatTab, MatTabGroup} from '@angular/material/tabs';
 import {TokenCardComponent} from '../token-card/token-card.component';
+import {ContainerTableComponent} from '../container-table/container-table.component';
 
 @Component({
   selector: 'app-token-grid',
@@ -20,12 +21,15 @@ import {TokenCardComponent} from '../token-card/token-card.component';
     MatTab,
     MatCardHeader,
     TokenCardComponent,
+    ContainerTableComponent,
   ],
   templateUrl: './token-grid.component.html',
   styleUrl: './token-grid.component.css'
 })
 export class TokenGridComponent {
-  ngOnInit(): void {
-    console.log('TokenGridComponent initialized');
+  selectedTabIndex: number = 0;
+
+  onTabChange(index: number): void {
+    this.selectedTabIndex = index;
   }
 }
