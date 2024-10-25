@@ -30,7 +30,6 @@ from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestExce
 from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError
 
-
 log = logging.getLogger(__name__)
 TIMEOUT = 10
 
@@ -155,12 +154,13 @@ class WebHookHandler(BaseEventHandler):
                 }
                 if content_type == CONTENT_TYPE.JSON:
                     def replace_recursive(val):
-                        for k,v in val.items():
+                        for k, v in val.items():
                             k = k.format(**attributes)
                             if isinstance(v, dict):
                                 return {k: replace_recursive(v)}
                             else:
                                 return {k: v.format(**attributes)}
+
                     new_json = replace_recursive(json.loads(webhook_text))
                     webhook_text = json.dumps(new_json)
                 else:
@@ -175,7 +175,7 @@ class WebHookHandler(BaseEventHandler):
                 try:
                     log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
                     response = requests.post(webhook_url, data=webhook_text,
-                                         headers={'Content-Type': content_type}, timeout=TIMEOUT)
+                                             headers={'Content-Type': content_type}, timeout=TIMEOUT)
                     # Responses will be logged when running debug. The HTTP response code will be shown in the audit too
                     log.info(response.status_code)
                     log.debug(response)
