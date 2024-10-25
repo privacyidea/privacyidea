@@ -36,7 +36,7 @@ def _try_convert_to_datetime(given_value_string):
 def _compare_regex_or_equal(_key, given_regex):
     def comparator(value):
         if type(value) in (int, bool):
-            # If the value from the database is an integer, we compare "euqals integer"
+            # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
             return given_value == value
         else:
@@ -48,7 +48,7 @@ def _compare_regex_or_equal(_key, given_regex):
 def _compare_not(_key, given_regex):
     def comparator(value):
         if type(value) in (int, bool):
-            # If the value from the database is an integer, we compare "euqals integer"
+            # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
             return given_value != value
         else:
@@ -221,9 +221,10 @@ def export_user_data(token_list, attributes=None):
 
     return users
 
-def _get_tokenlist(assigned, active, tokeninfo_filter, tokenattribute_filter,
-                   tokenowner_filter, tokencontaner_filter, orphaned, tokentype,
-                   chunksize, has_not_tokeninfo_key, has_tokeninfo_key):
+
+def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenattribute_filter,
+                   tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
+                   orphaned, chunksize, has_not_tokeninfo_key, has_tokeninfo_key):
     filter_active = None
     filter_assigned = None
     orphaned = orphaned or ""
@@ -235,6 +236,9 @@ def _get_tokenlist(assigned, active, tokeninfo_filter, tokenattribute_filter,
 
 
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
+                                              realm=realm,
+                                              resolver=resolver,
+                                              rollout_state=rollout_state,
                                               active=filter_active,
                                               assigned=filter_assigned,
                                               psize=chunksize)
@@ -255,6 +259,8 @@ def _get_tokenlist(assigned, active, tokeninfo_filter, tokenattribute_filter,
             if has_tokeninfo_key:
                 if has_tokeninfo_key not in token_obj.get_tokeninfo():
                     continue
+            if not range_of_seriel(0) <= token_obj.token.serial <= range_of_seriel(1):
+                continue
             if tokeninfo_filter:
                 for tokeninfo_key, tokeninfo_value_filter in tokeninfo_filter.items():
                     value = token_obj.get_tokeninfo(tokeninfo_key)
@@ -314,33 +320,45 @@ def _get_tokenlist(assigned, active, tokeninfo_filter, tokenattribute_filter,
 @click.option('--tokenowner', help='Match for certain information of the token owner from the database. '
                                    'Exemple: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
 @click.option('--tokencontaner', help='A comma separated list of contaner, to which the tokens should be assigned.')
-@click.option('--tokentype', help='The tokentype to search.')
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
-@click.option('--orphaned',
-              help='Whether the token is an orphaned token. Set to 1')
+@click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
+@click.option('--range-of-serial', help='A range of serial numbers to search for. For Example HOTP10000000-HOTP20000000')
 @click.pass_context
 def findtokens(ctx, has_not_tokeninfo_key, has_tokeninfo_key, tokenattribute, tokeninfo, tokenowner,
-               tokencontaner, tokentype, assigned, active, orphaned):
+               tokencontaner, assigned, active, orphaned, range_of_serial):
     """
     Finds all tokens which match the conditions.
     """
+    if range_of_serial:
+        range_of_serial = range_of_serial.split("-")
     chunksize = ctx.obj['chunksize']
     tafilter = []
+    tokentype = None
+    realm = None
+    token_owner = None
+    resolver = None
+    rollout_state = None
     if tokenattribute:
         allowed_tokenattributes = [col.key for col in Token.__table__.columns]
-        tokenattributes = tokenattribute.split(',') if tokenattribute else None
+        tokenattributes = tokenattribute.split(',')
+        attribute_map = {"tokentype": "tokentype",
+                         "realm": "realm",
+                         "resolver": "resolver",
+                         "rollout_state": "rollout_state"}
         for tokenattribute in tokenattributes:
             m = re.match(r"\s*(\w+)\s*([!=<>])\s*(\w+)\s*$", tokenattribute)
             if m.group(1) not in allowed_tokenattributes:
                 raise click.ClickException(f"Tokenattribute {m.group(1)} not allowed. "
                                            f"Allowed tokenattributes are: {allowed_tokenattributes}")
+            elif m.group(2) == "=" and m.group(1) in attribute_map:
+                locals()[attribute_map[m.group(1)]] = m.group(3)
             else:
                 tafilter.append(build_tokenvalue_filter(m))
 
     tvfilter = []
     if tokeninfo:
-        tokeninfos = tokeninfo.split(',') if tokeninfo else None
+        tokeninfos = tokeninfo.split(',')
         for tokeninfo in tokeninfos:
             m = re.match(r"\s*(\w+)\s*([!=<>])\s*(\w+)\s*$", tokeninfo)
             tvfilter.append(build_tokenvalue_filter(m))
@@ -359,7 +377,7 @@ def findtokens(ctx, has_not_tokeninfo_key, has_tokeninfo_key, tokenattribute, to
 
     tcfilter = []
     if tokencontaner:
-        tokencontainers = tokencontaner.split(',') if tokencontaner else None
+        tokencontainers = tokencontaner.split(',')
         allowed_containers = [col.key for col in TokenContainer.__table__.columns]
         for container in tokencontainers:
             m = re.match(r"\s*(\w+)\s*([!=<>])\s*(\w+)\s*$", container)
@@ -369,10 +387,11 @@ def findtokens(ctx, has_not_tokeninfo_key, has_tokeninfo_key, tokenattribute, to
             else:
                 tcfilter.append(build_tokenvalue_filter(m))
 
-    generator = _get_tokenlist(assigned=assigned, active=active,
+    generator = _get_tokenlist(assigned=assigned, active=active, range_of_seriel=range_of_serial,
                                tokeninfo_filter=tvfilter, tokenattribute_filter=tafilter,
                                tokenowner_filter=tofilter, tokencontaner_filter=tcfilter,
-                               orphaned=orphaned, tokentype=tokentype,
+                               orphaned=orphaned, tokentype=tokentype, realm=realm,
+                               token_owner=token_owner, resolver=resolver, rollout_state=rollout_state,
                                chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
                                has_tokeninfo_key=has_tokeninfo_key)
 
@@ -387,6 +406,9 @@ def findtokens(ctx, has_not_tokeninfo_key, has_tokeninfo_key, tokenattribute, to
 
 @click.pass_context
 def listuser(ctx, sum_tokens, attributes):
+    """
+    List all users and the number of tokens they own.
+    """
     tlist = ctx.obj['tokens']
     if not sum_tokens:
         tokens = export_token_data(tlist, attributes)
@@ -403,6 +425,9 @@ def listuser(ctx, sum_tokens, attributes):
               help='The output is written as CSV instead of the formatted output.')
 @click.pass_context
 def listtoken(ctx, csv):
+    """"
+    List all found tokens.
+    """
     tlist = ctx.obj['tokens']
     if not csv:
         print("Token serial\tTokeninfo")
@@ -415,14 +440,18 @@ def listtoken(ctx, csv):
             print(f"'{token_obj.token.serial}','{token_obj.token.tokentype}','{token_obj.token.description}',"
                   f"'{token_obj.get_tokeninfo()}'")
 
+
 @findtokens.command('export')
-@click.option('--format', type=click.Choice(['csv', 'yaml', 'xml']), case_sensitive=False,
+@click.option('--format', type=click.Choice(['csv', 'yaml', 'xml'], case_sensitive=False),
               default='xml', help='Please specify the format of the output. Possible values are: csv, yaml, xml. '
                                   'Default is xml.')
 @click.option('--b32', is_flag=True,
               help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.') #TODO: check if there is a better way
 @click.pass_context
 def export(ctx, format, b32):
+    """
+    Exports the found tokens.
+    """
     tlist = ctx.obj['tokens']
     if format == "csv":
         for tokenobj in tlist:
@@ -456,9 +485,12 @@ def export(ctx, format, b32):
 
 
 @findtokens.command('set_tokenrealms')
-@click.argument('--tokenrealms', prompt=True)
+@click.argument('--tokenrealms')
 @click.pass_context
 def set_tokenrealms(ctx, tokenrealms):
+    """
+    Sets the realms of the found tokens.
+    """
     for token_obj in ctx.obj['tokens']:
         trealms = [r.strip() for r in tokenrealms.split(",") if r]
         token_obj.set_realms(trealms)
@@ -468,6 +500,9 @@ def set_tokenrealms(ctx, tokenrealms):
 @findtokens.command('disable')
 @click.pass_context
 def disable(ctx):
+    """
+    Disables the found tokens.
+    """
     for token_obj in ctx.obj['tokens']:
         enable_token(serial=token_obj.token.serial, enable=False)
         print(f"Disabling token {token_obj.token.serial}")
@@ -475,7 +510,10 @@ def disable(ctx):
 
 @findtokens.command('delete')
 @click.pass_context
-def disable(ctx):
+def delete(ctx):
+    """
+    Deletes the found tokens.
+    """
     for token_obj in ctx.obj['tokens']:
         remove_token(serial=token_obj.token.serial)
         print(f"Deleting token {token_obj.token.serial}")
@@ -484,15 +522,21 @@ def disable(ctx):
 @findtokens.command('unassign')
 @click.pass_context
 def unassign(ctx):
+    """
+    Unassigns the found tokens from their owners.
+    """
     for token_obj in ctx.obj['tokens']:
         unassign_token(serial=token_obj.token.serial)
         print(f"Unassigning token {token_obj.token.serial}")
 
 
 @findtokens.command('set_description')
-@click.argument('--description', prompt=True)
+@click.argument('--description')
 @click.pass_context
 def set_description(ctx, description):
+    """
+    Sets the description of the found tokens.
+    """
     for token_obj in ctx.obj['tokens']:
         print(f"Setting description for token {token_obj.token.serial}: {description}")
         token_obj.set_description(description)
@@ -500,9 +544,12 @@ def set_description(ctx, description):
 
 
 @findtokens.command('set_tokeninfo')
-@click.argument('--tokeninfo', prompt=True)
+@click.argument('--tokeninfo')
 @click.pass_context
 def set_tokeninfo(ctx, tokeninfo):
+    """
+    Sets the tokeninfo of the found tokens.
+    """
     m = re.match(r"\s*(\w+)\s*([=])\s*(\w+)\s*$", tokeninfo)
     tokeninfo_key = m.group(1)
     tokeninfo_value = m.group(3)
@@ -513,11 +560,14 @@ def set_tokeninfo(ctx, tokeninfo):
 
 
 @findtokens.command('remove_tokeninfo')
-@click.argument('--tokeninfo', prompt=True)
+@click.argument('--tokeninfo_key')
 @click.pass_context
-def remove_tokeninfo(ctx, tokeninfo):
+def remove_tokeninfo(ctx, tokeninfo_key):
+    """
+    Remove the tokeninfo of the found tokens.
+    """
     for token_obj in ctx.obj['tokens']:
-        print(f"Removing tokeninfo for token {token_obj.token.serial}: {tokeninfo}")
-        token_obj.remove_tokeninfo(tokeninfo)
+        print(f"Removing tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}")
+        token_obj.remove_tokeninfo(tokeninfo_key)
         token_obj.save()
 
