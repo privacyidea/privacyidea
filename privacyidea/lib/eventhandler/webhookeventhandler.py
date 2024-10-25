@@ -154,12 +154,17 @@ class WebHookHandler(BaseEventHandler):
                     "token_serial": token_serial
                 }
                 if content_type == CONTENT_TYPE.JSON:
-                    # A new dict for the output is needed in case a key is mutated
-                    new_json = {}
-                    for key, value in json.loads(webhook_text).items():
-                        new_json[key.format(**attributes)] = value.format(**attributes)
+                    def replace_recursive(val):
+                        for k,v in val.items():
+                            k = k.format(**attributes)
+                            if isinstance(v, dict):
+                                return {k: replace_recursive(v)}
+                            else:
+                                return {k: v.format(**attributes)}
+                    new_json = replace_recursive(json.loads(webhook_text))
                     webhook_text = json.dumps(new_json)
                 else:
+                    # Content Type URLENCODED, simple format
                     webhook_text = webhook_text.format(**attributes)
             except(ValueError, KeyError) as err:
                 log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")

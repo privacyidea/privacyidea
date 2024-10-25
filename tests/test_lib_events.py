@@ -3873,6 +3873,7 @@ class WebhookTestCase(MyTestCase):
                                 'realm': self.realm1}
 
             t_handler = WebHookHandler()
+            data = '{"{realm}": {"{realm}": {"{realm}": "This is {logged_in_user} from realm {realm}"}}}'
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL":
@@ -3881,15 +3882,14 @@ class WebhookTestCase(MyTestCase):
                                            CONTENT_TYPE.JSON,
                                        "replace":
                                            True,
-                                       "data":
-                                           '{"{realm}": "This is {logged_in_user} from realm {realm}"}'
+                                       "data": data
                                        }
                        }
                        }
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
             text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'http://test.com', '{"realm1": "This is hans from realm realm1"}')
+                'http://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
