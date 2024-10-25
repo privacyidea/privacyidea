@@ -19,7 +19,7 @@ import {FooterComponent} from '../grid-layout/footer/footer.component';
 export class LoginComponent {
   username = signal<string>('');
   password = signal<string>('');
-  private authSecretKey = 'bearer_token';
+  private bearerTokenKey = 'bearer_token';
 
   constructor(private authService: AuthService, private router: Router) {
   }
@@ -32,7 +32,7 @@ export class LoginComponent {
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token
           && this.authService.isAuthenticatedUser()) {
-          localStorage.setItem(this.authSecretKey, response.result.value.token);
+          localStorage.setItem(this.bearerTokenKey, response.result.value.token);
           this.router.navigate(['token']);
         } else {
           console.warn('Login failed. Challenge response required.');
@@ -44,7 +44,7 @@ export class LoginComponent {
   }
 
   logout(): void {
-    localStorage.removeItem(this.authSecretKey);
+    localStorage.removeItem(this.bearerTokenKey);
     this.authService.deauthenticate();
   }
 }

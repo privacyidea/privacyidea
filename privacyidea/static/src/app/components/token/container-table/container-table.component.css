@@ -5,7 +5,7 @@ table {
 
 a {
   text-decoration: none;
-  color: #16536F;
+  color: var(--blue1);
 }
 
 td:nth-child(even) {
@@ -22,7 +22,8 @@ th:nth-child(even) {
 
 .mat-mdc-form-field {
   font-size: var(--font-size);
-  width: 60%;
+  color: var(--blue1);
+  width: 63%;
 }
 
 .mat-mdc-paginator {
@@ -37,7 +38,7 @@ th:nth-child(even) {
 
 .container-table {
   justify-content: center;
-  padding: 33px;
+  padding: 20px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);

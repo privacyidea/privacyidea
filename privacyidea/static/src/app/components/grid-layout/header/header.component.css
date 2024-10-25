@@ -56,13 +56,12 @@
   margin-left: 20px;
   margin-right: 40px;
   height: 40px;
-  width: 160px;
+  width: 166px;
   border: none;
   border-radius: var(--border-radius);
   background: var(--background-primary);
   box-shadow: var(--box-shadow);
   cursor: pointer;
-  font-size: var(--font-size);
   color: white;
 }
 
@@ -74,5 +73,5 @@
 }
 
 h4 {
-  margin-left: 10px;
+  margin-left: 4px;
 }

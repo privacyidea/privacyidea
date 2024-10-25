@@ -27,11 +27,15 @@
   border-radius: var(--border-radius);
   background: var(--background-green);
   cursor: pointer;
-  font-size: var(--font-size);
   color: white;
 }
 
 a {
   text-decoration: none;
-  color: #e6e6e6;
+  color: #c8c8c8;
+}
+
+span {
+  margin-left: 20px;
+  color: #c8c8c8;
 }

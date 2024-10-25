@@ -5,11 +5,15 @@ table {
 
 a {
   text-decoration: none;
-  color: #16536F;
+  color: var(--blue1);
 }
 
 td:nth-child(even) {
   background: #f3f3f3;
+}
+
+td:nth-child(5) {
+  text-align: center;
 }
 
 th:nth-child(even) {
@@ -22,7 +26,8 @@ th:nth-child(even) {
 
 .mat-mdc-form-field {
   font-size: var(--font-size);
-  width: 60%;
+  color: var(--blue1);
+  width: 63%;
 }
 
 .mat-mdc-paginator {
