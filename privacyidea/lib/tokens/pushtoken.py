@@ -699,9 +699,9 @@ class PushTokenClass(TokenClass):
 
             if challenges:
                 # There are valid challenges, so we check this signature
-                for c in challenges:
+                for challenge in challenges:
                     # Re-construct the signature data and then verify the signature
-                    sign_data = f"{c.challenge}|{serial}"
+                    sign_data = f"{challenge.challenge}|{serial}"
                     if decline:
                         sign_data += "|decline"
                     if presence_answer:
@@ -712,19 +712,19 @@ class PushTokenClass(TokenClass):
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
                         # The signature was valid
-                        log.debug(f"Found matching challenge {c}.")
+                        log.debug(f"Found matching challenge {challenge}.")
                         result = True
                         if decline:
-                            c.set_session(CHALLENGE_SESSION.DECLINED)
+                            challenge.set_session(CHALLENGE_SESSION.DECLINED)
                         else:
                             # Verify the presence_answer. The correct choice is stored as last entry
                             # in the data separated by a comma.
-                            if presence_answer and presence_answer != c.get_data().split(",").pop():
+                            if presence_answer and presence_answer != challenge.get_data().split(",").pop():
                                 result = False
                                 # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
                             else:
-                                c.set_otp_status(True)
-                        c.save()
+                                challenge.set_otp_status(True)
+                        challenge.save()
                     except InvalidSignature as _e:
                         pass
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
