@@ -34,4 +34,10 @@ export class TableUtilsService {
       return (valueA < valueB ? -1 : 1) * (isAsc ? 1 : -1);
     });
   }
+
+  paginateData(data: any[], pageIndex: number, pageSize: number): any[] {
+    const startIndex = pageIndex * pageSize;
+    const endIndex = startIndex + pageSize;
+    return data.slice(startIndex, endIndex);
+  }
 }

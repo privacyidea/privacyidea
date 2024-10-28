@@ -76,6 +76,7 @@ export class ContainerTableComponent {
   @ViewChild(MatSort) sort: MatSort | null = null;
   private fullData: any[] = [];
   private currentData: any[] = [];
+  protected readonly columns = columns;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -96,7 +97,6 @@ export class ContainerTableComponent {
   private fetchContainerData() {
     this.containerService.getContainerData().subscribe({
       next: containers => {
-        console.log('Container data', containers); // TODO map values correctly and remove this line
         this.length = containers.length;
         this.fullData = containers;
         this.currentData = containers;
@@ -122,27 +122,19 @@ export class ContainerTableComponent {
     this.pageIndex = 0;
   }
 
-  pageEvent: PageEvent | undefined;
-
   handlePageEvent(e: PageEvent) {
-
-    this.pageEvent = e;
     this.pageSize = e.pageSize;
     this.pageIndex = e.pageIndex;
     this.updateDataSource(this.currentData);
   }
 
   private updateDataSource(data: any[]) {
-    const startIndex = this.pageIndex * this.pageSize;
-    const endIndex = startIndex + this.pageSize;
     const processedData = data.map((item) => ({
       ...item,
       users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : '',
       user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
-
-    this.dataSource.set(new MatTableDataSource(processedData.slice(startIndex, endIndex)));
+    const paginatedData = this.tableUtils.paginateData(processedData, this.pageIndex, this.pageSize);
+    this.dataSource.set(new MatTableDataSource(paginatedData));
   }
-
-  protected readonly columns = columns;
 }

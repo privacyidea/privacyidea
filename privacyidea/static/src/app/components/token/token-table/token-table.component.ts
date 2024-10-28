@@ -50,6 +50,7 @@ export class TokenTableComponent {
   @ViewChild(MatSort) sort: MatSort | null = null;
   private fullData: any[] = [];
   private currentData: any[] = [];
+  protected readonly columns = columns;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -95,24 +96,18 @@ export class TokenTableComponent {
     });
   }
 
-  protected readonly columns = columns;
-  pageEvent: PageEvent | undefined;
-
   handlePageEvent(e: PageEvent) {
-    this.pageEvent = e;
     this.pageSize = e.pageSize;
     this.pageIndex = e.pageIndex;
     this.updateDataSource(this.currentData);
   }
 
   private updateDataSource(data: any[]) {
-    const startIndex = this.pageIndex * this.pageSize;
-    const endIndex = startIndex + this.pageSize;
     const processedData = data.map((item) => ({
       ...item,
       realms: item.realms && item.realms.length > 0 ? item.realms[0] : ''
     }));
-
-    this.dataSource.set(new MatTableDataSource(processedData.slice(startIndex, endIndex)));
+    const paginatedData = this.tableUtils.paginateData(processedData, this.pageIndex, this.pageSize);
+    this.dataSource.set(new MatTableDataSource(paginatedData));
   }
 }
