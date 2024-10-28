@@ -27,6 +27,7 @@ from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
+from privacyidea.lib.resolvers.TokenResolver import TokenResolver
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -2863,3 +2864,166 @@ class HTTPResolverTestCase(MyTestCase):
             'Received an error while searching for user: PepePerez',
             instance.getUserInfo, 'PepePerez'
         )
+
+
+class TokenResolverTestCase(MyTestCase):
+    """
+    Test the Token Resolver
+    """
+    num_users = 9
+    parameters = {'methodAllowed': 'HS256',
+                  'secret': '',
+                  'responseMapping': '{ "username": "username", "userid": "userid" }',
+                  }
+
+    """
+    Test the Passwdresolver
+    """
+    resolvername1 = "tokenresolver1"
+    resolvername2 = "tokenresolver2"
+    resolvername3 = "tokenresolver3"
+
+    def test_01_create_token_resolver(self):
+        rid = save_resolver({
+            "resolver": self.resolvername1,
+            "type": "tokenresolver"})
+        self.assertTrue(rid > 0, rid)
+
+    def test_01a_create_token_resolver_with_parameters(self):
+        rid = save_resolver({
+            "resolver": self.resolvername2,
+            "type": "tokenresolver",
+            "methodAllowed": "HS256",
+            "secret": "",
+            "responseMapping": '{ "username": "{username}", "userid": "{userid}" }'})
+        self.assertTrue(rid > 0, rid)
+
+    def test_02_get_resolver_list(self):
+        reso_list = get_resolver_list(filter_resolver_name=self.resolvername1)
+        self.assertTrue(self.resolvername1 in reso_list, "resolver1 not found in list")
+        self.assertTrue(self.resolvername2 not in reso_list, "resolver2 found in list")
+    
+    def test_03_token_resolver_defintion(self):
+        y = get_resolver_object(self.resolvername1)
+        rtype = y.getResolverType()
+        self.assertEqual(rtype, "tokenresolver")
+
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue(rtype in rdesc.keys(), "Token Resolver configuration not found")
+
+        descriptor = rdesc.get("tokenresolver")
+        self.assertTrue(descriptor is not None, "Token Resolver Descriptor not found")
+        self.assertTrue("config" in descriptor, "Token Resolver Configuration not found")
+        
+        config = descriptor.get("config")
+        self.assertTrue("methodAllowed" in config, "Token Resolver Configuration methodAllowed not found")
+        self.assertTrue("secret" in config, "Token Resolver Configuration secret not found")
+        self.assertTrue("responseMapping" in config, "Token Resolver Configuration responseMapping not found")
+
+        self.assertTrue("clazz" in descriptor, "Token Resolver Class not found")
+        self.assertEqual(descriptor.get("clazz"), "useridresolver.TokenResolver.IdResolver", "Token Resolver Class not found")
+
+    def test_04_get_resolver_config(self):
+        reso_config = get_resolver_config(self.resolvername2)
+        self.assertTrue("methodAllowed" in reso_config, reso_config)
+        self.assertTrue("secret" in reso_config, reso_config)
+        self.assertTrue("responseMapping" in reso_config, reso_config)
+
+    def test_05_if_a_resolver_exists(self):
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 in reso_list)
+        self.assertTrue(self.resolvername2 in reso_list)
+        self.assertTrue(self.resolvername3 not in reso_list)
+
+    def test_06_create_resolver_object(self):
+        reso_obj = get_resolver_object(self.resolvername1)
+        self.assertTrue(isinstance(reso_obj, TokenResolver), type(reso_obj))
+
+        reso_obj = get_resolver_object(self.resolvername2)
+        self.assertTrue(isinstance(reso_obj, TokenResolver), type(reso_obj))
+        self.assertTrue(reso_obj.methodAllowed == "HS256")
+        self.assertTrue(reso_obj.secret == "")
+        self.assertTrue(reso_obj.responseMapping == {"username": "{username}", "userid": "{userid}"})
+
+        # resolver, that does not exist
+        reso_obj = get_resolver_object("unknown")
+        self.assertTrue(reso_obj is None, reso_obj)
+
+    def test_07_test_connection(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "")
+        success, response = reso_obj.testconnection({
+            "methodAllowed": reso_obj.methodAllowed,
+            "responseMapping": str(reso_obj.responseMapping),
+            "testToken": testToken})
+        self.assertTrue(success)
+        self.assertEqual(response, {"username": "John Doe", "userid": "12334"})
+
+        badToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "wrong secret")
+        success, response = reso_obj.testconnection({
+            "methodAllowed": reso_obj.methodAllowed,
+            "responseMapping": str(reso_obj.responseMapping),
+            "testToken": badToken})
+        self.assertFalse(success)
+        self.assertTrue(response is not None)
+
+    def test_08_check_password(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.secret = "secret"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "secret")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+
+        badToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "wrong secret")
+        result = reso_obj.checkPass("12334", badToken)
+        self.assertFalse(result)
+
+    def test_08a_check_password_with_asymmetrical_key(self):
+        # Keys generated for testing only
+        private_key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDQ7DZSCiFstUUPZawzOEMa7rb36+LQDmutmW7KdhxFSZGfilIPQOf2/jEkqFjMoGXM0eRjI+mq6U8Th6FuE4wTFcQEMTGzW7y7w62VZtEQcCVeVfod5Z08yEb67XI9TImV5Ww8fGWCwrkh7YEonE6H0yQVeTaiDwP933swgO6a4wIDAQABAoGBAMFWVs6E4XmgJlChXkHoBvGdh2TWvgab0bnNC2IA+xiDhGeHsXi8L+26PfAWelai+JIaiqfUTCEF10/Ta+hZ3nz+Zo1NigNmvOvr08C0GmFho/zV3+pjbnAuYZMF6knAmF6CGiihOZ5PC88551ZTKqe07kkZcY/tkxSWoEd754kBAkEA8fUMuR6ut1xWa4AMKD2+pULsKVmrrgs/v0sjXcvH2p+D1H4iYPhov2ybm8S8tbi2SJISOy8lPfygsqXaUQ44UQJBAN0MV6iaSpLiDmMWJir6BUF9uHkGbSM88ZnYAfFjVAB5/wtBD1q7nZs/syx2JeNFknaWensBENP82lCBmTM5RvMCQGsqUTdQ6quV/0Tf0wKjzmPeD0GFUO/mVZbBjemGT396dWZRc6Klg6d9UDKe4cJPDJV59Q83o3QgB4D4yohqFvECQHvqhl2DGRkcVppfeUgQXs/m7XoTCy185aeruvMaDqYxvbMOZtAjauf0HrpnBThR8Rg/pSu9XjSog64r6LkZe9cCQQDQ/Gq2UrixVGcBqct7ug8udoeVyTswQQjDaiHZXRkfGYIAQxGkAMwXxHg8/3u1kzpmX945IjfLqBOVC5eMaRvY\n-----END RSA PRIVATE KEY-----"
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.secret = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQ7DZSCiFstUUPZawzOEMa7rb36+LQDmutmW7KdhxFSZGfilIPQOf2/jEkqFjMoGXM0eRjI+mq6U8Th6FuE4wTFcQEMTGzW7y7w62VZtEQcCVeVfod5Z08yEb67XI9TImV5Ww8fGWCwrkh7YEonE6H0yQVeTaiDwP933swgO6a4wIDAQAB\n-----END PUBLIC KEY-----"
+        reso_obj.methodAllowed = "RS256"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, private_key, algorithm="RS256")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        reso_obj.userid = ""
+        self.assertEqual(reso_obj.getUserId("John Doe"), "12334")
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+        reso_obj.username = ""
+        self.assertEqual(reso_obj.getUsername("12334"), "John Doe")
+
+    def test_09_get_user_info(self):
+        reso_obj = get_resolver_object(self.resolvername2)
+        reso_obj.methodAllowed = "HS256"
+        reso_obj.secret = "secret"
+        testToken = jwt.encode({"username": "John Doe", "userid": "12334"}, "secret")
+        result = reso_obj.checkPass("12334", testToken)
+        self.assertTrue(result)
+        self.assertEqual(reso_obj.getUserInfo("12334"), {"username": "John Doe", "userid": "12334"})
+
+        # Ensure that an unverified user will return the username and id passed in
+        reso_obj = get_resolver_object(self.resolvername1)
+        self.assertEqual(reso_obj.getUserInfo("12334"), {"username": "12334", "userid": "12334"})
+        self.assertEqual(reso_obj.getUserId("John Doe"), "John Doe")
+        self.assertEqual(reso_obj.getUserId(12334), 12334)
+        self.assertEqual(reso_obj.getUsername("12334"), "12334")
+
+    def test_10_delete_resolver(self):
+        # get the list of the resolvers
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 in reso_list, reso_list)
+        self.assertTrue(self.resolvername2 in reso_list, reso_list)
+
+        # delete the resolvers
+        delete_resolver(self.resolvername1)
+        delete_resolver(self.resolvername2)
+
+        # check list empty
+        reso_list = get_resolver_list()
+        self.assertTrue(self.resolvername1 not in reso_list, reso_list)
+        self.assertTrue(self.resolvername2 not in reso_list, reso_list)
+        self.assertTrue(len(reso_list) == 0, reso_list)

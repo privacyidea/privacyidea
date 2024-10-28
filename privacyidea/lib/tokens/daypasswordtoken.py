@@ -22,7 +22,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
+from privacyidea.lib.utils import parse_time_sec_int
 from privacyidea.lib import _, lazy_gettext
 
 log = logging.getLogger(__name__)

@@ -335,6 +335,7 @@ def get_resolver_object(resolvername):
         if resolvername not in resolver_objects:
             # create the resolver instance and load the config
             r_obj = resolver_objects[resolvername] = r_obj_class()
+            r_obj.name = resolvername
             if r_obj is not None:
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)

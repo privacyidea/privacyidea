@@ -49,8 +49,7 @@ from flask import (Blueprint,
                    g)
 import jwt
 from functools import wraps
-from datetime import (datetime,
-                      timedelta)
+from datetime import (datetime, timedelta, timezone)
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -383,7 +382,7 @@ def get_auth_token():
                         "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
-                        "exp": datetime.utcnow() + validity,
+                        "exp": datetime.now(timezone.utc) + validity,
                         "rights": rights},
                        secret, algorithm='HS256')
 

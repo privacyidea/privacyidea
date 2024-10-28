@@ -1,0 +1,83 @@
+<div>
+
+    <h2 class="form-signin-heading" ng-show="resolvername" translate>Edit Token Resolver {{ resolvername }}</h2>
+    <h2 class="form-signin-heading" ng-hide="resolvername" translate>Create a new Token Resolver</h2>
+
+    <form name="formResolverAddToken" role="form" validate class="form-horizontal">
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label" translate>Resolver name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername" class="form-control" ng-model="resolvername" required
+                    placeholder="resolver1" ng-pattern="inputNamePatterns.withoutTest.pattern"
+                    title="{{ inputNamePatterns.withoutTest.title | translate }}" autofocus />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="methodAllowed" class="col-sm-3 control-label" translate>
+                Allowed Algorithm
+            </label>
+            <div class="col-sm-4">
+                <select class="form-control" name="methodAllowed" id="methodAllowed" ng-model="params.methodAllowed">
+                    <!--ng-init="selection ='HS256'"-->
+                    <option ng-repeat="o in method_allowed_options" ng-selected="{{o.name==params.methodAllowed}}"
+                        value="{{o.value}}">
+                        {{o.name}}
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="secret" class="col-sm-3 control-label" translate>Validation Key</label>
+
+            <div class="col-sm-9">
+                <textarea name="secret" class="form-control" id="secret" ng-model="params.secret" rows="5"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="responsemapping" class="col-sm-3 control-label text-right" translate>Response Mapping
+                (JSON format)</label>
+            <div class="col-sm-9">
+                <input type="text" name="responsemapping" id="responsemapping" ng-model="params.responseMapping"
+                    placeholder='{"username": "{Username}", "email": "{Email}"}' class="form-control" required />
+            </div>
+        </div>
+
+
+        <div class="text-center" ng-show="showResult">
+            <label class="label" ng-class="{'label-success':result.result,
+               'label-danger':!result.result}">
+                {{ result.description }}<span class="glyphicon glyphicon-remove" ng-click="showResult=false"></span>
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="testToken" class="col-sm-3 control-label" translate>
+                Test Token
+            </label>
+            <div class="col-sm-9">
+                <textarea name="testToken" id="testToken" class="form-control" ng-model="params.testToken" rows="8"
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoidGVzdCJ9.c3YTBJSewzdOv8ggND9PFQIrU9b1PK2vAA9oq3Cslgo"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="text-center">
+                <button ng-click="testResolver()" ng-disabled="formResolverAddToken.$invalid" class="btn btn-success"
+                    translate>
+                    Test Token Resolver
+                </button>
+                <button ng-click="setResolver()" ng-show="checkRight('resolverwrite')"
+                    ng-disabled="formResolverAddToken.$invalid" class="btn btn-primary" translate>
+                    Save resolver
+                </button>
+            </div>
+        </div>
+</div>
+
+</form>
+</div>
