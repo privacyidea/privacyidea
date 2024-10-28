@@ -1,44 +1,44 @@
-from flask import Request
-from pyasn1.debug import scope
-from werkzeug.test import EnvironBuilder
+import json
+import time
+from base64 import b32decode, b32encode
 from datetime import datetime, timedelta
-from pytz import utc
+from threading import Timer
 
-from .base import MyTestCase, FakeFlaskG
+import mock
+import responses
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from flask import Request
+from google.oauth2 import service_account
+from pytz import utc
+from werkzeug.test import EnvironBuilder
+
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
-from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
+                                    LOGINMODE, PolicyClass)
+from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
+from privacyidea.lib.token import get_tokens, remove_token, init_token
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
-from privacyidea.lib.token import get_tokens, remove_token, init_token
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.crypto import geturandom
-from privacyidea.models import Token, Challenge
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
-                                    LOGINMODE, PolicyClass)
+from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
-from privacyidea.lib.error import ConfigAdminError
-from base64 import b32decode, b32encode
-import json
-import responses
-import mock
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from google.oauth2 import service_account
-from threading import Timer
-import time
+from privacyidea.models import Token, Challenge
+from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
