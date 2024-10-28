@@ -9,6 +9,7 @@ The lib.resolver.py only depends on the database model.
 """
 
 PWFILE = "tests/testdata/passwords"
+import jwt
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
