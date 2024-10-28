@@ -20,8 +20,8 @@ import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {HttpClient} from '@angular/common/http';
-import {LocalService} from '../../../services/local/local.service';
+import {ContainerService} from '../../../services/container/container.service';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -77,24 +77,15 @@ export class ContainerTableComponent {
   private fullData: any[] = [];
   private currentData: any[] = [];
 
-  constructor(private router: Router, private http: HttpClient,
-              private authService: AuthService, private localStore: LocalService) {
+  constructor(private router: Router,
+              private authService: AuthService,
+              private containerService: ContainerService,
+              private tableUtils: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
+    } else {
+      this.fetchContainerData();
     }
-    const headerDict = {headers: {'PI-Authorization': localStore.getData('bearer_token') || ''}}
-    this.http.get('http://127.0.0.1:5000/container', headerDict).subscribe({
-      next: (response: any) => {
-        console.log('Container data', response.result.value.containers); // TODO map values correctly and remove this line
-        const containers = response.result.value.containers;
-        this.length = containers.length;
-        this.fullData = containers;
-        this.currentData = containers;
-        this.updateDataSource(this.currentData);
-      }, error: (error: any) => {
-        console.error('Failed to get container data', error);
-      }
-    });
   }
 
   ngAfterViewInit() {
@@ -102,65 +93,38 @@ export class ContainerTableComponent {
     this.dataSource().sort = this.sort;
   }
 
-  applyFilter(event: Event) {
-    const filterValue = String((event.target as HTMLInputElement).value).trim().toLowerCase();
-    const filterKeys = columns.map((column) => column.key);
-    this.currentData = this.fullData.filter((item) => {
-      return filterKeys.some((key) => {
-        const value = String(item[key]).trim().toLowerCase();
-        if (filterValue === 'false' && item[key] === false) {  // special case for boolean value 'false'
-          return true;
-        }
-        if (value.includes(filterValue)) {
-          console.log('Matched', key, value);
-        }
-        return value.includes(filterValue);
-      });
+  private fetchContainerData() {
+    this.containerService.getContainerData().subscribe({
+      next: containers => {
+        console.log('Container data', containers); // TODO map values correctly and remove this line
+        this.length = containers.length;
+        this.fullData = containers;
+        this.currentData = containers;
+        this.updateDataSource(this.currentData);
+      },
+      error: error => {
+        console.error('Failed to get container data', error);
+      }
     });
-    console.log('Filtered data', this.currentData);
+  }
 
+  applyFilter(event: Event) {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.currentData = this.tableUtils.applyFilter(this.fullData, filterValue, columns);
+    this.updateDataSource(this.currentData);
     this.pageIndex = 0;
     this.length = this.currentData.length;
-    this.updateDataSource(this.currentData);
   }
 
   sortData(sort: Sort) {
-    if (!sort.active || sort.direction === '') {
-      this.updateDataSource(this.currentData);
-      return;
-    }
-
-    function compare(a: string | number, b: string | number, isAsc: boolean) {
-      return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
-    }
-
-    this.currentData = this.currentData.slice().sort((a: any, b: any) => {
-      const isAsc = sort.direction === 'asc';
-      switch (sort.active) {
-        case 'serial':
-          return compare(a.serial, b.serial, isAsc);
-        case 'type':
-          return compare(a.type, b.type, isAsc);
-        case 'description':
-          return compare(a.description, b.description, isAsc);
-        case 'users':
-          return compare(a.users, b.users, isAsc);
-        case 'user_realms':
-          return compare(a.user_realms, b.user_realms, isAsc);
-        case 'realms':
-          return compare(a.realms, b.realms, isAsc);
-        default:
-          return 0;
-      }
-    });
-
-    this.pageIndex = 0;
+    this.currentData = this.tableUtils.sortData(this.currentData, sort, columns);
     this.updateDataSource(this.currentData);
+    this.pageIndex = 0;
   }
 
   pageEvent: PageEvent | undefined;
-
   handlePageEvent(e: PageEvent) {
+
     this.pageEvent = e;
     this.pageSize = e.pageSize;
     this.pageIndex = e.pageIndex;

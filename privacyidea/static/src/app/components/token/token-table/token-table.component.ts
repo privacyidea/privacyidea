@@ -6,10 +6,10 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {HttpClient} from '@angular/common/http';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {LocalService} from '../../../services/local/local.service';
+import {TokenService} from '../../../services/token/token.service';
+import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -51,24 +51,15 @@ export class TokenTableComponent {
   private fullData: any[] = [];
   private currentData: any[] = [];
 
-  constructor(private router: Router, private http: HttpClient,
-              private authService: AuthService, private localStore: LocalService) {
+  constructor(private router: Router,
+              private authService: AuthService,
+              private tokenService: TokenService,
+              private tableUtils: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
+    } else {
+      this.fetchTokenData();
     }
-    const headerDict = {headers: {'PI-Authorization': this.localStore.getData('bearer_token') || ''}}
-    this.http.get('http://127.0.0.1:5000/token', headerDict).subscribe({
-      next: (response: any) => {
-        const tokens = response.result.value.tokens;
-        console.log('Token data', tokens); // TODO map values correctly and remove this line
-        this.length = tokens.length;
-        this.fullData = tokens;
-        this.currentData = tokens;
-        this.updateDataSource(this.currentData);
-      }, error: (error: any) => {
-        console.error('Failed to get token data', error);
-      }
-    });
   }
 
   ngAfterViewInit() {
@@ -77,67 +68,32 @@ export class TokenTableComponent {
   }
 
   applyFilter(event: Event) {
-    const filterValue = String((event.target as HTMLInputElement).value).trim().toLowerCase();
-    const filterKeys = columns.map((column) => column.key);
-    this.currentData = this.fullData.filter((item) => {
-      return filterKeys.some((key) => {
-        const value = String(item[key]).trim().toLowerCase();
-        if (filterValue === 'false' && item[key] === false) {  // special case for boolean value 'false'
-          return true;
-        }
-        if (value.includes(filterValue)) {
-          console.log('Matched', key, value);
-        }
-        return value.includes(filterValue);
-      });
-    });
-    console.log('Filtered data', this.currentData);
-
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.currentData = this.tableUtils.applyFilter(this.fullData, filterValue, columns);
+    this.updateDataSource(this.currentData);
     this.pageIndex = 0;
     this.length = this.currentData.length;
-    this.updateDataSource(this.currentData);
   }
 
   sortData(sort: Sort) {
-    if (!sort.active || sort.direction === '') {
-      this.updateDataSource(this.currentData);
-      return;
-    }
+    this.currentData = this.tableUtils.sortData(this.currentData, sort, columns);
+    this.updateDataSource(this.currentData);
+    this.pageIndex = 0;
+  }
 
-    function compare(a: string | number, b: string | number, isAsc: boolean) {
-      return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
-    }
-
-    this.currentData = this.currentData.slice().sort((a: any, b: any) => {
-      const isAsc = sort.direction === 'asc';
-      switch (sort.active) {
-        case 'serial':
-          return compare(a.serial, b.serial, isAsc);
-        case 'tokentype':
-          return compare(a.tokentype, b.tokentype, isAsc);
-        case 'active':
-          return compare(a.active, b.active, isAsc);
-        case 'description':
-          return compare(a.description, b.description, isAsc);
-        case 'failcount':
-          return compare(a.failcount, b.failcount, isAsc);
-        case 'rollout_state':
-          return compare(a.rollout_state, b.rollout_state, isAsc);
-        case 'username':
-          return compare(a.username, b.username, isAsc);
-        case 'user_realm':
-          return compare(a.user_realm, b.user_realm, isAsc);
-        case 'token_realm':
-          return compare(a.token_realm, b.token_realm, isAsc);
-        case 'container_serial':
-          return compare(a.container_serial, b.container_serial, isAsc);
-        default:
-          return 0;
+  private fetchTokenData() {
+    this.tokenService.getTokenData().subscribe({
+      next: tokens => {
+        console.log('Token data', tokens); // TODO map values correctly and remove this line
+        this.length = tokens.length;
+        this.fullData = tokens;
+        this.currentData = tokens;
+        this.updateDataSource(this.currentData);
+      },
+      error: error => {
+        console.error('Failed to get token data', error);
       }
     });
-
-    this.pageIndex = 0;
-    this.updateDataSource(this.currentData);
   }
 
   protected readonly columns = columns;
