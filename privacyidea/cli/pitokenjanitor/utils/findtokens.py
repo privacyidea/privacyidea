@@ -210,7 +210,7 @@ def export_user_data(token_list, attributes=None):
                    f"'{user.info.get('surname', '')}','{user.uid}','{user.resolver}','{user.realm}'")
             if attributes:
                 for att in attributes.split(","):
-                    uid += f",'{user.info.get(att, "")}'"
+                    uid += f",'{user.info.get(att, '')}'"
         else:
             uid = "N/A" + ", " * 5
 
@@ -460,11 +460,11 @@ def export(ctx, format, b32):
             token_dict = tokenobj._to_dict(b32=b32)
             owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
             if type == "totp":
-                print(f"{owner}, {token_dict.get("serial")}, {token_dict.get("otpkey")}, {token_dict.get("type")}, "
-                      f"{token_dict.get("otplen")}, {token_dict.get("info_list", {}).get("timStep")}")
+                print(f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
+                      f"{token_dict.get('otplen')}, {token_dict.get('info_list', {}).get('timStep')}")
             else:
-                print(f"{owner}, {token_dict.get("serial")}, {token_dict.get("otpkey")}, {token_dict.get("type")}, "
-                      f"{token_dict.get("otplen")}")
+                print(f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
+                      f"{token_dict.get('otplen')}")
     elif format == "yaml":
         token_list = []
         for tokenobj in tlist:
