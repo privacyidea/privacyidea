@@ -6,7 +6,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
@@ -29,7 +29,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, NgForOf, MatCard, MatCardContent, NgClass, NgIf
+    MatSortModule, MatCard, MatCardContent, NgClass
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'

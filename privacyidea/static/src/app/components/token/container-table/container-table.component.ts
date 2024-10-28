@@ -17,7 +17,7 @@ import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {ContainerService} from '../../../services/container/container.service';
@@ -36,26 +36,8 @@ const columns = [
   selector: 'app-container-table',
   standalone: true,
   imports: [
-    MatCell,
-    MatCellDef,
-    MatFormField,
-    MatHeaderCell,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatInput,
-    MatLabel,
-    MatPaginator,
-    MatRow,
-    MatRowDef,
-    MatSort,
-    MatSortHeader,
-    MatTable,
-    NgForOf,
-    NgIf,
-    MatColumnDef,
-    MatHeaderCellDef,
-    MatNoDataRow,
-    NgClass
+    MatCell, MatCellDef, MatFormField, MatHeaderCell, MatHeaderRow, MatHeaderRowDef, MatInput, MatLabel, MatPaginator,
+    MatRow, MatRowDef, MatSort, MatSortHeader, MatTable, MatColumnDef, MatHeaderCellDef, MatNoDataRow, NgClass
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.css'

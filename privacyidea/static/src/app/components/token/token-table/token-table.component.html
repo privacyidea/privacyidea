@@ -14,18 +14,21 @@
   <table (matSortChange)="sortData($event)" [dataSource]="dataSource()" aria-label="Token Data Table"
          class="mat-elevation-z8"
          mat-table matSort>
-    <ng-container *ngFor="let column of columnDefinitions" [matColumnDef]="column.key">
-      <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
-        {{ column.label }}
-      </th>
-      <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
-        <ng-container *ngIf="column.key === 'serial' || column.key === 'username'|| column.key === 'container_serial'
-        || column.key === 'user_realm' || column.key === 'realms'; else otherColumns">
-          <a attr.aria-label="{{ column.label }} Link" href="#">
-            {{ element[column.key] }}
-          </a>
-        </ng-container>
-        <ng-template #otherColumns>
+    @for (column of columnDefinitions; track column) {
+      <ng-container [matColumnDef]="column.key">
+        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
+          {{ column.label }}
+        </th>
+        <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
+          @if (column.key === 'serial' || column.key === 'username' || column.key === 'container_serial'
+          || column.key === 'user_realm' || column.key === 'realms') {
+            <ng-container>
+              <a attr.aria-label="{{ column.label }} Link" href="#">
+                {{ element[column.key] }}
+              </a>
+            </ng-container>
+          } @else {
+            <ng-container>
           <span [ngClass]="{
             'highlight-base highlight-true': (column.key === 'active' && element[column.key] === true) ||
             (column.key === 'failcount' && element[column.key] >= 0 && element[column.key] <= 9),
@@ -34,9 +37,11 @@
           }">
             {{ element[column.key] }}
           </span>
-        </ng-template>
-      </td>
-    </ng-container>
+            </ng-container>
+          }
+        </td>
+      </ng-container>
+    }
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
