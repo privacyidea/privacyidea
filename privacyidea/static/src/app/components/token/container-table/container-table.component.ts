@@ -21,6 +21,7 @@ import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
+import {LocalService} from '../../../services/local/local.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -60,7 +61,6 @@ const columns = [
   styleUrl: './container-table.component.css'
 })
 export class ContainerTableComponent {
-  private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
   dataSource = signal(new MatTableDataSource());
   displayedColumns: string[] = columns.map(column => column.key);
   columnDefinitions = columns;
@@ -77,12 +77,13 @@ export class ContainerTableComponent {
   private fullData: any[] = [];
   private currentData: any[] = [];
 
-  constructor(private authService: AuthService, private router: Router, private http: HttpClient) {
+  constructor(private router: Router, private http: HttpClient,
+              private authService: AuthService, private localStore: LocalService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     }
-
-    this.http.get('http://127.0.0.1:5000/container', this.headerDict).subscribe({
+    const headerDict = {headers: {'PI-Authorization': localStore.getData('bearer_token') || ''}}
+    this.http.get('http://127.0.0.1:5000/container', headerDict).subscribe({
       next: (response: any) => {
         console.log('Container data', response.result.value.containers); // TODO map values correctly and remove this line
         const containers = response.result.value.containers;

@@ -9,6 +9,7 @@ import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
+import {LocalService} from '../../../services/local/local.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -34,7 +35,6 @@ const columns = [
   styleUrl: './token-table.component.css'
 })
 export class TokenTableComponent {
-  private headerDict = {headers: {'PI-Authorization': localStorage.getItem('bearer_token') || ''}}
   dataSource = signal(new MatTableDataSource());
   displayedColumns: string[] = columns.map(column => column.key);
   columnDefinitions = columns;
@@ -51,12 +51,13 @@ export class TokenTableComponent {
   private fullData: any[] = [];
   private currentData: any[] = [];
 
-  constructor(private authService: AuthService, private router: Router, private http: HttpClient) {
+  constructor(private router: Router, private http: HttpClient,
+              private authService: AuthService, private localStore: LocalService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     }
-
-    this.http.get('http://127.0.0.1:5000/token', this.headerDict).subscribe({
+    const headerDict = {headers: {'PI-Authorization': this.localStore.getData('bearer_token') || ''}}
+    this.http.get('http://127.0.0.1:5000/token', headerDict).subscribe({
       next: (response: any) => {
         const tokens = response.result.value.tokens;
         console.log('Token data', tokens); // TODO map values correctly and remove this line

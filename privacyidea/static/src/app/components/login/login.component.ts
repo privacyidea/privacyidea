@@ -8,6 +8,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatButton, MatFabButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
 import {FooterComponent} from '../grid-layout/footer/footer.component';
+import {LocalService} from '../../services/local/local.service';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +22,7 @@ export class LoginComponent {
   password = signal<string>('');
   private bearerTokenKey = 'bearer_token';
 
-  constructor(private authService: AuthService, private router: Router) {
+  constructor(private authService: AuthService, private router: Router, private localStore: LocalService) {
   }
 
   onSubmit() {
@@ -32,7 +33,7 @@ export class LoginComponent {
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token
           && this.authService.isAuthenticatedUser()) {
-          localStorage.setItem(this.bearerTokenKey, response.result.value.token);
+          this.localStore.saveData(this.bearerTokenKey, response.result.value.token);
           this.router.navigate(['token']);
         } else {
           console.warn('Login failed. Challenge response required.');
@@ -44,7 +45,7 @@ export class LoginComponent {
   }
 
   logout(): void {
-    localStorage.removeItem(this.bearerTokenKey);
+    this.localStore.removeData(this.bearerTokenKey);
     this.authService.deauthenticate();
   }
 }

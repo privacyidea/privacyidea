@@ -52,7 +52,9 @@
 .refresh-btn {
   margin-left: auto;
   width: 100px;
+  height: 60px;
   cursor: pointer;
+  border-radius: 0;
   background: white;
   box-shadow: none;
 }
