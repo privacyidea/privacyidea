@@ -169,8 +169,12 @@ export class ContainerTableComponent {
   private updateDataSource(data: any[]) {
     const startIndex = this.pageIndex * this.pageSize;
     const endIndex = startIndex + this.pageSize;
+    const processedData = data.slice(startIndex, endIndex).map((item) => ({
+      ...item,
+      users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : ''
+    }));
 
-    this.dataSource.set(new MatTableDataSource(data.slice(startIndex, endIndex)));
+    this.dataSource.set(new MatTableDataSource(processedData.slice(startIndex, endIndex)));
   }
 
   protected readonly columns = columns;

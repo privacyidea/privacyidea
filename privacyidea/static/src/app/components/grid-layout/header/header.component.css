@@ -17,8 +17,8 @@
 
 .brand img {
   margin-left: 40px;
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   box-shadow: var(--box-shadow);
 }
@@ -29,27 +29,32 @@
 
 .nav-menu a {
   text-decoration: none;
-  background: var(--background-secondary-inset);
+  border-radius: 0;
   color: #767676;
   height: 60px;
   min-width: 120px;
   padding: 20px;
-  border-radius: 0;
-  box-shadow: var(--box-shadow-inset);
+  background: white;
+  box-shadow: none;
+  transition: 0ms;
 }
 
 .nav-menu a.active,
 .nav-menu a:hover {
-  box-shadow: 8px 8px var(--blur) #b5b5b5;
+  z-index: 1;
+  box-shadow: 8px 6px var(--blur) #b5b5b5;
   background: var(--background-primary);
   color: white;
-  transition: 0ms;
+  transform: translateX(-2px);
+  transition: transform 200ms, box-shadow 200ms ease;
 }
 
 .refresh-btn {
   margin-left: auto;
-  padding-top: 10px;
+  width: 100px;
   cursor: pointer;
+  background: white;
+  box-shadow: none;
 }
 
 .profile-btn {

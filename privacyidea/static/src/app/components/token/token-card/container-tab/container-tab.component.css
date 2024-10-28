@@ -9,8 +9,10 @@
   background: var(--background-blue);
   box-shadow: var(--box-shadow-blue);
   cursor: pointer;
+  transition: 0ms;
 }
 
+.card-button.activ,
 .card-button:hover {
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);

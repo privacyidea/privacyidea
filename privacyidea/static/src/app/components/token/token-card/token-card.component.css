@@ -12,3 +12,8 @@ mat-card {
 h4 {
   padding: 8px;
 }
+
+.active {
+  color: var(--blue2);
+  transition: 200ms;
+}

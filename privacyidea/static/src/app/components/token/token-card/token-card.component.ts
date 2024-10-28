@@ -7,6 +7,7 @@ import {MatButton, MatFabButton} from '@angular/material/button';
 import {MatDivider} from '@angular/material/divider';
 import {TokenTabComponent} from './token-tab/token-tab.component';
 import {ContainerTabComponent} from './container-tab/container-tab.component';
+import {NgClass} from '@angular/common';
 
 @Component({
   selector: 'app-token-card',
@@ -24,6 +25,7 @@ import {ContainerTabComponent} from './container-tab/container-tab.component';
     MatTabHeader,
     TokenTabComponent,
     ContainerTabComponent,
+    NgClass,
   ],
   templateUrl: './token-card.component.html',
   styleUrls: ['./token-card.component.css']
