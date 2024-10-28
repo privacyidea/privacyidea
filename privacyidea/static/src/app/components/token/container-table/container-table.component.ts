@@ -28,7 +28,7 @@ const columns = [
   {key: 'type', label: 'Type'},
   {key: 'description', label: 'Description'},
   {key: 'users', label: 'User'},
-  {key: 'user_realms', label: 'Realm'},
+  {key: 'user_realm', label: 'Realm'},
   {key: 'realms', label: 'Container Realms'},
 ];
 
@@ -123,6 +123,7 @@ export class ContainerTableComponent {
   }
 
   pageEvent: PageEvent | undefined;
+
   handlePageEvent(e: PageEvent) {
 
     this.pageEvent = e;
@@ -134,9 +135,10 @@ export class ContainerTableComponent {
   private updateDataSource(data: any[]) {
     const startIndex = this.pageIndex * this.pageSize;
     const endIndex = startIndex + this.pageSize;
-    const processedData = data.slice(startIndex, endIndex).map((item) => ({
+    const processedData = data.map((item) => ({
       ...item,
-      users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : ''
+      users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : '',
+      user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
 
     this.dataSource.set(new MatTableDataSource(processedData.slice(startIndex, endIndex)));

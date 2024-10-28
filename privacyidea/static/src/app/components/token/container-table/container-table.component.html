@@ -20,7 +20,8 @@
       </th>
       <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
         <ng-container
-          *ngIf="column.key === 'serial' || column.key === 'users'|| column.key === 'realms'; else otherColumns">
+          *ngIf="column.key === 'serial' || column.key === 'users' || column.key === 'realms'
+          || column.key === 'user_realm'; else otherColumns">
           <a attr.aria-label="{{ column.label }} Link" href="#">
             {{ element[column.key] }}
           </a>

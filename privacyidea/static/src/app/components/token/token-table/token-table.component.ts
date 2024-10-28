@@ -9,7 +9,7 @@ import {Router} from '@angular/router';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -20,7 +20,7 @@ const columns = [
   {key: 'rollout_state', label: 'Rollout Status'},
   {key: 'username', label: 'User'},
   {key: 'user_realm', label: 'Realm'},
-  {key: 'tokengroup', label: 'Token Realm'},
+  {key: 'realms', label: 'Token Realm'},
   {key: 'container_serial', label: 'Container'},
 ];
 
@@ -84,7 +84,6 @@ export class TokenTableComponent {
   private fetchTokenData() {
     this.tokenService.getTokenData().subscribe({
       next: tokens => {
-        console.log('Token data', tokens); // TODO map values correctly and remove this line
         this.length = tokens.length;
         this.fullData = tokens;
         this.currentData = tokens;
@@ -109,7 +108,11 @@ export class TokenTableComponent {
   private updateDataSource(data: any[]) {
     const startIndex = this.pageIndex * this.pageSize;
     const endIndex = startIndex + this.pageSize;
+    const processedData = data.map((item) => ({
+      ...item,
+      realms: item.realms && item.realms.length > 0 ? item.realms[0] : ''
+    }));
 
-    this.dataSource.set(new MatTableDataSource(data.slice(startIndex, endIndex)));
+    this.dataSource.set(new MatTableDataSource(processedData.slice(startIndex, endIndex)));
   }
 }
