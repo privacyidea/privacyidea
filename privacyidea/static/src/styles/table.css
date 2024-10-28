@@ -1,0 +1,67 @@
+table {
+  width: 100%;
+  background-color: var(--table-color);
+}
+
+a {
+  text-decoration: none;
+  color: var(--blue1);
+}
+
+td:nth-child(even) {
+  background: #f3f3f3;
+}
+
+th:nth-child(even) {
+  background: #f3f3f3;
+}
+
+.item-table {
+  justify-content: center;
+  padding: 20px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+}
+
+.ng-tns-c508571215-2 {
+  color: dimgray;
+}
+
+.mat-mdc-form-field {
+  font-size: var(--font-size);
+  color: var(--blue1);
+  width: 52%;
+}
+
+.mat-mdc-paginator {
+  background-color: var(--table-color);
+}
+
+.filter-paginator-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.highlight-true {
+  background-color: #9ABF00;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+}
+
+.highlight-false {
+  background-color: #bf003a;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+}
+
+span {
+  font-size: 12px;
+  margin-right: 20px;
+  margin-left: auto;
+}

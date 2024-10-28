@@ -35,7 +35,6 @@ export class TokenCardComponent {
   @Output() tabChange: EventEmitter<number> = new EventEmitter<number>();
 
   onTabChange(event: MatTabChangeEvent): void {
-    console.log('Tab changed', event.index);
     this.selectedTabIndex = event.index;
     this.tabChange.emit(this.selectedTabIndex);
   }
