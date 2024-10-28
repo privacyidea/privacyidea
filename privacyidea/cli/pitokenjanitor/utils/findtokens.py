@@ -473,7 +473,7 @@ def export(ctx, format, b32):
                 token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
                 token_list.append(token_dict)
             except Exception as e:
-                sys.stderr.write(f"\nFailed to export token {tokenobj.get("serial")}.\n")
+                sys.stderr.write(f"\nFailed to export token {tokenobj.get('serial')}.\n")
         print(yaml_safe_dump(token_list))
     else:
         key, token_num, soup = export_pskc(tlist)
