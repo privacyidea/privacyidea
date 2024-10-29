@@ -184,6 +184,7 @@ urllib3==2.2.3
     # via
     #   requests
     #   responses
+webauthn==2.2.0
 werkzeug==3.0.4
     # via flask
 
