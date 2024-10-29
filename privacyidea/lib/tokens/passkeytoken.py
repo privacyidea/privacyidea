@@ -180,11 +180,9 @@ class PasskeyTokenClass(TokenClass):
                         "rawId": cred_id_raw,
                         "response": {
                             "attestationObject": attestation,
-                            "clientDataJSON": client_data,
-                            "transports": ["internal"],
+                            "clientDataJSON": client_data
                         },
                         "type": "public-key",
-                        "clientExtensionResults": {},
                         "authenticatorAttachment": authenticator_attachment,
                     },
                     expected_challenge=challenge_list[0].challenge.encode("utf-8"),

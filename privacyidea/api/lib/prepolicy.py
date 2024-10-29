@@ -1901,8 +1901,8 @@ def webauthntoken_auth(request, action):
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
     if (not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data)
-            and ('serial' not in request.all_data or
-                 request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix()))):
+            and ('serial' not in request.all_data
+                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix()))):
         user_object = request.User if hasattr(request, 'User') else None
         allowed_transports_policies = (Match.user(g,
                                                   scope=SCOPE.AUTH,

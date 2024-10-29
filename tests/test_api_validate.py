@@ -714,7 +714,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            data={"serial": "123456"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(404, res.status_code)
 
     def test_03_check_user(self):
         # get the original counter
@@ -2689,7 +2689,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             result = res.json.get("result")
             error_msg = result.get("error").get("message")
-            self.assertEqual("ERR905: You need to specify a serial or a user.", error_msg)
+            self.assertEqual("ERR905: You need to specify a serial, user or credential_id.", error_msg)
 
         # wrong username
         with self.app.test_request_context('/validate/check',
