@@ -1,5 +1,5 @@
 import logging
-from hashlib import sha512, sha256
+from hashlib import sha256
 
 from flask_babel import lazy_gettext
 from webauthn import (generate_registration_options,
@@ -7,9 +7,9 @@ from webauthn import (generate_registration_options,
 from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse
-from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorAttachment,
-                                      AuthenticatorSelectionCriteria, ResidentKeyRequirement,
-                                      PublicKeyCredentialDescriptor)
+from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorSelectionCriteria,
+                                      ResidentKeyRequirement,
+                                      PublicKeyCredentialDescriptor, UserVerificationRequirement)
 
 from privacyidea.api.lib.utils import get_optional, get_required
 from privacyidea.lib import _
@@ -17,7 +17,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import EnrollmentError, ParameterError
+from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
@@ -53,7 +53,7 @@ class PasskeyTokenClass(TokenClass):
         res = {
             "type": "passkey",
             "title": "Passkey",
-            "description": _("Passkey: A secret stored on one’s devices, unlocked with biometrics."),
+            "description": _("Passkey: A secret stored on a device, unlocked with biometrics."),
             "init": {},
             'config': {},
             'user': ['enroll'],
@@ -73,7 +73,8 @@ class PasskeyTokenClass(TokenClass):
         """
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             if not user:
-                raise ParameterError("User must be provided for passkey enrollment!")
+                raise ParameterError("User must be provided for passkey enrollment!",
+                                     id=ERROR.PARAMETER_USER_MISSING)
 
             response_detail = TokenClass.get_init_detail(self, params, user)
 
@@ -88,14 +89,22 @@ class PasskeyTokenClass(TokenClass):
                                   validitytime=challenge_validity)
             challenge.save()
 
-            # To avoid registering the same authenticator multiple times, get other passkey token of the user
-            # and set their credential ids in exclude_credentials
-            registered_credential_ids = [base64url_to_bytes(cred_id) for cred_id in
-                                         get_optional(params, "registered_credential_ids")]
-            excluded_credentials: list[PublicKeyCredentialDescriptor] = []
-            if registered_credential_ids:
-                excluded_credentials = ([PublicKeyCredentialDescriptor(id=cred)
-                                         for cred in registered_credential_ids])
+            # Excluded Credentials
+            registered_credential_ids: list[bytes] = [base64url_to_bytes(cred_id) for cred_id in
+                                                      get_optional(params, "registered_credential_ids")]
+            excluded_credentials: list[PublicKeyCredentialDescriptor] = ([PublicKeyCredentialDescriptor(id=cred)
+                                                                          for cred in registered_credential_ids])
+
+            # Key Algorithms
+            pub_key_algorithms = get_optional(params, WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                              default=[COSEAlgorithmIdentifier.ECDSA_SHA_256,
+                                                       COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256])
+
+            # User Verification
+            user_verification = UserVerificationRequirement.PREFERRED
+            uv_param = get_optional(params, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT)
+            if uv_param:
+                user_verification = UserVerificationRequirement(uv_param)
 
             registration_options = generate_registration_options(
                 rp_id=get_required(params, WEBAUTHNACTION.RELYING_PARTY_ID),
@@ -107,11 +116,11 @@ class PasskeyTokenClass(TokenClass):
                 attestation=AttestationConveyancePreference.NONE,
                 authenticator_selection=AuthenticatorSelectionCriteria(
                     resident_key=ResidentKeyRequirement.REQUIRED,
+                    user_verification=user_verification,
                 ),
                 challenge=nonce,
                 exclude_credentials=excluded_credentials,
-                supported_pub_key_algs=[COSEAlgorithmIdentifier.ECDSA_SHA_256,
-                                        COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256],
+                supported_pub_key_algs=pub_key_algorithms,
                 timeout=12000,
             )
 
@@ -119,7 +128,7 @@ class PasskeyTokenClass(TokenClass):
             response_detail["passkey_registration"] = options_json
             response_detail["transaction_id"] = challenge.transaction_id
 
-            # Add RP ID and Name to the token info
+            # Add RP ID and name to the token info
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID, registration_options.rp.id)
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME, registration_options.rp.name)
         else:

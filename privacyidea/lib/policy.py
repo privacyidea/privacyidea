@@ -1296,8 +1296,7 @@ class PolicyClass(object):
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
             if role in tokenclass.get_class_info("ui_enroll"):
-                enroll_types[tokenclass.get_class_type()] = \
-                    tokenclass.get_class_info("description")
+                enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL

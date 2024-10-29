@@ -28,14 +28,14 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
-                                               ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
-                                               WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
-                                               WebAuthnAssertionResponse, AuthenticationRejectedException,
-                                               USER_VERIFICATION_LEVEL)
+                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
+                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
+                                             WebAuthnAssertionResponse, AuthenticationRejectedException,
+                                             USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
@@ -902,7 +902,8 @@ class WebAuthnTokenClass(TokenClass):
                     uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
                 ).verify([
                     # TODO: this might get slow when a lot of webauthn tokens are registered
-                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if token.get_serial() != self.get_serial()
+                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if
+                    token.get_serial() != self.get_serial()
                 ])
             except Exception as e:
                 log.warning('Enrollment of {0!s} token failed: '
@@ -974,8 +975,8 @@ class WebAuthnTokenClass(TokenClass):
             if not params:
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
-                raise ParameterError("Failed to create a WebAuhn token."
-                                     "Creating a WebAuthn token requires user to be provided")
+                raise ParameterError("User must be provided for WebAuthn enrollment!",
+                                     id=ERROR.PARAMETER_USER_MISSING)
 
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
@@ -1177,7 +1178,7 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        dataimage = "" #convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
+        dataimage = ""  # convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
                                      "img": dataimage},
@@ -1235,23 +1236,23 @@ class WebAuthnTokenClass(TokenClass):
                 # All data is parsed and verified. If any errors occur, an exception
                 # will be raised.
                 self.set_otp_count(WebAuthnAssertionResponse(
-                                       webauthn_user=user,
-                                       assertion_response={
-                                           'id': credential_id,
-                                           'userHandle': user_handle,
-                                           'clientData': client_data,
-                                           'authData': authenticator_data,
-                                           'signature': signature_data,
-                                           'assertionClientExtensions':
-                                               webauthn_b64_decode(assertion_client_extensions)
-                                                   if assertion_client_extensions
-                                                   else None
-                                       },
-                                       challenge=webauthn_b64_encode(challenge),
-                                       origin=http_origin,
-                                       allow_credentials=[user.credential_id],
-                                       uv_required=uv_req
-                                   ).verify())
+                    webauthn_user=user,
+                    assertion_response={
+                        'id': credential_id,
+                        'userHandle': user_handle,
+                        'clientData': client_data,
+                        'authData': authenticator_data,
+                        'signature': signature_data,
+                        'assertionClientExtensions':
+                            webauthn_b64_decode(assertion_client_extensions)
+                            if assertion_client_extensions
+                            else None
+                    },
+                    challenge=webauthn_b64_encode(challenge),
+                    origin=http_origin,
+                    allow_credentials=[user.credential_id],
+                    uv_required=uv_req
+                ).verify())
             except AuthenticationRejectedException as e:
                 # The authentication ceremony failed.
                 log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))

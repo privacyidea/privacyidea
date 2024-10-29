@@ -75,7 +75,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_credential_ids_for_user)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
+from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError, ERROR)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -310,8 +310,13 @@ def init():
 
         # The token was created successfully, so we add token specific
         # init details like the Google URL to the response
-        init_details = token_object.get_init_detail(param, user)
-        response_details.update(init_details)
+        try:
+            init_details = token_object.get_init_detail(param, user)
+            response_details.update(init_details)
+        except ParameterError as e:
+            if e.id is ERROR.PARAMETER_USER_MISSING:
+                remove_token(serial=token_object.get_serial())
+            raise e
 
         # Check if a containerSerial is set and assign the token to the container
         if "container_serial" in param:
