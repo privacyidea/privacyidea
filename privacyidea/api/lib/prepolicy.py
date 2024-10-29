@@ -2006,7 +2006,7 @@ def webauthntoken_enroll(request, action):
         authenticator_attachment = None
         if (authenticator_attachment_policies
                 and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES):
-            authenticator_attachment = authenticator_attachment_policies[0]
+            authenticator_attachment = list(authenticator_attachment_policies)[0]
 
         # We need to set 'unique' to False since this policy can contain multiple values
         pubkey_credential_algo_pref_policies = Match.user(
