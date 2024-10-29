@@ -838,7 +838,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         if not smartphone_serial:
             smartphone_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
-        scope = "https://pi.net/container/register/finalize"
+        scope = create_endpoint_url(server_url, "container/register/finalize")
 
         # passphrase
         params = {}
@@ -847,6 +847,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Prepare
         result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True", params=params)
+        smartphone.add_container_info("server_url", server_url)
 
         # Check result entries
         result_entries = result.keys()
@@ -960,12 +961,13 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_37_register_smartphone_success(self):
         # Prepare
-        scope = "https://pi.net/container/register/finalize"
-        smartphone_serial, init_result = self.register_smartphone_initialize_success(scope)
+        server_url = "https://pi.net/"
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(server_url)
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Mock smartphone
         device_id = "1234"
+        scope = create_endpoint_url(server_url, "container/register/finalize")
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
                                                                          scope, smartphone_serial,
@@ -1381,7 +1383,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Mock new smartphone
         device_id = "4567"
-        scope = f"https://pi.net/container/register/finalize"
+        scope = "https://pi.net/container/register/finalize"
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
                                                                          scope, smartphone_serial,
