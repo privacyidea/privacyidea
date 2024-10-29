@@ -407,6 +407,7 @@ class ACTION(object):
     CONTAINER_LIST = "container_list"
     CONTAINER_REGISTER = "container_register"
     CONTAINER_UNREGISTER = "container_unregister"
+    CONTAINER_ROLLOVER = "container_rollover"
     PI_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     CONTAINER_CHALLENGE_TTL = "container_challenge_ttl"
@@ -2117,21 +2118,25 @@ def get_static_policy_definitions(scope=None):
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                          'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
+                                        'desc': _('Admin is allowed to perform a container rollover.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
-                                        'desc': _('Admin is allowed to create and edit container templates.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
+                                               'desc': _('Admin is allowed to create and edit container templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
-                                        'desc': _('Admin is allowed to delete templates.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
+                                               'desc': _('Admin is allowed to delete templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
-                                        'desc': _('Admin is allowed to list templates and view their details.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER}
+                                             'desc': _('Admin is allowed to list templates and view their details.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2316,6 +2321,10 @@ def get_static_policy_definitions(scope=None):
                                           'desc': _('Users are allowed to unregister containers from synchronization.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
+                                        'desc': _('Users are allowed to perform a container rollover.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
                                                'desc': _('Users are allowed to create and edit container templates.'),
                                                'mainmenu': [MAIN_MENU.TOKENS],
@@ -2325,9 +2334,9 @@ def get_static_policy_definitions(scope=None):
                                                'mainmenu': [MAIN_MENU.TOKENS],
                                                'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
-                                        'desc': _('Users are allowed to list templates and view their details.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER}
+                                             'desc': _('Users are allowed to list templates and view their details.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {

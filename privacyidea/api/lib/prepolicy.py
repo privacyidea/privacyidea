@@ -1344,6 +1344,21 @@ def check_container_action(request=None, action=None):
     return True
 
 
+def check_container_register_rollover(request=None, action=None):
+    """
+    Checks if a container rollover is requested. If so, the policy is checked.
+
+    :param request: The request that is intercepted during the API call
+    :return: True if rollover is allowed or not requested, otherwise raises an Exception
+    """
+    params = request.all_data
+    container_rollover = getParam(params, "rollover", optional)
+    if container_rollover:
+        return check_container_action(request, ACTION.CONTAINER_ROLLOVER)
+    else:
+        return check_container_action(request, ACTION.CONTAINER_REGISTER)
+
+
 def check_token_upload(request=None, action=None):
     """
     This decorator function takes the request and verifies the given action

@@ -1040,12 +1040,6 @@ def finalize_registration(container_serial: str, params: dict):
     container_info = container.get_container_info_dict()
     registration_state = container_info.get("registration_state")
 
-    if registration_state == "rollover":
-        # check if rollover is allowed
-        rollover_right = container_info.get(SmartphoneOptions.ALLOW_ROLLOVER)
-        if rollover_right != 'True':
-            raise ContainerRollover("Rollover is not allowed for this container.")
-
     # Update params with registration url
     server_url = container_info.get("server_url")
     if server_url is None:
@@ -1107,20 +1101,21 @@ def init_container_rollover(container: TokenContainer, server_url: str, challeng
     return res
 
 
-def unregister(container: TokenContainer, user: User, user_role: str):
+def unregister(container: TokenContainer):
     """
     Unregister a container from the synchronization. The user has to be an admin or the owner of the container.
 
     :param container: The container object
-    :param user: The user object
-    :param user_role: The role of the user ('admin' or 'user')
     :return: True on success
     """
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
-
-    # registration
+    # terminate registration
     res_registration = container.terminate_registration()
+
+    # Delete all challenges of the container
+    challenge_list = get_challenges(serial=container.serial)
+    for challenge in challenge_list:
+        challenge.delete()
+
     return res_registration
 
 

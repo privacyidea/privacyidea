@@ -17,7 +17,6 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-import base64
 import json
 import logging
 
@@ -25,7 +24,8 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
-                                           check_admin_tokenlist, check_container_action)
+                                           check_admin_tokenlist, check_container_action,
+                                           check_container_register_rollover)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -536,7 +536,7 @@ def set_container_info(container_serial, key):
 
 
 @container_blueprint.route('register/initialize', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REGISTER)
+@prepolicy(check_container_register_rollover, request)
 @event('container_register_initialize', request, g)
 @log_with(log)
 def registration_init():
@@ -557,21 +557,24 @@ def registration_init():
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
+    container_rollover = getParam(params, "rollover", optional=True)
     container = find_container_by_serial(container_serial)
     res = {"container_serial": container_serial}
 
     # Check registration state: registration init is only allowed for None and "client_wait"
     registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state and registration_state != "client_wait":
-        raise ContainerNotRegistered(f"Container is already registered.")
+    if container_rollover:
+        if registration_state != "registered":
+            raise ContainerNotRegistered(f"Container is not registered.")
+    else:
+        if registration_state and registration_state != "client_wait":
+            raise ContainerNotRegistered(f"Container is already registered.")
 
-    # Get registration url for the second step
+    # Get server url for the second step
     server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-    container.add_container_info("server_url", server_url)
-    scope = create_endpoint_url(server_url, "container/register/finalize")
 
     # Get validity time for the registration
     registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
@@ -592,7 +595,6 @@ def registration_init():
         if challenge_ttl <= 0:
             # default 2 min
             challenge_ttl = 2
-    container.add_container_info("challenge_ttl", challenge_ttl)
 
     # Get ssl verify
     ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
@@ -609,8 +611,20 @@ def registration_init():
     _check_user_access_on_container(container, user, user_role)
 
     # registration
+    scope = create_endpoint_url(server_url, "container/register/finalize")
     res_registration = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
     res.update(res_registration)
+
+    if container_rollover:
+        # Set registration state
+        container.add_container_info("registration_state", "rollover")
+        container.add_container_info("rollover_server_url", server_url)
+        container.add_container_info("rollover_challenge_ttl", challenge_ttl)
+    else:
+        # save policy values in container info
+        container.add_container_info("server_url", server_url)
+        container.add_container_info("challenge_ttl", challenge_ttl)
+
     return send_result(res)
 
 
@@ -656,7 +670,10 @@ def registration_terminate(container_serial: str):
 
     user = request.User
     user_role = g.logged_in_user.get("role")
-    res = unregister(container, user, user_role)
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    res = unregister(container)
 
     return send_result(res)
 
@@ -683,7 +700,7 @@ def registration_terminate_client(container_serial: str):
     params.update({'scope': scope})
     container.check_challenge_response(params)
 
-    res = container.terminate_registration()
+    res = unregister(container)
 
     return send_result(res)
 
@@ -717,7 +734,7 @@ def create_challenge(container_serial: str):
     container = find_container_by_serial(container_serial)
     container_info = container.get_container_info_dict()
     registration_state = container_info.get("registration_state")
-    if registration_state != "registered":
+    if registration_state != "registered" and registration_state != "rollover":
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # Get server url for the second step
@@ -832,7 +849,7 @@ def rollover(container_serial):
 
     # Check registration state: rollover is only allowed for registered containers
     registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state != "registered":
+    if registration_state != "registered" and registration_state != "rollover":
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # Get server url
