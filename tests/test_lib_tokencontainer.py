@@ -17,7 +17,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        add_token_to_container, create_endpoint_url, create_container_template,
                                        get_templates_by_query, get_template_obj,
                                        create_container_template_from_db_object, compare_template_dicts,
-                                       set_default_template, compare_template_with_container)
+                                       set_default_template, compare_template_with_container,
+                                       finalize_registration, finalize_container_rollover, init_container_rollover)
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.containers.yubikey import YubikeyOptions
@@ -26,7 +27,7 @@ from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneConta
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
 from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   TokenAdminError, privacyIDEAError, ContainerInvalidChallenge)
+                                   TokenAdminError, privacyIDEAError, ContainerInvalidChallenge, ContainerRollover)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
@@ -832,20 +833,20 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Pass undefined user role raises Parameter error
         self.assertRaises(ParameterError, _check_user_access_on_container, container, user, "random")
 
-    def register_smartphone_initialize_success(self, server_url, passphrase_params=None):
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+    def register_smartphone_initialize_success(self, server_url, passphrase_params=None,
+                                               smartphone_serial: str = None):
+        if not smartphone_serial:
+            smartphone_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
-        params = {"server_url": server_url,
-                  "scope": "https://pi.net/container/register/finalize",
-                  "ssl_verify": "True",
-                  "registration_ttl": 100}
+        scope = "https://pi.net/container/register/finalize"
 
         # passphrase
+        params = {}
         if passphrase_params:
             params.update(passphrase_params)
 
         # Prepare
-        result = smartphone.init_registration(params)
+        result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True", params=params)
 
         # Check result entries
         result_entries = result.keys()
@@ -878,12 +879,15 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     @classmethod
     def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_id,
-                                        passphrase=None):
+                                        passphrase=None, private_key_smph=None):
         message = f"{nonce}|{registration_time}|{serial}|{scope}|{device_id}"
         if passphrase:
             message += f"|{passphrase}"
 
-        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
+        if private_key_smph:
+            public_key_smph = private_key_smph.public_key()
+        else:
+            public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
 
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
@@ -892,13 +896,6 @@ class TokenContainerManagementTestCase(MyTestCase):
                   "device_id": device_id, "scope": scope}
 
         return params, private_key_smph
-
-    def test_34_register_smartphone_init_fails(self):
-        smartphone_serial, _ = init_container({"type": "smartphone"})
-        smartphone = find_container_by_serial(smartphone_serial)
-
-        # Prepare with missing server URL
-        self.assertRaises(privacyIDEAError, smartphone.init_registration, {})
 
     def test_35_register_smartphone_finalize_unauthorized(self):
         scope = "https://pi.net/container/register/finalize"
@@ -1332,7 +1329,88 @@ class TokenContainerManagementTestCase(MyTestCase):
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(2, len(add_tokens))
 
-    def test_53_get_as_dict(self):
+    def test_53_finalize_container_rollover(self):
+        # create smartphone container with all possible token types
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+        hotp_token = init_token({"genkey": True, "type": "hotp"})
+        hotp_secret = hotp_token.token.get_otpkey().getKey().decode("utf-8")
+        smartphone.add_token(hotp_token)
+        totp_token = init_token({"genkey": True, "type": "totp"})
+        totp_secret = totp_token.token.get_otpkey().getKey().decode("utf-8")
+        smartphone.add_token(totp_token)
+        push_token = init_token({"genkey": True, "type": "push"})
+        push_secret = push_token.token.get_otpkey().getKey().decode("utf-8")
+        smartphone.add_token(push_token)
+        daypassword = init_token({"genkey": True, "type": "daypassword"})
+        daypassword_secret = daypassword.token.get_otpkey().getKey().decode("utf-8")
+        smartphone.add_token(daypassword)
+
+        # rollover
+        finalize_container_rollover(smartphone)
+
+        # check token secrets
+        new_hotp_secret = hotp_token.token.get_otpkey().getKey().decode("utf-8")
+        self.assertNotEqual(hotp_secret, new_hotp_secret)
+        new_totp_secret = totp_token.token.get_otpkey().getKey().decode("utf-8")
+        self.assertNotEqual(totp_secret, new_totp_secret)
+        new_push_secret = push_token.token.get_otpkey().getKey().decode("utf-8")
+        self.assertNotEqual(push_secret, new_push_secret)
+        new_daypassword_secret = daypassword.token.get_otpkey().getKey().decode("utf-8")
+        self.assertNotEqual(daypassword_secret, new_daypassword_secret)
+
+    def test_54_container_rollover(self):
+        smartphone_serial, priv_key_smph = self.test_37_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+
+        # Create Challenge for rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        challenge_data = smartphone.create_challenge(scope)
+
+        # Mock smartphone
+        device_id = "1234"
+        params, priv_sig_key_smph = self.mock_smartphone_register_params(challenge_data["nonce"],
+                                                                         challenge_data["time_stamp"],
+                                                                         scope, smartphone_serial,
+                                                                         device_id, private_key_smph=priv_key_smph)
+
+        # Rollover init
+        init_result = init_container_rollover(smartphone, "https://pi.net/", 20, 10,
+                                              "True", params)
+
+        # Mock new smartphone
+        device_id = "4567"
+        scope = f"https://pi.net/container/register/finalize"
+        params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
+                                                                         init_result["time_stamp"],
+                                                                         scope, smartphone_serial,
+                                                                         device_id)
+
+        # Finalize registration
+        res = finalize_registration(smartphone_serial, params)
+        self.assertIn("public_server_key", res.keys())
+
+        # Check if container info is set correctly
+        container_info = smartphone.get_container_info_dict()
+        container_info_keys = container_info.keys()
+        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_server", container_info_keys)
+        self.assertIn("private_key_server", container_info_keys)
+        self.assertEqual(device_id, container_info["device_id"])
+        self.assertEqual("registered", container_info["registration_state"])
+        self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
+        self.assertEqual("https://pi.net/", container_info["server_url"])
+        self.assertEqual("20", container_info["challenge_ttl"])
+        self.assertEqual("registered", container_info["registration_state"])
+
+        # rollover entries removed
+        self.assertNotIn("rollover_server_url", container_info_keys)
+        self.assertNotIn("rollover_challenge_ttl", container_info_keys)
+
+        return smartphone_serial, priv_sig_key_smph
+
+    def test_55_get_as_dict(self):
         # Arrange
         container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
@@ -1367,7 +1445,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(self.resolvername1, container_dict["users"][0]["user_resolver"])
         self.assertListEqual([hotp.get_serial(), totp.get_serial()], container_dict["tokens"])
 
-    def test_54_get_as_dict_no_tokens_no_user(self):
+    def test_56_get_as_dict_no_tokens_no_user(self):
         # Arrange
         container_serial, _ = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
@@ -1388,7 +1466,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertListEqual([], container_dict["users"])
         self.assertListEqual([], container_dict["tokens"])
 
-    def test_55_set_default_options(self):
+    def test_57_set_default_options(self):
         smph_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smph_serial)
 
@@ -1405,6 +1483,53 @@ class TokenContainerManagementTestCase(MyTestCase):
         # set default value keeps the defined value
         value = smartphone.set_default_option(SmartphoneOptions.KEY_ALGORITHM)
         self.assertEqual("secp256r1", value)
+
+    def test_58_init_smartphone_with_options(self):
+        options = {SmartphoneOptions.ALLOW_ROLLOVER: True,
+                   SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+                   SmartphoneOptions.HASH_ALGORITHM: "SHA256",
+                   SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
+                   SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
+                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
+                   SmartphoneOptions.FORCE_BIOMETRIC: False}
+
+        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smartphone = find_container_by_serial(smph_serial)
+        container_info = smartphone.get_container_info_dict()
+        self.assertEqual("True", container_info[SmartphoneOptions.ALLOW_ROLLOVER])
+        self.assertEqual("secp384r1", container_info[SmartphoneOptions.KEY_ALGORITHM])
+        self.assertEqual("SHA256", container_info[SmartphoneOptions.HASH_ALGORITHM])
+        self.assertEqual("AES", container_info[SmartphoneOptions.ENCRYPT_ALGORITHM])
+        self.assertEqual("x25519", container_info[SmartphoneOptions.ENCRYPT_KEY_ALGORITHM])
+        self.assertEqual("GCM", container_info[SmartphoneOptions.ENCRYPT_MODE])
+        self.assertEqual("False", container_info[SmartphoneOptions.FORCE_BIOMETRIC])
+
+    def test_59_init_smartphone_with_invalid_options(self):
+        options = {SmartphoneOptions.ALLOW_ROLLOVER: "Maybe",
+                   SmartphoneOptions.KEY_ALGORITHM: "xxx",
+                   SmartphoneOptions.HASH_ALGORITHM: "SHA1",
+                   SmartphoneOptions.ENCRYPT_ALGORITHM: "ABC",
+                   SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "xxx",
+                   SmartphoneOptions.ENCRYPT_MODE: "DEF",
+                   SmartphoneOptions.FORCE_BIOMETRIC: "Maybe"}
+
+        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smartphone = find_container_by_serial(smph_serial)
+        container_info_keys = smartphone.get_container_info_dict().keys()
+        self.assertNotIn(SmartphoneOptions.ALLOW_ROLLOVER, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.KEY_ALGORITHM, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.HASH_ALGORITHM, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.ENCRYPT_ALGORITHM, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.ENCRYPT_KEY_ALGORITHM, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.ENCRYPT_MODE, container_info_keys)
+        self.assertNotIn(SmartphoneOptions.FORCE_BIOMETRIC, container_info_keys)
+
+    def test_60_init_smartphone_with_invalid_option_keys(self):
+        options = {YubikeyOptions.PIN_POLICY: "Maybe"}
+        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smartphone = find_container_by_serial(smph_serial)
+        container_info_keys = smartphone.get_container_info_dict().keys()
+        self.assertNotIn(YubikeyOptions.PIN_POLICY, container_info_keys)
 
 
 class TokenContainerTemplateTestCase(MyTestCase):
@@ -1783,14 +1908,14 @@ class TokenContainerTemplateTestCase(MyTestCase):
                                   options=template_options)
 
         # Create container with template
-        container_params = {"type": "generic", "template": {"name": "test", "container_type": "generic",
+        container_params = {"type": "smartphone", "template": {"name": "test", "container_type": "smartphone",
                                                             "template_options": template_options}}
         container_serial, template_tokens = init_container(container_params)
         self.assertEqual(template_options["tokens"], template_tokens)
 
         # check container properties
         container = find_container_by_serial(container_serial)
-        self.assertEqual("secp384r1", container.get_container_info_dict()["key_algorithm"])
+        self.assertEqual("secp384r1", container.get_container_info_dict()[SmartphoneOptions.KEY_ALGORITHM])
 
         # Delete template
         template = get_template_obj("test")

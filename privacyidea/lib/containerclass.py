@@ -477,6 +477,23 @@ class TokenContainerClass:
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
         return res
 
+    def add_options(self, options):
+        """
+        Add the given options to the container.
+
+        :param options: The options to add as dictionary
+        """
+        class_options = self.get_class_options()
+        for key, value in options.items():
+            option_values = class_options.get(key)
+            if option_values is not None:
+                if value in option_values:
+                    self.add_container_info(key, value)
+                else:
+                    log.debug(f"Value {value} not supported for option key {key}.")
+            else:
+                log.debug(f"Option key {key} not found for container type {self.get_class_type()}.")
+
     @property
     def template(self):
         """
@@ -500,9 +517,15 @@ class TokenContainerClass:
                 log.info(f"Template {template_name} is not compatible with container type {self.type}.")
         return success
 
-    def init_registration(self, params):
+    def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params):
         """
         Initialize the registration of a pi container on a physical container.
+
+        :param server_url: URL of the server reachable for the client.
+        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param registration_ttl: Time to live of the registration link in minutes.
+        :param ssl_verify: Whether the client shall use ssl.
+        :param params: Container specific parameters.
         """
         raise privacyIDEAError("Registration is not implemented for this container type.")
 
@@ -548,8 +571,10 @@ class TokenContainerClass:
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
+            * checks if the challenge is for the right scope
             * Verifies the signature
-            * Verifies the passphrase if it is part of the challenge
+        Implicitly verifies the passphrase by adding it to the signature message. The passphrase needs to be defined in
+        the challenge data. Otherwise, no passphrase is used.
 
         :param signature: Signature of the message
         :param public_key: Public key to verify the signature
@@ -573,10 +598,12 @@ class TokenContainerClass:
                 extra_data = json.loads(challenge.data)
                 passphrase = extra_data.get("passphrase_response")
                 challenge_scope = extra_data.get("scope")
+                # explicitly check the scope that the right challenge for the right endpoint is used
                 if scope != challenge_scope:
+                    log.debug(f"Scope {scope} does not match challenge scope {challenge_scope}.")
                     continue
 
-                message = f"{nonce}|{times_stamp}|{self.serial}|{scope}"
+                message = f"{nonce}|{times_stamp}|{self.serial}|{challenge_scope}"
                 if url:
                     message += f"|{url}"
                 if device_id:
@@ -602,20 +629,6 @@ class TokenContainerClass:
                 except InvalidSignature:
                     # It is not the right challenge
                     continue
-
-                # Check passphrase
-                challenge_data = json.loads(challenge.data)
-                challenge_passphrase = challenge_data.get("passphrase_response")
-                if challenge_passphrase:
-                    if challenge_data.get("passphrase_ad") == "AD":
-                        # TODO: Validate against AD
-                        pass
-                    else:
-                        # not case-sensitive
-                        if challenge_passphrase.lower() != passphrase.lower():
-                            valid_challenge = False
-                            log.debug("Invalid passphrase!")
-                            break
 
                 # Valid challenge: delete it
                 challenge.delete()

@@ -131,19 +131,19 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return "A smartphone that uses an authenticator app."
 
-    def init_registration(self, params):
+    def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params={}):
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
-        :param params: The parameters for the registration as dictionary like:
+        :param server_url: URL of the server reachable for the client.
+        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param registration_ttl: Time to live of the registration link in minutes.
+        :param ssl_verify: Whether the client shall use ssl.
+        :param params: Container specific parameters like
 
             ::
 
                 {
-                    "server_url": <str, url of the server reachable for the client>,
-                    "scope": <str, endpoint the client contacts to finalize the registration>,
-                    "ssl_verify": <bool, whether the client shall use ssl>,
-                    "registration_ttl": <int, time to live of the registration link in minutes>,
                     "passphrase_ad": <bool, whether the AD password shall be used>, (optional)
                     "passphrase_prompt": <str, the prompt for the passphrase displayed in the app>, (optional)
                     "passphrase_response": <str, passphrase>, (optional)
@@ -170,13 +170,7 @@ class SmartphoneContainer(TokenContainerClass):
             }
         """
         # get params
-        scope = getParam(params, 'scope', optional=False)
-        server_url = getParam(params, 'server_url', optional=False)
-        ssl_verify = getParam(params, 'ssl_verify', optional=False)
-        registration_ttl = getParam(params, 'registration_ttl', optional=False)
         extra_data = getParam(params, 'extra_data', optional=True) or {}
-
-        # Check if a passphrase is required for the registration
         passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
         passphrase_prompt = getParam(params, 'passphrase_prompt', optional=True) or ""
         passphrase_response = getParam(params, 'passphrase_response', optional=True) or ""
@@ -188,8 +182,6 @@ class SmartphoneContainer(TokenContainerClass):
                             "passphrase_ad": passphrase_ad}
 
         # Delete all other challenges for this container
-        # Even if the container is already registered and a new QR code is generated it shall reset the registration
-        # and therefor invalidate all existing challenges
         challenge_list = get_challenges(serial=self.serial)
         for challenge in challenge_list:
             challenge.delete()
@@ -265,7 +257,7 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
         scope = getParam(params, "scope", optional=False)
-        device_id = getParam(params, "device_id", optional=False)
+        device_id = getParam(params, "device_id", optional=True)
 
         # Verifies challenge
         valid = self.validate_challenge(signature, pub_key_container, scope=scope, device_id=device_id)
@@ -363,6 +355,7 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=True)
         container_client_str = getParam(params, "container_dict_client", optional=True)
         scope = getParam(params, "scope", optional=False)
+        device_id = getParam(params, "device_id", optional=True)
 
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
@@ -373,7 +366,8 @@ class SmartphoneContainer(TokenContainerClass):
         # Validate challenge
         valid_challenge = self.validate_challenge(signature, pub_key_sig_container, scope=scope,
                                                   key=pub_key_encr_container_str,
-                                                  container=container_client_str)
+                                                  container=container_client_str,
+                                                  device_id=device_id)
         if not valid_challenge:
             raise ContainerInvalidChallenge('Could not verify signature!')
 

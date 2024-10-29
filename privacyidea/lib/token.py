@@ -2942,5 +2942,9 @@ def regenerate_enroll_url(serial, request, g):
     except PolicyError as ex:
         log.warning(f"{ex}")
 
-    enroll_url = token.get_enroll_url(token_owner, request.all_data)
+    params = request.all_data
+    params.update({"genkey": True, "rollover": True})
+    token = init_token(params)
+    enroll_url = token.get_enroll_url(token_owner, params)
+
     return enroll_url

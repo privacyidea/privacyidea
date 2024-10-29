@@ -60,6 +60,7 @@ class ERROR:
     CONTAINER = 3000
     CONTAINER_NOT_REGISTERED = 3001
     CONTAINER_INVALID_CHALLENGE = 3002
+    CONTAINER_ROLLOVER = 3003
 
 
 class privacyIDEAError(Exception):
@@ -218,3 +219,7 @@ class ContainerInvalidChallenge(ContainerError):
     def __init__(self, description="container challenge error!", eid=ERROR.CONTAINER_INVALID_CHALLENGE):
         ContainerError.__init__(self, description=description, eid=eid)
 
+
+class ContainerRollover(ContainerError):
+    def __init__(self, description="container rollover error", eid=ERROR.CONTAINER_ROLLOVER):
+        ContainerError.__init__(self, description=description, eid=eid)

@@ -1626,24 +1626,57 @@ class APIContainer(APIContainerTest):
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
 
+    def test_27_init_smartphone_with_options(self):
+        options = {SmartphoneOptions.ALLOW_ROLLOVER: True,
+                   SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+                   SmartphoneOptions.HASH_ALGORITHM: "SHA256",
+                   SmartphoneOptions.ENCRYPT_ALGORITHM: "ABC",  # invalid value
+                   SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
+                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
+                   SmartphoneOptions.FORCE_BIOMETRIC: False,
+                   YubikeyOptions.PIN_POLICY: "disabled"}  # invalid key
+
+        data = json.dumps({"type": "smartphone", "options": options})
+        result = self.request_assert_success('/container/init', data, self.at, )
+        serial = result["result"]["value"]["container_serial"]
+        smartphone = find_container_by_serial(serial)
+
+        # valid key value pairs set
+        smartphone_info = smartphone.get_container_info_dict()
+        self.assertEqual("True", smartphone_info[SmartphoneOptions.ALLOW_ROLLOVER])
+        self.assertEqual("secp384r1", smartphone_info[SmartphoneOptions.KEY_ALGORITHM])
+        self.assertEqual("SHA256", smartphone_info[SmartphoneOptions.HASH_ALGORITHM])
+        self.assertEqual("x25519", smartphone_info[SmartphoneOptions.ENCRYPT_KEY_ALGORITHM])
+        self.assertEqual("GCM", smartphone_info[SmartphoneOptions.ENCRYPT_MODE])
+        self.assertEqual("False", smartphone_info[SmartphoneOptions.FORCE_BIOMETRIC])
+
+        # invalid key / values not set
+        smartphone_info_keys = smartphone_info.keys()
+        self.assertNotIn(SmartphoneOptions.ENCRYPT_ALGORITHM, smartphone_info_keys)
+        self.assertNotIn(YubikeyOptions.PIN_POLICY, smartphone_info_keys)
+
 
 class ContainerSynchronization(APIContainerTest):
 
     @classmethod
     def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_id,
-                                        passphrase=None):
+                                        passphrase=None, private_key_smph=None):
         message = f"{nonce}|{registration_time}|{serial}|{scope}|{device_id}"
         if passphrase:
             message += f"|{passphrase}"
 
-        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
+        if private_key_smph:
+            public_key_smph = private_key_smph.public_key()
+        else:
+            public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
 
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
         params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
                   "passphrase": passphrase, "device_id": device_id,
-                  "message": message, "container_serial": serial}
+                  "container_serial": serial,
+                  "scope": scope}
 
         return params, private_key_smph
 
@@ -1708,7 +1741,6 @@ class ContainerSynchronization(APIContainerTest):
 
         # Check if the response contains the expected values
         self.assertIn("public_server_key", result["result"]["value"])
-        self.assertEqual("https://pi.net/", result["result"]["value"]["server_url"])
 
         delete_policy("policy")
 
@@ -2292,7 +2324,7 @@ class ContainerSynchronization(APIContainerTest):
         tokens = tokens_dict["add"]
         # Only hotp token to be added
         self.assertEqual(1, len(tokens))
-        self.assertEqual(initial_enroll_url, tokens[0])
+        self.assertNotEqual(initial_enroll_url, tokens[0])
 
         delete_policy('token_enroll')
 
@@ -2313,6 +2345,321 @@ class ContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(400, f'container/{generic_serial}/challenge',
                                            {"scope": scope}, None, 'POST')
         self.assertEqual(3001, result["result"]["error"]["code"])
+
+    def test_28_rollover_success(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope=rollover_scope,
+                                                                         nonce=challenge_data["nonce"],
+                                                                         registration_time=challenge_data[
+                                                                             "time_stamp"],
+                                                                         device_id="1234",
+                                                                         private_key_smph=priv_key_smph)
+        params.update({"passphrase_prompt": "Enter your passphrase", "passphrase_response": "top_secret"})
+
+        # Init rollover
+        result = self.request_assert_success(f'container/{smartphone_serial}/rollover',
+                                             params,
+                                             None, 'POST')
+        rollover_data = result["result"]["value"]
+
+        # Mock smartphone
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://pi.net/container/register/finalize",
+                                                                         nonce=rollover_data["nonce"],
+                                                                         registration_time=rollover_data[
+                                                                             "time_stamp"],
+                                                                         passphrase="top_secret",
+                                                                         device_id="4567")
+
+        # Finalize rollover (finalize registration)
+        result = self.request_assert_success('container/register/finalize',
+                                             params,
+                                             None, 'POST')
+
+        # Check if the response contains the expected values
+        self.assertIn("public_server_key", result["result"]["value"])
+
+        delete_policy("policy")
+
+    def test_29_rollover_init_denied(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope=rollover_scope,
+                                                                         nonce=challenge_data["nonce"],
+                                                                         registration_time=challenge_data[
+                                                                             "time_stamp"],
+                                                                         passphrase=None,
+                                                                         device_id="1234",
+                                                                         private_key_smph=priv_key_smph)
+
+        # Init rollover
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/rollover', params,
+                                           None, 'POST')
+        self.assertEqual(3003, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_30_rollover_finalize_denied(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope=rollover_scope,
+                                                                         nonce=challenge_data["nonce"],
+                                                                         registration_time=challenge_data[
+                                                                             "time_stamp"],
+                                                                         passphrase=None,
+                                                                         device_id="1234",
+                                                                         private_key_smph=priv_key_smph)
+
+        # Init rollover
+        result = self.request_assert_success(f'container/{smartphone_serial}/rollover',
+                                             params,
+                                             None, 'POST')
+        rollover_data = result["result"]["value"]
+
+        # Mock smartphone
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://pi.net/container/register/finalize",
+                                                                         nonce=rollover_data["nonce"],
+                                                                         registration_time=rollover_data[
+                                                                             "time_stamp"],
+                                                                         passphrase=None,
+                                                                         device_id="4567")
+
+        # Remove rollover right
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: False})
+
+        # Finalize rollover (finalize registration)
+        result = self.request_assert_error(400, 'container/register/finalize',
+                                           params,
+                                           None, 'POST')
+        self.assertEqual(3003, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_31_rollover_container_not_registered(self):
+        # Registration
+        smartphone_serial, _ = init_container(
+            {"type": "smartphone", "options": {SmartphoneOptions.ALLOW_ROLLOVER: True}})
+        smartphone = find_container_by_serial(smartphone_serial)
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/challenge',
+                                           {"scope": scope}, None, 'POST')
+        self.assertEqual(3001, result["result"]["error"]["code"])
+
+        # Init rollover
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/rollover',
+                                           {},
+                                           None, 'POST')
+        self.assertEqual(3001, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_32_rollover_init_invalid_challenge(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone with invalid nonce
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope=rollover_scope,
+                                                                         nonce="123456789",
+                                                                         registration_time=challenge_data[
+                                                                             "time_stamp"],
+                                                                         device_id="1234",
+                                                                         private_key_smph=priv_key_smph)
+
+        # Init rollover
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/rollover',
+                                           params,
+                                           None, 'POST')
+        self.assertEqual(3002, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_33_rollover_finalize_invalid_challenge(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope=rollover_scope,
+                                                                         nonce=challenge_data["nonce"],
+                                                                         registration_time=challenge_data[
+                                                                             "time_stamp"],
+                                                                         device_id="1234",
+                                                                         private_key_smph=priv_key_smph)
+        passphrase = "top_secret"
+        params.update({"passphrase_prompt": "Enter your passphrase", "passphrase_response": passphrase})
+
+        # Init rollover
+        result = self.request_assert_success(f'container/{smartphone_serial}/rollover',
+                                             params,
+                                             None, 'POST')
+        rollover_data = result["result"]["value"]
+
+        # Invalid Nonce
+        # Mock smartphone with
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://pi.net/container/register/finalize",
+                                                                         nonce="123456789",
+                                                                         registration_time=rollover_data[
+                                                                             "time_stamp"],
+                                                                         passphrase=passphrase,
+                                                                         device_id="4567")
+        # Finalize rollover (finalize registration)
+        result = self.request_assert_error(400, 'container/register/finalize',
+                                           params,
+                                           None, 'POST')
+        self.assertEqual(3002, result["result"]["error"]["code"])
+
+        # Invalid time stamp
+        # Mock smartphone with
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://pi.net/container/register/finalize",
+                                                                         nonce=rollover_data["nonce"],
+                                                                         registration_time="2021-01-01T00:00:00+00:00",
+                                                                         passphrase=passphrase,
+                                                                         device_id="4567")
+        # Finalize rollover (finalize registration)
+        result = self.request_assert_error(400, 'container/register/finalize',
+                                           params,
+                                           None, 'POST')
+        self.assertEqual(3002, result["result"]["error"]["code"])
+
+        # Invalid passphrase
+        # Mock smartphone with
+        params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://pi.net/container/register/finalize",
+                                                                         nonce=rollover_data["nonce"],
+                                                                         registration_time=rollover_data[
+                                                                             "time_stamp"],
+                                                                         passphrase="test1234",
+                                                                         device_id="4567")
+        # Finalize rollover (finalize registration)
+        result = self.request_assert_error(400, 'container/register/finalize',
+                                           params,
+                                           None, 'POST')
+        self.assertEqual(3002, result["result"]["error"]["code"])
+
+        delete_policy("policy")
+
+    def test_34_sync_with_rollover_challenge_fails(self):
+        # Registration
+        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        # tokens
+        hotp = init_token({"genkey": "1", "type": "hotp"})
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+
+        # create signature for rollover endpoint
+        params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_smph, scope)
+
+        # Call sync endpoint with rollover signature
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/sync',
+                                           params, None, 'POST')
+        self.assertEqual(3002, result["result"]["error"]["code"])
+
+        delete_policy("policy")
 
 
 class APIContainerTemplate(APIContainerTest):

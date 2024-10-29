@@ -38,7 +38,8 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
                                        set_default_template, get_container_template_classes,
                                        get_container_classes, create_container_from_db_object,
-                                       compare_template_with_container, register_init, unregister)
+                                       compare_template_with_container, unregister,
+                                       _check_user_access_on_container, finalize_registration, init_container_rollover)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
@@ -166,6 +167,7 @@ def init():
     :jsonparam: user: Optional username to assign the container to. Requires realm param to be present as well.
     :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
     :jsonparam: template: The template to create the container from (dictionary), optional
+    :jsonparam: options: Options for the container if no template is used (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -570,8 +572,6 @@ def registration_init():
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
     container.add_container_info("server_url", server_url)
     scope = create_endpoint_url(server_url, "container/register/finalize")
-    params.update({"scope": scope,
-                   "server_url": server_url})
 
     # Get validity time for the registration
     registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
@@ -582,7 +582,6 @@ def registration_init():
         if registration_ttl <= 0:
             # default 10 min
             registration_ttl = 10
-    params.update({'registration_ttl': registration_ttl})
 
     # Get validity time for further challenges
     challenge_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
@@ -603,12 +602,14 @@ def registration_init():
             ssl_verify = 'True'
     else:
         ssl_verify = 'True'
-    params.update({'ssl_verify': ssl_verify})
 
     # Initialize registration
     user = request.User
     user_role = g.logged_in_user.get("role")
-    res_registration = register_init(container, params, user, user_role)
+    _check_user_access_on_container(container, user, user_role)
+
+    # registration
+    res_registration = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
     res.update(res_registration)
     return send_result(res)
 
@@ -636,21 +637,7 @@ def registration_finalize():
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
-
-    # Get container
-    container = find_container_by_serial(container_serial)
-
-    # Update params with registration url
-    server_url = container.get_container_info_dict().get("server_url")
-    if server_url is None:
-        log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
-        server_url = " "
-    scope = create_endpoint_url(server_url, "container/register/finalize")
-    params.update({'scope': scope})
-
-    # Validate registration
-    res = container.finalize_registration(params)
-    res.update({'server_url': server_url})
+    res = finalize_registration(container_serial, params)
 
     return send_result(res)
 
@@ -808,7 +795,13 @@ def synchronize(container_serial: str):
     enroll_info = []
     for serial in container_dict["tokens"]["add"]:
         try:
-            enroll_info.append(regenerate_enroll_url(serial, request, g))
+            # token rollover + get enroll url
+            enroll_url = regenerate_enroll_url(serial, request, g)
+            if enroll_url:
+                enroll_info.append(enroll_url)
+            else:
+                log.debug(f"Could not regenerate the enroll url for the token {serial} during synchronization of "
+                          f"container {container_serial}.")
         except Exception as e:
             log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
                       f"container {container_serial}: {e}")
@@ -820,6 +813,66 @@ def synchronize(container_serial: str):
 
     # Update last sync time
     container.update_last_synchronization()
+
+    return send_result(res)
+
+
+@container_blueprint.route('<string:container_serial>/rollover', methods=['POST'])
+def rollover(container_serial):
+    """
+    Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
+    The data or qr code is returned for the container to re-register.
+    This endpoint can be used to transfer a container from one device to another.
+
+    parameters and entries in the returned dictionary are container type specific
+    """
+    params = request.all_data
+    container = find_container_by_serial(container_serial)
+    res = {"container_serial": container_serial}
+
+    # Check registration state: rollover is only allowed for registered containers
+    registration_state = container.get_container_info_dict().get("registration_state")
+    if registration_state != "registered":
+        raise ContainerNotRegistered(f"Container is not registered.")
+
+    # Get server url
+    server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
+    if len(server_url_policies) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
+
+    # Get validity time for the registration
+    registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
+                                              action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
+    registration_ttl = 10
+    if len(registration_ttl_policies) > 0:
+        registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
+        if registration_ttl <= 0:
+            # default 10 min
+            registration_ttl = 10
+
+    # Get validity time for further challenges
+    challenge_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
+                                           action=ACTION.CONTAINER_CHALLENGE_TTL).policies()
+    challenge_ttl = 2
+    if len(challenge_ttl_policies) > 0:
+        challenge_ttl = int(challenge_ttl_policies[0]["action"][ACTION.CONTAINER_CHALLENGE_TTL])
+        if challenge_ttl <= 0:
+            # default 2 min
+            challenge_ttl = 2
+
+    # Get ssl verify
+    ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
+    if len(ssl_verify_policies) > 0:
+        ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
+        if ssl_verify not in ["True", "False"]:
+            ssl_verify = 'True'
+    else:
+        ssl_verify = 'True'
+
+    # Rollover
+    res_rollover = init_container_rollover(container, server_url, challenge_ttl, registration_ttl, ssl_verify, params)
+    res.update(res_rollover)
 
     return send_result(res)
 

@@ -1206,8 +1206,6 @@ class PushTokenClass(TokenClass):
         """
         Return the URL to enroll this token. It is not supported by all token types.
         """
-        if self.rollout_state == ROLLOUTSTATE.ENROLLED:
-            return None
         init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("pushurl").get("value")
         return enroll_url

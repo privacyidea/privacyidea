@@ -24,14 +24,16 @@ import os
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
+from privacyidea.lib.containers.smartphone import SmartphoneOptions
+from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
+                                   ContainerRollover)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import (db, TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
-                                TokenContainerRealm, Realm, TokenContainerTemplate, TokenContainerInfo)
+from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
+                                Realm, TokenContainerTemplate)
 
 log = logging.getLogger(__name__)
 
@@ -384,11 +386,17 @@ def init_container(params):
             original_template_used = compare_template_dicts(template, original_template)
             if original_template_used:
                 container.template = original_template["name"]
+        template_options = template.get("template_options", {})
         # set container options from template
-        options = template.get("template_options", {}).get("options", {})
-        [container.add_container_info(key, options[key]) for key in options]
+        options = template_options.get("options", {})
+        container.add_options(options)
         # tokens from template
-        template_tokens = template.get("template_options", {}).get("tokens", [])
+        template_tokens = template_options.get("tokens", [])
+
+    # container options
+    options = params.get("options")
+    if options and not template:
+        container.add_options(options)
 
     user = params.get("user")
     realm = params.get("realm")
@@ -993,7 +1001,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
             container_dict["tokens"] = tokens_dict_list
 
         infos: dict = {}
-        black_key_list = ["private_key_server", "public_key_server", "public_key_container"]
+        black_key_list = ["private_key_server", "public_key_server", "public_key_container", "rollover_server_url",
+                          "rollover_challenge_ttl"]
         for info in container.get_container_info():
             if info.key not in black_key_list:
                 infos[info.key] = info.value
@@ -1021,22 +1030,81 @@ def create_endpoint_url(base_url, endpoint):
     return endpoint_url
 
 
-def register_init(container: TokenContainer, params: dict, user: User, user_role: str):
+def finalize_registration(container_serial: str, params: dict):
     """
-    Register a container for synchronization. The user has to be an admin or the owner of the container.
-
-    :param container: The container object
-    :param params: The parameters for the registration
-    :param user: The user object
-    :param user_role: The role of the user ('admin' or 'user')
-    :return: True on success
+    Finalize the registration of a container if the challenge response is valid.
+    It also finalizes a container rollover.
     """
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
+    # Get container
+    container = find_container_by_serial(container_serial)
+    container_info = container.get_container_info_dict()
+    registration_state = container_info.get("registration_state")
 
-    # registration
-    res_registration = container.init_registration(params)
-    return res_registration
+    if registration_state == "rollover":
+        # check if rollover is allowed
+        rollover_right = container_info.get(SmartphoneOptions.ALLOW_ROLLOVER)
+        if rollover_right != 'True':
+            raise ContainerRollover("Rollover is not allowed for this container.")
+
+    # Update params with registration url
+    server_url = container_info.get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
+        server_url = " "
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({'scope': scope})
+
+    res = container.finalize_registration(params)
+
+    if registration_state == "rollover":
+        # container registration rolled over: set rollover info as correct info
+        for key, value in container_info.items():
+            if "rollover" in key:
+                original_key = key.replace("rollover_", "")
+                container.add_container_info(original_key, value)
+                container.delete_container_info(key)
+
+        finalize_container_rollover(container)
+
+    return res
+
+
+def finalize_container_rollover(container: TokenContainer):
+    tokens = container.get_tokens()
+    for token in tokens:
+        params = {"serial": token.get_serial(),
+                  "type": token.get_type(),
+                  "genkey": True,
+                  "rollover": True}
+        try:
+            token = init_token(params)
+        except Exception as ex:
+            # Do not block the rollover process
+            log.debug(f"Error during rollover of token {token.get_serial()} in container rollover: {ex}")
+        # token.enable(False)
+
+
+def init_container_rollover(container: TokenContainer, server_url: str, challenge_ttl: int, registration_ttl: int,
+                            ssl_verify: str, params: dict):
+    # Check if rollover is allowed
+    rollover_right = container.get_container_info_dict().get(SmartphoneOptions.ALLOW_ROLLOVER)
+    if rollover_right != 'True':
+        raise ContainerRollover("Rollover is not allowed for this container.")
+
+    # Check challenge if rollover is allowed
+    container.check_challenge_response(params)
+
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+
+    # Get registration data
+    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
+
+    # Set registration state
+    container.add_container_info("registration_state", "rollover")
+    container.add_container_info("rollover_server_url", server_url)
+    container.add_container_info("rollover_challenge_ttl", challenge_ttl)
+
+    return res
 
 
 def unregister(container: TokenContainer, user: User, user_role: str):

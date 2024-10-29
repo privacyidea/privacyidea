@@ -274,6 +274,15 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     });
                 }
             }
+            else if ($scope.form.options) {
+                // only set the options if no template is used (which already defines the options)
+                params["options"] = {};
+                angular.forEach($scope.form.options, function (value, key) {
+                    if (value !== "-") {
+                        params["options"][key] = value;
+                    }
+                });
+            }
             if ($scope.newUser.user) {
                 params["user"] = fixUser($scope.newUser.user);
                 params["realm"] = $scope.newUser.realm;
