@@ -28,6 +28,16 @@ log = logging.getLogger(__name__)
 
 
 class PasskeyTokenClass(TokenClass):
+    """
+    Implements a token class for passkeys (fido2). This is very similar to the webauthn token class, but uses a lib
+    for registration and authentication. It is less configurable, always requires resident key and uses excluded
+    credentials by default.
+    It shares the following policy configuration with the webauthn token class:
+        - RP_ID
+        - RP_NAME
+        - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
+        - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
+    """
 
     def __init__(self, db_token):
         super().__init__(db_token)

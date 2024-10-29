@@ -6,9 +6,9 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from testfixtures import log_capture
-from privacyidea.lib.tokens.piwebauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
-                                               ATTESTATION_LEVEL, ATTESTATION_FORM,
-                                               USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
+                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
+                                             USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
@@ -92,7 +92,6 @@ from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RE
                                        REGISTRATION_RESPONSE_TMPL)
 from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
-
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -450,20 +449,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         tokenobject = init_token({"serial": "NEW001", "type": "hotp",
                                   "otpkey": "1234567890123456"},
-                                  user=User(login="cornelius",
-                                            realm=self.realm1))
-        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                 user=User(login="cornelius",
                                            realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
         self.assertTrue(check_max_token_user(req))
 
         # Now the user gets his second token
         tokenobject = init_token({"serial": "NEW002", "type": "hotp",
                                   "otpkey": "1234567890123456"},
-                                  user=User(login="cornelius",
-                                            realm=self.realm1))
-        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                 user=User(login="cornelius",
                                            realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 2)
 
         # The user has two tokens. The check that will run in this case,
@@ -729,13 +728,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
-                          ACTION.PINHANDLING))
+                       ACTION.PINHANDLING))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "realm1"}
+            "user": "cornelius",
+            "realm": "realm1"}
 
         init_random_pin(req)
         pin = req.all_data.get("pin")
@@ -779,8 +778,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # request, that matches the policy
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "realm1"}
+            "user": "cornelius",
+            "realm": "realm1"}
 
         set_random_pin(req)
         pin = req.all_data.get("pin")
@@ -876,8 +875,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # request, that matches the policy
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home"}
+            "user": "cornelius",
+            "realm": "home"}
         encrypt_pin(req)
 
         # Check, if the tokenlabel was added
@@ -966,35 +965,35 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.USER,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                 ACTION.OTPPINMINLEN, "4",
-                                                 ACTION.OTPPINCONTENTS, "cn"))
+                                                                       ACTION.OTPPINMINLEN, "4",
+                                                                       ACTION.OTPPINCONTENTS, "cn"))
         g.policy_object = PolicyClass()
 
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home"}
+            "user": "cornelius",
+            "realm": "home"}
         req.User = User("cornelius", "home")
         # The minimum OTP length is 4
         self.assertRaises(PolicyError, check_otp_pin, req)
 
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home",
-                        "pin": "12345566890012"}
+            "user": "cornelius",
+            "realm": "home",
+            "pin": "12345566890012"}
         # Fail maximum OTP length
         self.assertRaises(PolicyError, check_otp_pin, req)
 
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home",
-                        "pin": "123456"}
+            "user": "cornelius",
+            "realm": "home",
+            "pin": "123456"}
         # Good OTP length, but missing character A-Z
         self.assertRaises(PolicyError, check_otp_pin, req)
 
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home",
-                        "pin": "abc123"}
+            "user": "cornelius",
+            "realm": "home",
+            "pin": "abc123"}
         # Good length and good contents
         self.assertTrue(check_otp_pin(req))
 
@@ -1059,8 +1058,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                 ACTION.OTPPINMINLEN, "4",
-                                                 ACTION.OTPPINCONTENTS, "cn"),
+                                                                       ACTION.OTPPINMINLEN, "4",
+                                                                       ACTION.OTPPINCONTENTS, "cn"),
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -1083,9 +1082,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError, check_otp_pin, req)
 
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home",
-                        "pin": "abc123"}
+            "user": "cornelius",
+            "realm": "home",
+            "pin": "abc123"}
         # Good length and good contents
         self.assertTrue(check_otp_pin(req))
 
@@ -1202,8 +1201,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         g.policy_object = PolicyClass()
         req.all_data = {
-                        "user": "cornelius",
-                        "realm": "home"}
+            "user": "cornelius",
+            "realm": "home"}
 
         # Check success on no definition
         r = check_external(req)
@@ -1252,7 +1251,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         secret = current_app.config.get("SECRET_KEY")
         token = jwt.encode({"role": ROLE.VALIDATE,
                             "exp": datetime.utcnow() + timedelta(hours=1)},
-                            secret)
+                           secret)
         req.headers = {"Authorization": token}
         r = api_key_required(req)
         self.assertTrue(r)
@@ -1261,7 +1260,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         token = jwt.encode({"role": ROLE.ADMIN,
                             "username": "admin",
                             "exp": datetime.utcnow() + timedelta(hours=1)},
-                            secret)
+                           secret)
         req.headers = {"Authorization": token}
         self.assertRaises(PolicyError, api_key_required, req)
 
@@ -1451,7 +1450,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "resolver": ["resolverB"],
                         "time": "",
                         "user": []
-        }
+                        }
         set_policy("polAdminA", scope=SCOPE.ADMIN,
                    action="set, revoke, adduser, enrollSMS, policydelete, "
                           "policywrite, enrollTIQR, configdelete, machinelist, "
@@ -2022,6 +2021,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # We send a fake push_wait that is not in the policies
         class RequestMock(object):
             pass
+
         req = RequestMock()
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
@@ -2176,7 +2176,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2198,6 +2198,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_26b_webauthn_auth_validate_check(self):
         class RequestMock(object):
             pass
+
         # Normal request
         request = RequestMock()
         request.all_data = {
@@ -2243,7 +2244,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2286,7 +2287,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2440,7 +2441,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + 'https://' + rp_id + ','
-                  +WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
+                   + WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
         )
         request = RequestMock()
         request.all_data = {
@@ -2466,7 +2467,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + rp_id + ','
-                   +WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
+                   + WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
         )
 
         # Normal request
@@ -2538,8 +2539,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          authenticator_attachment)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
-                             public_key_credential_algorithm_preference
-                         ]])
+                              public_key_credential_algorithm_preference
+                          ]])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          authenticator_attestation_level)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2634,8 +2635,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
-                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement + ','
-                  +WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+                   + WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement + ','
+                   + WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
         )
         request = RequestMock()
         request.all_data = {
@@ -2734,7 +2735,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
-                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+                   + WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -2784,7 +2785,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
-                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+                   + WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -2890,7 +2891,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
-                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+                   + WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -3218,8 +3219,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # first test without any policy to delete the department. This is not allowed
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         self.assertRaisesRegex(PolicyError,
-                                "ERR303: You are not allowed to delete the custom user attribute department!",
-                                check_custom_user_attributes, req, "delete")
+                               "ERR303: You are not allowed to delete the custom user attribute department!",
+                               check_custom_user_attributes, req, "delete")
 
         # set to allow deleting the department
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
@@ -3314,8 +3315,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="ca",
                    scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                     CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
-                     CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
+                       CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
+                       CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
                    ))
         set_policy(name="sub1",
                    scope=SCOPE.ENROLL,
@@ -3861,7 +3862,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(ACTION.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
-                                     client="10.0.0.0/8")
+                   client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
@@ -3920,8 +3921,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(ACTION.AUTOASSIGN,
-                                     AUTOASSIGNVALUE.USERSTORE),
-                                     client="10.0.0.0/8")
+                                               AUTOASSIGNVALUE.USERSTORE),
+                   client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
@@ -3998,7 +3999,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # check that we cannot authenticate with an offline value
         self.assertTrue(pbkdf2_sha512.verify("offline287082", response.get('1')))
         self.assertTrue(pbkdf2_sha512.verify("offline516516", response.get('99')))
-        res = tokenobject.check_otp("516516") # count = 99
+        res = tokenobject.check_otp("516516")  # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
@@ -4247,7 +4248,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                          jresult.get("result").get("value").get("logout_redirect_url"),
                          jresult)
         delete_policy("pol_logout_redirect")
-
 
     def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
@@ -4586,7 +4586,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         r = mangle_challenge_response(req, resp)
         message = r.json.get("detail", {}).get("message")
-        self.assertEqual(message, "These are your options:<ul><li>enter the HOTP from your email</li>\n<li>enter the TOTP from your SMS</li>\nHappy authenticating!")
+        self.assertEqual(message,
+                         "These are your options:<ul><li>enter the HOTP from your email</li>\n<li>enter the TOTP from your SMS</li>\nHappy authenticating!")
 
         # We do no html list
         set_policy(name="pol_header",
@@ -4598,7 +4599,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         r = mangle_challenge_response(req, resp)
         message = r.json.get("detail", {}).get("message")
         self.assertTrue("<ul><li>" not in message, message)
-        self.assertEqual(message, "These are your options:\nenter the HOTP from your email, enter the TOTP from your SMS\nHappy authenticating!")
+        self.assertEqual(message,
+                         "These are your options:\nenter the HOTP from your email, enter the TOTP from your SMS\nHappy authenticating!")
 
         delete_policy("pol_header")
         delete_policy("pol_footer")

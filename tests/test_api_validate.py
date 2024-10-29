@@ -30,7 +30,7 @@ from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_re
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.tokens.piwebauthn import webauthn_b64_decode
+from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CLIENTMODE
