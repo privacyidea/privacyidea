@@ -2,16 +2,16 @@
   <div class="filter-paginator-container">
     <mat-form-field>
       <mat-label>Filter</mat-label>
-      <input #input (keyup)="applyFilter($event)" aria-label="Filter Input" class="filter-input" matInput
-             placeholder="Example query: 'Type: hotp Active: true'. Use column labels as keywords.">
+      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input" class="filter-input" matInput
+             placeholder="Example query: 'Type: hotp Token Realm: realm1'. Use column labels as keywords.">
     </mat-form-field>
     <span>Total items: {{ length }}</span>
-    <mat-paginator (page)="handlePageEvent($event)" [hidePageSize]="hidePageSize" [length]="length"
-                   [pageIndex]="pageIndex" [pageSizeOptions]="showPageSizeOptions ? pageSizeOptions : []"
+    <mat-paginator (page)="handlePageEvent($event)" [length]="length"
+                   [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
                    [pageSize]="pageSize" aria-label="Select page of tokens" showFirstLastButtons>
     </mat-paginator>
   </div>
-  <table (matSortChange)="sortData($event)" [dataSource]="dataSource()" aria-label="Token Data Table"
+  <table (matSortChange)="handleSortEvent($event)" [dataSource]="dataSource()" aria-label="Token Data Table"
          class="mat-elevation-z8"
          mat-table matSort>
     @for (column of columnDefinitions; track column) {
@@ -45,7 +45,8 @@
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
-      <td aria-label="No Data Cell" class="mat-cell" colspan="4">No data matching the filter "{{ input.value }}"
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">No data matching the
+        filter.
       </td>
     </tr>
   </table>

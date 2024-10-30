@@ -17,7 +17,7 @@ export class ContainerService {
     const headers = new HttpHeaders({
       'PI-Authorization': this.localStore.getData('bearer_token') || ''
     });
-
+    // TODO switch to backend pagination, sorting and filter
     return this.http.get<any>(this.baseUrl, {headers}).pipe(
       map(response => response.result.value.containers),
       catchError(error => {

@@ -9,7 +9,6 @@ import {Router} from '@angular/router';
 import {NgClass} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
-import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -41,21 +40,16 @@ export class TokenTableComponent {
   length = 0;
   pageSize = 10;
   pageIndex = 0;
-  hidePageSize = false;
   pageSizeOptions = [5, 10, 15, 20];
-  showPageSizeOptions = false;
-  disabled = false;
+  filterValue = '';
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
-  private fullData: any[] = [];
-  private currentData: any[] = [];
   protected readonly columns = columns;
 
   constructor(private router: Router,
               private authService: AuthService,
-              private tokenService: TokenService,
-              private tableUtils: TableUtilsService) {
+              private tokenService: TokenService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     } else {
@@ -64,31 +58,19 @@ export class TokenTableComponent {
   }
 
   ngAfterViewInit() {
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
-  }
-
-  applyFilter(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.currentData = this.tableUtils.applyFilter(this.fullData, filterValue, columns);
-    this.updateDataSource(this.currentData);
-    this.pageIndex = 0;
-    this.length = this.currentData.length;
-  }
-
-  sortData(sort: Sort) {
-    this.currentData = this.tableUtils.sortData(this.currentData, sort, columns);
-    this.updateDataSource(this.currentData);
-    this.pageIndex = 0;
+    if (this.paginator) {
+      this.paginator.page.subscribe((event: PageEvent) => this.handlePageEvent(event));
+    }
+    if (this.sort) {
+      this.sort.sortChange.subscribe((sort: Sort) => this.handleSortEvent(sort));
+    }
   }
 
   private fetchTokenData() {
-    this.tokenService.getTokenData().subscribe({
-      next: tokens => {
-        this.length = tokens.length;
-        this.fullData = tokens;
-        this.currentData = tokens;
-        this.updateDataSource(this.currentData);
+    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.updateDataSource(response.result.value.tokens);
       },
       error: error => {
         console.error('Failed to get token data', error);
@@ -96,10 +78,37 @@ export class TokenTableComponent {
     });
   }
 
-  handlePageEvent(e: PageEvent) {
-    this.pageSize = e.pageSize;
-    this.pageIndex = e.pageIndex;
-    this.updateDataSource(this.currentData);
+  handlePageEvent(event: PageEvent) {
+    this.pageSize = event.pageSize;
+    this.pageIndex = event.pageIndex;
+    this.fetchTokenData();
+  }
+
+  handleSortEvent(sort: Sort) {
+    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, sort).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.updateDataSource(response.result.value.tokens);
+      },
+      error: error => {
+        console.error('Failed to get token data', error);
+      }
+    });
+  }
+
+  handleFilterInput(event: Event) {
+    this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.pageIndex = 0;
+
+    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, undefined, this.filterValue).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.updateDataSource(response.result.value.tokens);
+      },
+      error: error => {
+        console.error('Failed to get token data', error);
+      }
+    });
   }
 
   private updateDataSource(data: any[]) {
@@ -107,7 +116,6 @@ export class TokenTableComponent {
       ...item,
       realms: item.realms && item.realms.length > 0 ? item.realms[0] : ''
     }));
-    const paginatedData = this.tableUtils.paginateData(processedData, this.pageIndex, this.pageSize);
-    this.dataSource.set(new MatTableDataSource(paginatedData));
+    this.dataSource.set(new MatTableDataSource(processedData));
   }
 }
