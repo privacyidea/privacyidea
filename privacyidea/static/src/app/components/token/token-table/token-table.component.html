@@ -11,7 +11,7 @@
                    [pageSize]="pageSize" aria-label="Select page of tokens" showFirstLastButtons>
     </mat-paginator>
   </div>
-  <table (matSortChange)="handleSortEvent($event)" [dataSource]="dataSource()" aria-label="Token Data Table"
+  <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()" aria-label="Token Data Table"
          class="mat-elevation-z8"
          mat-table matSort>
     @for (column of columnDefinitions; track column) {

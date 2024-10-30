@@ -3,7 +3,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
 import {MatInputModule} from '@angular/material/input';
-import {MatSort, MatSortModule, Sort} from '@angular/material/sort';
+import {MatSort, MatSortModule} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
 import {NgClass} from '@angular/common';
@@ -40,7 +40,7 @@ export class TokenTableComponent {
   length = 0;
   pageSize = 10;
   pageIndex = 0;
-  pageSizeOptions = [5, 10, 15, 20];
+  pageSizeOptions = [10];
   filterValue = '';
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
@@ -62,12 +62,13 @@ export class TokenTableComponent {
       this.paginator.page.subscribe((event: PageEvent) => this.handlePageEvent(event));
     }
     if (this.sort) {
-      this.sort.sortChange.subscribe((sort: Sort) => this.handleSortEvent(sort));
+      this.sort.sortChange.subscribe(() => this.handleSortEvent());
     }
   }
 
   private fetchTokenData() {
-    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns).subscribe({
+    let sort = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
+    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, sort, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
         this.updateDataSource(response.result.value.tokens);
@@ -81,34 +82,17 @@ export class TokenTableComponent {
   handlePageEvent(event: PageEvent) {
     this.pageSize = event.pageSize;
     this.pageIndex = event.pageIndex;
-    this.fetchTokenData();
+    this.fetchTokenData()
   }
 
-  handleSortEvent(sort: Sort) {
-    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, sort).subscribe({
-      next: response => {
-        this.length = response.result.value.count;
-        this.updateDataSource(response.result.value.tokens);
-      },
-      error: error => {
-        console.error('Failed to get token data', error);
-      }
-    });
+  handleSortEvent() {
+    this.fetchTokenData()
   }
 
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
     this.pageIndex = 0;
-
-    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, undefined, this.filterValue).subscribe({
-      next: response => {
-        this.length = response.result.value.count;
-        this.updateDataSource(response.result.value.tokens);
-      },
-      error: error => {
-        console.error('Failed to get token data', error);
-      }
-    });
+    this.fetchTokenData()
   }
 
   private updateDataSource(data: any[]) {
