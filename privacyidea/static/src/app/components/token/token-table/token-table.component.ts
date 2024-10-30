@@ -42,6 +42,7 @@ export class TokenTableComponent {
   pageIndex = 0;
   pageSizeOptions = [10];
   filterValue = '';
+  sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
@@ -58,17 +59,13 @@ export class TokenTableComponent {
   }
 
   ngAfterViewInit() {
-    if (this.paginator) {
-      this.paginator.page.subscribe((event: PageEvent) => this.handlePageEvent(event));
-    }
-    if (this.sort) {
-      this.sort.sortChange.subscribe(() => this.handleSortEvent());
-    }
+    this.dataSource().paginator = this.paginator;
+    this.dataSource().sort = this.sort;
   }
 
   private fetchTokenData() {
-    let sort = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
-    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, columns, sort, this.filterValue).subscribe({
+    this.tokenService.getTokenData(
+      this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
         this.updateDataSource(response.result.value.tokens);
@@ -86,6 +83,8 @@ export class TokenTableComponent {
   }
 
   handleSortEvent() {
+    this.sortby_sortdir = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
+    this.pageIndex = 0;
     this.fetchTokenData()
   }
 
