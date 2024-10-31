@@ -89,6 +89,18 @@ span {
   margin-right: -1px;
 }
 
+.add-icon {
+  color: #999999;
+}
+
+.keyword-span:hover .add-icon {
+  color: #9ABF00;
+}
+
+.remove-icon {
+  color: #bf003a;
+}
+
 .filter-icon {
   display: inline-flex;
   vertical-align: bottom;

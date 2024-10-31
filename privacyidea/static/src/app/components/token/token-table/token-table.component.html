@@ -14,7 +14,7 @@
     @for (filter of apiFilter; track filter) {
       <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-span">
         <mat-icon class="filter-button-icon"
-                  [ngStyle]="{ 'color': input.value.includes(filter + ':') ? '#bf003a' : '#999999' }">
+                  [ngClass]="input.value.includes(filter + ':') ? 'remove-icon' : 'add-icon'">
           {{ input.value.includes(filter + ':') ? 'remove_circle' : 'add_circle' }}
         </mat-icon>
         {{ filter }}

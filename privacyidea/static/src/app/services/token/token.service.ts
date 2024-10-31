@@ -17,7 +17,7 @@ export class TokenService {
     'description',
     'rollout_state',
     'userid',
-    'resolver'
+    'resolver',
     /*'user',
     'assigned',
     'active',

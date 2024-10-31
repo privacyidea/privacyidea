@@ -8,7 +8,7 @@ import {LocalService} from '../local/local.service';
   providedIn: 'root'
 })
 export class ContainerService {
-  private baseUrl = 'http://127.0.0.1:5000/container/?pagesize=10000';
+  private baseUrl = 'http://127.0.0.1:5000/container/?pagesize=10099';
 
   constructor(private http: HttpClient, private localStore: LocalService) {
   }
