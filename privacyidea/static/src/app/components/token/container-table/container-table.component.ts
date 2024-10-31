@@ -1,26 +1,16 @@
 import {Component, signal, ViewChild} from '@angular/core';
-import {
-  MatCell,
-  MatCellDef,
-  MatColumnDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatNoDataRow,
-  MatRow,
-  MatRowDef,
-  MatTable,
-  MatTableDataSource
-} from '@angular/material/table';
-import {MatFormField, MatLabel} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
-import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
-import {NgClass} from '@angular/common';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatTableDataSource, MatTableModule} from '@angular/material/table';
+import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
+import {MatInputModule} from '@angular/material/input';
+import {MatSort, MatSortModule} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
+import {NgClass, NgStyle} from '@angular/common';
+import {MatCard, MatCardContent} from '@angular/material/card';
 import {ContainerService} from '../../../services/container/container.service';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 const columns = [
@@ -36,8 +26,8 @@ const columns = [
   selector: 'app-container-table',
   standalone: true,
   imports: [
-    MatCell, MatCellDef, MatFormField, MatHeaderCell, MatHeaderRow, MatHeaderRowDef, MatInput, MatLabel, MatPaginator,
-    MatRow, MatRowDef, MatSort, MatSortHeader, MatTable, MatColumnDef, MatHeaderCellDef, MatNoDataRow, NgClass
+    MatTableModule, MatFormFieldModule, MatInputModule, MatPaginatorModule,
+    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.css'
@@ -49,21 +39,19 @@ export class ContainerTableComponent {
   length = 0;
   pageSize = 10;
   pageIndex = 0;
-  hidePageSize = false;
-  pageSizeOptions = [5, 10, 15, 20];
-  showPageSizeOptions = false;
-  disabled = false;
+  pageSizeOptions = [10];
+  filterValue = '';
+  apiFilter = this.containerService.apiFilter;
+  sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
-  private fullData: any[] = [];
-  private currentData: any[] = [];
   protected readonly columns = columns;
 
   constructor(private router: Router,
               private authService: AuthService,
               private containerService: ContainerService,
-              private tableUtils: TableUtilsService) {
+              protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     } else {
@@ -77,12 +65,11 @@ export class ContainerTableComponent {
   }
 
   private fetchContainerData() {
-    this.containerService.getContainerData().subscribe({
-      next: containers => {
-        this.length = containers.length;
-        this.fullData = containers;
-        this.currentData = containers;
-        this.updateDataSource(this.currentData);
+    this.containerService.getContainerData(
+      this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.updateDataSource(response.result.value.containers);
       },
       error: error => {
         console.error('Failed to get container data', error);
@@ -90,24 +77,28 @@ export class ContainerTableComponent {
     });
   }
 
-  applyFilter(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.currentData = this.tableUtils.applyFilter(this.fullData, filterValue, columns);
-    this.updateDataSource(this.currentData);
-    this.pageIndex = 0;
-    this.length = this.currentData.length;
+  handlePageEvent(event: PageEvent) {
+    this.pageSize = event.pageSize;
+    this.pageIndex = event.pageIndex;
+    this.fetchContainerData();
   }
 
-  sortData(sort: Sort) {
-    this.currentData = this.tableUtils.sortData(this.currentData, sort, columns);
-    this.updateDataSource(this.currentData);
+  handleSortEvent() {
+    this.sortby_sortdir = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
     this.pageIndex = 0;
+    this.fetchContainerData();
   }
 
-  handlePageEvent(e: PageEvent) {
-    this.pageSize = e.pageSize;
-    this.pageIndex = e.pageIndex;
-    this.updateDataSource(this.currentData);
+  handleFilterInput(event: Event) {
+    this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.pageIndex = 0;
+    this.fetchContainerData();
+  }
+
+  toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
+    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
+    this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+    inputElement.focus();
   }
 
   private updateDataSource(data: any[]) {
@@ -116,7 +107,6 @@ export class ContainerTableComponent {
       users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : '',
       user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
-    const paginatedData = this.tableUtils.paginateData(processedData, this.pageIndex, this.pageSize);
-    this.dataSource.set(new MatTableDataSource(paginatedData));
+    this.dataSource.set(new MatTableDataSource(processedData));
   }
 }

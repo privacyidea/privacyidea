@@ -1,25 +1,62 @@
 import {Injectable} from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {LocalService} from '../local/local.service';
+import {Sort} from '@angular/material/sort';
+import {TableUtilsService} from '../table-utils/table-utils.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContainerService {
-  private baseUrl = 'http://127.0.0.1:5000/container/?pagesize=10099';
+  private baseUrl = 'http://127.0.0.1:5000/container/';
+  apiFilter = [
+    'user',
+    'serial',
+    'type',
+    'token_serial', /*TODO fix not working and missing query params*/
+  ];
 
-  constructor(private http: HttpClient, private localStore: LocalService) {
+  constructor(private http: HttpClient,
+              private localStore: LocalService,
+              private tableUtilsService: TableUtilsService) {
   }
 
-  getContainerData(): Observable<any> {
+  getContainerData(page: number, pageSize: number, columns: {
+    key: string;
+    label: string
+  }[], sort?: Sort, filterValue?: string): Observable<any> {
     const headers = new HttpHeaders({
       'PI-Authorization': this.localStore.getData('bearer_token') || ''
     });
-    // TODO switch to backend pagination, sorting and filter
-    return this.http.get<any>(this.baseUrl, {headers}).pipe(
-      map(response => response.result.value.containers),
+
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('pagesize', pageSize.toString());
+
+    if (sort) {
+      params = params
+        .set('sortby', sort.active)
+        .set('sortdir', sort.direction);
+    }
+
+    if (filterValue) {
+      const {filterPairs, remainingFilterText} = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+
+      filterPairs.forEach(({label, value}) => {
+        params = params.set(label, `${value}`); // TODO wildcards are missing in api
+      });
+
+      /* TODO global filtering is missing in api
+      if (remainingFilterText) {
+        params = params.set('globalfilter', `*${remainingFilterText}*`);
+      }
+      */
+    }
+
+    return this.http.get<any>(this.baseUrl, {headers, params}).pipe(
+      map(response => response),
       catchError(error => {
         console.error('Failed to get container data', error);
         return throwError(error);

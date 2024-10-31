@@ -2,25 +2,36 @@
   <div class="filter-paginator-container">
     <mat-form-field>
       <mat-label>Filter</mat-label>
-      <input #input (keyup)="applyFilter($event)" aria-label="Filter Input" class="filter-input" matInput
-             placeholder="Example query: 'User: admin Type: generic'. Use column labels as keywords.">
+      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input" class="filter-input" matInput
+             placeholder="Example query: 'type: generic user: admin'">
     </mat-form-field>
-    <mat-paginator (page)="handlePageEvent($event)" [hidePageSize]="hidePageSize" [length]="length"
-                   [pageIndex]="pageIndex" [pageSizeOptions]="showPageSizeOptions ? pageSizeOptions : []"
-                   [pageSize]="pageSize" aria-label="Select page of container" showFirstLastButtons>
+    <mat-paginator (page)="handlePageEvent($event)" [length]="length"
+                   [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
+                   [pageSize]="pageSize" aria-label="Select page of containers" showFirstLastButtons>
     </mat-paginator>
   </div>
-  <table (matSortChange)="sortData($event)" [dataSource]="dataSource()" aria-label="Token Data Table"
+  <span class="filter-text"><mat-icon class="filter-icon">filter_alt</mat-icon>Filter by:&nbsp;
+    @for (filter of apiFilter; track filter) {
+      <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-span">
+        <mat-icon class="filter-button-icon"
+                  [ngClass]="this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove-icon' : 'add-icon'">
+          {{ this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove_circle' : 'add_circle' }}
+        </mat-icon>
+        {{ filter }}
+      </button>
+    }
+  </span>
+  <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()" aria-label="Container Data Table"
          class="mat-elevation-z8"
          mat-table matSort>
     @for (column of columnDefinitions; track column) {
       <ng-container [matColumnDef]="column.key">
-        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell
-            mat-sort-header> {{ column.label }}
+        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
+          {{ column.label }}
         </th>
         <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
-          @if (column.key === 'serial' || column.key === 'users' || column.key === 'realms'
-          || column.key === 'user_realm') {
+          @if (column.key === 'serial' || column.key === 'users' || column.key === 'user_realm'
+          || column.key === 'realms') {
             <ng-container>
               <a attr.aria-label="{{ column.label }} Link" href="#">
                 {{ element[column.key] }}
@@ -37,7 +48,8 @@
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
-      <td aria-label="No Data Cell" class="mat-cell" colspan="4">No data matching the filter "{{ input.value }}"
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">No data matching the
+        filter.
       </td>
     </tr>
   </table>

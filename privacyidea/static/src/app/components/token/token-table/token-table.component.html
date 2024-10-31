@@ -14,8 +14,8 @@
     @for (filter of apiFilter; track filter) {
       <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-span">
         <mat-icon class="filter-button-icon"
-                  [ngClass]="input.value.includes(filter + ':') ? 'remove-icon' : 'add-icon'">
-          {{ input.value.includes(filter + ':') ? 'remove_circle' : 'add_circle' }}
+                  [ngClass]="this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove-icon' : 'add-icon'">
+          {{ this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove_circle' : 'add_circle' }}
         </mat-icon>
         {{ filter }}
       </button>

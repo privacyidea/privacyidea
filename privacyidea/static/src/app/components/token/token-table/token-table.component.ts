@@ -11,6 +11,7 @@ import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -53,7 +54,8 @@ export class TokenTableComponent {
 
   constructor(private router: Router,
               private authService: AuthService,
-              private tokenService: TokenService) {
+              private tokenService: TokenService,
+              protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
     } else {
@@ -98,17 +100,7 @@ export class TokenTableComponent {
   }
 
   toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
-    const currentValue = inputElement.value.trim();
-    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, 'i');
-    if (keywordPattern.test(currentValue)) {
-      inputElement.value = currentValue.replace(keywordPattern, '').trim().replace(/\s{2,}/g, ' ');
-    } else {
-      if (currentValue.length > 0) {
-        inputElement.value = (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
-      } else {
-        inputElement.value = `${keyword}: `;
-      }
-    }
+    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
     this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
     inputElement.focus();
   }
