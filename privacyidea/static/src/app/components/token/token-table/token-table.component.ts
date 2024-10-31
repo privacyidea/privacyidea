@@ -9,6 +9,7 @@ import {Router} from '@angular/router';
 import {NgClass} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
+import {MatIcon} from '@angular/material/icon';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -28,7 +29,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, MatCard, MatCardContent, NgClass
+    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
@@ -42,6 +43,7 @@ export class TokenTableComponent {
   pageIndex = 0;
   pageSizeOptions = [10];
   filterValue = '';
+  apiFilter = this.tokenService.apiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
 
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
@@ -92,6 +94,14 @@ export class TokenTableComponent {
     this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
     this.pageIndex = 0;
     this.fetchTokenData()
+  }
+
+  addKeywordToFilter(keyword: string, inputElement: HTMLInputElement): void {
+    if (!inputElement.value.includes(keyword)) {
+      inputElement.value += keyword + ': ';
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+      inputElement.focus();
+    }
   }
 
   private updateDataSource(data: any[]) {

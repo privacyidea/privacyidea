@@ -10,16 +10,21 @@ import {Sort} from '@angular/material/sort';
 })
 export class TokenService {
   private baseUrl = 'http://127.0.0.1:5000/token/';
-
-  private apiColumnMap = {
-    description: 'description',
-    resolver: 'resolver',
-    rollout_state: 'rollout_state',
-    serial: 'serial',
-    realms: 'tokenrealm',
-    tokentype: 'type',
-    username: 'userid' // TODO username is not userid
-  };
+  apiFilter = [
+    'serial',
+    'type',
+    'tokenrealm',
+    'description',
+    'rollout_state',
+    'userid',
+    'resolver'
+    /*'user',
+    'assigned',
+    'active',
+    'infokey',
+    'infovalue',
+    'container_serial', TODO fix not working query params*/
+  ];
 
   constructor(private http: HttpClient, private localStore: LocalService) {
   }
@@ -46,7 +51,7 @@ export class TokenService {
 
     if (filterValue) {
       const lowerFilterValue = filterValue.trim().toLowerCase();
-      const filterLabels = columns.map(column => column.label.toLowerCase() + ':');
+      const filterLabels = this.apiFilter.map(column => column.toLowerCase() + ':');
 
       const filterValueSplit = lowerFilterValue.split(' ');
       const filterPairs = [] as { label: string; value: string }[];
@@ -89,29 +94,16 @@ export class TokenService {
         filterPairs.push({label: currentLabel.slice(0, -1), value: currentValue.trim()});
       }
       filterPairs.forEach(({label, value}) => {
-        const column = columns.find(col => col.label.toLowerCase() === label);
-        if (column) {
-          const apiColumnKey = this.apiColumnMap[column.key as keyof typeof this.apiColumnMap];
-          if (apiColumnKey) {
-            params = params.set(apiColumnKey, `*${value}*`);
-            appliedKeys.add(apiColumnKey);
-          }
+          params = params.set(label, `*${value}*`);
+          appliedKeys.add(label);
         }
-      });
+      );
 
       /*remainingFilterText = remainingFilterText.trim();
       if (remainingFilterText) {
         params = params.set('globalfilter', `*${remainingFilterText}*`);
       }*/
     }
-
-    Object.keys(this.apiColumnMap).forEach((frontendKey) => {
-      const key = frontendKey as keyof typeof this.apiColumnMap;
-      const apiKey = this.apiColumnMap[key];
-      if (!appliedKeys.has(apiKey)) {
-        params = params.set(apiKey, '**');
-      }
-    });
 
     return this.http.get<any>(this.baseUrl, {headers, params}).pipe(
       map(response => response),
