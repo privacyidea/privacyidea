@@ -6,10 +6,11 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {NgClass} from '@angular/common';
+import {NgClass, NgStyle} from '@angular/common';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -29,7 +30,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon
+    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
@@ -96,12 +97,20 @@ export class TokenTableComponent {
     this.fetchTokenData()
   }
 
-  addKeywordToFilter(keyword: string, inputElement: HTMLInputElement): void {
-    if (!inputElement.value.includes(keyword)) {
-      inputElement.value += keyword + ': ';
-      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
-      inputElement.focus();
+  toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
+    const currentValue = inputElement.value.trim();
+    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, 'i');
+    if (keywordPattern.test(currentValue)) {
+      inputElement.value = currentValue.replace(keywordPattern, '').trim().replace(/\s{2,}/g, ' ');
+    } else {
+      if (currentValue.length > 0) {
+        inputElement.value = (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
+      } else {
+        inputElement.value = `${keyword}: `;
+      }
     }
+    this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+    inputElement.focus();
   }
 
   private updateDataSource(data: any[]) {
