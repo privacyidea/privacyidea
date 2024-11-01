@@ -725,13 +725,13 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("container_policy")
 
     def test_23_admin_container_unregister_allowed(self):
-        container_serial = self.test_54_admin_container_register_allowed()
+        container_serial = self.test_21_admin_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER)
         self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_24_admin_container_unregister_denied(self):
-        container_serial = self.test_54_admin_container_register_allowed()
+        container_serial = self.test_21_admin_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
@@ -779,13 +779,13 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_29_admin_container_template_delete_allowed(self):
-        template_name = self.test_60_admin_container_template_create_allowed()
+        template_name = self.test_27_admin_container_template_create_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_TEMPLATE_DELETE)
         self.request_assert_200(f'/container/template/{template_name}', {}, self.at, 'DELETE')
         delete_policy("policy")
 
     def test_30_admin_container_template_delete_denied(self):
-        template_name = self.test_60_admin_container_template_create_allowed()
+        template_name = self.test_27_admin_container_template_create_allowed()
         # Admin does not have CONTAINER_TEMPLATE_DELETE rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}', {}, self.at, 'DELETE')
@@ -804,14 +804,14 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
 
     def test_33_admin_compare_template_container_allowed(self):
         # TODO: Test with containers the user might not be allowed to see
-        template_name = self.test_60_admin_container_template_create_allowed()
+        template_name = self.test_27_admin_container_template_create_allowed()
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True})
         self.request_assert_200(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         delete_policy("policy")
 
     def test_34_admin_compare_template_container_denied(self):
-        template_name = self.test_60_admin_container_template_create_allowed()
+        template_name = self.test_27_admin_container_template_create_allowed()
         # Admin does not have CONTAINER_TEMPLATE_LIST rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
@@ -1170,13 +1170,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("container_policy")
 
     def test_22_helpdesk_container_unregister_allowed(self):
-        container_serial = self.test_87_helpdesk_container_register_allowed()
+        container_serial = self.test_20_helpdesk_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm1)
         self.request_assert_200(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_23_helpdesk_container_unregister_denied(self):
-        container_serial = self.test_87_helpdesk_container_register_allowed()
+        container_serial = self.test_20_helpdesk_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm2)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
@@ -1780,13 +1780,13 @@ class APIContainer(APIContainerTest):
         self.assertEqual(905, error["code"])
 
     def test_27_init_smartphone_with_options(self):
-        options = {SmartphoneOptions.ALLOW_ROLLOVER: True,
+        options = {SmartphoneOptions.ALLOW_ROLLOVER: 'True',
                    SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
                    SmartphoneOptions.HASH_ALGORITHM: "SHA256",
                    SmartphoneOptions.ENCRYPT_ALGORITHM: "ABC",  # invalid value
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
                    SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                   SmartphoneOptions.FORCE_BIOMETRIC: False,
+                   SmartphoneOptions.FORCE_BIOMETRIC: 'False',
                    YubikeyOptions.PIN_POLICY: "disabled"}  # invalid key
 
         data = json.dumps({"type": "smartphone", "options": options})
@@ -2525,7 +2525,7 @@ class ContainerSynchronization(APIContainerTest):
         # Registration
         smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
@@ -2614,7 +2614,7 @@ class ContainerSynchronization(APIContainerTest):
         # Registration
         smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
@@ -2665,7 +2665,7 @@ class ContainerSynchronization(APIContainerTest):
     def test_31_rollover_client_container_not_registered(self):
         # Registration
         smartphone_serial, _ = init_container(
-            {"type": "smartphone", "options": {SmartphoneOptions.ALLOW_ROLLOVER: True}})
+            {"type": "smartphone", "options": {SmartphoneOptions.ALLOW_ROLLOVER: 'True'}})
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -2692,7 +2692,7 @@ class ContainerSynchronization(APIContainerTest):
         # Registration
         smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
@@ -2728,7 +2728,7 @@ class ContainerSynchronization(APIContainerTest):
         # Registration
         smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)

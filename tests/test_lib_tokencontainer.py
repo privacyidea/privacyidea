@@ -1364,7 +1364,7 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_54_container_rollover(self):
         smartphone_serial, priv_key_smph = self.test_37_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: True})
+        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
 
         # Create Challenge for rollover
         scope = f"https://pi.net/container/{smartphone_serial}/rollover"
@@ -1487,13 +1487,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("secp256r1", value)
 
     def test_58_init_smartphone_with_options(self):
-        options = {SmartphoneOptions.ALLOW_ROLLOVER: True,
+        options = {SmartphoneOptions.ALLOW_ROLLOVER: "True",
                    SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
                    SmartphoneOptions.HASH_ALGORITHM: "SHA256",
                    SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
                    SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                   SmartphoneOptions.FORCE_BIOMETRIC: False}
+                   SmartphoneOptions.FORCE_BIOMETRIC: "False"}
 
         smph_serial, _ = init_container({"type": "smartphone", "options": options})
         smartphone = find_container_by_serial(smph_serial)
@@ -1624,12 +1624,12 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # set options
         new_options = {"tokens": [{"type": "hotp", "genkey": True},
                                   {"type": "totp", "genkey": True, "hashlib": "sha256"}],
-                       "options": {SmartphoneOptions.ALLOW_ROLLOVER: True, SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+                       "options": {SmartphoneOptions.ALLOW_ROLLOVER: "True", SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
                                    SmartphoneOptions.HASH_ALGORITHM: "SHA256",
                                    SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
                                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
                                    SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                                   SmartphoneOptions.FORCE_BIOMETRIC: False}}
+                                   SmartphoneOptions.FORCE_BIOMETRIC: "False"}}
         template.template_options = new_options
         options = template.template_options
         self.assertEqual(json.dumps(new_options), options)
