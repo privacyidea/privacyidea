@@ -13,7 +13,7 @@ export class ContainerService {
   private baseUrl = 'http://127.0.0.1:5000/container/';
   apiFilter = [
     'user',
-    'serial',
+    'container_serial',
     'type',
     'token_serial', /*TODO fix not working and missing query params*/
   ];

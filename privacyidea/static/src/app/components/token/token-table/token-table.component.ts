@@ -54,7 +54,7 @@ export class TokenTableComponent {
 
   constructor(private router: Router,
               private authService: AuthService,
-              private tokenService: TokenService,
+              protected tokenService: TokenService,
               protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
@@ -103,6 +103,28 @@ export class TokenTableComponent {
     inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
     this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
     inputElement.focus();
+  }
+
+  toggleActive(element: any): void {
+    this.tokenService.toggleActive(element).subscribe({
+      next: () => {
+        this.fetchTokenData();
+      },
+      error: error => {
+        console.error('Failed to toggle active', error);
+      }
+    });
+  }
+
+  resetFailCount(element: any): void {
+    this.tokenService.resetFailCount(element).subscribe({
+      next: () => {
+        this.fetchTokenData();
+      },
+      error: error => {
+        console.error('Failed to reset fail counter', error);
+      }
+    });
   }
 
   private updateDataSource(data: any[]) {

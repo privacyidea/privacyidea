@@ -51,6 +51,16 @@ th:nth-child(even) {
   padding: 2px 6px;
   color: white;
   display: inline-block;
+  cursor: pointer;
+}
+
+.highlight-warning {
+  background-color: #F0AD4E;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+  cursor: pointer;
 }
 
 .highlight-false {
@@ -59,6 +69,7 @@ th:nth-child(even) {
   padding: 2px 6px;
   color: white;
   display: inline-block;
+  cursor: pointer;
 }
 
 span {

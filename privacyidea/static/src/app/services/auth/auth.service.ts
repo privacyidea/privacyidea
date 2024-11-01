@@ -24,7 +24,7 @@ export class AuthService {
       withCredentials: true
     }).pipe(
       tap((response: any) => {
-        if (response && response.result && response.result.status) {
+        if (response?.result?.status) {
           this.isAuthenticated = true;
         }
       })

@@ -27,19 +27,43 @@ export class TokenService {
     'container_serial', TODO fix not working and missing query params*/
   ];
 
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'PI-Authorization': this.localStore.getData('bearer_token') || ''
+    });
+  }
+
   constructor(private http: HttpClient,
               private localStore: LocalService,
               private tableUtilsService: TableUtilsService) {
+  }
+
+  toggleActive(element: any): Observable<any> {
+    const headers = this.getHeaders();
+    const action = element.active ? 'disable' : 'enable';
+    return this.http.post(`${this.baseUrl}${action}`, {"serial": element.serial}, {headers}).pipe(
+      catchError(error => {
+        console.error(`Failed to ${action} token`, error);
+        return throwError(error);
+      })
+    );
+  }
+
+  resetFailCount(element: any): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.post(this.baseUrl + 'reset', {"serial": element.serial}, {headers}).pipe(
+      catchError(error => {
+        console.error('Failed to get reset fail counter', error);
+        return throwError(error);
+      })
+    )
   }
 
   getTokenData(page: number, pageSize: number, columns: {
     key: string;
     label: string
   }[], sort?: Sort, filterValue?: string): Observable<any> {
-    const headers = new HttpHeaders({
-      'PI-Authorization': this.localStore.getData('bearer_token') || ''
-    });
-
+    const headers = this.getHeaders();
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pagesize', pageSize.toString());

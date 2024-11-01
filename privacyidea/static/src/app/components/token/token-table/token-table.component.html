@@ -39,14 +39,16 @@
             </ng-container>
           } @else {
             <ng-container>
-          <span [ngClass]="{
-            'highlight-base highlight-true': (column.key === 'active' && element[column.key] === true) ||
-            (column.key === 'failcount' && element[column.key] >= 0 && element[column.key] <= 9),
-            'highlight-base highlight-false': (column.key === 'active' && element[column.key] !== true) ||
-            (column.key === 'failcount' && (element[column.key] < 0 || element[column.key] > 9))
-          }">
-            {{ element[column.key] }}
-          </span>
+              <span [ngClass]="{
+                'highlight-true': (column.key === 'active' && element[column.key] === true) ||
+                (column.key === 'failcount' && element[column.key] == 0),
+                'highlight-warning': (column.key === 'failcount' && element[column.key] >= 1 && element[column.key] <= 9),
+                'highlight-false': (column.key === 'active' && element[column.key] !== true) ||
+                (column.key === 'failcount' && (element[column.key] < 0 || element[column.key] > 9))
+              }" (click)="column.key === 'active' ? toggleActive(element) :
+                (column.key === 'failcount' ? resetFailCount(element) : null)">
+                {{ element[column.key] }}
+              </span>
             </ng-container>
           }
         </td>
