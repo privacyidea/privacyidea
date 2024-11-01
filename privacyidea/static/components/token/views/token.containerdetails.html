@@ -88,9 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </button>
             </td>
         </tr>
-        <tr ng-show="loggedInUser.role==='admin' &&
-                     checkRight('container_description')"
-            token-data-edit text="{{ 'Description'|translate }}"
+        <tr token-data-edit text="{{ 'Description'|translate }}"
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ container.description }}"
             hide-buttons="{{ hide_buttons }}"
@@ -99,62 +97,16 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             token-key="description"
             callback-cancel="getContainer()"
             callback="setDescription(value)"
-            logged-in-user="loggedInUser"></tr>
-        <tr ng-show="loggedInUser.role==='user'"
-            token-data-edit text="{{ 'Description'|translate }}"
-            button-text="{{ 'Set description'|translate }}"
-            token-data="{{ container.description }}"
-            hide-buttons="{{ hide_buttons }}"
-            set-right="{{ checkRight('container_description') }}"
-            editable-as-user=true
-            token-key="description"
-            callback-cancel="getContainer()"
-            callback="setDescription(value)"
-            logged-in-user="loggedInUser"></tr>
-        <tr ng-hide="true">
-            <td translate> Info</td>
-            <td>
-                <ul>
-                    <li ng-repeat="(k,v) in container.info">
-                        {{ k + ": " + v }}<br>
-                    </li>
-                </ul>
-            </td>
-            <td>
-                <!-- Container info is an admin only action -->
-                <div ng-hide="(!loggedInUser.isAdmin || !checkRight('container_info'))&& hide_buttons">
-                    <button class="btn btn-primary"
-                            id="ciEditButton"
-                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
-                            ng-hide="editContainerInfo"
-                            ng-click="startEditContainerInfo()"
-                            translate>Edit
-                    </button>
-                    <button class="btn btn-primary"
-                            id="ciSaveButton"
-                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_info')"
-                            ng-show="editContainerInfo"
-                            ng-click="saveContainerInfo()"
-                            translate>Save Container Info
-                    </button>
-                    <button class="btn btn-danger"
-                            id="ciCancelButton"
-                            ng-show="editContainerInfo"
-                            ng-click="editContainerInfo=false"
-                            translate>Cancel
-                    </button>
-                </div>
-            </td>
+            logged-in-user="loggedInUser">
         </tr>
-        <tr>
-            <td translate> Realms</td>
-            <td>
+        <td translate> Realms</td>
+        <td>
                 <span ng-hide="editContainerRealms">
                     <ul>
                         <li ng-repeat="realm in container.realms">{{ realm }}</li>
                     </ul>
                 </span>
-                <span ng-show="editContainerRealms">
+            <span ng-show="editContainerRealms">
                     <span ng-repeat="(realmname, realm) in realms">
                         <label for="{{ realmname }}">
                             <input type="checkbox"
@@ -167,50 +119,82 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         </label><br>
                     </span>
                 </span>
-            </td>
-            <td>
-                <!-- Container realms is an admin only action -->
-                <fieldset ng-disabled="!loggedInUser.isAdmin">
-                    <button class="btn btn-primary"
-                            id="cRealmsEditButton"
-                            ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin) && hide_buttons)"
-                            ng-disabled="!loggedInUser.isAdmin || !checkRight('container_realms')"
-                            ng-click="startEditRealms()"
-                            translate>Edit
-                    </button>
-                    <button class="btn btn-primary"
-                            id="cRealmsSaveButton"
-                            ng-show="editContainerRealms"
-                            ng-click="saveRealms()"
-                            translate>Save realms
-                    </button>
-                    <button class="btn btn-danger"
-                            id="cRealmsCancelButton"
-                            ng-show="editContainerRealms"
-                            ng-click="cancelEditRealms();"
-                            translate>Cancel
-                    </button>
-                </fieldset>
-            </td>
+        </td>
+        <td>
+            <!-- Container realms is an admin only action -->
+            <fieldset ng-disabled="!loggedInUser.isAdmin">
+                <button class="btn btn-primary"
+                        id="cRealmsEditButton"
+                        ng-hide="editContainerRealms || ((!checkRight('container_realms') || !loggedInUser.isAdmin) && hide_buttons)"
+                        ng-disabled="!loggedInUser.isAdmin || !checkRight('container_realms')"
+                        ng-click="startEditRealms()"
+                        translate>Edit
+                </button>
+                <button class="btn btn-primary"
+                        id="cRealmsSaveButton"
+                        ng-show="editContainerRealms"
+                        ng-click="saveRealms()"
+                        translate>Save realms
+                </button>
+                <button class="btn btn-danger"
+                        id="cRealmsCancelButton"
+                        ng-show="editContainerRealms"
+                        ng-click="cancelEditRealms();"
+                        translate>Cancel
+                </button>
+            </fieldset>
+        </td>
         </tr>
         <tr>
             <td translate>Template</td>
             <td>
-                <a ui-sref="token.containertemplates.edit({templateName: container.template})">
-                    {{ container.template }}
+                <a ui-sref="token.containertemplates.edit({templateName: container.template})"
+                   ng-show="checkRight('container_template_list')">
+                    {{ container.template }}</a>
+                <span ng-hide="checkRight('container_template_list')">
+                    {{ container.template }}</span>
             </td>
             <td></td>
         </tr>
         <tr>
             <td translate>Info</td>
             <td>
-                <ul>
-                    <li ng-repeat="(k,v) in container.info">
-                        {{ k }}: {{ v | truncate:30 }}
-                    </li>
-                </ul>
+                <div ng-hide="editContainerInfo">
+                    <ul>
+                        <li ng-repeat="(k,v) in container.info">
+                            {{ k }}: {{ v | truncate:30 }}
+                        </li>
+                    </ul>
+                </div>
+                <div ng-show="editContainerInfo">
+                    <div ng-repeat="(optionKey, optionValues) in containerInfoOptions">
+                        <label>{{ optionKey }}</label>
+                        <select class="form-control"
+                                id="optionKey"
+                                ng-model="selectedInfoOptions[optionKey]"
+                                ng-options="value for value in optionValues">
+                        </select>
+                    </div>
+                </div>
             </td>
-            <td></td>
+            <td>
+                <button class="btn btn-primary"
+                        ng-hide="editContainerInfo || (!checkRight('container_set_options') && hide_buttons)"
+                        ng-disabled="!checkRight('container_set_options')"
+                        ng-click="editInfo()"
+                        translate>Edit
+                </button>
+                <button class="btn btn-primary"
+                        ng-show="editContainerInfo"
+                        ng-click="saveInfo()"
+                        translate>Save
+                </button>
+                <button class="btn btn-danger"
+                        ng-show="editContainerInfo"
+                        ng-click="editContainerInfo=false"
+                        translate>Cancel
+                </button>
+            </td>
         </tr>
         <tr ng-show="container.info['registration_state'] === 'registered'">
             <td translate> Last Authentication</td>
@@ -226,17 +210,18 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 </div>
 
 <!------------ Container Synchronization ------------>
-<div class="form-group" ng-hide="container.type === 'generic' || !checkRight('container_register')">
+<div class="form-group"
+     ng-hide="container.type === 'generic' || (!checkRight('container_register') && !checkRight('container_rollover'))">
     <hr class="horizontal-line-invisible">
     <h4 translate>Synchronization</h4>
 
-    <!--- State: Not registered / client wait --->
-    <uib-accordion ng-hide="container.info['registration_state'] === 'registered' || container.type !== 'smartphone'">
+    <uib-accordion ng-hide="container.type !== 'smartphone'">
         <div uib-accordion-group
              class="panel-default"
              is-open="registrationOptions.open">
             <uib-accordion-heading ng-click="registrationOptions.open=!registrationOptions.open">
-                <div>Registration Configuration
+                <div>
+                    <span translate>Registration Configuration</span>
                     <span class="pull-right glyphicon" aria-hidden="true"
                           ng-class="{'glyphicon-chevron-down': registrationOptions.open,
                                          'glyphicon-chevron-right': !registrationOptions.open}">
@@ -248,19 +233,28 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <div class="text-center">
                 <button class="btn btn-primary"
                         ng-show="!container.info['registration_state']"
-                        ng-click="registerContainer()">
+                        ng-disabled="!checkRight('container_register')"
+                        ng-click="registerContainer(false)">
                     <span translate>Register Container on Device</span>
                 </button>
                 <button class="btn btn-primary"
                         ng-show="container.info['registration_state'] === 'client_wait'"
-                        ng-click="registerContainer()">
+                        ng-disabled="!checkRight('container_register')"
+                        ng-click="registerContainer(false)">
                     <span translate>Regenerate QR Code</span>
+                </button>
+                <button class="btn btn-primary"
+                        ng-show="container.info['registration_state'] && (checkRight('container_rollover') || !hideButtons)"
+                        ng-disabled="!checkRight('container_rollover')"
+                        ng-click="registerContainer(true)">
+                    <span translate>Rollover</span>
                 </button>
             </div>
         </div>
     </uib-accordion>
 
-    <div ng-show="container.info['registration_state'] === 'client_wait' && container.type === 'smartphone'">
+    <div ng-show="(container.info['registration_state'] === 'client_wait' || container.info['registration_state'] === 'rollover')
+                    && container.type === 'smartphone'">
         <div class="row" ng-show="showQR">
             <div class="col-sm-4">
                 <img width="250" ng-src="{{ containerRegistrationQR }}"/>
@@ -276,10 +270,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </div>
     <!--- State: Registered --->
-    <div ng-show="container.info['registration_state'] === 'registered'">
+    <div ng-show="container.info['registration_state'] === 'registered' || container.info['registration_state'] === 'rollover'">
         <div class="text-center">
             <button class="btn btn-primary"
-                    ng-click="unregisterContainer()">
+                    ng-click="unregisterContainer()"
+                    ng-disabled="!checkRight('container_unregister')">
                 <span translate>Unregister Container</span>
             </button>
         </div>

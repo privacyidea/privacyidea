@@ -90,8 +90,8 @@ class SmartphoneOptions:
 
 class SmartphoneContainer(TokenContainerClass):
     # The first value in the list is the default value
-    options = {SmartphoneOptions.FORCE_BIOMETRIC: [False, True],
-               SmartphoneOptions.ALLOW_ROLLOVER: [False, True],
+    options = {SmartphoneOptions.FORCE_BIOMETRIC: ['False', 'True'],
+               SmartphoneOptions.ALLOW_ROLLOVER: ['False', 'True'],
                SmartphoneOptions.KEY_ALGORITHM: ["secp384r1"],
                SmartphoneOptions.HASH_ALGORITHM: ["SHA256"],
                SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: ["x25519"],

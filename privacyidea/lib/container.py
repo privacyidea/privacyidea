@@ -1119,6 +1119,23 @@ def unregister(container: TokenContainer):
     return res_registration
 
 
+def set_options(serial: str, options: dict, user: User = None, user_role="user"):
+    """
+    Set the options of a container. The user has to be an admin or the owner of the container.
+
+    :param serial: The serial of the container
+    :param options: The options as dictionary
+    :param user: The user object
+    :param user_role: The role of the user ('admin' or 'user')
+    """
+    container = find_container_by_serial(serial)
+
+    # Check if user is admin or owner of container
+    _check_user_access_on_container(container, user, user_role)
+
+    container.add_options(options)
+
+
 def get_container_template_classes():
     """
     Returns a dictionary of all available container template classes in the format: { type: class }.

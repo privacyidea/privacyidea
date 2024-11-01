@@ -39,7 +39,8 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        set_default_template, get_container_template_classes,
                                        get_container_classes, create_container_from_db_object,
                                        compare_template_with_container, unregister,
-                                       _check_user_access_on_container, finalize_registration, init_container_rollover)
+                                       _check_user_access_on_container, finalize_registration, init_container_rollover,
+                                       set_options)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import PolicyError, ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
@@ -67,7 +68,7 @@ def list_containers():
     at once.
 
     :query user: Username of a user assigned to the containers
-    :query serial: Serial of a single container
+    :query container_serial: Serial of a single container
     :query type: Type of the containers to return
     :query token_serial: Serial of a token assigned to the container
     :query sortby: Sort by a container attribute (serial or type)
@@ -535,6 +536,26 @@ def set_container_info(container_serial, key):
     return send_result(res)
 
 
+@container_blueprint.route("<container_serial>/options", methods=['POST'])
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_SET_OPTIONS)
+@event('container_set_options', request, g)
+@log_with(log)
+def set_container_options(container_serial):
+    """
+    Set the options of a container. Overwrites the old options if they already exist.
+
+    :param: container_serial: Serial of the container
+    :jsonparam: options: Options to set (container type specific)
+    """
+    options = getParam(request.all_data, "options", required)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
+    set_options(container_serial, options, user, user_role)
+
+    return send_result(True)
+
+
 @container_blueprint.route('register/initialize', methods=['POST'])
 @prepolicy(check_container_register_rollover, request)
 @event('container_register_initialize', request, g)
@@ -564,7 +585,7 @@ def registration_init():
     # Check registration state: registration init is only allowed for None and "client_wait"
     registration_state = container.get_container_info_dict().get("registration_state")
     if container_rollover:
-        if registration_state != "registered":
+        if registration_state != "registered" and registration_state != "rollover":
             raise ContainerNotRegistered(f"Container is not registered.")
     else:
         if registration_state and registration_state != "client_wait":

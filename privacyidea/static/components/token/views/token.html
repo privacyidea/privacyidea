@@ -188,6 +188,7 @@
                         </a>
                     </li>
                     <li role="presentation"
+                        ng-show="checkRight('container_template_list')"
                         ng-class="{active: $state.includes('token.containertemplates')}">
                         <a ui-sref="token.containertemplates.list">
                             <span class="glyphicon glyphicon-duplicate"></span>
@@ -216,6 +217,28 @@
                             </a>
                         </li>
                     </ul>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerlist'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#containers' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Containers</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containercreate'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Container</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerdetails'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Details</span></a>
+                    </li>
                 </ul>
             </div>
         </div>

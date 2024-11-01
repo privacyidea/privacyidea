@@ -235,7 +235,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             if (templateOptions !== undefined) {
                 $scope.form.tokens = templateOptions.tokens || [];
                 let options = templateOptions.options || {};
-                angular.forEach($scope.form.options, function(value, key) {
+                angular.forEach($scope.form.options, function (value, key) {
                     if (options[key] !== undefined) {
                         $scope.form.options[key] = options[key];
                     } else {
@@ -246,7 +246,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 // no template is used or the template has no options
                 $scope.form.tokens = [];
                 angular.forEach($scope.form.options, function (value, key) {
-                   $scope.form.options[key] = "-";
+                    $scope.form.options[key] = "-";
                 });
             }
         };
@@ -254,7 +254,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.createContainer = function () {
             let ctype = $scope.form.containerType;
             let params = {"type": ctype};
-            if ($scope.form.template && $scope.form.template.name !== "noTemplate") {
+            if (templateListRight && $scope.form.template && $scope.form.template.name !== "noTemplate") {
                 params["template"] = $scope.form.template;
                 params["template"]["template_options"]["options"] = {};
                 angular.forEach($scope.form.options, function (value, key) {
@@ -273,8 +273,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         }
                     });
                 }
-            }
-            else if ($scope.form.options) {
+            } else if ($scope.form.options) {
                 // only set the options if no template is used (which already defines the options)
                 params["options"] = {};
                 angular.forEach($scope.form.options, function (value, key) {
@@ -321,7 +320,10 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             });
         };
 
-        $scope.getTemplates();
+        const templateListRight = AuthFactory.checkRight('container_template_list');
+        if (templateListRight) {
+            $scope.getTemplates();
+        }
         $scope.getTokenAndContainerTypes();
     }]);
 
@@ -463,7 +465,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                         $scope.container.last_synchronization = "-";
                     }
 
-
                     angular.forEach($scope.container.states, function (state) {
                         $scope.excludeStates(state);
                     });
@@ -557,6 +558,40 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
+        $scope.editContainerInfo = false;
+        $scope.containerInfoOptions = {};
+        $scope.selectedInfoOptions = {};
+        $scope.editInfo = function () {
+            $scope.editContainerInfo = true;
+
+            ContainerFactory.getClassOptions({
+                "only_selectable": true,
+                "container_type": $scope.container.type
+            }, function (data) {
+                $scope.containerInfoOptions = data.result.value[$scope.container.type];
+                angular.forEach($scope.containerInfoOptions, function (values, key) {
+                    let selected = $scope.container.info[key];
+                    if (selected !== undefined) {
+                        $scope.selectedInfoOptions[key] = selected;
+                    } else {
+                        $scope.selectedInfoOptions[key] = values[0];
+                    }
+                });
+
+            });
+        };
+
+        $scope.saveInfo = function () {
+            ContainerFactory.setOptions($scope.containerSerial,
+                {"options": $scope.selectedInfoOptions},
+                function () {
+                    $scope.editContainerInfo = false;
+                    $scope.getContainer();
+                }
+            );
+
+        };
+
         $scope.saveRealms = function () {
             let realmList = "";
             for (const realm in $scope.selectedRealms) {
@@ -608,13 +643,14 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.registrationOptions = {"open": false};
         $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
-        $scope.registerContainer = function () {
+        $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
                     "container_serial": $scope.containerSerial,
                     "passphrase_ad": $scope.passphrase.ad,
                     "passphrase_prompt": $scope.passphrase.prompt,
-                    "passphrase_response": $scope.passphrase.response
+                    "passphrase_response": $scope.passphrase.response,
+                    "rollover": rollover
                 };
             ContainerFactory.initializeRegistration(registrationParams, function (data) {
                 if ($scope.container.type === "smartphone") {

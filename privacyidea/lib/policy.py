@@ -416,6 +416,7 @@ class ACTION(object):
     CONTAINER_TEMPLATE_CREATE = "container_template_create"
     CONTAINER_TEMPLATE_DELETE = "container_template_delete"
     CONTAINER_TEMPLATE_LIST = "container_template_list"
+    CONTAINER_SET_OPTIONS = "container_set_options"
 
 
 class TYPE(object):
@@ -2136,7 +2137,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Admin is allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_SET_OPTIONS: {'type': 'bool',
+                                           'desc': _('Admin is allowed to set container options.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2336,7 +2341,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Users are allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_SET_OPTIONS: {'type': 'bool',
+                                           'desc': _('Users are allowed to set container options.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
