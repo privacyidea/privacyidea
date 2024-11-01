@@ -16,15 +16,15 @@ export class TokenService {
     'type',
     'tokenrealm',
     'description',
+    'user',
     'rollout_state',
     'userid',
     'resolver',
-    /*'user',
-    'assigned',
     'active',
+    /*'assigned',
+    'container_serial',
     'infokey',
-    'infovalue',
-    'container_serial', TODO fix not working and missing query params*/
+    'infovalue', TODO fix not working and missing query params*/
   ];
 
   private getHeaders(): HttpHeaders {
