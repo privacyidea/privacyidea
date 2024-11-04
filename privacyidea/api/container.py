@@ -576,6 +576,9 @@ def registration_init():
             }
     Further information might be provided depending on the container type.
     """
+    user = request.User
+    if user.is_empty():
+        user = None
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
     container_rollover = getParam(params, "rollover", optional=True)
@@ -592,14 +595,14 @@ def registration_init():
             raise ContainerNotRegistered(f"Container is already registered.")
 
     # Get server url for the second step
-    server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
+    server_url_policies = Match.user(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL, user_object=user).policies()
     if len(server_url_policies) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
     server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
 
     # Get validity time for the registration
-    registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
-                                              action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
+    registration_ttl_policies = Match.user(g, scope=SCOPE.CONTAINER,
+                                           action=ACTION.CONTAINER_REGISTRATION_TTL, user_object=user).policies()
     registration_ttl = 10
     if len(registration_ttl_policies) > 0:
         registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
@@ -608,8 +611,8 @@ def registration_init():
             registration_ttl = 10
 
     # Get validity time for further challenges
-    challenge_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
-                                           action=ACTION.CONTAINER_CHALLENGE_TTL).policies()
+    challenge_ttl_policies = Match.user(g, scope=SCOPE.CONTAINER,
+                                        action=ACTION.CONTAINER_CHALLENGE_TTL, user_object=user).policies()
     challenge_ttl = 2
     if len(challenge_ttl_policies) > 0:
         challenge_ttl = int(challenge_ttl_policies[0]["action"][ACTION.CONTAINER_CHALLENGE_TTL])
@@ -618,7 +621,8 @@ def registration_init():
             challenge_ttl = 2
 
     # Get ssl verify
-    ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
+    ssl_verify_policies = Match.user(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,
+                                     user_object=user).policies()
     if len(ssl_verify_policies) > 0:
         ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
         if ssl_verify not in ["True", "False"]:

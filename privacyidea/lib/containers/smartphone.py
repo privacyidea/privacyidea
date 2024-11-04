@@ -228,7 +228,8 @@ class SmartphoneContainer(TokenContainerClass):
                            "hash_algorithm": hash_algorithm,
                            "ssl_verify": ssl_verify,
                            "ttl": registration_ttl,
-                           "passphrase_prompt": passphrase_prompt}
+                           "passphrase_prompt": passphrase_prompt,
+                           "server_url": server_url}
 
         return response_detail
 
@@ -304,7 +305,7 @@ class SmartphoneContainer(TokenContainerClass):
         Create a challenge for the container.
 
         :param scope: The scope (endpoint) of the challenge, e.g. "container/SMPH001/sync"
-        :param validity_time: The validity time of the challenge in seconds.
+        :param validity_time: The validity time of the challenge in minutes.
         :param data: Additional data for the challenge.
         :return: A dictionary with the challenge data like
 
