@@ -350,7 +350,7 @@ def init_container(params):
         ::
 
             {
-                "type":...,
+                "type": ...,
                 "description": ..., (optional)
                 "container_serial": ..., (optional)
                 "user": ..., Name of the user (optional)
@@ -1070,6 +1070,8 @@ def finalize_container_rollover(container: TokenContainer):
                   "type": token.get_type(),
                   "genkey": True,
                   "rollover": True}
+        token_info = token.get_tokeninfo()
+        params.update(token_info)
         try:
             token = init_token(params)
         except Exception as ex:
@@ -1086,12 +1088,15 @@ def init_container_rollover(container: TokenContainer, server_url: str, challeng
         raise ContainerRollover("Rollover is not allowed for this container.")
 
     # Check challenge if rollover is allowed
+    rollover_scope = create_endpoint_url(server_url, f"container/{container.serial}/rollover")
+    params.update({"scope": rollover_scope})
     container.check_challenge_response(params)
 
-    scope = create_endpoint_url(server_url, "container/register/finalize")
+    registration_scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({"scope": registration_scope})
 
     # Get registration data
-    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
+    res = container.init_registration(server_url, registration_scope, registration_ttl, ssl_verify, params)
 
     # Set registration state
     container.add_container_info("registration_state", "rollover")
