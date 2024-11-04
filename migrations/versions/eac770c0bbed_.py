@@ -7,6 +7,7 @@ Create Date: 2024-10-30 11:21:28.721316
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = 'eac770c0bbed'
@@ -40,9 +41,18 @@ def upgrade():
                 if len(list(set(columns).intersection(uq['column_names']))) == 2:
                     op.drop_constraint(uq['name'], 'tokencontainerrealm', type_='unique')
 
-    except Exception as exx:
-        print("Could not drop unique constraint on tokencontainerrealm. Maybe it does not exist.")
-        print(exx)
+    except (OperationalError, ProgrammingError) as exx:
+        if "no such constraint" in str(exx.orig).lower():
+            print("Unique constraint on tokencontainerrealm already removed.")
+        else:
+            print("Could not drop unique constraint on tokencontainerrealm.")
+            print(exx)
+    except ValueError as exx:
+        if "no such constraint" in str(exx).lower():
+            print("Unique constraint on tokencontainerrealm already removed.")
+        else:
+            print("Could not drop unique constraint on tokencontainerrealm.")
+            print(exx)
 
 
 def downgrade():
