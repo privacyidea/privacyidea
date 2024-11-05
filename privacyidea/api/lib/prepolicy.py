@@ -1963,7 +1963,7 @@ def fido2_enroll(request, action):
     :return:
     :rtype:
     """
-
+    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() in types:
         user_object = request.User if hasattr(request, 'User') else None
