@@ -684,7 +684,7 @@ class PushTokenClass(TokenClass):
 
             details = token_obj.get_init_detail(init_detail_dict)
             result = True
-        elif "signature" in request_data and not "new_fb_token" in request_data:
+        elif "signature" in request_data and "new_fb_token" not in request_data:
             log.debug("Handling the authentication response from the smartphone.")
             signature = getParam(request_data, "signature")
             decline = is_true(getParam(request_data, "decline", default=False))
