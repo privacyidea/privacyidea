@@ -475,8 +475,8 @@ def check():
         serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
     else:
         serials = details.get("serial")
-    #serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
-     #          if 'multi_challenge' in details else details.get('serial'))
+    # serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+    #          if 'multi_challenge' in details else details.get('serial'))
     ret = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
@@ -717,15 +717,15 @@ def poll_transaction(transaction_id=None):
     return send_result(result, rid=2, details=details)
 
 
-@prepolicy(fido2_auth, request=request)
 @validate_blueprint.route('/initialize', methods=['POST'])
+@prepolicy(fido2_auth, request=request)
 def initialize():
     """
     Start an authentication by requesting a challenge for a token type. Currently, supports only type: passkey
     @param type: The type of the token, for which a challenge should be created.
     """
 
-    token_type = get_optional(request.all_data, "type", default="")
+    token_type = get_optional(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
         rp_id_policies = (Match.user(g,
@@ -741,16 +741,20 @@ def initialize():
         challenge = create_fido2_challenge(rp_id)
 
         user_verification_policies = Match.user(g,
-                                                            scope=SCOPE.AUTH,
-                                                            action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-                                                            user_object=None).action_values(unique=True)
+                                                scope=SCOPE.AUTH,
+                                                action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                                user_object=None).action_values(unique=True)
         challenge["user_verification"] = (list(user_verification_policies)[0]
-                                         if user_verification_policies
-                                         else "preferred")
+                                          if user_verification_policies
+                                          else "preferred")
+        if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
+            challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
+
         details["passkey"] = challenge
 
+
     else:
-        raise ParameterError("Unsupported token type for initialization!")
+        raise ParameterError("Unsupported token type for authentication initialization!")
 
     response = send_result(AUTH_RESPONSE.CHALLENGE, rid=2, details=details)
     return response

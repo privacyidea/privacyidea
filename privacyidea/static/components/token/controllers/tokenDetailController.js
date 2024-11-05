@@ -105,12 +105,16 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.testPasskey = function () {
             $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
                     let data = response.data.detail.passkey;
+                    let userVerification = "preferred";
+                    if (["required", "preferred", "discouraged"].includes(data.user_verification)) {
+                        userVerification = data.user_verification;
+                    }
                     console.log(data);
                     navigator.credentials.get({
                         publicKey: {
                             challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
                             rpId: data.rpId,
-                            userVerification: data.user_verification,
+                            userVerification: userVerification,
                         },
                     }).then(credential => {
                         console.log(credential);
