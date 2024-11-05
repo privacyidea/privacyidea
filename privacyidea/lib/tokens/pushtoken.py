@@ -684,7 +684,7 @@ class PushTokenClass(TokenClass):
 
             details = token_obj.get_init_detail(init_detail_dict)
             result = True
-        elif all(k in request_data for k in ("nonce", "signature")):
+        elif "signature" in request_data:
             log.debug("Handling the authentication response from the smartphone.")
             signature = getParam(request_data, "signature")
             decline = is_true(getParam(request_data, "decline", default=False))
@@ -867,7 +867,6 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              nonce=<the actual challenge>
               signature=<signature over {nonce}|{serial}>
 
         - The smartphone can also decline the authentication request, by sending
@@ -879,7 +878,6 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              nonce=<the actual challenge>
               decline=1
               signature=<signature over {nonce}|{serial}|decline
 
