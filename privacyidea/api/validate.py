@@ -717,7 +717,7 @@ def poll_transaction(transaction_id=None):
     return send_result(result, rid=2, details=details)
 
 
-@prepolicy(webauthntoken_request, request=request)
+@prepolicy(fido2_auth, request=request)
 @validate_blueprint.route('/initialize', methods=['POST'])
 def initialize():
     """

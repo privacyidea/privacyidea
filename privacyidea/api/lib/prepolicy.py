@@ -1863,72 +1863,39 @@ def webauthntoken_authz(request, action):
 
 def fido2_auth(request, action):
     """
-    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerchallenge,
-    /validate/check, and /auth.
+    Add policy values for FIDO2 tokens to the request.
+    The following policy values are added:
+    - WEBAUTHNACTION.ALLOWED_TRANSPORTS
+    - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
 
-    This will enrich the challenge creation request for WebAuthn tokens with the
-    necessary configuration information from policy actions with
-    scope=SCOPE.AUTH. The request will be augmented with the allowed
-    transports and the text to display to the user when asking to confirm
-    the challenge on the token, as specified by the actions
-    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and ACTION.CHALLENGETEXT, respectively.
-
-    Both of these policies are optional, and have sensible defaults.
-
-    :param request:
-    :type request:
-    :param action:
-    :type action:
-    :return:
-    :rtype:
     """
-
-    # Check if this is an auth request (as opposed to an enrollment), and it
-    # is not a WebAuthn authorization, and the request is either for
-    # authentication with a WebAuthn token, or not for any particular token at
-    # all (since authentication requests contain almost no parameters, it is
-    # necessary to define them by what they are not, rather than by what they
-    # are).
-    #
-    # This logic means that we will add WebAuthn specific information to any
-    # unspecific authentication request, even if the user does not actually
-    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
-    # passive and will just pull values from policies and add them to properly
-    # prefixed fields in the request data, this is not a problem.
-    if (not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data)
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix()))):
-        user_object = request.User if hasattr(request, 'User') else None
-        allowed_transports_policies = (Match.user(g,
-                                                  scope=SCOPE.AUTH,
-                                                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
-                                                  user_object=user_object)
-                                       .action_values(unique=False, allow_white_space_in_action=True))
-        allowed_transports = set(
-            transport
-            for allowed_transports_policy in (
-                list(allowed_transports_policies)
-                if allowed_transports_policies
-                else [DEFAULT_ALLOWED_TRANSPORTS]
-            )
-            for transport in allowed_transports_policy.split()
-        )
-
-        webauthn_challenge_text_policy = f"{WebAuthnTokenClass.get_class_type()}_{ACTION.CHALLENGETEXT}"
-        challenge_text_policies = (Match.user(g,
+    user_object = request.User if hasattr(request, "User") else None
+    allowed_transports_policies = (Match.user(g,
                                               scope=SCOPE.AUTH,
-                                              action=webauthn_challenge_text_policy,
+                                              action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
                                               user_object=user_object)
-                                   .action_values(unique=True,
-                                                  allow_white_space_in_action=True,
-                                                  write_to_audit_log=False))
-        challenge_text = (list(challenge_text_policies)[0]
-                          if challenge_text_policies
-                          else DEFAULT_CHALLENGE_TEXT_AUTH)
+                                   .action_values(unique=False, allow_white_space_in_action=True))
+    allowed_transports = set(
+        transport
+        for allowed_transports_policy in (
+            list(allowed_transports_policies)
+            if allowed_transports_policies
+            else [DEFAULT_ALLOWED_TRANSPORTS]
+        )
+        for transport in allowed_transports_policy.split()
+    )
 
-        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
-        request.all_data[webauthn_challenge_text_policy] = challenge_text
+    # Challenge texts
+    challenge_texts = _get_challenge_texts_for_types([WebAuthnTokenClass.get_class_type().lower(),
+                                                      PasskeyTokenClass.get_class_type().lower()],
+                                                     scope=SCOPE.AUTH)
+    for t, text in challenge_texts.items():
+        if text:
+            request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
+
+    request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
     return True
+
 
 
 def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
@@ -1943,9 +1910,8 @@ def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AU
         challenge_text_policies = (Match.user(g, scope=scope, action=action, user_object=None)
                                    .action_values(unique=True, allow_white_space_in_action=True,
                                                   write_to_audit_log=False))
-        res[t] = (list(challenge_text_policies)[0]
-                  if challenge_text_policies
-                  else "")
+        res[t] = list(challenge_text_policies)[0] if challenge_text_policies else ""
+
     return res
 
 
@@ -2065,7 +2031,7 @@ def fido2_enroll(request, action):
                                                       user_object=user_object).any()
 
         # Challenge texts
-        challenge_texts = _get_challenge_texts_for_types(types)
+        challenge_texts = _get_challenge_texts_for_types(types, scope=SCOPE.ENROLL)
         for t, text in challenge_texts.items():
             if text:
                 request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
