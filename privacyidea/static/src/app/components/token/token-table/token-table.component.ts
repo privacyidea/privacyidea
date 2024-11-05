@@ -12,6 +12,7 @@ import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {TokenDetailsComponent} from '../token-details/token-details.component';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -31,7 +32,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle
+    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle, TokenDetailsComponent
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
@@ -47,10 +48,13 @@ export class TokenTableComponent {
   filterValue = '';
   apiFilter = this.tokenService.apiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
+  serial = '';
 
-  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
-  @ViewChild(MatSort) sort: MatSort | null = null;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
   protected readonly columns = columns;
+  protected tokenIsSelected = signal(false);
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -133,5 +137,10 @@ export class TokenTableComponent {
       realms: item.realms && item.realms.length > 0 ? item.realms[0] : ''
     }));
     this.dataSource.set(new MatTableDataSource(processedData));
+  }
+
+  tokenSelected(serial: string) {
+    this.tokenIsSelected.set(true)
+    this.serial = serial;
   }
 }

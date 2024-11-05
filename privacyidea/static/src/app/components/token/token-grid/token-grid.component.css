@@ -3,6 +3,11 @@
   width: calc(100% - 40px);
 }
 
+.token-grid {
+  padding: 0 10px 0;
+}
+
 mat-grid-tile {
-  /* background-color: #ffff00; DEBUG */
+  /* background-color: #ffff00; *//* DEBUG */
+  overflow: auto;
 }

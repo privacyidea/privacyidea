@@ -96,4 +96,16 @@ export class TokenService {
       })
     );
   }
+
+  getTokenDetails(serial: string): Observable<any> {
+    const headers = this.getHeaders();
+    let params = new HttpParams().set('serial', serial);
+    return this.http.get(this.baseUrl, {headers, params}).pipe(
+      map(response => response),
+      catchError(error => {
+        console.error('Failed to get token details', error);
+        return throwError(error);
+      })
+    );
+  }
 }
