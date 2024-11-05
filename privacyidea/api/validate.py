@@ -79,7 +79,7 @@ from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundE
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
                                    find_fido2_token_by_credential_id, verify_fido2_challenge)
-from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
+from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent, AUTH_RESPONSE
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -89,7 +89,7 @@ from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action, pushtoken_validate, webauthntoken_auth,
+                                           check_base_action, pushtoken_validate, fido2_auth,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge)
@@ -245,7 +245,7 @@ def offlinerefill():
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
-@prepolicy(webauthntoken_auth, request=request)
+@prepolicy(fido2_auth, request=request)
 @check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
@@ -408,12 +408,7 @@ def check():
     options.update(request.all_data)
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
-    g.audit_object.log({"user": user.login,
-                        "resolver": user.resolver,
-                        "realm": user.realm})
-
-    success: bool = False
-
+    details: dict = {}
     # Passkey/FIDO2: Identify the user by the credential ID
     credential_id: str = get_optional(request.all_data, "credential_id")
     # If only the credential ID is given, try to use it to identify the token
@@ -429,8 +424,7 @@ def check():
         except ResourceNotFoundError:
             return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
 
-        r = verify_fido2_challenge(transaction_id, token, request.all_data)
-        details = None
+        r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
         result = r > 0
         success = result
         if r > 0:
@@ -472,9 +466,17 @@ def check():
                         # Additional attributes
                         for k, v in user_info.items():
                             result["attributes"][k] = v
+    # TODO can this be here and not at the start
+    g.audit_object.log({"user": user.login,
+                        "resolver": user.resolver,
+                        "realm": user.realm})
 
-    serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
-        if 'multi_challenge' in details else details.get('serial'))
+    if "multi_challenge" in details:
+        serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+    else:
+        serials = details.get("serial")
+    #serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+     #          if 'multi_challenge' in details else details.get('serial'))
     r = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
@@ -495,7 +497,7 @@ def check():
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
-@prepolicy(webauthntoken_auth, request=request)
+@prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():
     """
@@ -715,18 +717,40 @@ def poll_transaction(transaction_id=None):
     return send_result(result, rid=2, details=details)
 
 
+@prepolicy(webauthntoken_request, request=request)
 @validate_blueprint.route('/initialize', methods=['POST'])
 def initialize():
     """
+    Start an authentication by requesting a challenge for a token type. Currently, supports only type: passkey
+    @param type: The type of the token, for which a challenge should be created.
     """
-    rp_id_policies = (Match.user(g,
-                                 scope=SCOPE.ENROLL,
-                                 action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                                 user_object=None)
-                      .action_values(unique=True))
-    if rp_id_policies:
+
+    token_type = get_optional(request.all_data, "type", default="")
+    details = {}
+    if token_type.lower() == "passkey":
+        rp_id_policies = (Match.user(g,
+                                     scope=SCOPE.ENROLL,
+                                     action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                     user_object=None)
+                          .action_values(unique=True))
+
+        if not rp_id_policies:
+            raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
+
         rp_id = list(rp_id_policies)[0]
         challenge = create_fido2_challenge(rp_id)
-        return send_result(True, rid=2, details=challenge)
+
+        user_verification_policies = Match.user(g,
+                                                            scope=SCOPE.AUTH,
+                                                            action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                                            user_object=None).action_values(unique=True)
+        challenge["user_verification"] = (list(user_verification_policies)[0]
+                                         if user_verification_policies
+                                         else "preferred")
+        details["passkey"] = challenge
+
     else:
-        raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
+        raise ParameterError("Unsupported token type for initialization!")
+
+    response = send_result(AUTH_RESPONSE.CHALLENGE, rid=2, details=details)
+    return response

@@ -99,7 +99,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            sms_identifiers, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
+                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
@@ -153,7 +153,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(indexedsecret_force_attribute, request)
 @prepolicy(webauthntoken_allowed, request)
 @prepolicy(webauthntoken_request, request)
-@prepolicy(webauthntoken_enroll, request)
+@prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)

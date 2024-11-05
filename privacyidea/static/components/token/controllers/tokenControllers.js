@@ -503,6 +503,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             }
 
             if ($scope.enrolledToken.passkey_registration) {
+                $scope.click_wait = true;
+                console.log($scope.enrolledToken.passkey_registration);
                 let options = JSON.parse($scope.enrolledToken.passkey_registration);
                 let excludedCredentials = [];
                 for (const cred of options.excludeCredentials) {
@@ -511,6 +513,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         type: cred.type,
                     });
                 }
+                console.log("Registering passkey for user " + options.user.displayName);
                 navigator.credentials.create({
                     publicKey: {
                         rp: options.rp,
@@ -524,27 +527,37 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         excludeCredentials: excludedCredentials,
                         authenticatorSelection: options.authenticatorSelection,
                         timeout: options.timeout,
-                        "extensions": {
-                            "credProps": true
-                        }
+                        extensions: {
+                            credProps: true,
+                        },
+                        attestation: options.attestation
                     }
-                }).then(function (newCredentialInfo) {
-                    console.log("newCredentialInfo");
-                    console.log(newCredentialInfo);
+                }).then(function (publicKeyCred) {
+                    console.log("Successfully registered passkey");
+                    console.log(publicKeyCred);
                     let params = {
                         user: $scope.newUser.user,
                         realm: $scope.newUser.realm,
                         transaction_id: data.detail.transaction_id,
                         serial: data.detail.serial,
                         type: "passkey",
-                        credential_id: newCredentialInfo.id,
-                        rawId: $scope.bytesToBase64(new Uint8Array(newCredentialInfo.rawId)),
-                        authenticatorAttachment: newCredentialInfo.authenticatorAttachment,
-                        attestationObject: $scope.bytesToBase64(new Uint8Array(newCredentialInfo.response.attestationObject)),
-                        clientDataJSON: $scope.bytesToBase64(new Uint8Array(newCredentialInfo.response.clientDataJSON)),
+                        credential_id: publicKeyCred.id,
+                        rawId: $scope.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
+                        authenticatorAttachment: publicKeyCred.authenticatorAttachment,
+                        attestationObject: $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject)),
+                        clientDataJSON: $scope.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON)),
                     }
-
+                    if (publicKeyCred.response.attestationObject) {
+                        params.attestationObject = $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject));
+                    }
+                    const extResults = publicKeyCred.getClientExtensionResults();
+                    if (extResults.credProps) {
+                        params.credProps = extResults.credProps;
+                    }
                     TokenFactory.initToken(params, function (response) {
+                        $scope.click_wait = false;
                     });
                 }, function (error) {
                     console.log("Error while registering passkey");

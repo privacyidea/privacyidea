@@ -81,7 +81,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
-from privacyidea.api.lib.utils import get_required
+from privacyidea.api.lib.utils import get_required, get_optional
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
@@ -2277,7 +2277,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
-                    transactionid=transaction_id, options=options)
+                transactionid=transaction_id, options=options)
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
@@ -2506,7 +2506,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         further_challenge = False
         for token_object in challenge_response_token_list:
             if token_object.check_challenge_response(passw=passw,
-                                                    options=options) >= 0:
+                                                     options=options) >= 0:
                 reply_dict["serial"] = token_object.token.serial
                 matching_challenge = True
                 messages = []
@@ -2669,6 +2669,7 @@ def get_dynamic_policy_definitions(scope=None):
             if pol_section in pol_keys:
                 pol_entry = policy.get(pol_section)
                 for pol_def in pol_entry:
+                    #pol_def = str(pol_def)
                     set_def = pol_def
                     if pol_def.startswith(ttype) is not True:
                         set_def = '{0!s}_{1!s}'.format(ttype, pol_def)
@@ -2926,13 +2927,12 @@ def create_fido2_challenge(rp_id: str) -> dict:
 
     db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
     db_challenge.save()
-    ret = {
+    return {
         "transaction_id": transaction_id,
         "challenge": challenge,
         "message": message,
         "rpId": rp_id
     }
-    return ret
 
 
 def verify_fido2_challenge(transaction_id: str, token, params: dict) -> int:
@@ -2955,6 +2955,7 @@ def verify_fido2_challenge(transaction_id: str, token, params: dict) -> int:
         "signature": get_required(params, "signature"),
         "userHandle": get_required(params, "userHandle"),
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
+        "user_verification": get_optional(params, "webauthn_user_verification_requirement", "preferred")
     }
     return token.check_otp(None, options=options)
 

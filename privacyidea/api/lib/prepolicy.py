@@ -72,7 +72,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminErro
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass, PasskeyAction
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
@@ -1763,10 +1763,9 @@ def webauthntoken_request(request, action):
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if not request.all_data.get("type") \
-            and not is_webauthn_assertion_response(request.all_data) \
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+    if not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data) and (
+            'serial' not in request.all_data
+            or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
         scope = SCOPE.AUTH
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
@@ -1862,7 +1861,7 @@ def webauthntoken_authz(request, action):
     return True
 
 
-def webauthntoken_auth(request, action):
+def fido2_auth(request, action):
     """
     This is a WebAuthn token specific wrapper for the endpoints /validate/triggerchallenge,
     /validate/check, and /auth.
@@ -1932,9 +1931,9 @@ def webauthntoken_auth(request, action):
     return True
 
 
-def webauthntoken_enroll(request, action):
+def fido2_enroll(request, action):
     """
-    This is a token specific wrapper for the WebAuthn token for the endpoint /token/init.
+    This is a token specific wrapper for FIDO2 token and the endpoint /token/init.
 
     This will enrich the initialization request for WebAuthn tokens with the
     necessary configuration information from policy actions with
@@ -1966,8 +1965,7 @@ def webauthntoken_enroll(request, action):
     """
 
     ttype = request.all_data.get("type")
-    if (ttype and (ttype.lower() == WebAuthnTokenClass.get_class_type()
-                   or ttype.lower() == PasskeyTokenClass.get_class_type())):
+    if ttype and ttype.lower() in types:
         user_object = request.User if hasattr(request, 'User') else None
         rp_id_policies = (Match.user(g,
                                      scope=SCOPE.ENROLL,
@@ -2043,15 +2041,16 @@ def webauthntoken_enroll(request, action):
             raise PolicyError(
                 f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM} must be one of {', '.join(ATTESTATION_FORMS)}")
 
-        challenge_text_policies = Match.user(g,
-                                             scope=SCOPE.ENROLL,
-                                             action=f"{WebAuthnTokenClass.get_class_type()}_{ACTION.CHALLENGETEXT}",
-                                             user_object=user_object).action_values(unique=True,
-                                                                                    allow_white_space_in_action=True,
-                                                                                    write_to_audit_log=False)
-        challenge_text = (list(challenge_text_policies)[0]
-                          if challenge_text_policies
-                          else DEFAULT_CHALLENGE_TEXT_ENROLL)
+        # Challenge text policies for WebAuthn and Passkey
+        for t in types:
+            action = f"{t}_{ACTION.CHALLENGETEXT}"
+            challenge_text_policies = (Match.user(g, scope=SCOPE.ENROLL, action=action, user_object=user_object)
+                                       .action_values(unique=True, allow_white_space_in_action=True,
+                                                      write_to_audit_log=False))
+            challenge_text = (list(challenge_text_policies)[0]
+                              if challenge_text_policies
+                              else DEFAULT_CHALLENGE_TEXT_ENROLL)
+            request.all_data[action] = challenge_text
 
         avoid_double_registration_policy = Match.user(g,
                                                       scope=SCOPE.ENROLL,
@@ -2068,8 +2067,19 @@ def webauthntoken_enroll(request, action):
                                                                               x in pubkey_credential_algo_pref])
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
-        request.all_data[f"{ttype.lower()}_{ACTION.CHALLENGETEXT}"] = challenge_text
+
         request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
+
+        passkey_attestation_policies = Match.user(g,
+                                                  scope=SCOPE.ENROLL,
+                                                  action=PasskeyAction.AttestationConveyancePreference,
+                                                  user_object=user_object).action_values(unique=True)
+
+        passkey_attestation = (list(passkey_attestation_policies)[0]
+                               if passkey_attestation_policies
+                               else None)
+        if passkey_attestation:
+            request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
 
     return True
 
@@ -2100,7 +2110,7 @@ def webauthntoken_allowed(request, action):
     :return:
     :rtype:
     """
-
+    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
     ttype = request.all_data.get("type")
 
     # Get the registration data of the 2nd step of enrolling a WebAuthn token

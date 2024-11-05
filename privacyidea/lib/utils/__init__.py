@@ -1301,8 +1301,10 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
-        if obj:
+        if obj and obj != AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.ACCEPT
+        elif obj and obj == AUTH_RESPONSE.CHALLENGE:
+            r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
             r_authentication = AUTH_RESPONSE.CHALLENGE

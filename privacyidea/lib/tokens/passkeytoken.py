@@ -1,15 +1,22 @@
 import logging
+from enum import Enum
 from hashlib import sha256
 
+import cryptography.x509
+from cryptography.hazmat._oid import NameOID
+from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import Certificate, NameAttribute
 from flask_babel import lazy_gettext
 from webauthn import (generate_registration_options,
                       options_to_json, verify_registration_response, verify_authentication_response)
-from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
+from webauthn.helpers import bytes_to_base64url, base64url_to_bytes, parse_attestation_object
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse
 from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorSelectionCriteria,
                                       ResidentKeyRequirement,
-                                      PublicKeyCredentialDescriptor, UserVerificationRequirement)
+                                      PublicKeyCredentialDescriptor, UserVerificationRequirement, AttestationObject,
+                                      PublicKeyCredentialCreationOptions)
+from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import get_optional, get_required
 from privacyidea.lib import _
@@ -19,12 +26,16 @@ from privacyidea.lib.crypto import geturandom, get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthntoken import WEBAUTHNCONFIG, WEBAUTHNACTION, WEBAUTHNINFO
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
+
+
+class PasskeyAction:
+    AttestationConveyancePreference = "passkey_attestation_conveyance_preference"
 
 
 class PasskeyTokenClass(TokenClass):
@@ -67,13 +78,29 @@ class PasskeyTokenClass(TokenClass):
             "init": {},
             'config': {},
             'user': ['enroll'],
-            'ui_enroll': ["admin", "user"]
+            'ui_enroll': ["admin", "user"],
+            'policy': {
+                SCOPE.AUTH: {
+                    ACTION.CHALLENGETEXT: {
+                        'type': 'str',
+                        'desc': _("Use an alternative challenge text for telling "
+                                  "the user to confirm the login with his WebAuthn token. "
+                                  "You can also use tags for automated replacement. "
+                                  "Check out the documentation for more details.")
+                    }
+                },
+                SCOPE.ENROLL: {
+                    PasskeyAction.AttestationConveyancePreference: {
+                        'type': 'str',
+                        'desc': _("Request attestation from the authenticator during the registration. The attestation "
+                                  "certificate will be saved in the token info. The default value is 'none'."),
+                        'value': [v for v in AttestationConveyancePreference],
+                        'group': 'WebAuthn'
+                    }
+                }
+            }
         }
         return res.get(key, {}) if key else res
-
-    def _get_message(self, options):
-        challenge_text = get_optional(options, f"{self.get_class_type()}_{ACTION.CHALLENGETEXT}")
-        return challenge_text.format(self.token.description) if challenge_text else ''
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -86,17 +113,17 @@ class PasskeyTokenClass(TokenClass):
                 raise ParameterError("User must be provided for passkey enrollment!",
                                      id=ERROR.PARAMETER_USER_MISSING)
 
-            response_detail = TokenClass.get_init_detail(self, params, user)
+            response_detail: dict = TokenClass.get_init_detail(self, params, user)
 
             nonce = self._get_nonce()
-            challenge_validity = int(get_from_config(WEBAUTHNCONFIG.CHALLENGE_VALIDITY_TIME,
-                                                     get_from_config('DefaultChallengeValidityTime', 120)))
-            challenge = Challenge(serial=self.token.serial,
-                                  transaction_id=get_optional(params, 'transaction_id'),
-                                  challenge=bytes_to_base64url(nonce),
-                                  data=None,
-                                  session=get_optional(params, 'session'),
-                                  validitytime=challenge_validity)
+            challenge_validity: int = int(get_from_config(WEBAUTHNCONFIG.CHALLENGE_VALIDITY_TIME,
+                                                          get_from_config('DefaultChallengeValidityTime', 120)))
+            challenge: Challenge = Challenge(serial=self.token.serial,
+                                             transaction_id=get_optional(params, 'transaction_id'),
+                                             challenge=bytes_to_base64url(nonce),
+                                             data=None,
+                                             session=get_optional(params, 'session'),
+                                             validitytime=challenge_validity)
             challenge.save()
 
             # Excluded Credentials
@@ -111,19 +138,22 @@ class PasskeyTokenClass(TokenClass):
                                                        COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256])
 
             # User Verification
-            user_verification = UserVerificationRequirement.PREFERRED
-            uv_param = get_optional(params, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT)
-            if uv_param:
-                user_verification = UserVerificationRequirement(uv_param)
+            user_verification: UserVerificationRequirement = UserVerificationRequirement.PREFERRED
+            if WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT in params:
+                user_verification = UserVerificationRequirement(params[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT])
 
-            registration_options = generate_registration_options(
+            # Attestation (None is recommended for passkeys)
+            attestation: AttestationConveyancePreference = AttestationConveyancePreference.NONE
+            if PasskeyAction.AttestationConveyancePreference in params:
+                attestation = AttestationConveyancePreference(params[PasskeyAction.AttestationConveyancePreference])
+
+            registration_options: PublicKeyCredentialCreationOptions = generate_registration_options(
                 rp_id=get_required(params, WEBAUTHNACTION.RELYING_PARTY_ID),
                 rp_name=get_required(params, WEBAUTHNACTION.RELYING_PARTY_NAME),
                 user_id=self.token.serial.encode("utf-8"),
                 user_name=user.login,
-                user_display_name=str(user),
-                # Attestation=None is recommended for passkeys
-                attestation=AttestationConveyancePreference.NONE,
+                user_display_name=user.login,
+                attestation=attestation,
                 authenticator_selection=AuthenticatorSelectionCriteria(
                     resident_key=ResidentKeyRequirement.REQUIRED,
                     user_verification=user_verification,
@@ -134,7 +164,7 @@ class PasskeyTokenClass(TokenClass):
                 timeout=12000,
             )
 
-            options_json = options_to_json(registration_options)
+            options_json: str = options_to_json(registration_options)
             response_detail["passkey_registration"] = options_json
             response_detail["transaction_id"] = challenge.transaction_id
 
@@ -159,7 +189,7 @@ class PasskeyTokenClass(TokenClass):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
             # Set the description in the first enrollment step
             if "description" in param:
-                self.set_description(get_optional(param, "description", default=""))
+                self.set_description(param["description"])
 
         elif attestation and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Finalize the registration by verifying the registration data from the authenticator
@@ -174,7 +204,7 @@ class PasskeyTokenClass(TokenClass):
             if not len(challenge_list):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
             try:
-                registration_verification = verify_registration_response(
+                registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
                         "id": cred_id,
                         "rawId": cred_id_raw,
@@ -195,7 +225,7 @@ class PasskeyTokenClass(TokenClass):
 
             # Verification successful, set the token to enrolled and save information returned by the authenticator
             self.token.rollout_state = ROLLOUTSTATE.ENROLLED
-            public_key_enc = bytes_to_base64url(registration_verification.credential_public_key)
+            public_key_enc: str = bytes_to_base64url(registration_verification.credential_public_key)
             self.add_tokeninfo("public_key", public_key_enc)
             self.add_tokeninfo("aaguid", registration_verification.aaguid)
             self.add_tokeninfo("sign_count", registration_verification.sign_count)
@@ -203,9 +233,21 @@ class PasskeyTokenClass(TokenClass):
             self.set_otpkey(bytes_to_base64url(registration_verification.credential_id))
             # Add a hash of the credential_id to the token info to be able to find
             # the token faster given the credential_id
-            h = sha256(registration_verification.credential_id)
-            self.add_tokeninfo("credential_id_hash", h.hexdigest())
+            self.add_tokeninfo("credential_id_hash", sha256(registration_verification.credential_id).hexdigest())
 
+            # If the attestation object contains a x5c certificate, save it in the token info
+            # and set the description to the CN if it is not already set
+            if registration_verification.attestation_object:
+                att_obj: AttestationObject = parse_attestation_object(registration_verification.attestation_object)
+                if att_obj.att_stmt and att_obj.att_stmt.x5c:
+                    att_cert: Certificate = cryptography.x509.load_der_x509_certificate(att_obj.att_stmt.x5c[0])
+                    pem: str = (att_cert.public_bytes(serialization.Encoding.PEM)
+                                .decode("utf-8").replace("\n", ""))
+                    self.add_tokeninfo("attestation_certificate", pem)
+                    if not self.token.description:
+                        attributes: list[NameAttribute] = att_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+                        if attributes:
+                            self.set_description(attributes[0].value)
         return response_detail
 
     @check_token_locked
@@ -213,11 +255,21 @@ class PasskeyTokenClass(TokenClass):
         """
         :param otpval: Unused for this token type
         :type otpval: None
-        :param counter: The authentication counter
+        :param counter: Unused for this token type
         :type counter: int
         :param window: Unused for this token type
         :type window: None
         :param options: Contains the data from the client, along with policy configurations.
+                        The following keys are required:
+                        - "challenge"
+                        - "authenticatorData"
+                        - "clientDataJSON"
+                        - "signature"
+                        - "userHandle"
+                        - "HTTP_ORIGIN"
+                        The following keys are optional:
+                        - "webauthn_user_verification_requirement"
+
         :type options: dict
         :return: A numerical value where values larger than zero indicate success.
         :rtype: int
@@ -225,6 +277,7 @@ class PasskeyTokenClass(TokenClass):
 
         credential_id = bytes_to_base64url(self.token.get_otpkey().getKey())
         rp_id = self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID)
+        user_verification = get_optional(options, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, "preferred")
         try:
             res = verify_authentication_response(
                 credential={
@@ -243,13 +296,12 @@ class PasskeyTokenClass(TokenClass):
                 expected_challenge=get_required(options, "challenge").encode("utf-8"),
                 expected_rp_id=rp_id,
                 expected_origin=get_required(options, "HTTP_ORIGIN"),
-                require_user_verification=True,
+                require_user_verification=user_verification == "required",
                 credential_current_sign_count=int(self.get_tokeninfo("sign_count")),
                 credential_public_key=base64url_to_bytes(self.get_tokeninfo("public_key")),
             )
         except InvalidAuthenticationResponse as ex:
             log.info(f"Passkey authentication failed: {ex}")
-            print(f"Passkey authentication failed: {ex}")
             return -1
 
         self.add_tokeninfo("sign_count", res.new_sign_count)
@@ -273,7 +325,7 @@ class PasskeyTokenClass(TokenClass):
         challenge = bytes_to_base64url(geturandom(32))
         transaction_id = get_rand_digit_str(20)
         message = lazy_gettext("Please authenticate with your Passkey!")
-        db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
+        db_challenge = Challenge(self.get_serial(), transaction_id=transaction_id, challenge=challenge)
         db_challenge.save()
         ret = {
             "transaction_id": transaction_id,

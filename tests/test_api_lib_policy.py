@@ -45,8 +45,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait,
-                                           webauthntoken_auth, webauthntoken_authz,
-                                           webauthntoken_enroll, webauthntoken_request,
+                                           fido2_auth, webauthntoken_authz,
+                                           fido2_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
@@ -2141,7 +2141,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             'user': 'foo'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2152,7 +2152,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             'serial': WebAuthnTokenClass.get_class_prefix() + '123'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2163,7 +2163,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             'serial': 'FOO123'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
                          None)
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2182,7 +2182,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             'user': 'foo'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2205,7 +2205,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'user': 'foo',
             'pass': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2218,7 +2218,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'serial': WebAuthnTokenClass.get_class_prefix() + '123',
             'pass': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2231,7 +2231,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'serial': 'FOO123',
             'pass': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
                          None)
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2251,7 +2251,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'user': 'foo',
             'pass': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2274,7 +2274,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'username': 'foo',
             'password': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2294,7 +2294,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'username': 'foo',
             'password': '1234'
         }
-        webauthntoken_auth(request, None)
+        fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
@@ -2434,7 +2434,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
 
         # Malformed RP_ID
         set_policy(
@@ -2448,7 +2448,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
 
         # Missing RP_NAME
         set_policy(
@@ -2461,7 +2461,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
 
         set_policy(
             name="WebAuthn1",
@@ -2475,7 +2475,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type()
         }
-        webauthntoken_enroll(request, None)
+        fido2_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID),
                          rp_id)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME),
@@ -2498,7 +2498,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             "type": "footoken"
         }
-        webauthntoken_enroll(request, None)
+        fido2_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID),
                          None),
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME),
@@ -2534,7 +2534,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type()
         }
-        webauthntoken_enroll(request, None)
+        fido2_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
@@ -2559,21 +2559,21 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
-            webauthntoken_enroll(request, None)
+            fido2_enroll(request, None)
 
         # Reset policies
         set_policy(

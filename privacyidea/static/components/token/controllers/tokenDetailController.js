@@ -94,27 +94,31 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 String.fromCodePoint(byte),).join("");
             return btoa(binString);
         };
-
+        let mediation = "silent";
         const available = PublicKeyCredential.isConditionalMediationAvailable()
             .then((available) => {
                 console.log("isConditionalMediationAvailable: " + available);
+                if (available) {
+                    mediation = "conditional";
+                }
             });
         $scope.testPasskey = function () {
-            $http.post(validateUrl + "/initialize", {}).then(function (response) {
-                    let data = response.data.detail;
+            $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
+                    let data = response.data.detail.passkey;
                     console.log(data);
                     navigator.credentials.get({
                         publicKey: {
                             challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
                             rpId: data.rpId,
-                            userVerification: "preferred",
+                            userVerification: data.user_verification,
                         },
                     }).then(credential => {
                         console.log(credential);
                         let params = {
                             transaction_id: data.transaction_id,
                             credential_id: credential.id,
-                            authenticatorData: $scope.bytesToBase64(new Uint8Array(credential.response.authenticatorData)),
+                            authenticatorData: $scope.bytesToBase64(
+                                new Uint8Array(credential.response.authenticatorData)),
                             clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
                             signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
                             userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
