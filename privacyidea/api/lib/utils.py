@@ -39,7 +39,7 @@ import re
 from copy import copy
 from urllib.parse import unquote
 from flask import (jsonify,
-                   current_app)
+                   current_app, Response)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -132,7 +132,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     return ret
 
 
-def send_result(obj, rid=1, details=None):
+def send_result(obj, rid=1, details=None) -> Response:
     """
     sendResult - return a json result document
 

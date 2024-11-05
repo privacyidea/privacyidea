@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 from hashlib import sha256
 
 import cryptography.x509
@@ -83,13 +82,18 @@ class PasskeyTokenClass(TokenClass):
                 SCOPE.AUTH: {
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
-                        'desc': _("Use an alternative challenge text for telling "
-                                  "the user to confirm the login with his WebAuthn token. "
-                                  "You can also use tags for automated replacement. "
-                                  "Check out the documentation for more details.")
+                        'desc': _("Alternative challenge message to use when authenticating with a passkey."
+                                  "You can also use tags for replacement, "
+                                  "check the documentation for more details.")
                     }
                 },
                 SCOPE.ENROLL: {
+                    ACTION.CHALLENGETEXT: {
+                        'type': 'str',
+                        'desc': _("Alternative challenge message to use when registering a passkey."
+                                  "You can also use tags for replacement, "
+                                  "check the documentation for more details.")
+                    },
                     PasskeyAction.AttestationConveyancePreference: {
                         'type': 'str',
                         'desc': _("Request attestation from the authenticator during the registration. The attestation "

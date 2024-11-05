@@ -477,13 +477,13 @@ def check():
         serials = details.get("serial")
     #serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
      #          if 'multi_challenge' in details else details.get('serial'))
-    r = send_result(result, rid=2, details=details)
+    ret = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
-                        "authentication": r.json.get("result").get("authentication") or "",
+                        "authentication": ret.json.get("result").get("authentication") or "",
                         "serial": serials,
                         "token_type": details.get("type")})
-    return r
+    return ret
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])

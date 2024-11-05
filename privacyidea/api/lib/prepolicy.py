@@ -1931,6 +1931,24 @@ def fido2_auth(request, action):
     return True
 
 
+def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
+    """
+    Get the challenge texts for the given token types and scope.
+    Returns a dictionary with the token type as key and the challenge text as value.
+    If no challenge text is found for a token type, the value will be an empty string.
+    """
+    res: dict[str, str] = {}
+    for t in token_types:
+        action = f"{t}_{ACTION.CHALLENGETEXT}"
+        challenge_text_policies = (Match.user(g, scope=scope, action=action, user_object=None)
+                                   .action_values(unique=True, allow_white_space_in_action=True,
+                                                  write_to_audit_log=False))
+        res[t] = (list(challenge_text_policies)[0]
+                  if challenge_text_policies
+                  else "")
+    return res
+
+
 def fido2_enroll(request, action):
     """
     This is a token specific wrapper for FIDO2 token and the endpoint /token/init.
@@ -2041,21 +2059,16 @@ def fido2_enroll(request, action):
             raise PolicyError(
                 f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM} must be one of {', '.join(ATTESTATION_FORMS)}")
 
-        # Challenge text policies for WebAuthn and Passkey
-        for t in types:
-            action = f"{t}_{ACTION.CHALLENGETEXT}"
-            challenge_text_policies = (Match.user(g, scope=SCOPE.ENROLL, action=action, user_object=user_object)
-                                       .action_values(unique=True, allow_white_space_in_action=True,
-                                                      write_to_audit_log=False))
-            challenge_text = (list(challenge_text_policies)[0]
-                              if challenge_text_policies
-                              else DEFAULT_CHALLENGE_TEXT_ENROLL)
-            request.all_data[action] = challenge_text
-
         avoid_double_registration_policy = Match.user(g,
                                                       scope=SCOPE.ENROLL,
                                                       action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
                                                       user_object=user_object).any()
+
+        # Challenge texts
+        challenge_texts = _get_challenge_texts_for_types(types)
+        for t, text in challenge_texts.items():
+            if text:
+                request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
 
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
