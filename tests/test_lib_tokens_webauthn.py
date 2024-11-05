@@ -143,13 +143,13 @@ PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = [
 ]
 ALLOWED_TRANSPORTS = "usb ble nfc"
 CRED_ID = 'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_EUuOHZUI6x_gC32LQ'
-PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c'\
+PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c' \
           '22582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a'
 
-URL_DECODE_TEST_STRING = 'MEQCIBxR_Zn2XNp8yp4gVaFWU7xdpdAjkBXpXPphKPrgc_4uAiBAB0oVN-8ryLRfo-koEF5NLn1J\r\n'\
+URL_DECODE_TEST_STRING = 'MEQCIBxR_Zn2XNp8yp4gVaFWU7xdpdAjkBXpXPphKPrgc_4uAiBAB0oVN-8ryLRfo-koEF5NLn1J\r\n' \
                          'Cj8yyeCsp1U7mhR32A'
-URL_DECODE_EXPECTED_RESULT = b'0D\x02 \x1cQ\xfd\x99\xf6\\\xda|\xca\x9e U\xa1VS\xbc]\xa5\xd0#\x90\x15\xe9\\\xfaa(\xfa'\
-                             b'\xe0s\xfe.\x02 @\x07J\x157\xef+\xc8\xb4_\xa3\xe9(\x10^M.}I\n?2\xc9\xe0\xac\xa7U;\x9a'\
+URL_DECODE_EXPECTED_RESULT = b'0D\x02 \x1cQ\xfd\x99\xf6\\\xda|\xca\x9e U\xa1VS\xbc]\xa5\xd0#\x90\x15\xe9\\\xfaa(\xfa' \
+                             b'\xe0s\xfe.\x02 @\x07J\x157\xef+\xc8\xb4_\xa3\xe9(\x10^M.}I\n?2\xc9\xe0\xac\xa7U;\x9a' \
                              b'\x14w\xd8'
 NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL = {
     'clientData': b'eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZkszN3hLZGhXSmhVNmQyVEFH'
@@ -166,7 +166,7 @@ NONE_ATTESTATION_USER_DISPLAY_NAME = '<john.doe.resolver1@foorealm>'
 NONE_ATTESTATION_USER_ID = b'WAN000136AE'
 NONE_ATTESTATION_ATTESTATION_FORM = 'none'
 NONE_ATTESTATION_CRED_ID = 'XyBvPatPc3biviiMX2Rkq5Vj-W6Pk6RtNi6r7v0dSgrLYaPxxWi0qxhAbrMBQa-HYM1FYKmUDAAkj3ekCoITEw'
-NONE_ATTESTATION_PUB_KEY = 'a5010203262001215820d210be8ddfb5b0bc0be1ea8deaedec197e43e1fece4eb95791e97e1d9219491f22582'\
+NONE_ATTESTATION_PUB_KEY = 'a5010203262001215820d210be8ddfb5b0bc0be1ea8deaedec197e43e1fece4eb95791e97e1d9219491f22582' \
                            '0f80e408b103d424808474999556a4e2c76453cfd114295a39bc9325a83b84416'
 
 SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL = {
@@ -282,9 +282,9 @@ class WebAuthnTokenTestCase(MyTestCase):
             self.token.get_init_detail(self.init_params)
 
     def test_02_token_init(self):
-        web_authn_register_request = self\
-            .token\
-            .get_init_detail(self.init_params, self.user)\
+        web_authn_register_request = self \
+            .token \
+            .get_init_detail(self.init_params, self.user) \
             .get("webAuthnRegisterRequest")
 
         self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
@@ -511,6 +511,49 @@ class WebAuthnTokenTestCase(MyTestCase):
                    "HTTP_ORIGIN": ORIGIN,
                    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
                }})
+
+    def test_11_uv_required(self):
+        self._setup_token()
+        # Adjust the token to be able to verify the data used in this test
+        self.token.add_tokeninfo(WEBAUTHNINFO.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+                                                       "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
+                                                       "5a1bd6d263a1554ea4107b74e3e12844c60")
+        self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
+                                                                      "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
+        self.token.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID, "cool.nils")
+
+        # Try to authenticate with authenticatordata where the UV bit is not set (B at the end)
+        # and UV=required, should fail
+        res = self.token.check_otp(otpval=None, options={
+            "credentialid": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+            "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcBAAAATQ",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJdndQ"
+                          "aklFeDNmbXgtOCIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZPM6"
+                             "0iWyPNtX",
+            "user": self.user,
+            "challenge": hexlify_and_unicode(webauthn_b64_decode("1BnSt4TYHSsNmQLnQKJr1afBBbJbwIvwPjIEx3fmx-8")),
+            "HTTP_ORIGIN": "https://cool.nils:5000",
+            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: "required"
+        })
+        self.assertEqual(res, -1)
+
+        # Try to authenticate with authenticatordata where the UV bit is set (F at the end)
+        # and UV=required, should succeed
+        res = self.token.check_otp(otpval=None, options={
+            "credentialid": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+            "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcFAAAATw",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFLRUVz"
+                          "R0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9GbHT"
+                             "-mBQrM",
+            "user": self.user,
+            "challenge": hexlify_and_unicode(webauthn_b64_decode("jQcrMyYAcLCc3AnuyiuiF78CPaXH1KEEsGEknGwhrXo")),
+            "HTTP_ORIGIN": "https://cool.nils:5000",
+            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: "required"
+        })
+        # Returns the sign count on success which is 79
+        self.assertEqual(res, 79)
 
 
 class WebAuthnTestCase(unittest.TestCase):
@@ -801,13 +844,13 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     nonce2 = 'FnyL0FzVVECu9wMHj2PMXsEPXkLpC--6AQcGn4wY_xg'
 
     init_params = {
-            WEBAUTHNACTION.RELYING_PARTY_ID: rp_id,
-            WEBAUTHNACTION.RELYING_PARTY_NAME: rp_name,
-            WEBAUTHNACTION.TIMEOUT: TIMEOUT,
-            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-        }
+        WEBAUTHNACTION.RELYING_PARTY_ID: rp_id,
+        WEBAUTHNACTION.RELYING_PARTY_NAME: rp_name,
+        WEBAUTHNACTION.TIMEOUT: TIMEOUT,
+        WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+        WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+    }
     auth_options = {
         WEBAUTHNACTION.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
         WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,

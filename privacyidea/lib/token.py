@@ -1182,10 +1182,9 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None,
-               tokenkind=None):
+def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
-    create a new token or update an existing token
+    Create a new token or update an existing token with the specified parameters.
 
     :param param: initialization parameters like
 

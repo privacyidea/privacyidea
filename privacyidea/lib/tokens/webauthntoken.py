@@ -1216,6 +1216,31 @@ class WebAuthnTokenClass(TokenClass):
             user_handle = getParam(options, "userhandle", optional)
             assertion_client_extensions = getParam(options, "assertionclientextensions", optional)
 
+            # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
+            # policy exception.
+            allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
+            if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
+                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
+
+            # Check if the attestation certificate is
+            # authorized. If not, we can raise a policy exception.
+            if not attestation_certificate_allowed(
+                    {
+                        "attestation_issuer": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER),
+                        "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
+                        "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
+                    },
+                    getParam(options, WEBAUTHNACTION.REQ, optional)):
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate "
+                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
+
             try:
                 user = self._get_webauthn_user(getParam(options, "user", required))
             except ParameterError:
@@ -1257,33 +1282,6 @@ class WebAuthnTokenClass(TokenClass):
                 # The authentication ceremony failed.
                 log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))
                 return -1
-
-            # At this point we can check, if the attestation certificate is
-            # authorized. If not, we can raise a policy exception.
-            if not attestation_certificate_allowed(
-                    {
-                        "attestation_issuer": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER),
-                        "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
-                        "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
-                    },
-                    getParam(options, WEBAUTHNACTION.REQ, optional)
-            ):
-                log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate "
-                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
-
-            # Now we need to check, if a whitelist for AAGUIDs exists, and if
-            # so, if this device is whitelisted. If not, we again raise a
-            # policy exception.
-            allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
-            if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
-                log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
-                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
 
             # All clear? Nice!
             return self.get_otp_count()

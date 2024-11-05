@@ -163,7 +163,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @log_with(log, log_entry=False)
 def init():
     """
-    create a new token.
+    Create a new token with the specified parameters.
 
     :jsonparam otpkey: required: the secret key of the token
     :jsonparam genkey: set to =1, if key should be generated. We either
@@ -319,8 +319,8 @@ def init():
             raise e
 
         # Check if a containerSerial is set and assign the token to the container
-        if "container_serial" in param:
-            container_serial = param.get("container_serial")
+        container_serial = param.get("container_serial", {})
+        if container_serial:
             # Check if user is allowed to add tokens to containers
             try:
                 container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
