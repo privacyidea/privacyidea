@@ -13,7 +13,7 @@
     </div>
     <span class="filter-text"><mat-icon class="filter-icon">filter_alt</mat-icon>Filter by:&nbsp;
       @for (filter of apiFilter; track filter) {
-        <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-span">
+        <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-button">
           <mat-icon class="filter-button-icon"
                     [ngClass]="this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove-icon' : 'add-icon'">
             {{ this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove_circle' : 'add_circle' }}

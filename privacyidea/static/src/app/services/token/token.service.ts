@@ -21,10 +21,10 @@ export class TokenService {
     'userid',
     'resolver',
     'active',
-    /*'assigned',
-    'container_serial',
+    'assigned',
     'infokey',
-    'infovalue', TODO fix not working and missing query params*/
+    'infovalue',
+    'container_serial',
   ];
 
   private getHeaders(): HttpHeaders {
@@ -78,7 +78,12 @@ export class TokenService {
       const {filterPairs, remainingFilterText} = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
 
       filterPairs.forEach(({label, value}) => {
-        params = params.set(label, `*${value}*`);
+        if (label === 'user' || label === 'infokey' || label === 'infovalue' || label === 'active'
+          || label === 'assigned' || label === 'container_serial') {
+          params = params.set(label, `${value}`);
+        } else {
+          params = params.set(label, `*${value}*`);
+        }
       });
 
       /* TODO global filtering is missing in api

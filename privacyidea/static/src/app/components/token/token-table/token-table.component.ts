@@ -98,7 +98,7 @@ export class TokenTableComponent {
   }
 
   handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.filterValue = (event.target as HTMLInputElement).value.trim();
     this.pageIndex = 0;
     this.fetchTokenData()
   }

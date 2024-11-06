@@ -13,7 +13,7 @@ export class TableUtilsService {
     filterPairs: FilterPair[],
     remainingFilterText: string
   } {
-    const lowerFilterValue = filterValue.trim().toLowerCase(); // TODO lower case doesn't work for container
+    const lowerFilterValue = filterValue.trim();
     const filterLabels = apiFilter.map(column => column.toLowerCase() + ':');
     const filterValueSplit = lowerFilterValue.split(' ');
     const filterPairs: FilterPair[] = [];

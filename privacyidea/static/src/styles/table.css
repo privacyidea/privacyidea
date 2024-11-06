@@ -89,13 +89,17 @@ span {
   align-items: center;
 }
 
-.keyword-span {
-  background-color: #e2e2e2;
+.keyword-button {
+  background-color: #f3f3f3;
   border-radius: var(--border-radius);
   padding: 2px 8px;
   height: 28px;
   margin: 3px;
   box-shadow: none;
+}
+
+.keyword-button:hover .add-icon {
+  color: #9ABF00;
 }
 
 .filter-button-icon {
@@ -107,10 +111,6 @@ span {
 
 .add-icon {
   color: #999999;
-}
-
-.keyword-span:hover .add-icon {
-  color: #9ABF00;
 }
 
 .remove-icon {

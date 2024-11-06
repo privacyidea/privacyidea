@@ -45,7 +45,11 @@ export class ContainerService {
       const {filterPairs, remainingFilterText} = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
 
       filterPairs.forEach(({label, value}) => {
-        params = params.set(label, `${value}`); // TODO wildcards are missing in api
+        if (label === 'user' || label === 'generic' || label === 'container_serial' || label === 'token_serial') {
+          params = params.set(label, `${value}`);
+        } else {
+          params = params.set(label, `*${value}*`);
+        }
       });
 
       /* TODO global filtering is missing in api
