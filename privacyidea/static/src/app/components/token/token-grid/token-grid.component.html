@@ -4,6 +4,7 @@
       <div class="tile-content">
         <app-token-card
           (tabChange)="onTabChange($event)"
+          [containerIsSelected]="containerIsSelected"
           [selectedTabIndex]="selectedTabIndex"
           [tokenIsSelected]="tokenIsSelected">
         </app-token-card>
@@ -13,20 +14,21 @@
       <div class="tile-content">
         <main>
           @if (selectedTabIndex === 0) {
-            @if (!tokenIsSelected()) {
-              <app-token-table [serial]="serial" [tokenIsSelected]="tokenIsSelected"></app-token-table>
-            } @else {
+            @if (tokenIsSelected()) {
               <app-token-details [serial]="serial"></app-token-details>
+            } @else {
+              <app-token-table [serial]="serial" [tokenIsSelected]="tokenIsSelected"></app-token-table>
             }
-          } @else {
-            <div class="tile-content">
-              <main>
-                <app-container-table></app-container-table>
-              </main>
-            </div>
+          } @else if (selectedTabIndex === 1) {
+            @if (containerIsSelected()) {
+              <app-container-details [serial]="serial"></app-container-details>
+            } @else {
+              <app-container-table [serial]="serial" [containerIsSelected]="containerIsSelected"></app-container-table>
+            }
           }
         </main>
       </div>
     </mat-grid-tile>
+
   </mat-grid-list>
 </div>

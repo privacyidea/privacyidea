@@ -10,7 +10,7 @@
   transition: 0ms;
 }
 
-.card-button-delete{
+.card-button-delete {
   height: 40px;
   width: 100%;
   border: none;
@@ -29,7 +29,7 @@
   transition: 0ms;
 }
 
-.card-button-reset{
+.card-button-reset {
   height: 40px;
   width: 100%;
   border: none;
@@ -48,7 +48,17 @@
   transition: 0ms;
 }
 
-.card-button.activ,
+.card-button-activ {
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-blue-inset);
+  box-shadow: var(--box-shadow-blue-inset);
+  transition: 0ms;
+}
+
 .card-button:hover {
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);
@@ -60,6 +70,6 @@
 }
 
 .mat-delete {
-  background-color:var(--red-light);
+  background-color: var(--red-light);
   color: white;
 }

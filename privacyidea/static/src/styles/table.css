@@ -56,7 +56,6 @@ th:nth-child(even) {
   padding: 2px 6px;
   color: white;
   display: inline-block;
-  cursor: pointer;
 }
 
 .highlight-warning {
@@ -65,10 +64,35 @@ th:nth-child(even) {
   padding: 2px 6px;
   color: white;
   display: inline-block;
-  cursor: pointer;
 }
 
 .highlight-false {
+  background-color: var(--red-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+}
+
+.highlight-true-clickable {
+  background-color: var(--green-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.highlight-warning-clickable {
+  background-color: var(--yellow-light-active);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: white;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.highlight-false-clickable {
   background-color: var(--red-light);
   border-radius: 4px;
   padding: 2px 6px;

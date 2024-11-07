@@ -1,4 +1,4 @@
-<div aria-label="Token Table" class="item-table">
+<div aria-label="Details Tables" class="item-table">
   <div class="detail-table-wrapper">
     <div class="details-section">
       <div class="token-detail-header"><h2>Details for Token </h2>
@@ -18,7 +18,15 @@
                 }
               </mat-list>
             } @else {
-              {{ element.value }}
+              <span [ngClass]="{
+                  'highlight-true': (element.key.key === 'active' && element.value === true) ||
+                                  (element.key.key === 'failcount' && element.value == 0),
+                  'highlight-warning': (element.key.key === 'failcount' && element.value >= 1 && element.value <= 9),
+                  'highlight-false': (element.key.key === 'active' && element.value !== true) ||
+                                    (element.key.key === 'failcount' && (element.value < 0 || element.value > 9))
+                }">
+                {{ element.key.key === 'active' ? (element.value ? 'active' : 'deactivated') : element.value }}
+              </span>
             }
           </td>
         </ng-container>

@@ -33,10 +33,13 @@ import {NgClass} from '@angular/common';
 export class TokenCardComponent {
   @Input() selectedTabIndex: number = 0;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Output() tabChange: EventEmitter<number> = new EventEmitter<number>();
 
   onTabChange(event: MatTabChangeEvent): void {
     this.selectedTabIndex = event.index;
+    this.tokenIsSelected.set(false);
+    this.containerIsSelected.set(false);
     this.tabChange.emit(this.selectedTabIndex);
   }
 }

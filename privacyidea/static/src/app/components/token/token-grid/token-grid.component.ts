@@ -7,6 +7,7 @@ import {MatTab, MatTabGroup} from '@angular/material/tabs';
 import {TokenCardComponent} from '../token-card/token-card.component';
 import {ContainerTableComponent} from '../container-table/container-table.component';
 import {TokenDetailsComponent} from '../token-details/token-details.component';
+import {ContainerDetailsComponent} from '../container-details/container-details.component';
 
 @Component({
   selector: 'app-token-grid',
@@ -24,6 +25,7 @@ import {TokenDetailsComponent} from '../token-details/token-details.component';
     TokenCardComponent,
     ContainerTableComponent,
     TokenDetailsComponent,
+    ContainerDetailsComponent,
   ],
   templateUrl: './token-grid.component.html',
   styleUrl: './token-grid.component.css'
@@ -31,6 +33,7 @@ import {TokenDetailsComponent} from '../token-details/token-details.component';
 export class TokenGridComponent {
   selectedTabIndex: number = 0;
   @Output() tokenIsSelected = signal(false);
+  @Output() containerIsSelected = signal(false);
   @Output() serial = signal('');
 
   onTabChange(index: number): void {

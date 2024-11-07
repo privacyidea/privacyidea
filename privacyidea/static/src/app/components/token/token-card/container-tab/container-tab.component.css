@@ -10,7 +10,17 @@
   transition: 0ms;
 }
 
-.card-button.activ,
+.card-button-activ {
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-blue-inset);
+  box-shadow: var(--box-shadow-blue-inset);
+  transition: 0ms;
+}
+
 .card-button:hover {
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);

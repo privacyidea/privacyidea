@@ -1,82 +1,82 @@
 <br/>
-@if (!tokenIsSelected()) {
-  <mat-list>
-    <mat-list-item>
-      <button class="activ card-button" mat-flat-button>
-        <mat-icon>policy</mat-icon>
-        Overview
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>add_moderator</mat-icon>
-        Enrollment
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>file_upload</mat-icon>
-        Import
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>cached</mat-icon>
-        Show Challenges
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>now_widgets</mat-icon>
-        Applications
-      </button>
-    </mat-list-item>
-    <br/>
-    <mat-divider/>
-    <br/>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>help_outline</mat-icon>
-        Identify Serial Number
-      </button>
-    </mat-list-item>
-    <br/>
-    <mat-divider/>
-    <br/>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>info_outline</mat-icon>
-        Help
-      </button>
-    </mat-list-item>
-    <mat-list-item disabled>
-    </mat-list-item>
-  </mat-list>
-} @else {
-  <mat-list>
-    <mat-list-item>
-      <button class="card-button" mat-flat-button>
-        <mat-icon>policy</mat-icon>
-        Overview
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="activ card-button" mat-flat-button>
-        <mat-icon>health_and_safety</mat-icon>
-        Token Details
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button-reset" mat-flat-button>
-        <mat-icon>lock_reset</mat-icon>
-        Reset Fail Count
-      </button>
-    </mat-list-item>
-    <mat-list-item>
-      <button class="card-button-delete" color="alert" mat-flat-button>
-        <mat-icon>delete</mat-icon>
-        Delete
-      </button>
-    </mat-list-item>
-  </mat-list>
-}
+<mat-list>
+  <mat-list-item>
+    <button (click)="tokenIsSelected.set(false)" [ngClass]="{'card-button-activ': !tokenIsSelected(),
+    'card-button': tokenIsSelected()}" mat-flat-button>
+      <mat-icon>policy</mat-icon>
+      Overview
+    </button>
+  </mat-list-item>
+  <div [@toggleState]="tokenIsSelected()">
+    @if (!tokenIsSelected()) {
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>add_moderator</mat-icon>
+          Enrollment
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>file_upload</mat-icon>
+          Import
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>cached</mat-icon>
+          Show Challenges
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>now_widgets</mat-icon>
+          Applications
+        </button>
+      </mat-list-item>
+      <br/>
+      <mat-divider/>
+      <br/>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>help_outline</mat-icon>
+          Identify Serial Number
+        </button>
+      </mat-list-item>
+      <br/>
+      <mat-divider/>
+      <br/>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>info_outline</mat-icon>
+          Help
+        </button>
+      </mat-list-item>
+      <mat-list-item disabled>
+      </mat-list-item>
+    } @else {
+      <mat-list-item>
+        <button [ngClass]="{'card-button-activ': tokenIsSelected(),
+          'card-button': !tokenIsSelected()}" mat-flat-button>
+          <mat-icon>health_and_safety</mat-icon>
+          Token Details
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button-reset" mat-flat-button>
+          <mat-icon>lock_reset</mat-icon>
+          Reset Fail Count
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button-delete" color="alert" mat-flat-button>
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      </mat-list-item>
+      @for (a of [0, 0, 0, 0, 0, 0]; track 0) {
+        <mat-list-item disabled>
+        </mat-list-item>
+      }
+    }
+  </div>
+</mat-list>

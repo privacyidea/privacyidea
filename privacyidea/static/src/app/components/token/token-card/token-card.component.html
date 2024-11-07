@@ -20,7 +20,7 @@
           <mat-icon [ngClass]="{ 'active': selectedTabIndex === 1 }">folder</mat-icon>
           <h4 [ngClass]="{ 'active': selectedTabIndex === 1 }">Container</h4>
         </ng-template>
-        <app-container-tab></app-container-tab>
+        <app-container-tab [containerIsSelected]="containerIsSelected"></app-container-tab>
       </mat-tab>
     </mat-tab-group>
   </mat-card-content>

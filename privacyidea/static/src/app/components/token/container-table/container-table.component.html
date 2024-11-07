@@ -30,10 +30,15 @@
           {{ column.label }}
         </th>
         <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
-          @if (column.key === 'serial' || column.key === 'users' || column.key === 'user_realm'
-          || column.key === 'realms') {
+          @if (column.key === 'users' || column.key === 'user_realm' || column.key === 'realms') {
             <ng-container>
               <a attr.aria-label="{{ column.label }} Link" href="#">
+                {{ element[column.key] }}
+              </a>
+            </ng-container>
+          } @else if (column.key === 'serial') {
+            <ng-container>
+              <a attr.aria-label="{{ column.label }} Link" (click)="containerSelected(element.serial)">
                 {{ element[column.key] }}
               </a>
             </ng-container>

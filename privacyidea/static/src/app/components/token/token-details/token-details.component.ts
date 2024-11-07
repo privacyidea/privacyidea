@@ -13,6 +13,7 @@ import {MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
+import {NgClass} from '@angular/common';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -50,7 +51,8 @@ export const userDetail = [
     MatRow,
     MatRowDef,
     MatTable,
-    MatHeaderCellDef
+    MatHeaderCellDef,
+    NgClass
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -80,8 +82,6 @@ export class TokenDetailsComponent {
   showTokenDetail(serial: string) {
     this.tokenService.getTokenDetails(serial).subscribe({
       next: response => {
-        console.log('Token details response:', response);
-
         const tokenDetails = response.result.value.tokens[0];
         this.detailData.set(details.map(detail => ({
           key: detail,

@@ -39,11 +39,17 @@
   transition: 0ms;
 }
 
-.nav-menu a.active,
 .nav-menu a:hover {
   z-index: 1;
-  box-shadow: 5px 6px var(--blur) #b5b5b5;
   background: var(--background-blue);
+  color: white;
+  transform: translateX(-2px);
+  transition: transform 200ms, box-shadow 200ms ease;
+}
+
+.nav-menu a.active {
+  z-index: 2;
+  background: var(--blue-base);
   color: white;
   transform: translateX(-2px);
   transition: transform 200ms, box-shadow 200ms ease;

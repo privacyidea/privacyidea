@@ -1,4 +1,4 @@
-import {Component, signal, ViewChild} from '@angular/core';
+import {Component, Input, signal, ViewChild, WritableSignal} from '@angular/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
@@ -47,6 +47,8 @@ export class ContainerTableComponent {
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
   protected readonly columns = columns;
+  @Input() serial!: WritableSignal<string>;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -108,5 +110,10 @@ export class ContainerTableComponent {
       user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
     this.dataSource.set(new MatTableDataSource(processedData));
+  }
+
+  containerSelected(serial: string) {
+    this.serial.set(serial);
+    this.containerIsSelected.set(true)
   }
 }
