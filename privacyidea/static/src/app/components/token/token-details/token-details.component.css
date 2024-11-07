@@ -1,1 +1,38 @@
 @import '../../../../styles/table.css';
+
+.detail-table {
+  display: flex;
+  width: auto;
+  max-width: fit-content;
+  padding-left: 10px;
+}
+
+.detail-table-wrapper {
+  display: flex;
+  gap: 20px;
+  width: auto;
+  max-width: fit-content;
+  padding-left: 10px;
+}
+
+.details-section .user-details-section {
+  width: auto;
+  max-width: fit-content;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 7px;
+  border: 1px solid #ddd;
+}
+
+.detail-row {
+  height: 10px;
+}
+
+.token-detail-header {
+  display: flex;
+  gap: 10px;
+}

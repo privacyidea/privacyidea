@@ -1,4 +1,4 @@
-import {Component, effect, Input, signal} from '@angular/core';
+import {Component, effect, Input, signal, WritableSignal} from '@angular/core';
 import {
   MatCell,
   MatCellDef,
@@ -58,27 +58,16 @@ export const userDetail = [
 export class TokenDetailsComponent {
   protected readonly Array = Array;
   protected readonly Object = Object;
-  private serialSignal = signal<string>('');
   detailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
   userDetailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
 
   constructor(private tokenService: TokenService) {
     effect(() => {
-      const serial = this.serialSignal();
-      if (serial) {
-        this.showTokenDetail(serial);
-      }
+      this.showTokenDetail(this.serial());
     });
   }
 
-  @Input()
-  set serial(value: string) {
-    this.serialSignal.set(value);
-  }
-
-  get serial(): string {
-    return this.serialSignal();
-  }
+  @Input() serial!: WritableSignal<string>
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;

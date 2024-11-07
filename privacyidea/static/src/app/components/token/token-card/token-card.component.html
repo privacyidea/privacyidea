@@ -5,15 +5,15 @@
       [(selectedIndex)]="selectedTabIndex"
       animationDuration="200ms"
       fitInkBarToContent
-      mat-stretch-tabs="false"
       mat-align-tabs="center"
+      mat-stretch-tabs="false"
     >
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon [ngClass]="{ 'active': selectedTabIndex === 0 }">shield</mat-icon>
           <h4 [ngClass]="{ 'active': selectedTabIndex === 0 }">Token</h4>
         </ng-template>
-        <app-token-tab></app-token-tab>
+        <app-token-tab [tokenIsSelected]="tokenIsSelected"></app-token-tab>
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>

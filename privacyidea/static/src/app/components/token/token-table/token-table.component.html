@@ -1,50 +1,49 @@
 <div aria-label="Token Table" class="item-table">
-  @if (!tokenIsSelected()) {
-    <div class="filter-paginator-container">
-      <mat-form-field>
-        <mat-label>Filter</mat-label>
-        <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input" class="filter-input" matInput
-               placeholder="Example query: 'type: hotp userid: 1000'">
-      </mat-form-field>
-      <mat-paginator (page)="handlePageEvent($event)" [length]="length"
-                     [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
-                     [pageSize]="pageSize" aria-label="Select page of tokens" showFirstLastButtons>
-      </mat-paginator>
-    </div>
-    <span class="filter-text"><mat-icon class="filter-icon">filter_alt</mat-icon>Filter by:&nbsp;
-      @for (filter of apiFilter; track filter) {
-        <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-button">
+  <div class="filter-paginator-container">
+    <mat-form-field>
+      <mat-label>Filter</mat-label>
+      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input" class="filter-input" matInput
+             placeholder="Example query: 'type: hotp userid: 1000'">
+    </mat-form-field>
+    <mat-paginator (page)="handlePageEvent($event)" [length]="length"
+                   [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
+                   [pageSize]="pageSize" aria-label="Select page of tokens" showFirstLastButtons>
+    </mat-paginator>
+  </div>
+  <span class="filter-text"><mat-icon class="filter-icon">filter_alt</mat-icon>Filter by:&nbsp;
+    @for (filter of apiFilter; track filter) {
+      <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)" class="keyword-button">
           <mat-icon class="filter-button-icon"
                     [ngClass]="this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove-icon' : 'add-icon'">
             {{ this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove_circle' : 'add_circle' }}
           </mat-icon>
-          {{ filter }}
+        {{ filter }}
         </button>
-      }
+    }
     </span>
-    <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()" aria-label="Token Data Table"
-           mat-table matSort class="token-table">
-      @for (column of columnDefinitions; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
-            {{ column.label }}
-          </th>
-          <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
-            @if (column.key === 'username' || column.key === 'container_serial'
-            || column.key === 'user_realm' || column.key === 'realms') {
-              <ng-container>
-                <a attr.aria-label="{{ column.label }} Link" href="#">
-                  {{ element[column.key] }}
-                </a>
-              </ng-container>
-            } @else if (column.key === 'serial') {
-              <ng-container>
-                <a attr.aria-label="{{ column.label }} Link" (click)="tokenSelected(element.serial)">
-                  {{ element[column.key] }}
-                </a>
-              </ng-container>
-            } @else {
-              <ng-container>
+  <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()" aria-label="Token Data Table"
+         class="token-table" mat-table matSort>
+    @for (column of columnDefinitions; track column) {
+      <ng-container [matColumnDef]="column.key">
+        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
+          {{ column.label }}
+        </th>
+        <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
+          @if (column.key === 'username' || column.key === 'container_serial'
+          || column.key === 'user_realm' || column.key === 'realms') {
+            <ng-container>
+              <a attr.aria-label="{{ column.label }} Link" href="#">
+                {{ element[column.key] }}
+              </a>
+            </ng-container>
+          } @else if (column.key === 'serial') {
+            <ng-container>
+              <a attr.aria-label="{{ column.label }} Link" (click)="tokenSelected(element.serial)">
+                {{ element[column.key] }}
+              </a>
+            </ng-container>
+          } @else {
+            <ng-container>
                 <span [ngClass]="{
                   'highlight-true': (column.key === 'active' && element[column.key] === true) ||
                   (column.key === 'failcount' && element[column.key] == 0),
@@ -55,21 +54,17 @@
                   (column.key === 'failcount' ? resetFailCount(element) : null)">
                   {{ column.key === 'active' ? (element[column.key] ? 'active' : 'deactivated') : element[column.key] }}
                 </span>
-              </ng-container>
-            }
-          </td>
-        </ng-container>
-      }
-      <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
-      <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
-      <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
-        <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">No data matching the
-          filter.
+            </ng-container>
+          }
         </td>
-      </tr>
-    </table>
-  }
-  @if (tokenIsSelected()) {
-    <app-token-details [serial]=this.serial></app-token-details>
-  }
+      </ng-container>
+    }
+    <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
+    <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
+    <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">No data matching the
+        filter.
+      </td>
+    </tr>
+  </table>
 </div>

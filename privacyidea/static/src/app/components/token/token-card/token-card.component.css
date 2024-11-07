@@ -18,6 +18,6 @@ h4 {
 }
 
 .active {
-  color: var(--blue2);
+  color: var(--blue-base);
   transition: 200ms;
 }

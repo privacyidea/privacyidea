@@ -1,66 +1,68 @@
-<div class="detail-table-wrapper">
-  <div class="details-section">
-    <h2>Details for Token {{ this.serial }} </h2>
-    <table mat-table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table">
-      <ng-container matColumnDef="key">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">{{ element.key.label }}</td>
-      </ng-container>
-      <ng-container matColumnDef="value">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">
-          @if (isObject(element.value)) {
-            <mat-list>
-              @for (item of parseObjectToList(element.value); track item) {
-                <mat-list-item class="object-row"><span class="object-item">{{ item }}</span></mat-list-item>
-              }
-            </mat-list>
-          } @else if (Array.isArray(element.value)) {
-            <mat-list>
-              @for (item of element.value; track item) {
-                <mat-list-item><span class="object-item">{{ item }}</span></mat-list-item>
-              }
-            </mat-list>
-          } @else {
+<div aria-label="Token Table" class="item-table">
+  <div class="detail-table-wrapper">
+    <div class="details-section">
+      <div class="token-detail-header"><h2>Details for Token </h2>
+        <h2 style="color: var(--blue-base)"> {{ serial() }} </h2></div>
+      <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
+        <ng-container matColumnDef="key">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.key.label }}</td>
+        </ng-container>
+        <ng-container matColumnDef="value">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>
+            @if (isObject(element.value) || Array.isArray(element.value)) {
+              <mat-list>
+                @for (item of parseObjectToList(element.value); track item) {
+                  <mat-list-item class="object-row"><span class="object-item">{{ item }}</span></mat-list-item>
+                }
+              </mat-list>
+            } @else {
+              {{ element.value }}
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="edit">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>
+            @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
+            || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
+            || element.key.key === "tokengroup") {
+              <button mat-fab class="edit-button" (click)="editTokenDetail()">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+        <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+      </table>
+    </div>
+    <br/>
+    <div class="user-details-section">
+      <h3>Assigned User</h3>
+      <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
+        <ng-container matColumnDef="key">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.key.label }}</td>
+        </ng-container>
+        <ng-container matColumnDef="value">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>
             {{ element.value }}
-          }
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="edit">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">
-          @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
-          || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
-          || element.key.key === "tokengroup") {
-            <button mat-fab class="edit-button" (click)="editTokenDetail()"><mat-icon>edit</mat-icon></button>
-          }
-        </td>
-      </ng-container>
-      <tr mat-row *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"></tr>
-    </table>
-  </div>
-  <div class="user-details-section">
-    <h2>Assigned User</h2>
-    <table mat-table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table">
-      <ng-container matColumnDef="key">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">{{ element.key.label }}</td>
-      </ng-container>
-      <ng-container matColumnDef="value">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">
-          {{ element.value }}
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="edit">
-        <th mat-header-cell *matHeaderCellDef class="detail-row"></th>
-        <td mat-cell *matCellDef="let element" class="detail-row">
-          @if (element.key.key === "username") {
-            <button mat-fab class="edit-button" (click)="editTokenDetail()"><mat-icon>edit</mat-icon></button>
-          }
-        </td>
-      </ng-container>
-      <tr mat-row *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"></tr>
-    </table>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="edit">
+          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+          <td *matCellDef="let element" class="detail-row" mat-cell>
+            @if (element.key.key === "username") {
+              <button mat-fab class="edit-button" (click)="editTokenDetail()">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+        <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+      </table>
+    </div>
   </div>
 </div>

@@ -10,6 +10,44 @@
   transition: 0ms;
 }
 
+.card-button-delete{
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-red);
+  box-shadow: var(--box-shadow-red);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-delete.activ,
+.card-button-delete:hover {
+  background: var(--background-red-inset);
+  box-shadow: var(--box-shadow-red-inset);
+  transition: 0ms;
+}
+
+.card-button-reset{
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-green);
+  box-shadow: var(--box-shadow-green);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-reset.activ,
+.card-button-reset:hover {
+  background: var(--background-green-inset);
+  box-shadow: var(--box-shadow-green-inset);
+  transition: 0ms;
+}
+
 .card-button.activ,
 .card-button:hover {
   background: var(--background-blue-inset);
@@ -19,4 +57,9 @@
 
 .mat-divider {
   border-top-color: #E0E2EC;
+}
+
+.mat-delete {
+  background-color:var(--red-light);
+  color: white;
 }

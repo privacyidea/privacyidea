@@ -5,7 +5,7 @@ table {
 
 a {
   text-decoration: none;
-  color: var(--blue1);
+  color: var(--blue-base);
   cursor: pointer;
 }
 
@@ -36,7 +36,7 @@ th:nth-child(even) {
 
 .mat-mdc-form-field {
   font-size: var(--font-size);
-  color: var(--blue1);
+  color: var(--blue-base);
   width: 60%;
 }
 
@@ -51,7 +51,7 @@ th:nth-child(even) {
 }
 
 .highlight-true {
-  background-color: #9ABF00;
+  background-color: var(--green-light);
   border-radius: 4px;
   padding: 2px 6px;
   color: white;
@@ -60,7 +60,7 @@ th:nth-child(even) {
 }
 
 .highlight-warning {
-  background-color: #F0AD4E;
+  background-color: var(--yellow-light-active);
   border-radius: 4px;
   padding: 2px 6px;
   color: white;
@@ -69,7 +69,7 @@ th:nth-child(even) {
 }
 
 .highlight-false {
-  background-color: #bf003a;
+  background-color: var(--red-light);
   border-radius: 4px;
   padding: 2px 6px;
   color: white;
@@ -99,7 +99,7 @@ span {
 }
 
 .keyword-button:hover .add-icon {
-  color: #9ABF00;
+  color: var(--green-light);
 }
 
 .filter-button-icon {
@@ -114,7 +114,7 @@ span {
 }
 
 .remove-icon {
-  color: #bf003a;
+  color: var(--red-light);
 }
 
 .filter-icon {
@@ -122,30 +122,6 @@ span {
   vertical-align: bottom;
   margin-right: -3px;
   font-size: 22px !important;
-}
-
-.detail-table-wrapper {
-  display: block;
-  width: auto;
-  max-width: fit-content;
-  padding-left: 10px;
-}
-
-.details-section .user-details-section {
-  width: auto;
-  max-width: fit-content;
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-.detail-table th,
-.detail-table td {
-  padding: 7px;
-  border: 1px solid #ddd;
-}
-
-.detail-row {
-  height: 10px;
 }
 
 .object-row {

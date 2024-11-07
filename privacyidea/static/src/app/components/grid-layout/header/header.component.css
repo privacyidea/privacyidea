@@ -20,7 +20,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow-logo);
 }
 
 .nav-menu {
@@ -42,8 +42,8 @@
 .nav-menu a.active,
 .nav-menu a:hover {
   z-index: 1;
-  box-shadow: 8px 6px var(--blur) #b5b5b5;
-  background: var(--background-primary);
+  box-shadow: 5px 6px var(--blur) #b5b5b5;
+  background: var(--background-blue);
   color: white;
   transform: translateX(-2px);
   transition: transform 200ms, box-shadow 200ms ease;

@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, Input, WritableSignal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatTab, MatTabLabel} from '@angular/material/tabs';
 import {MatList, MatListItem} from '@angular/material/list';
@@ -21,5 +21,5 @@ import {MatDivider} from '@angular/material/divider';
   styleUrl: './token-tab.component.css'
 })
 export class TokenTabComponent {
-
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
 }

@@ -9,34 +9,75 @@ body {
 }
 
 :root {
-  --blue1: #16536F;
-  --blue2: #1a6081;
-  --blue2-light: #1f7299;
-  --blue3-light: #0b83af;
-  --blue3: #0b7aa2;
+  --font-size: 12px;
   --blur: 8px;
+  --blur-white: 3px;
   --border-radius: 3px;
   --light-distance: -4px;
   --shadow-distance: 4px;
-  --font-size: 12px;
-  --background-primary: linear-gradient(145deg, var(--blue2-light), var(--blue2));
-  --background-primary-inset: linear-gradient(145deg, var(--blue2), var(--blue2-light));
-  --background-green: linear-gradient(145deg, #a4cc00, #8aac00);
-  --background-yellow: linear-gradient(145deg, #E38D13, #e6751a);
-  --background-yellow-inset: linear-gradient(145deg, #e6751a, #E38D13);
+
+  --green-brand-base: hsl(72, 100%, 32%);
+  --green-brand-light: hsl(72, 100%, 37%);
+  --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
+
+  --blue-dark: hsl(198, 66%, 25%);
+  --blue-base: hsl(198, 66%, 30%);
+  --blue-light: hsl(198, 66%, 35%);
+  --blue-light-active: hsl(198, 66%, 40%);
+
+  --green-dark: hsl(120, 39%, 39%);
+  --green-base: hsl(120, 39%, 44%);
+  --green-light: hsl(120, 39%, 49%);
+  --green-light-active: hsl(120, 39%, 54%);
+
+  --red-dark: hsl(342, 100%, 32%);
+  --red-base: hsl(342, 100%, 37%);
+  --red-light: hsl(342, 100%, 42%);
+  --red-light-active: hsl(342, 100%, 57%);
+
+  --yellow-dark: hsl(28, 85%, 45%);
+  --yellow-base: hsl(28, 85%, 50%);
+  --yellow-light: hsl(28, 85%, 55%);
+  --yellow-light-active: hsl(28, 85%, 60%);
+
   --background-secondary: linear-gradient(145deg, white, #e6e6e6);
   --background-secondary-inset: linear-gradient(145deg, #c8c8c8, white);
-  --background-blue: linear-gradient(145deg, var(--blue2), var(--blue2-light));
-  --background-blue-inset: linear-gradient(145deg, var(--blue3-light), var(--blue3));
-  --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) #b5b5b5, var(--light-distance) var(--light-distance) var(--blur) white;
-  --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) #b5b5b5, inset var(--light-distance) var(--light-distance) var(--blur) white;
-  --box-shadow-blue: inset 4px 4px 8px var(--blue2-light), inset -8px -8px 16px var(--blue2);
-  --box-shadow-blue-inset: inset 4px 4px var(--blur) var(--blue2), inset -1px -1px 6px white;
+  --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) #b5b5b5,
+  var(--light-distance) var(--light-distance) var(--blur) white;
+  --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) #b5b5b5,
+  inset var(--light-distance) var(--light-distance) var(--blur) white;
+
+  --background-blue: linear-gradient(145deg, var(--blue-base), var(--blue-light));
+  --background-blue-inset: linear-gradient(145deg, var(--blue-light-active), var(--blue-light));
+  --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-dark);
+  --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur-white) var(--blue-light-active);
+
+  --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
+  --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
+  --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
+  --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur-white) var(--green-light-active);
+
+  --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
+  --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
+  --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
+  --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur-white) var(--red-light-active);
+
+  --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
+  --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
+
+  --box-shadow-logo: 2px 2px var(--blur) #b5b5b5;
+
   --table-color: white;
   --mdc-filled-text-field-container-color: #f3f3f3;
-  --mdc-tab-indicator-active-indicator-color: var(--blue1);
-  --mdc-filled-text-field-focus-active-indicator-color: var(--blue1);
-  --mat-tab-header-active-focus-indicator-color: var(--blue1);
+  --mdc-tab-indicator-active-indicator-color: var(--blue-base);
+  --mdc-filled-text-field-focus-active-indicator-color: var(--blue-base);
+  --mat-tab-header-active-focus-indicator-color: var(--blue-base);
   --mat-tab-header-active-ripple-color: white;
   --mat-tab-header-inactive-ripple-color: white;
 }

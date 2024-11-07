@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output, WritableSignal} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatTabChangeEvent, MatTabHeader, MatTabsModule} from '@angular/material/tabs';
 import {MatIcon} from '@angular/material/icon';
@@ -32,6 +32,7 @@ import {NgClass} from '@angular/common';
 })
 export class TokenCardComponent {
   @Input() selectedTabIndex: number = 0;
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Output() tabChange: EventEmitter<number> = new EventEmitter<number>();
 
   onTabChange(event: MatTabChangeEvent): void {

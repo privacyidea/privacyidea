@@ -1,4 +1,4 @@
-import {Component, signal, ViewChild} from '@angular/core';
+import {Component, Input, signal, ViewChild, WritableSignal} from '@angular/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
@@ -48,13 +48,13 @@ export class TokenTableComponent {
   filterValue = '';
   apiFilter = this.tokenService.apiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
-  serial = '';
 
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() serial!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   protected readonly columns = columns;
-  protected tokenIsSelected = signal(false);
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -140,7 +140,7 @@ export class TokenTableComponent {
   }
 
   tokenSelected(serial: string) {
+    this.serial.set(serial);
     this.tokenIsSelected.set(true)
-    this.serial = serial;
   }
 }
