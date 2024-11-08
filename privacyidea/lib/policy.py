@@ -417,6 +417,10 @@ class ACTION(object):
     CONTAINER_TEMPLATE_DELETE = "container_template_delete"
     CONTAINER_TEMPLATE_LIST = "container_template_list"
     CONTAINER_SET_OPTIONS = "container_set_options"
+    CONTAINER_CLIENT_ROLLOVER = "container_client_rollover"
+    CONTAINER_INITIAL_TOKEN_TRANSFER = "container_initial_token_transfer"
+    CLIENT_TOKEN_DELETABLE = "client_token_deletable"
+    CLIENT_CONTAINER_UNREGISTER = "client_container_unregister"
 
 
 class TYPE(object):
@@ -448,6 +452,7 @@ class GROUP(object):
     SERVICEID = "service ID"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
+    SMARTPHONE = "smartphone"
 
 
 class MAIN_MENU(object):
@@ -2875,13 +2880,15 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.CONTAINER_REGISTRATION_TTL: {
                 'type': 'int',
-                'desc': _('The time in minutes the user has to do the second step of the registration.'
+                'desc': _('The time in minutes the client has to do the second step of the registration. '
                           'The default is ten minutes.'),
                 'group': GROUP.REGISTRATION
             },
             ACTION.CONTAINER_CHALLENGE_TTL: {
                 'type': 'int',
-                'desc': _('The time in minutes the user has to answer a challenge.'
+                'desc': _('After the client (a registered container) has challenged an action such as synchronization '
+                          'or unregistration, this defines the time in minutes that the client has to complete the '
+                          'action. '
                           'The default is two minutes.'),
                 'group': GROUP.REGISTRATION
             },
@@ -2892,6 +2899,30 @@ def get_static_policy_definitions(scope=None):
                     'and synchronization. (default True)'),
                 'group': GROUP.REGISTRATION,
                 'value': ['True', 'False']
+            },
+            ACTION.CONTAINER_CLIENT_ROLLOVER: {
+                'type': 'bool',
+                'desc': _('The client is allowed to perform a rollover of the container and the included tokens.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER: {
+                'type': 'bool',
+                'desc': _('During the first synchronization the server adds token from the client to the container. '
+                          'This allows to register existing devices as a container without manually adding the '
+                          'tokens.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.CLIENT_TOKEN_DELETABLE: {
+                'type': 'bool',
+                'desc': _('The user is allowed to delete tokens locally on the smartphone. '
+                          'The tokens will remain on the server.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.CLIENT_CONTAINER_UNREGISTER: {
+                'type': 'bool',
+                'desc': _('The client is allowed to unregister the container. '
+                          'The container will remain on the server but is not connected to the smartphone.'),
+                'group': GROUP.SMARTPHONE
             }
         }
 

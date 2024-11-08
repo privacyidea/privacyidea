@@ -27,7 +27,7 @@ from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneConta
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
 from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   TokenAdminError, privacyIDEAError, ContainerInvalidChallenge)
+                                   TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
@@ -908,44 +908,36 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("secp256r1", value)
 
     def test_37_init_smartphone_with_options(self):
-        options = {SmartphoneOptions.ALLOW_ROLLOVER: "True",
-                   SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+        options = {SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
                    SmartphoneOptions.HASH_ALGORITHM: "SHA256",
                    SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
-                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                   SmartphoneOptions.FORCE_BIOMETRIC: "False"}
+                   SmartphoneOptions.ENCRYPT_MODE: "GCM"}
 
         smph_serial, _ = init_container({"type": "smartphone", "options": options})
         smartphone = find_container_by_serial(smph_serial)
         container_info = smartphone.get_container_info_dict()
-        self.assertEqual("True", container_info[SmartphoneOptions.ALLOW_ROLLOVER])
         self.assertEqual("secp384r1", container_info[SmartphoneOptions.KEY_ALGORITHM])
         self.assertEqual("SHA256", container_info[SmartphoneOptions.HASH_ALGORITHM])
         self.assertEqual("AES", container_info[SmartphoneOptions.ENCRYPT_ALGORITHM])
         self.assertEqual("x25519", container_info[SmartphoneOptions.ENCRYPT_KEY_ALGORITHM])
         self.assertEqual("GCM", container_info[SmartphoneOptions.ENCRYPT_MODE])
-        self.assertEqual("False", container_info[SmartphoneOptions.FORCE_BIOMETRIC])
 
     def test_38_init_smartphone_with_invalid_options(self):
-        options = {SmartphoneOptions.ALLOW_ROLLOVER: "Maybe",
-                   SmartphoneOptions.KEY_ALGORITHM: "xxx",
+        options = {SmartphoneOptions.KEY_ALGORITHM: "xxx",
                    SmartphoneOptions.HASH_ALGORITHM: "SHA1",
                    SmartphoneOptions.ENCRYPT_ALGORITHM: "ABC",
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "xxx",
-                   SmartphoneOptions.ENCRYPT_MODE: "DEF",
-                   SmartphoneOptions.FORCE_BIOMETRIC: "Maybe"}
+                   SmartphoneOptions.ENCRYPT_MODE: "DEF"}
 
         smph_serial, _ = init_container({"type": "smartphone", "options": options})
         smartphone = find_container_by_serial(smph_serial)
         container_info_keys = smartphone.get_container_info_dict().keys()
-        self.assertNotIn(SmartphoneOptions.ALLOW_ROLLOVER, container_info_keys)
         self.assertNotIn(SmartphoneOptions.KEY_ALGORITHM, container_info_keys)
         self.assertNotIn(SmartphoneOptions.HASH_ALGORITHM, container_info_keys)
         self.assertNotIn(SmartphoneOptions.ENCRYPT_ALGORITHM, container_info_keys)
         self.assertNotIn(SmartphoneOptions.ENCRYPT_KEY_ALGORITHM, container_info_keys)
         self.assertNotIn(SmartphoneOptions.ENCRYPT_MODE, container_info_keys)
-        self.assertNotIn(SmartphoneOptions.FORCE_BIOMETRIC, container_info_keys)
 
     def test_39_init_smartphone_with_invalid_option_keys(self):
         options = {YubikeyOptions.PIN_POLICY: "Maybe"}
@@ -1003,9 +995,9 @@ class TokenContainerSynchronization(MyTestCase):
         return smartphone_serial, result
 
     @classmethod
-    def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_id,
+    def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_brand, device_model,
                                         passphrase=None, private_key_smph=None):
-        message = f"{nonce}|{registration_time}|{serial}|{scope}|{device_id}"
+        message = f"{nonce}|{registration_time}|{serial}|{scope}|{device_brand}|{device_model}"
         if passphrase:
             message += f"|{passphrase}"
 
@@ -1018,23 +1010,24 @@ class TokenContainerSynchronization(MyTestCase):
         signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
 
         params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
-                  "device_id": device_id, "scope": scope}
+                  "device_brand": device_brand, "device_model": device_model, "scope": scope}
 
         return params, private_key_smph
 
-    def test_01_register_smartphone_finalize_unauthorized(self):
+    def test_01_register_smartphone_finalize_invalid_challenge(self):
         scope = "https://pi.net/container/register/finalize"
 
         # Mock smartphone with guessed params (no prepare)
         smartphone_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
         nonce = geturandom(20, hex=True)
-        device_id = geturandom(10, hex=True)
+        device_brand = "LG"
+        device_model = "ABC123"
         time_stamp = datetime.now(timezone.utc)
         params, _ = self.mock_smartphone_register_params(nonce, time_stamp,
-                                                         scope, smartphone_serial, device_id)
-        # Try finalize registration
-        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+                                                         scope, smartphone_serial, device_brand, device_model)
+        # Try finalize registration with invalid params
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Valid prepare
         passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
@@ -1046,32 +1039,32 @@ class TokenContainerSynchronization(MyTestCase):
         # Mock smartphone with wrong nonce
         invalid_nonce = geturandom(20, hex=True)
         params, _ = self.mock_smartphone_register_params(invalid_nonce, init_results["time_stamp"],
-                                                         scope, smartphone_serial, device_id)
+                                                         scope, smartphone_serial, device_brand, device_model)
         # Try to finalize registration
-        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Mock smartphone with invalid public key
         params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                         scope, smartphone_serial, device_id)
+                                                         scope, smartphone_serial, device_brand, device_model)
         params.update({"scope": scope})
         public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
         params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
         # Try finalize registration
-        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Mock smartphone with invalid passphrase
         params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
-                                                         scope, smartphone_serial, device_id,
+                                                         scope, smartphone_serial, device_brand, device_model,
                                                          "different_secret")
         # Try to finalize registration
-        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Mock smartphone with wrong scope
         params, _ = self.mock_smartphone_register_params(nonce, init_results["time_stamp"],
                                                          "https://pi.net/container/register/terminate",
-                                                         smartphone_serial, device_id)
+                                                         smartphone_serial, device_brand, device_model)
         # Try to finalize registration
-        self.assertRaises(privacyIDEAError, smartphone.finalize_registration, params)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
     def test_02_register_smartphone_terminate(self):
         # container is not registered
@@ -1083,19 +1076,21 @@ class TokenContainerSynchronization(MyTestCase):
         container_info = smartphone.get_container_info_dict()
         self.assertEqual(0, len(container_info))
 
-    def test_03_register_smartphone_success(self):
+    def test_03_register_smartphone_success(self, smartphone_serial=None):
         # Prepare
         server_url = "https://pi.net/"
-        smartphone_serial, init_result = self.register_smartphone_initialize_success(server_url)
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(server_url,
+                                                                                     smartphone_serial=smartphone_serial)
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Mock smartphone
-        device_id = "1234"
+        device_brand = "LG"
+        device_model = "ABC123"
         scope = create_endpoint_url(server_url, "container/register/finalize")
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
                                                                          scope, smartphone_serial,
-                                                                         device_id)
+                                                                         device_brand, device_model)
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
@@ -1107,7 +1102,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
-        self.assertEqual(device_id, container_info["device_id"])
+        self.assertEqual(f"{device_brand} {device_model}", container_info["device"])
         self.assertEqual("registered", container_info["registration_state"])
         self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
 
@@ -1133,7 +1128,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertNotIn("public_key_container", container_info_keys)
         self.assertNotIn("public_key_server", container_info_keys)
         self.assertNotIn("private_key_server", container_info_keys)
-        self.assertNotIn("device_id", container_info_keys)
+        self.assertNotIn("device", container_info_keys)
         self.assertNotIn("registration_state", container_info_keys)
         self.assertNotIn("server_url", container_info_keys)
 
@@ -1157,7 +1152,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Mock smartphone
         params, _ = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],
-                                                         scope, smartphone_serial, "1234",
+                                                         scope, smartphone_serial, "LG", "ABC123",
                                                          passphrase_params["passphrase_response"])
 
         # Finalize registration
@@ -1391,7 +1386,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize sync
         smph_params.update({'scope': scope})
-        self.assertRaises(privacyIDEAError, smartphone.check_challenge_response, smph_params)
+        self.assertRaises(ContainerNotRegistered, smartphone.check_challenge_response, smph_params)
 
     def test_15_synchronize_with_invalid_signature(self):
         # Registration
@@ -1411,7 +1406,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize sync
         smph_params.update({'scope': scope})
-        self.assertRaises(privacyIDEAError, smartphone.check_challenge_response, smph_params)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.check_challenge_response, smph_params)
 
     def test_16_synchronize_container_details(self):
         # Arrange
@@ -1488,30 +1483,33 @@ class TokenContainerSynchronization(MyTestCase):
     def test_18_container_rollover(self):
         smartphone_serial, priv_key_smph = self.test_03_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
+        smartphone.add_container_info("allow_client_rollover", "True")
 
         # Create Challenge for rollover
         scope = f"https://pi.net/container/{smartphone_serial}/rollover"
         challenge_data = smartphone.create_challenge(scope)
 
         # Mock smartphone
-        device_id = "1234"
+        device_brand = "LG"
+        device_model = "ABC123"
         params, priv_sig_key_smph = self.mock_smartphone_register_params(challenge_data["nonce"],
                                                                          challenge_data["time_stamp"],
                                                                          scope, smartphone_serial,
-                                                                         device_id, private_key_smph=priv_key_smph)
+                                                                         device_brand, device_model,
+                                                                         private_key_smph=priv_key_smph)
 
         # Rollover init
         init_result = init_container_rollover(smartphone, "https://pi.net/", 20, 10,
                                               "True", params)
 
         # Mock new smartphone
-        device_id = "4567"
+        device_brand = "Huawai"
+        device_model = "XY98"
         scope = "https://pi.net/container/register/finalize"
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
                                                                          scope, smartphone_serial,
-                                                                         device_id)
+                                                                         device_brand, device_model)
 
         # Finalize registration
         res = finalize_registration(smartphone_serial, params)
@@ -1523,7 +1521,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn("public_key_container", container_info_keys)
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
-        self.assertEqual(device_id, container_info["device_id"])
+        self.assertEqual(f"{device_brand} {device_model}", container_info["device"])
         self.assertEqual("registered", container_info["registration_state"])
         self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
         self.assertEqual("https://pi.net/", container_info["server_url"])
@@ -1537,7 +1535,7 @@ class TokenContainerSynchronization(MyTestCase):
     def test_19_container_rollover_with_tokens(self):
         smartphone_serial, priv_key_smph = self.test_03_register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
-        smartphone.add_options({SmartphoneOptions.ALLOW_ROLLOVER: 'True'})
+        smartphone.add_container_info("allow_client_rollover", "True")
 
         # Add tokens
         hotp = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -1558,23 +1556,26 @@ class TokenContainerSynchronization(MyTestCase):
         challenge_data = smartphone.create_challenge(scope)
 
         # Mock smartphone
-        device_id = "1234"
+        device_brand = "LG"
+        device_model = "ABC123"
         params, priv_sig_key_smph = self.mock_smartphone_register_params(challenge_data["nonce"],
                                                                          challenge_data["time_stamp"],
                                                                          scope, smartphone_serial,
-                                                                         device_id, private_key_smph=priv_key_smph)
+                                                                         device_brand, device_model,
+                                                                         private_key_smph=priv_key_smph)
 
         # Rollover init
         init_result = init_container_rollover(smartphone, "https://pi.net/", 20, 10,
                                               "True", params)
 
         # Mock new smartphone
-        device_id = "4567"
+        device_brand = "Huawai"
+        device_model = "XY98"
         scope = "https://pi.net/container/register/finalize"
         params, priv_sig_key_smph = self.mock_smartphone_register_params(init_result["nonce"],
                                                                          init_result["time_stamp"],
                                                                          scope, smartphone_serial,
-                                                                         device_id)
+                                                                         device_brand, device_model)
 
         # Finalize registration
         res = finalize_registration(smartphone_serial, params)
@@ -1602,6 +1603,51 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertEqual("60", daypw_dict["info"]["timeStep"])
         new_daypw_secret = daypassword.token.get_otpkey().getKey().decode("utf-8")
         self.assertNotEqual(daypw_secret, new_daypw_secret)
+
+    def test_20_initial_synchronize_smartphone(self):
+        # setup container
+        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Registration
+        _, priv_sig_key_smph = self.test_03_register_smartphone_success(smartphone_serial)
+        smartphone.add_container_info("initial_synchronized", "False")
+
+        # tokens
+        hotp_token = init_token({"genkey": "1", "type": "hotp"})
+        _, _, otp_dict = hotp_token.get_multi_otp(2)
+        hotp_otps = list(otp_dict["otp"].values())
+        totp_token = init_token({"genkey": "1", "type": "totp"})
+        spass_token = init_token({"type": "spass"})
+
+        # Init sync
+        scope = f"https://pi.net/container/{smartphone_serial}/sync"
+        init_result = smartphone.create_challenge(scope)
+        result_entries = init_result.keys()
+        self.assertIn("nonce", result_entries)
+        self.assertIn("time_stamp", result_entries)
+        self.assertIn("enc_key_algorithm", result_entries)
+
+        # Mock smartphone with known and unknown tokens for the server
+        client_container = {"tokens": [{"type": "hotp", "otp": hotp_otps},  # known by the server
+                                       {"type": "totp", "serial": totp_token.get_serial()},  # known by the server
+                                       {"type": "hotp", "serial": "123456"},  # unknown to the server
+                                       {"type": "spass", "serial": spass_token.get_serial()}]}  # invalid type
+        smph_params, priv_enc_key_smph = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph,
+                                                                   scope, client_container)
+
+        # Finalize sync
+        smph_params.update({'scope': scope})
+        allowed = smartphone.check_challenge_response(smph_params)
+        self.assertTrue(allowed)
+        smartphone.synchronize_container_details(client_container, True)
+
+        # check tokens of the container on the server
+        server_tokens = smartphone.get_tokens()
+        self.assertEqual(2, len(server_tokens))
+        server_serials = [token.get_serial() for token in server_tokens]
+        self.assertIn(hotp_token.get_serial(), server_serials)
+        self.assertIn(totp_token.get_serial(), server_serials)
 
 
 class TokenContainerTemplateTestCase(MyTestCase):
@@ -1694,13 +1740,11 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # set options
         new_options = {"tokens": [{"type": "hotp", "genkey": True},
                                   {"type": "totp", "genkey": True, "hashlib": "sha256"}],
-                       "options": {SmartphoneOptions.ALLOW_ROLLOVER: "True",
-                                   SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
+                       "options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
                                    SmartphoneOptions.HASH_ALGORITHM: "SHA256",
                                    SmartphoneOptions.ENCRYPT_ALGORITHM: "AES",
                                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
-                                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                                   SmartphoneOptions.FORCE_BIOMETRIC: "False"}}
+                                   SmartphoneOptions.ENCRYPT_MODE: "GCM"}}
         template.template_options = new_options
         options = template.template_options
         self.assertEqual(json.dumps(new_options), options)

@@ -179,7 +179,10 @@ def before_container_request():
             # verified later
             request.all_data["auth_token"] = auth_token
 
-        # simplified before request (without user stuff)
+        ensure_no_config_object()
+        request.all_data = get_all_params(request)
+        request.User = None
+
         g.policy_object = PolicyClass()
         g.audit_object = getAudit(current_app.config, g.startdate)
         g.event_config = EventConfiguration()
@@ -189,7 +192,8 @@ def before_container_request():
         # Save the HTTP header in the localproxy object
         g.request_headers = request.headers
         privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-        # Already get some typical parameters to log
+        g.serial = None
+
         # Container info
         container_serial = getParam(request.all_data, "container_serial")
         container = None
@@ -202,11 +206,30 @@ def before_container_request():
                 pass
         if container:
             container_type = container.type
+            if request.User is None or request.User.is_empty():
+                owners = container.get_users()
+                if len(owners) == 1:
+                    request.User = owners[0]
 
+        if request.User:
+            audit_username = request.User.login
+            audit_realm = request.User.realm
+            audit_resolver = request.User.resolver
+        else:
+            audit_realm = getParam(request.all_data, "realm")
+            audit_resolver = getParam(request.all_data, "resolver")
+            audit_username = getParam(request.all_data, "user")
+
+        ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
         g.audit_object.log({"success": False,
+                            "user": audit_username,
+                            "realm": audit_realm,
+                            "resolver": audit_resolver,
                             "container_serial": container_serial,
                             "container_type": container_type,
                             "client": g.client_ip,
+                            "user_agent": ua_name,
+                            "user_agent_version": ua_version,
                             "privacyidea_server": privacyidea_server,
                             "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                             "action_detail": "",
@@ -301,6 +324,10 @@ def before_request():
                 break
     if container:
         container_type = container.type
+        if request.User is None or request.User.is_empty():
+            owners = container.get_users()
+            if len(owners) == 1:
+                request.User = owners[0]
 
     if request.User:
         audit_username = request.User.login

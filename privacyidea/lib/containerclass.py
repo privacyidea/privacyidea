@@ -567,7 +567,8 @@ class TokenContainerClass:
         return {}
 
     def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
-                           url: str = None, key: str = None, container: str = None, device_id: str = None):
+                           url: str = None, key: str = None, container: str = None, device_brand: str = None,
+                           device_model: str = None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -583,7 +584,8 @@ class TokenContainerClass:
         :param url: URL to be included in the signature, optional
         :param key: Key to be included in the signature, optional
         :param container: Container to be included in the signature, optional
-        :param device_id: Device ID to be included in the signature, optional
+        :param device_brand: Device brand to be included in the signature, optional
+        :param device_model: Device model to be included in the signature, optional
         :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
@@ -606,8 +608,10 @@ class TokenContainerClass:
                 message = f"{nonce}|{times_stamp}|{self.serial}|{challenge_scope}"
                 if url:
                     message += f"|{url}"
-                if device_id:
-                    message += f"|{device_id}"
+                if device_brand:
+                    message += f"|{device_brand}"
+                if device_model:
+                    message += f"|{device_model}"
                 if passphrase:
                     message += f"|{passphrase}"
                 if key:
@@ -636,10 +640,12 @@ class TokenContainerClass:
 
         return valid_challenge
 
-    def get_as_dict(self):
+    def get_as_dict(self, include_tokens=True, public_info=True):
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
+        :param include_tokens: If True, the tokens are included in the dictionary
+        :param public_info: If True, only public information is included and sensitive information is omitted
         :return: Dictionary with the container details
 
         Example response
@@ -670,8 +676,16 @@ class TokenContainerClass:
                    "description": self.description,
                    "last_authentication": self.last_authentication,
                    "last_synchronization": self.last_synchronization,
-                   "states": self.get_states(),
-                   "info": self.get_container_info_dict()}
+                   "states": self.get_states()}
+
+        if public_info:
+            black_key_list = ["private_key_server", "public_key_server", "public_key_container", "rollover_server_url",
+                              "rollover_challenge_ttl"]
+            info = self.get_container_info()
+            info_dict = {i.key: i.value for i in info if i.key not in black_key_list}
+        else:
+            info_dict = self.get_container_info_dict()
+        details["info"] = info_dict
 
         template = self.template
         template_name = ""
@@ -694,7 +708,8 @@ class TokenContainerClass:
             users.append(user_info)
         details["users"] = users
 
-        details["tokens"] = [token.get_serial() for token in self.get_tokens()]
+        if include_tokens:
+            details["tokens"] = [token.get_serial() for token in self.get_tokens()]
 
         return details
 

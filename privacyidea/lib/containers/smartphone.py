@@ -32,7 +32,8 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc)
-from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered
+from privacyidea.lib.error import (ContainerInvalidChallenge, ContainerNotRegistered, ResourceNotFoundError,
+                                   ParameterError)
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
@@ -79,20 +80,16 @@ class SmartphoneOptions:
     """
     Options for the smartphone container.
     """
-    ALLOW_ROLLOVER = "allow_client_rollover"
     KEY_ALGORITHM = "key_algorithm"
     HASH_ALGORITHM = "hash_algorithm"
     ENCRYPT_KEY_ALGORITHM = "encrypt_key_algorithm"
     ENCRYPT_ALGORITHM = "encrypt_algorithm"
     ENCRYPT_MODE = "encrypt_mode"
-    FORCE_BIOMETRIC = "force_biometric"
 
 
 class SmartphoneContainer(TokenContainerClass):
     # The first value in the list is the default value
-    options = {SmartphoneOptions.FORCE_BIOMETRIC: ['False', 'True'],
-               SmartphoneOptions.ALLOW_ROLLOVER: ['False', 'True'],
-               SmartphoneOptions.KEY_ALGORITHM: ["secp384r1"],
+    options = {SmartphoneOptions.KEY_ALGORITHM: ["secp384r1"],
                SmartphoneOptions.HASH_ALGORITHM: ["SHA256"],
                SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: ["x25519"],
                SmartphoneOptions.ENCRYPT_ALGORITHM: ["AES"],
@@ -140,7 +137,7 @@ class SmartphoneContainer(TokenContainerClass):
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters like
-
+        An example params dictionary:
             ::
 
                 {
@@ -150,24 +147,25 @@ class SmartphoneContainer(TokenContainerClass):
                     "extra_data": <dict, any additional data>, (optional)
                 }
 
-        :return: A dictionary like:
+        :return: A dictionary with the registration data
 
+        An example of a returned dictionary:
             ::
 
-            {
-                "container_url": {
-                    "description": "URL for privacyIDEA Container Registration",
-                    "value": <url>,
-                    "img": <qr code of url>
-                },
-                "nonce": "ajhbdsuiuojno49877n4no3u09on38r98n",
-                "time_stamp": "2020-08-25T14:00:00.000000+00:00",
-                "key_algorithm": "secp384r1",
-                "hash_algorithm": "SHA256",
-                "ssl_verify": <bool>,
-                "ttl": <int>,
-                "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
-            }
+                {
+                    "container_url": {
+                        "description": "URL for privacyIDEA Container Registration",
+                        "value": <url>,
+                        "img": <qr code of url>
+                    },
+                    "nonce": "ajhbdsuiuojno49877n4no3u09on38r98n",
+                    "time_stamp": "2020-08-25T14:00:00.000000+00:00",
+                    "key_algorithm": "secp384r1",
+                    "hash_algorithm": "SHA256",
+                    "ssl_verify": <bool>,
+                    "ttl": <int>,
+                    "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
+                }
         """
         # get params
         extra_data = getParam(params, 'extra_data', optional=True) or {}
@@ -240,14 +238,16 @@ class SmartphoneContainer(TokenContainerClass):
         Raises a privacyIDEAError on any failure to not disclose information.
 
         :param params: The parameters from the smartphone for the registration as dictionary like:
-
+        An example params dictionary:
             ::
+
                 {
                     "container_serial": <serial of the container>,
                     "signature": <sign(message)>,
                     "message": <nonce|timestamp|registration_url|serial[|passphrase]>,
                     "public_key": <public key of the smartphone base 64 url safe encoded>,
-                    "device_id": <IMEI of the smartphone>,
+                    "device_brand": <Brand of the smartphone> (optional),
+                    "device_model": <Model of the smartphone> (optional),
                     "passphrase": <passphrase> (optional)
                 }
 
@@ -258,10 +258,17 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
         scope = getParam(params, "scope", optional=False)
-        device_id = getParam(params, "device_id", optional=True)
+        device_brand = getParam(params, "device_brand", optional=True)
+        device_model = getParam(params, "device_model", optional=True)
+        device = ""
+        if device_brand:
+            device += device_brand
+        if device_model:
+            device += f" {device_model}"
 
         # Verifies challenge
-        valid = self.validate_challenge(signature, pub_key_container, scope=scope, device_id=device_id)
+        valid = self.validate_challenge(signature, pub_key_container, scope=scope, device_brand=device_brand,
+                                        device_model=device_model)
         if not valid:
             raise ContainerInvalidChallenge('Could not verify signature!')
 
@@ -277,23 +284,48 @@ class SmartphoneContainer(TokenContainerClass):
         self.add_container_info("public_key_container", pub_key_container_str)
         self.add_container_info("public_key_server", public_key_server_str)
         self.add_container_info("private_key_server", encryptPassword(private_key_server_str))
-        self.add_container_info("device_id", device_id)
+        if device != "":
+            self.add_container_info("device", device)
         self.add_container_info("registration_state", "registered")
+        if params.get("initial_token_transfer"):
+            self.add_container_info("initial_synchronized", False)
 
-        res = {"public_server_key": public_key_server_str}
+        res = self.get_policy_config_from_params(params)
+        res.update({"public_server_key": public_key_server_str})
+
         return res
+
+    @classmethod
+    def get_policy_config_from_params(cls, params):
+        """
+        Get the policy configuration.
+        A decorator reads the configuration from the policy and writes them into the request object.
+        This function extracts the policy configuration from the request object and writes them into an own dictionary
+
+        :param params: All data from the request object as dictionary.
+        :return: The policy configuration as dictionary.
+        """
+        policies = {"rollover_allowed": params.get("rollover_allowed"),
+                    "initial_token_transfer": params.get("initial_token_transfer"),
+                    "tokens_deletable": params.get("tokens_deletable"),
+                    "unregister_allowed": params.get("unregister_allowed")}
+        return policies
 
     def terminate_registration(self):
         """
         Terminate the synchronisation of the container with privacyIDEA.
+        The associated information is deleted from the container info and all challenges for this container are deleted
+        as well.
         """
         # Delete registration / synchronization info
         self.delete_container_info("public_key_container")
         self.delete_container_info("public_key_server")
         self.delete_container_info("private_key_server")
-        self.delete_container_info("device_id")
+        self.delete_container_info("device")
         self.delete_container_info("server_url")
         self.delete_container_info("registration_state")
+        self.delete_container_info("challenge_ttl")
+        self.delete_container_info("initial_synchronized")
 
         # Delete challenges
         challenge_list = get_challenges(serial=self.serial)
@@ -307,9 +339,11 @@ class SmartphoneContainer(TokenContainerClass):
         :param scope: The scope (endpoint) of the challenge, e.g. "container/SMPH001/sync"
         :param validity_time: The validity time of the challenge in minutes.
         :param data: Additional data for the challenge.
-        :return: A dictionary with the challenge data like
+        :return: A dictionary with the challenge data
 
+        An example of a returned challenge dictionary:
             ::
+
                 {
                     "nonce": <nonce>,
                     "time_stamp": <timestamp iso format>,
@@ -342,7 +376,9 @@ class SmartphoneContainer(TokenContainerClass):
 
         :param params: Dictionary with the parameters for the challenge.
 
+        An example params dictionary:
             ::
+
                 {
                     "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
                     "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
@@ -356,7 +392,8 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=True)
         container_client_str = getParam(params, "container_dict_client", optional=True)
         scope = getParam(params, "scope", optional=False)
-        device_id = getParam(params, "device_id", optional=True)
+        device_brand = getParam(params, "device_brand", optional=True)
+        device_model = getParam(params, "device_model", optional=True)
 
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
@@ -368,7 +405,8 @@ class SmartphoneContainer(TokenContainerClass):
         valid_challenge = self.validate_challenge(signature, pub_key_sig_container, scope=scope,
                                                   key=pub_key_encr_container_str,
                                                   container=container_client_str,
-                                                  device_id=device_id)
+                                                  device_brand=device_brand,
+                                                  device_model=device_model)
         if not valid_challenge:
             raise ContainerInvalidChallenge('Could not verify signature!')
 
@@ -380,9 +418,11 @@ class SmartphoneContainer(TokenContainerClass):
 
         :param container_dict: The container dictionary to be encrypted.
         :param params: Dictionary with the parameters for the encryption from the client.
-        :return: Dictionary with the encrypted container dictionary and further encryption parameters like
+        :return: Dictionary with the encrypted container dictionary and further encryption parameters
 
+        An example of a returned dictionary:
             ::
+
                 {
                     "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
                     "encryption_algorithm": "AES",
@@ -417,7 +457,7 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict):
+    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -428,9 +468,11 @@ class SmartphoneContainer(TokenContainerClass):
         or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated the serial and
         further information is provided.
 
+        :param initial_transfer_allowed: If True, all tokens from the client are added to the container
         :param container_client: The container from the client as dictionary.
-
+        An example container dictionary from the client:
             ::
+
                 {
                     "container": {"states": ["active"]},
                     "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
@@ -438,8 +480,9 @@ class SmartphoneContainer(TokenContainerClass):
                 }
 
         :return: container dictionary like
-
+        An example of a returned container dictionary:
             ::
+
                 {
                     "container": {"states": ["active"]},
                     "tokens": {"add": ["enroll_url1", "enroll_url2"],
@@ -448,7 +491,7 @@ class SmartphoneContainer(TokenContainerClass):
                                            "type": "hotp"}]}
                 }
         """
-        container_dict = {"container": {"states": self.get_states()}}
+        container_dict = {"container": self.get_as_dict(include_tokens=False, public_info=True)}
         server_token_serials = [token.get_serial() for token in self.get_tokens()]
 
         # Get serials for client tokens without serial
@@ -477,11 +520,34 @@ class SmartphoneContainer(TokenContainerClass):
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
             token_dict = token.get_as_dict()
+            # rename count to counter for the client
+            if "count" in token_dict:
+                token_dict["counter"] = token_dict["count"]
+                del token_dict["count"]
             otp = serial_otp_map.get(serial)
             if otp:
                 token_dict["otp"] = otp
             update_dict.append(token_dict)
 
         container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
+
+        # Initial synchronization after registration or rollover
+        container_info = self.get_container_info_dict()
+        if initial_transfer_allowed and container_info.get("initial_synchronized") == "False":
+            self.add_container_info("initial_synchronized", "True")
+            server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
+            for serial in server_missing_tokens:
+                # Try to add the missing token to the container on the server
+                try:
+                    token = get_tokens_from_serial_or_user(serial, None)[0]
+                except ResourceNotFoundError:
+                    log.info(f"Token {serial} from client does not exist on the server.")
+                    continue
+
+                try:
+                    self.add_token(token)
+                except ParameterError as e:
+                    log.info(f"Client token {serial} could not be added to the container: {e}")
+                    continue
 
         return container_dict

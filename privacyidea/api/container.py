@@ -25,7 +25,8 @@ from flask import Blueprint, request, g
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
                                            check_admin_tokenlist, check_container_action,
-                                           check_container_register_rollover)
+                                           check_container_register_rollover, container_registration_config,
+                                           smartphone_config)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -112,7 +113,7 @@ def assign(container_serial):
     """
     Assign a container to a user.
 
-    :param: container_serial: serial of the container
+    :param container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Name of the realm of the user
     """
@@ -137,7 +138,7 @@ def unassign(container_serial):
     """
     Unassign a user from a container
 
-    :param: container_serial: serial of the container
+    :param container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Realm of the user
     """
@@ -162,13 +163,13 @@ def init():
     """
     Create a new container.
 
-    :jsonparam: description: Description for the container
-    :jsonparam: type: Type of the container. If the type is unknown, an error will be returned
-    :jsonparam: serial: Optional serial
-    :jsonparam: user: Optional username to assign the container to. Requires realm param to be present as well.
-    :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
-    :jsonparam: template: The template to create the container from (dictionary), optional
-    :jsonparam: options: Options for the container if no template is used (dictionary), optional
+    :jsonparam description: Description for the container
+    :jsonparam type: Type of the container. If the type is unknown, an error will be returned
+    :jsonparam serial: Optional serial
+    :jsonparam user: Optional username to assign the container to. Requires realm param to be present as well.
+    :jsonparam realm: Optional realm to assign the container to. Requires user param to be present as well.
+    :jsonparam template: The template to create the container from (dictionary), optional
+    :jsonparam options: Options for the container if no template is used (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -209,7 +210,7 @@ def delete(container_serial):
     """
     Delete a container.
 
-    :param: container_serial: serial of the container
+    :param container_serial: serial of the container
     """
     # Get parameters
     user = request.User
@@ -241,8 +242,8 @@ def add_token(container_serial):
     """
     Add a single token to a container.
 
-    :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to add.
+    :param container_serial: serial of the container
+    :jsonparam serial: Serial of the token to add.
     """
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     user = request.User
@@ -273,8 +274,8 @@ def add_all_tokens(container_serial):
     """
     Add multiple tokens to a container.
 
-    :param: container_serial: serial of the container
-    :jsonparam: serial: Comma separated list of token serials
+    :param container_serial: serial of the container
+    :jsonparam serial: Comma separated list of token serials
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
@@ -310,8 +311,8 @@ def remove_token(container_serial):
     """
     Remove a single token from a container.
 
-    :param: container_serial: serial of the container
-    :jsonparam: serial: Serial of the token to remove.
+    :param container_serial: serial of the container
+    :jsonparam serial: Serial of the token to remove.
     """
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     user = request.User
@@ -342,8 +343,8 @@ def remove_all_tokens(container_serial):
     """
     Remove multiple tokens from a container.
 
-    :param: container_serial: serial of the container
-    :jsonparam: serial: Comma separated list of token serials.
+    :param container_serial: serial of the container
+    :jsonparam serial: Comma separated list of token serials.
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
@@ -400,8 +401,8 @@ def set_description(container_serial):
     """
     Set the description of a container.
 
-    :param: container_serial: Serial of the container
-    :jsonparam: description: New description to be set
+    :param container_serial: Serial of the container
+    :jsonparam description: New description to be set
     """
     new_description = getParam(request.all_data, "description", optional=required)
     user = request.User
@@ -431,7 +432,7 @@ def set_states(container_serial):
     """
     Set the states of a container.
 
-    :jsonparam: states: string of comma separated states
+    :jsonparam states: string of comma separated states
     """
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
     states_string = states_string.replace(" ", "")
@@ -481,8 +482,8 @@ def set_realms(container_serial):
     """
     Set the realms of a container. Old realms will be deleted.
 
-    :param: container_serial: Serial of the container
-    :jsonparam: realms: comma separated string of realms, e.g. "realm1,realm2"
+    :param container_serial: Serial of the container
+    :jsonparam realms: comma separated string of realms, e.g. "realm1,realm2"
     """
     # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
@@ -519,8 +520,8 @@ def set_container_info(container_serial, key):
     """
     Set the value of a container info key. Overwrites the old value if the key already exists.
 
-    :param: container_serial: Serial of the container
-    :param: key: Key of the container info
+    :param container_serial: Serial of the container
+    :param key: Key of the container info
     :jsonparam: value: Value to set
     """
     value = getParam(request.all_data, "value", required)
@@ -544,8 +545,8 @@ def set_container_options(container_serial):
     """
     Set the options of a container. Overwrites the old options if they already exist.
 
-    :param: container_serial: Serial of the container
-    :jsonparam: options: Options to set (container type specific)
+    :param container_serial: Serial of the container
+    :jsonparam options: Options to set (container type specific)
     """
     options = getParam(request.all_data, "options", required)
     user = request.User
@@ -553,18 +554,27 @@ def set_container_options(container_serial):
 
     set_options(container_serial, options, user, user_role)
 
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    option_str = ", ".join([f"{k}: {v}" for k, v in options.items()])
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": option_str,
+                        "success": True})
+
     return send_result(True)
 
 
 @container_blueprint.route('register/initialize', methods=['POST'])
 @prepolicy(check_container_register_rollover, request)
+@prepolicy(container_registration_config, request)
 @event('container_register_initialize', request, g)
 @log_with(log)
 def registration_init():
     """
     Prepares the registration of a container. It returns all information required for the container to register.
 
-    :param: container_serial: Serial of the container
+    :jsonparam container_serial: Serial of the container
     :return: Result of the registration process as dictionary. At least the registration url for the second step is
         provided.
 
@@ -576,14 +586,16 @@ def registration_init():
             }
     Further information might be provided depending on the container type.
     """
-    user = request.User
-    if user.is_empty():
-        user = None
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
     container_rollover = getParam(params, "rollover", optional=True)
     container = find_container_by_serial(container_serial)
     res = {"container_serial": container_serial}
+    # Params set by pre-policies
+    server_url = getParam(params, "server_url")
+    challenge_ttl = getParam(params, "challenge_ttl")
+    registration_ttl = getParam(params, "registration_ttl")
+    ssl_verify = getParam(params, "ssl_verify")
 
     # Check registration state: registration init is only allowed for None and "client_wait"
     registration_state = container.get_container_info_dict().get("registration_state")
@@ -593,42 +605,6 @@ def registration_init():
     else:
         if registration_state and registration_state != "client_wait":
             raise ContainerNotRegistered(f"Container is already registered.")
-
-    # Get server url for the second step
-    server_url_policies = Match.user(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL, user_object=user).policies()
-    if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-
-    # Get validity time for the registration
-    registration_ttl_policies = Match.user(g, scope=SCOPE.CONTAINER,
-                                           action=ACTION.CONTAINER_REGISTRATION_TTL, user_object=user).policies()
-    registration_ttl = 10
-    if len(registration_ttl_policies) > 0:
-        registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
-        if registration_ttl <= 0:
-            # default 10 min
-            registration_ttl = 10
-
-    # Get validity time for further challenges
-    challenge_ttl_policies = Match.user(g, scope=SCOPE.CONTAINER,
-                                        action=ACTION.CONTAINER_CHALLENGE_TTL, user_object=user).policies()
-    challenge_ttl = 2
-    if len(challenge_ttl_policies) > 0:
-        challenge_ttl = int(challenge_ttl_policies[0]["action"][ACTION.CONTAINER_CHALLENGE_TTL])
-        if challenge_ttl <= 0:
-            # default 2 min
-            challenge_ttl = 2
-
-    # Get ssl verify
-    ssl_verify_policies = Match.user(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,
-                                     user_object=user).policies()
-    if len(ssl_verify_policies) > 0:
-        ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
-        if ssl_verify not in ["True", "False"]:
-            ssl_verify = 'True'
-    else:
-        ssl_verify = 'True'
 
     # Initialize registration
     user = request.User
@@ -650,11 +626,20 @@ def registration_init():
         container.add_container_info("server_url", server_url)
         container.add_container_info("challenge_ttl", challenge_ttl)
 
+    # Audit log
+    action_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
+                  f"ssl_verify={ssl_verify}, rollover={container_rollover}")
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": action_str,
+                        "success": True})
+
     return send_result(res)
 
 
 @container_blueprint.route('register/finalize', methods=['POST'])
 @event('container_register_finalize', request, g)
+@prepolicy(smartphone_config, request)
 @log_with(log)
 def registration_finalize():
     """
@@ -662,7 +647,7 @@ def registration_finalize():
     At least the container serial has to be passed in the parameters. Further parameters might be required, depending on
     the container type.
 
-    :param: container_serial: Serial of the container
+    :param container_serial: Serial of the container
     :return: Result of the registration process as dictionary
 
     An example response looks like this:
@@ -678,6 +663,11 @@ def registration_finalize():
     container_serial = getParam(params, "container_serial", required)
     res = finalize_registration(container_serial, params)
 
+    # Audit log
+    container = find_container_by_serial(container_serial)
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "success": res})
     return send_result(res)
 
 
@@ -690,6 +680,7 @@ def registration_terminate(container_serial: str):
     Terminates the synchronization of a container with privacyIDEA.
 
     :param container_serial: Serial of the container
+    :return: True if the container was unregistered successfully
     """
     container = find_container_by_serial(container_serial)
 
@@ -700,10 +691,16 @@ def registration_terminate(container_serial: str):
 
     res = unregister(container)
 
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "success": res})
+
     return send_result(res)
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['POST'])
+@prepolicy(check_container_action, request, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
 @event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate_client(container_serial: str):
@@ -713,6 +710,7 @@ def registration_terminate_client(container_serial: str):
 
     :param container_serial: Serial of the container
     :jsonparam signature: Signature of the client
+    :return: True if the container was unregistered successfully
     """
     params = request.all_data
     container = find_container_by_serial(container_serial)
@@ -726,6 +724,11 @@ def registration_terminate_client(container_serial: str):
     container.check_challenge_response(params)
 
     res = unregister(container)
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "success": res})
 
     return send_result(res)
 
@@ -775,10 +778,19 @@ def create_challenge(container_serial: str):
     res = container.create_challenge(scope, challenge_ttl)
     res.update({'server_url': server_url})
 
+    # Audit log
+    info_str = f"registration_state={registration_state}, server_url={server_url}, challenge_ttl={challenge_ttl}min"
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"scope={scope}",
+                        "info": info_str,
+                        "success": res})
+
     return send_result(res)
 
 
 @container_blueprint.route('<string:container_serial>/sync', methods=['POST'])
+@prepolicy(smartphone_config, request)
 def synchronize(container_serial: str):
     """
     Validates the challenge if the container is authorized to synchronize. If successful, the server returns the
@@ -787,8 +799,12 @@ def synchronize(container_serial: str):
     Additional parameters and entries in the response are possible, depending on the container type.
 
     :param container_serial: Serial of the container
-    :jsonparam: container_dict_client: container data with included tokens from the client like
+    :jsonparam container_dict_client: container data with included tokens from the client. The provided information
+        may differ for different container and token types. To identify tokens at least the serial shall be provided.
+        However, some clients might not have the serial. In this case, the client can provide a list of at least two
+        otp values for hotp, totp and daypassword tokens.
 
+    An example container_dict_client looks like this:
         ::
 
             {
@@ -797,12 +813,10 @@ def synchronize(container_serial: str):
                            {"otp": ["1234", "4567"], "type": "hotp"}]
             }
 
-        The provided information may differ for different container and token types. To identify tokens at least the
-        serial shall be provided. However, some clients might not have the serial. In this case, the client can provide
-        a list of at least two otp values for hotp, totp and daypassword tokens.
+    :return: dictionary including the container properties and the tokens. The provided enroll information depends on
+        the token type as well as the returned information for the tokens to be updated.
 
-    :return: dictionary including the container properties and the tokens like
-
+    Example response:
         ::
 
             {
@@ -810,11 +824,10 @@ def synchronize(container_serial: str):
                 "tokens": {"add": [<enroll information token1>, <enroll information token2>, ...],
                            "update": [{"serial": "TOTP001", "active": True},
                                       {"serial": "HOTP001", "active": False,
-                                       "otp": ["1234", "9876"], "type": "hotp"}]}
+                                       "otp": ["1234", "9876"], "type": "hotp"}]},
+                "policies": {"rollover_allowed": True, "initial_token_transfer": False}
             }
 
-        The provided enroll information depends on the token type as well as the returned information for the tokens
-        to be updated.
     """
     params = request.all_data
     container_client_str = getParam(params, "container_dict_client", optional=True)
@@ -831,7 +844,7 @@ def synchronize(container_serial: str):
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
     container.check_challenge_response(params)
-    container_dict = container.synchronize_container_details(container_client)
+    container_dict = container.synchronize_container_details(container_client, params.get("initial_token_transfer"))
 
     # Get enroll information for missing tokens
     enroll_info = []
@@ -853,13 +866,24 @@ def synchronize(container_serial: str):
     res = container.encrypt_dict(container_dict, params)
     res.update({'server_url': server_url})
 
+    # Add policy info
+    res["policies"] = container.get_policy_config_from_params(params)
+
     # Update last sync time
     container.update_last_synchronization()
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"container_dict_client={container_client_str}",
+                        "success": res})
 
     return send_result(res)
 
 
 @container_blueprint.route('<string:container_serial>/rollover', methods=['POST'])
+@prepolicy(container_registration_config, request)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
 def rollover(container_serial):
     """
     Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
@@ -870,53 +894,30 @@ def rollover(container_serial):
     """
     params = request.all_data
     container = find_container_by_serial(container_serial)
-    res = {"container_serial": container_serial}
+    # Params set by pre-policies
+    server_url = getParam(params, "server_url")
+    challenge_ttl = getParam(params, "challenge_ttl")
+    registration_ttl = getParam(params, "registration_ttl")
+    ssl_verify = getParam(params, "ssl_verify")
 
     # Check registration state: rollover is only allowed for registered containers
     registration_state = container.get_container_info_dict().get("registration_state")
     if registration_state != "registered" and registration_state != "rollover":
         raise ContainerNotRegistered(f"Container is not registered.")
 
-    # Get server url
-    server_url_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL).policies()
-    if len(server_url_policies) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    server_url = server_url_policies[0]["action"][ACTION.PI_SERVER_URL]
-
-    # Get validity time for the registration
-    registration_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
-                                              action=ACTION.CONTAINER_REGISTRATION_TTL).policies()
-    registration_ttl = 10
-    if len(registration_ttl_policies) > 0:
-        registration_ttl = int(registration_ttl_policies[0]["action"][ACTION.CONTAINER_REGISTRATION_TTL])
-        if registration_ttl <= 0:
-            # default 10 min
-            registration_ttl = 10
-
-    # Get validity time for further challenges
-    challenge_ttl_policies = Match.generic(g, scope=SCOPE.CONTAINER,
-                                           action=ACTION.CONTAINER_CHALLENGE_TTL).policies()
-    challenge_ttl = 2
-    if len(challenge_ttl_policies) > 0:
-        challenge_ttl = int(challenge_ttl_policies[0]["action"][ACTION.CONTAINER_CHALLENGE_TTL])
-        if challenge_ttl <= 0:
-            # default 2 min
-            challenge_ttl = 2
-
-    # Get ssl verify
-    ssl_verify_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY).policies()
-    if len(ssl_verify_policies) > 0:
-        ssl_verify = ssl_verify_policies[0]["action"][ACTION.CONTAINER_SSL_VERIFY]
-        if ssl_verify not in ["True", "False"]:
-            ssl_verify = 'True'
-    else:
-        ssl_verify = 'True'
-
     # Rollover
     res_rollover = init_container_rollover(container, server_url, challenge_ttl, registration_ttl, ssl_verify, params)
-    res.update(res_rollover)
 
-    return send_result(res)
+    # Audit log
+    action_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
+                  f"ssl_verify={ssl_verify}")
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": action_str,
+                        "info": f"registration_state={registration_state}",
+                        "success": True})
+
+    return send_result(res_rollover)
 
 
 @container_blueprint.route('classoptions', methods=['GET'])
@@ -927,9 +928,11 @@ def get_class_options():
 
     :jsonparam container_type: Type of the container, optional
     :jsonparam only_selectable: If set to True, only options with at least two selectable values are returned, optional
-    :return: Dictionary with the class options for the given container type or for all container types like
+    :return: Dictionary with the class options for the given container type or for all container types.
 
+    An example response looks like this:
         ::
+
             {
                 "generic": {},
                 "smartphone": {"key_algorithm": ["secp384r1", "secp256r1", ...], "encrypt_algorithm": ["AES", ...], ...},
@@ -948,6 +951,12 @@ def get_class_options():
         # Get options for all container types
         for ctype in container_classes:
             options[ctype] = container_classes[ctype].get_class_options(only_selectable)
+
+    # Audit log
+    g.audit_object.log({"container_type": container_type,
+                        "action_detail": f"only_selectable={only_selectable}",
+                        "success": True})
+
     return send_result(options)
 
 
@@ -966,17 +975,19 @@ def get_template():
 
     :return: Dictionary with at least an entry "templates" and further entries if pagination is used.
 
-        ::
-            {
-                "templates": [{"name": "template1", "container_type": "smartphone",
-                               "template_options": {"tokens": [{"type": "hotp", "genkey": True}, ...]}, ...},
-                               {"name": "template2", "container_type": "yubikey", ...},
-                               ...],
-                "count": 25,
-                "current": 1,
-                "prev": null,
-                "next": 2,
-            }
+    An example response looks like this:
+    ::
+
+        {
+            "templates": [{"name": "template1", "container_type": "smartphone",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True}, ...]}, ...},
+                           {"name": "template2", "container_type": "yubikey", ...},
+                           ...],
+            "count": 25,
+            "current": 1,
+            "prev": null,
+            "next": 2,
+        }
     """
     params = request.all_data
     name = getParam(params, "name", optional=True)
@@ -985,6 +996,9 @@ def get_template():
     pagesize = int(getParam(params, "pagesize", optional=True, default=0) or 0)
 
     templates_dict = get_templates_by_query(name=name, container_type=container_type, page=page, pagesize=pagesize)
+
+    # Audit log
+    g.audit_object.log({"success": True})
 
     return send_result(templates_dict)
 
@@ -1000,6 +1014,9 @@ def get_template_options():
 
     for container_type in template_classes:
         template_options[container_type] = template_classes[container_type].get_template_class_options()
+
+    # Audit log
+    g.audit_object.log({"success": True})
 
     return send_result(template_options)
 
@@ -1044,6 +1061,7 @@ def create_template_with_name(container_type, template_name):
     if default_template:
         set_default_template(template_name)
 
+    # Audit log
     audit_log_data = {"container_type": container_type,
                       "action_detail": f"template_name={template_name}",
                       "success": True}
@@ -1060,6 +1078,12 @@ def delete_template(template_name):
     """
     template = get_template_obj(template_name)
     template.delete()
+
+    # Audit log
+    g.audit_object.log({"container_type": template.get_class_type(),
+                        "action_detail": f"template_name={template_name}",
+                        "success": True})
+
     return send_result(True)
 
 
@@ -1072,9 +1096,10 @@ def compare_template_with_containers(template_name):
     Compares a template with it's created containers.
 
     :param template_name: Name of the template
-    :return A dictionary with the differences between the template and each container in the format:
+    :return: A dictionary with the differences between the template and each container in the format:
 
         ::
+
             {"SMPH0001": {
                             "tokens": {
                                         "missing": ["hotp"],
@@ -1094,5 +1119,10 @@ def compare_template_with_containers(template_name):
     result = {}
     for container in container_list:
         result[container.serial] = compare_template_with_container(template, container)
+
+    # Audit log
+    g.audit_object.log({"container_type": template.get_class_type(),
+                        "action_detail": f"template_name={template_name}",
+                        "success": True})
 
     return send_result(result)

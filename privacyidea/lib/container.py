@@ -24,9 +24,7 @@ import os
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerRollover)
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
@@ -457,6 +455,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                    twostep_enrollment_activation, enroll_pin, init_subject_components,
                                                    init_ca_template, init_ca_connector, init_tokenlabel,
                                                    check_token_init, check_max_token_user, require_description)
+        # Pre-policy checks
         try:
             verify_enrollment(request)
             required_piv_attestation(request)
@@ -499,6 +498,16 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             continue
         container.add_token(token)
 
+        # Post-policy checks
+        from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
+        try:
+            # Todo: Post policies
+            #check_verify_enrollment(request, None)
+            #save_pin_change(request, None)
+            pass
+        except PolicyError as ex:
+            log.info(f"Error checking post-policy for token {token_info} created from template: {ex}")
+            continue
 
 def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user"):
     """
@@ -953,9 +962,11 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     :param user: The user object requesting the containers
     :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
     :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
-    :return: List of container dictionaries like
+    :return: List of container dictionaries
 
+    Example of a returned list:
         ::
+
             [
                 {
                     "type": "generic",
@@ -987,11 +998,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     """
     res: list = []
     for container in container_list:
-        container_dict = container.get_as_dict()
-
-        if no_token:
-            del container_dict["tokens"]
-        else:
+        container_dict = container.get_as_dict(include_tokens=not no_token, public_info=True)
+        if not no_token:
             token_serials = ",".join(container_dict["tokens"])
             tokens_dict_list = []
             if len(token_serials) > 0:
@@ -999,14 +1007,6 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
                 tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
                                                                   allowed_realms=allowed_token_realms)
             container_dict["tokens"] = tokens_dict_list
-
-        infos: dict = {}
-        black_key_list = ["private_key_server", "public_key_server", "public_key_container", "rollover_server_url",
-                          "rollover_challenge_ttl"]
-        for info in container.get_container_info():
-            if info.key not in black_key_list:
-                infos[info.key] = info.value
-        container_dict["info"] = infos
 
         res.append(container_dict)
 
@@ -1034,6 +1034,10 @@ def finalize_registration(container_serial: str, params: dict):
     """
     Finalize the registration of a container if the challenge response is valid.
     It also finalizes a container rollover.
+
+    :param container_serial: The serial of the container
+    :param params: The parameters for the registration as dictionary
+    :return: dictionary with container specific information
     """
     # Get container
     container = find_container_by_serial(container_serial)
@@ -1041,7 +1045,10 @@ def finalize_registration(container_serial: str, params: dict):
     registration_state = container_info.get("registration_state")
 
     # Update params with registration url
-    server_url = container_info.get("server_url")
+    if registration_state == "rollover":
+        server_url = container_info.get("rollover_server_url")
+    else:
+        server_url = container_info.get("server_url")
     if server_url is None:
         log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
         server_url = " "
@@ -1053,7 +1060,7 @@ def finalize_registration(container_serial: str, params: dict):
     if registration_state == "rollover":
         # container registration rolled over: set rollover info as correct info
         for key, value in container_info.items():
-            if "rollover" in key:
+            if key.find("rollover_") == 0:
                 original_key = key.replace("rollover_", "")
                 container.add_container_info(original_key, value)
                 container.delete_container_info(key)
@@ -1082,11 +1089,15 @@ def finalize_container_rollover(container: TokenContainer):
 
 def init_container_rollover(container: TokenContainer, server_url: str, challenge_ttl: int, registration_ttl: int,
                             ssl_verify: str, params: dict):
-    # Check if rollover is allowed
-    rollover_right = container.get_container_info_dict().get(SmartphoneOptions.ALLOW_ROLLOVER)
-    if rollover_right != 'True':
-        raise ContainerRollover("Rollover is not allowed for this container.")
+    """
+    Initializes the rollover of a container.
+    First the response to the challenge is validated. If it is valid, the registration is initialized.
+    The new registration info is not finally set until the new container successfully finalized the registration.
 
+    :param container: The container object
+    :param params: Container type specific parameters for the registration as dictionary
+    :return: dictionary with container specific information for the client
+    """
     # Check challenge if rollover is allowed
     rollover_scope = create_endpoint_url(server_url, f"container/{container.serial}/rollover")
     params.update({"scope": rollover_scope})
@@ -1114,14 +1125,14 @@ def unregister(container: TokenContainer):
     :return: True on success
     """
     # terminate registration
-    res_registration = container.terminate_registration()
+    container.terminate_registration()
 
     # Delete all challenges of the container
     challenge_list = get_challenges(serial=container.serial)
     for challenge in challenge_list:
         challenge.delete()
 
-    return res_registration
+    return True
 
 
 def set_options(serial: str, options: dict, user: User = None, user_role="user"):
@@ -1330,9 +1341,11 @@ def compare_template_with_container(template: TokenContainerTemplate, container:
 
     :param template: The template object
     :param container: The container object
-    :return A dictionary with the differences between the template and the container in the format:
+    :return A dictionary with the differences between the template and the container
 
+    Example of a returned dictionary:
         ::
+
             {
                 "tokens": {
                             "missing": ["hotp"],
