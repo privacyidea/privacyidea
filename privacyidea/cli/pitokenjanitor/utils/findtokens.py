@@ -346,9 +346,9 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                                         'You can use the following operators: =, >, <, ! for you matching. '
                                         'For example: "rollout_state=clientwait" or "failcount>3".')
 @click.option('--tokenowners', multiple=True, help='Match for certain information of the token owner from the '
-                                                   'database. Exemple: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
-@click.option('--tokencontainers', multiple=True, help='A comma separated list of contaner, '
-                                                       'to which the tokens should be assigned.')
+                                                   'database. Example: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
+@click.option('--tokencontainers', multiple=True, help='Match for certain information of tokencontainer from the '
+                                                   'database. Example: type=smartphone.')
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
