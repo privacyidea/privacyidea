@@ -437,10 +437,11 @@ Tokenattribute
 '--tokenattribute' to find tokens with specific token attributes.
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=HOTP123456,tokentype=hotp'
+    pitokenjanitor find --tokenattribute 'serial=HOTP123456' --tokenattribute 'tokentype=hotp'
 
 Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
 .. note:: You can also use regular expressions in the tokenattribute filter.
+.. note:: You can use the option '--tokenattribute' multiple times.
 
 Tokeninfo
 *********
@@ -452,6 +453,7 @@ Example::
 Search for all tokens with the tokeninfo-key ``tokenkind`` and the value ''software'' and with an import_time before
 the given date.
 .. note:: You can also use regular expressions in the tokeninfo filter.
+.. note:: You can use the option '--tokeninfo' multiple times.
 
 Tokencontaner
 **************
@@ -462,6 +464,7 @@ Example::
 
 Search for all tokens in the token container with the serial ``SMPH00009272``.
 .. note:: You can also use regular expressions in the tokencontainer filter.
+.. note:: You can use the option '--tokencontainer' multiple times.
 
 Has-tokeninfo-key/Has-not-tokeninfo-key
 ****************************************
@@ -484,6 +487,9 @@ the resolver.
 Example::
 
     pitokenjanitor find --tokenowner 'user_id=642cf598-d9cf-1037-8083-a1df7d38c897'
+
+.. note:: You can also use regular expressions in the tokenowner filter.
+.. note:: You can use the option '--tokenowner' multiple times.
 
 Assigned
 ********
@@ -525,38 +531,39 @@ Example::
 
 .. note:: This matches the string as ASCII values. So consider case sensitivity.
 
-Listuser
-********
-Lists all users assinged to the found tokens.
+List
+****
+Lists all found tokens.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listuser
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list
 
---csv
-.....
-The option '--csv' can be used to output the results in CSV format.
-
-Example::
-
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' --csv
-
-Listtoken
-*********
-Lists all tokens found.
+--user_attributes
+..................
+You can use this option to extend the output with user attributes.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listtoken
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --user_attributes email
 
---csv
-.....
-Lists all tokens found in CSV format.
+--token_attributes
+...................
+You can use this option to extend the output with token attributes.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' listtoken --csv
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --token_attributes tokeninfo
 
+--sum
+......
+You can use this option to group the token output by user.
+
+Example::
+
+    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
+
+.. note:: The option '--sum' only works with the option '--user_attributes' not with '--token_attributes'.
 
 Export
 ******
@@ -656,4 +663,41 @@ This argument must be set to specify witch tokeninfo should be removed.
 Example::
 
     pitokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
+
+Import
+~~~~~~
+This command can be used to import token data from a file.
+
+PSKC
+****
+Imports token data from a PSKC file.
+
+Example::
+
+    pitokenjanitor import pskc /path/to/pskcfile.xml
+
+--preshared_key
+...............
+The option '--preshared_key' can be used to specify the preshared key for the PSKC file.
+
+Example::
+
+    pitokenjanitor import pskc /path/to/pskcfile.xml --preshared_key 'mykey'
+
+--validate_mac
+..............
+With this option you can specify "How the file should be validated. 'no_check' for every token is parsed, ignoring HMAC,
+'check_fail_soft' for skip tokens with invalid HMAC and 'check_fail_hard' for only import tokens if all HMAC are valid.
+
+Update
+~~~~~~
+This command can be used to update allready existing token data.
+
+yaml
+****
+Updates token data from a yaml file.
+
+Example::
+
+    pitokenjanitor update yaml /path/to/yamlfile.yaml
 
