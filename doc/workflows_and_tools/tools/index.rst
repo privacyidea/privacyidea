@@ -691,7 +691,7 @@ With this option you can specify "How the file should be validated. 'no_check' f
 
 Update
 ~~~~~~
-This command can be used to update allready existing token data.
+This command can be used to update already existing token data.
 
 yaml
 ****
