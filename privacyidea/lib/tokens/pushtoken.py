@@ -867,7 +867,7 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              signature=<signature over {nonce}|{serial}>
+              signature=<signature over {challenge}|{serial}>
 
         - The smartphone can also decline the authentication request, by sending
           a response to the server:
@@ -879,7 +879,7 @@ class PushTokenClass(TokenClass):
 
               serial=<token serial>
               decline=1
-              signature=<signature over {nonce}|{serial}|decline
+              signature=<signature over {challenge}|{serial}|decline
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
