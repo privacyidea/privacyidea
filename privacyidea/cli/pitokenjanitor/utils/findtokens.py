@@ -24,6 +24,7 @@ def _try_convert_to_integer(given_value_string):
     except ValueError:
         raise click.ClickException(f'Not an integer: {given_value_string}')
 
+
 def _try_convert_to_datetime(given_value_string):
     try:
         parsed = parser.parse(given_value_string, dayfirst=False)
@@ -33,6 +34,7 @@ def _try_convert_to_datetime(given_value_string):
         return parsed
     except ValueError:
         raise
+
 
 def _compare_regex_or_equal(_key, given_regex):
     def comparator(value):
@@ -46,6 +48,7 @@ def _compare_regex_or_equal(_key, given_regex):
 
     return comparator
 
+
 def _compare_not(_key, given_regex):
     def comparator(value):
         if type(value) in (int, bool):
@@ -58,6 +61,7 @@ def _compare_not(_key, given_regex):
 
     return comparator
 
+
 def _parse_datetime(key, value):
     #TODO: Rewrite this function after #1586 is merged
     if key == ACTION.LASTAUTH:
@@ -69,6 +73,7 @@ def _parse_datetime(key, value):
     else:
         # Other values are given in local time
         return parser.parse(parse_legacy_time(value))
+
 
 def _compare_greater_than(_key, given_value_string):
     """
@@ -85,6 +90,7 @@ def _compare_greater_than(_key, given_value_string):
 
     return comparator
 
+
 def _compare_less_than(_key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to an integer)
@@ -100,6 +106,7 @@ def _compare_less_than(_key, given_value_string):
 
     return comparator
 
+
 def _compare_after(key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
@@ -112,6 +119,7 @@ def _compare_after(key, given_value_string):
         except ValueError:
             return False
     return comparator
+
 
 def _compare_before(key, given_value_string):
     """
@@ -126,6 +134,7 @@ def _compare_before(key, given_value_string):
             return False
 
     return comparator
+
 
 def build_tokenvalue_filter(m):
     """
@@ -142,13 +151,13 @@ def build_tokenvalue_filter(m):
     if m.group(2) == '=':
         filter.append(_compare_regex_or_equal(m.group(1), m.group(3)))
     elif m.group(2) == '<':
-        try: # try to convert the given value to datetime
+        try:  # try to convert the given value to datetime
             given_value = _try_convert_to_datetime(m.group(3))
             filter.append(_compare_before(m.group(1), given_value))
         except:
             filter.append(_compare_greater_than(m.group(1), m.group(3)))
     elif m.group(2) == '>':
-        try: # try to convert the given value to datetime
+        try:  # try to convert the given value to datetime
             given_value = _try_convert_to_datetime(m.group(3))
             filter.append(_compare_after(m.group(1), given_value))
         except:
@@ -186,7 +195,7 @@ def export_token_data(token_list, token_attributes=None, user_attributes=None):
                 for att in user_attributes:
                     if att == "uid":
                         token_data.append(f'{user.uid}')
-                    elif  att == "resolver":
+                    elif att == "resolver":
                         token_data.append(f'{user.resolver}')
                     elif att == "realm":
                         token_data.append(f'{user.realm}')
@@ -237,11 +246,10 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
     filter_assigned = None
     orphaned = orphaned or ""
 
-    if assigned is not None:
+    if not assigned is None:
         filter_assigned = assigned.lower() == "true"
-    if active is not None:
+    if not active is None:
         filter_active = active.lower() == "true"
-
 
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
                                               realm=realm,
@@ -258,7 +266,6 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
         tok_found = 0
         for token_obj in tokenobj_list:
             add = True
-            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r')
             sys.stderr.flush()
             tok_count += 1
             #TODO: We could do this with regex and the tokeninfo filter
@@ -324,7 +331,6 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                 # if everything matched, we append the token object
                 filtered_list.append(token_obj)
 
-        sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r\n')
         sys.stderr.write("++ Token object list created.\n")
         sys.stderr.flush()
         yield filtered_list
@@ -337,15 +343,17 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
 @click.option('--tokeninfos', multiple=True, help='Match for a certain tokeninfo from the database.')
 @click.option('--tokenattributes', multiple=True, help='Match for a certain token attribute from the database. '
-                                        'You can use the following operators: =, >, <, ! for you matching. For example: '
-                                        '"rollout_state=clientwait" or "failcount>3".')
-@click.option('--tokenowners', multiple=True, help='Match for certain information of the token owner from the database. '
-                                   'Exemple: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
-@click.option('--tokencontainers', multiple=True, help='A comma separated list of contaner, to which the tokens should be assigned.')
+                                        'You can use the following operators: =, >, <, ! for you matching. '
+                                        'For example: "rollout_state=clientwait" or "failcount>3".')
+@click.option('--tokenowners', multiple=True, help='Match for certain information of the token owner from the '
+                                                   'database. Exemple: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
+@click.option('--tokencontainers', multiple=True, help='A comma separated list of contaner, '
+                                                       'to which the tokens should be assigned.')
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
-@click.option('--range-of-serial', help='A range of serial numbers to search for. For Example HOTP10000000-HOTP20000000')
+@click.option('--range-of-serial', help='A range of serial numbers to search for. '
+                                        'For Example HOTP10000000-HOTP20000000')
 @click.pass_context
 def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key, tokenattributes, tokeninfos, tokenowners,
                tokencontainers, assigned, active, orphaned, range_of_serial):
@@ -399,7 +407,6 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key, tokenat
             else:
                 tcfilter.append((m.group(1), build_tokenvalue_filter(m)))
 
-
     ctx.obj = {}
 
     ctx.obj['tokens'] = _get_tokenlist(assigned=assigned, active=active, range_of_seriel=range_of_serial,
@@ -411,6 +418,7 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key, tokenat
                                has_tokeninfo_key=has_tokeninfo_key)
 
     sys.stderr.write(f"+ Reading tokens from database in chunks of {chunksize}...\n")
+
 
 @findtokens.command('list')
 @click.option('--user_attributes', multiple=True,
@@ -440,7 +448,8 @@ def list(ctx, user_attributes, token_attributes, sum_tokens):
               default='xml', help='Please specify the format of the output. Possible values are: csv, yaml, xml. '
                                   'Default is xml.')
 @click.option('--b32', is_flag=True,
-              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.') #TODO: check if there is a better way
+              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
+#TODO: check if there is a better way
 @click.pass_context
 def export(ctx, format, b32):
     """
@@ -571,4 +580,3 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             print(f"Removing tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}")
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
-

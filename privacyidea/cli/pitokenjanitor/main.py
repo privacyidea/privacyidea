@@ -49,6 +49,7 @@ def cli():
 {0!s:>51}
     """.format('v{0!s}'.format(get_version_number())))
 
+
 cli.add_command(findtokens)
 cli.add_command(importtokens)
 cli.add_command(updatetokens)
