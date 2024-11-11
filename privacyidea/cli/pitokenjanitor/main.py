@@ -21,6 +21,8 @@ import click
 from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.lib.utils import get_version_number
 from privacyidea.cli.pitokenjanitor.utils.findtokens import findtokens
+from privacyidea.cli.pitokenjanitor.utils.importtokens import importtokens
+from privacyidea.cli.pitokenjanitor.utils.updatetokens import updatetokens
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -28,9 +30,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
              add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
-@click.option('--chunksize', default=100, help='The number of tokens to fetch in one request.')
-@click.pass_context
-def cli(ctx, chunksize):
+def cli():
     """
 \b
              _                    _______  _______
@@ -48,10 +48,10 @@ def cli(ctx, chunksize):
 /_/                       /___/
 {0!s:>51}
     """.format('v{0!s}'.format(get_version_number())))
-    ctx.ensure_object(dict)
-    ctx.obj['chunksize'] = chunksize
 
 cli.add_command(findtokens)
+cli.add_command(importtokens)
+cli.add_command(updatetokens)
 
 if __name__ == '__main__':
     cli()
