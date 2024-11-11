@@ -42,8 +42,6 @@
 
 from flask.cli import AppGroup
 import click
-
-from privacyidea.cli.privacyideatokenjanitor.loadtokens import loadtokens_cli
 from privacyidea.lib.token import import_token
 
 importtokens_cli = AppGroup("import")
@@ -51,6 +49,9 @@ importtokens_cli = AppGroup("import")
 
 @importtokens_cli.group("import")
 def importtokens():
+    """
+    Import tokens from different sources.
+    """
     pass
 
 
