@@ -20,13 +20,14 @@ def upgrade():
         op.add_column('policy', sa.Column('user_case_insensitive', sa.Boolean(), nullable=True))
         # ### end Alembic commands ###
     except (OperationalError, ProgrammingError) as exx:
-        if "already exists" in str(exx.orig).lower():
+        if any(x in str(exx.orig).lower() for x in ["already exists", "duplicate column name"]):
             print("Ok, column 'user_case_insensitive' already exists.")
         else:
             print(exx)
+            raise
     except Exception as exx:
-        print("Could not add column 'user_case_insensitive' to database")
-        print(exx)
+        print(f"Could not add column 'user_case_insensitive' to database: {exx}")
+        raise
 
 
 def downgrade():
