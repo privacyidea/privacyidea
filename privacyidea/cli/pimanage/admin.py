@@ -28,7 +28,7 @@ admin_cli = AppGroup("admin", help="Manage local administrators")
 @admin_cli.command("add")
 @click.argument('username')
 @click.option("-e", "--email", "email")
-@click.password_option()
+@click.password_option('-p', '--password')
 def add_admin(username, email, password):
     """
     Register a new administrator in the database.
