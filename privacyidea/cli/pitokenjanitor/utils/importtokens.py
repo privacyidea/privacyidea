@@ -48,15 +48,17 @@ from privacyidea.lib.token import import_token
 
 importtokens_cli = AppGroup("import")
 
+
 @importtokens_cli.group("import")
 def importtokens():
     pass
+
 
 @importtokens.command("pskc")
 @click.argument('pskc', type=click.File())
 @click.option('--preshared_key',
               help='The AES encryption key.')
-@click.option('--validate_mac', type=click.Choice(['no_check','check_fail_soft','check_fail_hard']),
+@click.option('--validate_mac', type=click.Choice(['no_check', 'check_fail_soft', 'check_fail_hard']),
               default='check_fail_hard',
               help="How the file should be validated.\n"
                    "'no_check' : Every token is parsed, ignoring HMAC\n"
