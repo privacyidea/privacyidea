@@ -30,6 +30,13 @@
 
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard">
+                <li ui-sref-active="{ 'active': $state.includes('info') }"
+                    <a ui-sref="info.rss">
+                    <span class="glyphicon glyphicon-dashboard"
+                          aria-hidden="true"></span>
+                        <translate>News</translate>
+                    </a></li>
+
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
