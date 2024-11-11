@@ -26,7 +26,7 @@ class PITokenJanitorLoadTestCase(CliTestCase):
     def test_01_pitokenjanitor_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_token_janitor, ["-h"])
-        self.assertIn("Loads token data from the PSKC file.",
+        self.assertIn("Import tokens from different sources.",
                       result.output, result)
         self.assertIn("Update existing tokens in the privacyIDEA system.",
                       result.output, result)
@@ -35,10 +35,7 @@ class PITokenJanitorLoadTestCase(CliTestCase):
 
     def test_02_pitokenjanitor_find_help(self):
         runner = self.app.test_cli_runner()
-        result = runner.invoke(pi_token_janitor, ["find", "listuser", "-h"])
-        self.assertIn("List all users and the number of tokens they own.",
-                      result.output, result)
-        result = runner.invoke(pi_token_janitor, ["find", "listtoken", "-h"])
+        result = runner.invoke(pi_token_janitor, ["find", "list", "-h"])
         self.assertIn("List all found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "export", "-h"])
