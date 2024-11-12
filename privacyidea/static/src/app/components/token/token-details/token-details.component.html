@@ -6,7 +6,7 @@
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="12">
+    <mat-grid-tile [colspan]="1" [rowspan]="11">
       <div class="details-wrapper">
         <div class="details-section">
           <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
@@ -57,10 +57,15 @@
                 || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
                 || element.key.key === "tokengroup") {
                   <div class="edit-button-container">
-                    <mat-icon class="edit-button"
-                              (click)="toggleEditMode(element)">{{ element.isEditing ? 'save_as' : 'edit' }}
-                    </mat-icon>
-                    @if (element.isEditing) {
+                    @if (!isAnyEditing()) {
+                      <mat-icon class="edit-button"
+                                (click)="toggleEditMode(element)">{{ 'edit' }}
+                      </mat-icon>
+                    }
+                    @else if (element.isEditing) {
+                      <mat-icon class="edit-button"
+                                (click)="toggleEditMode(element)">{{ 'save_as' }}
+                      </mat-icon>
                       <mat-icon class="edit-button"
                                 (click)="toggleEditMode(element, 'cancel')" style="color: var(--red-base)">cancel
                       </mat-icon>
@@ -74,7 +79,7 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="12">
+    <mat-grid-tile [colspan]="1" [rowspan]="11">
       <div class="user-details-section">
         <h3>Assigned User:</h3>
         <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
@@ -145,10 +150,10 @@
         </button>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="12">
+    <mat-grid-tile [colspan]="1" [rowspan]="11">
       <div class="otp-container">
         <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
-          <mat-icon>delete_forever</mat-icon>
+          <mat-icon>delete_outlined</mat-icon>
           Delete
         </button>
         <div class="delete-buttons">
@@ -159,7 +164,7 @@
           </button>
           <button (click)="revokeToken()" [disabled]="revoked" class="card-button-delete-fix" color="alert"
                   mat-flat-button>
-            <mat-icon>delete_outlined</mat-icon>
+            <mat-icon>delete_forever</mat-icon>
             Revoke
           </button>
         </div>

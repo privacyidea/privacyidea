@@ -78,8 +78,8 @@ export const userDetail = [
 export class TokenDetailsComponent {
   protected readonly Array = Array;
   protected readonly Object = Object;
-  detailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
-  userDetailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
+  detailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
+  userDetailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   infos = signal<string[]>([]);
 
   constructor(private tokenService: TokenService) {
@@ -111,12 +111,14 @@ export class TokenDetailsComponent {
         this.revoked = tokenDetails.revoked;
         this.detailData.set(details.map(detail => ({
           key: detail,
-          value: tokenDetails[detail.key]
+          value: tokenDetails[detail.key],
+          isEditing: false
         })).filter(detail => detail.value !== undefined));
 
         this.userDetailData.set(userDetail.map(detail => ({
           key: detail,
-          value: tokenDetails[detail.key]
+          value: tokenDetails[detail.key],
+          isEditing: false
         })).filter(detail => detail.value !== undefined));
       },
       error: error => {
@@ -141,12 +143,16 @@ export class TokenDetailsComponent {
       element.isEditing = false;
     } else {
       element.isEditing = !element.isEditing;
-      if (element.isEditing) {
+      if (element.isEditing && element.key.key === 'info') {
         this.infos.set(this.parseObjectToList(element.value));
-      } else {
+      } else if (!element.isEditing) {
         this.saveDetail(element);
       }
     }
+  }
+
+  isAnyEditing(): boolean {
+    return this.detailData().some((element) => element.isEditing) || this.userDetailData().some((element) => element.isEditing);
   }
 
   saveDetail(element: any): void {
