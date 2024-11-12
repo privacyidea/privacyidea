@@ -882,11 +882,27 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_05_helpdesk_description_allowed(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1, self.realm2])
-        container_serial, _ = init_container({"type": "generic", "realm": self.realm1})
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm2, self.realm1])
+        container_serial = self.create_container_for_user()
+        #container = find_container_by_serial(container_serial)
+        #container.set_realms([self.realm2], add=True)
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                     method='POST')
         delete_policy("policy")
+
+    def test_05b_helpdesk_description(self):
+        self.setUp_user_realm2()
+        set_policy("policy_hans", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm1,
+                   user="hans", priority=1)
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm1,
+                   priority=3)
+        container_serial = self.create_container_for_user()
+        container = find_container_by_serial(container_serial)
+        container.set_realms([self.realm2], add=True)
+        self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
+                                    method='POST')
+        delete_policy("policy_hans")
+        delete_policy("policy_realm")
 
     def test_06_helpdesk_description_denied(self):
         self.setUp_user_realm2()
@@ -2175,6 +2191,33 @@ class APIContainerSynchronization(APIContainerTest):
         self.register_terminate_client_success()
         delete_policy("client_unregister")
 
+    def test_10_register_terminate_client_realm_success(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # Generic policy
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
+        smartphone_serial, _ = init_container({"type": "smartphone", "realm": self.realm2})
+        self.register_terminate_client_success(smartphone_serial)
+        delete_policy("client_unregister")
+
+        # Policy for realms
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1, self.realm2])
+        smartphone_serial, _ = init_container({"type": "smartphone", "realm": self.realm2})
+        self.register_terminate_client_success(smartphone_serial)
+        delete_policy("client_unregister")
+
+        # Multiple policies
+        set_policy("client_unregister_hans", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
+                   user="hans", realm=self.realm1)
+        set_policy("client_unregister_realm", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1])
+        smartphone_serial, _ = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})
+        self.register_terminate_client_success(smartphone_serial)
+        delete_policy("client_unregister_hans")
+        delete_policy("client_unregister_realm")
+
     def test_11_register_terminate_client_with_user_success(self):
         self.setUp_user_realms()
 
@@ -2210,9 +2253,6 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(303, res["result"]["error"]["code"])
 
     def test_12_register_terminate_client_no_user_denied(self):
-        # No policy
-        self.register_terminate_client_denied()
-
         # Policy for a specific realm
         self.setUp_user_realms()
         set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
@@ -2224,14 +2264,21 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
-        # No policy
-        smartphone_serial, _ = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})
-        self.register_terminate_client_denied(smartphone_serial)
-
         # Policy for another realm
         smartphone_serial, _ = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})
         set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm2)
+        self.register_terminate_client_denied(smartphone_serial)
+        delete_policy("client_unregister")
+
+    def test_10_register_terminate_client_realm_denied(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # Policy for another realm
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1])
+        smartphone_serial, _ = init_container({"type": "smartphone", "realm": self.realm2})
         self.register_terminate_client_denied(smartphone_serial)
         delete_policy("client_unregister")
 
@@ -2678,13 +2725,18 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(sms)
 
         # set label, issuer and require pin policies
-        set_policy('token_enroll', scope=SCOPE.ENROLL,
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy('token_enroll_realm2', scope=SCOPE.ENROLL,
                    action={ACTION.TOKENLABEL: '{user}',
                            ACTION.TOKENISSUER: '{realm}',
-                           'hotp_' + ACTION.FORCE_APP_PIN: True})
+                           'hotp_' + ACTION.FORCE_APP_PIN: True}, realm=self.realm2)
+        set_policy('token_enroll_realm1', scope=SCOPE.ENROLL,
+                   action={ACTION.TOKENLABEL: '{user}',
+                           ACTION.TOKENISSUER: '{realm}',
+                           'hotp_' + ACTION.FORCE_APP_PIN: True}, realm=self.realm1)
 
         # Get initial enroll url
-        self.setUp_user_realms()
         hotp_params = {"type": "hotp",
                        "genkey": True,
                        "realm": self.realm1,
@@ -2728,9 +2780,18 @@ class APIContainerSynchronization(APIContainerTest):
         tokens = tokens_dict["add"]
         # totp, daypassword and hotp token to be added (sms token can not be enrolled in the app)
         self.assertEqual(4, len(tokens))
-        self.assertNotEqual(initial_enroll_url, tokens[0])
+        # check hotp enroll url
+        for token in tokens:
+            if "hotp" in token:
+                hotp_enroll_url = token
+                break
+        self.assertNotEqual(initial_enroll_url, hotp_enroll_url)
+        self.assertIn("pin=True", hotp_enroll_url)
+        self.assertIn(f"issuer={self.realm1}", hotp_enroll_url)
+        self.assertIn("hans", hotp_enroll_url)
 
-        delete_policy('token_enroll')
+        delete_policy('token_enroll_realm1')
+        delete_policy('token_enroll_realm2')
 
     def test_28_generic_sync_fail(self):
         generic_serial, _ = init_container({"type": "generic"})
@@ -2845,8 +2906,10 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy_rollover")
 
     def test_31_rollover_client_no_user_denied(self):
-        # Rollover with no policy
+        # No rollover right
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
         self.client_rollover_denied()
+        delete_policy("policy_rollover")
 
         # Rollover with policy for a specific realm
         self.setUp_user_realms()
@@ -2873,9 +2936,11 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
-        # Rollover with no policy
+        # Rollover with no rollover rights
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
         smartphone_serial, _ = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})
         self.client_rollover_denied(smartphone_serial)
+        delete_policy("policy_rollover")
 
         # Rollover with policy only for another realm
         smartphone_serial, _ = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})

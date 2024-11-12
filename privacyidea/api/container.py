@@ -23,10 +23,10 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy,
+from privacyidea.api.lib.prepolicy import (prepolicy,
                                            check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
-                                           smartphone_config)
+                                           smartphone_config, check_client_container_action)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -60,8 +60,7 @@ API for managing token containers
 
 @container_blueprint.route('/', methods=['GET'])
 @prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
-@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def list_containers():
     """
@@ -700,7 +699,7 @@ def registration_terminate(container_serial: str):
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
+@prepolicy(check_client_container_action, request, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
 @event('container_register_terminate', request, g)
 @log_with(log)
 def registration_terminate_client(container_serial: str):
@@ -834,7 +833,7 @@ def synchronize(container_serial: str):
     container_client = json.loads(container_client_str) if container_client_str else {}
     container = find_container_by_serial(container_serial)
 
-    # Get synchronization url for the second step
+    # Get server url
     server_url = container.get_container_info_dict().get("server_url")
     if server_url is None:
         log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
@@ -848,9 +847,11 @@ def synchronize(container_serial: str):
 
     # Get enroll information for missing tokens
     enroll_info = []
+    org_all_data = request.all_data
     for serial in container_dict["tokens"]["add"]:
         try:
             # token rollover + get enroll url
+            request.all_data = org_all_data
             enroll_url = regenerate_enroll_url(serial, request, g)
             if enroll_url:
                 enroll_info.append(enroll_url)
@@ -883,7 +884,7 @@ def synchronize(container_serial: str):
 
 @container_blueprint.route('<string:container_serial>/rollover', methods=['POST'])
 @prepolicy(container_registration_config, request)
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+@prepolicy(check_client_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
 def rollover(container_serial):
     """
     Initiate a rollover for a container which will generate new token secrets for all tokens in the container.

@@ -81,7 +81,8 @@ from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
-from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters, get_pushtoken_add_config
+from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
+                                              check_matching_realms)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -1281,25 +1282,25 @@ def check_container_action(request=None, action=None):
     :param action:
     :return: True if action is allowed, otherwise raises an Exception
     """
-    ERROR = {"user": "User actions are defined, but the action %s is not "
-                     "allowed!" % action,
-             "admin": "Admin actions are defined, but the action %s is not "
-                      "allowed!" % action,
-             "container": "Container actions are defined, but the action %s is not allowed!" % action}
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
     if "logged_in_user" in g:
         (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     else:
-        # a client is requesting
-        role, username, realm, adminuser, adminrealm = None, None, None, None, None
+        role, adminuser, adminrealm = None, None, None
+        username, realm = "", ""
+
+    if not username and not realm:
         if user_object:
             username = user_object.login
             realm = user_object.realm
-
-    realm = realm or params.get("realm")
-    resolver = resolver or params.get("resolver")
+            # resolver = user_object.resolver
+        else:
+            # container has no owner
+            username = params.get("user")
+            realm = params.get("realm")
+            resolver = params.get("resolver")
 
     # Check action for (container) realm
     match = Match.generic(g, scope=role,
@@ -1312,45 +1313,71 @@ def check_container_action(request=None, action=None):
     action_allowed = match.allowed()
 
     # Get allowed realms
-    allowed_realms = []
-    policies = match.policies()
-    for pol in policies:
-        if not pol.get("realm"):
-            # if there is no realm set in a policy, then this is a wildcard!
-            allowed_realms = None
-            break
-        else:
-            allowed_realms.extend(pol.get("realm"))
-    request.pi_allowed_realms = allowed_realms
+    request.pi_allowed_realms = match.get_policy_realms()
 
     # get the realm by the container serial
     # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
     # TODO: Refactor Match.generic() to support multiple realms
-    if params.get("container_serial"):
-        container_realms = get_container_realms(params.get("container_serial"))
-
-        # Check if at least one container realm is allowed
-        if action_allowed and allowed_realms and container_realms:
-            matching_realms = list(set(container_realms).intersection(allowed_realms))
-            action_allowed = len(matching_realms) > 0
-
-        # get the realm by the token serial:
-        token_realms = None
-        if params.get("serial"):
-            serial = params.get("serial")
-            if serial.isalnum():
-                # single serial, no list
-                token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
-
-            # Check if at least one token realm is allowed
-            if action_allowed and allowed_realms and token_realms:
-                matching_realms = list(set(token_realms).intersection(allowed_realms))
-                action_allowed = len(matching_realms) > 0
+    container_serial = params.get("container_serial")
+    if action_allowed and container_serial:
+        action_allowed = check_matching_realms(container_serial, request.pi_allowed_realms, params)
 
     if not action_allowed:
         if not role:
             role = "container"
-        raise PolicyError(ERROR.get(role))
+        raise PolicyError(f"{role} actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_client_container_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE CONTAINER.
+    This decorator is used for api calls that perform actions on container requested from a client. If a token serial
+    is passed, it also checks the policy for the token realm.
+
+    :param request:
+    :param action:
+    :return: True if action is allowed, otherwise raises an Exception
+    """
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    user_object = request.User
+    role, adminuser, adminrealm = None, None, None
+    if user_object:
+        username = user_object.login
+        realm = user_object.realm
+        resolver = user_object.resolver
+    else:
+        # No user
+        container_realms = get_container_realms(container_serial)
+        if len(container_realms) > 0:
+            # realms available: get all policies and match container realms afterward
+            username, realm, resolver = None, None, None
+        else:
+            # No user and no realms: Get only policies without explicit user conditions
+            username, realm, resolver = "", "", ""
+
+    # Check action for (container) realm
+    match = Match.generic(g, scope=role,
+                          action=action,
+                          user=username,
+                          resolver=resolver,
+                          realm=realm,
+                          adminrealm=adminrealm,
+                          adminuser=adminuser)
+    action_allowed = match.allowed()
+
+    # Get allowed realms
+    request.pi_allowed_realms = match.get_policy_realms()
+
+    # get the realm by the container serial
+    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
+    # TODO: Refactor Match.generic() to support multiple realms
+    if container_serial and action_allowed:
+        action_allowed = check_matching_realms(container_serial, request.pi_allowed_realms, params)
+
+    if not action_allowed:
+        raise PolicyError(f"Container actions are defined, but the action {action} is not allowed!")
     return True
 
 
@@ -1790,10 +1817,9 @@ def webauthntoken_request(request, action):
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if not request.all_data.get("type") \
-            and not is_webauthn_assertion_response(request.all_data) \
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+    if (not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data) and (
+            'serial' not in request.all_data or request.all_data['serial'].startswith(
+            WebAuthnTokenClass.get_class_prefix()))):
         webauthn = True
         scope = SCOPE.AUTH
 
@@ -1802,44 +1828,41 @@ def webauthntoken_request(request, action):
         actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
 
         if WEBAUTHNACTION.TIMEOUT in actions:
-            timeout_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=WEBAUTHNACTION.TIMEOUT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
+            timeout_policies = Match.user(g,
+                                          scope=scope,
+                                          action=WEBAUTHNACTION.TIMEOUT,
+                                          user_object=request.User if hasattr(request, 'User') else None
+                                          ).action_values(unique=True)
             timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
-            request.all_data[WEBAUTHNACTION.TIMEOUT] \
-                = timeout * 1000
+            request.all_data[WEBAUTHNACTION.TIMEOUT] = timeout * 1000
 
         if WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT in actions:
-            user_verification_requirement_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
-            user_verification_requirement = list(user_verification_requirement_policies)[0] \
-                if user_verification_requirement_policies \
-                else DEFAULT_USER_VERIFICATION_REQUIREMENT
+            user_verification_requirement_policies = Match.user(g,
+                                                                scope=scope,
+                                                                action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                                                user_object=request.User if hasattr(request,
+                                                                                                    'User') else None
+                                                                ).action_values(unique=True)
+            user_verification_requirement = (list(user_verification_requirement_policies)[0]
+                                             if user_verification_requirement_policies
+                                             else DEFAULT_USER_VERIFICATION_REQUIREMENT)
             if user_verification_requirement not in USER_VERIFICATION_LEVELS:
                 raise PolicyError(
                     "{0!s} must be one of {1!s}"
                     .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                             ", ".join(USER_VERIFICATION_LEVELS)))
 
-            request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] \
-                = user_verification_requirement
+            request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
 
         if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
-            allowed_aaguids_pols = Match \
-                .user(g,
-                      scope=scope,
-                      action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=False,
-                               allow_white_space_in_action=True)
+            allowed_aaguids_pols = Match.user(g,
+                                              scope=scope,
+                                              action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                                              user_object=request.User if hasattr(request,
+                                                                                  'User') else None
+                                              ).action_values(unique=False,
+                                                              allow_white_space_in_action=True)
             allowed_aaguids = set(
                 aaguid
                 for allowed_aaguid_pol in allowed_aaguids_pols
@@ -1847,8 +1870,7 @@ def webauthntoken_request(request, action):
             )
 
             if allowed_aaguids:
-                request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
-                    = list(allowed_aaguids)
+                request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] = list(allowed_aaguids)
 
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 
@@ -2000,24 +2022,20 @@ def webauthntoken_enroll(request, action):
 
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        rp_id_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
+        rp_id_policies = Match.user(g, scope=SCOPE.ENROLL,
+                                    action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                    user_object=request.User if hasattr(request, 'User') else None
+                                    ).action_values(unique=True)
         if rp_id_policies:
             rp_id = list(rp_id_policies)[0]
         else:
             raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
 
-        rp_name_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True)
+        rp_name_policies = Match.user(g,
+                                      scope=SCOPE.ENROLL,
+                                      action=WEBAUTHNACTION.RELYING_PARTY_NAME,
+                                      user_object=request.User if hasattr(request, 'User') else None
+                                      ).action_values(unique=True, allow_white_space_in_action=True)
         if rp_name_policies:
             rp_name = list(rp_name_policies)[0]
         else:
@@ -2032,16 +2050,17 @@ def webauthntoken_enroll(request, action):
                 "Illegal value for {0!s} (must be a domain name)."
                 .format(WEBAUTHNACTION.RELYING_PARTY_ID))
 
-        authenticator_attachment_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attachment = list(authenticator_attachment_policies)[0] \
-            if authenticator_attachment_policies \
-               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
-            else None
+        authenticator_attachment_policies = Match.user(g,
+                                                       scope=SCOPE.ENROLL,
+                                                       action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                                                       user_object=request.User if hasattr(request,
+                                                                                           'User') else None
+                                                       ).action_values(unique=True)
+        authenticator_attachment = (list(authenticator_attachment_policies)[0]
+                                    if ((authenticator_attachment_policies
+                                         and list(authenticator_attachment_policies)[0])
+                                        in AUTHENTICATOR_ATTACHMENT_TYPES)
+                                    else None)
 
         # we need to set `unique` to False since this policy can contain multiple values
         public_key_credential_algorithm_pref_policies = Match.user(
@@ -2050,76 +2069,74 @@ def webauthntoken_enroll(request, action):
             action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
             user_object=request.User if hasattr(request, 'User') else None
         ).action_values(unique=False)
-        public_key_credential_algorithm_pref = public_key_credential_algorithm_pref_policies.keys() \
-            if public_key_credential_algorithm_pref_policies \
-            else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+        public_key_credential_algorithm_pref = (public_key_credential_algorithm_pref_policies.keys()
+                                                if public_key_credential_algorithm_pref_policies
+                                                else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE)
         if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in public_key_credential_algorithm_pref]):
             raise PolicyError(
                 "{0!s} must be one of {1!s}"
                 .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                         ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())))
 
-        authenticator_attestation_level_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
-            if authenticator_attestation_level_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
+        authenticator_attestation_level_policies = Match.user(g,
+                                                              scope=SCOPE.ENROLL,
+                                                              action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                              user_object=request.User if hasattr(request,
+                                                                                                  'User') else None
+                                                              ).action_values(unique=True)
+        authenticator_attestation_level = (list(authenticator_attestation_level_policies)[0]
+                                           if authenticator_attestation_level_policies
+                                           else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
         if authenticator_attestation_level not in ATTESTATION_LEVELS:
             raise PolicyError(
                 "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
                                                     ', '.join(ATTESTATION_LEVELS)))
 
-        authenticator_attestation_form_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
-            if authenticator_attestation_form_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+        authenticator_attestation_form_policies = Match.user(g,
+                                                             scope=SCOPE.ENROLL,
+                                                             action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                                                             user_object=request.User if hasattr(request,
+                                                                                                 'User') else None
+                                                             ).action_values(unique=True)
+        authenticator_attestation_form = (list(authenticator_attestation_form_policies)[0]
+                                          if authenticator_attestation_form_policies
+                                          else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
         if authenticator_attestation_form not in ATTESTATION_FORMS:
             raise PolicyError(
                 "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
                                                     ', '.join(ATTESTATION_FORMS)))
 
-        challengetext_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True,
-                           write_to_audit_log=False)
-        challengetext = list(challengetext_policies)[0] \
-            if challengetext_policies \
-            else DEFAULT_CHALLENGE_TEXT_ENROLL
+        challengetext_policies = Match.user(g,
+                                            scope=SCOPE.ENROLL,
+                                            action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(),
+                                                                        ACTION.CHALLENGETEXT),
+                                            user_object=request.User if hasattr(request,
+                                                                                'User') else None
+                                            ).action_values(unique=True,
+                                                            allow_white_space_in_action=True,
+                                                            write_to_audit_log=False)
+        challengetext = (list(challengetext_policies)[0]
+                         if challengetext_policies
+                         else DEFAULT_CHALLENGE_TEXT_ENROLL)
 
-        avoid_double_registration_policy = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
-                  user_object=request.User if hasattr(request, 'User') else None).any()
+        avoid_double_registration_policy = Match.user(g,
+                                                      scope=SCOPE.ENROLL,
+                                                      action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+                                                      user_object=request.User if hasattr(request,
+                                                                                          'User') else None).any()
 
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
 
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
-            = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] \
-            = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
-               for x in PUBKEY_CRED_ALGORITHMS_ORDER
-               if x in public_key_credential_algorithm_pref]
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
-            = authenticator_attestation_level
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
-            = authenticator_attestation_form
-        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
-            = challengetext
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+        request.all_data[
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                                                                for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                                                                if x in public_key_credential_algorithm_pref]
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
+        request.all_data[
+            "{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] = challengetext
         request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
 
     return True
@@ -2172,20 +2189,18 @@ def webauthntoken_allowed(request, action):
                                                                       auth_data=att_obj.get('authData'))
 
         attestation_cert = crypto.X509.from_cryptography(trust_path[0]) if trust_path else None
-        allowed_certs_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.REQ,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False)
+        allowed_certs_pols = Match.user(g,
+                                        scope=SCOPE.ENROLL,
+                                        action=WEBAUTHNACTION.REQ,
+                                        user_object=request.User if hasattr(request, 'User') else None
+                                        ).action_values(unique=False)
 
-        allowed_aaguids_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
+        allowed_aaguids_pols = Match.user(g,
+                                          scope=SCOPE.ENROLL,
+                                          action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                                          user_object=request.User if hasattr(request, 'User') else None
+                                          ).action_values(unique=False,
+                                                          allow_white_space_in_action=True)
         allowed_aaguids = set(
             aaguid
             for allowed_aaguid_pol in allowed_aaguids_pols
@@ -2347,8 +2362,8 @@ def require_description(request=None, action=None):
         tok = None
         serial = getParam(params, "serial")
         if serial:
-            tok = get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True) or \
-                  get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
+            tok = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
+                   or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
@@ -2443,12 +2458,18 @@ def smartphone_config(request, action=None):
     :return: True on success, otherwise raises a PolicyError
     """
     user = request.User
-    if not user:
-        user = None
+    if user:
+        username = user.login or ""
+        realm = user.realm or ""
+        resolver = user.resolver or ""
+    else:
+        username = ""
+        realm = ""
+        resolver = ""
 
     # Check if rollover is allowed for the client
     rollover_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
-                                      user_object=user).policies()
+                                      user=username, realm=realm, resolver=resolver).policies()
     if len(rollover_policies) > 0:
         request.all_data["rollover_allowed"] = rollover_policies[0]['action'][ACTION.CONTAINER_CLIENT_ROLLOVER]
     else:
@@ -2456,7 +2477,7 @@ def smartphone_config(request, action=None):
 
     # Check if initial token transfer is allowed (the server can add tokens from the client to the container)
     token_transfer_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
-                                            user_object=user).policies()
+                                            user=username, realm=realm, resolver=resolver).policies()
     if len(token_transfer_policies) > 0:
         request.all_data["initial_token_transfer"] = token_transfer_policies[0]["action"][
             ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER]
@@ -2465,7 +2486,7 @@ def smartphone_config(request, action=None):
 
     # Check if the user is allowed to delete tokens from the smartphone (not on the server)
     delete_tokens_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_TOKEN_DELETABLE,
-                                           user_object=user).policies()
+                                           user=username, realm=realm, resolver=resolver).policies()
     if len(delete_tokens_policies) > 0:
         request.all_data["tokens_deletable"] = delete_tokens_policies[0]["action"][ACTION.CLIENT_TOKEN_DELETABLE]
     else:
@@ -2473,7 +2494,7 @@ def smartphone_config(request, action=None):
 
     # Check if the user is allowed to unregister the container
     container_unregister_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
-                                                  user_object=user).policies()
+                                                  user=username, realm=realm, resolver=resolver).policies()
     if len(container_unregister_policies) > 0:
         request.all_data["unregister_allowed"] = container_unregister_policies[0]["action"][
             ACTION.CLIENT_CONTAINER_UNREGISTER]

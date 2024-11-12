@@ -2924,19 +2924,20 @@ def regenerate_enroll_url(serial, request, g):
     token = get_one_token(serial=serial)
     token_owner = token.user or User()
     request.User = token_owner
+    if token_owner:
+        request.all_data["user"] = token_owner.login
+        request.all_data["realm"] = token_owner.realm
+        request.all_data["resolver"] = token_owner.resolver
     request.all_data["serial"] = serial
     request.all_data["type"] = token.get_type()
     g.serial = serial
 
     # Get policies for the token
-    from privacyidea.api.lib.prepolicy import (verify_enrollment, required_piv_attestation, pushtoken_add_config,
-                                               tantoken_count, sms_identifiers, papertoken_count, init_tokenlabel)
+    from privacyidea.api.lib.prepolicy import (pushtoken_add_config, tantoken_count, papertoken_count,
+                                               init_tokenlabel)
     try:
-        verify_enrollment(request)
-        required_piv_attestation(request)
         pushtoken_add_config(request, None)
         tantoken_count(request, None)
-        sms_identifiers(request, None)
         papertoken_count(request, None)
         init_tokenlabel(request, None)
     except PolicyError as ex:

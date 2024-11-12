@@ -24,9 +24,12 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 """
 
 import logging
+
+from privacyidea.lib.container import get_container_realms
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.error import PolicyError
+from privacyidea.lib.token import get_realms_of_token
 
 log = logging.getLogger(__name__)
 
@@ -81,9 +84,11 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
     # Get the firebase configuration from the policies
-    firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                 user_object=user_obj if user_obj else None).action_values(unique=True,
-                                                                                           allow_white_space_in_action=True)
+    firebase_config = Match.user(g, scope=SCOPE.ENROLL,
+                                 action=PUSH_ACTION.FIREBASE_CONFIG,
+                                 user_object=user_obj if user_obj else None
+                                 ).action_values(unique=True,
+                                                 allow_white_space_in_action=True)
     if len(firebase_config) == 1:
         params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
     else:
@@ -113,3 +118,37 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     else:
         params[PUSH_ACTION.TTL] = "10"
     return params
+
+
+def check_matching_realms(container_serial, allowed_realms, params):
+    """
+    Checks if at least one realm of the container is contained in the allowed realms.
+    If a token serial is given in the request parameters, it is also evaluated for the token realms.
+
+    :param container_serial: The serial of the container
+    :param allowed_realms: A list of the realms that are allowed to perform the action
+    :param params: The request parameters
+    :return: True if at least one realm is allowed, False otherwise
+    """
+    action_allowed = True
+    container_realms = get_container_realms(container_serial)
+
+    # Check if at least one container realm is allowed
+    if allowed_realms and container_realms:
+        matching_realms = list(set(container_realms).intersection(allowed_realms))
+        action_allowed = len(matching_realms) > 0
+
+    # get the realm by the token serial:
+    token_realms = None
+    if params.get("serial"):
+        serial = params.get("serial")
+        if serial.isalnum():
+            # single serial, no list
+            token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
+
+        # Check if at least one token realm is allowed
+        if action_allowed and allowed_realms and token_realms:
+            matching_realms = list(set(token_realms).intersection(allowed_realms))
+            action_allowed = len(matching_realms) > 0
+
+    return action_allowed
