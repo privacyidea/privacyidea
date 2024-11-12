@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {forkJoin, Observable} from 'rxjs';
 import {LocalService} from '../local/local.service';
 import {Sort} from '@angular/material/sort';
 import {TableUtilsService} from '../table-utils/table-utils.service';
@@ -91,9 +91,17 @@ export class TokenService {
     return this.http.get(this.baseUrl, {headers, params})
   }
 
-  setTokenDetail(serial: string, key: string, value: string): Observable<any> {
+  setTokenDetail(serial: string, key: string, old_value: any, new_value: any): Observable<any> {
     const headers = this.getHeaders();
-    return this.http.post(this.baseUrl + 'set', {'serial': serial, [key]: value}, {headers})
+    const url = `${this.baseUrl}set`;
+    if (key === 'info' && typeof new_value === 'object' && new_value !== null) {
+      const requests = Object.keys(new_value).map(infoKey =>
+        this.http.post(url, {serial, [new_value[infoKey].split(':')[0]]: new_value[infoKey].split(' ')[1]}, {headers})
+      );
+      return forkJoin(requests);
+    } else {
+      return this.http.post(url, {serial, [key]: old_value}, {headers});
+    }
   }
 
   deleteToken(serial: string) {

@@ -80,6 +80,7 @@ export class TokenDetailsComponent {
   protected readonly Object = Object;
   detailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
   userDetailData = signal<{ value: any; key: { label: string; key: string } }[]>([]);
+  infos = signal<string[]>([]);
 
   constructor(private tokenService: TokenService) {
     effect(() => {
@@ -140,25 +141,24 @@ export class TokenDetailsComponent {
       element.isEditing = false;
     } else {
       element.isEditing = !element.isEditing;
-      if (!element.isEditing) {
+      if (element.isEditing) {
+        this.infos.set(this.parseObjectToList(element.value));
+      } else {
         this.saveDetail(element);
       }
     }
   }
 
   saveDetail(element: any): void {
-    if (element.key.key === 'info') {
-
-    } else {
-      this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value).subscribe({
-        next: response => {
-          console.log('Token detail saved:', response);
-        },
-        error: error => {
-          console.error('Failed to save token detail', error);
-        }
-      });
-    }
+    this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value, this.infos()).subscribe({
+      next: response => {
+        this.showTokenDetail(this.serial());
+        console.log('Token detail saved:', response);
+      },
+      error: error => {
+        console.error('Failed to save token detail', error);
+      }
+    });
   }
 
   deleteToken(): void {
