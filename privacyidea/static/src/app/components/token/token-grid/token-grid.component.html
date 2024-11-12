@@ -15,7 +15,7 @@
         <main>
           @if (selectedTabIndex === 0) {
             @if (tokenIsSelected()) {
-              <app-token-details [serial]="serial"></app-token-details>
+              <app-token-details [serial]="serial" [tokenIsSelected]="tokenIsSelected"></app-token-details>
             } @else {
               <app-token-table [serial]="serial" [tokenIsSelected]="tokenIsSelected"></app-token-table>
             }
@@ -29,6 +29,5 @@
         </main>
       </div>
     </mat-grid-tile>
-
   </mat-grid-list>
 </div>

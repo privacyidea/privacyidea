@@ -7,21 +7,28 @@ import {
   MatHeaderCellDef,
   MatRow,
   MatRowDef,
-  MatTable
+  MatTable,
 } from '@angular/material/table';
-import {MatFabButton} from '@angular/material/button';
+import {MatButton, MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {NgClass} from '@angular/common';
+import {MatGridList, MatGridTile} from '@angular/material/grid-list';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {MatInput, MatSuffix} from '@angular/material/input';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatDivider} from '@angular/material/divider';
+import {MatOption, MatSelectModule} from '@angular/material/select';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
   {key: 'active', label: 'Active'},
   {key: 'maxfail', label: 'Max Count'},
-  {key: 'failcount', label: 'Count'},
+  {key: 'failcount', label: 'Fail Count'},
   {key: 'otplen', label: 'OTP Length'},
   {key: 'count_window', label: 'Count Window'},
+  {key: 'sync_window', label: 'Sync Window'},
   {key: 'count', label: 'Count'},
   {key: 'description', label: 'Description'},
   {key: 'info', label: 'Information'},
@@ -52,7 +59,18 @@ export const userDetail = [
     MatRowDef,
     MatTable,
     MatHeaderCellDef,
-    NgClass
+    NgClass,
+    MatGridTile,
+    MatGridList,
+    FormsModule,
+    MatInput,
+    MatDivider,
+    MatSuffix,
+    MatOption,
+    MatFormFieldModule,
+    MatSelectModule,
+    ReactiveFormsModule,
+    MatButton,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -70,6 +88,10 @@ export class TokenDetailsComponent {
   }
 
   @Input() serial!: WritableSignal<string>
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
+  hide!: boolean;
+  active: boolean = true;
+  revoked: boolean = false;
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -83,6 +105,9 @@ export class TokenDetailsComponent {
     this.tokenService.getTokenDetails(serial).subscribe({
       next: response => {
         const tokenDetails = response.result.value.tokens[0];
+        console.log('Token details:', tokenDetails);
+        this.active = tokenDetails.active;
+        this.revoked = tokenDetails.revoked;
         this.detailData.set(details.map(detail => ({
           key: detail,
           value: tokenDetails[detail.key]
@@ -99,7 +124,72 @@ export class TokenDetailsComponent {
     });
   }
 
-  editTokenDetail() {
-    console.log('Edit button clicked. Implement your edit logic here.');
+  resetFailCount() {
+    this.tokenService.resetFailCount(this.serial()).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to reset fail counter', error);
+      }
+    });
+  }
+
+  toggleEditMode(element: any, action: string = '') {
+    if (action === 'cancel') {
+      element.isEditing = false;
+    } else {
+      element.isEditing = !element.isEditing;
+      if (!element.isEditing) {
+        this.saveDetail(element);
+      }
+    }
+  }
+
+  saveDetail(element: any): void {
+    if (element.key.key === 'info') {
+
+    } else {
+      this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value).subscribe({
+        next: response => {
+          console.log('Token detail saved:', response);
+        },
+        error: error => {
+          console.error('Failed to save token detail', error);
+        }
+      });
+    }
+  }
+
+  deleteToken(): void {
+    this.tokenService.deleteToken(this.serial()).subscribe({
+      next: () => {
+        this.tokenIsSelected.set(false);
+      }, error: error => {
+        console.error('Failed to delete token', error);
+      }
+    });
+  }
+
+  toggleActive(): void {
+    this.tokenService.toggleActive(this.serial(), this.active).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to toggle active', error);
+      }
+    });
+  }
+
+  revokeToken(): void {
+    this.tokenService.revokeToken(this.serial()).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to revoke token', error);
+      }
+    });
   }
 }

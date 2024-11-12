@@ -1,76 +1,190 @@
 <div aria-label="Details Tables" class="item-table">
-  <div class="detail-table-wrapper">
-    <div class="details-section">
-      <div class="token-detail-header"><h2>Details for Token </h2>
-        <h2 style="color: var(--blue-base)"> {{ serial() }} </h2></div>
-      <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
-        <ng-container matColumnDef="key">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.key.label }}</td>
-        </ng-container>
-        <ng-container matColumnDef="value">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>
-            @if (isObject(element.value) || Array.isArray(element.value)) {
-              <mat-list>
-                @for (item of parseObjectToList(element.value); track item) {
-                  <mat-list-item class="object-row"><span class="object-item">{{ item }}</span></mat-list-item>
+  <mat-grid-list cols="3" rowHeight="6vh">
+    <mat-grid-tile [colspan]="3" [rowspan]="1">
+      <div class="token-detail-header">
+        <h2>Details for Token: </h2>
+        <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="1" [rowspan]="12">
+      <div class="details-wrapper">
+        <div class="details-section">
+          <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
+            <ng-container matColumnDef="key">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.key.label }}</td>
+            </ng-container>
+            <ng-container matColumnDef="value">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
+                @if (isObject(element.value) || Array.isArray(element.value)) {
+                  <mat-list>
+                    @for (item of parseObjectToList(element.value); track item) {
+                      <mat-list-item class="object-row"><span class="object-item">{{ item }}</span></mat-list-item>
+                    }
+                  </mat-list>
+                } @else if (element.isEditing) {
+                  <input matInput [(ngModel)]="element.value"/>
+                } @else {
+                  <span
+                    [ngClass]="{
+            'highlight-true': (element.key.key === 'active' && element.value === true) ||
+                            (element.key.key === 'failcount' && element.value == 0),
+            'highlight-warning': (element.key.key === 'failcount' && element.value >= 1 && element.value <= 9),
+            'highlight-false': (element.key.key === 'active' && element.value !== true) ||
+                              (element.key.key === 'failcount' && (element.value < 0 || element.value > 9))
+          }">
+          {{ element.key.key === 'active' ? (revoked ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
+        </span>
                 }
-              </mat-list>
-            } @else {
-              <span [ngClass]="{
-                  'highlight-true': (element.key.key === 'active' && element.value === true) ||
-                                  (element.key.key === 'failcount' && element.value == 0),
-                  'highlight-warning': (element.key.key === 'failcount' && element.value >= 1 && element.value <= 9),
-                  'highlight-false': (element.key.key === 'active' && element.value !== true) ||
-                                    (element.key.key === 'failcount' && (element.value < 0 || element.value > 9))
-                }">
-                {{ element.key.key === 'active' ? (element.value ? 'active' : 'deactivated') : element.value }}
-              </span>
-            }
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="edit">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>
-            @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
-            || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
-            || element.key.key === "tokengroup") {
-              <button mat-fab class="edit-button" (click)="editTokenDetail()">
-                <mat-icon>edit</mat-icon>
-              </button>
-            }
-          </td>
-        </ng-container>
-        <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
-      </table>
-    </div>
-    <br/>
-    <div class="user-details-section">
-      <h3>Assigned User</h3>
-      <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
-        <ng-container matColumnDef="key">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.key.label }}</td>
-        </ng-container>
-        <ng-container matColumnDef="value">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>
-            {{ element.value }}
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="edit">
-          <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-          <td *matCellDef="let element" class="detail-row" mat-cell>
-            @if (element.key.key === "username") {
-              <button mat-fab class="edit-button" (click)="editTokenDetail()">
-                <mat-icon>edit</mat-icon>
-              </button>
-            }
-          </td>
-        </ng-container>
-        <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
-      </table>
-    </div>
-  </div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="edit">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
+                @if (element.key.key === "failcount") {
+                  <mat-icon class="clickable" (click)="resetFailCount()">lock_reset</mat-icon>
+                }
+                @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
+                || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
+                || element.key.key === "tokengroup") {
+                  <div class="edit-button-container">
+                    <mat-icon class="edit-button"
+                              (click)="toggleEditMode(element)">{{ element.isEditing ? 'save_as' : 'edit' }}
+                    </mat-icon>
+                    @if (element.isEditing) {
+                      <mat-icon class="edit-button"
+                                (click)="toggleEditMode(element, 'cancel')" style="color: var(--red-base)">cancel
+                      </mat-icon>
+                    }
+                  </div>
+                }
+              </td>
+            </ng-container>
+            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+          </table>
+        </div>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="1" [rowspan]="12">
+      <div class="user-details-section">
+        <h3>Assigned User:</h3>
+        <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
+          <ng-container matColumnDef="key">
+            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="user-detail-row" mat-cell>{{ element.key.label }}</td>
+          </ng-container>
+          <ng-container matColumnDef="value">
+            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="user-detail-row editable-row" mat-cell>
+              @if (element.isEditing) {
+                <input matInput [(ngModel)]="element.value"/>
+              } @else {
+                {{ element.value }}
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="edit">
+            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
+              @if (element.key.key === "username") {
+                <div class="edit-button-container">
+                  <mat-icon class="edit-button"
+                            (click)="toggleEditMode(element)"
+                            [ngClass]="{'yellow-icon': !element.isEditing,
+                                        'green-icon': element.isEditing}">
+                    {{ element.isEditing ? 'person_add' : 'person_remove' }}
+                  </mat-icon>
+                </div>
+              }
+            </td>
+          </ng-container>
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+        </table>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <div class="otp-input-container">
+          <input style="display:none" type="text"/>
+          <input style="display:none" type="password"/>
+          <input [type]="'password'" class="input" placeholder="Token Pin" value="">
+          <input [type]="'password'" class="input" placeholder="Repeat Pin" value="">
+        </div>
+        <div class="pin-button">
+          <button class="detail-button-fix" extended mat-fab>
+            <mat-icon class="detail-button-icon">password</mat-icon>
+            Set Pin
+          </button>
+          <button class="detail-button-fix" extended mat-fab>
+            <mat-icon class="detail-button-icon">casino</mat-icon>
+            Random Pin
+          </button>
+        </div>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <mat-form-field class="mat-form-field">
+          <mat-label>Container Serial</mat-label>
+          <select matNativeControl>
+            <option value="option1"></option>
+            <option value="option2">CONT1234567890</option>
+            <option value="option3">CONT0987654321</option>
+          </select>
+        </mat-form-field>
+        <button class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">drive_folder_upload</mat-icon>
+          Assign container
+        </button>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="1" [rowspan]="12">
+      <div class="otp-container">
+        <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
+          <mat-icon>delete_forever</mat-icon>
+          Delete
+        </button>
+        <div class="delete-buttons">
+          <button (click)="toggleActive()" [disabled]="revoked" [ngClass]="{'card-button-delete-fix': active,
+                                         'card-button-activate-fix': !active}" color="alert" mat-flat-button>
+            <mat-icon>{{ active ? 'auto_delete' : 'play_circle' }}</mat-icon>
+            {{ active ? 'Deactivate' : 'Activate' }}
+          </button>
+          <button (click)="revokeToken()" [disabled]="revoked" class="card-button-delete-fix" color="alert"
+                  mat-flat-button>
+            <mat-icon>delete_outlined</mat-icon>
+            Revoke
+          </button>
+        </div>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <div class="otp-input-container">
+          <input class="input" placeholder="First OTP value" value="">
+          <input class="input" placeholder="Second OTP value" value="">
+        </div>
+        <button class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">sync</mat-icon>
+          Resync Token
+        </button>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <div class="pin-input">
+          <input style="display:none" type="text"/>
+          <input style="display:none" type="password"/>
+          <input [type]="hide ? 'password' : 'text'" class="input-full" placeholder="OTP or PIN" value="">
+          <mat-icon (click)="hide = !hide" class="visible-icon" matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+        </div>
+        <button class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">help_outline</mat-icon>
+          Test Token
+        </button>
+        <button class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">help_outline</mat-icon>
+          Verify OTP value
+        </button>
+      </div>
+    </mat-grid-tile>
+  </mat-grid-list>
 </div>

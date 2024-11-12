@@ -27,7 +27,7 @@ th:nth-child(even) {
 
 .item-table th,
 .item-table td {
-  border: 1px solid #ddd;
+  border: 1px solid #E0E2EC;
 }
 
 .ng-tns-c508571215-2 {
@@ -149,18 +149,24 @@ span {
 }
 
 .object-row {
-  height: 20px;
+  max-width: 200px;
+  height: auto;
 }
 
 .object-item {
-  font-size: 14px;
+  font-size: 12px;
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .edit-button {
   color: black;
-  height: 20px;
-  width: 28px;
-  font-size: 8px;
   background-color: white;
-  box-shadow: none;
+  cursor: pointer;
+}
+
+.mat-divider {
+  border-top-color: #E0E2EC;
 }

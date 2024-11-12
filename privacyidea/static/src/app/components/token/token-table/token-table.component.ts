@@ -110,7 +110,7 @@ export class TokenTableComponent {
   }
 
   toggleActive(element: any): void {
-    this.tokenService.toggleActive(element).subscribe({
+    this.tokenService.toggleActive(element.serial, element.active).subscribe({
       next: () => {
         this.fetchTokenData();
       },
@@ -121,7 +121,7 @@ export class TokenTableComponent {
   }
 
   resetFailCount(element: any): void {
-    this.tokenService.resetFailCount(element).subscribe({
+    this.tokenService.resetFailCount(element.serial).subscribe({
       next: () => {
         this.fetchTokenData();
       },

@@ -62,18 +62,21 @@
         </button>
       </mat-list-item>
       <mat-list-item>
-        <button class="card-button-reset" mat-flat-button>
-          <mat-icon>lock_reset</mat-icon>
-          Reset Fail Count
+        <button class="card-button" mat-flat-button>
+          <mat-icon>manage_search</mat-icon>
+          Show Token in Audit Log
         </button>
       </mat-list-item>
+      <br/>
+      <mat-divider/>
+      <br/>
       <mat-list-item>
-        <button class="card-button-delete" color="alert" mat-flat-button>
-          <mat-icon>delete</mat-icon>
-          Delete
+        <button class="card-button" mat-flat-button>
+          <mat-icon>remove_red_eye</mat-icon>
+          Lost Token
         </button>
       </mat-list-item>
-      @for (a of [0, 0, 0, 0, 0, 0]; track 0) {
+      @for (a of [0, 0, 0, 0, 0]; track 0) {
         <mat-list-item disabled>
         </mat-list-item>
       }

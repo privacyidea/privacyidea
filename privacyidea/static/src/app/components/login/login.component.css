@@ -11,7 +11,7 @@
   width: 10%;
   height: auto;
   border-radius: 50%;
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow-white);
   margin-bottom: 20px;
 }
 
@@ -38,7 +38,7 @@ mat-form-field {
   color: #fff;
   padding: 10px;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow-white);
   background: var(--background-blue);
 }
 

@@ -1,7 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {Observable, throwError} from 'rxjs';
-import {catchError, map} from 'rxjs/operators';
+import {Observable} from 'rxjs';
 import {LocalService} from '../local/local.service';
 import {Sort} from '@angular/material/sort';
 import {TableUtilsService} from '../table-utils/table-utils.service';
@@ -38,25 +37,15 @@ export class TokenService {
               private tableUtilsService: TableUtilsService) {
   }
 
-  toggleActive(element: any): Observable<any> {
+  toggleActive(serial: string, active: boolean): Observable<any> {
     const headers = this.getHeaders();
-    const action = element.active ? 'disable' : 'enable';
-    return this.http.post(`${this.baseUrl}${action}`, {"serial": element.serial}, {headers}).pipe(
-      catchError(error => {
-        console.error(`Failed to ${action} token`, error);
-        return throwError(error);
-      })
-    );
+    const action = active ? 'disable' : 'enable';
+    return this.http.post(`${this.baseUrl}${action}`, {"serial": serial}, {headers})
   }
 
-  resetFailCount(element: any): Observable<any> {
+  resetFailCount(serial: string): Observable<any> {
     const headers = this.getHeaders();
-    return this.http.post(this.baseUrl + 'reset', {"serial": element.serial}, {headers}).pipe(
-      catchError(error => {
-        console.error('Failed to get reset fail counter', error);
-        return throwError(error);
-      })
-    )
+    return this.http.post(this.baseUrl + 'reset', {"serial": serial}, {headers})
   }
 
   getTokenData(page: number, pageSize: number, columns: {
@@ -93,24 +82,27 @@ export class TokenService {
       */
     }
 
-    return this.http.get<any>(this.baseUrl, {headers, params}).pipe(
-      map(response => response),
-      catchError(error => {
-        console.error('Failed to get token data', error);
-        return throwError(error);
-      })
-    );
+    return this.http.get<any>(this.baseUrl, {headers, params})
   }
 
   getTokenDetails(serial: string): Observable<any> {
     const headers = this.getHeaders();
     let params = new HttpParams().set('serial', serial);
-    return this.http.get(this.baseUrl, {headers, params}).pipe(
-      map(response => response),
-      catchError(error => {
-        console.error('Failed to get token details', error);
-        return throwError(error);
-      })
-    );
+    return this.http.get(this.baseUrl, {headers, params})
+  }
+
+  setTokenDetail(serial: string, key: string, value: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.post(this.baseUrl + 'set', {'serial': serial, [key]: value}, {headers})
+  }
+
+  deleteToken(serial: string) {
+    const headers = this.getHeaders();
+    return this.http.delete(this.baseUrl + "/" + serial, {headers})
+  }
+
+  revokeToken(serial: string) {
+    const headers = this.getHeaders();
+    return this.http.post(this.baseUrl + 'revoke', {'serial': serial}, {headers})
   }
 }

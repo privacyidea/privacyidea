@@ -5,18 +5,20 @@
   width: auto;
   max-width: fit-content;
   padding-left: 10px;
+  padding-right: 10px;
 }
 
-.detail-table-wrapper {
+.details-wrapper {
   display: flex;
-  gap: 20px;
-  width: auto;
-  max-width: fit-content;
-  padding-left: 10px;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  max-width: 100%;
 }
 
 .details-section .user-details-section {
-  width: auto;
+  align-self: flex-start;
+  width: 100%;
   max-width: fit-content;
   table-layout: auto;
   border-collapse: collapse;
@@ -24,15 +26,211 @@
 
 .detail-table th,
 .detail-table td {
-  padding: 7px;
-  border: 1px solid #ddd;
+  padding: 10px;
 }
 
 .detail-row {
+  min-width: 122px;
+  height: 10px;
+}
+
+.user-detail-row {
   height: 10px;
 }
 
 .token-detail-header {
   display: flex;
+  margin-left: 20px;
+  margin-right: auto;
   gap: 10px;
+}
+
+.detail-button {
+  height: 40px;
+  width: 100%;
+  color: white;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-blue);
+  box-shadow: var(--box-shadow-blue);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.detail-button-fix:hover,
+.detail-button:hover {
+  background: var(--background-blue-inset);
+  box-shadow: var(--box-shadow-blue-inset);
+  transition: 0ms;
+}
+
+.detail-button-fix {
+  height: 40px;
+  width: 49%;
+  color: white;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-blue);
+  box-shadow: var(--box-shadow-blue);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.detail-button-icon {
+  vertical-align: bottom;
+  margin-bottom: -6px;
+  font-size: 18px;
+}
+
+.visible-icon {
+  vertical-align: bottom;
+  margin-bottom: -10px;
+  cursor: pointer;
+}
+
+.otp-container {
+  flex-direction: column;
+  display: flex;
+  gap: 10px;
+  margin: 16px 10px 10px;
+  width: 100%;
+  border-radius: var(--border-radius);
+  background-color: #f3f3f3;
+  border: #E0E2EC 1px solid;
+  padding: 40px 57px;
+}
+
+.otp-input-container {
+  display: flex;
+  gap: 10px;
+}
+
+.input {
+  height: 40px;
+  width: calc(50% - 5px);
+  border-radius: var(--border-radius);
+}
+
+.input-full {
+  height: 40px;
+  width: calc(80% - 10px);
+  border-radius: var(--border-radius);
+}
+
+mat-grid-tile {
+  /* background-color: #ffff00; *//* DEBUG */
+  display: flex;
+  overflow: auto;
+}
+
+:host ::ng-deep .mat-grid-tile-content {
+  align-items: start;
+}
+
+.detail-row.mat-cell {
+  display: flex;
+  align-items: center;
+  width: auto;
+  padding: 0;
+}
+
+.edit-button-container {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  text-align: center;
+}
+
+.editable-row {
+  min-width: 220px;
+}
+
+.pin-input {
+  display: flex;
+  gap: 10px;
+}
+
+.pin-button {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.mat-form-field {
+  width: 76%;
+}
+
+.yellow-icon {
+  color: var(--yellow-base);
+}
+
+.green-icon {
+  color: var(--green-base);
+}
+
+.card-button-delete {
+  margin-right: 5px;
+  margin-bottom: -5px;
+  height: 40px;
+  width: 98%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-red);
+  box-shadow: var(--box-shadow-red);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-delete-fix {
+  margin-right: 6px;
+  margin-bottom: 5px;
+  height: 40px;
+  width: 48%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-red);
+  box-shadow: var(--box-shadow-red);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-activate-fix {
+  margin-right: 6px;
+  margin-bottom: 5px;
+  height: 40px;
+  width: 48%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-green);
+  box-shadow: var(--box-shadow-green);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-activate-fix.activ,
+.card-button-activate-fix:hover {
+  background: var(--background-green-inset);
+  box-shadow: var(--box-shadow-green-inset);
+  transition: 0ms;
+}
+
+.card-button-delete-fix.activ,
+.card-button-delete-fix:hover,
+.card-button-delete.activ,
+.card-button-delete:hover {
+  background: var(--background-red-inset);
+  box-shadow: var(--box-shadow-red-inset);
+  transition: 0ms;
+}
+
+.clickable {
+  cursor: pointer;
 }

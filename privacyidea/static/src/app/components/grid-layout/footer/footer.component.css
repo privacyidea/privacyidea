@@ -5,7 +5,7 @@
   background: #3f3f3f;
   color: white;
   padding: 10px;
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow-white);
   position: fixed;
   bottom: 0;
   width: 100%;

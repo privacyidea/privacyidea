@@ -20,7 +20,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  box-shadow: var(--box-shadow-logo);
+  box-shadow: var(--box-shadow-white);
 }
 
 .nav-menu {
@@ -40,6 +40,7 @@
 }
 
 .nav-menu a:hover {
+  box-shadow: var(--box-shadow-header);
   z-index: 1;
   background: var(--background-blue);
   color: white;
@@ -48,7 +49,8 @@
 }
 
 .nav-menu a.active {
-  z-index: 2;
+  box-shadow: var(--box-shadow-header);
+  z-index: 1;
   background: var(--blue-base);
   color: white;
   transform: translateX(-2px);
@@ -73,7 +75,7 @@
   border: none;
   border-radius: var(--border-radius);
   background: var(--background-yellow);
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow-white);
   cursor: pointer;
   color: white;
 }

@@ -1,3 +1,5 @@
+@import '../../../../../styles/table.css';
+
 .card-button {
   height: 40px;
   width: 100%;
@@ -7,25 +9,6 @@
   background: var(--background-blue);
   box-shadow: var(--box-shadow-blue);
   cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-delete {
-  height: 40px;
-  width: 100%;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-red);
-  box-shadow: var(--box-shadow-red);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-delete.activ,
-.card-button-delete:hover {
-  background: var(--background-red-inset);
-  box-shadow: var(--box-shadow-red-inset);
   transition: 0ms;
 }
 
@@ -63,10 +46,6 @@
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);
   transition: 0ms;
-}
-
-.mat-divider {
-  border-top-color: #E0E2EC;
 }
 
 .mat-delete {
