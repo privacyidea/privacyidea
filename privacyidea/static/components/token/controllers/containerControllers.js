@@ -65,9 +65,10 @@ myApp.service('ContainerUtils', function () {
 });
 
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state', 'TokenFactory', 'ContainerUtils',
+    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state', 'TokenFactory', 'ContainerUtils', '$timeout', '$location',
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
-                                       AuthFactory, ConfigFactory, UserFactory, $state, TokenFactory, ContainerUtils) {
+                                       AuthFactory, ConfigFactory, UserFactory, $state, TokenFactory, ContainerUtils,
+                                       $timeout, $location) {
         $scope.formData = {
             containerTypes: {},
         };
@@ -304,11 +305,29 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         $scope.containerRegister = true;
                         $scope.containerRegistrationURL = registrationData.result.value['container_url']['value'];
                         $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
+                        $scope.pollContainerDetails();
                     });
                 } else {
                     $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                 }
 
+            });
+        };
+
+        $scope.pollContainerDetails = function () {
+            ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
+                if (data.result.value.containers.length > 0) {
+                    let container = data.result.value.containers[0];
+                    let registration_state = container.info['registration_state'];
+                    if (registration_state === "client_wait" && $location.path() == "/token/container") {
+                        // stop polling if the page changed or the container was (un)registered
+                        $timeout($scope.pollContainerDetails, 2500);
+                    }
+                    else if (registration_state === "registered") {
+                        // container successfully registered, move to details page
+                        $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                    }
+                }
             });
         };
 
@@ -659,7 +678,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     $scope.containerRegistrationQR = data.result.value['container_url']['img'];
                 }
                 $scope.registrationOptions = {"open": false};
-                $scope.getContainer();
+                // Set registration state to start the polling
+                $scope.container.info["registration_state"] = "client_wait";
                 $scope.pollContainerDetails();
             });
         };
@@ -672,10 +692,11 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.pollContainerDetails = function () {
-            let details_base_path = "/token/container/details";
-            if ($scope.container.info['registration_state'] === "client_wait" && $location.path().indexOf(details_base_path) > -1) {
+            $scope.getContainer();
+            let details_path = "/token/container/details/" + $scope.containerSerial;
+            let registration_state = $scope.container.info['registration_state'];
+            if (registration_state === "client_wait" && $location.path() === details_path) {
                 // stop polling if the page changed or the container was (un)registered
-                $scope.getContainer();
                 $timeout($scope.pollContainerDetails, 2500);
             }
         };
