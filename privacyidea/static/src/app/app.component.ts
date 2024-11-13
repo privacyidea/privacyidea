@@ -14,7 +14,7 @@ import {AuthService} from './services/auth/auth.service';
 export class AppComponent {
   constructor(private authService: AuthService) {
     if (this.authService.isAuthenticatedUser()) {
-      console.log('User is already logged in');
+      console.warn('User is already logged in');
     }
   }
 

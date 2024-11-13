@@ -142,7 +142,6 @@ export class TokenDetailsComponent {
     if (action === 'cancel') {
       element.isEditing = false;
     } else {
-      console.log('Toggle detail:', element);
       element.isEditing = !element.isEditing;
       if (element.isEditing && element.key.key === 'info') {
         this.infos.set(this.parseObjectToList(element.value));
@@ -150,7 +149,6 @@ export class TokenDetailsComponent {
         if (this.newInfo() !== '') {
           this.infos().push(this.newInfo());
         }
-        console.log('Saving detail:', element);
         this.saveDetail(element);
         this.newInfo.set('');
       }
@@ -208,7 +206,6 @@ export class TokenDetailsComponent {
 
   deleteInfo(info: string): void {
     const infoKey = info.split(':')[0];
-    console.log('Deleting info:', infoKey);
     this.tokenService.deleteInfo(this.serial(), infoKey).pipe(
       switchMap(() => this.showTokenDetail(this.serial())),
       switchMap(() => {

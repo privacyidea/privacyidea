@@ -55,7 +55,7 @@ export class ContainerTableComponent {
               private containerService: ContainerService,
               protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.log('Redirected to login page', r));
+      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
     } else {
       this.fetchContainerData();
     }
