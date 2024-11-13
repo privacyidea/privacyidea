@@ -31,11 +31,15 @@
 
 .detail-row {
   min-width: 122px;
-  height: 10px;
+  height: 51px;
 }
 
 .user-detail-row {
-  height: 10px;
+  height: 51px;
+}
+
+.edit-info-row {
+  display: flex;
 }
 
 .token-detail-header {

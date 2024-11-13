@@ -21,14 +21,22 @@
                   <mat-list>
                     @for (info of parseObjectToList(element.value); track info; let idx = $index) {
                       @if (element.isEditing) {
-                        <mat-list-item class="object-row">
-                          <input matInput [(ngModel)]="infos()[idx]"/>
-                        </mat-list-item>
+                        <div class="edit-info-row">
+                          <mat-list-item class="object-row">
+                            <input matInput [(ngModel)]="infos()[idx]"/>
+                          </mat-list-item>
+                          <mat-icon (click)="deleteInfo(infos()[idx])">delete</mat-icon>
+                        </div>
                       } @else {
                         <mat-list-item class="object-row">
                           <span class="object-item">{{ info }}</span>
                         </mat-list-item>
                       }
+                    }
+                    @if (element.isEditing) {
+                      <mat-list-item class="object-row">
+                        <input matInput [(ngModel)]="newInfo" placeholder="Add new info"/>
+                      </mat-list-item>
                     }
                   </mat-list>
                 } @else if (element.isEditing) {
@@ -61,8 +69,7 @@
                       <mat-icon class="edit-button"
                                 (click)="toggleEditMode(element)">{{ 'edit' }}
                       </mat-icon>
-                    }
-                    @else if (element.isEditing) {
+                    } @else if (element.isEditing) {
                       <mat-icon class="edit-button"
                                 (click)="toggleEditMode(element)">{{ 'save_as' }}
                       </mat-icon>

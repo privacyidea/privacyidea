@@ -19,7 +19,7 @@ import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput, MatSuffix} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDivider} from '@angular/material/divider';
-import {MatOption, MatSelectModule} from '@angular/material/select';
+import {MatSelectModule} from '@angular/material/select';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -66,7 +66,6 @@ export const userDetail = [
     MatInput,
     MatDivider,
     MatSuffix,
-    MatOption,
     MatFormFieldModule,
     MatSelectModule,
     ReactiveFormsModule,
@@ -81,6 +80,7 @@ export class TokenDetailsComponent {
   detailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   userDetailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   infos = signal<string[]>([]);
+  newInfo: WritableSignal<string> = signal('');
 
   constructor(private tokenService: TokenService) {
     effect(() => {
@@ -106,7 +106,6 @@ export class TokenDetailsComponent {
     this.tokenService.getTokenDetails(serial).subscribe({
       next: response => {
         const tokenDetails = response.result.value.tokens[0];
-        console.log('Token details:', tokenDetails);
         this.active = tokenDetails.active;
         this.revoked = tokenDetails.revoked;
         this.detailData.set(details.map(detail => ({
@@ -146,7 +145,11 @@ export class TokenDetailsComponent {
       if (element.isEditing && element.key.key === 'info') {
         this.infos.set(this.parseObjectToList(element.value));
       } else if (!element.isEditing) {
+        if (this.newInfo() !== '') {
+          this.infos().push(this.newInfo());
+        }
         this.saveDetail(element);
+        this.newInfo.set('');
       }
     }
   }
@@ -195,6 +198,17 @@ export class TokenDetailsComponent {
       },
       error: error => {
         console.error('Failed to revoke token', error);
+      }
+    });
+  }
+
+  deleteInfo(info: string) {
+    this.tokenService.deleteInfo(this.serial(), info.split(':')[0]).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to delete info', error);
       }
     });
   }

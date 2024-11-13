@@ -91,26 +91,44 @@ export class TokenService {
     return this.http.get(this.baseUrl, {headers, params})
   }
 
-  setTokenDetail(serial: string, key: string, old_value: any, new_value: any): Observable<any> {
+  setTokenDetail(serial: string, key: string, value: any, infos_signal: any): Observable<any> {
     const headers = this.getHeaders();
-    const url = `${this.baseUrl}set`;
-    if (key === 'info' && typeof new_value === 'object' && new_value !== null) {
-      const requests = Object.keys(new_value).map(infoKey =>
-        this.http.post(url, {serial, [new_value[infoKey].split(':')[0]]: new_value[infoKey].split(' ')[1]}, {headers})
+    const set_url = `${this.baseUrl}set`;
+    const info_url = `${this.baseUrl}info`;
+    if (key === 'info' && typeof infos_signal === 'object' && infos_signal !== null) {
+      const requests = Object.keys(infos_signal).map(index => {
+          const infoKey = infos_signal[index].split(':')[0];
+          const infoValue = infos_signal[index].split(' ')[1];
+          if (infoKey === "count_auth_max" || infoKey === "count_auth_success_max" || infoKey === "hashlib"
+            || infoKey === "validity_period_start" || infoKey === "validity_period_end") {
+            return this.http.post(set_url, {serial, [infoKey]: infoValue}, {headers})
+          } else {
+            return this.http.post(`${info_url}/${serial}/${infoKey}`, {["value"]: infoValue}, {headers})
+          }
+        }
       );
       return forkJoin(requests);
     } else {
-      return this.http.post(url, {serial, [key]: old_value}, {headers});
+      if (key === 'maxfail') {
+        return this.http.post(set_url, {serial, ["max_failcount"]: value}, {headers});
+      } else {
+        return this.http.post(set_url, {serial, [key]: value}, {headers});
+      }
     }
   }
 
   deleteToken(serial: string) {
     const headers = this.getHeaders();
-    return this.http.delete(this.baseUrl + "/" + serial, {headers})
+    return this.http.delete(this.baseUrl + serial, {headers})
   }
 
   revokeToken(serial: string) {
     const headers = this.getHeaders();
-    return this.http.post(this.baseUrl + 'revoke', {'serial': serial}, {headers})
+    return this.http.post(`${this.baseUrl}revoke`, {'serial': serial}, {headers})
+  }
+
+  deleteInfo(serial: string, infoKey: string) {
+    const headers = this.getHeaders();
+    return this.http.delete(`${this.baseUrl}info` + "/" + serial + "/" + infoKey, {headers})
   }
 }
