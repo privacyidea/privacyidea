@@ -17,7 +17,7 @@
             <ng-container matColumnDef="value">
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
-                @if (isObject(element.value) || Array.isArray(element.value)) {
+                @if (element.key.key === "info") {
                   <mat-list>
                     @for (info of parseObjectToList(element.value); track info; let idx = $index) {
                       @if (element.isEditing) {
@@ -39,6 +39,12 @@
                       </mat-list-item>
                     }
                   </mat-list>
+                } @else if (isObject(element.value) || Array.isArray(element.value)) {
+                  @for (info of parseObjectToList(element.value); track info; let idx = $index) {
+                      <mat-list-item class="object-row">
+                        <span class="object-item">{{ info }}</span>
+                      </mat-list-item>
+                  }
                 } @else if (element.isEditing) {
                   <input matInput [(ngModel)]="element.value"/>
                 } @else {

@@ -20,6 +20,7 @@ import {MatInput, MatSuffix} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDivider} from '@angular/material/divider';
 import {MatSelectModule} from '@angular/material/select';
+import {Observable, switchMap} from 'rxjs';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -84,7 +85,7 @@ export class TokenDetailsComponent {
 
   constructor(private tokenService: TokenService) {
     effect(() => {
-      this.showTokenDetail(this.serial());
+      this.showTokenDetail(this.serial()).subscribe();
     });
   }
 
@@ -102,9 +103,9 @@ export class TokenDetailsComponent {
     return Object.entries(value).map(([key, val]) => `${key}: ${val}`);
   }
 
-  showTokenDetail(serial: string) {
-    this.tokenService.getTokenDetails(serial).subscribe({
-      next: response => {
+  showTokenDetail(serial: string): Observable<void> {
+    return this.tokenService.getTokenDetails(serial).pipe(
+      switchMap(response => {
         const tokenDetails = response.result.value.tokens[0];
         this.active = tokenDetails.active;
         this.revoked = tokenDetails.revoked;
@@ -119,28 +120,29 @@ export class TokenDetailsComponent {
           value: tokenDetails[detail.key],
           isEditing: false
         })).filter(detail => detail.value !== undefined));
-      },
-      error: error => {
-        console.error('Failed to get token details', error);
-      }
-    });
+        return new Observable<void>(observer => {
+          observer.next();
+          observer.complete();
+        });
+      })
+    );
   }
 
-  resetFailCount() {
-    this.tokenService.resetFailCount(this.serial()).subscribe({
-      next: () => {
-        this.showTokenDetail(this.serial());
-      },
+  resetFailCount(): void {
+    this.tokenService.resetFailCount(this.serial()).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
       error: error => {
         console.error('Failed to reset fail counter', error);
       }
     });
   }
 
-  toggleEditMode(element: any, action: string = '') {
+  toggleEditMode(element: any, action: string = ''): void {
     if (action === 'cancel') {
       element.isEditing = false;
     } else {
+      console.log('Toggle detail:', element);
       element.isEditing = !element.isEditing;
       if (element.isEditing && element.key.key === 'info') {
         this.infos.set(this.parseObjectToList(element.value));
@@ -148,6 +150,7 @@ export class TokenDetailsComponent {
         if (this.newInfo() !== '') {
           this.infos().push(this.newInfo());
         }
+        console.log('Saving detail:', element);
         this.saveDetail(element);
         this.newInfo.set('');
       }
@@ -155,14 +158,16 @@ export class TokenDetailsComponent {
   }
 
   isAnyEditing(): boolean {
-    return this.detailData().some((element) => element.isEditing) || this.userDetailData().some((element) => element.isEditing);
+    return this.detailData().some((element) => element.isEditing)
+      || this.userDetailData().some((element) => element.isEditing);
   }
 
   saveDetail(element: any): void {
-    this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value, this.infos()).subscribe({
-      next: response => {
+    this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value, this.infos()).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      next: () => {
         this.showTokenDetail(this.serial());
-        console.log('Token detail saved:', response);
       },
       error: error => {
         console.error('Failed to save token detail', error);
@@ -174,17 +179,17 @@ export class TokenDetailsComponent {
     this.tokenService.deleteToken(this.serial()).subscribe({
       next: () => {
         this.tokenIsSelected.set(false);
-      }, error: error => {
+      },
+      error: error => {
         console.error('Failed to delete token', error);
       }
     });
   }
 
   toggleActive(): void {
-    this.tokenService.toggleActive(this.serial(), this.active).subscribe({
-      next: () => {
-        this.showTokenDetail(this.serial());
-      },
+    this.tokenService.toggleActive(this.serial(), this.active).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
       error: error => {
         console.error('Failed to toggle active', error);
       }
@@ -192,21 +197,32 @@ export class TokenDetailsComponent {
   }
 
   revokeToken(): void {
-    this.tokenService.revokeToken(this.serial()).subscribe({
-      next: () => {
-        this.showTokenDetail(this.serial());
-      },
+    this.tokenService.revokeToken(this.serial()).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
       error: error => {
         console.error('Failed to revoke token', error);
       }
     });
   }
 
-  deleteInfo(info: string) {
-    this.tokenService.deleteInfo(this.serial(), info.split(':')[0]).subscribe({
-      next: () => {
-        this.showTokenDetail(this.serial());
-      },
+  deleteInfo(info: string): void {
+    const infoKey = info.split(':')[0];
+    console.log('Deleting info:', infoKey);
+    this.tokenService.deleteInfo(this.serial(), infoKey).pipe(
+      switchMap(() => this.showTokenDetail(this.serial())),
+      switchMap(() => {
+        const infoDetail = this.detailData().find(detail => detail.key.key === 'info');
+        if (infoDetail) {
+          this.infos.set(this.parseObjectToList(infoDetail.value));
+          infoDetail.isEditing = true;
+        }
+        return new Observable<void>(observer => {
+          observer.next();
+          observer.complete();
+        });
+      })
+    ).subscribe({
       error: error => {
         console.error('Failed to delete info', error);
       }
