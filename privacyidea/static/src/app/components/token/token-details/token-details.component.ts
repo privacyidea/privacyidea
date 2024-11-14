@@ -98,8 +98,8 @@ export class TokenDetailsComponent {
   isEditingUser: boolean = false;
   username: string = '';
   userRealm: string = '';
-  setPin: string = '';
-  repeatPin: string = '';
+  setPinValue: string = '';
+  repeatPinValue: string = '';
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -250,16 +250,16 @@ export class TokenDetailsComponent {
   }
 
   saveUser() {
-    if (this.setPin !== this.repeatPin) {
+    if (this.setPinValue !== this.repeatPinValue) {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.assignUser(this.serial(), this.username, this.userRealm, this.setPin).pipe(
+    this.tokenService.assignUser(this.serial(), this.username, this.userRealm, this.setPinValue).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       next: () => {
-        this.setPin = '';
-        this.repeatPin = '';
+        this.setPinValue = '';
+        this.repeatPinValue = '';
         this.username = '';
         this.userRealm = '';
       },
@@ -275,6 +275,26 @@ export class TokenDetailsComponent {
     ).subscribe({
       error: error => {
         console.error('Failed to unassign user', error);
+      }
+    });
+  }
+
+  setPin() {
+    if (this.setPinValue !== this.repeatPinValue) {
+      console.error('PINs do not match');
+      return;
+    }
+    this.tokenService.setPin(this.serial(), this.setPinValue).subscribe({
+      error: error => {
+        console.error('Failed to set pin', error);
+      }
+    });
+  }
+
+  setRandomPin() {
+    this.tokenService.setRandomPin(this.serial()).subscribe({
+      error: error => {
+        console.error('Failed to set random pin', error);
       }
     });
   }

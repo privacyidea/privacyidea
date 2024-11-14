@@ -151,4 +151,19 @@ export class TokenService {
     const headers = this.getHeaders();
     return this.http.get('http://127.0.0.1:5000/realm', {headers})
   }
+
+  setPin(serial: string, userPin: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}setpin`, {
+      serial: serial,
+      userpin: userPin
+    }, {headers})
+  }
+
+  setRandomPin(serial: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}setrandompin`, {
+      serial: serial
+    }, {headers})
+  }
 }

@@ -107,13 +107,11 @@
                 @if (isEditingUser && element.key.key === "username") {
                   <input matInput [(ngModel)]="username"/>
                 } @else if (isEditingUser && element.key.key === "user_realm") {
-                  <mat-form-field class="mat-form-field">
-                    <select matNativeControl [(ngModel)]="userRealm">
-                      @for (option of realmOptions(); track option; ) {
-                        <option value="{{ option }}">{{ option }}</option>
-                      }
-                    </select>
-                  </mat-form-field>
+                  <select [(ngModel)]="userRealm">
+                    @for (option of realmOptions(); track option; ) {
+                      <option value="{{ option }}">{{ option }}</option>
+                    }
+                  </select>
                 } @else {
                   {{ element.value }}
                 }
@@ -151,17 +149,17 @@
           <div class="user-pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
-            <input [(ngModel)]="setPin" [type]="'password'" class="input" placeholder="Token Pin">
-            <input [(ngModel)]="repeatPin" [type]="'password'" class="input" placeholder="Repeat Pin">
+            <input [(ngModel)]="setPinValue" [type]="'password'" class="input" placeholder="Token Pin">
+            <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input" placeholder="Repeat Pin">
 
           </div>
           <div class="user-pin-button">
             @if (!isEditingUser) {
-              <button class="detail-button" extended mat-fab>
+              <button class="detail-button" extended mat-fab (click)="setPin()">
                 <mat-icon class="detail-button-icon">password</mat-icon>
                 Set Pin
               </button>
-              <button class="detail-button" extended mat-fab>
+              <button class="detail-button" extended mat-fab (click)="setRandomPin()">
                 <mat-icon class="detail-button-icon">casino</mat-icon>
                 Random Pin
               </button>
