@@ -41,7 +41,7 @@ class CONTENT_TYPE(object):
     Allowed type off content
     """
     JSON = "json"
-    URLENCODED = "urlendcode"
+    URLENCODED = "application/x-www-form-urlencoded"
 
 
 class ACTION_TYPE(object):
