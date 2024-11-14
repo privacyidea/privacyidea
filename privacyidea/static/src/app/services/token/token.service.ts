@@ -131,4 +131,24 @@ export class TokenService {
     const headers = this.getHeaders();
     return this.http.delete(`${this.baseUrl}info` + "/" + serial + "/" + infoKey, {headers})
   }
+
+  unassignUser(serial: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}unassign`, {serial}, {headers})
+  }
+
+  assignUser(serial: string, username: string, realm: string, pin: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}assign`, {
+      serial: serial,
+      user: username,
+      realm: realm,
+      pin: pin,
+    }, {headers})
+  }
+
+  getRealms(): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.get('http://127.0.0.1:5000/realm', {headers})
+  }
 }

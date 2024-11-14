@@ -20,7 +20,7 @@ import {MatInput, MatSuffix} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDivider} from '@angular/material/divider';
 import {MatSelectModule} from '@angular/material/select';
-import {Observable, switchMap} from 'rxjs';
+import {forkJoin, Observable, switchMap} from 'rxjs';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -80,6 +80,7 @@ export class TokenDetailsComponent {
   protected readonly Object = Object;
   detailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   userDetailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
+  realmOptions = signal<string[]>(['']);
   infos = signal<string[]>([]);
   newInfo: WritableSignal<string> = signal('');
 
@@ -95,6 +96,10 @@ export class TokenDetailsComponent {
   active: boolean = true;
   revoked: boolean = false;
   isEditingUser: boolean = false;
+  username: string = '';
+  userRealm: string = '';
+  setPin: string = '';
+  repeatPin: string = '';
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -105,9 +110,12 @@ export class TokenDetailsComponent {
   }
 
   showTokenDetail(serial: string): Observable<void> {
-    return this.tokenService.getTokenDetails(serial).pipe(
-      switchMap(response => {
-        const tokenDetails = response.result.value.tokens[0];
+    return forkJoin([
+      this.tokenService.getTokenDetails(serial),
+      this.tokenService.getRealms()
+    ]).pipe(
+      switchMap(([tokenDetailsResponse, realms]) => {
+        const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active = tokenDetails.active;
         this.revoked = tokenDetails.revoked;
         this.detailData.set(details.map(detail => ({
@@ -121,6 +129,9 @@ export class TokenDetailsComponent {
           value: tokenDetails[detail.key],
           isEditing: false
         })).filter(detail => detail.value !== undefined));
+
+        this.realmOptions.set(Object.keys(realms.result.value));
+
         return new Observable<void>(observer => {
           observer.next();
           observer.complete();
@@ -140,12 +151,6 @@ export class TokenDetailsComponent {
   }
 
   toggleEditMode(element: any, action: string = ''): void {
-    if (action === 'user') {
-      this.isEditingUser = !this.isEditingUser;
-      if (!this.isEditingUser) {
-        this.saveUser(element);
-      }
-    }
     if (action === 'cancel') {
       element.isEditing = false;
     } else {
@@ -158,6 +163,17 @@ export class TokenDetailsComponent {
         }
         this.saveDetail(element);
         this.newInfo.set('');
+      }
+    }
+  }
+
+  toggleEditUserMode(action: string = ''): void {
+    if (action === 'cancel') {
+      this.isEditingUser = !this.isEditingUser;
+    } else {
+      this.isEditingUser = !this.isEditingUser;
+      if (!this.isEditingUser) {
+        this.saveUser();
       }
     }
   }
@@ -233,7 +249,33 @@ export class TokenDetailsComponent {
     });
   }
 
-  private saveUser(element: any) {
-    console.log('Saving user!')
+  saveUser() {
+    if (this.setPin !== this.repeatPin) {
+      console.error('PINs do not match');
+      return;
+    }
+    this.tokenService.assignUser(this.serial(), this.username, this.userRealm, this.setPin).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      next: () => {
+        this.setPin = '';
+        this.repeatPin = '';
+        this.username = '';
+        this.userRealm = '';
+      },
+      error: error => {
+        console.error('Failed to assign user', error);
+      }
+    });
+  }
+
+  unassignUser() {
+    this.tokenService.unassignUser(this.serial()).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: error => {
+        console.error('Failed to unassign user', error);
+      }
+    });
   }
 }

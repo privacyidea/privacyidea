@@ -180,6 +180,10 @@ mat-grid-tile {
   color: var(--yellow-base);
 }
 
+.red-icon {
+  color: var(--red-base);
+}
+
 .green-icon {
   color: var(--green-base);
 }
@@ -198,6 +202,7 @@ mat-grid-tile {
 }
 
 .card-button-activate {
+  color: white;
   margin-right: 5px;
   height: 40px;
   width: 100%;
