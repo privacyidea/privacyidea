@@ -1,12 +1,12 @@
 <div aria-label="Details Tables" class="item-table">
-  <mat-grid-list cols="3" rowHeight="6vh">
-    <mat-grid-tile [colspan]="3" [rowspan]="1">
+  <mat-grid-list cols="25" rowHeight="6vh">
+    <mat-grid-tile [colspan]="25" [rowspan]="1">
       <div class="token-detail-header">
         <h2>Details for Token: </h2>
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="11">
+    <mat-grid-tile [colspan]="9" [rowspan]="12">
       <div class="details-wrapper">
         <div class="details-section">
           <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
@@ -25,7 +25,7 @@
                           <mat-list-item class="object-row">
                             <input matInput [(ngModel)]="infos()[idx]"/>
                           </mat-list-item>
-                          <mat-icon (click)="deleteInfo(infos()[idx])">delete</mat-icon>
+                          <mat-icon class="clickable" (click)="deleteInfo(infos()[idx])">delete</mat-icon>
                         </div>
                       } @else {
                         <mat-list-item class="object-row">
@@ -41,9 +41,9 @@
                   </mat-list>
                 } @else if (isObject(element.value) || Array.isArray(element.value)) {
                   @for (info of parseObjectToList(element.value); track info; let idx = $index) {
-                      <mat-list-item class="object-row">
-                        <span class="object-item">{{ info }}</span>
-                      </mat-list-item>
+                    <mat-list-item class="object-row">
+                      <span class="object-item">{{ info }}</span>
+                    </mat-list-item>
                   }
                 } @else if (element.isEditing) {
                   <input matInput [(ngModel)]="element.value"/>
@@ -64,7 +64,7 @@
             <ng-container matColumnDef="edit">
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
-                @if (element.key.key === "failcount") {
+                @if (element.key.key === "failcount" && !isAnyEditing()) {
                   <mat-icon class="clickable" (click)="resetFailCount()">lock_reset</mat-icon>
                 }
                 @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
@@ -73,11 +73,11 @@
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
                       <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element)">{{ 'edit' }}
+                                (click)="toggleEditMode(element)">edit
                       </mat-icon>
                     } @else if (element.isEditing) {
                       <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element)">{{ 'save_as' }}
+                                (click)="toggleEditMode(element)">save_as
                       </mat-icon>
                       <mat-icon class="edit-button"
                                 (click)="toggleEditMode(element, 'cancel')" style="color: var(--red-base)">cancel
@@ -92,90 +92,105 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="11">
+    <mat-grid-tile [colspan]="8" [rowspan]="12">
       <div class="user-details-section">
-        <h3>Assigned User:</h3>
-        <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
-          <ng-container matColumnDef="key">
-            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-            <td *matCellDef="let element" class="user-detail-row" mat-cell>{{ element.key.label }}</td>
-          </ng-container>
-          <ng-container matColumnDef="value">
-            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-            <td *matCellDef="let element" class="user-detail-row editable-row" mat-cell>
-              @if (element.isEditing) {
-                <input matInput [(ngModel)]="element.value"/>
-              } @else {
-                {{ element.value }}
-              }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="edit">
-            <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-            <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
-              @if (element.key.key === "username") {
-                <div class="edit-button-container">
-                  <mat-icon class="edit-button"
-                            (click)="toggleEditMode(element)"
-                            [ngClass]="{'yellow-icon': !element.isEditing,
-                                        'green-icon': element.isEditing}">
-                    {{ element.isEditing ? 'person_add' : 'person_remove' }}
-                  </mat-icon>
-                </div>
-              }
-            </td>
-          </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
-        </table>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <div class="otp-input-container">
-          <input style="display:none" type="text"/>
-          <input style="display:none" type="password"/>
-          <input [type]="'password'" class="input" placeholder="Token Pin" value="">
-          <input [type]="'password'" class="input" placeholder="Repeat Pin" value="">
+        <div class="user-container">
+          <h3>Assigned User:</h3>
+          <table [dataSource]="userDetailData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
+            <ng-container matColumnDef="key">
+              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="user-detail-row" mat-cell>{{ element.key.label }}</td>
+            </ng-container>
+            <ng-container matColumnDef="value">
+              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="user-detail-row user-editable-row" mat-cell>
+                @if (isEditingUser && element.key.key === "username") {
+                  <input matInput [(ngModel)]="element.value"/>
+                } @else if (isEditingUser && element.key.key === "user_realm") {
+                  <mat-form-field class="mat-form-field">
+                    <select matNativeControl>
+                      <option value="option1"></option>
+                      <option value="option2">defrealm</option>
+                      <option value="option3">realm1</option>
+                    </select>
+                  </mat-form-field>
+                } @else {
+                  {{ element.value }}
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="edit">
+              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
+                @if (element.key.key === "username") {
+                  <div class="edit-button-container">
+                    <mat-icon class="edit-button"
+                              (click)="toggleEditMode(element, 'user')"
+                              [ngClass]="{'yellow-icon': element.value && !element.isEditing,
+                                        'green-icon': !element.value && !element.isEditing}">
+                      {{ element.isEditing ? 'save' : (element.value ? 'person_remove' : 'person_add') }}
+                    </mat-icon>
+                  </div>
+                }
+              </td>
+            </ng-container>
+            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+          </table>
+          <br/>
+          <mat-divider/>
+          <br/>
+          <div class="user-pin-input">
+            <input style="display:none" type="text"/>
+            <input style="display:none" type="password"/>
+            <input [type]="'password'" class="input" placeholder="Token Pin" value="">
+            <input [type]="'password'" class="input" placeholder="Repeat Pin" value="">
+
+          </div>
+          <div class="user-pin-button">
+            <button class="detail-button" extended mat-fab>
+              <mat-icon class="detail-button-icon">password</mat-icon>
+              Set Pin
+            </button>
+            @if (!isEditingUser) {
+              <button class="detail-button" extended mat-fab>
+                <mat-icon class="detail-button-icon">casino</mat-icon>
+                Random Pin
+              </button>
+            }
+          </div>
+          <br/>
+          <mat-divider/>
+          <br/>
+          <div class="assign-container">
+            <mat-form-field class="mat-form-field">
+              <mat-label>Container Serial</mat-label>
+              <select matNativeControl>
+                <option value="option1"></option>
+                <option value="option2">CONT1234567890</option>
+                <option value="option3">CONT0987654321</option>
+              </select>
+            </mat-form-field>
+            <button class="detail-button" extended mat-fab>
+              <mat-icon class="detail-button-icon">drive_folder_upload</mat-icon>
+              Assign container
+            </button>
+          </div>
         </div>
-        <div class="pin-button">
-          <button class="detail-button-fix" extended mat-fab>
-            <mat-icon class="detail-button-icon">password</mat-icon>
-            Set Pin
-          </button>
-          <button class="detail-button-fix" extended mat-fab>
-            <mat-icon class="detail-button-icon">casino</mat-icon>
-            Random Pin
-          </button>
-        </div>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <mat-form-field class="mat-form-field">
-          <mat-label>Container Serial</mat-label>
-          <select matNativeControl>
-            <option value="option1"></option>
-            <option value="option2">CONT1234567890</option>
-            <option value="option3">CONT0987654321</option>
-          </select>
-        </mat-form-field>
-        <button class="detail-button" extended mat-fab>
-          <mat-icon class="detail-button-icon">drive_folder_upload</mat-icon>
-          Assign container
-        </button>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="1" [rowspan]="11">
+    <mat-grid-tile [colspan]="8" [rowspan]="12">
       <div class="otp-container">
-        <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
-          <mat-icon>delete_outlined</mat-icon>
-          Delete
-        </button>
         <div class="delete-buttons">
-          <button (click)="toggleActive()" [disabled]="revoked" [ngClass]="{'card-button-delete-fix': active,
-                                         'card-button-activate-fix': !active}" color="alert" mat-flat-button>
+          <button (click)="toggleActive()" [disabled]="revoked" [ngClass]="{'card-button-delete': active,
+                                         'card-button-activate': !active}" color="alert" mat-flat-button>
             <mat-icon>{{ active ? 'auto_delete' : 'play_circle' }}</mat-icon>
             {{ active ? 'Deactivate' : 'Activate' }}
           </button>
-          <button (click)="revokeToken()" [disabled]="revoked" class="card-button-delete-fix" color="alert"
+          <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
+            <mat-icon>delete_outlined</mat-icon>
+            Delete
+          </button>
+          <button (click)="revokeToken()" [disabled]="revoked" class="card-button-delete" color="alert"
                   mat-flat-button>
             <mat-icon>delete_forever</mat-icon>
             Revoke
@@ -184,7 +199,7 @@
         <br/>
         <mat-divider/>
         <br/>
-        <div class="otp-input-container">
+        <div class="pin-input">
           <input class="input" placeholder="First OTP value" value="">
           <input class="input" placeholder="Second OTP value" value="">
         </div>

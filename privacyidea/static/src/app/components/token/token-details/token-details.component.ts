@@ -94,6 +94,7 @@ export class TokenDetailsComponent {
   hide!: boolean;
   active: boolean = true;
   revoked: boolean = false;
+  isEditingUser: boolean = false;
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -139,6 +140,12 @@ export class TokenDetailsComponent {
   }
 
   toggleEditMode(element: any, action: string = ''): void {
+    if (action === 'user') {
+      this.isEditingUser = !this.isEditingUser;
+      if (!this.isEditingUser) {
+        this.saveUser(element);
+      }
+    }
     if (action === 'cancel') {
       element.isEditing = false;
     } else {
@@ -224,5 +231,9 @@ export class TokenDetailsComponent {
         console.error('Failed to delete info', error);
       }
     });
+  }
+
+  private saveUser(element: any) {
+    console.log('Saving user!')
   }
 }

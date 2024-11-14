@@ -1,6 +1,6 @@
 <div aria-label="Token Layout" class="token-grid">
-  <mat-grid-list cols="4" rowHeight="90vh">
-    <mat-grid-tile [colspan]="1">
+  <mat-grid-list cols="9" rowHeight="90vh">
+    <mat-grid-tile [colspan]="2">
       <div class="tile-content">
         <app-token-card
           (tabChange)="onTabChange($event)"
@@ -10,7 +10,7 @@
         </app-token-card>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="3">
+    <mat-grid-tile [colspan]="7">
       <div class="tile-content">
         <main>
           @if (selectedTabIndex === 0) {

@@ -62,23 +62,9 @@
   transition: 0ms;
 }
 
-.detail-button-fix:hover,
 .detail-button:hover {
   background: var(--background-blue-inset);
   box-shadow: var(--box-shadow-blue-inset);
-  transition: 0ms;
-}
-
-.detail-button-fix {
-  height: 40px;
-  width: 49%;
-  color: white;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-blue);
-  box-shadow: var(--box-shadow-blue);
-  cursor: pointer;
   transition: 0ms;
 }
 
@@ -98,17 +84,12 @@
   flex-direction: column;
   display: flex;
   gap: 10px;
-  margin: 16px 10px 10px;
-  width: 100%;
+  margin: 16px 40px;
+  width: auto;
   border-radius: var(--border-radius);
   background-color: #f3f3f3;
   border: #E0E2EC 1px solid;
-  padding: 40px 57px;
-}
-
-.otp-input-container {
-  display: flex;
-  gap: 10px;
+  padding: 54px;
 }
 
 .input {
@@ -119,14 +100,13 @@
 
 .input-full {
   height: 40px;
-  width: calc(80% - 10px);
+  width: calc(100% - 50px);
   border-radius: var(--border-radius);
 }
 
 mat-grid-tile {
   /* background-color: #ffff00; *//* DEBUG */
   display: flex;
-  overflow: auto;
 }
 
 :host ::ng-deep .mat-grid-tile-content {
@@ -151,22 +131,49 @@ mat-grid-tile {
 }
 
 .editable-row {
-  min-width: 240px;
+  min-width: 258px;
+}
+
+.user-editable-row {
+  min-width: 234px;
 }
 
 .pin-input {
   display: flex;
   gap: 10px;
+  justify-content: center;
 }
 
-.pin-button {
-  margin-top: 10px;
+.user-pin-input {
   display: flex;
+  margin: 0 82px;
   gap: 10px;
 }
 
+.user-pin-button {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-flow: row wrap;
+  padding: 0 82px;
+}
+
+.user-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 40px;
+}
+
+.assign-container {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 82px;
+}
+
 .mat-form-field {
-  width: 76%;
+  width: 100%;
 }
 
 .yellow-icon {
@@ -179,9 +186,8 @@ mat-grid-tile {
 
 .card-button-delete {
   margin-right: 5px;
-  margin-bottom: -5px;
   height: 40px;
-  width: 98%;
+  width: 100%;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -191,25 +197,10 @@ mat-grid-tile {
   transition: 0ms;
 }
 
-.card-button-delete-fix {
-  margin-right: 6px;
-  margin-bottom: 5px;
+.card-button-activate {
+  margin-right: 5px;
   height: 40px;
-  width: 48%;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-red);
-  box-shadow: var(--box-shadow-red);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-activate-fix {
-  margin-right: 6px;
-  margin-bottom: 5px;
-  height: 40px;
-  width: 48%;
+  width: 100%;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -219,20 +210,24 @@ mat-grid-tile {
   transition: 0ms;
 }
 
-.card-button-activate-fix.activ,
-.card-button-activate-fix:hover {
+.card-button-activate.activ,
+.card-button-activate:hover {
   background: var(--background-green-inset);
   box-shadow: var(--box-shadow-green-inset);
   transition: 0ms;
 }
 
-.card-button-delete-fix.activ,
-.card-button-delete-fix:hover,
 .card-button-delete.activ,
 .card-button-delete:hover {
   background: var(--background-red-inset);
   box-shadow: var(--box-shadow-red-inset);
   transition: 0ms;
+}
+
+.delete-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .clickable {
