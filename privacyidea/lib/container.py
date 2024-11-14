@@ -1071,6 +1071,13 @@ def finalize_registration(container_serial: str, params: dict):
 
 
 def finalize_container_rollover(container: TokenContainer):
+    """
+    Finalize the rollover of a container. For each token in the container a rollover is performed.
+    All previous challenges are deleted.
+
+    :param container: The container object
+    """
+
     tokens = container.get_tokens()
     for token in tokens:
         params = {"serial": token.get_serial(),
@@ -1084,7 +1091,11 @@ def finalize_container_rollover(container: TokenContainer):
         except Exception as ex:
             # Do not block the rollover process
             log.debug(f"Error during rollover of token {token.get_serial()} in container rollover: {ex}")
-        # token.enable(False)
+
+    # Delete previous challenges of the container
+    challenge_list = get_challenges(serial=container.serial)
+    for challenge in challenge_list:
+        challenge.delete()
 
 
 def init_container_rollover(container: TokenContainer, server_url: str, challenge_ttl: int, registration_ttl: int,

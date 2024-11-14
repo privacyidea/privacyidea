@@ -287,29 +287,14 @@ class SmartphoneContainer(TokenContainerClass):
         if device != "":
             self.add_container_info("device", device)
         self.add_container_info("registration_state", "registered")
-        if params.get("initial_token_transfer"):
+
+        # check right for initial token transfer
+        if params.get("client_policies").get("container_initial_token_transfer"):
             self.add_container_info("initial_synchronized", False)
 
-        res = self.get_policy_config_from_params(params)
-        res.update({"public_server_key": public_key_server_str})
+        res = {"public_server_key": public_key_server_str}
 
         return res
-
-    @classmethod
-    def get_policy_config_from_params(cls, params):
-        """
-        Get the policy configuration.
-        A decorator reads the configuration from the policy and writes them into the request object.
-        This function extracts the policy configuration from the request object and writes them into an own dictionary
-
-        :param params: All data from the request object as dictionary.
-        :return: The policy configuration as dictionary.
-        """
-        policies = {"rollover_allowed": params.get("rollover_allowed"),
-                    "initial_token_transfer": params.get("initial_token_transfer"),
-                    "tokens_deletable": params.get("tokens_deletable"),
-                    "unregister_allowed": params.get("unregister_allowed")}
-        return policies
 
     def terminate_registration(self):
         """

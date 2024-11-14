@@ -131,6 +131,13 @@ class TokenContainerClass:
         self._db_container.last_seen = datetime.now(timezone.utc)
         self._db_container.save()
 
+    def reset_last_authentication(self):
+        """
+        Resets the timestamp of the last seen field in the database.
+        """
+        self._db_container.last_seen = None
+        self._db_container.save()
+
     @property
     def last_synchronization(self):
         """
@@ -148,6 +155,13 @@ class TokenContainerClass:
         Updates the timestamp of the last updated field in the database.
         """
         self._db_container.last_updated = datetime.now(timezone.utc)
+        self._db_container.save()
+
+    def reset_last_synchronization(self):
+        """
+        Resets the timestamp of the last updated field in the database.
+        """
+        self._db_container.last_updated = None
         self._db_container.save()
 
     @property
@@ -637,6 +651,9 @@ class TokenContainerClass:
                 # Valid challenge: delete it
                 challenge.delete()
                 break
+            else:
+                # Delete expired challenge
+                challenge.delete()
 
         return valid_challenge
 

@@ -2447,10 +2447,10 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
         policies = result["result"]["value"]["policies"]
-        self.assertTrue(policies["unregister_allowed"])
-        self.assertFalse(policies["rollover_allowed"])
-        self.assertTrue(policies["initial_token_transfer"])
-        self.assertFalse(policies["tokens_deletable"])
+        self.assertTrue(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
@@ -3283,7 +3283,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("container_dict_server", result_entries)
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
-        self.assertTrue(result["result"]["value"]["policies"]["initial_token_transfer"])
+        self.assertTrue(result["result"]["value"]["policies"][ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
@@ -3361,7 +3361,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("container_dict_server", result_entries)
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
-        self.assertFalse(result["result"]["value"]["policies"]["initial_token_transfer"])
+        self.assertFalse(result["result"]["value"]["policies"][ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)

@@ -2467,38 +2467,41 @@ def smartphone_config(request, action=None):
         realm = ""
         resolver = ""
 
+    policies = {}
+
     # Check if rollover is allowed for the client
     rollover_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
                                       user=username, realm=realm, resolver=resolver).policies()
     if len(rollover_policies) > 0:
-        request.all_data["rollover_allowed"] = rollover_policies[0]['action'][ACTION.CONTAINER_CLIENT_ROLLOVER]
+        policies[ACTION.CONTAINER_CLIENT_ROLLOVER] = rollover_policies[0]['action'][ACTION.CONTAINER_CLIENT_ROLLOVER]
     else:
-        request.all_data["rollover_allowed"] = False
+        policies[ACTION.CONTAINER_CLIENT_ROLLOVER] = False
 
     # Check if initial token transfer is allowed (the server can add tokens from the client to the container)
     token_transfer_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
                                             user=username, realm=realm, resolver=resolver).policies()
     if len(token_transfer_policies) > 0:
-        request.all_data["initial_token_transfer"] = token_transfer_policies[0]["action"][
+        policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER] = token_transfer_policies[0]["action"][
             ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER]
     else:
-        request.all_data["initial_token_transfer"] = False
+        policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER] = False
 
     # Check if the user is allowed to delete tokens from the smartphone (not on the server)
     delete_tokens_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_TOKEN_DELETABLE,
                                            user=username, realm=realm, resolver=resolver).policies()
     if len(delete_tokens_policies) > 0:
-        request.all_data["tokens_deletable"] = delete_tokens_policies[0]["action"][ACTION.CLIENT_TOKEN_DELETABLE]
+        policies[ACTION.CLIENT_TOKEN_DELETABLE] = delete_tokens_policies[0]["action"][ACTION.CLIENT_TOKEN_DELETABLE]
     else:
-        request.all_data["tokens_deletable"] = False
+        policies[ACTION.CLIENT_TOKEN_DELETABLE] = False
 
     # Check if the user is allowed to unregister the container
     container_unregister_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
                                                   user=username, realm=realm, resolver=resolver).policies()
     if len(container_unregister_policies) > 0:
-        request.all_data["unregister_allowed"] = container_unregister_policies[0]["action"][
+        policies[ACTION.CLIENT_CONTAINER_UNREGISTER] = container_unregister_policies[0]["action"][
             ACTION.CLIENT_CONTAINER_UNREGISTER]
     else:
-        request.all_data["unregister_allowed"] = False
+        policies[ACTION.CLIENT_CONTAINER_UNREGISTER] = False
 
+    request.all_data["client_policies"] = policies
     return True

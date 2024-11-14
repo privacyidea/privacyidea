@@ -610,6 +610,10 @@ def registration_init():
     user_role = g.logged_in_user.get("role")
     _check_user_access_on_container(container, user, user_role)
 
+    # Reset last synchronization and authentication time stamps from possible previous registration
+    container.reset_last_synchronization()
+    container.reset_last_authentication()
+
     # registration
     scope = create_endpoint_url(server_url, "container/register/finalize")
     res_registration = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
@@ -843,7 +847,8 @@ def synchronize(container_serial: str):
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
     container.check_challenge_response(params)
-    container_dict = container.synchronize_container_details(container_client, params.get("initial_token_transfer"))
+    initial_token_transfer = request.all_data.get("client_policies").get(ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
+    container_dict = container.synchronize_container_details(container_client, initial_token_transfer)
 
     # Get enroll information for missing tokens
     enroll_info = []
@@ -868,7 +873,7 @@ def synchronize(container_serial: str):
     res.update({'server_url': server_url})
 
     # Add policy info
-    res["policies"] = container.get_policy_config_from_params(params)
+    res["policies"] = request.all_data.get("client_policies")
 
     # Update last sync time
     container.update_last_synchronization()
