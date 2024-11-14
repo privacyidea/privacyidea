@@ -39,7 +39,6 @@ install_requires = [
     "Flask>=0.10.1,<2.0",
     "Flask-Babel>=0.9,<3.0",
     "Flask-Migrate>=1.2.0,<3.0",
-    "Flask-Script>=2.0.5",
     "Flask-SQLAlchemy>=2.0,<3.0",
     "Flask-Versioned>=0.9.4",
     "google-auth>=1.23.0",
