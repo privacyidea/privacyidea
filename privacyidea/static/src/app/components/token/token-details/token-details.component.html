@@ -1,9 +1,40 @@
 <div aria-label="Details Tables" class="item-table">
-  <mat-grid-list cols="25" rowHeight="6vh">
-    <mat-grid-tile [colspan]="25" [rowspan]="1">
+  <mat-grid-list cols="24" rowHeight="6vh">
+    <mat-grid-tile [colspan]="24" [rowspan]="1">
       <div class="token-detail-header">
         <h2>Details for Token: </h2>
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="7" [rowspan]="12">
+      <div class="otp-container">
+        <div class="pin-input">
+          <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
+          <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
+        </div>
+        <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">sync</mat-icon>
+          Resync Token
+        </button>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <div class="pin-input">
+          <input style="display:none" type="text"/>
+          <input style="display:none" type="password"/>
+          <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'" class="input-full"
+                 placeholder="OTP or PIN">
+          <mat-icon (click)="hide = !hide" class="visible-icon" matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+        </div>
+        <button (click)="testToken()" class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">help_outline</mat-icon>
+          Test Token
+        </button>
+        <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
+          <mat-icon class="detail-button-icon">help_outline</mat-icon>
+          Verify OTP value
+        </button>
       </div>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="9" [rowspan]="12">
@@ -66,7 +97,7 @@
             'highlight-false': (element.key.key === 'active' && element.value !== true) ||
                               (element.key.key === 'failcount' && (element.value < 0 || element.value > 9))
           }">
-          {{ element.key.key === 'active' ? (revoked ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
+          {{ element.key.key === 'active' ? (revoked() ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
         </span>
                 }
               </td>
@@ -183,56 +214,6 @@
             }
           </div>
         </div>
-      </div>
-    </mat-grid-tile>
-    <mat-grid-tile [colspan]="8" [rowspan]="12">
-      <div class="otp-container">
-        <div class="delete-buttons">
-          <button (click)="toggleActive()" [disabled]="revoked" [ngClass]="{'card-button-delete': active,
-                                         'card-button-activate': !active}" color="alert" mat-flat-button>
-            <mat-icon>{{ active ? 'auto_delete' : 'play_circle' }}</mat-icon>
-            {{ active ? 'Deactivate' : 'Activate' }}
-          </button>
-          <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
-            <mat-icon>delete_outlined</mat-icon>
-            Delete
-          </button>
-          <button (click)="revokeToken()" [disabled]="revoked" class="card-button-delete" color="alert"
-                  mat-flat-button>
-            <mat-icon>delete_forever</mat-icon>
-            Revoke
-          </button>
-        </div>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <div class="pin-input">
-          <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
-          <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
-        </div>
-        <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
-          <mat-icon class="detail-button-icon">sync</mat-icon>
-          Resync Token
-        </button>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <div class="pin-input">
-          <input style="display:none" type="text"/>
-          <input style="display:none" type="password"/>
-          <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'" class="input-full"
-                 placeholder="OTP or PIN">
-          <mat-icon (click)="hide = !hide" class="visible-icon" matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
-          </mat-icon>
-        </div>
-        <button (click)="testToken()" class="detail-button" extended mat-fab>
-          <mat-icon class="detail-button-icon">help_outline</mat-icon>
-          Test Token
-        </button>
-        <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
-          <mat-icon class="detail-button-icon">help_outline</mat-icon>
-          Verify OTP value
-        </button>
       </div>
     </mat-grid-tile>
   </mat-grid-list>

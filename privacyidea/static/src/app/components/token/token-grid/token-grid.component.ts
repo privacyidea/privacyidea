@@ -1,9 +1,7 @@
-import {Component, Output, signal} from '@angular/core';
+import {Component, effect, Output, signal, ViewChild, WritableSignal} from '@angular/core';
 import {TokenTableComponent} from '../token-table/token-table.component';
 import {CommonModule} from '@angular/common';
-import {MatCard, MatCardContent, MatCardHeader} from '@angular/material/card';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
-import {MatTab, MatTabGroup} from '@angular/material/tabs';
 import {TokenCardComponent} from '../token-card/token-card.component';
 import {ContainerTableComponent} from '../container-table/container-table.component';
 import {TokenDetailsComponent} from '../token-details/token-details.component';
@@ -15,13 +13,8 @@ import {ContainerDetailsComponent} from '../container-details/container-details.
   imports: [
     CommonModule,
     TokenTableComponent,
-    MatCardContent,
-    MatCard,
     MatGridList,
     MatGridTile,
-    MatTabGroup,
-    MatTab,
-    MatCardHeader,
     TokenCardComponent,
     ContainerTableComponent,
     TokenDetailsComponent,
@@ -32,11 +25,37 @@ import {ContainerDetailsComponent} from '../container-details/container-details.
 })
 export class TokenGridComponent {
   selectedTabIndex: number = 0;
-  @Output() tokenIsSelected = signal(false);
-  @Output() containerIsSelected = signal(false);
-  @Output() serial = signal('');
+  tokenIsSelected = signal(false);
+  containerIsSelected = signal(false);
+  serial = signal('');
+  active = signal(true);
+  revoked = signal(true);
+  @Output() refreshTokenDetails:  WritableSignal<boolean> = signal(false);
+  @ViewChild('tokenDetailsComponent') tokenDetailsComponent!: TokenDetailsComponent;
+  constructor() {
+    effect(() => {
+      if(this.refreshTokenDetails()) {
+        this.onRefreshTokenDetails();
+      }
+    });
+  }
 
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
+  }
+
+  onRefreshTokenDetails(): void {
+    if (this.tokenDetailsComponent) {
+      this.tokenDetailsComponent.showTokenDetail(this.serial()).subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(false);
+        },
+        error: (error) => {
+          console.error('Error refreshing token details:', error);
+        }
+      });
+    } else {
+      console.warn('TokenDetailsComponent is not yet initialized');
+    }
   }
 }

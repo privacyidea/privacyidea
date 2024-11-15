@@ -76,7 +76,26 @@
           Lost Token
         </button>
       </mat-list-item>
-      @for (a of [0, 0, 0, 0, 0]; track 0) {
+      <br/>
+      <mat-divider/>
+      <br/>
+      <div class="delete-buttons">
+        <button (click)="toggleActive()" [disabled]="revoked()" [ngClass]="{'card-button-delete': active(),
+                                         'card-button-activate': !active()}" color="alert" mat-flat-button>
+          <mat-icon>{{ active() ? 'auto_delete' : 'play_circle' }}</mat-icon>
+          {{ active() ? 'Deactivate' : 'Activate' }}
+        </button>
+        <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
+          <mat-icon>delete_outlined</mat-icon>
+          Delete
+        </button>
+        <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete" color="alert"
+                mat-flat-button>
+          <mat-icon>delete_forever</mat-icon>
+          Revoke
+        </button>
+      </div>
+      @for (a of [0]; track 0) {
         <mat-list-item disabled>
         </mat-list-item>
       }

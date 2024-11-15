@@ -48,7 +48,51 @@
   transition: 0ms;
 }
 
-.mat-delete {
-  background-color: var(--red-light);
-  color: white;
+.card-button-delete {
+  margin-right: 5px;
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-red);
+  box-shadow: var(--box-shadow-red);
+  cursor: pointer;
+  transition: 0ms;
 }
+
+.card-button-activate {
+  color: white;
+  margin-right: 5px;
+  height: 40px;
+  width: 100%;
+  border: none;
+  justify-content: start;
+  border-radius: var(--border-radius);
+  background: var(--background-green);
+  box-shadow: var(--box-shadow-green);
+  cursor: pointer;
+  transition: 0ms;
+}
+
+.card-button-activate.activ,
+.card-button-activate:hover {
+  background: var(--background-green-inset);
+  box-shadow: var(--box-shadow-green-inset);
+  transition: 0ms;
+}
+
+.card-button-delete.activ,
+.card-button-delete:hover {
+  background: var(--background-red-inset);
+  box-shadow: var(--box-shadow-red-inset);
+  transition: 0ms;
+}
+
+.delete-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+

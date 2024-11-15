@@ -9,7 +9,7 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import {MatButton, MatFabButton} from '@angular/material/button';
+import {MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
@@ -72,7 +72,6 @@ export const userDetail = [
     MatFormFieldModule,
     MatSelectModule,
     ReactiveFormsModule,
-    MatButton,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -96,9 +95,9 @@ export class TokenDetailsComponent {
 
   @Input() serial!: WritableSignal<string>
   @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() active!: WritableSignal<boolean>;
+  @Input() revoked!: WritableSignal<boolean>;
   hide!: boolean;
-  active: boolean = true;
-  revoked: boolean = false;
   isEditingUser: boolean = false;
   username: string = '';
   userRealm: string = '';
@@ -124,9 +123,11 @@ export class TokenDetailsComponent {
       this.containerService.getContainerData(1, 10)
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms, containers]) => {
+        console.log("blub")
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
-        this.active = tokenDetails.active;
-        this.revoked = tokenDetails.revoked;
+        this.active.set(tokenDetails.active);
+        this.revoked.set(tokenDetails.revoked);
+        this.selectedContainer = tokenDetails.container_serial;
         this.detailData.set(details.map(detail => ({
           key: detail,
           value: tokenDetails[detail.key],
@@ -140,7 +141,6 @@ export class TokenDetailsComponent {
         })).filter(detail => detail.value !== undefined));
 
         this.realmOptions.set(Object.keys(realms.result.value));
-        console.log(containers.result.value)
         this.containerOptions.set(Object.values(containers.result.value.containers as {
           serial: string
         }[]).map(container => container.serial));
@@ -211,37 +211,6 @@ export class TokenDetailsComponent {
       },
       error: error => {
         console.error('Failed to save token detail', error);
-      }
-    });
-  }
-
-  deleteToken(): void {
-    this.tokenService.deleteToken(this.serial()).subscribe({
-      next: () => {
-        this.tokenIsSelected.set(false);
-      },
-      error: error => {
-        console.error('Failed to delete token', error);
-      }
-    });
-  }
-
-  toggleActive(): void {
-    this.tokenService.toggleActive(this.serial(), this.active).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: error => {
-        console.error('Failed to toggle active', error);
-      }
-    });
-  }
-
-  revokeToken(): void {
-    this.tokenService.revokeToken(this.serial()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: error => {
-        console.error('Failed to revoke token', error);
       }
     });
   }

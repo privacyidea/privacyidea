@@ -4,8 +4,6 @@
   display: flex;
   width: auto;
   max-width: fit-content;
-  padding-left: 10px;
-  padding-right: 10px;
 }
 
 .details-wrapper {
@@ -26,16 +24,16 @@
 
 .detail-table th,
 .detail-table td {
-  padding: 10px;
+  margin-left: 10px;
 }
 
 .detail-row {
-  min-width: 122px;
-  height: 51px;
+  min-width: 143px;
+  height: 42px;
 }
 
 .user-detail-row {
-  height: 51px;
+  height: 42px;
 }
 
 .edit-info-row {
@@ -44,6 +42,7 @@
 
 .token-detail-header {
   display: flex;
+  align-content: center;
   margin-left: 20px;
   margin-right: auto;
   gap: 10px;
@@ -89,7 +88,7 @@
   border-radius: var(--border-radius);
   background-color: #f3f3f3;
   border: #E0E2EC 1px solid;
-  padding: 54px;
+  padding: 34px;
 }
 
 .input {
@@ -105,7 +104,7 @@
 }
 
 mat-grid-tile {
-  /* background-color: #ffff00; *//* DEBUG */
+  /* background-color: #ff5555; *//* DEBUG */
   display: flex;
 }
 
@@ -131,7 +130,7 @@ mat-grid-tile {
 }
 
 .editable-row {
-  min-width: 258px;
+  min-width: 273px;
 }
 
 .user-editable-row {
@@ -146,7 +145,7 @@ mat-grid-tile {
 
 .user-pin-input {
   display: flex;
-  margin: 0 82px;
+  margin: 0 78px;
   gap: 10px;
 }
 
@@ -155,7 +154,7 @@ mat-grid-tile {
   gap: 10px;
   justify-content: center;
   flex-flow: row wrap;
-  padding: 0 82px;
+  padding: 0 77px;
 }
 
 .user-container {
@@ -186,53 +185,6 @@ mat-grid-tile {
 
 .green-icon {
   color: var(--green-base);
-}
-
-.card-button-delete {
-  margin-right: 5px;
-  height: 40px;
-  width: 100%;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-red);
-  box-shadow: var(--box-shadow-red);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-activate {
-  color: white;
-  margin-right: 5px;
-  height: 40px;
-  width: 100%;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-green);
-  box-shadow: var(--box-shadow-green);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-activate.activ,
-.card-button-activate:hover {
-  background: var(--background-green-inset);
-  box-shadow: var(--box-shadow-green-inset);
-  transition: 0ms;
-}
-
-.card-button-delete.activ,
-.card-button-delete:hover {
-  background: var(--background-red-inset);
-  box-shadow: var(--box-shadow-red-inset);
-  transition: 0ms;
-}
-
-.delete-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .clickable {
