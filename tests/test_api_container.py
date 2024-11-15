@@ -1891,12 +1891,11 @@ class APIContainerSynchronization(APIContainerTest):
         params = {"signature": base64.b64encode(signature)}
         return params
 
-    def test_01_register_smartphone_success(self, smartphone_serial=None):
+    def register_smartphone_success(self, smartphone_serial=None):
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24,
                                                             ACTION.CONTAINER_CHALLENGE_TTL: 1,
-                                                            ACTION.CONTAINER_SSL_VERIFY: "True",
-                                                            ACTION.CONTAINER_CLIENT_ROLLOVER: True}, priority=2)
+                                                            ACTION.CONTAINER_SSL_VERIFY: "True"}, priority=2)
         if not smartphone_serial:
             smartphone_serial, _ = init_container({"type": "smartphone"})
         data = {"container_serial": smartphone_serial,
@@ -1949,15 +1948,26 @@ class APIContainerSynchronization(APIContainerTest):
         # Check if the response contains the expected values
         self.assertIn("public_server_key", result["result"]["value"])
         self.assertIn("policies", result["result"]["value"])
-        policies = result["result"]["value"]["policies"]
+
+        delete_policy("policy")
+
+        return smartphone_serial, priv_key_sig_smph, result
+
+    def test_01_register_smartphone_success(self, smartphone_serial=None):
+        set_policy("client_policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, priority=1)
+
+        _, _, finalize_result = self.register_smartphone_success()
+
+        # Check if the response contains the expected values
+        self.assertIn("public_server_key", finalize_result["result"]["value"])
+        self.assertIn("policies", finalize_result["result"]["value"])
+        policies = finalize_result["result"]["value"]["policies"]
         self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
         self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
         self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
         self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
 
-        delete_policy("policy")
-
-        return smartphone_serial, priv_key_sig_smph
+        delete_policy("client_policy")
 
     def test_02_register_smartphone_of_user(self):
         self.setUp_user_realms()
@@ -2133,7 +2143,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
 
     def test_07_register_terminate_server_success(self):
-        smartphone_serial, _ = self.test_01_register_smartphone_success()
+        smartphone_serial, _, _ = self.register_smartphone_success()
         # Terminate
         self.request_assert_success(f'container/register/{smartphone_serial}/terminate',
                                     {},
@@ -2148,7 +2158,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_09_challenge_success(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
 
         # Init
         scope = f"https://pi.net/container/{smartphone_serial}/sync"
@@ -2177,7 +2187,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def register_terminate_client_success(self, smartphone_serial=None):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success(smartphone_serial)
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success(smartphone_serial)
 
         # Challenge
         scope = f"https://pi.net/container/register/{smartphone_serial}/terminate/client"
@@ -2243,7 +2253,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def register_terminate_client_denied(self, smartphone_serial=None):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success(smartphone_serial)
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success(smartphone_serial)
 
         # Challenge
         scope = f"https://pi.net/container/register/{smartphone_serial}/terminate/client"
@@ -2292,7 +2302,9 @@ class APIContainerSynchronization(APIContainerTest):
     def test_12_register_terminate_client_missing_param(self):
         set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
+
+        self.assertTrue(result["result"]["value"]["policies"][ACTION.CLIENT_CONTAINER_UNREGISTER])
 
         # Challenge
         scope = f"https://pi.net/container/register/{smartphone_serial}/terminate/client"
@@ -2316,7 +2328,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_14_register_terminate_client_invalid_challenge(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
 
         # Challenge
         scope = f"https://pi.net/container/register/{smartphone_serial}/terminate/client"
@@ -2333,7 +2345,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_15_register_terminate_client_not_registered(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
 
         # Challenge
         scope = f"https://pi.net/container/register/{smartphone_serial}/terminate/client"
@@ -2433,7 +2445,12 @@ class APIContainerSynchronization(APIContainerTest):
                    action={ACTION.CLIENT_CONTAINER_UNREGISTER: True,
                            ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER: True})
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
+        policies = result["result"]["value"]["policies"]
+        self.assertTrue(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertTrue(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
+        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
 
         # Challenge
         scope = f"https://pi.net/container/{smartphone_serial}/sync"
@@ -2487,7 +2504,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_21_synchronize_container_not_registered(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
 
         # Challenge
         scope = f"https://pi.net/container/{smartphone_serial}/sync"
@@ -2506,7 +2523,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_22_synchronize_invalid_challenge(self):
         # invalid challenge
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         # create challenge
         scope = f"https://pi.net/container/{smartphone_serial}/sync"
         result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
@@ -2521,7 +2538,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_23_synchronize_smartphone_with_push_fb(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # tokens
@@ -2573,7 +2590,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_24_synchronize_smartphone_with_push_poll_only(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # tokens
@@ -2621,7 +2638,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_25_synchronize_smartphone_with_new_tokens(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # tokens
@@ -2676,7 +2693,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_26_synchronize_smartphone_missing_token_enroll_policies(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # tokens
@@ -2720,7 +2737,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_27_synchronize_smartphone_token_policies(self):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Add tokens
@@ -2820,7 +2837,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def setup_rollover(self, smartphone_serial=None):
         # Registration
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success(smartphone_serial)
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success(smartphone_serial)
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -2985,7 +3002,13 @@ class APIContainerSynchronization(APIContainerTest):
     def test_35_rollover_client_init_invalid_challenge(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
+        policies = result["result"]["value"]["policies"]
+        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -3023,7 +3046,13 @@ class APIContainerSynchronization(APIContainerTest):
     def test_36_rollover_client_finalize_invalid_challenge(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
+        policies = result["result"]["value"]["policies"]
+        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -3110,7 +3139,13 @@ class APIContainerSynchronization(APIContainerTest):
     def test_37_sync_with_rollover_challenge_fails(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
+        policies = result["result"]["value"]["policies"]
+        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -3137,7 +3172,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_38_rollover_server_success(self):
         # Registration
-        smartphone_serial, priv_key_old_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # token
@@ -3227,7 +3262,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_39_rollover_server_not_completed(self):
         # Registration
-        smartphone_serial, priv_key_old_smph = self.test_01_register_smartphone_success()
+        smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
 
         # token
@@ -3257,7 +3292,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
 
     def sync_with_initial_token_transfer_allowed(self, smartphone_serial=None):
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success(smartphone_serial)
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success(smartphone_serial)
 
         # Create Tokens
         hotp_token = init_token({"genkey": True, "type": "hotp"})
@@ -3335,7 +3370,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertNotIn(new_hotp.get_serial(), token_serials)
 
     def sync_with_initial_token_transfer_denied(self, smartphone_serial=None):
-        smartphone_serial, priv_key_smph = self.test_01_register_smartphone_success(smartphone_serial)
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success(smartphone_serial)
 
         # Create Tokens
         hotp_token = init_token({"genkey": True, "type": "hotp"})
