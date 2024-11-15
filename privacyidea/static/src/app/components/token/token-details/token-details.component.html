@@ -39,6 +39,16 @@
                       </mat-list-item>
                     }
                   </mat-list>
+                } @else if (element.key.key === "container_serial") {
+                  @if (element.isEditing) {
+                    <select matNativeControl [(ngModel)]="selectedContainer">
+                      @for (option of containerOptions(); track option; ) {
+                        <option value="{{ option }}">{{ option }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <span>{{ element.value }}</span>
+                  }
                 } @else if (isObject(element.value) || Array.isArray(element.value)) {
                   @for (info of parseObjectToList(element.value); track info; let idx = $index) {
                     <mat-list-item class="object-row">
@@ -66,10 +76,11 @@
               <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
                 @if (element.key.key === "failcount" && !isAnyEditing()) {
                   <mat-icon class="clickable" (click)="resetFailCount()">lock_reset</mat-icon>
-                }
-                @if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
+                } @else if (element.key.key === "container_serial" && !isAnyEditing() && element.value) {
+                  <mat-icon class="clickable red-icon" (click)="unassignContainer()">folder_delete</mat-icon>
+                } @else if (element.key.key === "maxfail" || element.key.key === "count_window" || element.key.key === "sync_window"
                 || element.key.key === "description" || element.key.key === "info" || element.key.key === "realms"
-                || element.key.key === "tokengroup") {
+                || element.key.key === "tokengroup" || element.key.key === "container_serial") {
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
                       <mat-icon class="edit-button"
@@ -82,6 +93,8 @@
                       <mat-icon class="edit-button"
                                 (click)="toggleEditMode(element, 'cancel')" style="color: var(--red-base)">cancel
                       </mat-icon>
+                    } @else {
+                      <br/>
                     }
                   </div>
                 }
@@ -120,7 +133,7 @@
             <ng-container matColumnDef="edit">
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
-                @if (element.key.key === "username") {
+                @if (element.key.key === "username" && !(isAnyEditing() && !this.isEditingUser)) {
                   @if (element.value) {
                     <div class="edit-button-container">
                       <mat-icon class="edit-button yellow-icon"
@@ -151,7 +164,6 @@
             <input style="display:none" type="password"/>
             <input [(ngModel)]="setPinValue" [type]="'password'" class="input" placeholder="Token Pin">
             <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input" placeholder="Repeat Pin">
-
           </div>
           <div class="user-pin-button">
             @if (!isEditingUser) {
@@ -169,23 +181,6 @@
                 Assign User
               </button>
             }
-          </div>
-          <br/>
-          <mat-divider/>
-          <br/>
-          <div class="assign-container">
-            <mat-form-field class="mat-form-field">
-              <mat-label>Container Serial</mat-label>
-              <select matNativeControl>
-                <option value="option1"></option>
-                <option value="option2">CONT1234567890</option>
-                <option value="option3">CONT0987654321</option>
-              </select>
-            </mat-form-field>
-            <button class="detail-button" extended mat-fab>
-              <mat-icon class="detail-button-icon">drive_folder_upload</mat-icon>
-              Assign container
-            </button>
           </div>
         </div>
       </div>
@@ -212,10 +207,10 @@
         <mat-divider/>
         <br/>
         <div class="pin-input">
-          <input class="input" placeholder="First OTP value" value="">
-          <input class="input" placeholder="Second OTP value" value="">
+          <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
+          <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
         </div>
-        <button class="detail-button" extended mat-fab>
+        <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">sync</mat-icon>
           Resync Token
         </button>
@@ -225,15 +220,16 @@
         <div class="pin-input">
           <input style="display:none" type="text"/>
           <input style="display:none" type="password"/>
-          <input [type]="hide ? 'password' : 'text'" class="input-full" placeholder="OTP or PIN" value="">
+          <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'" class="input-full"
+                 placeholder="OTP or PIN">
           <mat-icon (click)="hide = !hide" class="visible-icon" matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
           </mat-icon>
         </div>
-        <button class="detail-button" extended mat-fab>
+        <button (click)="testToken()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">help_outline</mat-icon>
           Test Token
         </button>
-        <button class="detail-button" extended mat-fab>
+        <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">help_outline</mat-icon>
           Verify OTP value
         </button>

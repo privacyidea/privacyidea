@@ -23,18 +23,21 @@ export class ContainerService {
               private tableUtilsService: TableUtilsService) {
   }
 
-  getContainerData(page: number, pageSize: number, columns: {
-    key: string;
-    label: string
-  }[], sort?: Sort, filterValue?: string): Observable<any> {
-    const headers = new HttpHeaders({
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
       'PI-Authorization': this.localStore.getData('bearer_token') || ''
     });
+  }
 
+  getContainerData(page?: number, pageSize?: number, sort?: Sort, filterValue?: string): Observable<any> {
+    const headers = this.getHeaders();
     let params = new HttpParams()
-      .set('page', page.toString())
-      .set('pagesize', pageSize.toString());
 
+    if (page && pageSize) {
+      params = params
+        .set('page', page.toString())
+        .set('pagesize', pageSize.toString());
+    }
     if (sort) {
       params = params
         .set('sortby', sort.active)
@@ -63,6 +66,32 @@ export class ContainerService {
       map(response => response),
       catchError(error => {
         console.error('Failed to get container data', error);
+        return throwError(error);
+      })
+    );
+  }
+
+  assignContainer(token_serial: string, container_serial: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}${container_serial}/add`, {
+      serial: token_serial
+    }, {headers}).pipe(
+      map(response => response),
+      catchError(error => {
+        console.error('Failed to assign container', error);
+        return throwError(error);
+      })
+    );
+  }
+
+  unassignContainer(token_serial: string, container_serial: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}${container_serial}/remove`, {
+      serial: token_serial
+    }, {headers}).pipe(
+      map(response => response),
+      catchError(error => {
+        console.error('Failed to unassign container', error);
         return throwError(error);
       })
     );

@@ -166,4 +166,13 @@ export class TokenService {
       serial: serial
     }, {headers})
   }
+
+  resyncOTPToken(serial: string, fristOTPValue: string, secondOTPValue: string) {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.baseUrl}resync`, {
+      serial: serial,
+      otp1: fristOTPValue,
+      otp2: secondOTPValue
+    }, {headers})
+  }
 }

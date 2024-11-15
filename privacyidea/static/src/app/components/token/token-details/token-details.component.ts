@@ -13,6 +13,7 @@ import {MatButton, MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
+import {ContainerService} from '../../../services/container/container.service';
 import {NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
@@ -35,6 +36,7 @@ export const details = [
   {key: 'info', label: 'Information'},
   {key: 'realms', label: 'Token Realm'},
   {key: 'tokengroup', label: 'Token Group'},
+  {key: 'container_serial', label: 'Container Serial'},
 ];
 
 export const userDetail = [
@@ -81,10 +83,12 @@ export class TokenDetailsComponent {
   detailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   userDetailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
   realmOptions = signal<string[]>(['']);
+  containerOptions = signal<string[]>(['']);
   infos = signal<string[]>([]);
   newInfo: WritableSignal<string> = signal('');
 
-  constructor(private tokenService: TokenService) {
+  constructor(private tokenService: TokenService,
+              private containerService: ContainerService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
     });
@@ -100,6 +104,10 @@ export class TokenDetailsComponent {
   userRealm: string = '';
   setPinValue: string = '';
   repeatPinValue: string = '';
+  selectedContainer: string = '';
+  fristOTPValue: string = '';
+  secondOTPValue: string = '';
+  otpOrPinToTest: string = '';
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -112,9 +120,10 @@ export class TokenDetailsComponent {
   showTokenDetail(serial: string): Observable<void> {
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
-      this.tokenService.getRealms()
+      this.tokenService.getRealms(),
+      this.containerService.getContainerData(1, 10)
     ]).pipe(
-      switchMap(([tokenDetailsResponse, realms]) => {
+      switchMap(([tokenDetailsResponse, realms, containers]) => {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active = tokenDetails.active;
         this.revoked = tokenDetails.revoked;
@@ -131,6 +140,11 @@ export class TokenDetailsComponent {
         })).filter(detail => detail.value !== undefined));
 
         this.realmOptions.set(Object.keys(realms.result.value));
+        console.log(containers.result.value)
+        this.containerOptions.set(Object.values(containers.result.value.containers as {
+          serial: string
+        }[]).map(container => container.serial));
+        this.containerOptions().push('');
 
         return new Observable<void>(observer => {
           observer.next();
@@ -161,7 +175,11 @@ export class TokenDetailsComponent {
         if (this.newInfo() !== '') {
           this.infos().push(this.newInfo());
         }
-        this.saveDetail(element);
+        if (element.key.key === 'container_serial') {
+          this.assignContainer();
+        } else {
+          this.saveDetail(element);
+        }
         this.newInfo.set('');
       }
     }
@@ -180,7 +198,8 @@ export class TokenDetailsComponent {
 
   isAnyEditing(): boolean {
     return this.detailData().some((element) => element.isEditing)
-      || this.userDetailData().some((element) => element.isEditing);
+      || this.userDetailData().some((element) => element.isEditing) ||
+      this.isEditingUser;
   }
 
   saveDetail(element: any): void {
@@ -297,5 +316,43 @@ export class TokenDetailsComponent {
         console.error('Failed to set random pin', error);
       }
     });
+  }
+
+  assignContainer() {
+    this.containerService.assignContainer(this.serial(), this.selectedContainer).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: error => {
+        console.error('Failed to assign container', error);
+      }
+    });
+  }
+
+  unassignContainer() {
+    this.containerService.unassignContainer(this.serial(), this.selectedContainer).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: error => {
+        console.error('Failed to unassign container', error);
+      }
+    });
+  }
+
+  resyncOTPToken() {
+    this.tokenService.resyncOTPToken(this.serial(), this.fristOTPValue, this.secondOTPValue).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: error => {
+        console.error('Failed to resync OTP token', error);
+      }
+    });
+  }
+
+  testToken() {
+    console.log("Testing token")
+  }
+
+  verifyOTPValue() {
+    console.log("Verifying token")
   }
 }

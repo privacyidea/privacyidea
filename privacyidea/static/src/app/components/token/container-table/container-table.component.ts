@@ -6,8 +6,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {NgClass, NgStyle} from '@angular/common';
-import {MatCard, MatCardContent} from '@angular/material/card';
+import {NgClass} from '@angular/common';
 import {ContainerService} from '../../../services/container/container.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
@@ -27,7 +26,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatPaginatorModule,
-    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle
+    MatSortModule, NgClass, MatIcon, MatFabButton
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.css'
@@ -68,7 +67,7 @@ export class ContainerTableComponent {
 
   private fetchContainerData() {
     this.containerService.getContainerData(
-      this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
         this.updateDataSource(response.result.value.containers);
