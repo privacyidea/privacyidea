@@ -666,6 +666,9 @@ def registration_finalize():
     container_serial = getParam(params, "container_serial", required)
     res = finalize_registration(container_serial, params)
 
+    # Add policy information to the response
+    res["policies"] = request.all_data.get("client_policies", {})
+
     # Audit log
     container = find_container_by_serial(container_serial)
     g.audit_object.log({"container_serial": container_serial,

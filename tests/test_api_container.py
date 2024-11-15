@@ -1895,7 +1895,8 @@ class APIContainerSynchronization(APIContainerTest):
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24,
                                                             ACTION.CONTAINER_CHALLENGE_TTL: 1,
-                                                            ACTION.CONTAINER_SSL_VERIFY: "True"}, priority=2)
+                                                            ACTION.CONTAINER_SSL_VERIFY: "True",
+                                                            ACTION.CONTAINER_CLIENT_ROLLOVER: True}, priority=2)
         if not smartphone_serial:
             smartphone_serial, _ = init_container({"type": "smartphone"})
         data = {"container_serial": smartphone_serial,
@@ -1947,6 +1948,12 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Check if the response contains the expected values
         self.assertIn("public_server_key", result["result"]["value"])
+        self.assertIn("policies", result["result"]["value"])
+        policies = result["result"]["value"]["policies"]
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
 
         delete_policy("policy")
 
