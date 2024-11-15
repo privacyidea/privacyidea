@@ -289,7 +289,7 @@ class SmartphoneContainer(TokenContainerClass):
         self.add_container_info("registration_state", "registered")
 
         # check right for initial token transfer
-        if params.get("client_policies").get("container_initial_token_transfer"):
+        if params.get("client_policies", {}).get("container_initial_token_transfer"):
             self.add_container_info("initial_synchronized", False)
 
         res = {"public_server_key": public_key_server_str}
