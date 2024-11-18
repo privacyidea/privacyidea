@@ -276,7 +276,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                 if has_tokeninfo_key not in token_obj.get_tokeninfo():
                     add = False
             if range_of_seriel:
-                if not range_of_seriel(0) <= token_obj.token.serial <= range_of_seriel(1):
+                if not range_of_seriel[0] <= token_obj.token.serial <= range_of_seriel[1]:
                     add = False
             if tokeninfo_filter:
                 for att in tokeninfo_filter:
@@ -301,8 +301,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                 for att in tokenowner_filter:
                     user = token_obj.user
                     if not user is None:
-                        user_info = vars(user)
-                        value = user_info.get(att[0])
+                        value = user.info.get(att[0])
                         if value is None:
                             add = False
                         elif not all(comparator(value) for comparator in att[1]):
@@ -314,6 +313,12 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                     container = find_container_for_token(token_obj.token.serial)
                     if not container is None:
                         container_info = vars(container)
+                        container_info["serial"] = container.serial
+                        container_info["type"] = container.type
+                        container_info["description"] = container.description
+                        container_info["realm"] = container.realms
+                        container_info["last_seen"] = container.last_seen
+                        container_info["last_update"] = container.last_updated
                         value = container_info.get(att[0])
                         if value is None:
                             add = False
@@ -336,19 +341,20 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
         yield filtered_list
 
 
-@find_cli.group('find')
+@find_cli.group('find', invoke_without_command=True)
 @click.option('--chunksize', default=1000, help='The number of tokens to fetch in one request.')
 #TODO: Maby remove has-not-tokeninfo-key and has-tokeninfo-key and use regex instead
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@click.option('--tokeninfos', multiple=True, help='Match for a certain tokeninfo from the database.')
-@click.option('--tokenattributes', multiple=True, help='Match for a certain token attribute from the database. '
-                                        'You can use the following operators: =, >, <, ! for you matching. '
-                                        'For example: "rollout_state=clientwait" or "failcount>3".')
-@click.option('--tokenowners', multiple=True, help='Match for certain information of the token owner from the '
-                                                   'database. Example: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
-@click.option('--tokencontainers', multiple=True, help='Match for certain information of tokencontainer from the '
-                                                   'database. Example: type=smartphone.')
+@click.option('--tokeninfo', 'tokeninfos', multiple=True, help='Match for a certain tokeninfo from the database.')
+@click.option('--tokenattribute', 'tokenattributes', multiple=True,
+              help='Match for a certain token attribute from the database. You can use the following operators: '
+                   '=, >, <, ! for you matching. For example: "rollout_state=clientwait" or "failcount>3".')
+@click.option('--tokenowner', 'tokenowners', multiple=True,
+              help='Match for certain information of the token owner from the database. '
+                   'Example: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
+@click.option('--tokencontainer', 'tokencontainers', multiple=True,
+              help='Match for certain information of tokencontainer from the database. Example: type=smartphone.')
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
@@ -387,18 +393,14 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key, tokenat
 
     tofilter = []
     if tokenowners:
-        allowed_tokenowner = [col.key for col in TokenOwner.__table__.columns]
         for owner in tokenowners:
             m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", owner)
-            if m.group(1) not in allowed_tokenowner:
-                raise click.ClickException(f"Tokenowner {m.group(1)} not allowed. "
-                                           f"Allowed tokenowner attributes are: {allowed_tokenowner}")
-            else:
-                tofilter.append((m.group(1), build_tokenvalue_filter(m)))
+            tofilter.append((m.group(1), build_tokenvalue_filter(m)))
 
     tcfilter = []
     if tokencontainers:
         allowed_containers = [col.key for col in TokenContainer.__table__.columns]
+        allowed_containers = allowed_containers + ["serial", "type", "description", "realm", "last_seen", "last_update"]
         for container in tokencontainers:
             m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", container)
             if m.group(1) not in allowed_containers:
@@ -418,6 +420,9 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key, tokenat
                                has_tokeninfo_key=has_tokeninfo_key)
 
     sys.stderr.write(f"+ Reading tokens from database in chunks of {chunksize}...\n")
+
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(list)
 
 
 @findtokens.command('list')
