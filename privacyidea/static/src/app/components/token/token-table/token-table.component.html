@@ -47,9 +47,9 @@
                 <span [ngClass]="{
                   'highlight-true-clickable': (column.key === 'active' && element[column.key] === true) ||
                   (column.key === 'failcount' && element[column.key] == 0),
-                  'highlight-warning-clickable': (column.key === 'failcount' && element[column.key] >= 1 && element[column.key] <= 9),
+                  'highlight-warning-clickable': (column.key === 'failcount' && element[column.key] >= 1 && element[column.key] < element['maxfail']),
                   'highlight-false-clickable': (column.key === 'active' && element[column.key] !== true) ||
-                  (column.key === 'failcount' && (element[column.key] < 0 || element[column.key] > 9))
+                  (column.key === 'failcount' && (element[column.key] < 0 || element[column.key] >= element['maxfail']))
                 }" (click)="column.key === 'active' ? toggleActive(element) :
                   (column.key === 'failcount' ? resetFailCount(element) : null)">
                   {{ column.key === 'active' ? (element[column.key] ? 'active' : 'deactivated') : element[column.key] }}

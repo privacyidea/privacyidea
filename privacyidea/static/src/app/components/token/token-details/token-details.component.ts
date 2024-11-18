@@ -33,7 +33,6 @@ export const details = [
   {key: 'sync_window', label: 'Sync Window'},
   {key: 'count', label: 'Count'},
   {key: 'description', label: 'Description'},
-  {key: 'info', label: 'Information'},
   {key: 'realms', label: 'Token Realm'},
   {key: 'tokengroup', label: 'Token Group'},
   {key: 'container_serial', label: 'Container Serial'},
@@ -44,6 +43,10 @@ export const userDetail = [
   {key: 'user_realm', label: 'Realm'},
   {key: 'resolver', label: 'Resolver'},
   {key: 'user_id', label: 'User ID'},
+];
+
+export const infoDetail = [
+  {key: 'info', label: 'Information'},
 ];
 
 @Component({
@@ -79,8 +82,21 @@ export const userDetail = [
 export class TokenDetailsComponent {
   protected readonly Array = Array;
   protected readonly Object = Object;
-  detailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
-  userDetailData = signal<{ value: any; key: { label: string; key: string }, isEditing: boolean }[]>([]);
+  detailData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: boolean
+  }[]>([]);
+  userData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: boolean
+  }[]>([]);
+  infoData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: boolean
+  }[]>([]);
   realmOptions = signal<string[]>(['']);
   containerOptions = signal<string[]>(['']);
   infos = signal<string[]>([]);
@@ -123,19 +139,24 @@ export class TokenDetailsComponent {
       this.containerService.getContainerData(1, 10)
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms, containers]) => {
-        console.log("blub")
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.selectedContainer = tokenDetails.container_serial;
         this.detailData.set(details.map(detail => ({
-          key: detail,
+          keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: false
         })).filter(detail => detail.value !== undefined));
 
-        this.userDetailData.set(userDetail.map(detail => ({
-          key: detail,
+        this.userData.set(userDetail.map(detail => ({
+          keyMap: detail,
+          value: tokenDetails[detail.key],
+          isEditing: false
+        })).filter(detail => detail.value !== undefined));
+
+        this.infoData.set(infoDetail.map(detail => ({
+          keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: false
         })).filter(detail => detail.value !== undefined));
@@ -169,13 +190,13 @@ export class TokenDetailsComponent {
       element.isEditing = false;
     } else {
       element.isEditing = !element.isEditing;
-      if (element.isEditing && element.key.key === 'info') {
+      if (element.isEditing && element.keyMap.key === 'info') {
         this.infos.set(this.parseObjectToList(element.value));
       } else if (!element.isEditing) {
         if (this.newInfo() !== '') {
           this.infos().push(this.newInfo());
         }
-        if (element.key.key === 'container_serial') {
+        if (element.keyMap.key === 'container_serial') {
           this.assignContainer();
         } else {
           this.saveDetail(element);
@@ -198,12 +219,13 @@ export class TokenDetailsComponent {
 
   isAnyEditing(): boolean {
     return this.detailData().some((element) => element.isEditing)
-      || this.userDetailData().some((element) => element.isEditing) ||
-      this.isEditingUser;
+      || this.userData().some((element) => element.isEditing)
+      || this.infoData().some((element) => element.isEditing)
+      || this.isEditingUser;
   }
 
   saveDetail(element: any): void {
-    this.tokenService.setTokenDetail(this.serial(), element.key.key, element.value, this.infos()).pipe(
+    this.tokenService.setTokenDetail(this.serial(), element.keyMap.key, element.value, this.infos()).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       next: () => {
@@ -220,7 +242,7 @@ export class TokenDetailsComponent {
     this.tokenService.deleteInfo(this.serial(), infoKey).pipe(
       switchMap(() => this.showTokenDetail(this.serial())),
       switchMap(() => {
-        const infoDetail = this.detailData().find(detail => detail.key.key === 'info');
+        const infoDetail = this.detailData().find(detail => detail.keyMap.key === 'info');
         if (infoDetail) {
           this.infos.set(this.parseObjectToList(infoDetail.value));
           infoDetail.isEditing = true;
