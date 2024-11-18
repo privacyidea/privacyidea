@@ -503,22 +503,6 @@ class SmartphoneContainer(TokenContainerClass):
         missing_serials = list(set(server_token_serials).difference(set(client_serials)))
         same_serials = list(set(server_token_serials).intersection(set(client_serials)))
 
-        # Get info for same serials: token details
-        update_dict = []
-        for serial in same_serials:
-            token = get_tokens_from_serial_or_user(serial, None)[0]
-            token_dict = token.get_as_dict()
-            # rename count to counter for the client
-            if "count" in token_dict:
-                token_dict["counter"] = token_dict["count"]
-                del token_dict["count"]
-            otp = serial_otp_map.get(serial)
-            if otp:
-                token_dict["otp"] = otp
-            update_dict.append(token_dict)
-
-        container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
-
         # Initial synchronization after registration or rollover
         container_info = self.get_container_info_dict()
         if initial_transfer_allowed and container_info.get("initial_synchronized") == "False":
@@ -537,5 +521,23 @@ class SmartphoneContainer(TokenContainerClass):
                 except ParameterError as e:
                     log.info(f"Client token {serial} could not be added to the container: {e}")
                     continue
+                # add token to the same_serials list to update the token details
+                same_serials.append(serial)
+
+        # Get info for same serials: token details
+        update_dict = []
+        for serial in same_serials:
+            token = get_tokens_from_serial_or_user(serial, None)[0]
+            token_dict = token.get_as_dict()
+            # rename count to counter for the client
+            if "count" in token_dict:
+                token_dict["counter"] = token_dict["count"]
+                del token_dict["count"]
+            otp = serial_otp_map.get(serial)
+            if otp:
+                token_dict["otp"] = otp
+            update_dict.append(token_dict)
+
+        container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
 
         return container_dict
