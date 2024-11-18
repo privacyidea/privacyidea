@@ -432,8 +432,8 @@ Find
 
 With the *find* command you can search for tokens in the database. You can use several options to filter the tokens.
 
-Tokenattribute
-**************
+--tokenattribute
+****************
 '--tokenattribute' to find tokens with specific token attributes.
 Example::
 
@@ -443,8 +443,8 @@ Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
 .. note:: You can also use regular expressions in the tokenattribute filter.
 .. note:: You can use the option '--tokenattribute' multiple times.
 
-Tokeninfo
-*********
+--tokeninfo
+***********
 '--tokeninfo' to find tokens with tokeninfos.
 Example::
 
@@ -455,8 +455,8 @@ the given date.
 .. note:: You can also use regular expressions in the tokeninfo filter.
 .. note:: You can use the option '--tokeninfo' multiple times.
 
-Tokencontaner
-**************
+--tokencontaner
+***************
 '--tokencontainer' to find tokens in a specific token container.
 Example::
 
@@ -466,8 +466,8 @@ Search for all tokens in the token container with the serial ``SMPH00009272``.
 .. note:: You can also use regular expressions in the tokencontainer filter.
 .. note:: You can use the option '--tokencontainer' multiple times.
 
-Has-tokeninfo-key/Has-not-tokeninfo-key
-****************************************
+--has-tokeninfo-key/--has-not-tokeninfo-key
+*******************************************
 '--has-tokeninfo-key' to find tokens with a specific tokeninfo-key or '--has-not-tokeninfo-key' to find tokens
 without a specific tokeninfo-key.
 Example::
@@ -480,8 +480,8 @@ Example::
 
     pitokenjanitor find --has-not-tokeninfo-key 'import_time'
 
-Tokenower
-*********
+--tokenower
+***********
 '--tokenowner' to find tokens from a specific token owner(user). You can use things like the username, the realm or
 the resolver.
 Example::
@@ -491,8 +491,8 @@ Example::
 .. note:: You can also use regular expressions in the tokenowner filter.
 .. note:: You can use the option '--tokenowner' multiple times.
 
-Assigned
-********
+--assigned
+**********
 '--assigned' to find tokens that are assigned or unassigned.
 Example::
 
@@ -501,8 +501,8 @@ Example::
 or::
     pitokenjanitor find --assigned True
 
-Active
-******
+--active
+********
 '--active' searches for tokens that are either active or inactive, this means enabled or disabled.
 
 Example::
@@ -512,8 +512,8 @@ Example::
 or::
     pitokenjanitor find --active True
 
-Orphaned
-********
+--orphaned
+**********
 '--orphaned' searches for tokens, that are orphaned. Orphaned tokens are assigned to a user. But the user does not
 exist in the user store anymore. This can happen e.g. if an LDAP user gets deleted in the LDAP directory.
 
@@ -521,8 +521,8 @@ Example::
 
     pitokenjanitor find --orphaned 1
 
-Range-of-serials
-****************
+--range-of-serials
+******************
 '--range-of-serials' to find tokens with serials in a specific range.
 
 Example::
@@ -531,13 +531,15 @@ Example::
 
 .. note:: This matches the string as ASCII values. So consider case sensitivity.
 
-List
+list
 ****
 Lists all found tokens.
 
 Example::
 
     pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list
+
+..Note:: This command is the default command if no action is specified.
 
 --user_attributes
 ..................
