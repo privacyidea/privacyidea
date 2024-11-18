@@ -295,6 +295,7 @@ class TokenContainerClass:
             # Add user realm to container realms
             realm_db = Realm.query.filter_by(name=user.realm).first()
             self._db_container.realms.append(realm_db)
+            self._db_container.save()
             return True
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")

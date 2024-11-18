@@ -103,14 +103,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.functionObject = {};
         $scope.editTemplate = false;
 
-        $scope.$watch('form.containerType', function (newVal, oldVal) {
-            if (newVal && $scope.formData.containerTypes[newVal]) {
+        $scope.$watch('form.containerType', function (newType, oldVal) {
+            if (newType && $scope.formData.containerTypes[newType]) {
                 $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.form.containerType,
                     $scope.formData.containerTypes, $scope.tokenSettings.tokenTypes);
                 $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
 
                 $scope.selectTemplate(true);
                 $scope.editTemplate = false;
+
+                if (newType === "smartphone") {
+                    $scope.initRegistration = true;
+                } else {
+                    $scope.initRegistration = false;
+                }
             }
         }, true);
 
@@ -322,8 +328,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     if (registration_state === "client_wait" && $location.path() == "/token/container") {
                         // stop polling if the page changed or the container was (un)registered
                         $timeout($scope.pollContainerDetails, 2500);
-                    }
-                    else if (registration_state === "registered") {
+                    } else if (registration_state === "registered") {
                         // container successfully registered, move to details page
                         $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                     }
@@ -641,13 +646,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.unassignUser = function () {
+            let params = {
+                container_serial: $scope.containerSerial,
+                user: fixUser($scope.containerOwner.user_name),
+                realm: $scope.containerOwner.user_realm
+            }
             ContainerFactory.unassignUser(
-                {
-                    container_serial: $scope.containerSerial,
-                    user: fixUser($scope.containerOwner.user_name),
-                    realm: $scope.containerOwner.realm,
-                    pin: $scope.containerOwner.pin
-                }
+                params
                 , $scope.getContainer);
         };
 
@@ -695,7 +700,8 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $scope.getContainer();
             let details_path = "/token/container/details/" + $scope.containerSerial;
             let registration_state = $scope.container.info['registration_state'];
-            if (registration_state === "client_wait" && $location.path() === details_path) {
+            if ((registration_state === "client_wait" || registration_state === "rollover")
+                && $location.path() === details_path) {
                 // stop polling if the page changed or the container was (un)registered
                 $timeout($scope.pollContainerDetails, 2500);
             }
