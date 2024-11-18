@@ -179,7 +179,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </td>
             <td>
                 <button class="btn btn-primary"
-                        ng-hide="editContainerInfo || (!checkRight('container_set_options') && hide_buttons)"
+                        ng-hide="true || editContainerInfo || (!checkRight('container_set_options') && hide_buttons)"
                         ng-disabled="!checkRight('container_set_options')"
                         ng-click="editInfo()"
                         translate>Edit
@@ -198,12 +198,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </tr>
         <tr ng-show="container.info['registration_state'] === 'registered'">
             <td translate> Last Authentication</td>
-            <td>{{ container.last_authentication | date:'yyyy-MM-dd H:mm:ss'}}</td>
+            <td>{{ container.last_authentication | date:'yyyy-MM-dd H:mm:ss Z'}}</td>
             <td></td>
         </tr>
         <tr ng-show="container.info['registration_state'] === 'registered'">
             <td translate> Last Synchronization</td>
-            <td>{{ container.last_synchronization | date:'yyyy-MM-dd H:mm:ss'}}</td>
+            <td>{{ container.last_synchronization | date:'yyyy-MM-dd H:mm:ss Z'}}</td>
             <td></td>
         </tr>
     </table>
@@ -269,10 +269,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </div>
         </div>
     </div>
-    <!--- State: Registered --->
-    <div ng-show="container.info['registration_state'] === 'registered' || container.info['registration_state'] === 'rollover'">
+    <!--- Unregister --->
+    <div ng-show="container.info['registration_state']">
         <div class="text-center">
-            <button class="btn btn-primary"
+            <button class="btn btn-warning"
                     ng-click="unregisterContainer()"
                     ng-disabled="!checkRight('container_unregister')">
                 <span translate>Unregister Container</span>
@@ -362,7 +362,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </span>
                 <span class="label label-danger"
                       ng-show="loggedInUser.role=='admin'"
-                      ng-click="disableAllTokens()" translate>
+                      ng-click="disableAllTokens()"
+                      translate>
                     Disable All
                 </span>
             </th>

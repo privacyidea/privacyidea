@@ -1,11 +1,11 @@
 <table class="table table-hover">
     <tr>
         <td>
-            <label translate>Passphrase</label>
+            <label translate>Passphrase (optional)</label>
 
             <div>
 
-                <div class="form-group">
+                <div class="form-group" ng-hide=true>
                     <input type="checkbox" id="passphrase_ad"
                            ng-model="passphrase.ad">
                     <label for="passphrase_ad" translate>Use the passphrase of the user from the AD.</label>

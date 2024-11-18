@@ -62,21 +62,21 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <label for="templateName" translate>
                     Template Name
                 </label>
-                <select class="form-control"
+                <select class="form-control form-group"
                         id="templateName"
                         ng-model="form.template"
                         ng-change="selectTemplate(false)"
                         ng-options="templateName for (templateName, template) in templates[form.containerType]">
                 </select>
-                <button class="btn btn-default" ng-hide="editTemplate"
+                <button class="btn btn-default form-group" ng-hide="editTemplate"
                         ng-disabled="form.template.name==='noTemplate'"
                         ng-click="editTemplate=true" translate>
                     Edit
                 </button>
-                <button class="btn btn-default" ng-show="editTemplate" ng-click="editTemplate=false" translate>
+                <button class="btn btn-default form-group btn-group" ng-show="editTemplate" ng-click="editTemplate=false" translate>
                     Hide
                 </button>
-                <div class="well" ng-show="editTemplate">
+                <div class="panel panel-default panel-body" ng-show="editTemplate">
                     <div container-template-details
                          selection="form"
                          form-init="tokenSettings"
@@ -92,7 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </div>
         </div>
 
-         <!-- Options: only display if no template is used and options are available -->
+        <!-- Options: only display if no template is used and options are available -->
         <div class="form-group" ng-show="form.template.name === 'noTemplate'">
             <div container-options
                  selection="form"
@@ -101,16 +101,29 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
 
         <!-- Init registration -->
-        <div class="form-group" ng-show="checkRight('container_register')">
+        <div class="form-group" ng-show="checkRight('container_register') && form.containerType == 'smartphone'">
             <hr class="horizontal-line-invisible">
             <h4 translate>Registration</h4>
             <input type="checkbox" id="init_registration"
                    ng-model="initRegistration">
-            <label for="init_registration" translate>Initialize Registration</label>
-
+            <label for="init_registration" translate>Generate a QR code to register the container on a smartphone.</label>
+            <div class="form-group">
+                <buton class="btn btn-default"
+                       ng-click="registrationSettings=true"
+                       ng-hide="registrationSettings"
+                       translate>
+                    Edit Settings
+                </buton>
+                <buton class="btn btn-default"
+                       ng-click="registrationSettings=false"
+                       ng-show="registrationSettings"
+                       translate>
+                    Hide Settings
+                </buton>
+            </div>
             <div register-container
                  passphrase="passphrase"
-                 ng-show="initRegistration">
+                 ng-show="registrationSettings">
             </div>
         </div>
 
