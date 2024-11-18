@@ -156,7 +156,7 @@ export class TokenService {
     const headers = this.getHeaders();
     return this.http.post(`${this.baseUrl}setpin`, {
       serial: serial,
-      userpin: userPin
+      otppin: userPin
     }, {headers})
   }
 

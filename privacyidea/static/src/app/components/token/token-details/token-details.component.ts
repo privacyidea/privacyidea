@@ -22,6 +22,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDivider} from '@angular/material/divider';
 import {MatSelectModule} from '@angular/material/select';
 import {forkJoin, Observable, switchMap} from 'rxjs';
+import {ValidateService} from '../../../services/validate/validate.service';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -103,7 +104,8 @@ export class TokenDetailsComponent {
   newInfo: WritableSignal<string> = signal('');
 
   constructor(private tokenService: TokenService,
-              private containerService: ContainerService) {
+              private containerService: ContainerService,
+              private validateService: ValidateService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
     });
@@ -140,6 +142,7 @@ export class TokenDetailsComponent {
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms, containers]) => {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
+        console.log(tokenDetails);
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.selectedContainer = tokenDetails.container_serial;
@@ -340,10 +343,22 @@ export class TokenDetailsComponent {
   }
 
   testToken() {
-    console.log("Testing token")
+    this.validateService.testToken(this.serial(), this.otpOrPinToTest).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: (error: any) => {
+        console.error('Failed to test token', error);
+      }
+    });
   }
 
   verifyOTPValue() {
-    console.log("Verifying token")
+    this.validateService.testToken(this.serial(), this.otpOrPinToTest, "1").pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      error: (error: any) => {
+        console.error('Failed to verify OTP value', error);
+      }
+    });
   }
 }
