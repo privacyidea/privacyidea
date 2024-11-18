@@ -286,6 +286,9 @@ class SmartphoneContainer(TokenContainerClass):
         self.add_container_info("private_key_server", encryptPassword(private_key_server_str))
         if device != "":
             self.add_container_info("device", device)
+        else:
+            # this might be a rollover, delete old device information
+            self.delete_container_info("device")
         self.add_container_info("registration_state", "registered")
 
         # check right for initial token transfer

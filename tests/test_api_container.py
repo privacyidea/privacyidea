@@ -1,9 +1,10 @@
 import base64
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, get_container_realms, create_container_template,
                                        get_template_obj, delete_container_by_serial)
@@ -1932,6 +1933,20 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("hash_algorithm", qr_url)
         self.assertIn("passphrase=Enter%20your%20passphrase", qr_url)
 
+        # check challenge
+        challenges = get_challenges(serial=smartphone_serial)
+        challenge = challenges[0] if len(challenges) == 1 else None
+        self.assertIsNotNone(challenge)
+        self.assertEqual(init_response_data["nonce"], challenge.challenge)
+        # timestamp: we need to add the timezone for the challenge timestamp
+        creation_time = datetime.fromisoformat(init_response_data["time_stamp"])
+        self.assertEqual(creation_time, challenge.timestamp.replace(tzinfo=timezone.utc))
+        time_delta_challenge = (challenge.expiration - challenge.timestamp).total_seconds()
+        self.assertAlmostEqual(24*60, time_delta_challenge, 0)
+        challenge_data = json.loads(challenge.data)
+        self.assertEqual("https://pi.net/container/register/finalize", challenge_data["scope"])
+
+
         # Finalize
         params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
                                                                          scope="https://pi.net/container/register/finalize",
@@ -2157,6 +2172,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
     def test_09_challenge_success(self):
+        set_policy("challenge_ttl", scope="container", action={ACTION.CONTAINER_CHALLENGE_TTL: 3}, priority=1)
+
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
 
@@ -2170,6 +2187,24 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("time_stamp", result_entries)
         self.assertIn("enc_key_algorithm", result_entries)
         self.assertIn("server_url", result_entries)
+
+        # check challenge
+        challenge_list = get_challenges(serial=smartphone_serial)
+        self.assertEqual(1, len(challenge_list))
+        challenge = challenge_list[0]
+        result = result["result"]["value"]
+        self.assertEqual(result["nonce"], challenge.challenge)
+        # we need to set the timezone since the database can not store it
+        challenge_timestamp = challenge.timestamp.replace(tzinfo=timezone.utc)
+        self.assertEqual(datetime.fromisoformat(result["time_stamp"]), challenge_timestamp)
+        challenge_data = json.loads(challenge.data)
+        self.assertEqual(scope, challenge_data["scope"])
+        # expiration date: created a few microseconds after the creation date
+        expiration_date = datetime.fromisoformat(result["time_stamp"]) + timedelta(seconds=180)
+        time_delta = (expiration_date - challenge.expiration.replace(tzinfo=timezone.utc)).total_seconds()
+        self.assertLessEqual(abs(time_delta), 1)
+
+        delete_policy("challenge_ttl")
 
     def test_10_challenge_fail(self):
         # container does not exists
@@ -2198,9 +2233,10 @@ class APIContainerSynchronization(APIContainerTest):
                                                          scope)
 
         # Terminate
-        self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
+        res = self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
                                     params,
                                     None, 'POST')
+        self.assertTrue(res["result"]["value"]["success"])
 
     def test_10_register_terminate_client_no_user_success(self):
         # Generic policy

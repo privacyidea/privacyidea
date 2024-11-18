@@ -702,12 +702,12 @@ def registration_terminate(container_serial: str):
                         "container_type": container.type,
                         "success": res})
 
-    return send_result(res)
+    return send_result({"success": res})
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['POST'])
 @prepolicy(check_client_container_action, request, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
-@event('container_register_terminate', request, g)
+@event('container_register_terminate_client', request, g)
 @log_with(log)
 def registration_terminate_client(container_serial: str):
     """
@@ -736,7 +736,7 @@ def registration_terminate_client(container_serial: str):
                         "container_type": container.type,
                         "success": res})
 
-    return send_result(res)
+    return send_result({"success": res})
 
 
 @container_blueprint.route('<string:container_serial>/challenge', methods=['POST'])
@@ -777,8 +777,8 @@ def create_challenge(container_serial: str):
         log.debug("Server url is not set in the container info.")
         server_url = " "
 
-    # validity time for the challenge: convert from minutes to seconds
-    challenge_ttl = int(container_info.get("challenge_ttl", "2")) * 60
+    # validity time for the challenge in minutes
+    challenge_ttl = int(container_info.get("challenge_ttl", "2"))
 
     # Create challenge
     res = container.create_challenge(scope, challenge_ttl)
@@ -797,6 +797,7 @@ def create_challenge(container_serial: str):
 
 @container_blueprint.route('<string:container_serial>/sync', methods=['POST'])
 @prepolicy(smartphone_config, request)
+@event('container_synchronize', request, g)
 def synchronize(container_serial: str):
     """
     Validates the challenge if the container is authorized to synchronize. If successful, the server returns the
@@ -893,6 +894,7 @@ def synchronize(container_serial: str):
 @container_blueprint.route('<string:container_serial>/rollover', methods=['POST'])
 @prepolicy(container_registration_config, request)
 @prepolicy(check_client_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+@event('container_init_rollover', request, g)
 def rollover(container_serial):
     """
     Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
