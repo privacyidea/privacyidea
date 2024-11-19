@@ -102,8 +102,6 @@ th:nth-child(even) {
 
 span {
   font-size: 12px;
-  margin-right: 20px;
-  margin-left: auto;
 }
 
 .filter-text {
@@ -149,7 +147,7 @@ span {
 }
 
 .object-row {
-  max-width: 220px;
+  display: flex;
   height: auto;
 }
 
@@ -163,6 +161,12 @@ span {
 
 .edit-button {
   color: black;
+  background-color: white;
+  cursor: pointer;
+}
+
+.cancel-button {
+  color: var(--red-base);
   background-color: white;
   cursor: pointer;
 }

@@ -91,31 +91,34 @@ export class TokenService {
     return this.http.get(this.baseUrl, {headers, params})
   }
 
-  setTokenDetail(serial: string, key: string, value: any, infos_signal: any): Observable<any> {
+  setTokenDetail(serial: string, key: string, value: any): Observable<any> {
+    const headers = this.getHeaders();
+    const set_url = `${this.baseUrl}set`;
+    if (key === 'maxfail') {
+      return this.http.post(set_url, {serial, ["max_failcount"]: value}, {headers});
+    } else {
+      return this.http.post(set_url, {serial, [key]: value}, {headers});
+    }
+  }
+
+  setTokenInfos(serial: string, infos: any): Observable<any> {
     const headers = this.getHeaders();
     const set_url = `${this.baseUrl}set`;
     const info_url = `${this.baseUrl}info`;
-    if (key === 'info' && typeof infos_signal === 'object' && infos_signal !== null) {
-      const requests = Object.keys(infos_signal).map(index => {
-          const infoKey = infos_signal[index].split(':')[0];
-          const infoValue = infos_signal[index].split(' ')[1];
-          if (infoKey === "count_auth_max" || infoKey === "count_auth_success_max" || infoKey === "hashlib"
-            || infoKey === "validity_period_start" || infoKey === "validity_period_end") {
-            return this.http.post(set_url, {serial, [infoKey]: infoValue}, {headers})
-          } else {
-            return this.http.post(`${info_url}/${serial}/${infoKey}`, {["value"]: infoValue}, {headers})
-          }
+    const requests = Object.keys(infos).map(info => {
+        const infoKey = info;
+        const infoValue = infos[infoKey];
+        if (infoKey === "count_auth_max" || infoKey === "count_auth_success_max" || infoKey === "hashlib"
+          || infoKey === "validity_period_start" || infoKey === "validity_period_end") {
+          return this.http.post(set_url, {serial, [infoKey]: infoValue}, {headers})
+        } else {
+          return this.http.post(`${info_url}/${serial}/${infoKey}`, {["value"]: infoValue}, {headers})
         }
-      );
-      return forkJoin(requests);
-    } else {
-      if (key === 'maxfail') {
-        return this.http.post(set_url, {serial, ["max_failcount"]: value}, {headers});
-      } else {
-        return this.http.post(set_url, {serial, [key]: value}, {headers});
       }
-    }
+    );
+    return forkJoin(requests);
   }
+
 
   deleteToken(serial: string) {
     const headers = this.getHeaders();

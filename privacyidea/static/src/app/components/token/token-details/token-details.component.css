@@ -234,3 +234,25 @@ mat-grid-tile {
 h3 {
   margin-left: 10px;
 }
+
+.info-input {
+  margin-left: 5px;
+  max-width: 107px;
+}
+
+.delete-info-icon {
+  margin-bottom: -8px;
+  margin-left: auto;
+}
+
+.flex {
+  display: flex;
+}
+
+.value-container {
+  max-width: 288px;
+}
+
+.value-td {
+  padding: 0;
+}
