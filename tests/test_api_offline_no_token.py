@@ -7,7 +7,7 @@ from privacyidea.lib.machine import attach_token
 
 class OfflinePassNoTokenTestCase(MyApiTestCase):
     """
-    Ensure that an user with no tokens do not receive any offline values
+    Ensure that a user with no tokens do not receive any offline values
     https://github.com/privacyidea/privacyidea/issues/3333
     """
 
