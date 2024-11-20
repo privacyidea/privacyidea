@@ -48,6 +48,7 @@
 
 .edit-info-row {
   display: flex;
+  flex-direction: row;
 }
 
 .token-detail-header {
@@ -138,7 +139,7 @@ mat-grid-tile {
 
 .edit-button-container {
   display: inline-flex;
-  gap: 5px;
+  gap: 4px;
 }
 
 .edit-column-cell {
@@ -241,8 +242,8 @@ h3 {
 }
 
 .delete-info-icon {
-  margin-bottom: -8px;
-  margin-left: auto;
+  margin-top: 18px;
+  margin-left: 15px;
 }
 
 .flex {
@@ -250,9 +251,24 @@ h3 {
 }
 
 .value-container {
-  max-width: 288px;
+  width: 288px;
 }
 
 .value-td {
   padding: 0;
+}
+
+.info-span {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper {
+  height: 48px;
+  padding-left: 5px;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  height: 5px;
 }

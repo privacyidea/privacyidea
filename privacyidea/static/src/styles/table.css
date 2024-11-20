@@ -36,7 +36,7 @@ th:nth-child(even) {
 .mat-mdc-form-field {
   font-size: var(--font-size);
   color: var(--blue-base);
-  width: 60%;
+  width: 100%;
 }
 
 .mat-mdc-paginator {

@@ -194,7 +194,7 @@ export class TokenDetailsComponent {
           this.saveUser();
         }
         break;
-      case 'container':
+      case 'container_serial':
         element.isEditing = !element.isEditing;
         if (action === 'save') {
           this.assignContainer();

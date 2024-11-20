@@ -9,7 +9,8 @@
     <mat-grid-tile [colspan]="7" [rowspan]="9">
       <div class="info-container">
         <h3>Information: </h3>
-        <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table" mat-table>
+        <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
+               mat-table>
           <ng-container matColumnDef="value">
             <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
             <td *matCellDef="let element" class="detail-row editable-row value-td" mat-cell>
@@ -20,26 +21,43 @@
                       <div class="edit-info-row">
                         <mat-list-item class="object-row">
                           <div class="flex">
-                            <span class="object-item">{{ key }}: </span>
-                            <input matInput class="info-input" [(ngModel)]="element.value[key]"/>
-                            <mat-icon class="clickable delete-info-icon" (click)="deleteInfo(key)">delete</mat-icon>
+                            <mat-form-field>
+                              <mat-label style="font-size: 14px"
+                                         class="object-item">{{ key }}
+                              </mat-label>
+                              <input matInput class="info-input"
+                                     [(ngModel)]="element.value[key]"/>
+                            </mat-form-field>
+                            <mat-icon class="clickable delete-info-icon" (click)="deleteInfo(key)">
+                              delete_outlined
+                            </mat-icon>
                           </div>
                         </mat-list-item>
                       </div>
                     } @else {
                       <mat-list-item class="object-row">
                         <div class="info-span">
-                          <span class="object-item">{{ key }}: </span>
-                          <span class="object-item">{{ element.value[key] }}</span>
+                          <span style="margin-left: -4px" class="object-item">{{ key }}: </span>
+                          <span class="object-item"
+                                style="margin-left: 2px">{{ element.value[key] }}</span>
+                          <mat-divider style="margin-bottom: 4px"/>
                         </div>
                       </mat-list-item>
                     }
                   }
                   @if (isEditingInfo) {
-                    <mat-list-item class="object-row">
-                      <input matInput class="info-input" [(ngModel)]="newInfo().key" placeholder="Add new key"/>:
-                      <input matInput class="info-input" [(ngModel)]="newInfo().value" placeholder="Add new info"/>
-                    </mat-list-item>
+                    <div class="flex">
+                      <mat-list-item class="object-row">
+                        <mat-form-field style="width: 47%; margin-right: 5px">
+                          <input matInput class="info-input" [(ngModel)]="newInfo().key"
+                                 placeholder="Add new key"/>:
+                        </mat-form-field>
+                        <mat-form-field style="width: 51%">
+                          <input matInput class="info-input" [(ngModel)]="newInfo().value"
+                                 placeholder="Add new info"/>
+                        </mat-form-field>
+                      </mat-list-item>
+                    </div>
                   }
                 </mat-list>
               </div>
@@ -86,9 +104,11 @@
           <div class="pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
-            <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'" class="input-full"
+            <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
+                   class="input-full"
                    placeholder="OTP or PIN">
-            <mat-icon (click)="hide = !hide" class="visible-icon" matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
+            <mat-icon (click)="hide = !hide" class="visible-icon"
+                      matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
             </mat-icon>
           </div>
           <button (click)="testToken()" class="detail-button" extended mat-fab>
@@ -105,10 +125,12 @@
     <mat-grid-tile [colspan]="9" [rowspan]="9">
       <div class="details-wrapper">
         <div class="details-section">
-          <table [dataSource]="detailData()" aria-label="Token Detail Data Table" class="detail-table" mat-table>
+          <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
+                 class="detail-table" mat-table>
             <ng-container matColumnDef="key">
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}</td>
+              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="value">
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
@@ -150,11 +172,28 @@
               <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
                 @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
                   <mat-icon class="clickable" (click)="resetFailCount()">lock_reset</mat-icon>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditing() && element.value) {
-                  <mat-icon class="clickable red-icon" (click)="unassignContainer()">folder_delete</mat-icon>
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
+                  @if (element.value) {
+                    <mat-icon class="clickable red-icon" (click)="unassignContainer()">folder_delete
+                    </mat-icon>
+                  } @else {
+                    <mat-icon class="edit-button"
+                              (click)="toggleEditMode(element, 'container_serial', 'edit')">
+                      edit
+                    </mat-icon>
+                  }
+                } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
+                  <mat-icon class="edit-button"
+                            (click)="toggleEditMode(element, 'container_serial', 'save')">
+                    save_as
+                  </mat-icon>
+                  <mat-icon class="edit-button red-icon"
+                            (click)="toggleEditMode(element, 'container_serial', 'cancel')">
+                    cancel
+                  </mat-icon>
                 } @else if (element.keyMap.key === "maxfail" || element.keyMap.key === "count_window" || element.keyMap.key === "sync_window"
                 || element.keyMap.key === "description" || element.keyMap.key === "info" || element.keyMap.key === "realms"
-                || element.keyMap.key === "tokengroup" || element.keyMap.key === "container_serial") {
+                || element.keyMap.key === "tokengroup") {
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
                       <mat-icon class="edit-button"
@@ -165,7 +204,8 @@
                                 (click)="toggleEditMode(element, 'default', 'save')">save_as
                       </mat-icon>
                       <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element, 'default', 'cancel')" style="color: var(--red-base)">
+                                (click)="toggleEditMode(element, 'default', 'cancel')"
+                                style="color: var(--red-base)">
                         cancel
                       </mat-icon>
                     } @else {
@@ -175,7 +215,8 @@
                 }
               </td>
             </ng-container>
-            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
+                mat-row></tr>
           </table>
         </div>
       </div>
@@ -184,10 +225,13 @@
       <div class="user-details-section">
         <div class="user-container">
           <h3>Assigned User:</h3>
-          <table [dataSource]="userData()" aria-label="User Detail Data Table" class="detail-table" mat-table>
+          <table [dataSource]="userData()" aria-label="User Detail Data Table" class="detail-table"
+                 mat-table>
             <ng-container matColumnDef="key">
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="user-detail-row" mat-cell>{{ element.keyMap.label }}</td>
+              <td *matCellDef="let element" class="user-detail-row"
+                  mat-cell>{{ element.keyMap.label }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="value">
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
@@ -229,7 +273,8 @@
                 }
               </td>
             </ng-container>
-            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row" mat-row></tr>
+            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
+                mat-row></tr>
           </table>
           <br/>
           <mat-divider/>
@@ -237,8 +282,10 @@
           <div class="user-pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
-            <input [(ngModel)]="setPinValue" [type]="'password'" class="input" placeholder="Token Pin">
-            <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input" placeholder="Repeat Pin">
+            <input [(ngModel)]="setPinValue" [type]="'password'" class="input"
+                   placeholder="Token Pin">
+            <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input"
+                   placeholder="Repeat Pin">
           </div>
           <div class="user-pin-button">
             @if (!isEditingUser) {
@@ -251,7 +298,8 @@
                 Random Pin
               </button>
             } @else {
-              <button class="card-button-activate" extended mat-fab (click)="toggleEditMode(undefined, 'user', 'save')">
+              <button class="card-button-activate" extended mat-fab
+                      (click)="toggleEditMode(undefined, 'user', 'save')">
                 <mat-icon class="detail-button-icon">save</mat-icon>
                 Assign User
               </button>
