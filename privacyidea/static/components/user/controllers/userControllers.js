@@ -218,11 +218,11 @@ angular.module("privacyideaApp")
             $scope.onCustomAttributeKeyChange = function () {
                 $scope.newCustomAttributeValue = "";
                 $scope.selectedAttrValue = "";
-                $scope.allowed_values = $scope.allowedCustomAttributes['set'][$scope.selected_attr_key]
+                $scope.allowed_values = $scope.allowedCustomAttributes['set'][$scope.selectedAttrKey]
                 $scope.customAttributeValueSelectVisible = true;
                 if ($scope.allowed_values.length === 1) {
                     // If there is only one value, set it!
-                    $scope.selected_attr_value = $scope.allowed_values[0];
+                    $scope.selectedAttrValue = $scope.allowed_values[0];
                     // if this value is "*", then we hide the
                     $scope.customAttributeValueSelectVisible = false;
                 }
