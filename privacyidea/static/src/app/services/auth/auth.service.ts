@@ -8,12 +8,14 @@ import {tap} from 'rxjs/operators';
 })
 export class AuthService {
   private authUrl = '/auth';
-  private isAuthenticated = false;
+  isAuthenticated = false;
 
   constructor(private http: HttpClient) {
   }
 
-  authenticate(username: string, password: string, realm: string = ''): Observable<{ result: { status: boolean } }> {
+  authenticate(username: string, password: string, realm: string = ''): Observable<{
+    result: { status: boolean }
+  }> {
     const loginData = {username, password, realm};
 
     return this.http.post(this.authUrl, JSON.stringify(loginData), {
