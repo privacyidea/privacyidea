@@ -292,9 +292,8 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenOwner) \
             .filter(TokenOwner.token_id == self.id) \
             .delete()
-        db.session.query(MachineToken) \
-            .filter(MachineToken.token_id == self.id) \
-            .delete()
+        for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
+            mt.delete()
         db.session.query(Challenge) \
             .filter(Challenge.serial == self.serial) \
             .delete()
