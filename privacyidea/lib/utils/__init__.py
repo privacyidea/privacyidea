@@ -33,7 +33,7 @@ import base64
 import sqlalchemy
 import string
 import re
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from datetime import time as dt_time
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
@@ -41,6 +41,7 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import threading
+
 try:
     from importlib import metadata
 except ImportError:
@@ -60,8 +61,8 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
-                          "n": string.digits,         # numbers
-                          "s": string.punctuation}    # special
+                          "n": string.digits,  # numbers
+                          "s": string.punctuation}  # special
 
 
 class AUTH_RESPONSE(object):
@@ -884,12 +885,12 @@ def compare_generic_condition(cond, key_method, warning):
     Compares a condition like "tokeninfoattribute == value".
     It uses the "key_method" to determine the value of "tokeninfoattribute".
 
-    If the value does not match, it returns False.
+    If the value does not match or the key does not exist, it returns False.
 
     :param cond: A condition containing a comparator like "==", ">", "<"
     :param key_method: A function call, that get the value from the key
-    :param warning: A warning message to be written to the log file.
-    :return: True of False
+    :param warning: A warning message to be written to the log file in case the condition is not parsable.
+    :return: True or False
     """
     key = value = None
     for comparator in ["==", ">", "<"]:
@@ -897,13 +898,39 @@ def compare_generic_condition(cond, key_method, warning):
             key, value = [x.strip() for x in cond.split(comparator)]
             break
     if value:
-        res = compare_value_value(key_method(key), comparator, value)
-        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
-        return res
+        if key_method(key) is not None:
+            res = compare_value_value(key_method(key), comparator, value)
+            log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+            return res
+        else:
+            log.debug(f"Key {key} not found.")
+            return False
     else:
         # There is a condition, but we do not know it!
         log.warning(warning.format(cond))
         raise Exception("Condition not parsable.")
+
+
+def compare_time(cond, time_value):
+    """
+    Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
+
+    :param cond: The maximum time difference the time value may have to now, e.g. "5d", "2h", "30m"
+                 The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param time_value: The timestamp to be compared to now
+    :return: True if the time difference between the time stamp and now is less than the condition value,
+             False otherwise
+    """
+    # parse condition value to timedelta format
+    cond_time_delta = parse_timedelta(cond)
+
+    # calculate the true time difference between the time stamp and now
+    now = datetime.now(timezone.utc)
+    true_time_delta = now - time_value
+
+    # compare the true time value with the condition time value
+    res = compare_value_value(true_time_delta, "<", cond_time_delta)
+    return res
 
 
 def int_to_hex(serial):

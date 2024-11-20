@@ -582,8 +582,7 @@ class TokenContainerClass:
         return {}
 
     def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
-                           url: str = None, key: str = None, container: str = None, device_brand: str = None,
-                           device_model: str = None):
+                           key: str = None, container: str = None, device_brand: str = None, device_model: str = None):
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -596,7 +595,6 @@ class TokenContainerClass:
         :param public_key: Public key to verify the signature
         :param scope: endpoint to reach if the challenge is valid
         :param transaction_id: Transaction ID of the challenge, optional
-        :param url: URL to be included in the signature, optional
         :param key: Key to be included in the signature, optional
         :param container: Container to be included in the signature, optional
         :param device_brand: Device brand to be included in the signature, optional
@@ -621,8 +619,6 @@ class TokenContainerClass:
                     continue
 
                 message = f"{nonce}|{times_stamp}|{self.serial}|{challenge_scope}"
-                if url:
-                    message += f"|{url}"
                 if device_brand:
                     message += f"|{device_brand}"
                 if device_model:

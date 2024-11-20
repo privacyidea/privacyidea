@@ -68,7 +68,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(tdelta, timedelta(hours=31))
 
         tdelta = parse_timedelta(" 2y")
-        self.assertEqual(tdelta, timedelta(days=2*365))
+        self.assertEqual(tdelta, timedelta(days=2 * 365))
 
         tdelta = parse_timedelta("30 m ")
         self.assertEqual(tdelta, timedelta(minutes=30))
@@ -211,15 +211,15 @@ class UtilsTestCase(MyTestCase):
         realms = {'defrealm': {'default': False,
                                'option': '',
                                'resolver': [
-                                    {'priority': None,
-                                     'type': 'passwdresolver',
-                                     'name': 'deflocal'}]},
+                                   {'priority': None,
+                                    'type': 'passwdresolver',
+                                    'name': 'deflocal'}]},
                   'localsql': {'default': True,
                                'option': '',
                                'resolver': [
-                                    {'priority': None,
-                                     'type': 'sqlresolver',
-                                     'name': 'localusers2'}]}}
+                                   {'priority': None,
+                                    'type': 'sqlresolver',
+                                    'name': 'localusers2'}]}}
         # The policy dictionary contains much more entries, but for us only
         # the realm is relevant
         policies = [{'realm': []}]
@@ -375,7 +375,7 @@ class UtilsTestCase(MyTestCase):
 
     def test_09_get_data_from_params(self):
         config_description = {
-            "local":  {
+            "local": {
                 'cakey': 'string',
                 'cacert': 'string',
                 'openssl.cnf': 'string',
@@ -448,8 +448,8 @@ class UtilsTestCase(MyTestCase):
 
         # compare dates
         self.assertTrue(compare_value_value(
-                        datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
-                        "2017-01-01T10:00+0200"))
+            datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
+            "2017-01-01T10:00+0200"))
         self.assertFalse(compare_value_value(
             datetime.now(tzlocal()).strftime(DATE_FORMAT), "<",
             "2017-01-01T10:00+0200"))
@@ -545,8 +545,9 @@ class UtilsTestCase(MyTestCase):
                          "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
                          "mysql://knöbel:***@localhost/pi")
-        self.assertEqual(censor_connect_string("oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
-                         "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
+        self.assertEqual(censor_connect_string(
+            "oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
+            "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
@@ -791,7 +792,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
         self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
         self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
-                          '-vv8_f7_')
+                         '-vv8_f7_')
 
     def test_27_images(self):
         hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
@@ -808,13 +809,13 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(modhex_encode(b'\x47'), 'fi')
         self.assertEqual(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
         self.assertEqual(modhex_encode(binascii.unhexlify('0123456789abcdef')),
-                          'cbdefghijklnrtuv')
+                         'cbdefghijklnrtuv')
         self.assertEqual(modhex_encode('Hallo'), 'fjhbhrhrhv')
         # and the other way around
         self.assertEqual(modhex_decode('fi'), b'\x47')
         self.assertEqual(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
         self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
-                          binascii.unhexlify('0123456789abcdef'))
+                         binascii.unhexlify('0123456789abcdef'))
         self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
         # fail with invalid modhex
         self.assertRaises((binascii.Error, TypeError), modhex_decode, 'nlltvcc')
@@ -882,8 +883,8 @@ class UtilsTestCase(MyTestCase):
 
     def test_33_determine_logged_in_user(self):
         (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"}, {})
+                                                                                     "username": "hans",
+                                                                                     "realm": "realm1"}, {})
 
         self.assertEqual(role, "user")
         self.assertEqual(user, "hans")
@@ -892,10 +893,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(adminrealm, None)
 
         (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"},
-                                                                                     {"user": "peter",
-                                                                                      "realm": "domain"})
+                                                                                     "username": "hans",
+                                                                                     "realm": "realm1"},
+                                                                                    {"user": "peter",
+                                                                                     "realm": "domain"})
 
         self.assertEqual(role, "admin")
         self.assertEqual(user, "peter")
@@ -947,6 +948,21 @@ class UtilsTestCase(MyTestCase):
 
         # Wrong condition
         self.assertFalse(compare_generic_condition("c <500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d==1",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d<1",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d>1",
                                                    mock_attribute,
                                                    "Error {0!s}"))
 

@@ -995,9 +995,13 @@ class TokenContainerSynchronization(MyTestCase):
         return smartphone_serial, result
 
     @classmethod
-    def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_brand, device_model,
-                                        passphrase=None, private_key_smph=None):
-        message = f"{nonce}|{registration_time}|{serial}|{scope}|{device_brand}|{device_model}"
+    def mock_smartphone_register_params(cls, nonce, registration_time, scope, serial, device_brand=None,
+                                        device_model=None, passphrase=None, private_key_smph=None):
+        message = f"{nonce}|{registration_time}|{serial}|{scope}"
+        if device_brand:
+            message += f"|{device_brand}"
+        if device_model:
+            message += f"|{device_model}"
         if passphrase:
             message += f"|{passphrase}"
 

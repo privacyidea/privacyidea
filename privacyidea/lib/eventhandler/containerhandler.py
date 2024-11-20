@@ -19,10 +19,12 @@
 __doc__ = """This is the event handler module for container actions.
 """
 
-from privacyidea.lib.container import get_container_classes, delete_container_by_serial, init_container, \
-    find_container_by_serial, set_container_states, \
-    add_container_states, set_container_description, add_container_info, delete_container_info, assign_user, \
-    unassign_user, set_container_info, remove_multiple_tokens_from_container, add_multiple_tokens_to_container
+from privacyidea.lib.container import (get_container_classes, delete_container_by_serial, init_container,
+                                       find_container_by_serial, set_container_states, add_container_states,
+                                       set_container_description, add_container_info, delete_container_info,
+                                       assign_user, unassign_user, set_container_info,
+                                       remove_multiple_tokens_from_container, add_multiple_tokens_to_container,
+                                       _check_user_access_on_container, unregister)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
@@ -51,6 +53,7 @@ class ACTION_TYPE(object):
     REMOVE_TOKENS = "remove all tokens"
     DISABLE_TOKENS = "disable all tokens"
     ENABLE_TOKENS = "enable all tokens"
+    UNREGISTER = "unregister"
 
 
 class ContainerEventHandler(BaseEventHandler):
@@ -144,7 +147,8 @@ class ContainerEventHandler(BaseEventHandler):
                  },
             ACTION_TYPE.DELETE_CONTAINER_INFO: {},
             ACTION_TYPE.DISABLE_TOKENS: {},
-            ACTION_TYPE.ENABLE_TOKENS: {}
+            ACTION_TYPE.ENABLE_TOKENS: {},
+            ACTION_TYPE.UNREGISTER: {}
         }
         return actions
 
@@ -183,7 +187,8 @@ class ContainerEventHandler(BaseEventHandler):
                               ACTION_TYPE.ADD_CONTAINER_INFO,
                               ACTION_TYPE.DELETE_CONTAINER_INFO,
                               ACTION_TYPE.DISABLE_TOKENS,
-                              ACTION_TYPE.ENABLE_TOKENS]:
+                              ACTION_TYPE.ENABLE_TOKENS,
+                              ACTION_TYPE.UNREGISTER]:
             if container_serial:
                 log.info(f"{action} for container {container_serial}")
                 if action.lower() == ACTION_TYPE.DELETE:
@@ -280,6 +285,11 @@ class ContainerEventHandler(BaseEventHandler):
 
                     if len(tokens) == 0:
                         log.debug(f"No tokens found to enable in container {container_serial}")
+
+                elif action.lower() == ACTION_TYPE.UNREGISTER:
+                    container = find_container_by_serial(container_serial)
+                    _check_user_access_on_container(container, user, user_role)
+                    unregister(container)
 
             else:
                 log.debug(f"Action {action} requires serial number. But no valid serial "

@@ -1,18 +1,20 @@
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from privacyidea.lib.event import set_event, delete_event
-from privacyidea.lib.eventhandler.containerhandler import ContainerEventHandler
+from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, ACTION
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from .base import MyApiTestCase, FakeFlaskG
 from . import smtpmock
 import mock
 from privacyidea.lib.config import set_privacyidea_config
+from .test_api_container import APIContainerSynchronization
+from .test_lib_events import ContainerEventTestCase
 
 # TODO: this should be imported from lib.event when available
 HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
-            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes"]
+            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "Container"]
 
 
 class APIEventsTestCase(MyApiTestCase):
@@ -845,3 +847,172 @@ class EventWrapperTestCase(MyApiTestCase):
             msg = smtpmock.get_sent_message()
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
+
+
+class ContainerHandlerTestCase(MyApiTestCase):
+    """
+    Full workflow tests for container actions:
+    These tests cover some typical use cases for event handlers, but not all possible combinations
+    """
+
+    def request_assert_success(self, url, data: dict, auth_token, method='POST'):
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token} if auth_token else None):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"])
+        return res.json
+
+    def request_assert_error(self, url, data: dict, auth_token, method='POST'):
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token} if auth_token else None):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["status"])
+        return res.json
+
+    @classmethod
+    def setup_container_with_tokens(cls):
+        # create container
+        container_serial, _ = init_container({"type": "smartphone"})
+        container = find_container_by_serial(container_serial)
+
+        # create tokens
+        hotp = init_token({"type": "hotp", "genkey": True})
+        container.add_token(hotp)
+        totp = init_token({"type": "totp", "genkey": True})
+        container.add_token(totp)
+
+        return container, hotp, totp
+
+    def test_disable_tokens_on_unregister(self):
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        # check that tokens are enabled
+        self.assertTrue(hotp.is_active())
+        self.assertTrue(totp.is_active())
+
+        # Register container
+        ContainerEventTestCase.register_smartphone(container)
+
+        # Create event handler definition
+        eid = set_event("event", event=["container_unregister"], handlermodule="Container",
+                        action=C_ACTION_TYPE.DISABLE_TOKENS, conditions={}, active=True, position="post")
+
+        # Unregister
+        self.request_assert_success(f'container/register/{container.serial}/terminate',
+                                    {},
+                                    self.at, 'POST')
+
+        # Check that tokens are disabled
+        self.assertFalse(hotp.is_active())
+        self.assertFalse(totp.is_active())
+
+        # Clean up
+        delete_event(eid)
+        container.delete()
+        hotp.delete_token()
+        totp.delete_token()
+
+    def test_disable_enable_tokens_on_rollover(self):
+        # Disable all tokens if a rollover is initiated and enable them after the rollover is successfully completed
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        # check that tokens are enabled
+        self.assertTrue(hotp.is_active())
+        self.assertTrue(totp.is_active())
+
+        # Register container
+        ContainerEventTestCase.register_smartphone(container)
+
+        # Create event handler definition
+        eid_disable = set_event("disable", event=["container_register_initialize"], handlermodule="Container",
+                                action=C_ACTION_TYPE.DISABLE_TOKENS, conditions=None,
+                                ordering=None, options=None, active=True,
+                                position="post")
+        eid_enable = set_event("enable", event=["container_register_finalize"], handlermodule="Container",
+                               action=C_ACTION_TYPE.ENABLE_TOKENS, conditions=None,
+                               ordering=None, options=None, active=True,
+                               position="post")
+
+        # Init rollover
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"}, priority=2)
+        result = self.request_assert_success(f'container/register/initialize',
+                                             {"container_serial": container.serial, "rollover": True},
+                                             self.at, 'POST')
+        init_result = result["result"]["value"]
+
+        # Check that tokens are disabled
+        self.assertFalse(hotp.is_active())
+        self.assertFalse(totp.is_active())
+
+        # Finalize rollover fails
+        self.request_assert_error(f'container/register/finalize',
+                                  {"container_serial": container.serial},
+                                  self.at, 'POST')
+        # Check that tokens are disabled
+        self.assertFalse(hotp.is_active())
+        self.assertFalse(totp.is_active())
+
+        # Finalize rollover success
+        scope = f"https://pi.net/container/register/finalize"
+        params, _ = APIContainerSynchronization.mock_smartphone_register_params(init_result["nonce"],
+                                                                                init_result["time_stamp"],
+                                                                                scope,
+                                                                                container.serial)
+        self.request_assert_success(f'container/register/finalize',
+                                    params,
+                                    self.at, 'POST')
+
+        # check that tokens are enabled
+        self.assertTrue(hotp.is_active())
+        self.assertTrue(totp.is_active())
+
+        # Clean up
+        delete_policy("policy")
+        delete_event(eid_enable)
+        delete_event(eid_disable)
+        container.delete()
+        hotp.delete_token()
+        totp.delete_token()
+
+    def test_disable_tokens_if_one_is_locked(self):
+        # Disable all tokens if one token in the container is locked
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        # check that tokens are enabled
+        self.assertTrue(hotp.is_active())
+        self.assertTrue(totp.is_active())
+
+        # setup token
+        hotp.set_maxfail(1)
+
+        # set event handler definition
+        eid = set_event("disable", event=["validate_check"], handlermodule="Container",
+                        action=C_ACTION_TYPE.DISABLE_TOKENS, conditions={"token_locked": "True"},
+                        ordering=None, options=None, active=True,
+                        position="post")
+
+        # login with token
+        self.request_assert_success(f'/validate/check',
+                                    {"serial": hotp.get_serial(),
+                                     "pass": "1234"},
+                                    None, 'POST')
+
+        # check that tokens are disabled
+        self.assertFalse(hotp.is_active())
+        self.assertFalse(totp.is_active())
+
+        # Cleanup
+        delete_event(eid)
+        container.delete()
+        hotp.delete_token()
+        totp.delete_token()

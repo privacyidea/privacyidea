@@ -885,8 +885,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm2()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm2, self.realm1])
         container_serial = self.create_container_for_user()
-        #container = find_container_by_serial(container_serial)
-        #container.set_realms([self.realm2], add=True)
+        # container = find_container_by_serial(container_serial)
+        # container.set_realms([self.realm2], add=True)
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                     method='POST')
         delete_policy("policy")
@@ -1942,10 +1942,9 @@ class APIContainerSynchronization(APIContainerTest):
         creation_time = datetime.fromisoformat(init_response_data["time_stamp"])
         self.assertEqual(creation_time, challenge.timestamp.replace(tzinfo=timezone.utc))
         time_delta_challenge = (challenge.expiration - challenge.timestamp).total_seconds()
-        self.assertAlmostEqual(24*60, time_delta_challenge, 0)
+        self.assertAlmostEqual(24 * 60, time_delta_challenge, 0)
         challenge_data = json.loads(challenge.data)
         self.assertEqual("https://pi.net/container/register/finalize", challenge_data["scope"])
-
 
         # Finalize
         params, priv_key_sig_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
@@ -2234,8 +2233,8 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Terminate
         res = self.request_assert_success(f'container/register/{smartphone_serial}/terminate/client',
-                                    params,
-                                    None, 'POST')
+                                          params,
+                                          None, 'POST')
         self.assertTrue(res["result"]["value"]["success"])
 
     def test_10_register_terminate_client_no_user_success(self):
@@ -2565,6 +2564,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
                                              {"scope": scope}, None, 'POST')
 
+        # mock client with invalid scope (wrong serial)
         params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
                                                                  priv_key_smph, "container/SMPH001/sync")
         result = self.request_assert_error(400, f'container/{smartphone_serial}/sync',
@@ -2572,7 +2572,28 @@ class APIContainerSynchronization(APIContainerTest):
         error = result["result"]["error"]
         self.assertEqual(3002, error["code"])
 
-    def test_23_synchronize_smartphone_with_push_fb(self):
+    def test_23_synchronize_man_in_the_middle(self):
+        # client register successfully
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
+        # client creates challenge
+        scope = f"https://pi.net/container/{smartphone_serial}/sync"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        # mock client
+        params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
+                                                                 priv_key_smph, scope)
+        # man in the middle fetches client request and inserts its own public encryption key
+        public_key_enc_evil, _ = generate_keypair_ecc("x25519")
+        params["public_enc_key_client"] = base64.urlsafe_b64encode(public_key_enc_evil.public_bytes_raw()).decode('utf-8')
+
+        # man in the middle sends modified request to the server
+        # Fails due to invalid signature (client signed the public encryption key which is now different)
+        result = self.request_assert_error(400, f'container/{smartphone_serial}/sync',
+                                           params, None, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(3002, error["code"])
+
+    def test_24_synchronize_smartphone_with_push_fb(self):
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -2624,7 +2645,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("push")
 
-    def test_24_synchronize_smartphone_with_push_poll_only(self):
+    def test_25_synchronize_smartphone_with_push_poll_only(self):
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -2672,7 +2693,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("push_1")
         delete_policy("push_2")
 
-    def test_25_synchronize_smartphone_with_new_tokens(self):
+    def test_26_synchronize_smartphone_with_new_tokens(self):
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -2727,7 +2748,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("sha256", daypw_dict["info"]["hashlib"])
         self.assertEqual("60", daypw_dict["info"]["timeStep"])
 
-    def test_26_synchronize_smartphone_missing_token_enroll_policies(self):
+    def test_27_synchronize_smartphone_missing_token_enroll_policies(self):
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -2771,7 +2792,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(1, len(tokens))
         self.assertIn("otpauth://hotp/", tokens[0])
 
-    def test_27_synchronize_smartphone_token_policies(self):
+    def test_28_synchronize_smartphone_token_policies(self):
         # Registration
         smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -2853,7 +2874,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy('token_enroll_realm1')
         delete_policy('token_enroll_realm2')
 
-    def test_28_generic_sync_fail(self):
+    def test_29_generic_sync_fail(self):
         generic_serial, _ = init_container({"type": "generic"})
 
         # Challenge
@@ -2862,7 +2883,7 @@ class APIContainerSynchronization(APIContainerTest):
                                            {"scope": scope}, None, 'POST')
         self.assertEqual(3001, result["result"]["error"]["code"])
 
-    def test_29_yubi_sync_fail(self):
+    def test_30_yubi_sync_fail(self):
         generic_serial, _ = init_container({"type": "generic"})
 
         # Challenge
@@ -2959,13 +2980,13 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("register_policy")
 
-    def test_30_rollover_client_no_user_success(self):
+    def test_31_rollover_client_no_user_success(self):
         # Rollover with generic policy
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         self.client_rollover_success()
         delete_policy("policy_rollover")
 
-    def test_31_rollover_client_no_user_denied(self):
+    def test_32_rollover_client_no_user_denied(self):
         # No rollover right
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
         self.client_rollover_denied()
@@ -2977,7 +2998,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.client_rollover_denied()
         delete_policy("policy_rollover")
 
-    def test_32_rollover_client_user_success(self):
+    def test_33_rollover_client_user_success(self):
         self.setUp_user_realms()
 
         # Rollover with generic policy
@@ -2992,7 +3013,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
 
-    def test_33_rollover_client_user_denied(self):
+    def test_34_rollover_client_user_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -3009,7 +3030,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
 
-    def test_34_rollover_client_container_not_registered(self):
+    def test_35_rollover_client_container_not_registered(self):
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial, _ = init_container({"type": "smartphone"})
         smartphone = find_container_by_serial(smartphone_serial)
@@ -3035,7 +3056,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_35_rollover_client_init_invalid_challenge(self):
+    def test_36_rollover_client_init_invalid_challenge(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
@@ -3079,7 +3100,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_36_rollover_client_finalize_invalid_challenge(self):
+    def test_37_rollover_client_finalize_invalid_challenge(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
@@ -3172,7 +3193,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_37_sync_with_rollover_challenge_fails(self):
+    def test_38_sync_with_rollover_challenge_fails(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
@@ -3206,7 +3227,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_38_rollover_server_success(self):
+    def test_39_rollover_server_success(self):
         # Registration
         smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -3296,7 +3317,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("policy")
 
-    def test_39_rollover_server_not_completed(self):
+    def test_40_rollover_server_not_completed(self):
         # Registration
         smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -3451,13 +3472,13 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_tokens = smartphone.get_tokens()
         self.assertEqual(0, len(smartphone_tokens))
 
-    def test_40_synchronize_initial_token_transfer_no_user_success(self):
+    def test_41_synchronize_initial_token_transfer_no_user_success(self):
         # Generic policy
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
         self.sync_with_initial_token_transfer_allowed()
         delete_policy("transfer_policy")
 
-    def test_41_synchronize_initial_token_transfer_no_user_denied(self):
+    def test_42_synchronize_initial_token_transfer_no_user_denied(self):
         # No policy
         self.sync_with_initial_token_transfer_denied()
 
@@ -3468,7 +3489,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_denied()
         delete_policy("transfer_policy")
 
-    def test_42_synchronize_initial_token_transfer_with_user_success(self):
+    def test_43_synchronize_initial_token_transfer_with_user_success(self):
         self.setUp_user_realms()
 
         # Generic policy
@@ -3484,7 +3505,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_allowed(smartphone_serial)
         delete_policy("transfer_policy")
 
-    def test_43_synchronize_initial_token_transfer_with_user_denied(self):
+    def test_44_synchronize_initial_token_transfer_with_user_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
