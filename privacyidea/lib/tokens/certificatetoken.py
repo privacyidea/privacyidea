@@ -440,6 +440,11 @@ class CertificateTokenClass(TokenClass):
         if request:
             if not spkac:
                 # We only do the whole attestation checking in case we have no SPKAC
+                request = request.replace("\n", "")
+                if not request.startswith("-----BEGIN CERTIFICATE REQUEST-----"):
+                    request = "-----BEGIN CERTIFICATE REQUEST-----" + request
+                if not request.endswith("-----END CERTIFICATE REQUEST-----"):
+                    request = request + "-----END CERTIFICATE REQUEST-----"
                 request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
                 if not request_csr.is_signature_valid:
                     raise privacyIDEAError("request has invalid signature.")
