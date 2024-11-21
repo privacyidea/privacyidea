@@ -28,14 +28,15 @@
                               <textarea matInput class="info-input" rows="1"
                                         [(ngModel)]="element.value[key]"></textarea>
                             </mat-form-field>
-                            <mat-icon class="clickable delete-info-icon" (click)="deleteInfo(key)">
-                              delete_outlined
-                            </mat-icon>
+                            <button mat-icon-button class=" delete-info-icon"
+                                    (click)="deleteInfo(key)">
+                              <mat-icon>delete_outlined</mat-icon>
+                            </button>
                           </div>
                         </mat-list-item>
                       </div>
                     } @else {
-                      <mat-list-item class="object-row">
+                      <mat-list-item class="object-row onepx">
                         <div class="info-span">
                           <span style="margin-left: -4px; font-size: 14px" class="object-item">{{
                               key
@@ -43,7 +44,7 @@
                           </span>
                           <span class="object-item"
                                 style="margin-left: 2px">{{ element.value[key] }}</span>
-                          <mat-divider style="margin-bottom: 8px"/>
+                          <mat-divider style="width: 86%; margin-bottom: 5px; margin-top: 3px"/>
                         </div>
                       </mat-list-item>
                     }
@@ -56,8 +57,9 @@
                                  placeholder="Add new key"/>:
                         </mat-form-field>
                         <mat-form-field style="width: 51%">
-                          <input matInput class="info-input" [(ngModel)]="newInfo().value"
-                                 placeholder="Add new info"/>
+                            <textarea matInput rows="1" class="info-input"
+                                      [(ngModel)]="newInfo().value"
+                                      placeholder="Add new info"></textarea>
                         </mat-form-field>
                       </mat-list-item>
                     </div>
@@ -70,19 +72,25 @@
             <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
               <div class="edit-button-container">
                 @if (!isAnyEditing()) {
-                  <mat-icon class="edit-button"
-                            (click)="toggleEditMode(element, 'info', 'edit')">edit
-                  </mat-icon>
+                  <button mat-icon-button class="edit-button"
+                          (click)="toggleEditMode(element, 'info', 'edit')">
+                    <mat-icon>edit
+                    </mat-icon>
+                  </button>
                 } @else if (!isEditingInfo) {
                   <br/>
                 }
                 @if (isEditingInfo) {
-                  <mat-icon class="edit-button"
-                            (click)="toggleEditMode(element, 'info', 'save')">save_as
-                  </mat-icon>
-                  <mat-icon class="cancel-button"
-                            (click)="toggleEditMode(element,'info', 'cancel')">cancel
-                  </mat-icon>
+                  <button mat-icon-button class="edit-button"
+                          (click)="toggleEditMode(element, 'info', 'save')">
+                    <mat-icon>save_as
+                    </mat-icon>
+                  </button>
+                  <button mat-icon-button class="cancel-button"
+                          (click)="toggleEditMode(element,'info', 'cancel')">
+                    <mat-icon>cancel
+                    </mat-icon>
+                  </button>
                 }
               </div>
             </td>
@@ -110,9 +118,10 @@
             <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
                    class="input-full"
                    placeholder="OTP or PIN">
-            <mat-icon (click)="hide = !hide" class="visible-icon"
-                      matSuffix>{{ hide ? 'visibility_off' : 'visibility' }}
-            </mat-icon>
+            <button (click)="hide = !hide" mat-icon-button
+                    matSuffix>
+              <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
           </div>
           <button (click)="testToken()" class="detail-button" extended mat-fab>
             <mat-icon class="detail-button-icon">help_outline</mat-icon>
@@ -154,9 +163,14 @@
                       <span class="object-item">{{ info }}</span>
                     </mat-list-item>
                   }
-                } @else if (element.isEditing) {
+                } @else if (element.isEditing && element.keyMap.key !== "maxfail" &&
+                element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {
                   <mat-form-field class="detail-table-input">
                     <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
+                  </mat-form-field>
+                } @else if (element.isEditing) {
+                  <mat-form-field class="detail-table-input">
+                    <input type="number" matInput [(ngModel)]="element.value"/>
                   </mat-form-field>
                 } @else {
                   <span class="detail-table-item"
@@ -176,43 +190,53 @@
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
                 @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
-                  <mat-icon class="clickable" (click)="resetFailCount()">lock_reset</mat-icon>
+                  <button mat-icon-button (click)="resetFailCount()">
+                    <mat-icon>
+                      lock_reset
+                    </mat-icon>
+                  </button>
                 } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
                   @if (element.value) {
-                    <mat-icon class="clickable red-icon" (click)="unassignContainer()">folder_delete
-                    </mat-icon>
+                    <button mat-icon-button class="red-icon" (click)="unassignContainer()">
+                      folder_delete
+                    </button>
                   } @else {
-                    <mat-icon class="edit-button"
-                              (click)="toggleEditMode(element, 'container_serial', 'edit')">
-                      edit
-                    </mat-icon>
+                    <button mat-icon-button class="edit-button"
+                            (click)="toggleEditMode(element, 'container_serial', 'edit')">
+                      <mat-icon>edit</mat-icon>
+                    </button>
                   }
                 } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
-                  <mat-icon class="edit-button"
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="edit-button"
                             (click)="toggleEditMode(element, 'container_serial', 'save')">
-                    save_as
-                  </mat-icon>
-                  <mat-icon class="edit-button red-icon"
+                      <mat-icon>save_as</mat-icon>
+                    </button>
+                    <button mat-icon-button class="edit-button red-icon"
                             (click)="toggleEditMode(element, 'container_serial', 'cancel')">
-                    cancel
-                  </mat-icon>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
                 } @else if (element.keyMap.key === "maxfail" || element.keyMap.key === "count_window" || element.keyMap.key === "sync_window"
                 || element.keyMap.key === "description" || element.keyMap.key === "info" || element.keyMap.key === "realms"
                 || element.keyMap.key === "tokengroup") {
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
-                      <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element, 'default', 'edit')">edit
-                      </mat-icon>
+                      <button mat-icon-button class="edit-button"
+                              (click)="toggleEditMode(element, 'default', 'edit')">
+                        <mat-icon>
+                          edit
+                        </mat-icon>
+                      </button>
                     } @else if (element.isEditing) {
-                      <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element, 'default', 'save')">save_as
-                      </mat-icon>
-                      <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element, 'default', 'cancel')"
-                                style="color: var(--red-base)">
-                        cancel
-                      </mat-icon>
+                      <button mat-icon-button class="edit-button"
+                              (click)="toggleEditMode(element, 'default', 'save')">
+                        <mat-icon>save_as</mat-icon>
+                      </button>
+                      <button mat-icon-button class="edit-button red-icon"
+                              (click)="toggleEditMode(element, 'default', 'cancel')">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
                     } @else {
                       <br/>
                     }
@@ -260,19 +284,24 @@
                 @if (element.keyMap.key === "username" && !(isAnyEditing() && !this.isEditingUser)) {
                   @if (element.value) {
                     <div class="edit-button-container">
-                      <mat-icon class="edit-button yellow-icon"
-                                (click)="unassignUser()">
-                        person_remove
-                      </mat-icon>
+                      <button mat-icon-button class="edit-button yellow-icon"
+                              (click)="unassignUser()">
+                        <mat-icon>person_remove</mat-icon>
+                      </button>
                     </div>
                   } @else {
                     <div class="edit-button-container">
-                      <mat-icon class="edit-button"
-                                (click)="toggleEditMode(element, 'user', 'edit')"
-                                [ngClass]="{'red-icon': this.isEditingUser,
-                                        'green-icon': !this.isEditingUser}">
-                        {{ this.isEditingUser ? 'cancel' : 'person_add' }}
-                      </mat-icon>
+                      @if (this.isEditingUser) {
+                        <button mat-icon-button class="edit-button red-icon"
+                                (click)="toggleEditMode(element, 'user', 'cancel')">
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      } @else {
+                        <button mat-icon-button class="edit-button green-icon"
+                                (click)="toggleEditMode(element, 'user', 'edit')">
+                          <mat-icon>person_add</mat-icon>
+                        </button>
+                      }
                     </div>
                   }
                 }

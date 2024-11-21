@@ -9,7 +9,7 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import {MatFabButton} from '@angular/material/button';
+import {MatFabButton, MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
@@ -76,6 +76,7 @@ export const infoDetail = [
     MatSelectModule,
     ReactiveFormsModule,
     MatList,
+    MatIconButton,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -192,12 +193,16 @@ export class TokenDetailsComponent {
         this.isEditingUser = !this.isEditingUser;
         if (action === 'save') {
           this.saveUser();
+        } else if (action === 'cancel') {
+          this.username = '';
         }
         break;
       case 'container_serial':
         element.isEditing = !element.isEditing;
         if (action === 'save') {
           this.assignContainer();
+        } else if (action === 'cancel') {
+          this.selectedContainer = '';
         }
         break;
       case 'info':
@@ -205,12 +210,16 @@ export class TokenDetailsComponent {
         if (action === 'save') {
           this.saveInfo(element.value);
           this.newInfo.set({key: '', value: ''});
+        } else if (action === 'cancel') {
+          this.newInfo.set({key: '', value: ''});
         }
         break;
       default:
         element.isEditing = !element.isEditing;
         if (action === 'save') {
           this.saveDetail(element.keyMap.key, element.value);
+        } else if (action === 'cancel') {
+          this.showTokenDetail(this.serial()).subscribe();
         }
         break;
     }

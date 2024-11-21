@@ -84,20 +84,12 @@
   font-size: 18px;
 }
 
-.visible-icon {
-  vertical-align: bottom;
-  margin-top: 10px;
-  cursor: pointer;
-}
-
 .info-container {
   flex-direction: column;
   display: flex;
   gap: 10px;
   margin: 10px 10px;
   width: auto;
-  border-radius: var(--border-radius);
-  border: #E0E2EC 1px solid;
   padding: 7px;
 }
 
@@ -105,14 +97,22 @@
   flex-direction: column;
   display: flex;
   gap: 10px;
-  margin: 16px 57px;
   width: auto;
+  padding: 0 59px 0 60px
 }
 
 .input {
   height: 40px;
   width: calc(50% - 5px);
   border-radius: var(--border-radius);
+}
+
+input {
+  outline: none;
+}
+
+input:focus {
+  outline: 3px solid var(--blue-light);
 }
 
 .input-full {
@@ -139,11 +139,11 @@ mat-grid-tile {
 
 .edit-button-container {
   display: inline-flex;
-  gap: 4px;
 }
 
 .edit-column-cell {
   min-width: 86px;
+  padding: 0;
   text-align: center;
 }
 
@@ -163,7 +163,7 @@ mat-grid-tile {
 
 .user-pin-input {
   display: flex;
-  margin: 0 78px;
+  margin: 0 87px;
   gap: 10px;
 }
 
@@ -172,7 +172,7 @@ mat-grid-tile {
   gap: 10px;
   justify-content: center;
   flex-flow: row wrap;
-  padding: 0 77px;
+  padding: 0 87px;
 }
 
 .user-container {
@@ -180,8 +180,6 @@ mat-grid-tile {
   flex-direction: column;
   gap: 10px;
   margin: 10px 10px;
-  border-radius: var(--border-radius);
-  border: #E0E2EC 1px solid;
   padding: 7px 7px 26px;
 }
 
@@ -206,10 +204,6 @@ mat-grid-tile {
 
 .green-icon {
   color: var(--green-base);
-}
-
-.clickable {
-  cursor: pointer;
 }
 
 .card-button-activate {
@@ -241,8 +235,7 @@ h3 {
 }
 
 .delete-info-icon {
-  margin-top: 18px;
-  margin-left: 15px;
+  margin-top: 10px
 }
 
 .flex {
@@ -288,4 +281,8 @@ h3 {
 
 textarea {
   margin-top: -2px;
+}
+
+onepx {
+  margin-top: 4px;
 }
