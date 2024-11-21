@@ -149,11 +149,14 @@
               <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
                 @if (element.keyMap.key === "container_serial") {
                   @if (element.isEditing) {
-                    <select matNativeControl [(ngModel)]="selectedContainer">
-                      @for (option of containerOptions(); track option; ) {
-                        <option value="{{ option }}">{{ option }}</option>
-                      }
-                    </select>
+                    <mat-form-field class="detail-table-input">
+                      <mat-label style="font-size: 12px">Select Container</mat-label>
+                      <select matNativeControl [(ngModel)]="selectedContainer">
+                        @for (option of containerOptions(); track option; ) {
+                          <option value="{{ option }}">{{ option }}</option>
+                        }
+                      </select>
+                    </mat-form-field>
                   } @else {
                     <span>{{ element.value }}</span>
                   }
@@ -198,7 +201,7 @@
                 } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
                   @if (element.value) {
                     <button mat-icon-button class="red-icon" (click)="unassignContainer()">
-                      folder_delete
+                      <mat-icon>folder_delete</mat-icon>
                     </button>
                   } @else {
                     <button mat-icon-button class="edit-button"

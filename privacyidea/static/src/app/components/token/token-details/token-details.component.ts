@@ -100,7 +100,7 @@ export class TokenDetailsComponent {
     isEditing: boolean
   }[]>([]);
   realmOptions = signal<string[]>(['']);
-  containerOptions = signal<string[]>(['']);
+  containerOptions = signal<string[]>([]);
   newInfo: WritableSignal<{
     key: string;
     value: string
@@ -167,7 +167,6 @@ export class TokenDetailsComponent {
         this.containerOptions.set(Object.values(containers.result.value.containers as {
           serial: string
         }[]).map(container => container.serial));
-        this.containerOptions().push('');
 
         return new Observable<void>(observer => {
           observer.next();
