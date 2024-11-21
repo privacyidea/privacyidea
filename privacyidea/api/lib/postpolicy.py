@@ -797,6 +797,12 @@ def multichallenge_enroll_via_validate(request, response):
     :param response:
     :return:
     """
+    try:
+        check_max_token_user(request=request)
+    except PolicyError as e:
+        g.audit_object.log({"success": False,
+                            'action_detail': e})
+        return response
     content = response.json
     result = content.get("result")
     # check, if the authentication was successful, then we need to do nothing
