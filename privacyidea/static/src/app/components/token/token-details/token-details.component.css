@@ -39,11 +39,11 @@
 
 .detail-row {
   min-width: 143px;
-  height: 51px;
+  height: 50px;
 }
 
 .user-detail-row {
-  height: 51px;
+  height: 50px;
 }
 
 .edit-info-row {
@@ -238,7 +238,6 @@ h3 {
 
 .info-input {
   margin-left: 5px;
-  max-width: 107px;
 }
 
 .delete-info-icon {
@@ -265,10 +264,28 @@ h3 {
 }
 
 ::ng-deep .mat-mdc-text-field-wrapper {
-  height: 48px;
   padding-left: 5px;
 }
 
 ::ng-deep .mat-mdc-form-field-subscript-wrapper {
   height: 5px;
+}
+
+::ng-deep .mat-mdc-form-field-infix {
+  padding-bottom: 0;
+  margin-bottom: -4px;
+}
+
+.detail-table-input {
+  margin-bottom: -5px;
+  margin-top: -4px;
+  font-size: 12px;
+}
+
+.detail-table-item {
+  margin-left: 5px;
+}
+
+textarea {
+  margin-top: -2px;
 }

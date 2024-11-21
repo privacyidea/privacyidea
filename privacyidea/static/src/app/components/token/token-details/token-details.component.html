@@ -6,7 +6,7 @@
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="7" [rowspan]="9">
+    <mat-grid-tile [colspan]="7" [rowspan]="11">
       <div class="info-container">
         <h3>Information: </h3>
         <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
@@ -25,8 +25,8 @@
                               <mat-label style="font-size: 14px"
                                          class="object-item">{{ key }}
                               </mat-label>
-                              <input matInput class="info-input"
-                                     [(ngModel)]="element.value[key]"/>
+                              <textarea matInput class="info-input" rows="1"
+                                        [(ngModel)]="element.value[key]"></textarea>
                             </mat-form-field>
                             <mat-icon class="clickable delete-info-icon" (click)="deleteInfo(key)">
                               delete_outlined
@@ -37,10 +37,13 @@
                     } @else {
                       <mat-list-item class="object-row">
                         <div class="info-span">
-                          <span style="margin-left: -4px" class="object-item">{{ key }}: </span>
+                          <span style="margin-left: -4px; font-size: 14px" class="object-item">{{
+                              key
+                            }}:
+                          </span>
                           <span class="object-item"
                                 style="margin-left: 2px">{{ element.value[key] }}</span>
-                          <mat-divider style="margin-bottom: 4px"/>
+                          <mat-divider style="margin-bottom: 8px"/>
                         </div>
                       </mat-list-item>
                     }
@@ -152,10 +155,12 @@
                     </mat-list-item>
                   }
                 } @else if (element.isEditing) {
-                  <input matInput [(ngModel)]="element.value"/>
+                  <mat-form-field class="detail-table-input">
+                    <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
+                  </mat-form-field>
                 } @else {
-                  <span
-                    [ngClass]="{
+                  <span class="detail-table-item"
+                        [ngClass]="{
             'highlight-true': (element.keyMap.key === 'active' && element.value === true) ||
                             (element.keyMap.key === 'failcount' && element.value == 0),
             'highlight-warning': (element.keyMap.key === 'failcount' && element.value >= 1 && element.value <= 9),
@@ -221,7 +226,7 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="8" [rowspan]="9">
+    <mat-grid-tile [colspan]="8" [rowspan]="8">
       <div class="user-details-section">
         <div class="user-container">
           <h3>Assigned User:</h3>
