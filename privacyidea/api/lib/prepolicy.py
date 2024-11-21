@@ -1897,7 +1897,6 @@ def fido2_auth(request, action):
     return True
 
 
-
 def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
     """
     Get the challenge texts for the given token types and scope.
@@ -2001,6 +2000,32 @@ def fido2_enroll(request, action):
             raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
                               f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
+        def _get_policy_value(policy_action: str, default: str, allowed_values: list[str]) -> str:
+            policies = (Match.user(g, scope=SCOPE.ENROLL, action=policy_action, user_object=user_object)
+                        .action_values(unique=True))
+            policy_value = list(policies)[0] if policies else default
+            if policy_value not in allowed_values:
+                raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
+            return policy_value
+
+        authenticator_attestation_level = _get_policy_value(
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+            DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+            ATTESTATION_LEVELS
+        )
+
+        authenticator_attestation_form = _get_policy_value(
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+            DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+            ATTESTATION_FORMS
+        )
+
+        user_verification_requirement = _get_policy_value(
+            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+            DEFAULT_USER_VERIFICATION_REQUIREMENT,
+            USER_VERIFICATION_LEVELS
+        )
+        """
         authenticator_attestation_level_policies = Match.user(g,
                                                               scope=SCOPE.ENROLL,
                                                               action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
@@ -2025,6 +2050,20 @@ def fido2_enroll(request, action):
             raise PolicyError(
                 f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM} must be one of {', '.join(ATTESTATION_FORMS)}")
 
+        user_verification_requirement_policies = Match.user(g,
+                                                            scope=SCOPE.ENROLL,
+                                                            action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                                            user_object=user_object).action_values(unique=True)
+        user_verification_requirement = (list(user_verification_requirement_policies)[0]
+                                         if user_verification_requirement_policies
+                                         else DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise PolicyError(
+                f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT} must be one of {', '.join(USER_VERIFICATION_LEVELS)}"
+            )
+
+        
+        """
         avoid_double_registration_policy = Match.user(g,
                                                       scope=SCOPE.ENROLL,
                                                       action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
@@ -2048,7 +2087,7 @@ def fido2_enroll(request, action):
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
 
         request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
-
+        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
         passkey_attestation_policies = Match.user(g,
                                                   scope=SCOPE.ENROLL,
                                                   action=PasskeyAction.AttestationConveyancePreference,

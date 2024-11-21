@@ -513,12 +513,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         type: cred.type,
                     });
                 }
-                console.log("Registering passkey for user " + options.user.displayName);
                 navigator.credentials.create({
                     publicKey: {
                         rp: options.rp,
                         user: {
-                            id: Uint8Array.from(options.user.id, c => c.charCodeAt(0)),
+                            id: $scope.base64URLToBytes(options.user.id),
                             name: options.user.name,
                             displayName: options.user.displayName
                         },

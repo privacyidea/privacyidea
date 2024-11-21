@@ -721,7 +721,7 @@ def poll_transaction(transaction_id=None):
 @prepolicy(fido2_auth, request=request)
 def initialize():
     """
-    Start an authentication by requesting a challenge for a token type. Currently, supports only type: passkey
+    Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
     @param type: The type of the token, for which a challenge should be created.
     """
 

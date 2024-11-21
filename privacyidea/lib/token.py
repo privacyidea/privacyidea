@@ -67,20 +67,15 @@ import string
 import traceback
 from collections import defaultdict
 
-from sqlalchemy import and_, func, or_, select
 from dateutil.tz import tzlocal
 from flask_babel import lazy_gettext
 from sqlalchemy import (and_, func)
+from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import FunctionElement
 from sqlalchemy.sql.expression import FunctionElement
 from webauthn import base64url_to_bytes
 from webauthn.helpers import bytes_to_base64url
 
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.error import (TokenAdminError,
-                                   ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
 from privacyidea.api.lib.utils import get_required, get_optional
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
@@ -88,27 +83,15 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
-from privacyidea.lib.crypto import generate_password, geturandom, get_rand_digit_str
+from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.crypto import geturandom, get_rand_digit_str
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode,
-                                   check_serial_valid, create_tag_dict)
-from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
-from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
-                                TokenInfo, TokenOwner, TokenTokengroup,
-                                Tokengroup, TokenContainer, TokenContainerToken)
-from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                    get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin, SYSCONF)
-from privacyidea.lib.user import User
-from privacyidea.lib import _
-from privacyidea.lib.realm import realm_is_defined, get_realms
-from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
@@ -119,8 +102,8 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               config_lost_token,
                                               reset_all_user_tokens, force_challenge_response)
-from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
-                                                         generic_challenge_response_resync)
+from privacyidea.lib.realm import realm_is_defined, get_realms
+from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
@@ -130,6 +113,7 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
+from privacyidea.models import (db)
 
 log = logging.getLogger(__name__)
 
@@ -1207,15 +1191,15 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     :rtype: TokenClass
     """
     token_type = param.get("type") or "hotp"
-    serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
-    check_serial_valid(serial)
-    realms = []
-
     # Check for unsupported token type
     token_types = get_token_types()
     if token_type.lower() not in token_types:
         log.error('type {0!r} not found in tokentypes: {1!r}'.format(token_type, token_types))
         raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(token_type), id=1610)
+
+    serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
+    check_serial_valid(serial)
+    realms = []
 
     # Check if a token with this serial already exists and
     # create a list of the found tokens
@@ -2908,6 +2892,12 @@ def find_fido2_token_by_credential_id(credential_id: str):
         raise ResourceNotFoundError(f"Failed to find credential with id: {credential_id}. {ex}")
 
 
+def get_fido2_nonce() -> str:
+    """
+    Generate a random 32 byte nonce for fido2 challenges. The nonce is encoded in base64url.
+    """
+    return bytes_to_base64url(geturandom(32))
+
 def create_fido2_challenge(rp_id: str) -> dict:
     """
     Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
@@ -2921,7 +2911,7 @@ def create_fido2_challenge(rp_id: str) -> dict:
     }
     The challenge nonce is encoded in base64url.
     """
-    challenge = bytes_to_base64url(geturandom(32))
+    challenge = get_fido2_nonce()
     transaction_id = get_rand_digit_str(20)
     message = lazy_gettext("Please authenticate with your Passkey!")
 
@@ -2935,7 +2925,7 @@ def create_fido2_challenge(rp_id: str) -> dict:
     }
 
 
-def verify_fido2_challenge(transaction_id: str, token, params: dict) -> int:
+def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> int:
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:

@@ -71,7 +71,7 @@ def _check_allowed_param(ret, key, default, allow_empty, allowed_values):
 
 def _get_param(param, key, default=None):
     ret = None
-    if key in param:
+    if param and key in param:
         ret = param[key]
     elif default:
         ret = default
