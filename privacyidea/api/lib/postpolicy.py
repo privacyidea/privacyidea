@@ -797,37 +797,40 @@ def multichallenge_enroll_via_validate(request, response):
     :param response:
     :return:
     """
-    try:
-        check_max_token_user(request=request)
-    except PolicyError as e:
-        g.audit_object.log({"success": False,
-                            'action_detail': e})
-        return response
+
     content = response.json
     result = content.get("result")
-    # check, if the authentication was successful, then we need to do nothing
+    # Check if the authentication was successful, only then attempt to enroll a new token
     if result.get("value") and result.get("authentication") == "ACCEPT":
-        user_obj = request.User
-        if user_obj.login and user_obj.realm:
-            enroll_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
-                                    user_object=user_obj).action_values(unique=True, write_to_audit_log=False)
+        # Check if another policy restricts the token count
+        try:
+            check_max_token_user(request=request)
+        except PolicyError as e:
+            g.audit_object.log({"success": True,
+                                'action_detail': e})
+            return response
+
+        user = request.User
+        if user.login and user.realm:
+            enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
+                                    user_object=user).action_values(unique=True, write_to_audit_log=False)
             # check if we have a multi enroll policy
-            if enroll_pol:
-                tokentype = list(enroll_pol)[0]
-                # TODO: Somehow we need to add condition, when we should stop enrolling!
-                #       Here: If the user has one token of this type.
-                if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
+            if enroll_policies:
+                tokentype = list(enroll_policies)[0]
+                # Check if the user already has a token of the type that should be enrolled
+                # If so, do not enroll another one
+                if len(get_tokens(tokentype=tokentype, user=user)) == 0:
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
                         # Now get the alternative text from the policies
-                        text_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
-                                              user_object=user_obj).action_values(unique=True,
+                        text_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                              user_object=user).action_values(unique=True,
                                                                                   write_to_audit_log=False,
                                                                                   allow_white_space_in_action=True)
                         message = None
-                        if text_pol:
-                            message = list(text_pol)[0]
-                        tclass = get_token_class(tokentype)
-                        tclass.enroll_via_validate(g, content, user_obj, message)
+                        if text_policies:
+                            message = list(text_policies)[0]
+                        tokenclass = get_token_class(tokentype)
+                        tokenclass.enroll_via_validate(g, content, user, message)
                         response.set_data(json.dumps(content))
 
     return response
