@@ -6103,28 +6103,28 @@ class MultiChallengeEnrollTest(MyApiTestCase):
                    action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
 
         set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=1")
-        self._authenticate_no_token_enrolled(user.login, spass)
+        self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_token_per_user")
 
         set_policy("max_active_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXACTIVETOKENUSER}=1")
-        self._authenticate_no_token_enrolled(user.login, spass)
+        self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_active_token_per_user")
 
         set_policy("hotp_max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=0")
-        self._authenticate_no_token_enrolled(user.login, spass)
+        self._authenticate_no_token_enrolled(user, spass)
         delete_policy("hotp_max_token_per_user")
 
         set_policy("max_token_per_realm", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENREALM}=1")
-        self._authenticate_no_token_enrolled(user.login, spass)
+        self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_token_per_realm")
 
         delete_policy("enroll_via_multichallenge")
         remove_token(token1.get_serial())
 
-    def _authenticate_no_token_enrolled(self, user, otp):
+    def _authenticate_no_token_enrolled(self, user:User, otp):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           data={"user": user, "pass": otp}):
+                                           data={"user": user.login, "realm": user.realm, "pass": otp}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
