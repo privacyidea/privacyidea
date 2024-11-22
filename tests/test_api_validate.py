@@ -6121,7 +6121,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("enroll_via_multichallenge")
         remove_token(token1.get_serial())
 
-    def _authenticate_no_token_enrolled(self, user:User, otp):
+    def _authenticate_no_token_enrolled(self, user: User, otp):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": user.login, "realm": user.realm, "pass": otp}):
