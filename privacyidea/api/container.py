@@ -26,7 +26,9 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (prepolicy,
                                            check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
-                                           smartphone_config, check_client_container_action)
+                                           smartphone_config, check_client_container_action,
+                                           check_user_is_container_owner, check_user_is_container_owner_or_has_no_owner,
+                                           get_allowed_realms)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -40,13 +42,13 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        set_default_template, get_container_template_classes,
                                        get_container_classes, create_container_from_db_object,
                                        compare_template_with_container, unregister,
-                                       _check_user_access_on_container, finalize_registration, init_container_rollover,
+                                       finalize_registration, init_container_rollover,
                                        set_options)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import PolicyError, ParameterError, ContainerNotRegistered
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION, Match, SCOPE
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
 
@@ -106,6 +108,7 @@ def list_containers():
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
+@prepolicy(check_user_is_container_owner_or_has_no_owner, request)
 @event('container_assign', request, g)
 @log_with(log)
 def assign(container_serial):
@@ -117,9 +120,7 @@ def assign(container_serial):
     :jsonparam realm: Name of the realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    logged_in_user = request.User
-    user_role = g.logged_in_user.get("role")
-    res = assign_user(container_serial, user, logged_in_user, user_role)
+    res = assign_user(container_serial, user)
 
     container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
@@ -131,6 +132,7 @@ def assign(container_serial):
 
 @container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_unassign', request, g)
 @log_with(log)
 def unassign(container_serial):
@@ -142,9 +144,7 @@ def unassign(container_serial):
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    logged_in_user = request.User
-    user_role = g.logged_in_user.get("role")
-    res = unassign_user(container_serial, user, logged_in_user, user_role)
+    res = unassign_user(container_serial, user)
 
     container = find_container_by_serial(container_serial)
     audit_log_data = {"container_serial": container_serial,
@@ -203,6 +203,7 @@ def init():
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_DELETE)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_delete', request, g)
 @log_with(log)
 def delete(container_serial):
@@ -211,10 +212,6 @@ def delete(container_serial):
 
     :param container_serial: serial of the container
     """
-    # Get parameters
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-
     # Audit log
     container = find_container_by_serial(container_serial)
     owners = container.get_users()
@@ -227,14 +224,16 @@ def delete(container_serial):
     g.audit_object.log(audit_log_data)
 
     # Delete container
-    res = delete_container_by_serial(container_serial, user, user_role)
+    res = delete_container_by_serial(container_serial)
     g.audit_object.log({"success": res > 0})
 
     return send_result(True)
 
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
+@prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_token(container_serial):
@@ -247,8 +246,9 @@ def add_token(container_serial):
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     user = request.User
     user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    success = add_token_to_container(container_serial, token_serial, user, user_role)
+    success = add_token_to_container(container_serial, token_serial, user, user_role, allowed_realms)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -266,7 +266,9 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
+@prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -303,7 +305,9 @@ def add_all_tokens(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
+@prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
@@ -316,8 +320,9 @@ def remove_token(container_serial):
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     user = request.User
     user_role = g.logged_in_user.get("role")
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    success = remove_token_from_container(container_serial, token_serial, user, user_role)
+    success = remove_token_from_container(container_serial, token_serial, user, user_role, allowed_realms)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -336,6 +341,7 @@ def remove_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
@@ -394,6 +400,7 @@ def get_types():
 
 @container_blueprint.route('<string:container_serial>/description', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_DESCRIPTION)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_set_description', request, g)
 @log_with(log)
 def set_description(container_serial):
@@ -404,9 +411,7 @@ def set_description(container_serial):
     :jsonparam description: New description to be set
     """
     new_description = getParam(request.all_data, "description", optional=required)
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-    set_container_description(container_serial, new_description, user, user_role)
+    set_container_description(container_serial, new_description)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -425,6 +430,7 @@ def set_description(container_serial):
 
 @container_blueprint.route('<string:container_serial>/states', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_STATE)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_set_states', request, g)
 @log_with(log)
 def set_states(container_serial):
@@ -436,9 +442,7 @@ def set_states(container_serial):
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
     states_string = states_string.replace(" ", "")
     states = states_string.split(",")
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-    res = set_container_states(container_serial, states, user, user_role)
+    res = set_container_states(container_serial, states)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -524,9 +528,7 @@ def set_container_info(container_serial, key):
     :jsonparam: value: Value to set
     """
     value = getParam(request.all_data, "value", required)
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-    res = add_container_info(container_serial, key, value, user, user_role)
+    res = add_container_info(container_serial, key, value)
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
@@ -538,6 +540,7 @@ def set_container_info(container_serial, key):
 
 @container_blueprint.route("<container_serial>/options", methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_SET_OPTIONS)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_set_options', request, g)
 @log_with(log)
 def set_container_options(container_serial):
@@ -548,10 +551,8 @@ def set_container_options(container_serial):
     :jsonparam options: Options to set (container type specific)
     """
     options = getParam(request.all_data, "options", required)
-    user = request.User
-    user_role = g.logged_in_user.get("role")
 
-    set_options(container_serial, options, user, user_role)
+    set_options(container_serial, options)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -566,6 +567,7 @@ def set_container_options(container_serial):
 
 @container_blueprint.route('register/initialize', methods=['POST'])
 @prepolicy(check_container_register_rollover, request)
+@prepolicy(check_user_is_container_owner, request)
 @prepolicy(container_registration_config, request)
 @event('container_register_initialize', request, g)
 @log_with(log)
@@ -604,11 +606,6 @@ def registration_init():
     else:
         if registration_state and registration_state != "client_wait":
             raise ContainerNotRegistered(f"Container is already registered.")
-
-    # Initialize registration
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-    _check_user_access_on_container(container, user, user_role)
 
     # Reset last synchronization and authentication time stamps from possible previous registration
     container.reset_last_synchronization()
@@ -679,6 +676,7 @@ def registration_finalize():
 
 @container_blueprint.route('register/<string:container_serial>/terminate', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNREGISTER)
+@prepolicy(check_user_is_container_owner, request)
 @event('container_unregister', request, g)
 @log_with(log)
 def registration_terminate(container_serial: str):
@@ -689,11 +687,6 @@ def registration_terminate(container_serial: str):
     :return: True if the container was unregistered successfully
     """
     container = find_container_by_serial(container_serial)
-
-    user = request.User
-    user_role = g.logged_in_user.get("role")
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
 
     res = unregister(container)
 

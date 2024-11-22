@@ -82,7 +82,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_matching_realms)
+                                              check_matching_realms, get_container_user_attributes_for_policy_match,
+                                              user_is_container_owner)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -1339,46 +1340,37 @@ def check_client_container_action(request=None, action=None):
     :param action:
     :return: True if action is allowed, otherwise raises an Exception
     """
-    params = request.all_data
-    container_serial = params.get("container_serial")
-    user_object = request.User
-    role, adminuser, adminrealm = None, None, None
-    if user_object:
-        username = user_object.login
-        realm = user_object.realm
-        resolver = user_object.resolver
-    else:
-        # No user
-        container_realms = get_container_realms(container_serial)
-        if len(container_realms) > 0:
-            # realms available: get all policies and match container realms afterward
-            username, realm, resolver = None, None, None
-        else:
-            # No user and no realms: Get only policies without explicit user conditions
-            username, realm, resolver = "", "", ""
+    username, user_realm, resolver, container_realms = get_container_user_attributes_for_policy_match(request)
 
     # Check action for (container) realm
-    match = Match.generic(g, scope=role,
+    match = Match.generic(g, scope=SCOPE.CONTAINER,
                           action=action,
                           user=username,
                           resolver=resolver,
-                          realm=realm,
-                          adminrealm=adminrealm,
-                          adminuser=adminuser)
+                          realm=user_realm,
+                          additional_realms=container_realms)
     action_allowed = match.allowed()
-
-    # Get allowed realms
-    request.pi_allowed_realms = match.get_policy_realms()
-
-    # get the realm by the container serial
-    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
-    # TODO: Refactor Match.generic() to support multiple realms
-    if container_serial and action_allowed:
-        action_allowed = check_matching_realms(container_serial, request.pi_allowed_realms, params)
 
     if not action_allowed:
         raise PolicyError(f"Container actions are defined, but the action {action} is not allowed!")
     return True
+
+
+def get_allowed_realms(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN.
+    It extracts all defined realms from the matching policies.
+
+    :param request:
+    :param action:
+    :return: True if action is allowed, otherwise raises an Exception
+    """
+    # Check action for (container) realm
+    match = Match.generic(g, scope=SCOPE.CONTAINER,
+                          action=action)
+
+    # Get allowed realms
+    request.pi_allowed_realms = match.get_policy_realms()
 
 
 def check_container_register_rollover(request=None, action=None):
@@ -2457,51 +2449,58 @@ def smartphone_config(request, action=None):
     :param action: The action parameter is not used in this decorator
     :return: True on success, otherwise raises a PolicyError
     """
-    user = request.User
-    if user:
-        username = user.login or ""
-        realm = user.realm or ""
-        resolver = user.resolver or ""
-    else:
-        username = ""
-        realm = ""
-        resolver = ""
+    username, user_realm, resolver, container_realms = get_container_user_attributes_for_policy_match(request)
 
     policies = {}
+    actions = [ACTION.CONTAINER_CLIENT_ROLLOVER,
+               ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
+               ACTION.CLIENT_TOKEN_DELETABLE,
+               ACTION.CLIENT_CONTAINER_UNREGISTER]
 
-    # Check if rollover is allowed for the client
-    rollover_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
-                                      user=username, realm=realm, resolver=resolver).policies()
-    if len(rollover_policies) > 0:
-        policies[ACTION.CONTAINER_CLIENT_ROLLOVER] = rollover_policies[0]['action'][ACTION.CONTAINER_CLIENT_ROLLOVER]
-    else:
-        policies[ACTION.CONTAINER_CLIENT_ROLLOVER] = False
-
-    # Check if initial token transfer is allowed (the server can add tokens from the client to the container)
-    token_transfer_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
-                                            user=username, realm=realm, resolver=resolver).policies()
-    if len(token_transfer_policies) > 0:
-        policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER] = token_transfer_policies[0]["action"][
-            ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER]
-    else:
-        policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER] = False
-
-    # Check if the user is allowed to delete tokens from the smartphone (not on the server)
-    delete_tokens_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_TOKEN_DELETABLE,
-                                           user=username, realm=realm, resolver=resolver).policies()
-    if len(delete_tokens_policies) > 0:
-        policies[ACTION.CLIENT_TOKEN_DELETABLE] = delete_tokens_policies[0]["action"][ACTION.CLIENT_TOKEN_DELETABLE]
-    else:
-        policies[ACTION.CLIENT_TOKEN_DELETABLE] = False
-
-    # Check if the user is allowed to unregister the container
-    container_unregister_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CLIENT_CONTAINER_UNREGISTER,
-                                                  user=username, realm=realm, resolver=resolver).policies()
-    if len(container_unregister_policies) > 0:
-        policies[ACTION.CLIENT_CONTAINER_UNREGISTER] = container_unregister_policies[0]["action"][
-            ACTION.CLIENT_CONTAINER_UNREGISTER]
-    else:
-        policies[ACTION.CLIENT_CONTAINER_UNREGISTER] = False
+    for action in actions:
+        # Check if action is allowed for the client
+        action_policies = Match.generic(g, scope=SCOPE.CONTAINER, action=action,
+                                        user=username, realm=user_realm, resolver=resolver,
+                                        additional_realms=container_realms).policies()
+        if len(action_policies) > 0:
+            policies[action] = action_policies[0]['action'][action]
+        else:
+            policies[action] = False
 
     request.all_data["client_policies"] = policies
     return True
+
+
+def check_user_is_container_owner(request, action=None):
+    """
+    This decorator checks if the user is the owner of the container.
+    A user is only allowed to manage and edit its own containers.
+    If the user is not the owner of the container, a PolicyError is raised.
+    If no container is found, the user is allowed to do the action.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True if the user is the owner of the container, otherwise raises a PolicyError
+    """
+    params = request.all_data
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    if role == "user":
+        user_is_container_owner(params, username, realm, allow_no_owner=False)
+
+
+def check_user_is_container_owner_or_has_no_owner(request, action=None):
+    """
+    This decorator checks if the user is the owner of the container.
+    A user is only allowed to manage and edit its own containers.
+    If the user is not the owner of the container, a PolicyError is raised.
+    If no container is found, the user is allowed to do the action.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True if the user is the owner of the container or the container does not have any owner,
+        otherwise raises a PolicyError
+    """
+    params = request.all_data
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    if role == "user":
+        user_is_container_owner(params, username, realm, allow_no_owner=True)

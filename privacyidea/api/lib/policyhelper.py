@@ -25,10 +25,10 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 
 import logging
 
-from privacyidea.lib.container import get_container_realms
+from privacyidea.lib.container import get_container_realms, find_container_by_serial
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match, SCOPE, ACTION
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.token import get_realms_of_token
 
 log = logging.getLogger(__name__)
@@ -152,3 +152,67 @@ def check_matching_realms(container_serial, allowed_realms, params):
             action_allowed = len(matching_realms) > 0
 
     return action_allowed
+
+
+def get_container_user_attributes_for_policy_match(request):
+    """
+    Get the user and container realms from the request.
+    If a user attribute (username, realm, resolver) is not available, an empty string is returned.
+    If no container realms are available or if it is equal to the user realm, an empty list is returned.
+
+    :param request: The request object
+    :return: username, realm, resolver, container realms
+    :rtype: str, str, str, list
+    """
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    user_object = request.User
+    username = realm = resolver = ""
+    try:
+        container_realms = get_container_realms(container_serial)
+    except ResourceNotFoundError:
+        log.info(f"Container serial {container_serial} passed as request parameter does not exist.")
+        container_realms = []
+
+    if user_object:
+        username = user_object.login
+        realm = user_object.realm
+        resolver = user_object.resolver
+
+    if len(container_realms) == 1 and realm in container_realms:
+        container_realms = None
+    elif len(container_realms) == 0:
+        container_realms = None
+
+    return username, realm, resolver, container_realms
+
+
+def user_is_container_owner(params, username, realm, allow_no_owner=False):
+    """
+    This decorator checks if the user is the owner of the container.
+    A user is only allowed to manage and edit its own containers.
+    If the user is not the owner of the container, a PolicyError is raised.
+    If no container is found, the user is allowed to do the action.
+
+    :param request: The request object
+    :param allow_no_owner: If True, the user is allowed to manage a container without owner
+    :return: True if the user is the owner of the container, otherwise raises a PolicyError
+    """
+
+    container_serial = params.get("container_serial")
+    try:
+        container = find_container_by_serial(container_serial) if container_serial else None
+    except ResourceNotFoundError:
+        log.info(f"Container with serial {container_serial} not found.")
+    if container:
+        container_owners = container.get_users()
+        is_owner = False
+        for owner in container_owners:
+            if owner.login == username and owner.realm == realm:
+                is_owner = True
+                break
+        if allow_no_owner and len(container_owners) == 0:
+            is_owner = True
+        if not is_owner:
+            raise PolicyError("User is not the owner of the container.")
+    return is_owner

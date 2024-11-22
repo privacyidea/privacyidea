@@ -633,7 +633,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
         remove_token(token_serial)
 
     def test_13_check_container_state(self):
@@ -784,7 +784,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
         remove_token(token_serial)
 
     def test_17_check_container_realm(self):
@@ -1004,7 +1004,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        delete_container_by_serial(container_serial, user=None, user_role="admin")
+        delete_container_by_serial(container_serial)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -2833,7 +2833,7 @@ class TokenEventTestCase(MyTestCase):
 
         # Clean up
         remove_token(tokens["tokens"][0]["serial"])
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
 
         # Enroll token and assign to container without a container serial
         options['request'].all_data = {}
