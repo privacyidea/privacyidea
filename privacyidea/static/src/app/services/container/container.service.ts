@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {LocalService} from '../local/local.service';
@@ -19,18 +19,12 @@ export class ContainerService {
   ];
 
   constructor(private http: HttpClient,
-              private localStore: LocalService,
+              private localService: LocalService,
               private tableUtilsService: TableUtilsService) {
   }
 
-  private getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      'PI-Authorization': this.localStore.getData('bearer_token') || ''
-    });
-  }
-
   getContainerData(page?: number, pageSize?: number, sort?: Sort, filterValue?: string): Observable<any> {
-    const headers = this.getHeaders();
+    const headers = this.localService.getHeaders();
     let params = new HttpParams()
 
     if (page && pageSize) {
@@ -45,7 +39,10 @@ export class ContainerService {
     }
 
     if (filterValue) {
-      const {filterPairs, remainingFilterText} = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+      const {
+        filterPairs,
+        remainingFilterText
+      } = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
 
       filterPairs.forEach(({label, value}) => {
         if (label === 'user' || label === 'generic' || label === 'container_serial' || label === 'token_serial') {
@@ -72,7 +69,7 @@ export class ContainerService {
   }
 
   assignContainer(token_serial: string, container_serial: string) {
-    const headers = this.getHeaders();
+    const headers = this.localService.getHeaders();
     return this.http.post(`${this.baseUrl}${container_serial}/add`, {
       serial: token_serial
     }, {headers}).pipe(
@@ -85,7 +82,7 @@ export class ContainerService {
   }
 
   unassignContainer(token_serial: string, container_serial: string) {
-    const headers = this.getHeaders();
+    const headers = this.localService.getHeaders();
     return this.http.post(`${this.baseUrl}${container_serial}/remove`, {
       serial: token_serial
     }, {headers}).pipe(

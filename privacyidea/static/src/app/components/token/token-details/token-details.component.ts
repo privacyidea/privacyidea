@@ -14,15 +14,19 @@ import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
-import {NgClass} from '@angular/common';
+import {AsyncPipe, NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput, MatSuffix} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDivider} from '@angular/material/divider';
 import {MatSelectModule} from '@angular/material/select';
-import {forkJoin, Observable, switchMap} from 'rxjs';
+import {forkJoin, Observable, startWith, switchMap} from 'rxjs';
 import {ValidateService} from '../../../services/validate/validate.service';
+import {RealmService} from '../../../services/realm/realm.service';
+import {MatAutocomplete, MatAutocompleteTrigger} from '@angular/material/autocomplete';
+import {UserService} from '../../../services/user/user.service';
+import {map} from 'rxjs/operators';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -34,14 +38,14 @@ export const details = [
   {key: 'sync_window', label: 'Sync Window'},
   {key: 'count', label: 'Count'},
   {key: 'description', label: 'Description'},
-  {key: 'realms', label: 'Token Realm'},
+  {key: 'realms', label: 'Token Realms'},
   {key: 'tokengroup', label: 'Token Group'},
   {key: 'container_serial', label: 'Container Serial'},
 ];
 
 export const userDetail = [
-  {key: 'username', label: 'User'},
   {key: 'user_realm', label: 'Realm'},
+  {key: 'username', label: 'User'},
   {key: 'resolver', label: 'Resolver'},
   {key: 'user_id', label: 'User ID'},
 ];
@@ -77,6 +81,9 @@ export const infoDetail = [
     ReactiveFormsModule,
     MatList,
     MatIconButton,
+    MatAutocomplete,
+    MatAutocompleteTrigger,
+    AsyncPipe,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -99,8 +106,11 @@ export class TokenDetailsComponent {
     keyMap: { label: string; key: string },
     isEditing: boolean
   }[]>([]);
-  realmOptions = signal<string[]>(['']);
+  filteredUserOptions!: Observable<string[]>;
+  realmOptions = signal<string[]>([]);
   containerOptions = signal<string[]>([]);
+  userOptions = signal<string[]>([]);
+  selectedUserRealm = signal<string>('');
   newInfo: WritableSignal<{
     key: string;
     value: string
@@ -108,10 +118,29 @@ export class TokenDetailsComponent {
 
   constructor(private tokenService: TokenService,
               private containerService: ContainerService,
+              private realmService: RealmService,
+              private userService: UserService,
               private validateService: ValidateService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
     });
+    effect(() => {
+      if (this.selectedUserRealm()) {
+        this.userService.getUsers(this.selectedUserRealm()).subscribe({
+          next: (users: any) => {
+            this.userOptions.set(users.result.value.map((user: any) => user.username));
+          },
+          error: error => {
+            console.error('Failed to get users', error);
+          }
+        });
+      }
+    });
+
+    this.filteredUserOptions = this.selectedUsername.valueChanges.pipe(
+      startWith(''),
+      map(value => this._filterUserOptions(value || ''))
+    );
   }
 
   @Input() serial!: WritableSignal<string>
@@ -121,14 +150,20 @@ export class TokenDetailsComponent {
   hide!: boolean;
   isEditingUser: boolean = false;
   isEditingInfo: boolean = false;
-  username: string = '';
-  userRealm: string = '';
+  selectedUsername = new FormControl<string>('');
   setPinValue: string = '';
   repeatPinValue: string = '';
   selectedContainer: string = '';
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
+  selectedRealms = new FormControl<string[]>([]);
+  userRealm: string = '';
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
+  }
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
@@ -137,7 +172,7 @@ export class TokenDetailsComponent {
   showTokenDetail(serial: string): Observable<void> {
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
-      this.tokenService.getRealms(),
+      this.realmService.getRealms(),
       this.containerService.getContainerData(1, 10)
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms, containers]) => {
@@ -164,6 +199,9 @@ export class TokenDetailsComponent {
         })).filter(detail => detail.value !== undefined));
 
         this.realmOptions.set(Object.keys(realms.result.value));
+        this.selectedRealms.setValue(tokenDetails.realms);
+        this.userRealm = this.userData().find(
+          detail => detail.keyMap.key === 'user_realm')?.value;
         this.containerOptions.set(Object.values(containers.result.value.containers as {
           serial: string
         }[]).map(container => container.serial));
@@ -193,7 +231,8 @@ export class TokenDetailsComponent {
         if (action === 'save') {
           this.saveUser();
         } else if (action === 'cancel') {
-          this.username = '';
+          this.selectedUsername.reset();
+          this.selectedUserRealm.set('');
         }
         break;
       case 'container_serial':
@@ -202,6 +241,15 @@ export class TokenDetailsComponent {
           this.assignContainer();
         } else if (action === 'cancel') {
           this.selectedContainer = '';
+        }
+        break;
+      case 'realms':
+        element.isEditing = !element.isEditing;
+        if (action === 'save') {
+          this.saveRealms();
+        } else if (action === 'cancel') {
+          this.selectedRealms.setValue(this.detailData().find(
+            detail => detail.keyMap.key === 'realms')?.value);
         }
         break;
       case 'info':
@@ -284,14 +332,14 @@ export class TokenDetailsComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.assignUser(this.serial(), this.username, this.userRealm, this.setPinValue).pipe(
+    this.tokenService.assignUser(this.serial(), this.selectedUsername.value, this.selectedUserRealm(), this.setPinValue).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       next: () => {
         this.setPinValue = '';
         this.repeatPinValue = '';
-        this.username = '';
-        this.userRealm = '';
+        this.selectedUsername.reset();
+        this.selectedUserRealm.set('');
       },
       error: error => {
         console.error('Failed to assign user', error);
@@ -375,6 +423,19 @@ export class TokenDetailsComponent {
     ).subscribe({
       error: (error: any) => {
         console.error('Failed to verify OTP value', error);
+      }
+    });
+  }
+
+  private saveRealms() {
+    this.tokenService.setTokenRealm(this.serial(), this.selectedRealms.value).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to save token realms', error);
       }
     });
   }

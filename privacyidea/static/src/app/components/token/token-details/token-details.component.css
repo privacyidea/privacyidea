@@ -107,11 +107,11 @@
   border-radius: var(--border-radius);
 }
 
-input {
+.input {
   outline: none;
 }
 
-input:focus {
+.input:focus {
   outline: 3px solid var(--blue-light);
 }
 
@@ -119,6 +119,10 @@ input:focus {
   height: 40px;
   width: calc(100% - 50px);
   border-radius: var(--border-radius);
+}
+
+.input-full:focus {
+  outline: 3px solid var(--blue-light);
 }
 
 mat-grid-tile {
@@ -260,13 +264,22 @@ h3 {
   padding-left: 5px;
 }
 
-::ng-deep .mat-mdc-form-field-subscript-wrapper {
+::ng-deep .info-container .mat-mdc-form-field-subscript-wrapper {
   height: 5px;
 }
 
-::ng-deep .mat-mdc-form-field-infix {
+::ng-deep .info-container .mat-mdc-form-field-infix {
   padding-bottom: 0;
   margin-bottom: -4px;
+}
+
+::ng-deep .user-container .mat-mdc-form-field-subscript-wrapper {
+  height: 0;
+}
+
+::ng-deep .user-container .mat-mdc-form-field-infix {
+  padding-bottom: 0;
+  margin-bottom: -8px;
 }
 
 .detail-table-input {
@@ -285,4 +298,8 @@ textarea {
 
 onepx {
   margin-top: 4px;
+}
+
+::ng-deep .cdk-overlay-pane {
+  position: absolute !important;
 }

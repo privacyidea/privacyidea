@@ -148,8 +148,8 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should assign user', () => {
-    component.username = 'testUser';
-    component.userRealm = 'testRealm';
+    component.selectedUsername.setValue('testUser');
+    component.selectedUserRealm.set('testRealm');
     component.setPinValue = '1234';
     component.repeatPinValue = '1234';
 
@@ -219,7 +219,7 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should set token infos', () => {
-    component.newInfo.set({ key: 'infoKey', value: 'infoValue' });
+    component.newInfo.set({key: 'infoKey', value: 'infoValue'});
 
     spyOn(tokenService, 'setTokenInfos').and.callThrough();
     component.saveInfo({});

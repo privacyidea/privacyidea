@@ -5,18 +5,14 @@ import {LocalService} from '../local/local.service';
 @Injectable({
   providedIn: 'root'
 })
-export class ValidateService {
-  private baseUrl = 'http://127.0.0.1:5000/validate/';
+export class UserService {
+  private baseUrl = 'http://127.0.0.1:5000/user/';
 
   constructor(private http: HttpClient, private localService: LocalService) {
   }
 
-  testToken(serial: string, otpOrPinToTest: string, otponly?: string): any {
+  getUsers(userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}check`, {
-      "serial": serial,
-      "pass": otpOrPinToTest,
-      "otponly": otponly
-    }, {headers})
+    return this.http.get(`${this.baseUrl}?realm=${userRealm}`, {headers});
   }
 }

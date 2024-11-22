@@ -6,7 +6,156 @@
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="7" [rowspan]="11">
+    <mat-grid-tile [colspan]="9" [rowspan]="9">
+      <div class="details-wrapper">
+        <div class="details-section">
+          <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
+                 class="detail-table" mat-table>
+            <ng-container matColumnDef="key">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="value">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
+                @if (element.keyMap.key === "container_serial") {
+                  @if (element.isEditing) {
+                    <mat-form-field class="detail-table-input">
+                      <mat-label style="font-size: 12px">Select Container</mat-label>
+                      <mat-select [(ngModel)]="selectedContainer">
+                        @for (option of containerOptions(); track option; ) {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    <span>{{ element.value }}</span>
+                  }
+                } @else if (element.keyMap.key === "realms") {
+                  @if (element.isEditing) {
+                    <mat-form-field class="detail-table-input">
+                      <mat-label style="font-size: 12px">Select Realms</mat-label>
+                      <mat-select [formControl]="selectedRealms" multiple>
+                        @for (option of realmOptions(); track option; ) {
+                          @if (option === userRealm) {
+                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                          } @else {
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                          }
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="object-row">
+                        <span class="object-item">• {{ realm }}</span>
+                      </mat-list-item>
+                    }
+                  }
+                } @else if (element.isEditing && element.keyMap.key !== "maxfail" &&
+                element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {
+                  <mat-form-field class="detail-table-input">
+                    <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
+                  </mat-form-field>
+                } @else if (element.isEditing) {
+                  <mat-form-field class="detail-table-input">
+                    <input type="number" matInput [(ngModel)]="element.value"/>
+                  </mat-form-field>
+                } @else {
+                  <span class="detail-table-item"
+                        [ngClass]="{
+            'highlight-true': (element.keyMap.key === 'active' && element.value === true) ||
+                            (element.keyMap.key === 'failcount' && element.value == 0),
+            'highlight-warning': (element.keyMap.key === 'failcount' && element.value >= 1 && element.value <= 9),
+            'highlight-false': (element.keyMap.key === 'active' && element.value !== true) ||
+                              (element.keyMap.key === 'failcount' && (element.value < 0 || element.value > 9))
+          }">
+          {{ element.keyMap.key === 'active' ? (revoked() ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
+        </span>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="edit">
+              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+              <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
+                @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
+                  <button mat-icon-button (click)="resetFailCount()">
+                    <mat-icon>
+                      lock_reset
+                    </mat-icon>
+                  </button>
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
+                  @if (element.value) {
+                    <button mat-icon-button class="red-icon" (click)="unassignContainer()">
+                      <mat-icon>folder_delete</mat-icon>
+                    </button>
+                  } @else {
+                    <button mat-icon-button class="edit-button"
+                            (click)="toggleEditMode(element, 'container_serial', 'edit')">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="edit-button"
+                            (click)="toggleEditMode(element, 'container_serial', 'save')">
+                      <mat-icon>save_as</mat-icon>
+                    </button>
+                    <button mat-icon-button class="edit-button red-icon"
+                            (click)="toggleEditMode(element, 'container_serial', 'cancel')">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                } @else if (element.keyMap.key === "realms" && element.isEditing) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="edit-button"
+                            (click)="toggleEditMode(element, 'realms', 'save')">
+                      <mat-icon>save_as</mat-icon>
+                    </button>
+                    <button mat-icon-button class="edit-button red-icon"
+                            (click)="toggleEditMode(element, 'realms', 'cancel')">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                } @else if (element.keyMap.key === "maxfail"
+                || element.keyMap.key === "count_window"
+                || element.keyMap.key === "sync_window"
+                || element.keyMap.key === "description"
+                || element.keyMap.key === "info"
+                || element.keyMap.key === "realms"
+                || element.keyMap.key === "tokengroup") {
+                  <div class="edit-button-container">
+                    @if (!isAnyEditing()) {
+                      <button mat-icon-button class="edit-button"
+                              (click)="toggleEditMode(element, 'default', 'edit')">
+                        <mat-icon>
+                          edit
+                        </mat-icon>
+                      </button>
+                    } @else if (element.isEditing) {
+                      <button mat-icon-button class="edit-button"
+                              (click)="toggleEditMode(element, 'default', 'save')">
+                        <mat-icon>save_as</mat-icon>
+                      </button>
+                      <button mat-icon-button class="edit-button red-icon"
+                              (click)="toggleEditMode(element, 'default', 'cancel')">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    } @else {
+                      <br/>
+                    }
+                  </div>
+                }
+              </td>
+            </ng-container>
+            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
+                mat-row></tr>
+          </table>
+        </div>
+      </div>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="7" [rowspan]="isEditingInfo ? 11 : 10">
       <div class="info-container">
         <h3>Information: </h3>
         <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
@@ -38,13 +187,13 @@
                     } @else {
                       <mat-list-item class="object-row onepx">
                         <div class="info-span">
-                          <span style="margin-left: -4px; font-size: 14px" class="object-item">{{
-                              key
-                            }}:
+                          <span style="margin-left: -4px; font-size: 14px" class="object-item">
+                            {{ key }}:
                           </span>
                           <span class="object-item"
                                 style="margin-left: 2px">{{ element.value[key] }}</span>
-                          <mat-divider style="width: 86%; margin-bottom: 5px; margin-top: 3px"/>
+                          <mat-divider style="width: 87%; margin-bottom: 5px; margin-left: -8px;
+                           margin-top: 3px"/>
                         </div>
                       </mat-list-item>
                     }
@@ -134,130 +283,12 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="9">
-      <div class="details-wrapper">
-        <div class="details-section">
-          <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
-                 class="detail-table" mat-table>
-            <ng-container matColumnDef="key">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="value">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
-                @if (element.keyMap.key === "container_serial") {
-                  @if (element.isEditing) {
-                    <mat-form-field class="detail-table-input">
-                      <mat-label style="font-size: 12px">Select Container</mat-label>
-                      <select matNativeControl [(ngModel)]="selectedContainer">
-                        @for (option of containerOptions(); track option; ) {
-                          <option value="{{ option }}">{{ option }}</option>
-                        }
-                      </select>
-                    </mat-form-field>
-                  } @else {
-                    <span>{{ element.value }}</span>
-                  }
-                } @else if (isObject(element.value) || Array.isArray(element.value)) {
-                  @for (info of element.value; track info; let idx = $index) {
-                    <mat-list-item class="object-row">
-                      <span class="object-item">{{ info }}</span>
-                    </mat-list-item>
-                  }
-                } @else if (element.isEditing && element.keyMap.key !== "maxfail" &&
-                element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {
-                  <mat-form-field class="detail-table-input">
-                    <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
-                  </mat-form-field>
-                } @else if (element.isEditing) {
-                  <mat-form-field class="detail-table-input">
-                    <input type="number" matInput [(ngModel)]="element.value"/>
-                  </mat-form-field>
-                } @else {
-                  <span class="detail-table-item"
-                        [ngClass]="{
-            'highlight-true': (element.keyMap.key === 'active' && element.value === true) ||
-                            (element.keyMap.key === 'failcount' && element.value == 0),
-            'highlight-warning': (element.keyMap.key === 'failcount' && element.value >= 1 && element.value <= 9),
-            'highlight-false': (element.keyMap.key === 'active' && element.value !== true) ||
-                              (element.keyMap.key === 'failcount' && (element.value < 0 || element.value > 9))
-          }">
-          {{ element.keyMap.key === 'active' ? (revoked() ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
-        </span>
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="edit">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
-                @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
-                  <button mat-icon-button (click)="resetFailCount()">
-                    <mat-icon>
-                      lock_reset
-                    </mat-icon>
-                  </button>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
-                  @if (element.value) {
-                    <button mat-icon-button class="red-icon" (click)="unassignContainer()">
-                      <mat-icon>folder_delete</mat-icon>
-                    </button>
-                  } @else {
-                    <button mat-icon-button class="edit-button"
-                            (click)="toggleEditMode(element, 'container_serial', 'edit')">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                  }
-                } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
-                  <div class="edit-button-container">
-                    <button mat-icon-button class="edit-button"
-                            (click)="toggleEditMode(element, 'container_serial', 'save')">
-                      <mat-icon>save_as</mat-icon>
-                    </button>
-                    <button mat-icon-button class="edit-button red-icon"
-                            (click)="toggleEditMode(element, 'container_serial', 'cancel')">
-                      <mat-icon>cancel</mat-icon>
-                    </button>
-                  </div>
-                } @else if (element.keyMap.key === "maxfail" || element.keyMap.key === "count_window" || element.keyMap.key === "sync_window"
-                || element.keyMap.key === "description" || element.keyMap.key === "info" || element.keyMap.key === "realms"
-                || element.keyMap.key === "tokengroup") {
-                  <div class="edit-button-container">
-                    @if (!isAnyEditing()) {
-                      <button mat-icon-button class="edit-button"
-                              (click)="toggleEditMode(element, 'default', 'edit')">
-                        <mat-icon>
-                          edit
-                        </mat-icon>
-                      </button>
-                    } @else if (element.isEditing) {
-                      <button mat-icon-button class="edit-button"
-                              (click)="toggleEditMode(element, 'default', 'save')">
-                        <mat-icon>save_as</mat-icon>
-                      </button>
-                      <button mat-icon-button class="edit-button red-icon"
-                              (click)="toggleEditMode(element, 'default', 'cancel')">
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    } @else {
-                      <br/>
-                    }
-                  </div>
-                }
-              </td>
-            </ng-container>
-            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
-                mat-row></tr>
-          </table>
-        </div>
-      </div>
-    </mat-grid-tile>
     <mat-grid-tile [colspan]="8" [rowspan]="8">
       <div class="user-details-section">
         <div class="user-container">
           <h3>Assigned User:</h3>
-          <table [dataSource]="userData()" aria-label="User Detail Data Table" class="detail-table"
+          <table [dataSource]="userData()" aria-label="User Detail Data Table"
+                 class="detail-table"
                  mat-table>
             <ng-container matColumnDef="key">
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
@@ -269,13 +300,24 @@
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="user-detail-row user-editable-row" mat-cell>
                 @if (isEditingUser && element.keyMap.key === "username") {
-                  <input matInput [(ngModel)]="username"/>
+                  <mat-form-field>
+                    <mat-label style="font-size: 12px">Select User</mat-label>
+                    <input matInput [formControl]="selectedUsername" [matAutocomplete]="auto">
+                    <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
+                      @for (option of filteredUserOptions | async; track option) {
+                        <mat-option [value]="option">{{ option }}</mat-option>
+                      }
+                    </mat-autocomplete>
+                  </mat-form-field>
                 } @else if (isEditingUser && element.keyMap.key === "user_realm") {
-                  <select [(ngModel)]="userRealm">
-                    @for (option of realmOptions(); track option; ) {
-                      <option value="{{ option }}">{{ option }}</option>
-                    }
-                  </select>
+                  <mat-form-field>
+                    <mat-label style="font-size: 12px">Search in Realm</mat-label>
+                    <mat-select [(ngModel)]="selectedUserRealm">
+                      @for (option of realmOptions(); track option; ) {
+                        <mat-option value="{{ option }}">{{ option }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
                 } @else {
                   {{ element.value }}
                 }
@@ -314,7 +356,11 @@
                 mat-row></tr>
           </table>
           <br/>
-          <mat-divider/>
+          @if (!isEditingUser) {
+            <mat-divider/>
+          } @else {
+            <mat-divider style="border-top-color: white;"/>
+          }
           <br/>
           <div class="user-pin-input">
             <input style="display:none" type="text"/>
