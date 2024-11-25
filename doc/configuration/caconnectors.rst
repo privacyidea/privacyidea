@@ -74,7 +74,7 @@ Starting with privacyIDEA version 2.18 it gets easier to setup local CAs.
 
 You can use the :ref:`pimanage` tool to setup a new CA like this::
 
-   pi-manage ca create myCA
+   pi-manage config ca create myCA
 
 This will ask you for all necessary parameters for the CA and then automatically
 
@@ -96,14 +96,14 @@ revoked and a CRL is created.
 Starting with version 2.18 the pi-manage command has an additional
 sub-command ``ca``::
 
-    pi-manage ca list
+    pi-manage config ca list
 
 which lists all configured *CA connectors*. You can use the ``-v`` switch to get more
 information.
 
 You can create a new CRL with the command::
 
-    pi-manage ca create_crl <CA name>
+    pi-manage config ca create_crl <CA name>
 
 This command will check the *overlap period* and only create a new CRL if it
 is necessary. If you want to force the creation of the CRL, you can use the
@@ -231,6 +231,6 @@ Of course the MS CA Connector can be configured in the privacyIDEA Web UI.
 For quick setup, you can also configure a connector at the command line using
 :ref:`pimanage` like this::
 
-    pi-manage ca create -t microsoft <name-of-connector>
+    pi-manage config ca create -t microsoft <name-of-connector>
 
 It will ask you all relevant questions and setup a connector in privacyIDEA.

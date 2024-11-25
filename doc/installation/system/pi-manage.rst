@@ -33,7 +33,7 @@ You can create an encryption key and encrypt the encryption key.
 
 Create encryption key::
 
-   pi-manage create_enckey [--enckey_b64=BASE64_ENCODED_ENCKEY]
+   pi-manage setup create_enckey [--enckey_b64=BASE64_ENCODED_ENCKEY]
 
 .. note:: The filename of the encryption
    key is read from the configuration. The key will not be created, if it
@@ -46,7 +46,7 @@ to set the correct access rights.
 
 You can also encrypt the encryption key with a passphrase. To do this do::
 
-   pi-manage encrypt_enckey /etc/privacyidea/enckey
+   pi-manage setup encrypt_enckey /etc/privacyidea/enckey
 
 and pipe the encrypted *enckey* to a new file.
 
@@ -76,7 +76,7 @@ Rotate Audit Log
 Audit logs are written to the database. You can use pi-manage to perform a
 log rotation::
 
-   pi-manage rotate_audit
+   pi-manage audit rotate
 
 You can specify a highwatermark and a lowwatermark, age or a config file. Read more
 about it at :ref:`audit_rotate`.
@@ -89,11 +89,11 @@ Clean up challenges
 The challenges of challenge response tokens are stored in a database table.
 Each challenge has a validity time. You can clean up old challenges with::
 
-   pi-manage challenge cleanup
+   pi-manage config challenge cleanup
 
 This will clean up all expired challenges. If you want to clean up challenges older than a certain age, you can use::
 
-   pi-manage challenge cleanup --age 10
+   pi-manage config challenge cleanup --age 10
 
 to clean up challenge that are older than 10 minutes.
 
@@ -133,8 +133,8 @@ You can now use this API key to enroll tokens as administrator.
 Policies
 --------
 
-You can use ``pi-manage policy`` to enable, disable, create and delete policies.
-Using the sub commands ``p_export`` and ``p_import`` you can also export a
+You can use ``pi-manage config policy`` to enable, disable, create and delete policies.
+Using the commands ``pi-manage config export -t policy`` and ``pi-manage config import -t policy`` you can also export a
 backup of your policies and import this policy set later.
 
 This could also be used to transfer the policies from one privacyIDEA
