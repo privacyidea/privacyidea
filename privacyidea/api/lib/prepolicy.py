@@ -786,17 +786,16 @@ def check_max_token_user(request=None, action=None):
         /token/init  (with a realm and user)
         /token/assign
 
-    :param req:
+    :param request:
     :param action:
     :return: True otherwise raises an Exception
     """
-    ERROR = "The number of tokens for this user is limited!"
-    ERROR_TYPE = "The number of tokens of type {0!s} for this user is limited!"
-    ERROR_ACTIVE = "The number of active tokens for this user is limited!"
-    ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
+    error_msg = "The number of tokens for this user is limited!"
+    error_msg_type = "The number of tokens of type {0!s} for this user is limited!"
+    error_msg_active_limit = "The number of active tokens for this user is limited!"
+    error_msg_type_limit = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
     serial = getParam(params, "serial")
-    tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
     if user_object.is_empty() and serial:
         try:
@@ -830,7 +829,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_TYPE.format(tokentype))
+                    raise PolicyError(error_msg_type.format(tokentype))
 
         # check maximum tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
@@ -847,7 +846,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR)
+                    raise PolicyError(error_msg)
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
@@ -865,7 +864,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_ACTIVE_TYPE.format(tokentype))
+                    raise PolicyError(error_msg_type_limit.format(tokentype))
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
@@ -883,7 +882,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_ACTIVE)
+                    raise PolicyError(error_msg_active_limit)
 
     return True
 
@@ -899,8 +898,8 @@ def check_max_token_realm(request=None, action=None):
         /token/assign
         /token/tokenrealms
 
-    :param req: The request that is intercepted during the API call
-    :type req: Request Object
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
     :param action: An optional Action
     :type action: basestring
     :return: True otherwise raises an Exception
