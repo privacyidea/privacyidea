@@ -236,17 +236,12 @@ class PasskeyTokenClass(TokenClass):
         elif attestation and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Finalize the registration by verifying the registration data from the authenticator
             cred_id = get_required(param, "credential_id")
-            print(f"cred_id: {cred_id}")
             cred_id_raw = get_required(param, "rawId")
-            print(f"cred_id_raw: {cred_id_raw}")
             authenticator_attachment = get_required(param, "authenticatorAttachment")
-            print(f"authenticator_attachment: {authenticator_attachment}")
             transaction_id = get_required(param, "transaction_id")
-            print(f"transaction_id: {transaction_id}")
             expected_rp_id = get_required(param, WEBAUTHNACTION.RELYING_PARTY_ID)
-            print(f"expected_rp_id: {expected_rp_id}")
             expected_origin = get_required(param, "HTTP_ORIGIN")
-            print(f"expected_origin: {expected_origin}")
+
             serial = self.token.serial
             challenge_list = [challenge for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
                               if challenge.is_valid()]
@@ -323,28 +318,21 @@ class PasskeyTokenClass(TokenClass):
                         - "userHandle"
                         - "HTTP_ORIGIN"
                         The following keys are optional:
-                        - "webauthn_user_verification_requirement"
+                        - "webauthn_user_verification_requirement", defaults to preferred
 
         :type options: dict
         :return: A numerical value where values larger than zero indicate success.
         :rtype: int
         """
         authenticator_data = get_required(options, "authenticatorData")
-        print(f"authenticator_data: {authenticator_data}")
         client_data_json = get_required(options, "clientDataJSON")
-        print(f"client_data_json: {client_data_json}")
         signature = get_required(options, "signature")
-        print(f"signature: {signature}")
         user_handle = get_required(options, "userHandle")
-        print(f"user_handle: {user_handle}")
-        credential_id = bytes_to_base64url(self.token.get_otpkey().getKey())
-        print(f"credential_id: {credential_id}")
+        credential_id = self.token.get_otpkey().getKey().decode("utf-8")
         rp_id = self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID)
         expected_challenge = get_required(options, "challenge").encode("utf-8")
-        print(f"expected_challenge: {expected_challenge}")
         expected_origin = get_required(options, "HTTP_ORIGIN")
-        print(f"expected_origin: {expected_origin}")
-        user_verification = get_optional(options, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, "preferred")
+        user_verification = get_optional(options, "user_verification", "preferred")
         try:
             verified_authentication: VerifiedAuthentication = verify_authentication_response(
                 credential={

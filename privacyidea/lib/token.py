@@ -2905,9 +2905,9 @@ def create_fido2_challenge(rp_id: str) -> dict:
     The returned dict has the format:
     {
         "transaction_id": "12345678901234567890",
-        "challenge": "AAAAAAAAAAAAAAA",
+        "challenge": <32 random bytes base64url encoded>,
         "rpId": "example.com",
-        "message": "authenticate or whatever"
+        "message": "Please authenticate with your Passkey!"
     }
     The challenge nonce is encoded in base64url.
     """

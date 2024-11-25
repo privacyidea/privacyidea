@@ -85,8 +85,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_response = {
             "attestationObject": self.registration_attestation,
             "clientDataJSON": self.registration_client_data,
-            "credential_id": self.registration_cred_id,
-            "rawId": self.registration_cred_id,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
             "authenticatorAttachment": self.authenticator_attachment,
             "HTTP_ORIGIN": self.expected_origin,
             WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
@@ -97,9 +97,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
     def _initialize_authentication(self) -> dict:
         with patch('privacyidea.lib.token.get_fido2_nonce') as get_nonce:
-            get_nonce.return_value = self.authentication_challenge
+            get_nonce.return_value = self.authentication_challenge_no_uv
             challenge = create_fido2_challenge(self.rp_id)
-            self.assertEqual(challenge["challenge"], self.authentication_challenge)
+            self.assertEqual(challenge["challenge"], self.authentication_challenge_no_uv)
             return challenge
 
     def test_01_class_values(self):
@@ -166,7 +166,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertTrue(token_info["attestation_certificate"])
         self.assertEqual(token.token.description, "Yubico U2F EE Serial 2109467376")
         # The token key is the credential id
-        self.assertEqual(token.token.get_otpkey().getKey().decode('utf-8'), self.registration_cred_id)
+        self.assertEqual(token.token.get_otpkey().getKey().decode('utf-8'), self.credential_id)
 
     def test_03_init_custom_settings(self):
         """
@@ -220,7 +220,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         # Complete the registration with tampered data
         with self.assertRaises(EnrollmentError):
             registration_response = registration_request.registration_response
-            registration_response["attestationObject"] = self.registration_attestation.replace("a", "b")
+            registration_response["attestationObject"] = self.registration_attestation.replace("e", "f")
             token.update(registration_response)
 
         # Change the origin, should be reflected in the error message
@@ -232,7 +232,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_response["clientDataJSON"] = tampered_client_data
         with self.assertRaises(EnrollmentError) as ex:
             token.update(registration_response)
-        self.assertIn('Unexpected client data origin "https://evil.nils:5000", expected "https://cool.nils:5000"',
+        self.assertIn('Unexpected client data origin "https://evil.nils:5000",'
+                      ' expected "https://cool.nils:5000"',
                       ex.exception.message)
         # Invalid client data (json format)
         with self.assertRaises(EnrollmentError) as ex:
@@ -273,11 +274,13 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         token = self._create_token()
         challenge = self._initialize_authentication()
         # UserVerification is preferred by default
-        success = verify_fido2_challenge(challenge["transaction_id"], token, self.authentication_response)
+        authentication_response = self.authentication_response_no_uv
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(success, 1)
         remove_token(serial=token.get_serial())
 
-    def test_05_authenticate_fails(self):
+    def test_07_authenticate_fails(self):
         token = self._create_token()
 
         # Challenge does not exist
@@ -286,7 +289,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
         # Wrong signature
         challenge = self._initialize_authentication()
-        authentication_response = self.authentication_response
+        authentication_response = self.authentication_response_no_uv
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response["signature"] = authentication_response["signature"].replace("a", "b")
         success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(success, -1)

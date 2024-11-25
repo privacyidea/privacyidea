@@ -422,7 +422,7 @@ def check():
                     "message": "No user found for the token with the given credential ID!"})
             user = token.user
         except ResourceNotFoundError:
-            return send_result(False, rid=2, details={"message": "No token found for given credential ID!"})
+            return send_result(False, rid=2, details={"message": "No token found for the given credential ID!"})
 
         r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
         result = r > 0
@@ -751,10 +751,8 @@ def initialize():
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
 
         details["passkey"] = challenge
-
-
     else:
         raise ParameterError("Unsupported token type for authentication initialization!")
 
-    response = send_result(AUTH_RESPONSE.CHALLENGE, rid=2, details=details)
+    response = send_result(False, rid=2, details=details)
     return response
