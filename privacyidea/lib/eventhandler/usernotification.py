@@ -103,6 +103,19 @@ class UserNotificationEventHandler(BaseEventHandler):
         """
         return ["post", "pre"]
 
+    def attach_qr(self, body, url_img, mimetype, serial):
+                # get the image part of the url
+                url = urlopen(url_img)  # nosec B310   # no user input
+                mail_body = MIMEMultipart('related')
+                mail_body.attach(MIMEText(body, mimetype))
+                mail_img = MIMEImage(url.read())
+                mail_img.add_header('Content-ID', '<token_image>')
+                mail_img.add_header('Content-Disposition',
+                                    'inline; filename="{0!s}.png"'.format(serial))
+                mail_body.attach(mail_img)
+                body = mail_body
+                return body
+
     @property
     def actions(cls):
         """
@@ -389,6 +402,10 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                             {}).get("value")
             googleurl_img = content.get("detail", {}).get("googleurl",
                                                           {}).get("img")
+            pushurl_value = content.get("detail", {}).get("pushurl",
+                                                          {}).get("value")
+            pushurl_img = content.get("detail", {}).get("pushurl",
+                                                        {}).get("img")
             tokentype = None
             tokendescription = None
             if serial:
@@ -405,6 +422,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    client_ip=g.client_ip,
                                    pin=pin,
                                    googleurl_value=googleurl_value,
+                                   pushurl_value=pushurl_value,
                                    recipient=recipient,
                                    tokenowner=tokenowner,
                                    serial=serial,
@@ -414,7 +432,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
 
-            body = to_unicode(body).format(googleurl_img=googleurl_img, **tags)
+            body = to_unicode(body).format(googleurl_img=googleurl_img, pushurl_img=pushurl_img, **tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
@@ -423,17 +441,11 @@ class UserNotificationEventHandler(BaseEventHandler):
                 useremail = recipient.get("email")
                 attach_qrcode = is_true(handler_options.get("attach_qrcode"))
 
-                if attach_qrcode and googleurl_img:
-                    # get the image part of the googleurl
-                    googleurl = urlopen(googleurl_img)  # nosec B310   # no user input
-                    mail_body = MIMEMultipart('related')
-                    mail_body.attach(MIMEText(body, mimetype))
-                    mail_img = MIMEImage(googleurl.read())
-                    mail_img.add_header('Content-ID', '<token_image>')
-                    mail_img.add_header('Content-Disposition',
-                                        'inline; filename="{0!s}.png"'.format(serial))
-                    mail_body.attach(mail_img)
-                    body = mail_body
+                if attach_qrcode:
+                    if googleurl_img:
+                        body = self.attach_qr(body, googleurl_img, mimetype, serial)
+                    elif pushurl_img:
+                        body = self.attach_qr(body, pushurl_img, mimetype, serial)
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
