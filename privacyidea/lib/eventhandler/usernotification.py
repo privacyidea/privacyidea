@@ -104,17 +104,17 @@ class UserNotificationEventHandler(BaseEventHandler):
         return ["post", "pre"]
 
     def attach_qr(self, body, url_img, mimetype, serial):
-                # get the image part of the url
-                url = urlopen(url_img)  # nosec B310   # no user input
-                mail_body = MIMEMultipart('related')
-                mail_body.attach(MIMEText(body, mimetype))
-                mail_img = MIMEImage(url.read())
-                mail_img.add_header('Content-ID', '<token_image>')
-                mail_img.add_header('Content-Disposition',
-                                    'inline; filename="{0!s}.png"'.format(serial))
-                mail_body.attach(mail_img)
-                body = mail_body
-                return body
+        # get the image part of the url
+        url = urlopen(url_img)  # nosec B310   # no user input
+        mail_body = MIMEMultipart('related')
+        mail_body.attach(MIMEText(body, mimetype))
+        mail_img = MIMEImage(url.read())
+        mail_img.add_header('Content-ID', '<token_image>')
+        mail_img.add_header('Content-Disposition',
+                            'inline; filename="{0!s}.png"'.format(serial))
+        mail_body.attach(mail_img)
+        body = mail_body
+        return body
 
     @property
     def actions(cls):
