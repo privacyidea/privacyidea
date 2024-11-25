@@ -47,7 +47,7 @@ The following config entries are used:
 The identifier points to a system wide SMTP server configuration.
 See :ref:`rest_smtpserver`.
 
-The system wide SMTP server configuration was introduced in version 2.10.
+The system-wide SMTP server configuration was introduced in version 2.10.
 In privacyIDEA up to version 2.9 the following config entries were used:
 
  * email.validtime

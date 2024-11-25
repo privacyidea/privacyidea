@@ -12,7 +12,8 @@
         <tbody>
         <tr ng-repeat="(identifier, server) in smtpServers">
             <td>
-                <a ui-sref="config.smtp.edit({identifier:identifier})">
+                <a ui-sref="config.smtp.edit({identifier:identifier})"
+                ng-click="editSMTPServer(identifier)">
                         {{ identifier }}</a>
             </td>
             <td>

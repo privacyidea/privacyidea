@@ -23,105 +23,108 @@
  *
  */
 myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
-                                     "$stateParams", "$http", "AuthFactory",
-                                     "instanceUrl", "$location", "gettextCatalog",
-                                     function (AuditFactory, $scope, $rootScope,
-                                               $stateParams, $http, AuthFactory,
-                                               instanceUrl, $location, gettextCatalog) {
-    $scope.params = {sortorder: "desc",
-                     page_size: $scope.audit_page_size,
-                     page: 1};
-    $scope.instanceUrl = instanceUrl;
-    var df = "yyyy-MM-dd HH:mm:ss";
-    $scope.dateFormat = df;
+    "$stateParams", "$http", "AuthFactory",
+    "instanceUrl", "$location",
+    function (AuditFactory, $scope, $rootScope,
+              $stateParams, $http, AuthFactory,
+              instanceUrl, $location) {
+        $scope.params = {
+            sortorder: "desc",
+            page_size: $scope.audit_page_size,
+            page: 1
+        };
+        $scope.instanceUrl = instanceUrl;
+        $scope.dateFormat = "yyyy-MM-dd HH:mm:ss";
 
-    // If the state is called with some filter values
-    if ($stateParams.serial) {
-        $scope.serialFilter = $stateParams.serial;
-    }
-    if ($stateParams.user) {
-        $scope.userFilter = $stateParams.user;
-    }
+        $scope.filter = {};
 
-    $scope.getParams = function () {
-        $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
-        $scope.params.user = "*" + ($scope.userFilter || "") + "*";
-        $scope.params.administrator = "*" + ($scope.administratorFilter || "") + "*";
-        $scope.params.token_type = "*" + ($scope.typeFilter || "") + "*";
-        $scope.params.action = "*" + ($scope.actionFilter || "") + "*";
-        $scope.params.success = "*" + ($scope.successFilter || "") + "*";
-        $scope.params.authentication = "*" + ($scope.authenticationFilter || "") +"*";
-        $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
-        $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
-        $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
-        $scope.params.policies = "*" + ($scope.policiesFilter || "") + "*";
-        $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
-        $scope.params.user_agent = "*" + ($scope.user_agentFilter || "") +"*";
-        $scope.params.user_agent_version = "*" + ($scope.user_agent_versionFilter || "") +"*";
-        $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
-        $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
-        $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
-        $scope.params.startdate = "*" + ($scope.startdateFilter || "") + "*";
-        $scope.params.duration = "*" + ($scope.durationFilter || "") + "*";
-        $scope.params.container_serial = "*" + ($scope.containerSerialFilter || "") + "*";
-        $scope.params.container_type = "*" + ($scope.containerTypeFilter || "") + "*";
-        //debug: console.log("Request Audit Trail with params");
-        //debug: console.log($scope.params);
-    };
-
-    $scope.getAuditList = function (live_search) {
-        if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
-            $scope.getParams();
-            AuditFactory.get($scope.params, function(data) {
-                $scope.auditdata = data.result.value;
-                $scope.audit_columns = data.result.value.auditcolumns;
-                // We split the policies, which come as comma separated string to an array.
-                angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
-                    if ($scope.auditdata.auditdata[key].policies != null) {
-                        var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
-                        // Duplicates in a repeater are not allowed!
-                        var uniquePolnameList = [];
-                        angular.forEach(polname_list, function(pol, i){
-                            if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
-                        });
-                        $scope.auditdata.auditdata[key].policies = uniquePolnameList;
-                    }
-                    if (auditentry.serial != null) {
-                        auditentry.serial_list = auditentry.serial.split(",");
-                    }
-                });
-            });
+        // If the state is called with some filter values
+        if ($stateParams.serial) {
+            $scope.filter.serial = $stateParams.serial;
         }
-    };
+        if ($stateParams.user) {
+            $scope.filter.user = $stateParams.user;
+        }
 
-    // Change the pagination
-    $scope.pageChanged = function () {
-        //debug: console.log('Page changed to: ' + $scope.params.page);
-        $scope.getAuditList();
-    };
+        $scope.getParams = function () {
+            $scope.params.serial = "*" + ($scope.filter.serial || "") + "*";
+            $scope.params.user = "*" + ($scope.filter.user || "") + "*";
+            $scope.params.administrator = "*" + ($scope.filter.administrator || "") + "*";
+            $scope.params.token_type = "*" + ($scope.filter.type || "") + "*";
+            $scope.params.action = "*" + ($scope.filter.action || "") + "*";
+            $scope.params.success = "*" + ($scope.filter.success || "") + "*";
+            $scope.params.authentication = "*" + ($scope.filter.authentication || "") + "*";
+            $scope.params.action_detail = "*" + ($scope.filter.action_detail || "") + "*";
+            $scope.params.realm = "*" + ($scope.filter.realm || "") + "*";
+            $scope.params.resolver = "*" + ($scope.filter.resolver || "") + "*";
+            $scope.params.policies = "*" + ($scope.filter.policies || "") + "*";
+            $scope.params.client = "*" + ($scope.filter.client || "") + "*";
+            $scope.params.user_agent = "*" + ($scope.filter.user_agent || "") + "*";
+            $scope.params.user_agent_version = "*" + ($scope.filter.user_agent_version || "") + "*";
+            $scope.params.privacyidea_server = "*" + ($scope.filter.server || "") + "*";
+            $scope.params.info = "*" + ($scope.filter.info || "") + "*";
+            $scope.params.date = "*" + ($scope.filter.date || "") + "*";
+            $scope.params.startdate = "*" + ($scope.filter.startdate || "") + "*";
+            $scope.params.duration = "*" + ($scope.filter.duration || "") + "*";
+            $scope.params.container_serial = "*" + ($scope.filter.containerSerial || "") + "*";
+            $scope.params.container_type = "*" + ($scope.filter.containerType || "") + "*";
+            //debug: console.log("Request Audit Trail with params");
+            //debug: console.log($scope.params);
+        };
 
-    // download function
-    $scope.download = function () {
-        var filename = "audit.csv";
-        //debug: console.log("download audit log");
-        $scope.getParams();
-        AuditFactory.download($scope.params, filename, function(data){
-            alert("Data received.")
-        });
-    };
+        $scope.getAuditList = function (live_search) {
+            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
+                $scope.getParams();
+                AuditFactory.get($scope.params, function (data) {
+                    $scope.auditdata = data.result.value;
+                    $scope.audit_columns = data.result.value.auditcolumns;
+                    // We split the policies, which come as comma separated string to an array.
+                    angular.forEach($scope.auditdata.auditdata, function (auditentry, key) {
+                        if ($scope.auditdata.auditdata[key].policies != null) {
+                            const polname_list = $scope.auditdata.auditdata[key].policies.split(",");
+                            // Duplicates in a repeater are not allowed!
+                            let uniquePolnameList = [];
+                            angular.forEach(polname_list, function (pol, i) {
+                                if (uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
+                            });
+                            $scope.auditdata.auditdata[key].policies = uniquePolnameList;
+                        }
+                        if (auditentry.serial != null) {
+                            auditentry.serial_list = auditentry.serial.split(",");
+                        }
+                    });
+                });
+            }
+        };
 
-    if ($location.path() === "/audit") {
-        $location.path("/audit/log");
-    }
+        // Change the pagination
+        $scope.pageChanged = function () {
+            //debug: console.log('Page changed to: ' + $scope.params.page);
+            $scope.getAuditList();
+        };
 
-    if ($location.path() === "/audit/log") {
-        $scope.getAuditList();
-    }
+        // download function
+        $scope.download = function () {
+            const filename = "audit.csv";
+            //debug: console.log("download audit log");
+            $scope.getParams();
+            AuditFactory.download($scope.params, filename, function (data) {
+                alert("Data received.")
+            });
+        };
 
-    $scope.$on("piReload", function() {
+        if ($location.path() === "/audit") {
+            $location.path("/audit/log");
+        }
+
         if ($location.path() === "/audit/log") {
             $scope.getAuditList();
         }
-    });
 
-}]);
+        $scope.$on("piReload", function () {
+            if ($location.path() === "/audit/log") {
+                $scope.getAuditList();
+            }
+        });
+
+    }]);

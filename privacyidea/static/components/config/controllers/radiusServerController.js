@@ -29,34 +29,28 @@ myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
     if ($location.path() === "/config/radius") {
         $location.path("/config/radius/list");
     }
+    $scope.identifier = $stateParams.identifier;
+    $scope.params = {};
 
     // Get all servers
-    $scope.getRadiusServers = function (identifier) {
+    $scope.getRadiusServers = function () {
         ConfigFactory.getRadius(function(data) {
             $scope.radiusServers = data.result.value;
             //debug: console.log("Fetched all radius servers");
             //debug: console.log($scope.radiusServers);
             // return one single RADIUS server
-            if (identifier) {
-                $scope.params = $scope.radiusServers[identifier];
-                $scope.params["identifier"] = identifier;
+            if ($scope.identifier) {
+                // We are editing an existing radius server
+                $scope.params = $scope.radiusServers[$scope.identifier];
+                $scope.params["identifier"] = $scope.identifier;
+            }
+            else {
+                $scope.params = {};
             }
         });
     };
 
-    if ($location.path() === "/config/radius/list") {
-        // In the case of list, we fetch all radius servers
-        $scope.getRadiusServers();
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing RADIUS Server
-        $scope.getRadiusServers($scope.identifier);
-    } else {
-        // This is a new RADIUS Server or the list
-        $scope.params = { };
-    }
+    $scope.getRadiusServers();
 
     $scope.delRadiusServer = function (identifier) {
         ConfigFactory.delRadius(identifier, function(data) {
@@ -88,10 +82,22 @@ myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
             if (data.result.status === true) {
                 inform.add(gettextCatalog.getString("RADIUS Config saved."),
                                 {type: "info"});
+                $scope.deselectRadiusServer();
                 $state.go('config.radius.list');
                 $scope.reload();
             }
         });
+    };
+
+    $scope.deselectRadiusServer = function() {
+        $scope.params = {};
+        $scope.identifier = null;
+        $scope.getRadiusServers();
+    };
+
+    $scope.editRadiusServer = function(identifier) {
+        $scope.identifier = identifier;
+        $scope.getRadiusServers();
     };
 
     // listen to the reload broadcast

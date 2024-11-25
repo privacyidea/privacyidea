@@ -969,7 +969,7 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
-        # Determine, if we require presence
+        # Determine if require presence is enabled
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
@@ -994,7 +994,7 @@ class PushTokenClass(TokenClass):
                 # The data contains all selected options and the correct option at the end.
                 data = ",".join(current_presence_options + [correct_option])
             else:
-                # If the user has more than one token and more than one challenge is created, we need to ensure, that
+                # If the user has more than one token and more than one challenge is created, we need to ensure that
                 # all challenge data is the same.
                 data = get_challenges(transaction_id=transactionid)[0].data
                 current_presence_options = data.split(",")[:-1]  # The correct option is the last one, so we remove it

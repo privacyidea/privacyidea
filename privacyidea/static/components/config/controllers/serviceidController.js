@@ -24,36 +24,24 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
             $location.path("/config/serviceid/list");
         }
 
+        $scope.servicename = $stateParams.servicename;
+        if (!$scope.servicename) {
+            $scope.servicename = "";
+        }
+        $scope.params = {};
 
-        // Get all services
-        $scope.getServiceids = function () {
-            ConfigFactory.getServiceid("", function (data) {
+        $scope.getServiceIds = function () {
+            ConfigFactory.getServiceid($scope.servicename, function (data) {
                 $scope.serviceids = data.result.value;
+                if ($scope.servicename) {
+                    $scope.params.servicename = $scope.servicename;
+                    $scope.params.description = $scope.serviceids[$scope.servicename].description;
+                    $scope.params.id = $scope.serviceids[$scope.servicename].id;
+                }
             });
         };
-        // get one special service
-        $scope.getServiceid = function (sname) {
-            ConfigFactory.getServiceid(sname, function (data) {
-                let serviceids = data.result.value
-                $scope.params.servicename = sname;
-                $scope.params.description = serviceids[sname].description;
-                $scope.params.id = serviceids[sname].id;
-            });
-        }
 
-        if ($location.path() === "/config/serviceid/list") {
-            // In the case of list, we fetch all Service IDs
-            $scope.getServiceids();
-        }
-
-        $scope.servicename = $stateParams.servicename;
-        if ($scope.servicename) {
-            // We are editing an existing Service ID
-            $scope.getServiceid($scope.servicename);
-        } else {
-            // This is a new service
-            $scope.params = {};
-        }
+        $scope.getServiceIds();
 
         $scope.delServiceid = function (sname) {
             ConfigFactory.delServiceid(sname, function (data) {
@@ -66,12 +54,24 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Service ID saved."),
                         {type: "info"});
+                    $scope.deselectServiceId();
                     $state.go('config.serviceid.list');
                     $scope.reload();
                 }
             });
         };
 
+        $scope.deselectServiceId = function () {
+            $scope.servicename = "";
+            $scope.params = {};
+            $scope.getServiceIds();
+        };
+
+        $scope.editServiceId = function (serviceName) {
+            $scope.servicename = serviceName;
+            $scope.getServiceIds();
+        };
+
         // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getServiceids);
+        $scope.$on("piReload", $scope.getServiceIds);
     }]);

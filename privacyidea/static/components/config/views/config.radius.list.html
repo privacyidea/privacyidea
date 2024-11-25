@@ -11,7 +11,8 @@
         <tbody>
         <tr ng-repeat="(identifier, server) in radiusServers">
             <td>
-                <a ui-sref="config.radius.edit({identifier:identifier})">
+                <a ui-sref="config.radius.edit({identifier:identifier})"
+                   ng-click="editRadiusServer(identifier)">
                         {{ identifier }}</a>
             </td>
             <td>

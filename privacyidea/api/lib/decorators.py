@@ -41,8 +41,6 @@ def add_serial_from_response_to_g(wrapped_function):
             serial = response.json.get("detail", {}).get("serial")
             if serial:
                 g.serial = serial
-            return response
-        else:
-            return response
+        return response
 
     return function_wrapper

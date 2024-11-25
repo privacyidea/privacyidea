@@ -145,7 +145,6 @@ SUPPORTED_ATTESTATION_FORMATS = (
     ATTESTATION_FORMAT.NONE
 )
 
-
 REGISTERED_ATTESTATION_FORMATS = (
     ATTESTATION_FORMAT.PACKED,
     ATTESTATION_FORMAT.TPM,
@@ -240,7 +239,6 @@ ATTESTATION_LEVELS = (
     ATTESTATION_LEVEL.NONE
 )
 
-
 ATTESTATION_REQUIREMENT_LEVEL = {
     ATTESTATION_LEVEL.TRUSTED: {
         'self_attestation_permitted': False,
@@ -255,7 +253,6 @@ ATTESTATION_REQUIREMENT_LEVEL = {
         'none_attestation_permitted': True
     }
 }
-
 
 ATTESTATION_REQUIREMENT_LEVELS = (
     ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.TRUSTED],
@@ -1349,8 +1346,8 @@ class WebAuthnRegistrationResponse(object):
             if not _verify_authenticator_extensions(auth_data, self.expected_registration_authenticator_extensions):
                 raise RegistrationRejectedException('Unable to verify authenticator extensions.')
             if not _verify_client_extensions(
-                self.registration_response.get('registrationClientExtensions'),
-                self.expected_registration_client_extensions
+                    self.registration_response.get('registrationClientExtensions'),
+                    self.expected_registration_client_extensions
             ):
                 raise RegistrationRejectedException('Unable to verify client extensions.')
 
@@ -1498,7 +1495,7 @@ class WebAuthnAssertionResponse(object):
                  expected_assertion_client_extensions=None,
                  expected_assertion_authenticator_extensions=None):
         """
-        Create a new WebAUthnAssertionResponse object.
+        Create a new WebAuthnAssertionResponse object.
 
         :param webauthn_user: The WebAuthnUser used to create the assertion.
         :type webauthn_user: WebAuthnUser
@@ -1510,8 +1507,8 @@ class WebAuthnAssertionResponse(object):
         :type origin: basestring
         :param allow_credentials: Which existing credentials to allow for the authentication.
         :type allow_credentials: list of basestring
-        :param uv_required: Whether user verification is required.
-        :type uv_required: bool
+        :param uv_required: Whether user verification is required, preferred or discouraged.
+        :type uv_required: USER_VERIFICATION_LEVEL
         :param expected_assertion_client_extensions: A dict whose keys indicate which client extensions are expected.
         :type expected_assertion_client_extensions: dict
         :param expected_assertion_authenticator_extensions: A dict whose keys indicate which auth exts to expect.
@@ -1523,14 +1520,11 @@ class WebAuthnAssertionResponse(object):
         self.challenge = challenge
         self.origin = origin
         self.allow_credentials = allow_credentials
-        self.uv_required = uv_required
+        self.uv_required = uv_required or USER_VERIFICATION_LEVEL.PREFERRED
 
-        self.expected_assertion_client_extensions = expected_assertion_client_extensions \
-            if expected_assertion_client_extensions \
-            else DEFAULT_CLIENT_EXTENSIONS
-        self.expected_assertion_authenticator_extensions = expected_assertion_authenticator_extensions \
-            if expected_assertion_authenticator_extensions \
-            else DEFAULT_AUTHENTICATOR_EXTENSIONS
+        self.expected_assertion_client_extensions = expected_assertion_client_extensions or DEFAULT_CLIENT_EXTENSIONS
+        self.expected_assertion_authenticator_extensions = (expected_assertion_authenticator_extensions
+                                                            or DEFAULT_AUTHENTICATOR_EXTENSIONS)
 
         if not isinstance(webauthn_user, WebAuthnUser):
             raise ValueError('Invalid user type.')
@@ -1547,7 +1541,6 @@ class WebAuthnAssertionResponse(object):
         :return: The new sign count of the authenticated credential.
         :rtype: int
         """
-
         try:
             # Step 1.
             #
@@ -1652,7 +1645,8 @@ class WebAuthnAssertionResponse(object):
             #
             # If user verification is required for this assertion, verify that
             # the User Verified bit of the flags in authData is set.
-            if self.uv_required and not AuthenticatorDataFlags(a_data).user_verified:
+            if (self.uv_required == USER_VERIFICATION_LEVEL.REQUIRED
+                    and not AuthenticatorDataFlags(a_data).user_verified):
                 raise RegistrationRejectedException('Malformed request received.')
 
             # Step 14.
@@ -1671,8 +1665,8 @@ class WebAuthnAssertionResponse(object):
             if not _verify_authenticator_extensions(a_data, self.expected_assertion_authenticator_extensions):
                 raise AuthenticationRejectedException('Unable to verify authenticator extensions.')
             if not _verify_client_extensions(
-                self.assertion_response.get('assertionClientExtensions'),
-                self.expected_assertion_client_extensions
+                    self.assertion_response.get('assertionClientExtensions'),
+                    self.expected_assertion_client_extensions
             ):
                 raise AuthenticationRejectedException('Unable to verify client extensions.')
 
@@ -1785,7 +1779,6 @@ def _encode_public_key(public_key):
 
 
 def _load_cose_public_key(key_bytes):
-
     cose_public_key = cbor2.loads(key_bytes)
 
     if COSE_PUBLIC_KEY.ALG not in cose_public_key:
@@ -1970,7 +1963,7 @@ def _verify_client_extensions(client_extensions, expected_client_extensions):
     :rtype: bool
     """
     return not client_extensions \
-           or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
+        or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
 
 
 def _verify_authenticator_extensions(auth_data, expected_authenticator_extensions):

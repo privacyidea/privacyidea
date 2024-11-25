@@ -6,6 +6,17 @@
         View token in Audit log</a>
 </h3>
 
+<div ng-show="token.tokentype == 'passkey'">
+    <button ng-click="testPasskey()"
+            class="btn btn-primary"
+            translate>Test Passkey
+    </button>
+    <input autofocus type="text" id="username-field" autoComplete="username webauthn" ng-model="passkeyinput"/>
+    <div ng-show="loggedinUsername">
+        <p translate>Logged in as: {{ loggedinUsername }}</p>
+    </div>
+</div>
+
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
         <tr>
@@ -485,8 +496,7 @@
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
-
-                <button class="btn btn-primary" ng-disabled="!testPassword"
+                <button class="btn btn-primary" ng-disabled="!testPassword && token.tokentype != 'passkey'"
                         id="testOtpButton"
                         uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">
@@ -556,7 +566,6 @@
         </button>
     </div>
 </div>
-
 
 <div ng-show="checkRight('assign')">
     <h4 ng-hide="token.user_id || token.locked" translate>

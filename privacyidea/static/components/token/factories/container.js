@@ -70,15 +70,6 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             addTokenToContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["container_serial"] + "/add", {serial: params["serial"]}, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).then(function (response) {
-                    callback(response.data);
-                }, function (error) {
-                    AuthFactory.authError(error.data)
-                });
-            },
-            addAllTokensToContainer: function (params, callback) {
                 $http.post(containerUrl + "/" + params["container_serial"] + "/addall", {serial: params["serial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {

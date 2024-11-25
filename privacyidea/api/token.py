@@ -59,6 +59,7 @@ from flask import (Blueprint, request, g, current_app)
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from ..lib.tokenclass import ROLLOUTSTATE
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -71,10 +72,10 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_credential_ids_for_user)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
+from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError, ERROR)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -98,7 +99,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            sms_identifiers, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
+                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
@@ -152,7 +153,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(indexedsecret_force_attribute, request)
 @prepolicy(webauthntoken_allowed, request)
 @prepolicy(webauthntoken_request, request)
-@prepolicy(webauthntoken_enroll, request)
+@prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)
@@ -162,7 +163,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @log_with(log, log_entry=False)
 def init():
     """
-    create a new token.
+    Create a new token with the specified parameters.
 
     :jsonparam otpkey: required: the secret key of the token
     :jsonparam genkey: set to =1, if key should be generated. We either
@@ -293,77 +294,58 @@ def init():
     authentication.
     """
     response_details = {}
-    tokenrealms = None
     param = request.all_data
 
-    # check admin authorization
-    # user_tnum = len(getTokens4UserOrSerial(user))
-    # res = self.Policy.checkPolicyPre('admin', 'init', param, user=user,
-    #                                 options={'token_num': user_tnum})
-
-    # if no user is given, we put the token in all realms of the admin
-    # if user.login == "":
-    #    log.debug("setting tokenrealm %s" % res['realms'])
-    #    tokenrealm = res['realms']
-
     user = request.User
-    tokenobject = init_token(param,
-                             user,
-                             tokenrealms=tokenrealms)
+    token_object = init_token(param, user)
 
-    if tokenobject:
+    if token_object:
         g.audit_object.log({"success": True})
+
+        # If the token is a fido2 token, find all already enrolled fido2 token for the user
+        # to avoid registering the same authenticator multiple times
+        if (token_object.get_type() in ["passkey", "webauthn"]
+                and token_object.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+            param["registered_credential_ids"] = get_credential_ids_for_user(user)
+
         # The token was created successfully, so we add token specific
         # init details like the Google URL to the response
-        init_details = tokenobject.get_init_detail(param, user)
-        response_details.update(init_details)
+        try:
+            init_details = token_object.get_init_detail(param, user)
+            response_details.update(init_details)
+        except ParameterError as e:
+            if e.id is ERROR.PARAMETER_USER_MISSING:
+                remove_token(serial=token_object.get_serial())
+            raise e
+
         # Check if a containerSerial is set and assign the token to the container
-        if "container_serial" in param:
-            container_serial = param.get("container_serial")
-            # check if user is allowed to add tokens to containers
+        container_serial = param.get("container_serial", {})
+        if container_serial:
+            # Check if user is allowed to add tokens to containers
             try:
                 container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
-                log.info(f"User {user.login} is not allowed to add token {tokenobject.get_serial()} to container "
+                log.info(f"User {user.login} is not allowed to add token {token_object.get_serial()} to container "
                          f"{container_serial}.")
             if container_add_token_right:
-                # TODO should this be caught here? The enrollment should not be blocked by the error?
+                # The enrollment will not be blocked if there is problem adding the new token to a container
+                # there will just be a warning in the log
                 try:
                     logged_in_user_role = g.logged_in_user.get("role")
-                    add_token_to_container(container_serial, tokenobject.get_serial(), user, logged_in_user_role)
+                    add_token_to_container(container_serial, token_object.get_serial(), user, logged_in_user_role)
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
                     g.audit_object.log({"container_serial": container_serial,
                                         "container_type": container.type})
                 except ResourceNotFoundError:
                     log.warning(f"Container with serial {container_serial} not found while enrolling token "
-                                f"{tokenobject.get_serial()}.")
+                                f"{token_object.get_serial()}.")
 
     g.audit_object.log({'user': user.login,
                         'realm': user.realm,
-                        'serial': tokenobject.token.serial,
-                        'token_type': tokenobject.token.tokentype})
-
-    # logTokenNum()
-
-    # setting the random PIN
-    # randomPINLength = self.Policy.getRandomOTPPINLength(user)
-    # if randomPINLength > 0:
-    #    newpin = self.Policy.getRandomPin(randomPINLength)
-    #    log.debug("setting random pin for token with serial "
-    #              "%s and user: %s" % (serial, user))
-    #    setPin(newpin, None, serial)
-
-    # finally we render the info as qr immage, if the qr parameter
-    # is provided and if the token supports this
-    # if 'qr' in param and tokenobject is not None:
-    #    (rdata, hparam) = tokenobject.getQRImageData(response_detail)
-    #    hparam.update(response_detail)
-    #    hparam['qr'] = param.get('qr') or 'html'
-    #    return sendQRImageResult(response, rdata, hparam)
-    # else:
-    #    return sendResult(response, ret, opt=response_detail)
+                        'serial': token_object.token.serial,
+                        'token_type': token_object.token.tokentype})
 
     return send_result(True, details=response_details)
 

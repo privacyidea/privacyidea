@@ -66,7 +66,7 @@ class event(object):
                                               eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
-                # The "action is determined by the event configuration
+                # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request,
                            "g": self.g,
@@ -108,7 +108,7 @@ class event(object):
                                               eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
-                # The "action is determined by the event configuration
+                # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request,
                            "g": self.g,

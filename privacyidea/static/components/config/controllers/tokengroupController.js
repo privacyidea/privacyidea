@@ -24,21 +24,25 @@ myApp.controller("tokengroupController", ["$scope", "$stateParams", "inform",
             $location.path("/config/tokengroup/list");
         }
 
-
         // Get all groups
         $scope.getTokengroups = function () {
             ConfigFactory.getTokengroup("", function (data) {
                 $scope.tokengroups = data.result.value;
             });
         };
+
         // get one special group
-        $scope.getTokengroup = function (groupname) {
-            ConfigFactory.getTokengroup(groupname, function (data) {
-                let group = data.result.value
-                $scope.params.groupname = groupname;
-                $scope.params.description = group[groupname].description;
-                $scope.params.id = group[groupname].id;
-            });
+        $scope.groupname = $stateParams.groupname;
+        $scope.params = {};
+        $scope.getTokengroup = function () {
+            if ($scope.groupname) {
+                ConfigFactory.getTokengroup($scope.groupname, function (data) {
+                    let group = data.result.value
+                    $scope.params.groupname = $scope.groupname;
+                    $scope.params.description = group[$scope.groupname].description;
+                    $scope.params.id = group[$scope.groupname].id;
+                });
+            }
         }
 
         if ($location.path() === "/config/tokengroup/list") {
@@ -46,13 +50,9 @@ myApp.controller("tokengroupController", ["$scope", "$stateParams", "inform",
             $scope.getTokengroups();
         }
 
-        $scope.groupname = $stateParams.groupname;
         if ($scope.groupname) {
             // We are editing an existing Tokengroup
             $scope.getTokengroup($scope.groupname);
-        } else {
-            // This is a new tokengroup
-            $scope.params = {};
         }
 
         $scope.delTokengroup = function (groupname) {
@@ -66,12 +66,24 @@ myApp.controller("tokengroupController", ["$scope", "$stateParams", "inform",
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Tokengroup saved."),
                         {type: "info"});
+                    $scope.deselectTokenGroup();
                     $state.go('config.tokengroup.list');
                     $scope.reload();
                 }
             });
         };
 
+        $scope.deselectTokenGroup = function () {
+            $scope.groupname = null;
+            $scope.params = {};
+        };
+
+        $scope.editTokengroup = function (groupName) {
+            $scope.groupname = groupName;
+            $scope.getTokengroup();
+        };
+
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getTokengroups);
+        $scope.$on("piReload", $scope.getTokengroup);
     }]);

@@ -953,8 +953,9 @@ def check_verify_enrollment(request, response):
         return response
 
     verify = request.all_data.get("verify")
-    if verify:
-        # In case we are in a 2nd step verification, we must early exit
+    two_step = request.all_data.get("2stepinit")
+    if verify or two_step:
+        # In case we are in the 2nd step of verification or 2step-enrollment, we must exit early
         return response
     tokenobj_list = get_tokens(serial=serial)
     if len(tokenobj_list) == 1:

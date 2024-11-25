@@ -11,8 +11,8 @@ import mock
 
 from mock import patch
 
-from privacyidea.lib.container import init_container, find_container_by_serial, get_all_containers, \
-    delete_container_by_serial, add_token_to_container
+from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
+                                       delete_container_by_serial, add_token_to_container)
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE,
@@ -1072,14 +1072,11 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
 
-        options = {"g": {},
-                   "handler_def": {},
-                   "request": req,
-                   "response": resp}
+        options = {"g": {}, "request": req, "response": resp,
+                   'handler_def': {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}}
 
         # Container has no token
         # Check if the condition matches
-        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
@@ -1103,6 +1100,68 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Clean up
         delete_container_by_serial(container_serial, User(), "admin")
         remove_token(token_serial)
+
+    def test_17_user_token_number(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        init_token({"serial": "pw01", "type": "pw", "otppin": "test", "otpkey": "secret"}, user=user)
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+    def test_18_compare_condition_no_int(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        # If the condition is not an integer, the error when converting is caught and false is returned
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: ">notaninteger"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -2082,7 +2141,6 @@ class ContainerEventTestCase(MyTestCase):
         containers = get_all_containers()['containers']
         self.assertEqual(1, len(containers))
         self.assertEqual(0, len(containers[0].get_tokens()))
-
 
     def test_02_delete_container(self):
         # create container
@@ -3673,7 +3731,8 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to \'https://test.com\' with the text: \'This is a test\''
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3687,7 +3746,8 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to \'https://test.com\' with the text: \'This is a test\''
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3712,7 +3772,9 @@ class WebhookTestCase(MyTestCase):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": "You can replace placeholder like {logged_in_user}"
+                "description": "You can use the following placeholders: {logged_in_user}, {realm}, {surname}, "
+                               "{token_owner}, {user_realm}, {token_serial}. "
+                               "However, tag availability is depending on the endpoint."
             },
             "data": {
                 "type": "str",
@@ -3782,7 +3844,38 @@ class WebhookTestCase(MyTestCase):
         self.assertFalse(res)
 
     @patch('requests.post')
-    def test_06_replace_function(self, mock_post):
+    def test_06_replace_function_json(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            data = '{"{realm}": {"{realm}": {"{realm}": "This is {logged_in_user} from realm {realm}"}}}'
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.JSON,
+                                       "replace":
+                                           True,
+                                       "data": data
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'http://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_07_replace_function_urlencoded(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
@@ -3803,13 +3896,13 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
                 'https://test.com', 'This is hans from realm realm1')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_07_replace_function_error(self, mock_post):
+    def test_08_replace_function_error(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3833,10 +3926,14 @@ class WebhookTestCase(MyTestCase):
                 options = {"g": g,
                            "request": req,
                            "handler_def": {
-                               "options": {"URL": 'https://test.com',
-                                           "content_type": CONTENT_TYPE.JSON,
-                                           "replace": True,
-                                           "data": '{token_serial} {token_owner} {unknown_tag}'
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               '{"{token_serial}": "{token_owner} {unknown_tag}"}'
                                            }
                            }
                            }
@@ -3844,13 +3941,13 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
                                          " Please check the webhooks data option.")
-                text = ('A webhook is send to \'https://test.com\' with the text: '
-                        '\'{token_serial} {token_owner} {unknown_tag}\'')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'http://test.com', '{"{token_serial}": "{token_owner} {unknown_tag}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_typo(self, mock_post):
+    def test_09_replace_function_typo(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3874,10 +3971,14 @@ class WebhookTestCase(MyTestCase):
                 options = {"g": g,
                            "request": req,
                            "handler_def": {
-                               "options": {"URL": 'https://test.com',
-                                           "content_type": CONTENT_TYPE.JSON,
-                                           "replace": True,
-                                           "data": 'The token serial is {token_seril}'
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               '{"text": "The token serial is {token_seril}"}'
                                            }
                            }
                            }
@@ -3885,7 +3986,7 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
                                          " Please check the webhooks data option.")
-                text = ('A webhook is send to \'https://test.com\' with the text: '
-                        '\'The token serial is {token_seril}\'')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'http://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)

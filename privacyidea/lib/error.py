@@ -57,6 +57,7 @@ class ERROR:
     SERVER = 903
     USER = 904
     PARAMETER = 905
+    PARAMETER_USER_MISSING = 9051
 
 
 class privacyIDEAError(Exception):

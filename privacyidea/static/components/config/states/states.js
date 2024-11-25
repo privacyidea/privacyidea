@@ -251,11 +251,14 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.smsgateway.edit', {
                     url: "/edit/:gateway_id",
-                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "smsgatewayDetailsController",
+                    params: { gateway_id: null }
                 })
                 .state('config.smsgateway.add', {
                     url: "/edit/",
-                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "smsgatewayDetailsController"
                 })
                 .state('config.radius', {
                     url: "/radius",

@@ -785,7 +785,7 @@ def reduce_realms(all_realms, policies):
 
 def is_true(value):
     """
-    Returns True is the value is 1, "1", True or "true"
+    Returns True if the value is 1, "1", True,"True", "true" or "TRUE"
 
     :param value: string or integer
     :return: Boolean
@@ -1301,9 +1301,11 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
-        if obj:
+        if obj and obj != AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.ACCEPT
-        elif not obj and details.get("multi_challenge"):
+        elif obj and obj == AUTH_RESPONSE.CHALLENGE:
+            r_authentication = AUTH_RESPONSE.CHALLENGE
+        elif not obj and details.get("multi_challenge") or details.get("passkey"):
             # We have a challenge authentication
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
@@ -1492,44 +1494,6 @@ def parse_string_to_dict(s, split_char=":"):
     values = [[x for x in y.split()] for y in packed_list[1::2]]
     d = {a: b for a, b in zip(keys, values)}
     return d
-
-
-def replace_function_event_handler(text, token_serial=None, tokenowner=None, logged_in_user=None):
-    if logged_in_user is not None:
-        login = logged_in_user.login
-        realm = logged_in_user.realm
-    else:
-        login = ""
-        realm = ""
-
-    if tokenowner is not None:
-        surname = tokenowner.info.get("surname")
-        givenname = tokenowner.info.get("givenname")
-        userrealm = tokenowner.realm
-    else:
-        surname = ""
-        givenname = ""
-        userrealm = ""
-
-    if token_serial is not None:
-        token_serial = token_serial
-    else:
-        token_serial = ""  # nosec B105 # Reset serial
-
-    try:
-        attributes = {
-            "logged_in_user": login,
-            "realm": realm,
-            "surname": surname,
-            "token_owner": givenname,
-            "user_realm": userrealm,
-            "token_serial": token_serial
-        }
-        new_text = text.format(**attributes)
-        return new_text
-    except(ValueError, KeyError) as err:
-        log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
-        return text
 
 
 def convert_imagefile_to_dataimage(imagepath):

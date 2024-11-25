@@ -59,38 +59,39 @@ tokenclass implementations like lib.tokens.hotptoken)
 This is the middleware/glue between the HTTP API and the database
 """
 
-import traceback
-import string
 import datetime
-import os
+import hashlib
 import logging
+import os
+import string
+import traceback
 from collections import defaultdict
 
-from sqlalchemy import and_, func, or_, select
+from dateutil.tz import tzlocal
+from flask_babel import lazy_gettext
+from sqlalchemy import (and_, func)
+from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import FunctionElement
+from sqlalchemy.sql.expression import FunctionElement
+from webauthn import base64url_to_bytes
+from webauthn.helpers import bytes_to_base64url
 
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.error import (TokenAdminError,
-                                   ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
-from privacyidea.lib.decorators import (check_user_or_serial,
-                                        check_copy_serials)
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode,
-                                   check_serial_valid, create_tag_dict)
-from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.log import log_with
-from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
-                                TokenInfo, TokenOwner, TokenTokengroup,
-                                Tokengroup, TokenContainer, TokenContainerToken)
+from privacyidea.api.lib.utils import get_required, get_optional
+from privacyidea.lib import _
+from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
+                                                         generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
-from privacyidea.lib.user import User
-from privacyidea.lib import _
-from privacyidea.lib.realm import realm_is_defined, get_realms
-from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.crypto import geturandom, get_rand_digit_str
+from privacyidea.lib.decorators import (check_user_or_serial,
+                                        check_copy_serials)
+from privacyidea.lib.error import (TokenAdminError,
+                                   ParameterError,
+                                   privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
@@ -101,12 +102,18 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               config_lost_token,
                                               reset_all_user_tokens, force_challenge_response)
-from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
-                                                         generic_challenge_response_resync)
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.realm import realm_is_defined, get_realms
+from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
 from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.user import User
 from privacyidea.lib.user import get_username
-from dateutil.tz import tzlocal
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
+from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
+                                TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
+                                TokenContainerToken)
+from privacyidea.models import (db)
 
 log = logging.getLogger(__name__)
 
@@ -500,7 +507,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
 
     :param tokentype: The type of the token. If None, all tokens are returned.
     :type tokentype: basestring
-    :param token_type_list: A list of token types. I None or empty, all token types are returned.
+    :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
@@ -1159,10 +1166,9 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None,
-               tokenkind=None):
+def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
-    create a new token or update an existing token
+    Create a new token or update an existing token with the specified parameters.
 
     :param param: initialization parameters like
 
@@ -1184,21 +1190,18 @@ def init_token(param, user=None, tokenrealms=None,
     :return: token object or None
     :rtype: TokenClass
     """
-    db_token = None
-    tokenobject = None
-
     token_type = param.get("type") or "hotp"
-    serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
-    check_serial_valid(serial)
-    realms = []
-
-    # unsupported token type
+    # Check for unsupported token type
     token_types = get_token_types()
     if token_type.lower() not in token_types:
         log.error('type {0!r} not found in tokentypes: {1!r}'.format(token_type, token_types))
         raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(token_type), id=1610)
 
-    # Check, if a token with this serial already exist
+    serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
+    check_serial_valid(serial)
+    realms = []
+
+    # Check if a token with this serial already exists and
     # create a list of the found tokens
     tokenobject_list = get_tokens(serial=serial)
     token_count = len(tokenobject_list)
@@ -1209,7 +1212,7 @@ def init_token(param, user=None, tokenrealms=None,
     else:
         # The token already exist, so we update the token
         db_token = tokenobject_list[0].token
-        # prevent from changing the token type
+        # Make sure the type is not changed between the initialization and the update
         old_type = db_token.tokentype
         if old_type.lower() != token_type.lower():
             msg = ('token %r already exist with type %r. '
@@ -1219,14 +1222,14 @@ def init_token(param, user=None, tokenrealms=None,
             log.error(msg)
             raise TokenAdminError(_("initToken failed: {0!s}").format(msg))
 
-    # if there is a realm as parameter (and the realm is not empty), but no
+    # If there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
     if param.get("realm") and 'user' not in param:
         realms.append(param.get("realm"))
-    # Assign the token to all tokenrealms
+
+    # Assign the token to all tokenrealms and to the user realm
     if tokenrealms and isinstance(tokenrealms, list):
         realms.extend(tokenrealms)
-    # and to the user realm
     if user and user.realm:
         realms.append(user.realm)
 
@@ -1235,11 +1238,11 @@ def init_token(param, user=None, tokenrealms=None,
         if token_count == 0:
             db_token.save()
 
-        # the tokenclass object is created
+        # The tokenclass object is created
         tokenobject = create_tokenclass_object(db_token)
 
         if token_count == 0:
-            # if this token is a newly created one, we have to setup the defaults,
+            # If this token is a newly created one, we have to set up the defaults,
             # which later might be overwritten by the tokenobject.update(param)
             tokenobject.set_defaults()
 
@@ -1256,13 +1259,12 @@ def init_token(param, user=None, tokenrealms=None,
     except Exception as e:
         log.error('token create failed: {0!s}'.format(e))
         log.debug("{0!s}".format(traceback.format_exc()))
-        # delete the newly created token from the db
+        # Delete the newly created token from the db
         if token_count == 0:
             db_token.delete()
         raise
 
-    # We only set the tokenkind here, if it was explicitly set in the
-    # init_token call.
+    # We only set the tokenkind here, if it was explicitly set in the init_token call.
     # In all other cases it is set in the update method of the tokenclass.
     if tokenkind:
         tokenobject.add_tokeninfo("tokenkind", tokenkind)
@@ -2259,7 +2261,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
-                    transactionid=transaction_id, options=options)
+                transactionid=transaction_id, options=options)
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
@@ -2274,15 +2276,12 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 next_pin = token_obj.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
-                    challenge_info["pin_change"] = \
-                        token_obj.is_pin_change()
+                    challenge_info["pin_change"] = token_obj.is_pin_change()
                 next_passw = token_obj.get_tokeninfo(
                     "next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
-                    challenge_info["password_change"] = \
-                        token_obj.is_pin_change(
-                            password=True)
+                    challenge_info["password_change"] = token_obj.is_pin_change(password=True)
                 # FIXME: This is deprecated and should be remove one day
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
@@ -2491,7 +2490,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         further_challenge = False
         for token_object in challenge_response_token_list:
             if token_object.check_challenge_response(passw=passw,
-                                                    options=options) >= 0:
+                                                     options=options) >= 0:
                 reply_dict["serial"] = token_object.token.serial
                 matching_challenge = True
                 messages = []
@@ -2843,11 +2842,11 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
 
 def challenge_text_replace(message, user, token_obj):
     serial = token_obj.token.serial if token_obj.token.serial else None
-    tokenowner = user if user else None
-    tokentype = token_obj.token.tokentype if token_obj.token.tokentype else ""
-    tags = create_tag_dict(serial=serial, tokenowner=tokenowner, tokentype=tokentype)
+    token_owner = user if user else None
+    token_type = token_obj.token.tokentype if token_obj.token.tokentype else ""
+    tags = create_tag_dict(serial=serial, tokenowner=token_owner, tokentype=token_type)
 
-    if tokentype == "sms":
+    if token_type == "sms":
         if is_true(token_obj.get_tokeninfo("dynamic_phone")):
             phone = token_obj.user.get_user_phone("mobile")
             if isinstance(phone, list) and phone:
@@ -2855,10 +2854,10 @@ def challenge_text_replace(message, user, token_obj):
                 phone = phone[0]
         else:
             phone = token_obj.get_tokeninfo("phone")
-        if phone is not None:
+        if phone:
             tags["phone"] = phone
 
-    if tokentype == "email":
+    if token_type == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
             email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
             if isinstance(email, list) and email:
@@ -2866,8 +2865,102 @@ def challenge_text_replace(message, user, token_obj):
                 email = email[0]
         else:
             email = TokenClass.get_tokeninfo(token_obj, token_obj.EMAIL_ADDRESS_KEY)
-        if email is not None:
+        if email:
             tags["email"] = email
 
     message = message.format_map(defaultdict(str, tags))
     return message
+
+
+def find_fido2_token_by_credential_id(credential_id: str):
+    """
+    Find a fido2 token (WebAuthn or Passkey) by the credential_id.
+
+    :param credential_id: The credential_id as returned by an authenticator
+    :return: The token object
+    """
+    h = hashlib.sha256(base64url_to_bytes(credential_id))
+    cred_id_hash = h.hexdigest()
+    try:
+        token_id = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
+                    .filter(TokenInfo.Value == cred_id_hash).first().token_id)
+        token = Token.query.filter(Token.id == token_id).first()
+        return create_tokenclass_object(token)
+    except Exception as ex:
+        log.warning(f"Failed to find credential with id: {credential_id}. {ex}")
+        raise ResourceNotFoundError(f"Failed to find credential with id: {credential_id}. {ex}")
+
+
+def get_fido2_nonce() -> str:
+    """
+    Generate a random 32 byte nonce for fido2 challenges. The nonce is encoded in base64url.
+    """
+    return bytes_to_base64url(geturandom(32))
+
+
+def create_fido2_challenge(rp_id: str) -> dict:
+    """
+    Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
+    the credential_id that returned with the response to this challenge.
+    The returned dict has the format:
+    {
+        "transaction_id": "12345678901234567890",
+        "challenge": <32 random bytes base64url encoded>,
+        "rpId": "example.com",
+        "message": "Please authenticate with your Passkey!"
+    }
+    The challenge nonce is encoded in base64url.
+    """
+    challenge = get_fido2_nonce()
+    transaction_id = get_rand_digit_str(20)
+    message = lazy_gettext("Please authenticate with your Passkey!")
+
+    db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
+    db_challenge.save()
+    return {
+        "transaction_id": transaction_id,
+        "challenge": challenge,
+        "message": message,
+        "rpId": rp_id
+    }
+
+
+def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> int:
+    """
+    Verify the response for a fido2 challenge with the given token.
+    Params is required to have the keys:
+    - authenticatorData
+    - clientDataJSON
+    - signature
+    - userHandle
+    - HTTP_ORIGIN
+    """
+    db_challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
+    if not db_challenge:
+        raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
+    options = {
+        "challenge": db_challenge.challenge,
+        "authenticatorData": get_required(params, "authenticatorData"),
+        "clientDataJSON": get_required(params, "clientDataJSON"),
+        "signature": get_required(params, "signature"),
+        "userHandle": get_required(params, "userHandle"),
+        "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
+        "user_verification": get_optional(params, "webauthn_user_verification_requirement", "preferred")
+    }
+    return token.check_otp(None, options=options)
+
+
+def get_credential_ids_for_user(user: User) -> list:
+    """
+    Get a list of credential ids of passkey or webauthn token for a user.
+    Can be used to avoid double registration of an authenticator
+
+    :param user: The user object
+    :return: A list of credential ids
+    """
+    credential_ids = []
+    for token in get_tokens(user=user, token_type_list=["passkey"]):
+        if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+            cred_id = token.token.get_otpkey().getKey().decode("utf-8")
+            credential_ids.append(cred_id)
+    return credential_ids

@@ -254,9 +254,8 @@ angular.module("privacyideaApp")
                             $state.go("response");
                         }
                         inform.add(gettextCatalog.getString("Challenge Response " +
-                                "Authentication. You" +
-                                " are not completely authenticated, yet."),
-                            {type: "warning", ttl: 5000});
+                                "Authentication. " + data.detail.message),
+                            {type: "warning", ttl: 60000});
                         $scope.hideResponseInput = true;
                         $scope.u2fSignRequests = Array();
                         $scope.webAuthnSignRequests = [];
@@ -650,6 +649,10 @@ angular.module("privacyideaApp")
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
             };
+
+            $scope.login.username = "admin";
+            $scope.login.password = "admin";
+            $scope.authenticate();
 
         }]);
 

@@ -25,123 +25,123 @@
                 <th ng-show="audit_columns.includes('number')"><translate>number</translate></th>
                 <th ng-show="audit_columns.includes('startdate')"
                     class="pifilter"><translate>startdate</translate>
-                    <pi-filter ng-model="startdateFilter"
+                    <pi-filter ng-model="filter.startdate"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('date')"
                     class="pifilter"><translate>enddate</translate>
-                    <pi-filter ng-model="dateFilter"
+                    <pi-filter ng-model="filter.date"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('duration')"
                     class="pifilter"><translate>duration</translate>
-                    <pi-filter ng-model="durationFilter"
+                    <pi-filter ng-model="filter.duration"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('action')"
                     class="pifilter"><translate>action</translate>
-                    <pi-filter ng-model="actionFilter"
+                    <pi-filter ng-model="filter.action"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('success')"
                     class="pifilter"><translate>success</translate>
-                    <pi-filter ng-model="successFilter"
+                    <pi-filter ng-model="filter.success"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('authentication')"
                     class="pifilter"><translate>authentication</translate>
-                    <pi-filter ng-model="authenticationFilter"
+                    <pi-filter ng-model="filter.authentication"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('action_detail')"
                     class="pifilter"><translate>action detail</translate>
-                    <pi-filter ng-model="action_detailFilter"
+                    <pi-filter ng-model="filter.action_detail"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('serial')"
                     class="pifilter"><translate>serial</translate>
-                    <pi-filter ng-model="serialFilter"
+                    <pi-filter ng-model="filter.serial"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return"></pi-filter>
                 </th>
                 <th ng-show="audit_columns.includes('token_type')"
                     class="pifilter"><translate>token type</translate>
-                    <pi-filter ng-model="typeFilter"
+                    <pi-filter ng-model="filter.type"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('container_serial')"
                     class="piFilter">
                     <translate> Container Serial </translate>
-                    <pi-filter ng-model="containerSerialFilter"
+                    <pi-filter ng-model="filter.containerSerial"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('container_type')"
                     class="piFilter">
                     <translate> Container Type </translate>
-                    <pi-filter ng-model="containerTypeFilter"
+                    <pi-filter ng-model="filter.containerType"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('administrator')"
                     class="pifilter"><translate>administrator</translate>
-                    <pi-filter ng-model="administratorFilter"
+                    <pi-filter ng-model="filter.administrator"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('user')"
                     class="pifilter"><translate>user</translate>
-                    <pi-filter ng-model="userFilter"
+                    <pi-filter ng-model="filter.user"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('realm')"
                     class="pifilter"><translate>realm</translate>
-                    <pi-filter ng-model="realmFilter"
+                    <pi-filter ng-model="filter.realm"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('resolver')"
                     class="pifilter"><translate>resolver</translate>
-                    <pi-filter ng-model="resolverFilter"
+                    <pi-filter ng-model="filter.resolver"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('policies') && loggedInUser.role == 'admin'"
                     class="pifilter"><translate>policies</translate>
-                    <pi-filter ng-model="policiesFilter"
+                    <pi-filter ng-model="filter.policies"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('client')"
                     class="pifilter"><translate>client</translate>
-                    <pi-filter ng-model="clientFilter"
+                    <pi-filter ng-model="filter.client"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('user_agent')"
                     class="pifilter"><translate>user agent</translate>
-                    <pi-filter ng-model="user_agentFilter"
+                    <pi-filter ng-model="filter.user_agent"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('user_agent_version')"
                     class="pifilter"><translate>user agent version</translate>
-                    <pi-filter ng-model="user_agent_versionFilter"
+                    <pi-filter ng-model="filter.user_agent_version"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('info')"
                     class="pifilter"><translate>info</translate>
-                    <pi-filter ng-model="infoFilter"
+                    <pi-filter ng-model="filter.info"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
@@ -152,7 +152,7 @@
                 <th ng-show="audit_columns.includes('log_level')" translate>log level</th>
                 <th ng-show="audit_columns.includes('privacyidea_server')"
                     class="pifilter"><translate>privacyidea server</translate>
-                    <pi-filter ng-model="serverFilter"
+                    <pi-filter ng-model="filter.server"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>

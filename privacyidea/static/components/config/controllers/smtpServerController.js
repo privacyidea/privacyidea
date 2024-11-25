@@ -26,17 +26,32 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
         if ($location.path() === "/config/smtp") {
             $location.path("/config/smtp/list");
         }
+        $scope.identifier = $stateParams.identifier;
+        $scope.params = {
+                tls: true,
+                port: 25,
+                timeout: 10
+            }
 
         // Get all servers
-        $scope.getSmtpServers = function (identifier) {
+        $scope.getSmtpServers = function () {
             ConfigFactory.getSmtp(function (data) {
                 $scope.smtpServers = data.result.value;
                 //debug: console.log("Fetched all smtp servers");
                 //debug: console.log($scope.smtpServers);
                 // return one single smtp server
-                if (identifier) {
-                    $scope.params = $scope.smtpServers[identifier];
-                    $scope.params["identifier"] = identifier;
+                if ($scope.identifier) {
+                    // We are editing an existing SMTP Server
+                    $scope.params = $scope.smtpServers[$scope.identifier];
+                    $scope.params["identifier"] = $scope.identifier;
+                }
+                else {
+                    // This is a new SMTP server
+                    $scope.params = {
+                        tls: true,
+                        port: 25,
+                        timeout: 10
+                    };
                 }
             });
         };
@@ -44,19 +59,6 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
         if ($location.path() === "/config/smtp/list") {
             // in case of list we fetch all smtp servers
             $scope.getSmtpServers();
-        }
-
-        $scope.identifier = $stateParams.identifier;
-        if ($scope.identifier) {
-            // We are editing an existing SMTP Server
-            $scope.getSmtpServers($scope.identifier);
-        } else {
-            // This is a new SMTP server
-            $scope.params = {
-                tls: true,
-                port: 25,
-                timeout: 10
-            }
         }
 
         $scope.delSmtpServer = function (identifier) {
@@ -86,10 +88,27 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("SMTP Config saved."),
                         {type: "info"});
+                    $scope.deselectSMTPServer();
                     $state.go('config.smtp.list');
                     $scope.reload();
                 }
             });
+        };
+
+        $scope.deselectSMTPServer = function () {
+            $scope.identifier = null;
+            $scope.params = {
+                tls: true,
+                port: 25,
+                timeout: 10
+            };
+            $scope.getSmtpServers();
+        };
+
+        $scope.editSMTPServer = function (identifier) {
+            //$state.go('config.smtp.edit');
+            $scope.identifier = identifier;
+            $scope.getSmtpServers();
         };
 
         // listen to the reload broadcast

@@ -335,7 +335,8 @@ angular.module("privacyideaApp")
             $scope.containerSelected = false;
             // Enable the button only if a container is selected
             $scope.$watch('containerSerial', function (newValue, oldValue) {
-                $scope.containerSelected = (newValue != null && newValue != undefined && newValue != "createnew");
+                $scope.containerSelected = (newValue !== null && newValue !== undefined
+                    && newValue != "createnew" && newValue != "none");
             });
 
             // Selection looks like this {"TOTP0001B29F":{"totp":true}, "OATH0002EB1F":{"hotp":false}}
@@ -380,10 +381,9 @@ angular.module("privacyideaApp")
                 }
                 let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
                 ContainerFactory.addTokenToContainer(params, function (data) {
-
+                    // Reload the token to show the container
+                    $scope._getUserToken();
                 });
-                // Reload the token to show the container
-                $scope._getUserToken();
                 $scope.showTokenOfUser = true;
                 $scope.containerSerial = null;
             };

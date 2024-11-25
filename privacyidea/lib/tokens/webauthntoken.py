@@ -21,7 +21,6 @@
 
 import binascii
 
-from OpenSSL import crypto
 from cryptography import x509
 
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
@@ -29,7 +28,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
@@ -462,7 +461,7 @@ DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
 DEFAULT_TIMEOUT = 60
 DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
-DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
+DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss', 'rsassa-pkcs1v1_5']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
 DEFAULT_CHALLENGE_TEXT_AUTH = lazy_gettext('Please confirm with your WebAuthn token ({0!s})')
@@ -766,7 +765,7 @@ class WebAuthnTokenClass(TokenClass):
     @staticmethod
     def get_setting_type(key):
         """
-        Fetch the type of a setting specific to WebAuthn tokens.
+        Fetch the type of setting specific to WebAuthn tokens.
 
         The WebAuthn token defines several public settings. When these are
         written to the database, the type of the setting is automatically
@@ -865,7 +864,7 @@ class WebAuthnTokenClass(TokenClass):
             try:
                 http_origin = getParam(param, "HTTP_ORIGIN", required, allow_empty=False)
             except ParameterError:
-                raise ValueError("The ORIGIN HTTP header must be included, when enrolling a new WebAuthn token.")
+                raise ValueError("The ORIGIN HTTP header must be included when enrolling a new WebAuthn token.")
 
             challengeobject_list = [
                 challengeobject
@@ -903,7 +902,8 @@ class WebAuthnTokenClass(TokenClass):
                     uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
                 ).verify([
                     # TODO: this might get slow when a lot of webauthn tokens are registered
-                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if token.get_serial() != self.get_serial()
+                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if
+                    token.get_serial() != self.get_serial()
                 ])
             except Exception as e:
                 log.warning('Enrollment of {0!s} token failed: '
@@ -975,8 +975,8 @@ class WebAuthnTokenClass(TokenClass):
             if not params:
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
-                raise ParameterError("Failed to create a WebAuhn token."
-                                     "Creating a WebAuthn token requires user to be provided")
+                raise ParameterError("User must be provided for WebAuthn enrollment!",
+                                     id=ERROR.PARAMETER_USER_MISSING)
 
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
@@ -1178,7 +1178,7 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        dataimage = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
+        dataimage = ""  # convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
                                      "img": dataimage},
@@ -1216,6 +1216,31 @@ class WebAuthnTokenClass(TokenClass):
             user_handle = getParam(options, "userhandle", optional)
             assertion_client_extensions = getParam(options, "assertionclientextensions", optional)
 
+            # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
+            # policy exception.
+            allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
+            if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
+                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
+
+            # Check if the attestation certificate is
+            # authorized. If not, we can raise a policy exception.
+            if not attestation_certificate_allowed(
+                    {
+                        "attestation_issuer": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER),
+                        "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
+                        "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
+                    },
+                    getParam(options, WEBAUTHNACTION.REQ, optional)):
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate "
+                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
+
             try:
                 user = self._get_webauthn_user(getParam(options, "user", required))
             except ParameterError:
@@ -1236,54 +1261,27 @@ class WebAuthnTokenClass(TokenClass):
                 # All data is parsed and verified. If any errors occur, an exception
                 # will be raised.
                 self.set_otp_count(WebAuthnAssertionResponse(
-                                       webauthn_user=user,
-                                       assertion_response={
-                                           'id': credential_id,
-                                           'userHandle': user_handle,
-                                           'clientData': client_data,
-                                           'authData': authenticator_data,
-                                           'signature': signature_data,
-                                           'assertionClientExtensions':
-                                               webauthn_b64_decode(assertion_client_extensions)
-                                                   if assertion_client_extensions
-                                                   else None
-                                       },
-                                       challenge=webauthn_b64_encode(challenge),
-                                       origin=http_origin,
-                                       allow_credentials=[user.credential_id],
-                                       uv_required=uv_req
-                                   ).verify())
+                    webauthn_user=user,
+                    assertion_response={
+                        'id': credential_id,
+                        'userHandle': user_handle,
+                        'clientData': client_data,
+                        'authData': authenticator_data,
+                        'signature': signature_data,
+                        'assertionClientExtensions':
+                            webauthn_b64_decode(assertion_client_extensions)
+                            if assertion_client_extensions
+                            else None
+                    },
+                    challenge=webauthn_b64_encode(challenge),
+                    origin=http_origin,
+                    allow_credentials=[user.credential_id],
+                    uv_required=uv_req
+                ).verify())
             except AuthenticationRejectedException as e:
                 # The authentication ceremony failed.
                 log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))
                 return -1
-
-            # At this point we can check, if the attestation certificate is
-            # authorized. If not, we can raise a policy exception.
-            if not attestation_certificate_allowed(
-                    {
-                        "attestation_issuer": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER),
-                        "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
-                        "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
-                    },
-                    getParam(options, WEBAUTHNACTION.REQ, optional)
-            ):
-                log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate "
-                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
-
-            # Now we need to check, if a whitelist for AAGUIDs exists, and if
-            # so, if this device is whitelisted. If not, we again raise a
-            # policy exception.
-            allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
-            if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
-                log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
-                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
 
             # All clear? Nice!
             return self.get_otp_count()

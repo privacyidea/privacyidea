@@ -155,6 +155,7 @@ typing-extensions==4.12.2
     #   pydash
 urllib3==2.2.3
     # via requests
+webauthn==2.2.0
 werkzeug==3.0.4
     # via flask
 

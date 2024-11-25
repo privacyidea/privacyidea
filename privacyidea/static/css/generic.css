@@ -27,8 +27,6 @@
     color: #000000;
     background-color: transparent;
     border-color: #ddd;
-    padding: 0.2em 0.6em 0.3em;
-    font-size: 90%;
 }
 
 .btn-transparent.disabled:hover,

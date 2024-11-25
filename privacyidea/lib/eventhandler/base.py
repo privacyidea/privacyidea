@@ -300,7 +300,7 @@ class BaseEventHandler(object):
                 {
                     "type": "str",
                     "desc": _("Action is triggered, if the user has this number "
-                              "of tokens assigned."),
+                              "of tokens assigned. > and < can be used, like <8."),
                     "group": GROUP.USER
                 },
             CONDITION.USER_CONTAINER_NUMBER:
@@ -756,7 +756,8 @@ class BaseEventHandler(object):
 
         if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
-            if num_tokens != int(conditions.get(CONDITION.USER_TOKEN_NUMBER)):
+            cond = conditions.get(CONDITION.USER_TOKEN_NUMBER)
+            if not compare_condition(cond, num_tokens):
                 return False
 
         if CONDITION.USER_CONTAINER_NUMBER in conditions and user:

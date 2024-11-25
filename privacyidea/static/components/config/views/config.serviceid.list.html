@@ -16,7 +16,8 @@ To view attached tokens go to <a ui-sref="token.applications">token applications
                 {{ service.id }}
             </td>
             <td>
-                <a ui-sref="config.serviceid.edit({servicename:servicename})">
+                <a ui-sref="config.serviceid.edit({servicename:servicename})"
+                   ng-click="editServiceId(servicename)">
                         {{ servicename }}</a>
             </td>
             <td>

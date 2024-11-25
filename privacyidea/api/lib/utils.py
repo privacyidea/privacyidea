@@ -39,7 +39,7 @@ import re
 from copy import copy
 from urllib.parse import unquote
 from flask import (jsonify,
-                   current_app)
+                   current_app, Response)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -59,6 +59,37 @@ SESSION_KEY_LENGTH = 32
 
 optional = True
 required = False
+
+
+def _check_allowed_param(ret, key, default, allow_empty, allowed_values):
+    if not allow_empty and ret == "":
+        raise ParameterError(f"Parameter {key} must not be empty", id=905)
+    if allowed_values and ret not in allowed_values:
+        ret = default
+    return ret
+
+
+def _get_param(param, key, default=None):
+    ret = None
+    if param and key in param:
+        ret = param[key]
+    elif default:
+        ret = default
+    return ret
+
+
+def get_required(param, key, default=None, allow_empty=False, allowed_values=None):
+    ret = _get_param(param, key, default)
+    if ret is None:
+        raise ParameterError(f"Missing parameter: {key}", id=905)
+    return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+
+
+def get_optional(param, key, default=None, allow_empty=True, allowed_values=None):
+    ret = _get_param(param, key, default)
+    if not allow_empty and ret == "":
+        raise ParameterError(f"Parameter {key} must not be empty", id=905)
+    return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
 
 
 def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
@@ -101,7 +132,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     return ret
 
 
-def send_result(obj, rid=1, details=None):
+def send_result(obj, rid=1, details=None) -> Response:
     """
     sendResult - return a json result document
 
