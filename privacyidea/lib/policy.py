@@ -1332,7 +1332,6 @@ class PolicyClass(object):
 #
 #
 
-
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,

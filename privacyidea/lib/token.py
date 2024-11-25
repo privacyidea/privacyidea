@@ -2653,7 +2653,6 @@ def get_dynamic_policy_definitions(scope=None):
             if pol_section in pol_keys:
                 pol_entry = policy.get(pol_section)
                 for pol_def in pol_entry:
-                    #pol_def = str(pol_def)
                     set_def = pol_def
                     if pol_def.startswith(ttype) is not True:
                         set_def = '{0!s}_{1!s}'.format(ttype, pol_def)
@@ -2897,6 +2896,7 @@ def get_fido2_nonce() -> str:
     Generate a random 32 byte nonce for fido2 challenges. The nonce is encoded in base64url.
     """
     return bytes_to_base64url(geturandom(32))
+
 
 def create_fido2_challenge(rp_id: str) -> dict:
     """

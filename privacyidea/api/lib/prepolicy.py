@@ -1886,9 +1886,9 @@ def fido2_auth(request, action):
     )
 
     # Challenge texts
-    challenge_texts = _get_challenge_texts_for_types([WebAuthnTokenClass.get_class_type().lower(),
-                                                      PasskeyTokenClass.get_class_type().lower()],
-                                                     scope=SCOPE.AUTH)
+    challenge_texts = get_challenge_texts_for_types([WebAuthnTokenClass.get_class_type().lower(),
+                                                     PasskeyTokenClass.get_class_type().lower()],
+                                                    scope=SCOPE.AUTH)
     for t, text in challenge_texts.items():
         if text:
             request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
@@ -1897,7 +1897,7 @@ def fido2_auth(request, action):
     return True
 
 
-def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
+def get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
     """
     Get the challenge texts for the given token types and scope.
     Returns a dictionary with the token type as key and the challenge text as value.
@@ -1912,6 +1912,16 @@ def _get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AU
         res[t] = list(challenge_text_policies)[0] if challenge_text_policies else ""
 
     return res
+
+
+def get_policy_value_of_allowed_values(policy_action: str, default: str,
+                                       allowed_values: list[str], user_object=None) -> str:
+    policies = (Match.user(g, scope=SCOPE.ENROLL, action=policy_action, user_object=user_object)
+                .action_values(unique=True))
+    policy_value = list(policies)[0] if policies else default
+    if policy_value not in allowed_values:
+        raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
+    return policy_value
 
 
 def fido2_enroll(request, action):
@@ -2000,77 +2010,31 @@ def fido2_enroll(request, action):
             raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
                               f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
-        def _get_policy_value(policy_action: str, default: str, allowed_values: list[str]) -> str:
-            policies = (Match.user(g, scope=SCOPE.ENROLL, action=policy_action, user_object=user_object)
-                        .action_values(unique=True))
-            policy_value = list(policies)[0] if policies else default
-            if policy_value not in allowed_values:
-                raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
-            return policy_value
-
-        authenticator_attestation_level = _get_policy_value(
+        authenticator_attestation_level = get_policy_value_of_allowed_values(
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
             DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
             ATTESTATION_LEVELS
         )
 
-        authenticator_attestation_form = _get_policy_value(
+        authenticator_attestation_form = get_policy_value_of_allowed_values(
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
             DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             ATTESTATION_FORMS
         )
 
-        user_verification_requirement = _get_policy_value(
+        user_verification_requirement = get_policy_value_of_allowed_values(
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
             DEFAULT_USER_VERIFICATION_REQUIREMENT,
             USER_VERIFICATION_LEVELS
         )
-        """
-        authenticator_attestation_level_policies = Match.user(g,
-                                                              scope=SCOPE.ENROLL,
-                                                              action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                              user_object=user_object).action_values(unique=True)
 
-        authenticator_attestation_level = (list(authenticator_attestation_level_policies)[0]
-                                           if authenticator_attestation_level_policies
-                                           else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
-        if authenticator_attestation_level not in ATTESTATION_LEVELS:
-            raise PolicyError(
-                f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL} must be one of {', '.join(ATTESTATION_LEVELS)}")
-
-        authenticator_attestation_form_policies = Match.user(g,
-                                                             scope=SCOPE.ENROLL,
-                                                             action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                                                             user_object=user_object).action_values(unique=True)
-
-        authenticator_attestation_form = (list(authenticator_attestation_form_policies)[0]
-                                          if authenticator_attestation_form_policies
-                                          else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
-        if authenticator_attestation_form not in ATTESTATION_FORMS:
-            raise PolicyError(
-                f"{WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM} must be one of {', '.join(ATTESTATION_FORMS)}")
-
-        user_verification_requirement_policies = Match.user(g,
-                                                            scope=SCOPE.ENROLL,
-                                                            action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-                                                            user_object=user_object).action_values(unique=True)
-        user_verification_requirement = (list(user_verification_requirement_policies)[0]
-                                         if user_verification_requirement_policies
-                                         else DEFAULT_USER_VERIFICATION_REQUIREMENT)
-        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
-            raise PolicyError(
-                f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT} must be one of {', '.join(USER_VERIFICATION_LEVELS)}"
-            )
-
-        
-        """
         avoid_double_registration_policy = Match.user(g,
                                                       scope=SCOPE.ENROLL,
                                                       action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
                                                       user_object=user_object).any()
 
         # Challenge texts
-        challenge_texts = _get_challenge_texts_for_types(types, scope=SCOPE.ENROLL)
+        challenge_texts = get_challenge_texts_for_types(types, scope=SCOPE.ENROLL)
         for t, text in challenge_texts.items():
             if text:
                 request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text

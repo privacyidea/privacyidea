@@ -240,4 +240,3 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
 
         remove_token(serial)
         delete_policy("user_verification")
-
