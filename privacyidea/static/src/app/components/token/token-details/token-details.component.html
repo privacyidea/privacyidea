@@ -1,12 +1,12 @@
 <div aria-label="Details Tables" class="item-table">
-  <mat-grid-list cols="24" rowHeight="7vh">
+  <mat-grid-list cols="24" rowHeight="6vh">
     <mat-grid-tile [colspan]="24" [rowspan]="1">
       <div class="token-detail-header">
         <h2>Details for Token: </h2>
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="9">
+    <mat-grid-tile [colspan]="9" [rowspan]="10">
       <div class="details-wrapper">
         <div class="details-section">
           <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
@@ -22,7 +22,7 @@
                 @if (element.keyMap.key === "container_serial") {
                   @if (element.isEditing) {
                     <mat-form-field class="detail-table-input">
-                      <mat-label style="font-size: 12px">Select Container</mat-label>
+                      <mat-label>Select Container</mat-label>
                       <mat-select [(ngModel)]="selectedContainer">
                         @for (option of containerOptions(); track option; ) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -35,7 +35,7 @@
                 } @else if (element.keyMap.key === "realms") {
                   @if (element.isEditing) {
                     <mat-form-field class="detail-table-input">
-                      <mat-label style="font-size: 12px">Select Realms</mat-label>
+                      <mat-label>Select Realms</mat-label>
                       <mat-select [formControl]="selectedRealms" multiple>
                         @for (option of realmOptions(); track option; ) {
                           @if (option === userRealm) {
@@ -246,9 +246,7 @@
           </ng-container>
           <tr *matRowDef="let row; columns: ['value', 'edit'];" class="detail-row" mat-row></tr>
         </table>
-        <br/>
         <mat-divider/>
-        <br/>
         <div class="otp-container">
           <div class="pin-input">
             <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
@@ -258,9 +256,7 @@
             <mat-icon class="detail-button-icon">sync</mat-icon>
             Resync Token
           </button>
-          <br/>
           <mat-divider/>
-          <br/>
           <div class="pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
@@ -283,7 +279,7 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="8" [rowspan]="8">
+    <mat-grid-tile [colspan]="8" [rowspan]="7">
       <div class="user-details-section">
         <div class="user-container">
           <h3>Assigned User:</h3>
@@ -299,11 +295,14 @@
             <ng-container matColumnDef="value">
               <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="user-detail-row user-editable-row" mat-cell>
-                @if (isEditingUser && element.keyMap.key === "username") {
+                @if (isEditingUser && element.keyMap.key === "username" && selectedUserRealm() !== '') {
                   <mat-form-field>
-                    <mat-label style="font-size: 12px">Select User</mat-label>
-                    <input matInput [formControl]="selectedUsername" [matAutocomplete]="auto">
-                    <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
+                    <mat-label>Select User</mat-label>
+                    <input matInput
+                           [formControl]="selectedUsername"
+                           [matAutocomplete]="auto">
+                    <mat-autocomplete autoActiveFirstOption
+                                      #auto="matAutocomplete">
                       @for (option of filteredUserOptions | async; track option) {
                         <mat-option [value]="option">{{ option }}</mat-option>
                       }
@@ -311,7 +310,7 @@
                   </mat-form-field>
                 } @else if (isEditingUser && element.keyMap.key === "user_realm") {
                   <mat-form-field>
-                    <mat-label style="font-size: 12px">Search in Realm</mat-label>
+                    <mat-label>Select Realm of User</mat-label>
                     <mat-select [(ngModel)]="selectedUserRealm">
                       @for (option of realmOptions(); track option; ) {
                         <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -355,13 +354,11 @@
             <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
                 mat-row></tr>
           </table>
-          <br/>
           @if (!isEditingUser) {
             <mat-divider/>
           } @else {
             <mat-divider style="border-top-color: white;"/>
           }
-          <br/>
           <div class="user-pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
