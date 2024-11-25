@@ -12,11 +12,11 @@ The templates are fetched from the given repository URL during runtime.
 .. figure:: images/default_templates.png
    :width: 500
 
-The policy templates are json files, which can contain common settings, that
+The policy templates are json files, which can contain common settings that
 can be used to start your own polices. When creating a new policy, you can
 select an existing policy template as a starting point.
 
-You may also fork the github repository and commit pull request to improve
+You may also fork the github repository and create a pull request to improve
 the policy templates. Or you may fork the github repository and use your own
 policy template URL for your policy templates.
 
