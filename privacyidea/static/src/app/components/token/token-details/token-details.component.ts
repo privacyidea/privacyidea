@@ -27,6 +27,7 @@ import {RealmService} from '../../../services/realm/realm.service';
 import {MatAutocomplete, MatAutocompleteTrigger} from '@angular/material/autocomplete';
 import {UserService} from '../../../services/user/user.service';
 import {map} from 'rxjs/operators';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -120,7 +121,8 @@ export class TokenDetailsComponent {
               private containerService: ContainerService,
               private realmService: RealmService,
               private userService: UserService,
-              private validateService: ValidateService) {
+              private validateService: ValidateService,
+              protected tableUtilsService: TableUtilsService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
     });
@@ -159,6 +161,7 @@ export class TokenDetailsComponent {
   otpOrPinToTest: string = '';
   selectedRealms = new FormControl<string[]>([]);
   userRealm: string = '';
+  maxfail: number = 0;
 
   private _filterUserOptions(value: string): string[] {
     const filterValue = value.toLowerCase();
@@ -179,6 +182,7 @@ export class TokenDetailsComponent {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
+        this.maxfail = tokenDetails.maxfail;
         this.selectedContainer = tokenDetails.container_serial;
         this.detailData.set(details.map(detail => ({
           keyMap: detail,

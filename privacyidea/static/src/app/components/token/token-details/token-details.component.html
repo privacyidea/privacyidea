@@ -6,7 +6,7 @@
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="10">
+    <mat-grid-tile [colspan]="9" [rowspan]="12">
       <div class="details-wrapper">
         <div class="details-section">
           <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
@@ -64,15 +64,13 @@
                   </mat-form-field>
                 } @else {
                   <span class="detail-table-item"
-                        [ngClass]="{
-            'highlight-true': (element.keyMap.key === 'active' && element.value === true) ||
-                            (element.keyMap.key === 'failcount' && element.value == 0),
-            'highlight-warning': (element.keyMap.key === 'failcount' && element.value >= 1 && element.value <= 9),
-            'highlight-false': (element.keyMap.key === 'active' && element.value !== true) ||
-                              (element.keyMap.key === 'failcount' && (element.value < 0 || element.value > 9))
-          }">
-          {{ element.keyMap.key === 'active' ? (revoked() ? 'revoked' : (element.value ? 'active' : 'deactivated')) : element.value }}
-        </span>
+                        [ngClass]="tableUtilsService.getClassForKeyMap(element.keyMap.key,
+                        element.value, maxfail)">
+                    {{
+                      tableUtilsService.getDisplayTextForKeyMap(element.keyMap.key, element.value,
+                        revoked())
+                    }}
+                  </span>
                 }
               </td>
             </ng-container>
@@ -80,42 +78,49 @@
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
                 @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
-                  <button mat-icon-button (click)="resetFailCount()">
-                    <mat-icon>
-                      lock_reset
-                    </mat-icon>
-                  </button>
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="edit-button" (click)="resetFailCount()">
+                      <mat-icon class="mat-icon-button">
+                        lock_reset
+                      </mat-icon>
+                    </button>
+                  </div>
                 } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
                   @if (element.value) {
-                    <button mat-icon-button class="red-icon" (click)="unassignContainer()">
-                      <mat-icon>folder_delete</mat-icon>
-                    </button>
+                    <div class="edit-button-container">
+                      <button mat-icon-button class="red-icon edit-button"
+                              (click)="unassignContainer()">
+                        <mat-icon class="mat-icon-button">folder_delete</mat-icon>
+                      </button>
+                    </div>
                   } @else {
-                    <button mat-icon-button class="edit-button"
-                            (click)="toggleEditMode(element, 'container_serial', 'edit')">
-                      <mat-icon>edit</mat-icon>
-                    </button>
+                    <div class="edit-button-container">
+                      <button mat-icon-button class="edit-button"
+                              (click)="toggleEditMode(element, 'container_serial', 'edit')">
+                        <mat-icon class="mat-icon-button">edit</mat-icon>
+                      </button>
+                    </div>
                   }
                 } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
                   <div class="edit-button-container">
                     <button mat-icon-button class="edit-button"
                             (click)="toggleEditMode(element, 'container_serial', 'save')">
-                      <mat-icon>save_as</mat-icon>
+                      <mat-icon class="mat-icon-button">save_as</mat-icon>
                     </button>
                     <button mat-icon-button class="edit-button red-icon"
                             (click)="toggleEditMode(element, 'container_serial', 'cancel')">
-                      <mat-icon>cancel</mat-icon>
+                      <mat-icon class="mat-icon-button">cancel</mat-icon>
                     </button>
                   </div>
                 } @else if (element.keyMap.key === "realms" && element.isEditing) {
                   <div class="edit-button-container">
                     <button mat-icon-button class="edit-button"
                             (click)="toggleEditMode(element, 'realms', 'save')">
-                      <mat-icon>save_as</mat-icon>
+                      <mat-icon class="mat-icon-button">save_as</mat-icon>
                     </button>
                     <button mat-icon-button class="edit-button red-icon"
                             (click)="toggleEditMode(element, 'realms', 'cancel')">
-                      <mat-icon>cancel</mat-icon>
+                      <mat-icon class="mat-icon-button">cancel</mat-icon>
                     </button>
                   </div>
                 } @else if (element.keyMap.key === "maxfail"
@@ -129,18 +134,18 @@
                     @if (!isAnyEditing()) {
                       <button mat-icon-button class="edit-button"
                               (click)="toggleEditMode(element, 'default', 'edit')">
-                        <mat-icon>
+                        <mat-icon class="mat-icon-button">
                           edit
                         </mat-icon>
                       </button>
                     } @else if (element.isEditing) {
                       <button mat-icon-button class="edit-button"
                               (click)="toggleEditMode(element, 'default', 'save')">
-                        <mat-icon>save_as</mat-icon>
+                        <mat-icon class="mat-icon-button">save_as</mat-icon>
                       </button>
                       <button mat-icon-button class="edit-button red-icon"
                               (click)="toggleEditMode(element, 'default', 'cancel')">
-                        <mat-icon>cancel</mat-icon>
+                        <mat-icon class="mat-icon-button">cancel</mat-icon>
                       </button>
                     } @else {
                       <br/>
@@ -155,7 +160,7 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="7" [rowspan]="isEditingInfo ? 11 : 10">
+    <mat-grid-tile [colspan]="7" [rowspan]="12">
       <div class="info-container">
         <h3>Information: </h3>
         <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
@@ -177,9 +182,9 @@
                               <textarea matInput class="info-input" rows="1"
                                         [(ngModel)]="element.value[key]"></textarea>
                             </mat-form-field>
-                            <button mat-icon-button class=" delete-info-icon"
+                            <button mat-icon-button class="delete-info-icon"
                                     (click)="deleteInfo(key)">
-                              <mat-icon>delete_outlined</mat-icon>
+                              <mat-icon class="mat-icon-button">delete_outlined</mat-icon>
                             </button>
                           </div>
                         </mat-list-item>
@@ -223,7 +228,7 @@
                 @if (!isAnyEditing()) {
                   <button mat-icon-button class="edit-button"
                           (click)="toggleEditMode(element, 'info', 'edit')">
-                    <mat-icon>edit
+                    <mat-icon class="mat-icon-button">edit
                     </mat-icon>
                   </button>
                 } @else if (!isEditingInfo) {
@@ -232,12 +237,12 @@
                 @if (isEditingInfo) {
                   <button mat-icon-button class="edit-button"
                           (click)="toggleEditMode(element, 'info', 'save')">
-                    <mat-icon>save_as
+                    <mat-icon class="mat-icon-button">save_as
                     </mat-icon>
                   </button>
                   <button mat-icon-button class="cancel-button"
                           (click)="toggleEditMode(element,'info', 'cancel')">
-                    <mat-icon>cancel
+                    <mat-icon class="mat-icon-button">cancel
                     </mat-icon>
                   </button>
                 }
@@ -246,40 +251,9 @@
           </ng-container>
           <tr *matRowDef="let row; columns: ['value', 'edit'];" class="detail-row" mat-row></tr>
         </table>
-        <mat-divider/>
-        <div class="otp-container">
-          <div class="pin-input">
-            <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
-            <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
-          </div>
-          <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
-            <mat-icon class="detail-button-icon">sync</mat-icon>
-            Resync Token
-          </button>
-          <mat-divider/>
-          <div class="pin-input">
-            <input style="display:none" type="text"/>
-            <input style="display:none" type="password"/>
-            <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
-                   class="input-full"
-                   placeholder="OTP or PIN">
-            <button (click)="hide = !hide" mat-icon-button
-                    matSuffix>
-              <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
-            </button>
-          </div>
-          <button (click)="testToken()" class="detail-button" extended mat-fab>
-            <mat-icon class="detail-button-icon">help_outline</mat-icon>
-            Test Token
-          </button>
-          <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
-            <mat-icon class="detail-button-icon">help_outline</mat-icon>
-            Verify OTP value
-          </button>
-        </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="8" [rowspan]="7">
+    <mat-grid-tile [colspan]="8" [rowspan]="12">
       <div class="user-details-section">
         <div class="user-container">
           <h3>Assigned User:</h3>
@@ -330,7 +304,7 @@
                     <div class="edit-button-container">
                       <button mat-icon-button class="edit-button yellow-icon"
                               (click)="unassignUser()">
-                        <mat-icon>person_remove</mat-icon>
+                        <mat-icon class="mat-icon-button">person_remove</mat-icon>
                       </button>
                     </div>
                   } @else {
@@ -338,12 +312,12 @@
                       @if (this.isEditingUser) {
                         <button mat-icon-button class="edit-button red-icon"
                                 (click)="toggleEditMode(element, 'user', 'cancel')">
-                          <mat-icon>cancel</mat-icon>
+                          <mat-icon class="mat-icon-button">cancel</mat-icon>
                         </button>
                       } @else {
                         <button mat-icon-button class="edit-button green-icon"
                                 (click)="toggleEditMode(element, 'user', 'edit')">
-                          <mat-icon>person_add</mat-icon>
+                          <mat-icon class="mat-icon-button">person_add</mat-icon>
                         </button>
                       }
                     </div>
@@ -355,35 +329,79 @@
                 mat-row></tr>
           </table>
           @if (!isEditingUser) {
-            <mat-divider/>
+            <mat-divider style="margin: 0 19px;"/>
           } @else {
-            <mat-divider style="border-top-color: white;"/>
+            <mat-divider style="margin: 0 19px; border-top-color: white;"/>
           }
-          <div class="user-pin-input">
+          <br/>
+          <div class="user-pin">
+            <div class="user-pin-input">
+              <input style="display:none" type="text"/>
+              <input style="display:none" type="password"/>
+              <input [(ngModel)]="setPinValue" [type]="'password'" class="input"
+                     placeholder="Token Pin">
+              <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input"
+                     placeholder="Repeat Pin">
+            </div>
+            <div class="user-pin-button">
+              @if (!isEditingUser) {
+                <button class="detail-button" extended mat-fab (click)="setPin()">
+                  <mat-icon class="detail-button-icon">password</mat-icon>
+                  Set Pin
+                </button>
+                <button class="detail-button" extended mat-fab (click)="setRandomPin()">
+                  <mat-icon class="detail-button-icon">casino</mat-icon>
+                  Random Pin
+                </button>
+              } @else {
+                <br/>
+                <button class="card-button-activate" extended mat-fab
+                        (click)="toggleEditMode(undefined, 'user', 'save')">
+                  <mat-icon class="detail-button-icon">save</mat-icon>
+                  Assign User
+                </button>
+                <br style="margin-top: 90px;"/>
+              }
+            </div>
+            <mat-divider style="margin: 0 96px;"/>
+            <br/>
+          </div>
+        </div>
+        <div class="otp-container">
+          <div class="pin-input">
+            <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
+            <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
+          </div>
+          <div class="pin-input-button">
+            <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
+              <mat-icon class="detail-button-icon">sync</mat-icon>
+              Resync Token
+            </button>
+          </div>
+          <mat-divider style="margin: 0 44px;"/>
+          <br/>
+          <div class="pin-input">
             <input style="display:none" type="text"/>
             <input style="display:none" type="password"/>
-            <input [(ngModel)]="setPinValue" [type]="'password'" class="input"
-                   placeholder="Token Pin">
-            <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input"
-                   placeholder="Repeat Pin">
+            <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
+                   class="input-full"
+                   placeholder="OTP or PIN">
+            <button (click)="hide = !hide" mat-icon-button
+                    matSuffix>
+              <mat-icon
+                class="visibility-button">{{ hide ? 'visibility_off' : 'visibility' }}
+              </mat-icon>
+            </button>
           </div>
           <div class="user-pin-button">
-            @if (!isEditingUser) {
-              <button class="detail-button" extended mat-fab (click)="setPin()">
-                <mat-icon class="detail-button-icon">password</mat-icon>
-                Set Pin
-              </button>
-              <button class="detail-button" extended mat-fab (click)="setRandomPin()">
-                <mat-icon class="detail-button-icon">casino</mat-icon>
-                Random Pin
-              </button>
-            } @else {
-              <button class="card-button-activate" extended mat-fab
-                      (click)="toggleEditMode(undefined, 'user', 'save')">
-                <mat-icon class="detail-button-icon">save</mat-icon>
-                Assign User
-              </button>
-            }
+            <button (click)="testToken()" class="detail-button" extended mat-fab>
+              <mat-icon class="detail-button-icon">help_outline</mat-icon>
+              Test Token
+            </button>
+            <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
+              <mat-icon class="detail-button-icon">help_outline</mat-icon>
+              Verify OTP value
+            </button>
           </div>
         </div>
       </div>

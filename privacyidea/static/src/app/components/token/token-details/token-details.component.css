@@ -4,6 +4,7 @@
   display: flex;
   width: auto;
   max-width: fit-content;
+  justify-content: center;
 }
 
 .details-wrapper {
@@ -61,7 +62,7 @@
 
 .detail-button {
   height: 40px;
-  width: 100%;
+  width: 257px;
   color: white;
   border: none;
   justify-content: start;
@@ -162,12 +163,25 @@ mat-grid-tile {
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin: 0 44px;
+}
+
+.pin-input-button {
+  display: flex;
+  justify-content: center;
+}
+
+.user-pin {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .user-pin-input {
   display: flex;
-  margin: 0 87px;
   gap: 10px;
+  margin: 0 96px 0 97px;
 }
 
 .user-pin-button {
@@ -175,14 +189,13 @@ mat-grid-tile {
   gap: 10px;
   justify-content: center;
   flex-flow: row wrap;
-  padding: 0 87px;
 }
 
 .user-container {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 7px 26px 7px;
+  padding: 0 7px 10px 7px;
 }
 
 .assign-container {
@@ -211,7 +224,7 @@ mat-grid-tile {
 .card-button-activate {
   color: white;
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -244,6 +257,13 @@ h3 {
 
 .flex {
   display: flex;
+}
+
+.verify-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
 }
 
 .value-container {
@@ -309,14 +329,18 @@ textarea {
   margin-top: 1px;
 }
 
-::ng-deep .cdk-overlay-pane {
-  position: absolute !important;
-}
-
 mat-label {
   font-size: 12px;
 }
 
 mat-select {
   font-size: 12px;
+}
+
+.visibility-button {
+  font-size: 25px;
+}
+
+.mat-icon-button {
+  font-size: 25px;
 }

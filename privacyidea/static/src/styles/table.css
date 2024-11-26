@@ -159,6 +159,7 @@ span {
 }
 
 .edit-button {
+  display: flex;
   color: black;
   background-color: white;
   cursor: pointer;
@@ -172,4 +173,9 @@ span {
 
 .mat-divider {
   border-top-color: #E0E2EC;
+}
+
+::ng-deep .cdk-overlay-pane {
+  position: absolute !important;
+  z-index: 9999;
 }

@@ -1,6 +1,6 @@
 .card-button {
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -12,7 +12,7 @@
 
 .card-button-activ {
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);

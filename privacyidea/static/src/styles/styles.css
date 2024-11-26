@@ -1,10 +1,8 @@
+@import "@angular/material/prebuilt-themes/azure-blue.css";
+
 html, body {
   background: #e6e6e6;
-}
-
-body {
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 :root {
@@ -77,8 +75,10 @@ body {
   --table-color: white;
   --mdc-filled-text-field-container-color: var(--light);
   --mdc-tab-indicator-active-indicator-color: var(--blue-base);
-  --mdc-filled-text-field-focus-active-indicator-color: var(--blue-base);
+  --mdc-filled-text-field-focus-active-indicator-color: var(--blue-light);
   --mat-tab-header-active-focus-indicator-color: var(--blue-base);
   --mat-tab-header-active-ripple-color: white;
   --mat-tab-header-inactive-ripple-color: white;
+  --mat-select-focused-arrow-color: var(--blue-light);
+  --mdc-outlined-text-field-focus-outline-color: var(--blue-light);
 }

@@ -76,4 +76,65 @@ export class TableUtilsService {
     const regex = new RegExp(`\\b${filter}:`, 'i');
     return regex.test(inputValue);
   }
+
+  getClassForColumn(columnKey: string, element: any): string {
+    if (columnKey === 'active') {
+      if (element['locked']) {
+        return 'highlight-false-clickable';
+      } else if (element['revoked']) {
+        return 'highlight-false-clickable';
+      } else if (element['active'] === false) {
+        return 'highlight-false-clickable';
+      } else {
+        return 'highlight-true-clickable';
+      }
+    } else if (columnKey === 'failcount') {
+      if (element['failcount'] === 0) {
+        return 'highlight-true-clickable';
+      } else if (element['failcount'] > 0 && element['failcount'] < element['maxfail']) {
+        return 'highlight-warning-clickable';
+      } else {
+        return 'highlight-false-clickable';
+      }
+    }
+    return '';
+  }
+
+  getDisplayText(columnKey: string, element: any): string {
+    if (columnKey === 'active') {
+      if (element['revoked']) {
+        return 'revoked';
+      } else if (element['locked']) {
+        return 'locked';
+      } else if (element['active']) {
+        return 'active';
+      } else {
+        return 'deactivated';
+      }
+    }
+    return element[columnKey];
+  }
+
+  getClassForKeyMap(key: string, value: any, maxfail: any): string {
+    if (key === 'active') {
+      return value === true ? 'highlight-true' : 'highlight-false';
+    } else if (key === 'failcount') {
+      if (value === 0) {
+        return 'highlight-true';
+      } else if (value >= 1 && value < maxfail) {
+        return 'highlight-warning';
+      } else {
+        return 'highlight-false';
+      }
+    }
+    return '';
+  }
+
+  getDisplayTextForKeyMap(key: string, value: any, revoked: boolean): string {
+    if (key === 'active') {
+      return revoked ? 'revoked' : (value ? 'active' : 'deactivated');
+    }
+    return value;
+  }
+
 }

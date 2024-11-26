@@ -33,8 +33,7 @@
           Applications
         </button>
       </mat-list-item>
-      <br/>
-      <mat-divider/>
+      <mat-divider class="card-divider"/>
       <br/>
       <mat-list-item>
         <button class="card-button" mat-flat-button>
@@ -42,8 +41,7 @@
           Identify Serial Number
         </button>
       </mat-list-item>
-      <br/>
-      <mat-divider/>
+      <mat-divider class="card-divider"/>
       <br/>
       <mat-list-item>
         <button class="card-button" mat-flat-button>
@@ -67,8 +65,7 @@
           Show in Audit Log
         </button>
       </mat-list-item>
-      <br/>
-      <mat-divider/>
+      <mat-divider class="card-divider"/>
       <br/>
       <mat-list-item>
         <button class="card-button" mat-flat-button>
@@ -76,12 +73,12 @@
           Lost Token
         </button>
       </mat-list-item>
-      <br/>
-      <mat-divider/>
+      <mat-divider class="card-divider"/>
       <br/>
       <div class="delete-buttons">
         <button (click)="toggleActive()" [disabled]="revoked()" [ngClass]="{'card-button-delete': active(),
-                                         'card-button-activate': !active()}" color="alert" mat-flat-button>
+                                         'card-button-activate': !active()}" color="alert"
+                mat-flat-button>
           <mat-icon>{{ active() ? 'auto_delete' : 'play_circle' }}</mat-icon>
           {{ active() ? 'Deactivate' : 'Activate' }}
         </button>
@@ -89,7 +86,8 @@
           <mat-icon>delete_outlined</mat-icon>
           Delete
         </button>
-        <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete" color="alert"
+        <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete"
+                color="alert"
                 mat-flat-button>
           <mat-icon>delete_forever</mat-icon>
           Revoke

@@ -6,13 +6,11 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {AuthService} from '../../../services/auth/auth.service';
 import {Router} from '@angular/router';
-import {NgClass, NgStyle} from '@angular/common';
-import {MatCard, MatCardContent} from '@angular/material/card';
+import {NgClass} from '@angular/common';
 import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
-import {TokenDetailsComponent} from '../token-details/token-details.component';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -32,7 +30,7 @@ const columns = [
   standalone: true,
   imports: [
     MatTableModule, MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, MatTableModule,
-    MatSortModule, MatCard, MatCardContent, NgClass, MatIcon, MatFabButton, NgStyle, TokenDetailsComponent
+    MatSortModule, NgClass, MatIcon, MatFabButton
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.css'
@@ -44,7 +42,7 @@ export class TokenTableComponent {
   length = 0;
   pageSize = 10;
   pageIndex = 0;
-  pageSizeOptions = [10];
+  pageSizeOptions = [5, 10, 15];
   filterValue = '';
   apiFilter = this.tokenService.apiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
@@ -92,7 +90,10 @@ export class TokenTableComponent {
   }
 
   handleSortEvent() {
-    this.sortby_sortdir = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
+    this.sortby_sortdir = this.sort ? {
+      active: this.sort.active,
+      direction: this.sort.direction
+    } : undefined;
     this.pageIndex = 0;
     this.fetchTokenData()
   }
@@ -142,5 +143,13 @@ export class TokenTableComponent {
   tokenSelected(serial: string) {
     this.serial.set(serial);
     this.tokenIsSelected.set(true)
+  }
+
+  handleColumnClick(columnKey: string, element: any): void {
+    if (columnKey === 'active') {
+      this.toggleActive(element);
+    } else if (columnKey === 'failcount') {
+      this.resetFailCount(element);
+    }
   }
 }

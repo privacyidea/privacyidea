@@ -3,3 +3,7 @@
 td:nth-child(5) {
   text-align: center;
 }
+
+.table-filter {
+  width: 58%;
+}

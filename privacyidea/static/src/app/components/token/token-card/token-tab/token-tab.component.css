@@ -2,7 +2,7 @@
 
 .card-button {
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -14,7 +14,7 @@
 
 .card-button-reset {
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -33,7 +33,7 @@
 
 .card-button-activ {
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -51,7 +51,7 @@
 .card-button-delete {
   margin-right: 5px;
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -65,7 +65,7 @@
   color: white;
   margin-right: 5px;
   height: 40px;
-  width: 100%;
+  width: 257px;
   border: none;
   justify-content: start;
   border-radius: var(--border-radius);
@@ -96,3 +96,6 @@
   padding: 0 16px;
 }
 
+.card-divider {
+  margin: 5px 16px 0 16px;
+}
