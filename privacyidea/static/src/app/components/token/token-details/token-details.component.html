@@ -1,12 +1,12 @@
 <div aria-label="Details Tables" class="item-table">
-  <mat-grid-list cols="24" rowHeight="6vh">
-    <mat-grid-tile [colspan]="24" [rowspan]="1">
+  <mat-grid-list cols="23" rowHeight="7vh">
+    <mat-grid-tile [colspan]="23" [rowspan]="1">
       <div class="token-detail-header">
         <h2>Details for Token: </h2>
         <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="12">
+    <mat-grid-tile [colspan]="9" [rowspan]="9">
       <div class="details-wrapper">
         <div class="details-section">
           <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
@@ -160,9 +160,22 @@
         </div>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="7" [rowspan]="12">
+    <mat-grid-tile [colspan]="14" [rowspan]="3">
+        <app-token-details-user [filteredUserOptions]="filteredUserOptions"
+                                [isAnyEditing]="isAnyEditing"
+                                [isEditingUser]="isEditingUser"
+                                [realmOptions]="realmOptions"
+                                [refreshTokenDetails]="refreshTokenDetails"
+                                [repeatPinValue]="repeatPinValue"
+                                [selectedUserRealm]="selectedUserRealm"
+                                [selectedUsername]="selectedUsername"
+                                [serial]="serial"
+                                [setPinValue]="setPinValue"
+                                [userData]="userData"></app-token-details-user>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="9" [rowspan]="6">
       <div class="info-container">
-        <h3>Information: </h3>
+        <span class="info-title">Information</span>
         <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
                mat-table>
           <ng-container matColumnDef="value">
@@ -253,156 +266,44 @@
         </table>
       </div>
     </mat-grid-tile>
-    <mat-grid-tile [colspan]="8" [rowspan]="12">
-      <div class="user-details-section">
-        <div class="user-container">
-          <h3>Assigned User:</h3>
-          <table [dataSource]="userData()" aria-label="User Detail Data Table"
-                 class="detail-table"
-                 mat-table>
-            <ng-container matColumnDef="key">
-              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="user-detail-row"
-                  mat-cell>{{ element.keyMap.label }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="value">
-              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="user-detail-row user-editable-row" mat-cell>
-                @if (isEditingUser && element.keyMap.key === "username" && selectedUserRealm() !== '') {
-                  <mat-form-field>
-                    <mat-label>Select User</mat-label>
-                    <input matInput
-                           [formControl]="selectedUsername"
-                           [matAutocomplete]="auto">
-                    <mat-autocomplete autoActiveFirstOption
-                                      #auto="matAutocomplete">
-                      @for (option of filteredUserOptions | async; track option) {
-                        <mat-option [value]="option">{{ option }}</mat-option>
-                      }
-                    </mat-autocomplete>
-                  </mat-form-field>
-                } @else if (isEditingUser && element.keyMap.key === "user_realm") {
-                  <mat-form-field>
-                    <mat-label>Select Realm of User</mat-label>
-                    <mat-select [(ngModel)]="selectedUserRealm">
-                      @for (option of realmOptions(); track option; ) {
-                        <mat-option value="{{ option }}">{{ option }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                } @else {
-                  {{ element.value }}
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="edit">
-              <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
-                @if (element.keyMap.key === "username" && !(isAnyEditing() && !this.isEditingUser)) {
-                  @if (element.value) {
-                    <div class="edit-button-container">
-                      <button mat-icon-button class="edit-button yellow-icon"
-                              (click)="unassignUser()">
-                        <mat-icon class="mat-icon-button">person_remove</mat-icon>
-                      </button>
-                    </div>
-                  } @else {
-                    <div class="edit-button-container">
-                      @if (this.isEditingUser) {
-                        <button mat-icon-button class="edit-button red-icon"
-                                (click)="toggleEditMode(element, 'user', 'cancel')">
-                          <mat-icon class="mat-icon-button">cancel</mat-icon>
-                        </button>
-                      } @else {
-                        <button mat-icon-button class="edit-button green-icon"
-                                (click)="toggleEditMode(element, 'user', 'edit')">
-                          <mat-icon class="mat-icon-button">person_add</mat-icon>
-                        </button>
-                      }
-                    </div>
-                  }
-                }
-              </td>
-            </ng-container>
-            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
-                mat-row></tr>
-          </table>
-          @if (!isEditingUser) {
-            <mat-divider style="margin: 0 19px;"/>
-          } @else {
-            <mat-divider style="margin: 0 19px; border-top-color: white;"/>
-          }
-          <br/>
-          <div class="user-pin">
-            <div class="user-pin-input">
-              <input style="display:none" type="text"/>
-              <input style="display:none" type="password"/>
-              <input [(ngModel)]="setPinValue" [type]="'password'" class="input"
-                     placeholder="Token Pin">
-              <input [(ngModel)]="repeatPinValue" [type]="'password'" class="input"
-                     placeholder="Repeat Pin">
-            </div>
-            <div class="user-pin-button">
-              @if (!isEditingUser) {
-                <button class="detail-button" extended mat-fab (click)="setPin()">
-                  <mat-icon class="detail-button-icon">password</mat-icon>
-                  Set Pin
-                </button>
-                <button class="detail-button" extended mat-fab (click)="setRandomPin()">
-                  <mat-icon class="detail-button-icon">casino</mat-icon>
-                  Random Pin
-                </button>
-              } @else {
-                <br/>
-                <button class="card-button-activate" extended mat-fab
-                        (click)="toggleEditMode(undefined, 'user', 'save')">
-                  <mat-icon class="detail-button-icon">save</mat-icon>
-                  Assign User
-                </button>
-                <br style="margin-top: 90px;"/>
-              }
-            </div>
-            <mat-divider style="margin: 0 96px;"/>
-            <br/>
-          </div>
+    <mat-grid-tile [colspan]="5" [rowspan]="5">
+      <div class="otp-container">
+        <br/>
+        <div class="pin-input">
+          <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
+          <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
         </div>
-        <div class="otp-container">
-          <div class="pin-input">
-            <input [(ngModel)]="fristOTPValue" class="input" placeholder="First OTP value">
-            <input [(ngModel)]="secondOTPValue" class="input" placeholder="Second OTP value">
-          </div>
-          <div class="pin-input-button">
-            <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
-              <mat-icon class="detail-button-icon">sync</mat-icon>
-              Resync Token
-            </button>
-          </div>
-          <mat-divider style="margin: 0 44px;"/>
-          <br/>
-          <div class="pin-input">
-            <input style="display:none" type="text"/>
-            <input style="display:none" type="password"/>
-            <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
-                   class="input-full"
-                   placeholder="OTP or PIN">
-            <button (click)="hide = !hide" mat-icon-button
-                    matSuffix>
-              <mat-icon
-                class="visibility-button">{{ hide ? 'visibility_off' : 'visibility' }}
-              </mat-icon>
-            </button>
-          </div>
-          <div class="user-pin-button">
-            <button (click)="testToken()" class="detail-button" extended mat-fab>
-              <mat-icon class="detail-button-icon">help_outline</mat-icon>
-              Test Token
-            </button>
-            <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
-              <mat-icon class="detail-button-icon">help_outline</mat-icon>
-              Verify OTP value
-            </button>
-          </div>
+        <div class="pin-input-button">
+          <button (click)="resyncOTPToken()" class="detail-button" extended mat-fab>
+            <mat-icon class="detail-button-icon">sync</mat-icon>
+            Resync Token
+          </button>
+        </div>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <div class="otp-pin-input">
+          <input style="display:none" type="text"/>
+          <input style="display:none" type="password"/>
+          <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
+                 class="input-full"
+                 placeholder="OTP or PIN">
+          <button (click)="hide = !hide" mat-icon-button class="visibility-button"
+                  matSuffix>
+            <mat-icon
+              class="visibility-icon">{{ hide ? 'visibility_off' : 'visibility' }}
+            </mat-icon>
+          </button>
+        </div>
+        <div class="user-pin-button">
+          <button (click)="testToken()" class="detail-button" extended mat-fab>
+            <mat-icon class="detail-button-icon">help_outline</mat-icon>
+            Test Token
+          </button>
+          <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab>
+            <mat-icon class="detail-button-icon">help_outline</mat-icon>
+            Verify OTP value
+          </button>
         </div>
       </div>
     </mat-grid-tile>

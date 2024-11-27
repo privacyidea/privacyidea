@@ -1,4 +1,4 @@
-@import '../../../../styles/table.css';
+@import '../../../../../styles/table.css';
 
 .detail-table {
   display: flex;
@@ -15,7 +15,7 @@
   max-width: 100%;
 }
 
-.details-section {
+.details-section .user-details-section {
   align-self: flex-start;
   width: 100%;
   max-width: fit-content;
@@ -26,6 +26,7 @@
 .detail-table th,
 .detail-table td {
   margin-left: 10px;
+  border: 1px solid #E0E2EC;
 }
 
 .info-table th:nth-child(odd),
@@ -44,6 +45,7 @@
 }
 
 .user-detail-row {
+  min-width: 143px;
   height: 50px;
 }
 
@@ -85,27 +87,7 @@
   font-size: 18px;
 }
 
-.mat-mdc-table {
-  min-width: 0;
-}
-
-.info-title {
-  display: flex;
-  padding-left: 16px;
-  align-items: center;
-  font-size: 14px;
-  height: 50px;
-  width: 125px;
-  border: 1px solid #E0E2EC;
-}
-
 .info-container {
-  flex-direction: row;
-  display: flex;
-  width: auto;
-}
-
-.otp-container {
   flex-direction: column;
   display: flex;
   gap: 10px;
@@ -128,7 +110,7 @@
 
 .input-full {
   height: 40px;
-  width: 116px;
+  width: calc(100% - 50px);
   border-radius: var(--border-radius);
 }
 
@@ -164,23 +146,25 @@ mat-grid-tile {
 }
 
 .editable-row {
-  min-width: 285px;
+  min-width: 288px;
 }
 
 .user-editable-row {
-  min-width: 234px;
+  min-width: 288px;
 }
 
 .pin-input {
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin: 0 44px;
 }
 
 .otp-pin-input {
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin: 0 128px 0 44px;
 }
 
 .pin-input-button {
@@ -189,9 +173,9 @@ mat-grid-tile {
 }
 
 .user-pin {
+  margin-top: auto;
   display: flex;
   justify-content: center;
-  align-items: center;
   flex-direction: column;
   gap: 10px;
 }
@@ -205,13 +189,25 @@ mat-grid-tile {
   display: flex;
   gap: 10px;
   justify-content: center;
-  flex-flow: column;
+  align-items: center;
+  flex-direction: column;
+}
+
+.mat-mdc-table {
+  min-width: 0;
+}
+
+.user-container {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
 }
 
 .assign-container {
   display: flex;
   justify-content: center;
   flex-direction: column;
+  margin: 0 82px;
 }
 
 .mat-form-field {
@@ -276,7 +272,7 @@ h3 {
 }
 
 .value-container {
-  width: 286px;
+  width: 288px;
 }
 
 .value-td {
@@ -347,10 +343,6 @@ mat-select {
 }
 
 .visibility-button {
-  margin-right: 86px;
-}
-
-.visibility-icon {
   font-size: 25px;
 }
 

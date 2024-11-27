@@ -1,0 +1,106 @@
+<div class="user-container">
+  <table [dataSource]="userData()" aria-label="User Detail Data Table"
+         class="detail-table"
+         mat-table>
+    <ng-container matColumnDef="key">
+      <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+      <td *matCellDef="let element" class="user-detail-row"
+          mat-cell>{{ element.keyMap.label }}
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="value">
+      <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+      <td *matCellDef="let element" class="user-detail-row user-editable-row" mat-cell>
+        @if (isEditingUser() && element.keyMap.key === "username" && selectedUserRealm() !== '') {
+          <mat-form-field>
+            <mat-label>Select User</mat-label>
+            <input matInput
+                   [formControl]="selectedUsername"
+                   [matAutocomplete]="auto">
+            <mat-autocomplete autoActiveFirstOption
+                              #auto="matAutocomplete">
+              @for (option of filteredUserOptions | async; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
+          <mat-form-field>
+            <mat-label>Select Realm of User</mat-label>
+            <mat-select [(ngModel)]="selectedUserRealm">
+              @for (option of realmOptions(); track option; ) {
+                <mat-option value="{{ option }}">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          {{ element.value }}
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="edit">
+      <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
+      <td *matCellDef="let element" class="user-detail-row edit-column-cell" mat-cell>
+        @if (element.keyMap.key === "username" && !(isAnyEditing() && !isEditingUser())) {
+          @if (element.value) {
+            <div class="edit-button-container">
+              <button mat-icon-button class="edit-button yellow-icon"
+                      (click)="unassignUser()">
+                <mat-icon class="mat-icon-button">person_remove</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <div class="edit-button-container">
+              @if (isEditingUser()) {
+                <button mat-icon-button class="edit-button red-icon"
+                        (click)="toggleEditMode('cancel')">
+                  <mat-icon class="mat-icon-button">cancel</mat-icon>
+                </button>
+              } @else {
+                <button mat-icon-button class="edit-button green-icon"
+                        (click)="toggleEditMode('edit')">
+                  <mat-icon class="mat-icon-button">person_add</mat-icon>
+                </button>
+              }
+            </div>
+          }
+        }
+      </td>
+    </ng-container>
+    <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
+        mat-row></tr>
+  </table>
+  <div class="user-pin">
+    <div class="user-pin-input">
+      <input style="display:none" type="text"/>
+      <input style="display:none" type="password"/>
+      <input [(ngModel)]="setPinValue"
+             [type]="'password'" class="input"
+             placeholder="Token Pin">
+      <input [(ngModel)]="repeatPinValue"
+             [type]="'password'" class="input"
+             placeholder="Repeat Pin">
+    </div>
+    <div class="user-pin-button">
+      @if (!isEditingUser()) {
+        <button class="detail-button" extended mat-fab (click)="setPin()">
+          <mat-icon class="detail-button-icon">password</mat-icon>
+          Set Pin
+        </button>
+        <button class="detail-button" extended mat-fab (click)="setRandomPin()">
+          <mat-icon class="detail-button-icon">casino</mat-icon>
+          Random Pin
+        </button>
+      } @else {
+        <button class="card-button-activate" extended mat-fab
+                (click)="toggleEditMode('save')">
+          <mat-icon class="detail-button-icon">save</mat-icon>
+          Assign User
+        </button>
+        <br style="margin-bottom: 40px">
+      }
+    </div>
+    <br/>
+    <mat-divider/>
+  </div>
+</div>

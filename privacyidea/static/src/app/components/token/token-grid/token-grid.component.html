@@ -6,10 +6,10 @@
           (tabChange)="onTabChange($event)"
           [active]="active"
           [containerIsSelected]="containerIsSelected"
-          [selectedTabIndex]="selectedTabIndex"
-          [serial]="serial"
           [refreshTokenDetails]="refreshTokenDetails"
           [revoked]="revoked"
+          [selectedTabIndex]="selectedTabIndex"
+          [serial]="serial"
           [tokenIsSelected]="tokenIsSelected">
         </app-token-card>
       </div>
@@ -19,16 +19,20 @@
         <main>
           @if (selectedTabIndex === 0) {
             @if (tokenIsSelected()) {
-              <app-token-details #tokenDetailsComponent [serial]="serial" [tokenIsSelected]="tokenIsSelected" [active]="active"
-                                 [revoked]="revoked"></app-token-details>
+              <app-token-details #tokenDetailsComponent [serial]="serial"
+                                 [tokenIsSelected]="tokenIsSelected" [active]="active"
+                                 [revoked]="revoked"
+                                 [refreshTokenDetails]="refreshTokenDetails"></app-token-details>
             } @else {
-              <app-token-table [serial]="serial" [tokenIsSelected]="tokenIsSelected"></app-token-table>
+              <app-token-table [serial]="serial"
+                               [tokenIsSelected]="tokenIsSelected"></app-token-table>
             }
           } @else if (selectedTabIndex === 1) {
             @if (containerIsSelected()) {
               <app-container-details [serial]="serial"></app-container-details>
             } @else {
-              <app-container-table [serial]="serial" [containerIsSelected]="containerIsSelected"></app-container-table>
+              <app-container-table [serial]="serial"
+                                   [containerIsSelected]="containerIsSelected"></app-container-table>
             }
           }
         </main>

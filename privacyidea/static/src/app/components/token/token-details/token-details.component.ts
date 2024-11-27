@@ -1,4 +1,4 @@
-import {Component, effect, Input, signal, WritableSignal} from '@angular/core';
+import {Component, effect, Input, Output, signal, WritableSignal} from '@angular/core';
 import {
   MatCell,
   MatCellDef,
@@ -14,7 +14,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
-import {AsyncPipe, NgClass} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput, MatSuffix} from '@angular/material/input';
@@ -24,10 +24,10 @@ import {MatSelectModule} from '@angular/material/select';
 import {forkJoin, Observable, startWith, switchMap} from 'rxjs';
 import {ValidateService} from '../../../services/validate/validate.service';
 import {RealmService} from '../../../services/realm/realm.service';
-import {MatAutocomplete, MatAutocompleteTrigger} from '@angular/material/autocomplete';
 import {UserService} from '../../../services/user/user.service';
 import {map} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -45,7 +45,7 @@ export const details = [
 ];
 
 export const userDetail = [
-  {key: 'user_realm', label: 'Realm'},
+  {key: 'user_realm', label: 'User Realm'},
   {key: 'username', label: 'User'},
   {key: 'resolver', label: 'Resolver'},
   {key: 'user_id', label: 'User ID'},
@@ -82,9 +82,7 @@ export const infoDetail = [
     ReactiveFormsModule,
     MatList,
     MatIconButton,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    AsyncPipe,
+    TokenDetailsUserComponent,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -107,8 +105,8 @@ export class TokenDetailsComponent {
     keyMap: { label: string; key: string },
     isEditing: boolean
   }[]>([]);
-  filteredUserOptions!: Observable<string[]>;
-  realmOptions = signal<string[]>([]);
+  @Output() filteredUserOptions!: Observable<string[]>;
+  @Output() realmOptions = signal<string[]>([]);
   containerOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
@@ -150,11 +148,11 @@ export class TokenDetailsComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   hide!: boolean;
-  isEditingUser: boolean = false;
+  @Output() isEditingUser: WritableSignal<boolean> = signal(false);
   isEditingInfo: boolean = false;
   selectedUsername = new FormControl<string>('');
-  setPinValue: string = '';
-  repeatPinValue: string = '';
+  @Output() setPinValue: WritableSignal<string> = signal('');
+  @Output() repeatPinValue: WritableSignal<string> = signal('');
   selectedContainer: string = '';
   fristOTPValue: string = '';
   secondOTPValue: string = '';
@@ -162,6 +160,7 @@ export class TokenDetailsComponent {
   selectedRealms = new FormControl<string[]>([]);
   userRealm: string = '';
   maxfail: number = 0;
+  @Input() refreshTokenDetails!: WritableSignal<boolean>;
 
   private _filterUserOptions(value: string): string[] {
     const filterValue = value.toLowerCase();
@@ -230,15 +229,6 @@ export class TokenDetailsComponent {
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
     switch (type) {
-      case 'user':
-        this.isEditingUser = !this.isEditingUser;
-        if (action === 'save') {
-          this.saveUser();
-        } else if (action === 'cancel') {
-          this.selectedUsername.reset();
-          this.selectedUserRealm.set('');
-        }
-        break;
       case 'container_serial':
         element.isEditing = !element.isEditing;
         if (action === 'save') {
@@ -276,9 +266,13 @@ export class TokenDetailsComponent {
     }
   }
 
+  @Output()
   isAnyEditing(): boolean {
-    return this.detailData().some((element) => element.isEditing)
-      || this.isEditingUser || this.isEditingInfo;
+    if (this.detailData) {
+      return this.detailData().some((element) => element.isEditing)
+        || this.isEditingUser() || this.isEditingInfo;
+    }
+    return false;
   }
 
   saveDetail(key: string, value: string): void {
@@ -327,56 +321,6 @@ export class TokenDetailsComponent {
     ).subscribe({
       error: error => {
         console.error('Failed to delete info', error);
-      }
-    });
-  }
-
-  saveUser() {
-    if (this.setPinValue !== this.repeatPinValue) {
-      console.error('PINs do not match');
-      return;
-    }
-    this.tokenService.assignUser(this.serial(), this.selectedUsername.value, this.selectedUserRealm(), this.setPinValue).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      next: () => {
-        this.setPinValue = '';
-        this.repeatPinValue = '';
-        this.selectedUsername.reset();
-        this.selectedUserRealm.set('');
-      },
-      error: error => {
-        console.error('Failed to assign user', error);
-      }
-    });
-  }
-
-  unassignUser() {
-    this.tokenService.unassignUser(this.serial()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: error => {
-        console.error('Failed to unassign user', error);
-      }
-    });
-  }
-
-  setPin() {
-    if (this.setPinValue !== this.repeatPinValue) {
-      console.error('PINs do not match');
-      return;
-    }
-    this.tokenService.setPin(this.serial(), this.setPinValue).subscribe({
-      error: error => {
-        console.error('Failed to set pin', error);
-      }
-    });
-  }
-
-  setRandomPin() {
-    this.tokenService.setRandomPin(this.serial()).subscribe({
-      error: error => {
-        console.error('Failed to set random pin', error);
       }
     });
   }

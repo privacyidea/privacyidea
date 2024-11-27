@@ -1,0 +1,134 @@
+import {Component, Input, signal, WritableSignal} from '@angular/core';
+import {FormControl, FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatRow,
+  MatRowDef,
+  MatTable
+} from '@angular/material/table';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatAutocomplete, MatAutocompleteTrigger, MatOption} from '@angular/material/autocomplete';
+import {MatSelect} from '@angular/material/select';
+import {MatFabButton, MatIconButton} from '@angular/material/button';
+import {MatIcon} from '@angular/material/icon';
+import {MatDivider} from '@angular/material/divider';
+import {TokenService} from '../../../../services/token/token.service';
+import {AsyncPipe} from '@angular/common';
+import {Observable} from 'rxjs';
+
+@Component({
+  selector: 'app-token-details-user',
+  standalone: true,
+  imports: [
+    MatTable,
+    MatColumnDef,
+    MatHeaderCellDef,
+    MatCellDef,
+    MatHeaderCell,
+    MatCell,
+    MatFormField,
+    MatInput,
+    ReactiveFormsModule,
+    MatAutocompleteTrigger,
+    MatAutocomplete,
+    MatOption,
+    FormsModule,
+    MatSelect,
+    MatIconButton,
+    MatIcon,
+    MatDivider,
+    MatFabButton,
+    AsyncPipe,
+    MatRowDef,
+    MatRow,
+    MatLabel
+  ],
+  templateUrl: './token-details-user.component.html',
+  styleUrl: './token-details-user.component.css'
+})
+export class TokenDetailsUserComponent {
+
+  constructor(private tokenService: TokenService) {
+  }
+
+  @Input() userData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: boolean
+  }[]>([]);
+  @Input() selectedUsername = new FormControl<string>('');
+  @Input() selectedUserRealm!: WritableSignal<string>;
+  @Input() serial!: WritableSignal<string>
+  @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  @Input() setPinValue!: WritableSignal<string>
+  @Input() repeatPinValue!: WritableSignal<string>
+  @Input() isEditingUser!: WritableSignal<boolean>
+  @Input() isAnyEditing!: () => boolean;
+  @Input() realmOptions!: WritableSignal<string[]>;
+  @Input() filteredUserOptions!: Observable<string[]>;
+
+  unassignUser() {
+    this.tokenService.unassignUser(this.serial()).subscribe({
+      next: () => {
+        this.refreshTokenDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to unassign user', error);
+      }
+    });
+  }
+
+  setPin() {
+    if (this.setPinValue !== this.repeatPinValue) {
+      console.error('PINs do not match');
+      return;
+    }
+    this.tokenService.setPin(this.serial(), this.setPinValue()).subscribe({
+      error: error => {
+        console.error('Failed to set pin', error);
+      }
+    });
+  }
+
+  setRandomPin() {
+    this.tokenService.setRandomPin(this.serial()).subscribe({
+      error: error => {
+        console.error('Failed to set random pin', error);
+      }
+    });
+  }
+
+  toggleEditMode(action: string = ''): void {
+    this.isEditingUser.set(!this.isEditingUser());
+    if (action === 'save') {
+      this.saveUser();
+    } else if (action === 'cancel') {
+      this.selectedUsername.reset();
+      this.selectedUserRealm.set('');
+    }
+  }
+
+  saveUser() {
+    if (this.setPinValue() !== this.repeatPinValue()) {
+      console.error('PINs do not match');
+      return;
+    }
+    this.tokenService.assignUser(this.serial(), this.selectedUsername.value, this.selectedUserRealm(), this.setPinValue()).subscribe({
+      next: () => {
+        this.setPinValue.set('');
+        this.repeatPinValue.set('');
+        this.selectedUsername.reset();
+        this.selectedUserRealm.set('');
+        this.refreshTokenDetails.set(true)
+      },
+      error: error => {
+        console.error('Failed to assign user', error);
+      }
+    });
+  }
+}
