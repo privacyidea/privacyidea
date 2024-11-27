@@ -18,4 +18,8 @@ export class RealmService {
     return this.http.get('http://127.0.0.1:5000/realm', {headers})
   }
 
+  getDefaultRealm() {
+    const headers = this.localService.getHeaders();
+    return this.http.get('http://127.0.0.1:5000/defaultrealm', {headers})
+  }
 }

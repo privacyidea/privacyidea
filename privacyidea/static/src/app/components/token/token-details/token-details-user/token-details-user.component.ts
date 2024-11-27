@@ -20,6 +20,7 @@ import {MatDivider} from '@angular/material/divider';
 import {TokenService} from '../../../../services/token/token.service';
 import {AsyncPipe} from '@angular/common';
 import {Observable} from 'rxjs';
+import {RealmService} from '../../../../services/realm/realm.service';
 
 @Component({
   selector: 'app-token-details-user',
@@ -53,7 +54,7 @@ import {Observable} from 'rxjs';
 })
 export class TokenDetailsUserComponent {
 
-  constructor(private tokenService: TokenService) {
+  constructor(private tokenService: TokenService, private realmService: RealmService) {
   }
 
   @Input() userData = signal<{
@@ -105,11 +106,13 @@ export class TokenDetailsUserComponent {
 
   toggleEditMode(action: string = ''): void {
     this.isEditingUser.set(!this.isEditingUser());
+    if (this.selectedUserRealm() === '') {
+      this.getDefaultRealm();
+    }
     if (action === 'save') {
       this.saveUser();
     } else if (action === 'cancel') {
       this.selectedUsername.reset();
-      this.selectedUserRealm.set('');
     }
   }
 
@@ -128,6 +131,17 @@ export class TokenDetailsUserComponent {
       },
       error: error => {
         console.error('Failed to assign user', error);
+      }
+    });
+  }
+
+  private getDefaultRealm() {
+    this.realmService.getDefaultRealm().subscribe({
+      next: (realm: any) => {
+        this.selectedUserRealm.set(Object.keys(realm.result.value)[0]);
+      },
+      error: error => {
+        console.error('Failed to get default realm', error);
       }
     });
   }
