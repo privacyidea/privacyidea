@@ -94,7 +94,11 @@ class APIContainerAuthorization(MyApiTestCase):
 
         # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        # another owner
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        # no owner
+        container_serial = init_container({"type": "generic"})
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
@@ -119,6 +123,11 @@ class APIContainerAuthorization(MyApiTestCase):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user, method='POST')
+
+        # Container has no owner
+        container_serial = init_container({"type": "generic"})
+        self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
+                                       self.at_user, method='POST')
         delete_policy("policy")
 
     def test_07_user_state_allowed(self):
@@ -141,6 +150,11 @@ class APIContainerAuthorization(MyApiTestCase):
         # User is not the owner of the container
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
+        self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
+                                       self.at_user, method='POST')
+
+        # Container has no owner
+        container_serial = init_container({"type": "generic", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user, method='POST')
         delete_policy("policy")
@@ -450,6 +464,13 @@ class APIContainerAuthorization(MyApiTestCase):
                                        self.at)
         delete_policy("policy")
 
+        self.setUp_user_realm3()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, resolver=self.resolvername1)
+        self.request_denied_assert_403('/container/init',
+                                       {"type": "Smartphone", "user": "corny", "realm": self.realm3},
+                                       self.at)
+        delete_policy("policy")
+
     def test_40_helpdesk_delete_allowed(self):
         self.setUp_user_realm2()
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=[self.realm2, self.realm1])
@@ -459,7 +480,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_41_helpdesk_delete_denied(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")
@@ -474,7 +495,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_43_helpdesk_description_denied(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm2)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at, method='POST')
@@ -489,7 +510,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_45_helpdesk_state_denied(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, realm=self.realm2)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
@@ -589,7 +610,7 @@ class APIContainerAuthorization(MyApiTestCase):
         self.setUp_user_realm2()
 
         # helpdesk of user realm realm2: container and token are both in realm1
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm2)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
@@ -632,13 +653,14 @@ class APIContainerAuthorization(MyApiTestCase):
         delete_policy("policy")
 
     def test_51_helpdesk_assign_user_denied(self):
+        self.setUp_user_realms()
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm2)
 
-        # helpdesk of user realm realm2: container in realm2, but user from realm1
+        # helpdesk of user realm realm2: container in realm2, but new user from realm1
         container_serial = init_container({"type": "generic", "realm": self.realm2})
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
-                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
+                                       {"realm": self.realm1, "user": "hans", "resolver": self.resolvername1}, self.at)
 
         # helpdesk of user realm realm2: user from realm2, but container in realm1
         container_serial = init_container({"type": "generic", "realm": self.realm1})
@@ -655,7 +677,7 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_53_helpdesk_remove_user_denied(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm2)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)

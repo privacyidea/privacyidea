@@ -81,7 +81,7 @@ import logging
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
-from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
@@ -102,7 +102,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
-                                           check_container_action)
+                                           check_container_action, check_user_params)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -328,7 +328,6 @@ def init():
                 log.info(f"User {user.login} is not allowed to add token {tokenobject.get_serial()} to container "
                          f"{container_serial}.")
             if container_add_token_right:
-                # TODO should this be caught here? The enrollment should not be blocked by the error?
                 try:
                     logged_in_user_role = g.logged_in_user.get("role")
                     add_token_to_container(container_serial, tokenobject.get_serial(), user, logged_in_user_role)
@@ -371,7 +370,7 @@ def init():
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
+@prepolicy(check_token_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
 def get_challenges_api(serial=None):
@@ -504,7 +503,8 @@ def list_api():
 @token_blueprint.route('/assign', methods=['POST'])
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_base_action, request, action=ACTION.ASSIGN)
+@prepolicy(check_user_params, request, action=ACTION.ASSIGN)
+@prepolicy(check_token_action, request, action=ACTION.ASSIGN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
@@ -535,7 +535,7 @@ def assign_api():
 
 
 @token_blueprint.route('/unassign', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.UNASSIGN)
+@prepolicy(check_token_action, request, action=ACTION.UNASSIGN)
 @event("token_unassign", request, g)
 @log_with(log)
 def unassign_api():
@@ -558,7 +558,7 @@ def unassign_api():
 
 @token_blueprint.route('/revoke', methods=['POST'])
 @token_blueprint.route('/revoke/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.REVOKE)
+@prepolicy(check_token_action, request, action=ACTION.REVOKE)
 @event("token_revoke", request, g)
 @log_with(log)
 def revoke_api(serial=None):
@@ -590,7 +590,7 @@ def revoke_api(serial=None):
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_base_action, request, action=ACTION.ENABLE)
+@prepolicy(check_token_action, request, action=ACTION.ENABLE)
 @event("token_enable", request, g)
 @log_with(log)
 def enable_api(serial=None):
@@ -615,7 +615,7 @@ def enable_api(serial=None):
 
 @token_blueprint.route('/disable', methods=['POST'])
 @token_blueprint.route('/disable/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.DISABLE)
+@prepolicy(check_token_action, request, action=ACTION.DISABLE)
 @event("token_disable", request, g)
 @log_with(log)
 def disable_api(serial=None):
@@ -642,7 +642,7 @@ def disable_api(serial=None):
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
-@prepolicy(check_base_action, request, action=ACTION.DELETE)
+@prepolicy(check_token_action, request, action=ACTION.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
 def delete_api(serial):
@@ -665,7 +665,7 @@ def delete_api(serial):
 
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.RESET)
+@prepolicy(check_token_action, request, action=ACTION.RESET)
 @event("token_reset", request, g)
 @log_with(log)
 def reset_api(serial=None):
@@ -690,7 +690,7 @@ def reset_api(serial=None):
 
 @token_blueprint.route('/resync', methods=['POST'])
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.RESYNC)
+@prepolicy(check_token_action, request, action=ACTION.RESYNC)
 @event("token_resync", request, g)
 @log_with(log)
 def resync_api(serial=None):
@@ -717,7 +717,7 @@ def resync_api(serial=None):
 
 @token_blueprint.route('/setpin', methods=['POST'])
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.SETPIN)
+@prepolicy(check_token_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request, action=ACTION.SETPIN)
 @postpolicy(save_pin_change, request)
@@ -767,7 +767,7 @@ def setpin_api(serial=None):
 
 @token_blueprint.route('/setrandompin', methods=['POST'])
 @token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.SETRANDOMPIN)
+@prepolicy(check_token_action, request, action=ACTION.SETRANDOMPIN)
 @prepolicy(set_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @postpolicy(save_pin_change, request)
@@ -802,7 +802,7 @@ def setrandompin_api(serial=None):
 
 @token_blueprint.route('/description', methods=['POST'])
 @token_blueprint.route('/description/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
+@prepolicy(check_token_action, request, action=ACTION.SETDESCRIPTION)
 @event("token_set", request, g)
 @log_with(log)
 def set_description_api(serial=None):
@@ -828,7 +828,7 @@ def set_description_api(serial=None):
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.SET)
+@prepolicy(check_token_action, request, action=ACTION.SET)
 @event("token_set", request, g)
 @log_with(log)
 def set_api(serial=None):
@@ -932,7 +932,8 @@ def set_api(serial=None):
 @admin_required
 @log_with(log)
 @prepolicy(check_max_token_realm, request)
-@prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
+@prepolicy(check_admin_tokenlist, request, action=ACTION.TOKENREALMS)
+@prepolicy(check_token_action, request, action=ACTION.TOKENREALMS)
 @event("token_realm", request, g)
 def tokenrealm_api(serial=None):
     """
@@ -957,7 +958,9 @@ def tokenrealm_api(serial=None):
         realm_list = [r.strip() for r in realms.split(",")]
     g.audit_object.log({"serial": serial})
 
-    set_realms(serial, realms=realm_list)
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
+
+    set_realms(serial, realms=realm_list, allowed_realms=allowed_realms)
     g.audit_object.log({"success": True})
     return send_result(True)
 
@@ -1082,7 +1085,7 @@ def copypin_api():
 
     :jsonparam basestring from: the serial number of the token, from where you
         want to copy the pin.
-    :jsonparam basestring to: the serial number of the token, from where you
+    :jsonparam basestring to: the serial number of the token, to where you
         want to copy the pin.
     :return: returns value=True in case of success
     :rtype: bool
@@ -1104,9 +1107,9 @@ def copyuser_api():
     Copy the token user from one token to the other.
 
     :jsonparam basestring from: the serial number of the token, from where you
-        want to copy the pin.
-    :jsonparam basestring to: the serial number of the token, from where you
-        want to copy the pin.
+        want to copy the user.
+    :jsonparam basestring to: the serial number of the token, to where you
+        want to copy the user.
     :return: returns value=True in case of success
     :rtype: bool
     """
@@ -1118,7 +1121,7 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.LOSTTOKEN)
+@prepolicy(check_token_action, request, action=ACTION.LOSTTOKEN)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
@@ -1209,7 +1212,7 @@ def get_serial_by_otp_api(otp=None):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
+@prepolicy(check_token_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
 def set_tokeninfo_api(serial, key):
@@ -1233,7 +1236,7 @@ def set_tokeninfo_api(serial, key):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
+@prepolicy(check_token_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
 def delete_tokeninfo_api(serial, key):
@@ -1256,7 +1259,7 @@ def delete_tokeninfo_api(serial, key):
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['POST'])
 @token_blueprint.route('/group/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.TOKENGROUPS)
+@prepolicy(check_token_action, request, ACTION.TOKENGROUPS)
 @event("token_assign_group", request, g)
 @log_with(log)
 def assign_tokengroup_api(serial, groupname=None):
@@ -1291,7 +1294,7 @@ def assign_tokengroup_api(serial, groupname=None):
 
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.TOKENGROUPS)
+@prepolicy(check_token_action, request, ACTION.TOKENGROUPS)
 @event("token_unassign_group", request, g)
 @log_with(log)
 def unassign_tokengroup_api(serial, groupname):

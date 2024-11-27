@@ -26,7 +26,8 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match, SCOPE, ACTION
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ResourceNotFoundError
+from privacyidea.lib.token import get_tokens_from_serial_or_user
 
 log = logging.getLogger(__name__)
 
@@ -113,3 +114,27 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     else:
         params[PUSH_ACTION.TTL] = "10"
     return params
+
+
+def get_token_user_attributes(serial: str):
+    """
+    Get the user attributes from the token owner and the token realms.
+
+    :param serial: The serial of the token
+    :return: username (str), realm (str), resolver (str), token_realms (list)
+    """
+    username = realm = resolver = token_realms = None
+    # get user attributes from the token
+    try:
+        token = get_tokens_from_serial_or_user(serial, user=None)[0]
+    except ResourceNotFoundError:
+        token = None
+        log.error("Could not find container with serial {container_serial}.")
+    if token:
+        token_owners = token.user
+        if token_owners:
+            username = token_owners.login
+            realm = token_owners.realm
+            resolver = token_owners.resolver
+        token_realms = token.get_realms()
+    return username, realm, resolver, token_realms
