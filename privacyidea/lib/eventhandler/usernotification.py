@@ -383,12 +383,14 @@ class UserNotificationEventHandler(BaseEventHandler):
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
+            container_serial = request.all_data.get("container_serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
             pin = content.get("detail", {}).get("pin")
             googleurl_value = content.get("detail", {}).get("googleurl",
                                                             {}).get("value")
-            googleurl_img = content.get("detail", {}).get("googleurl",
-                                                          {}).get("img")
+            googleurl_img = content.get("detail", {}).get("googleurl", {}).get("img")
+            container_url = content.get("result", {}).get("value", {}).get("container_url", {}).get("value")
+            container_qr = content.get("result", {}).get("value", {}).get("container_url", {}).get("img")
             tokentype = None
             tokendescription = None
             if serial:
@@ -408,11 +410,14 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    recipient=recipient,
                                    tokenowner=tokenowner,
                                    serial=serial,
+                                   container_serial=container_serial,
                                    tokentype=tokentype,
                                    tokendescription=tokendescription,
                                    registrationcode=registrationcode,
                                    escape_html=action.lower() == "sendmail" and
-                                               handler_options.get("mimetype", "").lower() == "html")
+                                               handler_options.get("mimetype", "").lower() == "html",
+                                   container_url=container_url,
+                                   container_qr=container_qr)
 
             body = to_unicode(body).format(googleurl_img=googleurl_img, **tags)
             subject = subject.format(**tags)

@@ -442,9 +442,10 @@ class BaseEventHandler(object):
             CONDITION.CONTAINER_REALM:
                 {
                     "type": "multi",
-                    "desc": _("The container is in this realm. Multiple realms can be passed as comma separated list "
-                              "without white spaces, e.g. 'realm1,realm2'. The condition is fulfilled if the container "
-                              "is in at least one realm."),
+                    "desc": _("The container is in this realm or in no realm at all. Multiple realms can be passed as "
+                              "comma separated list without white spaces, e.g. 'realm1,realm2'. The condition is "
+                              "fulfilled if the container is in at least one realm of the list. The condition is not "
+                              "checked if the container has no realm, hence the condition would match."),
                     "value": [{"name": r} for r in realms],
                     "group": GROUP.CONTAINER
                 },
@@ -453,7 +454,8 @@ class BaseEventHandler(object):
                     "type": "multi",
                     "desc": _("An owner of the container is in this resolver. Multiple resolvers can be passed as "
                               "comma separated list without white spaces, e.g. 'resolver1,resolver2'. The condition is "
-                              "fulfilled if at least one owner is in one resolver."),
+                              "fulfilled if at least one owner is in one resolver. The condition is not checked if the "
+                              "container has no owner, hence the condition would match."),
                     "value": [{"name": r} for r in resolvers],
                     "group": GROUP.CONTAINER
                 },
@@ -1029,22 +1031,27 @@ class BaseEventHandler(object):
             if CONDITION.CONTAINER_REALM in conditions:
                 condition_realms = conditions.get(CONDITION.CONTAINER_REALM).split(",")
                 container_realms = get_container_realms(container.serial)
-                # check if at least one realm of the condition is also a realm of the container
-                matching_realms = list(set(condition_realms).intersection(container_realms))
-                if len(matching_realms) == 0:
-                    log.debug(f"Condition container_realm {condition_realms} for container {container.serial} "
-                              "not fulfilled.")
-                    return False
+                # If the container is in no realm, the condition is not checked, it is fulfilled
+                if len(container_realms) > 0:
+                    # check if at least one realm of the condition is also a realm of the container
+                    matching_realms = list(set(condition_realms).intersection(container_realms))
+                    if len(matching_realms) == 0:
+                        log.debug(f"Condition container_realm {condition_realms} for container {container.serial} "
+                                  "not fulfilled.")
+                        return False
 
             if CONDITION.CONTAINER_RESOLVER in conditions:
                 condition_resolvers = conditions.get(CONDITION.CONTAINER_RESOLVER).split(",")
                 container_resolvers = [user.resolver for user in container.get_users()]
-                # check if at least one resolver of the condition is also a resolver of a container owner
-                matching_resolvers = list(set(condition_resolvers).intersection(container_resolvers))
-                if len(matching_resolvers) == 0:
-                    log.debug(f"Condition container_resolver {condition_resolvers} for container {container.serial} "
-                              "not fulfilled.")
-                    return False
+                # If the container has no owner, the condition is not checked, it is fulfilled
+                if len(container_resolvers) > 0:
+                    # check if at least one resolver of the condition is also a resolver of a container owner
+                    matching_resolvers = list(set(condition_resolvers).intersection(container_resolvers))
+                    if len(matching_resolvers) == 0:
+                        log.debug(
+                            f"Condition container_resolver {condition_resolvers} for container {container.serial} "
+                            "not fulfilled.")
+                        return False
 
             if CONDITION.CONTAINER_INFO in conditions:
                 cond = conditions.get(CONDITION.CONTAINER_INFO)

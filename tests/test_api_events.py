@@ -11,6 +11,7 @@ import mock
 from privacyidea.lib.config import set_privacyidea_config
 from .test_api_container import APIContainerSynchronization
 from .test_lib_events import ContainerEventTestCase
+from .test_lib_tokencontainer import TokenContainerSynchronization
 
 # TODO: this should be imported from lib.event when available
 HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
@@ -890,7 +891,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         return container, hotp, totp
 
-    def test_disable_tokens_on_unregister(self):
+    def test_01_disable_tokens_on_unregister(self):
         # create container with tokens
         container, hotp, totp = self.setup_container_with_tokens()
 
@@ -920,7 +921,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         hotp.delete_token()
         totp.delete_token()
 
-    def test_disable_enable_tokens_on_rollover(self):
+    def test_02_disable_enable_tokens_on_rollover(self):
         # Disable all tokens if a rollover is initiated and enable them after the rollover is successfully completed
         # create container with tokens
         container, hotp, totp = self.setup_container_with_tokens()
@@ -983,7 +984,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         hotp.delete_token()
         totp.delete_token()
 
-    def test_disable_tokens_if_one_is_locked(self):
+    def test_03_disable_tokens_if_one_is_locked(self):
         # Disable all tokens if one token in the container is locked
         # create container with tokens
         container, hotp, totp = self.setup_container_with_tokens()
@@ -1016,3 +1017,287 @@ class ContainerHandlerTestCase(MyApiTestCase):
         container.delete()
         hotp.delete_token()
         totp.delete_token()
+
+    @smtpmock.activate
+    def test_04_mail_on_register_init(self):
+        """
+        Send a mail with the registration QR code to the user.
+        """
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+        # policy for registration
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+
+        self.setUp_user_realms()
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        msg = """
+                Hello {user},
+
+                the administrator {admin}@{realm} initialized a registration for your container {container_serial}.
+                To complete the registration, please scan the attached QR code or click on this link {container_url}
+                on your smartphone.
+                
+                The QR code allows you to synchronize the tokens on your smartphone with the server. 
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
+                
+                {container_qr}
+
+                To check your container you may login to the Web UI:
+                {url}
+                """
+        r = set_event("send email", "container_register_initialize", "UserNotification", "sendmail",
+                      conditions={},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com",
+                               "subject": "Container Registration.",
+                               "body": msg})
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.request_assert_success(f'/container/register/initialize',
+                                        {"container_serial": container.serial},
+                                        self.at, 'POST')
+
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
+            mock_log.assert_called_once_with(expected)
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: pretzel@example.com', msg)
+            self.assertIn("Container Registration", msg)
+        delete_event(r)
+        delete_policy("policy")
+
+    @smtpmock.activate
+    def test_05_mail_on_unregister(self):
+        """
+        Send a user notification if the container is unregistered
+        The smpt server is mocked to return an error. The event is successfully triggered if the error occurs in the
+        log.
+        """
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        # Register container
+        ContainerEventTestCase.register_smartphone(container)
+
+        self.setUp_user_realms()
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        msg = """
+                Hello {user},
+                
+                the administrator {admin}@{realm} performed the action
+                {action} on your container {container_serial}.
+                
+                To check your tokens you may login to the Web UI:
+                {url}
+                """
+        r = set_event("send email", "container_unregister", "UserNotification", "sendmail",
+                      conditions={},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com",
+                               "subject": "Your container was unregistered.",
+                               "body": msg})
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.request_assert_success(f'/container/register/{container.serial}/terminate',
+                                        {},
+                                        self.at, 'POST')
+
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
+            mock_log.assert_called_once_with(expected)
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: pretzel@example.com', msg)
+            self.assertIn("Your container was unregistered.", msg)
+        delete_event(r)
+
+    @smtpmock.activate
+    def test_06_mail_on_client_rollover(self):
+        """
+        Send a user notification if the container shall be rolled over
+        """
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        self.setUp_user_realms()
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        msg = """
+                Hello {user},
+
+                a rollover was requested for your container {container_serial}.
+                The request came from the IP {client_ip}.
+                If that was you, you can ignore this mail, otherwise your container and all tokens might be compromised.
+                Please contact your admin and deactivate all tokens in the Web UI {url}.
+                """
+        r = set_event("send email", "container_init_rollover", "UserNotification", "sendmail",
+                      conditions={},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com",
+                               "subject": "Container Rollover.",
+                               "body": msg},
+                      position="post")
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        # Prepare rollover
+        # Register container
+        priv_key_smph = ContainerEventTestCase.register_smartphone(container)
+        set_policy("policy", scope=SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+        # Create Challenge for rollover
+        scope = f"https://pi.net/container/{container.serial}/rollover"
+        challenge_data = container.create_challenge(scope)
+        # Mock smartphone
+        device_brand = "LG"
+        device_model = "ABC123"
+        params, priv_sig_key_smph = TokenContainerSynchronization.mock_smartphone_register_params(
+            challenge_data["nonce"],
+            challenge_data["time_stamp"],
+            scope, container.serial,
+            device_brand, device_model,
+            private_key_smph=priv_key_smph)
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.request_assert_success(f'/container/{container.serial}/rollover',
+                                        params,
+                                        None, 'POST')
+
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
+            mock_log.assert_called_once_with(expected)
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: pretzel@example.com', msg)
+            self.assertIn("Container Rollover", msg)
+        delete_event(r)
+        delete_policy("policy")
+
+    @smtpmock.activate
+    def test_07_mail_on_rollover(self):
+        """
+        Send a user notification if the container shall be rolled over
+        """
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        self.setUp_user_realms()
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        msg = """
+                Hello {user},
+
+                the administrator {admin}@{realm} initialized a rollover for your container {container_serial}.
+                To complete the rollover, please scan the attached QR code or click on this link {container_url}
+                on your smartphone.
+                
+                The QR code allows you to synchronize the tokens on your smartphone with the server. 
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
+                
+                {container_qr}
+                
+                After the rollover is completed, the tokens and container on the old device are not valid anymore.
+
+                To check your container you may login to the Web UI:
+                {url}
+                """
+        r = set_event("send email", "container_register_initialize", "UserNotification", "sendmail",
+                      conditions={"container_info": "registration_state==rollover"},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com",
+                               "subject": "Container Rollover.",
+                               "body": msg},
+                      position="post")
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        set_policy("policy", scope=SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+
+        # Register container
+        ContainerEventTestCase.register_smartphone(container)
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.request_assert_success(f'/container/register/initialize',
+                                        {"container_serial": container.serial, "rollover": True},
+                                        self.at, 'POST')
+
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
+            mock_log.assert_called_once_with(expected)
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: pretzel@example.com', msg)
+            self.assertIn("Container Rollover", msg)
+
+        delete_event(r)
+        delete_policy("policy")
+
+    @smtpmock.activate
+    def test_08_mail_on_rollover_not_triggered_for_register(self):
+        """
+        Send a user notification if the container shall be rolled over.
+        The mail shall not be triggered, if a container is initially registered.
+        """
+        # create container with tokens
+        container, hotp, totp = self.setup_container_with_tokens()
+
+        self.setUp_user_realms()
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        r = set_event("send email", "container_register_initialize", "UserNotification", "sendmail",
+                      conditions={"container_info": "registration_state==rollover"},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com",
+                               "subject": "Container Rollover.",
+                               "body": ""},
+                      position="post")
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        set_policy("policy", scope=SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.request_assert_success(f'/container/register/initialize',
+                                        {"container_serial": container.serial},
+                                        self.at, 'POST')
+
+            # mock log not called
+            mock_log.assert_not_called()
+
+        delete_event(r)
+        delete_policy("policy")

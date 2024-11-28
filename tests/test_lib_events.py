@@ -800,10 +800,10 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         event_handler = BaseEventHandler()
 
-        # Container in no realm: condition shall not match
+        # Container in no realm: condition shall match
         options["handler_def"] = {"conditions": {CONDITION.CONTAINER_REALM: "realm1"}}
         r = event_handler.check_condition(options)
-        self.assertFalse(r)
+        self.assertTrue(r)
 
         # Add container to realm2: condition shall not match
         container.set_realms([self.realm2])
@@ -836,10 +836,10 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         event_handler = BaseEventHandler()
 
-        # Container has no user: condition shall not match
+        # Container has no user: condition shall match
         options["handler_def"] = {"conditions": {CONDITION.CONTAINER_RESOLVER: self.resolvername2}}
         r = event_handler.check_condition(options)
-        self.assertFalse(r)
+        self.assertTrue(r)
 
         # Add user to container: condition shall not match
         container.add_user(user)
@@ -1859,13 +1859,12 @@ class ContainerEventTestCase(MyTestCase):
         init_result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True",
                                                    params={})
         smartphone.add_container_info("server_url", server_url)
-        params, _ = TokenContainerSynchronization.mock_smartphone_register_params(init_result["nonce"],
-                                                                                  init_result["time_stamp"],
-                                                                                  scope,
-                                                                                  smartphone.serial)
+        params, priv_key_smph = TokenContainerSynchronization.mock_smartphone_register_params(init_result["nonce"],
+                                                                                              init_result["time_stamp"],
+                                                                                              scope,
+                                                                                              smartphone.serial)
         smartphone.finalize_registration(params)
-
-    # ------- Unit tests for container actions -------
+        return priv_key_smph
 
     def setup_request(self, container_serial=None):
         g = FakeFlaskG()
