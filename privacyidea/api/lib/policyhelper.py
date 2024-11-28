@@ -27,7 +27,7 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
-from privacyidea.lib.token import get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
 
 log = logging.getLogger(__name__)
 
@@ -127,14 +127,15 @@ def get_token_user_attributes(serial: str):
     # get user attributes from the token
     try:
         token = get_tokens_from_serial_or_user(serial, user=None)[0]
+        token_owner = get_token_owner(serial)
     except ResourceNotFoundError:
         token = None
+        token_owner = None
         log.error("Could not find container with serial {container_serial}.")
+    if token_owner:
+        username = token_owner.login
+        realm = token_owner.realm
+        resolver = token_owner.resolver
     if token:
-        token_owners = token.user
-        if token_owners:
-            username = token_owners.login
-            realm = token_owners.realm
-            resolver = token_owners.resolver
         token_realms = token.get_realms()
     return username, realm, resolver, token_realms

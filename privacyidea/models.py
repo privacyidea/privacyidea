@@ -384,9 +384,7 @@ class Token(MethodsMixin, db.Model):
         """
         # delete old TokenRealms
         if not add:
-            db.session.query(TokenRealm) \
-                .filter(TokenRealm.token_id == self.id) \
-                .delete()
+            db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
@@ -405,8 +403,7 @@ class Token(MethodsMixin, db.Model):
                                                 realm_id=r.id).first()
                 if not tr:
                     # If the realm is not yet attached to the token
-                    Tr = TokenRealm(token_id=self.id, realm_id=r.id)
-                    db.session.add(Tr)
+                    TokenRealm(token_id=self.id, realm_id=r.id).save()
         db.session.commit()
 
     def get_realms(self):
