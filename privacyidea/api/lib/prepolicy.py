@@ -1884,13 +1884,12 @@ def fido2_auth(request, action):
         for transport in allowed_transports_policy.split()
     )
 
-    # Challenge texts
-    challenge_texts = get_challenge_texts_for_types([WebAuthnTokenClass.get_class_type().lower(),
-                                                     PasskeyTokenClass.get_class_type().lower()],
-                                                    scope=SCOPE.AUTH)
-    for t, text in challenge_texts.items():
-        if text:
-            request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
+    types_defaults = {WebAuthnTokenClass.get_class_type().lower(): DEFAULT_CHALLENGE_TEXT_AUTH,
+             PasskeyTokenClass.get_class_type().lower(): PasskeyTokenClass.get_default_challenge_text()}
+    for t, d in types_defaults.items():
+        action = f"{t}_{ACTION.CHALLENGETEXT}"
+        challenge_text = get_first_policy_value(action, d, scope=SCOPE.AUTH)
+        request.all_data[action] = challenge_text
 
     request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
     return True
@@ -1913,12 +1912,12 @@ def get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUT
     return res
 
 
-def get_policy_value_of_allowed_values(policy_action: str, default: str,
-                                       allowed_values: list[str], user_object=None) -> str:
-    policies = (Match.user(g, scope=SCOPE.ENROLL, action=policy_action, user_object=user_object)
-                .action_values(unique=True))
+def get_first_policy_value(policy_action: str, default: str, scope,
+                           allowed_values: list[str] = None, user_object=None) -> str:
+    policies = (Match.user(g, scope=scope, action=policy_action, user_object=user_object)
+                .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
     policy_value = list(policies)[0] if policies else default
-    if policy_value not in allowed_values:
+    if allowed_values and policy_value not in allowed_values:
         raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
     return policy_value
 
@@ -2009,19 +2008,19 @@ def fido2_enroll(request, action):
             raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
                               f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
-        authenticator_attestation_level = get_policy_value_of_allowed_values(
+        authenticator_attestation_level = get_first_policy_value(
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
             DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
             ATTESTATION_LEVELS
         )
 
-        authenticator_attestation_form = get_policy_value_of_allowed_values(
+        authenticator_attestation_form = get_first_policy_value(
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
             DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             ATTESTATION_FORMS
         )
 
-        user_verification_requirement = get_policy_value_of_allowed_values(
+        user_verification_requirement = get_first_policy_value(
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
             DEFAULT_USER_VERIFICATION_REQUIREMENT,
             USER_VERIFICATION_LEVELS

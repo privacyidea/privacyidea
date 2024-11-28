@@ -33,7 +33,7 @@ from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuth
 from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorSelectionCriteria,
                                       ResidentKeyRequirement,
                                       PublicKeyCredentialDescriptor, UserVerificationRequirement, AttestationObject,
-                                      PublicKeyCredentialCreationOptions, AuthenticationCredential)
+                                      PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import get_optional, get_required
@@ -45,7 +45,6 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.token import get_fido2_nonce
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthntoken import WEBAUTHNCONFIG, WEBAUTHNACTION, WEBAUTHNINFO
 from privacyidea.models import Challenge
@@ -362,6 +361,10 @@ class PasskeyTokenClass(TokenClass):
         self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
         return 1
 
+    @classmethod
+    def get_default_challenge_text(cls):
+        return lazy_gettext("Please authenticate with your Passkey!")
+
     def create_challenge(self, transactionid=None, options=None):
         """
         Requires the key "webauthn_relying_party_id" (WEBAUTHNACTION.RELYING_PARTY_ID) in the option dict.
@@ -379,7 +382,7 @@ class PasskeyTokenClass(TokenClass):
         rp_id = get_required(options, WEBAUTHNACTION.RELYING_PARTY_ID)
         challenge = bytes_to_base64url(geturandom(32))
         transaction_id = get_rand_digit_str(20)
-        message = lazy_gettext("Please authenticate with your Passkey!")
+        message = PasskeyTokenClass.get_default_challenge_text()
         db_challenge = Challenge(self.get_serial(), transaction_id=transaction_id, challenge=challenge)
         db_challenge.save()
         ret = {

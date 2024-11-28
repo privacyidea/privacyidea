@@ -2141,6 +2141,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {
             'user': 'foo'
         }
+
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
@@ -2165,7 +2166,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         }
         fido2_auth(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
-                         None)
+                         DEFAULT_ALLOWED_TRANSPORTS)
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          None)
 
