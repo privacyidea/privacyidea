@@ -50,6 +50,21 @@
                         }
                       </mat-select>
                     </mat-form-field>
+                  }
+                } @else if (element.keyMap.key === "tokengroup") {
+                  @if (element.isEditing) {
+                    <mat-form-field class="detail-table-input">
+                      <mat-label>Select Token Group</mat-label>
+                      <mat-select [formControl]="selectedTokengroup" multiple>
+                        @for (option of tokengroupOptions(); track option; ) {
+                          @if (option === userRealm) {
+                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                          } @else {
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                          }
+                        }
+                      </mat-select>
+                    </mat-form-field>
                   } @else {
                     @for (realm of element.value; track realm; let idx = $index) {
                       <mat-list-item class="object-row">
@@ -93,7 +108,7 @@
                   @if (element.value) {
                     <div class="edit-button-container">
                       <button mat-icon-button class="red-icon edit-button"
-                              (click)="unassignContainer()">
+                              (click)="deleteContainer()">
                         <mat-icon class="mat-icon-button">folder_delete</mat-icon>
                       </button>
                     </div>
@@ -116,17 +131,6 @@
                       <mat-icon class="mat-icon-button">cancel</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "realms" && element.isEditing) {
-                  <div class="edit-button-container">
-                    <button mat-icon-button class="edit-button"
-                            (click)="toggleEditMode(element, 'realms', 'save')">
-                      <mat-icon class="mat-icon-button">save_as</mat-icon>
-                    </button>
-                    <button mat-icon-button class="edit-button red-icon"
-                            (click)="toggleEditMode(element, 'realms', 'cancel')">
-                      <mat-icon class="mat-icon-button">cancel</mat-icon>
-                    </button>
-                  </div>
                 } @else if (element.keyMap.key === "maxfail"
                 || element.keyMap.key === "count_window"
                 || element.keyMap.key === "sync_window"
@@ -137,14 +141,14 @@
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
                       <button mat-icon-button class="edit-button"
-                              (click)="toggleEditMode(element, 'default', 'edit')">
+                              (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
                         <mat-icon class="mat-icon-button">
                           edit
                         </mat-icon>
                       </button>
                     } @else if (element.isEditing) {
                       <button mat-icon-button class="edit-button"
-                              (click)="toggleEditMode(element, 'default', 'save')">
+                              (click)="toggleEditMode(element, element.keyMap.key, 'save')">
                         <mat-icon class="mat-icon-button">save_as</mat-icon>
                       </button>
                       <button mat-icon-button class="edit-button red-icon"

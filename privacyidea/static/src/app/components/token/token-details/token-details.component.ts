@@ -113,6 +113,7 @@ export class TokenDetailsComponent {
   filteredContainerOptions!: Observable<string[]>;
   @Output() realmOptions = signal<string[]>([]);
   containerOptions = signal<string[]>([]);
+  tokengroupOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
   newInfo: WritableSignal<{
@@ -171,6 +172,7 @@ export class TokenDetailsComponent {
   userRealm: string = '';
   maxfail: number = 0;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  selectedTokengroup = new FormControl<string[]>([]);
 
   private _filterUserOptions(value: string): string[] {
     const filterValue = value.toLowerCase();
@@ -247,7 +249,27 @@ export class TokenDetailsComponent {
       case 'container_serial':
         element.isEditing = !element.isEditing;
         if (action === 'save') {
-          this.assignContainer();
+          this.saveContainer();
+        } else if (action === 'cancel') {
+          this.selectedContainer.reset();
+        }
+        break;
+      case 'tokengroup':
+        element.isEditing = !element.isEditing;
+        if (element.isEditing) {
+          this.tokenService.getTokengroups().subscribe({
+            next: (tokengroups: any) => {
+              this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
+              this.selectedTokengroup.setValue(this.detailData().find(
+                detail => detail.keyMap.key === 'tokengroup')?.value);
+            },
+            error: error => {
+              console.error('Failed to get tokengroups', error);
+            }
+          });
+        }
+        if (action === 'save') {
+          this.saveTokengroup(this.selectedTokengroup.value);
         } else if (action === 'cancel') {
           this.selectedContainer.reset();
         }
@@ -340,7 +362,7 @@ export class TokenDetailsComponent {
     });
   }
 
-  assignContainer() {
+  saveContainer() {
     this.containerService.assignContainer(this.serial(), this.selectedContainer.value).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
@@ -350,7 +372,7 @@ export class TokenDetailsComponent {
     });
   }
 
-  unassignContainer() {
+  deleteContainer() {
     this.containerService.unassignContainer(this.serial(), this.selectedContainer.value).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
@@ -399,6 +421,19 @@ export class TokenDetailsComponent {
       },
       error: error => {
         console.error('Failed to save token realms', error);
+      }
+    });
+  }
+
+  private saveTokengroup(value: any) {
+    this.tokenService.setTokengroup(this.serial(), value).pipe(
+      switchMap(() => this.showTokenDetail(this.serial()))
+    ).subscribe({
+      next: () => {
+        this.showTokenDetail(this.serial());
+      },
+      error: error => {
+        console.error('Failed to set token group', error);
       }
     });
   }

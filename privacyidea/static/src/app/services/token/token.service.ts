@@ -129,7 +129,7 @@ export class TokenService {
 
   deleteInfo(serial: string, infoKey: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.baseUrl}info` + "/" + serial + "/" + infoKey, {headers})
+    return this.http.delete(`${this.baseUrl}info/` + serial + "/" + infoKey, {headers})
   }
 
   unassignUser(serial: string) {
@@ -173,8 +173,21 @@ export class TokenService {
 
   setTokenRealm(serial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}realm` + "/" + serial, {
+    return this.http.post(`${this.baseUrl}realm/` + serial, {
       realms: value
     }, {headers})
+  }
+
+  setTokengroup(serial: string, value: any) {
+    const headers = this.localService.getHeaders();
+    const valueArray = Array.isArray(value) ? value : Object.values(value);
+    return this.http.post(`${this.baseUrl}group/` + serial, {
+      groups: valueArray
+    }, {headers});
+  }
+
+  getTokengroups() {
+    const headers = this.localService.getHeaders();
+    return this.http.get(`http://127.0.0.1:5000/tokengroup`, {headers})
   }
 }
