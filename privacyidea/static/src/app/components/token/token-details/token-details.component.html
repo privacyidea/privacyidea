@@ -50,6 +50,12 @@
                         }
                       </mat-select>
                     </mat-form-field>
+                  } @else {
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="object-row">
+                        <span class="object-item">• {{ realm }}</span>
+                      </mat-list-item>
+                    }
                   }
                 } @else if (element.keyMap.key === "tokengroup") {
                   @if (element.isEditing) {
@@ -66,9 +72,9 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    @for (realm of element.value; track realm; let idx = $index) {
+                    @for (tokengroup of element.value; track tokengroup; let idx = $index) {
                       <mat-list-item class="object-row">
-                        <span class="object-item">• {{ realm }}</span>
+                        <span class="object-item">• {{ tokengroup }}</span>
                       </mat-list-item>
                     }
                   }
