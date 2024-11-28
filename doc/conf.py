@@ -9,12 +9,16 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
+from sphinx.util import logging
 import os
+import sys
+import requests
 
 # Monkey-patch functools.wraps
 # http://stackoverflow.com/questions/28366818/preserve-default-arguments-of-wrapped-decorated-python-function-in-sphinx-docume
 import functools
+
+logger = logging.getLogger(__name__)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -224,8 +228,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'privacyIDEA.tex', u'privacyIDEA Authentication System',
-   u'Cornelius Kölbel', 'manual'),
+  ('index', 'privacyIDEA.tex', 'privacyIDEA Authentication System',
+   'Cornelius Kölbel', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -254,8 +258,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'privacyidea-server', u'privacyIDEA Authentication System',
-     [u'Cornelius Kölbel'], 1)
+    ('index', 'privacyidea-server', 'privacyIDEA Authentication System',
+     ['Cornelius Kölbel'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -268,8 +272,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'privacyIDEA', u'privacyIDEA AUthentication System',
-   u'Cornelius Kölbel', 'privacyIDEA', 'One line description of project.',
+  ('index', 'privacyIDEA', 'privacyIDEA Authentication System',
+   'Cornelius Kölbel', 'privacyIDEA', 'Multi-factor authentication system',
    'Miscellaneous'),
 ]
 
@@ -291,3 +295,34 @@ plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
 
 # Use SVG inside <object> in supported browsers (all except IE8), falling back to PNG.
 plantuml_output_format = 'svg'
+
+# ------------------------------------------------------------------------------
+# Fix for new RTD behavior which clashes with the old pallets sphinx theme
+
+# We are using APIv2 to pull active versions, downloads and subprojects
+# because APIv3 requires a token.
+project_slug = os.environ.get("READTHEDOCS_PROJECT")
+version_slug = os.environ.get("READTHEDOCS_VERSION")
+production_domain = os.environ.get("READTHEDOCS_PRODUCTION_DOMAIN", "readthedocs.org")
+
+try:
+    response_versions = requests.get(
+        f"https://{production_domain}/api/v2/version/?project__slug={project_slug}&active=true",
+        timeout=2,
+    ).json()
+    versions = [
+        (version["slug"], f"/{version['project']['language']}/{version['slug']}/")
+        for version in response_versions["results"]
+    ]
+except Exception:
+    logger.warning(
+        "An error occurred when hitting API to fetch active versions. Defaulting to an empty list.",
+        exc_info=True,
+    )
+    versions = []
+
+html_context = {
+    'current_version': os.environ.get("READTHEDOCS_VERSION_NAME"),
+    'version_slug': version_slug,
+    "versions": versions
+}
