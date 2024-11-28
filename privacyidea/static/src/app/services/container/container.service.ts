@@ -15,7 +15,7 @@ export class ContainerService {
     'user',
     'container_serial',
     'type',
-    'token_serial', /*TODO fix not working and missing query params*/
+    'token_serial',
   ];
 
   constructor(private http: HttpClient,
@@ -68,7 +68,7 @@ export class ContainerService {
     );
   }
 
-  assignContainer(token_serial: string, container_serial: string) {
+  assignContainer(token_serial: string, container_serial: string | null) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.baseUrl}${container_serial}/add`, {
       serial: token_serial
@@ -81,7 +81,7 @@ export class ContainerService {
     );
   }
 
-  unassignContainer(token_serial: string, container_serial: string) {
+  unassignContainer(token_serial: string, container_serial: string | null) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.baseUrl}${container_serial}/remove`, {
       serial: token_serial

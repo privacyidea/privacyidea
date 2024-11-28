@@ -23,11 +23,15 @@
                   @if (element.isEditing) {
                     <mat-form-field class="detail-table-input">
                       <mat-label>Select Container</mat-label>
-                      <mat-select [(ngModel)]="selectedContainer">
-                        @for (option of containerOptions(); track option; ) {
-                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                      <input matInput
+                             [formControl]="selectedContainer"
+                             [matAutocomplete]="containerAuto">
+                      <mat-autocomplete autoActiveFirstOption
+                                        #containerAuto="matAutocomplete">
+                        @for (option of filteredContainerOptions | async; track option) {
+                          <mat-option [value]="option">{{ option }}</mat-option>
                         }
-                      </mat-select>
+                      </mat-autocomplete>
                     </mat-form-field>
                   } @else {
                     <span>{{ element.value }}</span>
@@ -161,17 +165,17 @@
       </div>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="14" [rowspan]="3">
-        <app-token-details-user [filteredUserOptions]="filteredUserOptions"
-                                [isAnyEditing]="isAnyEditing"
-                                [isEditingUser]="isEditingUser"
-                                [realmOptions]="realmOptions"
-                                [refreshTokenDetails]="refreshTokenDetails"
-                                [repeatPinValue]="repeatPinValue"
-                                [selectedUserRealm]="selectedUserRealm"
-                                [selectedUsername]="selectedUsername"
-                                [serial]="serial"
-                                [setPinValue]="setPinValue"
-                                [userData]="userData"></app-token-details-user>
+      <app-token-details-user [filteredUserOptions]="filteredUserOptions"
+                              [isAnyEditing]="isAnyEditing"
+                              [isEditingUser]="isEditingUser"
+                              [realmOptions]="realmOptions"
+                              [refreshTokenDetails]="refreshTokenDetails"
+                              [repeatPinValue]="repeatPinValue"
+                              [selectedUserRealm]="selectedUserRealm"
+                              [selectedUsername]="selectedUsername"
+                              [serial]="serial"
+                              [setPinValue]="setPinValue"
+                              [userData]="userData"></app-token-details-user>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="9" [rowspan]="6">
       <div class="info-container">
@@ -288,7 +292,7 @@
           <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'"
                  class="input-full"
                  placeholder="OTP or PIN">
-          <button (click)="hide = !hide" mat-icon-button class="visibility-button"
+          <button (click)="hide = !hide" class="visibility-button" mat-icon-button
                   matSuffix>
             <mat-icon
               class="visibility-icon">{{ hide ? 'visibility_off' : 'visibility' }}

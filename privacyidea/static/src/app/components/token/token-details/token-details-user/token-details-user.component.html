@@ -16,9 +16,9 @@
             <mat-label>Select User</mat-label>
             <input matInput
                    [formControl]="selectedUsername"
-                   [matAutocomplete]="auto">
+                   [matAutocomplete]="userAuto">
             <mat-autocomplete autoActiveFirstOption
-                              #auto="matAutocomplete">
+                              #userAuto="matAutocomplete">
               @for (option of filteredUserOptions | async; track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }

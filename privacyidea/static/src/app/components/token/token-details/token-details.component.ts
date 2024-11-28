@@ -14,7 +14,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
-import {NgClass} from '@angular/common';
+import {AsyncPipe, NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput, MatSuffix} from '@angular/material/input';
@@ -28,6 +28,7 @@ import {UserService} from '../../../services/user/user.service';
 import {map} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
+import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -83,6 +84,9 @@ export const infoDetail = [
     MatList,
     MatIconButton,
     TokenDetailsUserComponent,
+    MatAutocomplete,
+    AsyncPipe,
+    MatAutocompleteTrigger,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -106,6 +110,7 @@ export class TokenDetailsComponent {
     isEditing: boolean
   }[]>([]);
   @Output() filteredUserOptions!: Observable<string[]>;
+  filteredContainerOptions!: Observable<string[]>;
   @Output() realmOptions = signal<string[]>([]);
   containerOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
@@ -141,6 +146,11 @@ export class TokenDetailsComponent {
       startWith(''),
       map(value => this._filterUserOptions(value || ''))
     );
+
+    this.filteredContainerOptions = this.selectedContainer.valueChanges.pipe(
+      startWith(''),
+      map(value => this._filterContainerOptions(value || ''))
+    );
   }
 
   @Input() serial!: WritableSignal<string>
@@ -151,9 +161,9 @@ export class TokenDetailsComponent {
   @Output() isEditingUser: WritableSignal<boolean> = signal(false);
   isEditingInfo: boolean = false;
   selectedUsername = new FormControl<string>('');
+  selectedContainer = new FormControl<string>('');
   @Output() setPinValue: WritableSignal<string> = signal('');
   @Output() repeatPinValue: WritableSignal<string> = signal('');
-  selectedContainer: string = '';
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
@@ -167,6 +177,11 @@ export class TokenDetailsComponent {
     return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
+  private _filterContainerOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.containerOptions().filter(option => option.toLowerCase().includes(filterValue));
+  }
+
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
   }
@@ -175,14 +190,14 @@ export class TokenDetailsComponent {
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
       this.realmService.getRealms(),
-      this.containerService.getContainerData(1, 10)
+      this.containerService.getContainerData(1, 10) // TODO only first 10 containers
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms, containers]) => {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer = tokenDetails.container_serial;
+        this.selectedContainer.setValue(tokenDetails.container_serial);
         this.detailData.set(details.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
@@ -234,7 +249,7 @@ export class TokenDetailsComponent {
         if (action === 'save') {
           this.assignContainer();
         } else if (action === 'cancel') {
-          this.selectedContainer = '';
+          this.selectedContainer.reset();
         }
         break;
       case 'realms':
@@ -326,7 +341,7 @@ export class TokenDetailsComponent {
   }
 
   assignContainer() {
-    this.containerService.assignContainer(this.serial(), this.selectedContainer).pipe(
+    this.containerService.assignContainer(this.serial(), this.selectedContainer.value).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       error: error => {
@@ -336,7 +351,7 @@ export class TokenDetailsComponent {
   }
 
   unassignContainer() {
-    this.containerService.unassignContainer(this.serial(), this.selectedContainer).pipe(
+    this.containerService.unassignContainer(this.serial(), this.selectedContainer.value).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       error: error => {

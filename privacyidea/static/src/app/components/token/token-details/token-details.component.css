@@ -100,6 +100,7 @@
 }
 
 .info-container {
+  margin-top: 10px;
   flex-direction: row;
   display: flex;
   width: auto;
@@ -137,7 +138,7 @@
 }
 
 mat-grid-tile {
-  /* background-color: #f3c10c; *//* DEBUG */
+  /* border: 1px solid red; *//* DEBUG */
   display: flex;
 }
 
