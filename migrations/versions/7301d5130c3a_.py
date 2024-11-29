@@ -39,9 +39,9 @@ def downgrade():
             row.save()
 
     except Exception as exx:
-            print("Failed to revert urlendcoded to urlendcode in evanthandleroption table.")
-            print(exx)
-            session.rollback()
+        print("Failed to revert urlendcoded to urlendcode in evanthandleroption table.")
+        print(exx)
+        session.rollback()
 
     finally:
         session.commit()
