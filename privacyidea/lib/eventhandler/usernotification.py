@@ -179,7 +179,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "body": {
                     "type": "text",
                     "required": False,
-                    "description": _("The body of the mail that is sent.")},
+                    "description": _("The body of the mail that is sent. Can contain tags "
+                                     "as specified in the documentation. Available tags: {admin}, {realm}, {action}, "
+                                     "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                     "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                     "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}.")},
                 "To": {
                     "type": "str",
                     "required": True,
@@ -218,7 +223,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "value": smsgateways},
                 "body": {"type": "text",
                          "required": False,
-                         "description": _("The text of the SMS.")},
+                         "description": _("The text of the SMS. Can contain tags "
+                                     "as specified in the documentation. Available tags: {admin}, {realm}, {action}, "
+                                     "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                     "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                     "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}.")},
                 "To": {"type": "str",
                        "required": True,
                        "description": _("Send notification to this user."),
@@ -228,9 +238,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "body": {
                     "type": "text",
                     "required": True,
-                    "description": _("This is the template content of "
-                                     "the new file. Can contain the tags "
-                                     "as specified in the documentation.")},
+                    "description": _("This is the template content of the new file. Can contain tags "
+                                     "as specified in the documentation. Available tags: {admin}, {realm}, {action}, "
+                                     "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                     "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                     "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}.")},
                 "filename": {
                     "type": "str",
                     "required": True,

@@ -166,6 +166,8 @@ The body may contain the following tags
   * {recipient_surname} the surname of the recipient.
   * {googleurl_value} is the KEY URI for a google authenticator.
   * {googleurl_img} is the data image source of the google authenticator QR code.
+  * {pushurl_value} is the KEY URI from a push token for enrolled in a authenticator app.
+  * {pushurl_img} is the data image source of a push token qr code for enrolled in a authenticator app.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
   * {client_ip} the client IP of the client, which issued the original request.
