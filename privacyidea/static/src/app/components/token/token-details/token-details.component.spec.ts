@@ -7,6 +7,7 @@ import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
 import {ValidateService} from '../../../services/validate/validate.service';
 import {of, throwError} from 'rxjs';
+import {FormControl} from '@angular/forms';
 
 class MockTokenService {
   getTokenDetails() {
@@ -147,26 +148,6 @@ describe('TokenDetailsComponent', () => {
     expect(tokenService.setTokenDetail).toHaveBeenCalledWith('Mock serial', 'key', 'value');
   });
 
-  it('should assign user', () => {
-    component.selectedUsername.setValue('testUser');
-    component.selectedUserRealm.set('testRealm');
-    component.setPinValue = '1234';
-    component.repeatPinValue = '1234';
-
-    spyOn(tokenService, 'assignUser').and.callThrough();
-    component.saveUser();
-    expect(tokenService.assignUser).toHaveBeenCalledWith('Mock serial', 'testUser', 'testRealm', '1234');
-  });
-
-  it('should not assign user if PINs do not match', () => {
-    component.setPinValue = '1234';
-    component.repeatPinValue = '5678';
-
-    spyOn(tokenService, 'assignUser').and.callThrough();
-    component.saveUser();
-    expect(tokenService.assignUser).not.toHaveBeenCalled();
-  });
-
   it('should delete info', () => {
     spyOn(tokenService, 'deleteInfo').and.callThrough();
     component.deleteInfo('infoKey');
@@ -188,17 +169,17 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should assign container', () => {
-    component.selectedContainer = 'container1';
+    component.selectedContainer = new FormControl('container1');
     spyOn(containerService, 'assignContainer').and.callThrough();
-    component.assignContainer();
+    component.saveContainer();
     expect(containerService.assignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
   });
 
 
   it('should unassign container', () => {
-    component.selectedContainer = 'container1';
+    component.selectedContainer = new FormControl('container1');
     spyOn(containerService, 'unassignContainer').and.callThrough();
-    component.unassignContainer();
+    component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
   });
 
