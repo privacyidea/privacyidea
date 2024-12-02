@@ -192,9 +192,8 @@ export class TokenDetailsComponent {
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
       this.realmService.getRealms(),
-      this.containerService.getContainerData(1, 10) // TODO only first 10 containers
     ]).pipe(
-      switchMap(([tokenDetailsResponse, realms, containers]) => {
+      switchMap(([tokenDetailsResponse, realms]) => {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
@@ -222,10 +221,6 @@ export class TokenDetailsComponent {
         this.selectedRealms.setValue(tokenDetails.realms);
         this.userRealm = this.userData().find(
           detail => detail.keyMap.key === 'user_realm')?.value;
-        this.containerOptions.set(Object.values(containers.result.value.containers as {
-          serial: string
-        }[]).map(container => container.serial));
-
         return new Observable<void>(observer => {
           observer.next();
           observer.complete();
@@ -248,7 +243,21 @@ export class TokenDetailsComponent {
     switch (type) {
       case 'container_serial':
         element.isEditing = !element.isEditing;
+        if (element.isEditing && this.containerOptions().length === 0) {
+          this.containerService.getContainerData().subscribe({
+            next: (containers: any) => {
+              this.containerOptions.set(Object.values(containers.result.value.containers as {
+                serial: string
+              }[]).map(container => container.serial));
+              this.selectedContainer.setValue(this.selectedContainer.value);
+            },
+            error: error => {
+              console.error('Failed to get containers', error);
+            }
+          })
+        }
         if (action === 'save') {
+          this.selectedContainer.setValue(this.selectedContainer.value?.trim() ?? null);
           this.saveContainer();
         } else if (action === 'cancel') {
           this.selectedContainer.reset();

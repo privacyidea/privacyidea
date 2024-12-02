@@ -55,19 +55,19 @@
           <ng-container>
             @if (column.key === 'username' || column.key === 'container_serial'
             || column.key === 'user_realm') {
-              <a class="column-link" attr.aria-label="{{ column.label }} Link" href="#">
+              <a attr.aria-label="{{ column.label }} Link" href="#">
                 {{ element[column.key] }}
               </a>
             } @else if (column.key === 'realms') {
               <div class="scrollable-container">
                 @for (realm of element[column.key]; track realm; let idx = $index) {
-                  <a class="column-link" attr.aria-label="{{ column.label }} Link" href="#">
+                  <a attr.aria-label="{{ column.label }} Link" href="#">
                     {{ realm }}
-                  </a><br/>
+                  </a><br style="margin-top: 3px"/>
                 }
               </div>
             } @else if (column.key === 'serial') {
-              <a class="column-link" attr.aria-label="{{ column.label }} Link"
+              <a attr.aria-label="{{ column.label }} Link"
                  (click)="tokenSelected(element.serial)">
                 {{ element[column.key] }}
               </a>
