@@ -13,18 +13,20 @@ export class TokenService {
   apiFilter = [
     'serial',
     'type',
-    'tokenrealm',
-    'description',
-    'user',
-    'rollout_state',
-    'userid',
-    'resolver',
     'active',
-    'assigned',
-    'infokey',
-    'infovalue',
+    'description',
+    'rollout_state',
+    'user',
+    'tokenrealm',
     'container_serial',
   ];
+
+  advancedApiFilter = [
+    'infokey & infovalue',
+    'userid',
+    'resolver',
+    'assigned',
+  ]
 
   constructor(private http: HttpClient,
               private localService: LocalService,
@@ -58,11 +60,12 @@ export class TokenService {
     }
 
     if (filterValue) {
+      const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
       const {
         filterPairs,
         remainingFilterText
-      } = this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
-
+      } = this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
+      console.log(filterValue)
       filterPairs.forEach(({label, value}) => {
         if (label === 'user' || label === 'infokey' || label === 'infovalue' || label === 'active'
           || label === 'assigned' || label === 'container_serial') {

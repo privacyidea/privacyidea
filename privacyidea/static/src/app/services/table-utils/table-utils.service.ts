@@ -14,7 +14,12 @@ export class TableUtilsService {
     remainingFilterText: string
   } {
     const lowerFilterValue = filterValue.trim();
-    const filterLabels = apiFilter.map(column => column.toLowerCase() + ':');
+    const filterLabels = apiFilter.flatMap(column => {
+      if (column === 'infokey & infovalue') {
+        return ['infokey:', 'infovalue:'];
+      }
+      return column.toLowerCase() + ':'
+    });
     const filterValueSplit = lowerFilterValue.split(' ');
     const filterPairs: FilterPair[] = [];
 
@@ -73,6 +78,11 @@ export class TableUtilsService {
   }
 
   isFilterSelected(filter: string, inputValue: string): boolean {
+    if (filter === 'infokey & infovalue') {
+      const regexKey = new RegExp(`\\binfokey:`, 'i');
+      const regexValue = new RegExp(`\\binfovalue:`, 'i');
+      return regexKey.test(inputValue) || regexValue.test(inputValue);
+    }
     const regex = new RegExp(`\\b${filter}:`, 'i');
     return regex.test(inputValue);
   }

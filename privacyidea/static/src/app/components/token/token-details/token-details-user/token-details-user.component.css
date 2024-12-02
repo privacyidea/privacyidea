@@ -200,7 +200,7 @@ mat-grid-tile {
 .user-container {
   display: flex;
   flex-direction: row;
-  gap: 30px;
+  gap: 35px;
 }
 
 .assign-container {

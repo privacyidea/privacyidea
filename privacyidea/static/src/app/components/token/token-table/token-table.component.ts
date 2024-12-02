@@ -37,6 +37,7 @@ const columns = [
 })
 export class TokenTableComponent {
   dataSource = signal(new MatTableDataSource());
+  showAdvancedFilter = signal(false);
   displayedColumns: string[] = columns.map(column => column.key);
   columnDefinitions = columns;
   length = 0;
@@ -45,6 +46,7 @@ export class TokenTableComponent {
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
   apiFilter = this.tokenService.apiFilter;
+  advancedApiFilter = this.tokenService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
 
   @Input() tokenIsSelected!: WritableSignal<boolean>;
@@ -104,10 +106,18 @@ export class TokenTableComponent {
     this.fetchTokenData()
   }
 
-  toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
-    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
-    this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
-    inputElement.focus();
+  toggleKeywordInFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
+    if (filterKeyword === 'infokey & infovalue') {
+      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infokey');
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infovalue');
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+      inputElement.focus();
+    } else {
+      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), filterKeyword);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
+      inputElement.focus();
+    }
   }
 
   toggleActive(element: any): void {

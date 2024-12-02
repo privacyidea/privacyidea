@@ -1,6 +1,6 @@
 <div aria-label="Token Table" class="item-table">
   <div class="filter-paginator-container">
-    <mat-form-field class="table-filter">
+    <mat-form-field class="table-filter" subscriptSizing="dynamic">
       <mat-label>Filter</mat-label>
       <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
              class="filter-input" matInput
@@ -12,15 +12,34 @@
     </mat-paginator>
   </div>
   <span class="filter-text"><mat-icon class="filter-icon">filter_alt</mat-icon>Filter by:&nbsp;
-    @for (filter of apiFilter; track filter) {
-      <button mat-fab extended (click)="toggleKeywordInFilter(filter , input)"
+    @for (filterKeyword of apiFilter; track filterKeyword) {
+      <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
               class="keyword-button">
           <mat-icon class="filter-button-icon"
-                    [ngClass]="this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove-icon' : 'add-icon'">
-            {{ this.tableUtilsService.isFilterSelected(filter, input.value) ? 'remove_circle' : 'add_circle' }}
+                    [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove-icon' : 'add-icon'">
+            {{ this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove_circle' : 'add_circle' }}
           </mat-icon>
-        {{ filter }}
+        {{ filterKeyword }}
         </button>
+    }
+    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())" class="advanced-filter-button"
+            extended
+            mat-fab>
+          <mat-icon class="filter-button-icon">
+               {{ showAdvancedFilter() ? 'remove' : 'add' }}
+          </mat-icon>
+    </button>
+    @if (showAdvancedFilter()) {
+      @for (filterKeyword of advancedApiFilter; track filterKeyword) {
+        <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
+                class="keyword-button">
+          <mat-icon class="filter-button-icon"
+                    [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove-icon' : 'add-icon'">
+            {{ this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove_circle' : 'add_circle' }}
+          </mat-icon>
+          {{ filterKeyword }}
+        </button>
+      }
     }
     </span>
   <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()"

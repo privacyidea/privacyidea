@@ -109,6 +109,7 @@
   flex-direction: column;
   display: flex;
   gap: 10px;
+  margin-left: 3px;
   width: auto;
 }
 

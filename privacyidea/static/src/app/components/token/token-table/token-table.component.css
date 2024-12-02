@@ -7,3 +7,12 @@ td:nth-child(5) {
 .table-filter {
   width: 58%;
 }
+
+.advanced-filter-button {
+  background-color: #f3f3f3;
+  border-radius: var(--border-radius);
+  padding: 0 0 0 8px;
+  height: 28px;
+  margin: 3px;
+  box-shadow: none;
+}
