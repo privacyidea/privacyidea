@@ -76,6 +76,7 @@ export class TokenTableComponent {
     this.tokenService.getTokenData(
       this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
+        console.log('Token data', response);
         this.length = response.result.value.count;
         this.updateDataSource(response.result.value.tokens);
       },
@@ -143,11 +144,7 @@ export class TokenTableComponent {
   }
 
   private updateDataSource(data: any[]) {
-    const processedData = data.map((item) => ({
-      ...item,
-      realms: item.realms && item.realms.length > 0 ? item.realms[0] : ''
-    }));
-    this.dataSource.set(new MatTableDataSource(processedData));
+    this.dataSource.set(new MatTableDataSource(data));
   }
 
   tokenSelected(serial: string) {

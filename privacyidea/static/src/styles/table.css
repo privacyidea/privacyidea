@@ -3,6 +3,7 @@ table {
 }
 
 a {
+  font-size: 14px;
   text-decoration: none;
   color: var(--blue-base);
   cursor: pointer;

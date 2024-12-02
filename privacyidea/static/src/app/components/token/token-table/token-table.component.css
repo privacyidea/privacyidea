@@ -16,3 +16,9 @@ td:nth-child(5) {
   margin: 3px;
   box-shadow: none;
 }
+
+.scrollable-container {
+  max-height: 52px;
+  overflow-y: auto;
+  margin-right: -16px;
+}

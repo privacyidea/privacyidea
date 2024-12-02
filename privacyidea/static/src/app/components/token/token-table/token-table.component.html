@@ -52,37 +52,41 @@
           {{ column.label }}
         </th>
         <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
-          @if (column.key === 'username' || column.key === 'container_serial'
-          || column.key === 'user_realm' || column.key === 'realms') {
-            <ng-container>
-              <a attr.aria-label="{{ column.label }} Link" href="#">
+          <ng-container>
+            @if (column.key === 'username' || column.key === 'container_serial'
+            || column.key === 'user_realm') {
+              <a class="column-link" attr.aria-label="{{ column.label }} Link" href="#">
                 {{ element[column.key] }}
               </a>
-            </ng-container>
-          } @else if (column.key === 'serial') {
-            <ng-container>
-              <a attr.aria-label="{{ column.label }} Link" (click)="tokenSelected(element.serial)">
+            } @else if (column.key === 'realms') {
+              <div class="scrollable-container">
+                @for (realm of element[column.key]; track realm; let idx = $index) {
+                  <a class="column-link" attr.aria-label="{{ column.label }} Link" href="#">
+                    {{ realm }}
+                  </a><br/>
+                }
+              </div>
+            } @else if (column.key === 'serial') {
+              <a class="column-link" attr.aria-label="{{ column.label }} Link"
+                 (click)="tokenSelected(element.serial)">
                 {{ element[column.key] }}
               </a>
-            </ng-container>
-          } @else {
-            <ng-container>
+            } @else {
               <span
                 [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                 (click)="handleColumnClick(column.key, element)">
                 {{ tableUtilsService.getDisplayText(column.key, element) }}
               </span>
-            </ng-container>
-          }
+            }
+          </ng-container>
         </td>
       </ng-container>
     }
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
-      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">No
-        data matching the
-        filter.
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">
+        No data matching the filter.
       </td>
     </tr>
   </table>
