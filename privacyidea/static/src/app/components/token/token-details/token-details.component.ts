@@ -25,7 +25,7 @@ import {forkJoin, Observable, startWith, switchMap} from 'rxjs';
 import {ValidateService} from '../../../services/validate/validate.service';
 import {RealmService} from '../../../services/realm/realm.service';
 import {UserService} from '../../../services/user/user.service';
-import {map} from 'rxjs/operators';
+import {catchError, map} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
 import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
@@ -94,6 +94,16 @@ export const infoDetail = [
 export class TokenDetailsComponent {
   protected readonly Array = Array;
   protected readonly Object = Object;
+  @Input() serial!: WritableSignal<string>
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() active!: WritableSignal<boolean>;
+  @Input() revoked!: WritableSignal<boolean>;
+  @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  @Output() isEditingUser: WritableSignal<boolean> = signal(false);
+  @Output() setPinValue: WritableSignal<string> = signal('');
+  @Output() repeatPinValue: WritableSignal<string> = signal('');
+  @Output() filteredUserOptions!: Observable<string[]>;
+  @Output() realmOptions = signal<string[]>([]);
   detailData = signal<{
     value: any;
     keyMap: { label: string; key: string },
@@ -109,9 +119,6 @@ export class TokenDetailsComponent {
     keyMap: { label: string; key: string },
     isEditing: boolean
   }[]>([]);
-  @Output() filteredUserOptions!: Observable<string[]>;
-  filteredContainerOptions!: Observable<string[]>;
-  @Output() realmOptions = signal<string[]>([]);
   containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
@@ -120,6 +127,18 @@ export class TokenDetailsComponent {
     key: string;
     value: string
   }> = signal({key: '', value: ''});
+  hide!: boolean;
+  isEditingInfo: boolean = false;
+  selectedUsername = new FormControl<string>('');
+  selectedContainer = new FormControl<string>('');
+  fristOTPValue: string = '';
+  secondOTPValue: string = '';
+  otpOrPinToTest: string = '';
+  selectedRealms = new FormControl<string[]>([]);
+  userRealm: string = '';
+  maxfail: number = 0;
+  selectedTokengroup = new FormControl<string[]>([]);
+  filteredContainerOptions!: Observable<string[]>;
 
   constructor(private tokenService: TokenService,
               private containerService: ContainerService,
@@ -153,26 +172,6 @@ export class TokenDetailsComponent {
       map(value => this._filterContainerOptions(value || ''))
     );
   }
-
-  @Input() serial!: WritableSignal<string>
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() active!: WritableSignal<boolean>;
-  @Input() revoked!: WritableSignal<boolean>;
-  hide!: boolean;
-  @Output() isEditingUser: WritableSignal<boolean> = signal(false);
-  isEditingInfo: boolean = false;
-  selectedUsername = new FormControl<string>('');
-  selectedContainer = new FormControl<string>('');
-  @Output() setPinValue: WritableSignal<string> = signal('');
-  @Output() repeatPinValue: WritableSignal<string> = signal('');
-  fristOTPValue: string = '';
-  secondOTPValue: string = '';
-  otpOrPinToTest: string = '';
-  selectedRealms = new FormControl<string[]>([]);
-  userRealm: string = '';
-  maxfail: number = 0;
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  selectedTokengroup = new FormControl<string[]>([]);
 
   private _filterUserOptions(value: string): string[] {
     const filterValue = value.toLowerCase();
@@ -225,6 +224,10 @@ export class TokenDetailsComponent {
           observer.next();
           observer.complete();
         });
+      }),
+      catchError(error => {
+        console.error('Failed to get token details', error);
+        throw error;
       })
     );
   }
@@ -240,74 +243,108 @@ export class TokenDetailsComponent {
   }
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
+    element.isEditing = !element.isEditing;
+
+    if (action === 'cancel') {
+      this.handleCancelAction(type);
+      return;
+    }
+
     switch (type) {
       case 'container_serial':
-        element.isEditing = !element.isEditing;
-        if (element.isEditing && this.containerOptions().length === 0) {
-          this.containerService.getContainerData().subscribe({
-            next: (containers: any) => {
-              this.containerOptions.set(Object.values(containers.result.value.containers as {
-                serial: string
-              }[]).map(container => container.serial));
-              this.selectedContainer.setValue(this.selectedContainer.value);
-            },
-            error: error => {
-              console.error('Failed to get containers', error);
-            }
-          })
-        }
-        if (action === 'save') {
-          this.selectedContainer.setValue(this.selectedContainer.value?.trim() ?? null);
-          this.saveContainer();
-        } else if (action === 'cancel') {
-          this.selectedContainer.reset();
-        }
+        this.handleContainerSerial(element, action);
         break;
       case 'tokengroup':
-        element.isEditing = !element.isEditing;
-        if (element.isEditing) {
-          this.tokenService.getTokengroups().subscribe({
-            next: (tokengroups: any) => {
-              this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
-              this.selectedTokengroup.setValue(this.detailData().find(
-                detail => detail.keyMap.key === 'tokengroup')?.value);
-            },
-            error: error => {
-              console.error('Failed to get tokengroups', error);
-            }
-          });
-        }
-        if (action === 'save') {
-          this.saveTokengroup(this.selectedTokengroup.value);
-        } else if (action === 'cancel') {
-          this.selectedContainer.reset();
-        }
+        this.handleTokengroup(element, action);
         break;
       case 'realms':
-        element.isEditing = !element.isEditing;
-        if (action === 'save') {
-          this.saveRealms();
-        } else if (action === 'cancel') {
-          this.selectedRealms.setValue(this.detailData().find(
-            detail => detail.keyMap.key === 'realms')?.value);
-        }
+        this.handleRealms(action);
         break;
       case 'info':
         this.isEditingInfo = !this.isEditingInfo;
-        if (action === 'save') {
-          this.saveInfo(element.value);
-          this.newInfo.set({key: '', value: ''});
-        } else if (action === 'cancel') {
-          this.newInfo.set({key: '', value: ''});
-        }
+        this.handleInfo(element, action);
         break;
       default:
-        element.isEditing = !element.isEditing;
-        if (action === 'save') {
-          this.saveDetail(element.keyMap.key, element.value);
-        } else if (action === 'cancel') {
-          this.showTokenDetail(this.serial()).subscribe();
+        this.handleDefault(element, action);
+        break;
+    }
+  }
+
+  private handleContainerSerial(element: any, action: string): void {
+    if (element.isEditing && this.containerOptions().length === 0) {
+      this.containerService.getContainerData().subscribe({
+        next: (containers: any) => {
+          this.containerOptions.set(Object.values(containers.result.value.containers as {
+            serial: string
+          }[]).map(container => container.serial));
+          this.selectedContainer.setValue(this.selectedContainer.value);
+        },
+        error: error => {
+          console.error('Failed to get containers', error);
         }
+      });
+    }
+    if (action === 'save') {
+      this.selectedContainer.setValue(this.selectedContainer.value?.trim() ?? null);
+      this.saveContainer();
+    }
+  }
+
+  private handleTokengroup(element: any, action: string): void {
+    if (element.isEditing) {
+      this.tokenService.getTokengroups().subscribe({
+        next: (tokengroups: any) => {
+          this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
+          this.selectedTokengroup.setValue(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+        },
+        error: error => {
+          console.error('Failed to get tokengroups', error);
+        }
+      });
+    }
+    if (action === 'save') {
+      this.saveTokengroup(this.selectedTokengroup.value);
+    }
+  }
+
+  private handleRealms(action: string): void {
+    if (action === 'save') {
+      this.saveRealms();
+    }
+  }
+
+  private handleInfo(element: any, action: string): void {
+    if (action === 'save') {
+      this.saveInfo(element.value);
+      this.newInfo.set({key: '', value: ''});
+    } else {
+      this.newInfo.set({key: '', value: ''});
+    }
+  }
+
+  private handleDefault(element: any, action: string): void {
+    if (action === 'save') {
+      this.saveDetail(element.keyMap.key, element.value);
+    }
+  }
+
+  private handleCancelAction(type: string): void {
+    switch (type) {
+      case 'container_serial':
+        this.selectedContainer.reset();
+        break;
+      case 'tokengroup':
+        this.selectedTokengroup.reset();
+        break;
+      case 'realms':
+        this.selectedRealms.setValue(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);
+        break;
+      case 'info':
+        this.isEditingInfo = false;
+        this.newInfo.set({key: '', value: ''});
+        break;
+      default:
+        this.showTokenDetail(this.serial()).subscribe();
         break;
     }
   }

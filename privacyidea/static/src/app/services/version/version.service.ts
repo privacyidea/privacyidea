@@ -4,7 +4,7 @@ import {Injectable} from '@angular/core';
   providedIn: 'root'
 })
 export class VersionService {
-  private version: string;
+  private readonly version: string;
 
   constructor() {
     // TODO get version from an environment variable or API
