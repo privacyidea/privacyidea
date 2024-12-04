@@ -25,14 +25,12 @@ from privacyidea.lib.error import ParameterError
 class TemplateOptionsBase:
     OPTIONS = "options"
     TOKENS = "tokens"
-    USER_MODIFIABLE = "user_modifiable"
 
 
 class ContainerTemplateBase:
     template_option_values = {
         TemplateOptionsBase.OPTIONS: {},
-        TemplateOptionsBase.TOKENS: [],
-        TemplateOptionsBase.USER_MODIFIABLE: [True, False]
+        TemplateOptionsBase.TOKENS: []
     }
 
     def __init__(self, db_template):
@@ -50,7 +48,10 @@ class ContainerTemplateBase:
         """
         Returns the supported token types for this container template.
         """
-        return TokenContainerClass.get_supported_token_types()
+        supported_token_types = ["hotp", "remote", "daypassword", "spass", "totp", "4eyes", "paper", "push",
+                                 "indexedsecret", "webauthn", "tan", "applspec", "registration", "sms", "email", "tiqr"]
+        supported_token_types.sort()
+        return supported_token_types
 
     @property
     def name(self):
@@ -77,7 +78,7 @@ class ContainerTemplateBase:
         return self._db_template.options
 
     def get_template_options_as_dict(self):
-        return json.loads(self.template_options)
+        return json.loads(self.template_options) if self.template_options else {}
 
     @template_options.setter
     def template_options(self, options):

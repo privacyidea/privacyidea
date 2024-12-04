@@ -43,7 +43,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_container_classes, create_container_from_db_object,
                                        compare_template_with_container, unregister,
                                        finalize_registration, init_container_rollover,
-                                       set_options)
+                                       set_options, get_container_realms)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
@@ -61,7 +61,7 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
-@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def list_containers():
@@ -184,7 +184,7 @@ def init():
 
     # Template handling
     if template_tokens:
-        create_container_tokens_from_template(serial, template_tokens, request)
+        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request)
 
     # Audit log
     owners = container.get_users()
@@ -1037,7 +1037,12 @@ def create_template_with_name(container_type, template_name):
     :param template_name: Name of the template
     :jsonparam template_options: Dictionary with the template options
     :jsonparam default: Set this template as default for the container type
-    :return: ID of the created template or the template that was updated
+    :return: ID of the created template or the template that was updated as dictionary such as
+
+        ::
+            {
+                "template_id": 1
+            }
     """
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}
@@ -1070,7 +1075,7 @@ def create_template_with_name(container_type, template_name):
                       "action_detail": f"template_name={template_name}",
                       "success": True}
     g.audit_object.log(audit_log_data)
-    return send_result(template_id)
+    return send_result({"template_id": template_id})
 
 
 @container_blueprint.route('template/<string:template_name>', methods=['DELETE'])
@@ -1092,12 +1097,14 @@ def delete_template(template_name):
 
 
 @container_blueprint.route('template/<string:template_name>/compare', methods=['GET'])
+@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_LIST)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_LIST)
 @log_with(log)
 def compare_template_with_containers(template_name):
     """
     Compares a template with it's created containers.
+    Only containers the user is allowed to manage are included in the comparison.
 
     :param template_name: Name of the template
     :return: A dictionary with the differences between the template and each container in the format:
@@ -1117,12 +1124,31 @@ def compare_template_with_containers(template_name):
                             }
             }
     """
+    allowed_realms = getattr(request, "pi_allowed_container_realms", None)
+    user = request.User
+    user_role = g.logged_in_user.get("role")
+
     template = get_template_obj(template_name)
     container_list = [create_container_from_db_object(db_container) for db_container in template.containers]
 
     result = {}
     for container in container_list:
-        result[container.serial] = compare_template_with_container(template, container)
+        authorized = False
+        if user_role == "admin":
+            if allowed_realms is None:
+                authorized = True
+            else:
+                container_realms = get_container_realms(container.serial)
+                matching_realms = list(set(container_realms).intersection(allowed_realms))
+                authorized = len(matching_realms) > 0
+        elif user_role == "user":
+            container_owners = container.get_users()
+            authorized = user in container_owners
+
+        if authorized:
+            result[container.serial] = compare_template_with_container(template, container)
+        else:
+            log.info(f"User {user} is not authorized to access the container {container.serial}.")
 
     # Audit log
     g.audit_object.log({"container_type": template.get_class_type(),
@@ -1130,3 +1156,29 @@ def compare_template_with_containers(template_name):
                         "success": True})
 
     return send_result(result)
+
+
+@container_blueprint.route('template/tokentypes', methods=['GET'])
+@log_with(log)
+def get_template_token_types():
+    """
+    Returns a dictionary with the container types as keys and their description and supported token types as values.
+
+    ::
+
+        {
+            <type>: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
+            <type>: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
+        }
+
+    """
+    token_types = {}
+    template_classes = get_container_template_classes()
+    descriptions = get_container_classes_descriptions()
+
+    for container_type in template_classes:
+        token_types[container_type] = {"description": descriptions[container_type],
+                                       "token_types": template_classes[container_type].get_supported_token_types()}
+
+    g.audit_object.log({"success": True})
+    return send_result(token_types)

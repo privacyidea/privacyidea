@@ -22,11 +22,12 @@ import json
 import logging
 import os
 
+from build.lib.privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import (get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token, get_tokens,
+from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
@@ -413,6 +414,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
     contains the details for a token to be enrolled
     :param request: The request object
+    :return: A dictionary containing the init details for each created token
     """
     container = find_container_by_serial(container_serial)
 
@@ -422,9 +424,23 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     else:
         container_owner = User()
 
-    for token_info in template_tokens:
+    init_result = {}
 
-        user = None
+    # Get policies for the token
+    from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
+                                               webauthntoken_enroll, webauthntoken_request, webauthntoken_allowed,
+                                               indexedsecret_force_attribute, pushtoken_add_config,
+                                               tantoken_count, papertoken_count, init_token_length_contents,
+                                               init_token_defaults, check_external, check_otp_pin, encrypt_pin,
+                                               init_random_pin, twostep_enrollment_parameters,
+                                               twostep_enrollment_activation, enroll_pin,
+                                               init_tokenlabel, check_token_init, check_max_token_user,
+                                               require_description)
+    from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
+
+    for token_info in template_tokens:
+        token = None
+        user = User()
         if token_info.get("user"):
             token_info["user"] = container_owner.login
             token_info["realm"] = container_owner.realm
@@ -434,70 +450,61 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         request.all_data = {}
         request.all_data.update(token_info)
 
-        # Get policies for the token
-        from privacyidea.api.lib.prepolicy import (check_max_token_realm, verify_enrollment, required_piv_attestation,
-                                                   webauthntoken_enroll, webauthntoken_request, webauthntoken_allowed,
-                                                   indexedsecret_force_attribute, pushtoken_add_config,
-                                                   u2ftoken_verify_cert, u2ftoken_allowed, tantoken_count,
-                                                   sms_identifiers, papertoken_count, init_token_length_contents,
-                                                   init_token_defaults, check_external, check_otp_pin, encrypt_pin,
-                                                   init_random_pin, twostep_enrollment_parameters,
-                                                   twostep_enrollment_activation, enroll_pin, init_subject_components,
-                                                   init_ca_template, init_ca_connector, init_tokenlabel,
-                                                   check_token_init, check_max_token_user, require_description)
         # Pre-policy checks
         try:
-            verify_enrollment(request)
-            required_piv_attestation(request)
-            webauthntoken_enroll(request, None)
-            webauthntoken_request(request, None)
-            webauthntoken_allowed(request, None)
-            indexedsecret_force_attribute(request, None)
-            pushtoken_add_config(request, None)
-            u2ftoken_verify_cert(request, None)
-            u2ftoken_allowed(request, None)
-            tantoken_count(request, None)
-            sms_identifiers(request, None)
-            papertoken_count(request, None)
-            init_token_length_contents(request, None)
-            init_token_defaults(request, None)
-            check_external(request, None)
-            check_otp_pin(request, None)
-            encrypt_pin(request, None)
-            init_random_pin(request, None)
-            twostep_enrollment_parameters(request, None)
-            twostep_enrollment_activation(request, None)
-            enroll_pin(request, None)
-            init_subject_components(request, None)
-            init_ca_template(request, None)
-            init_ca_connector(request, None)
-            init_tokenlabel(request, None)
-            check_token_init(request, None)
-            check_max_token_user(request, None)
-            require_description(request, None)
             check_max_token_realm(request, None)
-        except PolicyError as ex:
-            log.warning(f"Error creating token {token_info} from template: {ex}")
+            require_description(request, None)
+            check_max_token_user(request, None)
+            check_token_init(request, None)
+            init_tokenlabel(request, None)
+            enroll_pin(request, None)
+            twostep_enrollment_activation(request, None)
+            twostep_enrollment_parameters(request, None)
+            init_random_pin(request, None)
+            encrypt_pin(request, None)
+            check_otp_pin(request, None)
+            check_external(request, None)
+            init_token_defaults(request, None)
+            init_token_length_contents(request, None)
+            papertoken_count(request, None)
+            sms_identifiers(request, None)
+            tantoken_count(request, None)
+            pushtoken_add_config(request, None)
+            indexedsecret_force_attribute(request, None)
+            webauthntoken_allowed(request, None)
+            webauthntoken_request(request, None)
+            webauthntoken_enroll(request, None)
+        except Exception as ex:
+            log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
             continue
 
         init_params = request.all_data
         try:
             token = init_token(init_params, user)
+            init_result[token.get_serial()] = {"type": token.get_type()}
+            init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
+            container.add_token(token)
         except Exception as ex:
             log.warning(f"Error creating token {token_info} from template: {ex}")
+            if token:
+                if init_result.get(token.get_serial()):
+                    del init_result[token.get_serial()]
+                token.delete_token()
             continue
-        container.add_token(token)
 
         # Post-policy checks
-        from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
         try:
-            # Todo: Post policies
-            # check_verify_enrollment(request, None)
-            # save_pin_change(request, None)
-            pass
-        except PolicyError as ex:
-            log.info(f"Error checking post-policy for token {token_info} created from template: {ex}")
+            response = send_result(True, details=init_result[token.get_serial()])
+            check_verify_enrollment(request, response)
+            save_pin_change(request, response)
+        except Exception as ex:
+            log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
             continue
+
+        init_result[token.get_serial()].update(response.json["detail"])
+        init_result[token.get_serial()]["init_params"] = init_params
+
+    return init_result
 
 
 def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user", allowed_realms=None):
@@ -1138,9 +1145,18 @@ def get_container_template_classes():
 def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False):
     """
     Create a new container template.
+
     :param container_type: The type of the container
     :param template_name: The name of the template
-    :param options: The options for the template as dictionary
+    :param options: The options for the template as dictionary such as
+
+        ::
+
+            {
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...],
+                "options": {"key": "value", ...}
+            }
+
     :param default: If True, the template is set as default
     :return: ID of the created template
     """
@@ -1266,7 +1282,10 @@ def set_default_template(name: str):
 def compare_template_dicts(template_a: dict, template_b: dict):
     """
     Compares two template dictionaries for equality.
-    Returns True if the templates contain the same content, False otherwise.
+
+    :param template_a: The first template dictionary
+    :param template_b: The second template dictionary
+    :return: True if the templates contain the same content, False otherwise.
     """
     equal = True
 
@@ -1276,8 +1295,6 @@ def compare_template_dicts(template_a: dict, template_b: dict):
     # get template options
     template_options_a = template_a.get("template_options", {})
     template_options_b = template_b.get("template_options", {})
-
-    # TODO compare options
 
     # compare tokens
     tokens_a = template_options_a.get("tokens", [])

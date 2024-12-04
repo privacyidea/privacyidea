@@ -21,8 +21,9 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        finalize_registration, finalize_container_rollover, init_container_rollover,
                                        _check_access_on_token)
 from privacyidea.lib.container import get_container_classes
-from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.containers.yubikey import YubikeyOptions
+from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.smartphone import SmartphoneOptions, SmartphoneContainer
+from privacyidea.lib.containers.yubikey import YubikeyOptions, YubikeyContainer
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
@@ -220,7 +221,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertFalse(result)
 
         # Pass no token serial
-        self.assertRaises(ResourceNotFoundError, remove_token_from_container, self.smartphone_serial, None, user_role="admin",
+        self.assertRaises(ResourceNotFoundError, remove_token_from_container, self.smartphone_serial, None,
+                          user_role="admin",
                           allowed_realms=None)
 
         # Pass non-existing container serial
@@ -1720,7 +1722,7 @@ class TokenContainerTemplateTestCase(MyTestCase):
                           options="random")
         self.assertRaises(ResourceNotFoundError, get_template_obj, template_name)
 
-        # wrong type
+        # wrong container type
         self.assertRaises(EnrollmentError, create_container_template, container_type="random",
                           template_name=template_name,
                           options={"tokens": [{"type": "hotp"}]})
@@ -1770,7 +1772,28 @@ class TokenContainerTemplateTestCase(MyTestCase):
         template.delete()
 
     def test_05_get_supported_token_types(self):
-        pass
+        # Check that the template token types are all supported by the corresponding container
+        # Generic
+        generic_token_types = TokenContainerClass.get_supported_token_types()
+        template_generic_tokens = ContainerTemplateBase.get_supported_token_types()
+        self.assertGreater(len(template_generic_tokens), 0)
+        self.assertTrue(set(template_generic_tokens).issubset(set(generic_token_types)))
+
+        # Smartphone
+        smph_token_types = SmartphoneContainer.get_supported_token_types()
+        template_smph_tokens = SmartphoneContainerTemplate.get_supported_token_types()
+        self.assertGreater(len(template_smph_tokens), 0)
+        self.assertTrue(set(template_smph_tokens).issubset(set(smph_token_types)))
+        # All smartphone tokens must be a subset of the generic tokens
+        self.assertTrue(set(smph_token_types).issubset(set(generic_token_types)))
+
+        # Yubikey
+        yubi_token_types = YubikeyContainer.get_supported_token_types()
+        template_yubi_tokens = YubikeyContainerTemplate.get_supported_token_types()
+        self.assertGreater(len(template_yubi_tokens), 0)
+        self.assertTrue(set(template_yubi_tokens).issubset(set(yubi_token_types)))
+        # All yubikey tokens must be a subset of the generic tokens
+        self.assertTrue(set(yubi_token_types).issubset(set(generic_token_types)))
 
     def test_06_template_options_success(self):
         initial_options = {"tokens": [{"type": "hotp", "genkey": True}], "options": {}}
@@ -2136,3 +2159,21 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertEqual(1, len(options_result["missing"]))
         self.assertEqual(1, len(options_result["different"]))
         self.assertEqual(1, len(options_result["additional"]))
+
+    def test_23_get_template_options_as_dict(self):
+        # create template
+        template_options = {"options": {},
+                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="generic",
+                                  template_name="test",
+                                  options=template_options)
+        template = get_template_obj("test")
+
+        options_dict = template.get_template_options_as_dict()
+        self.assertDictEqual(template_options, options_dict)
+
+        template.template_options = {}
+        options_dict = template.get_template_options_as_dict()
+        self.assertDictEqual({}, options_dict)
+
+        template.delete()

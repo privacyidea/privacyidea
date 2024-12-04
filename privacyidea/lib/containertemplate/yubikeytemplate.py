@@ -48,4 +48,6 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
         """
         Returns the supported token types for this container template.
         """
-        return YubikeyContainer.get_supported_token_types()
+        supported_token_types = ["hotp", "webauthn"]
+        supported_token_types.sort()
+        return supported_token_types
