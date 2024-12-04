@@ -11,7 +11,7 @@ Glossary
         based on a seed. The term OTP value is used frequently by privacyIDEA to distinguish
         the changing value from the :term:`OTP PIN`.
         In terms of two factor authentication the OTP Value is actually the 2nd factor,
-        the possion factor, since it is usually only possible to calculage, if the user
+        the possession factor, since it is usually only possible to calculate, if the user
         is in the possession of the smartphone app or a hardware token. The OTP Value is calculated
         using the secret cryptographic :term:`Seed`.
 
@@ -56,7 +56,8 @@ Glossary
 
    Time Window
         Timewindow in which the given OTP value is valid for authentication.
-        ``Timestep`` and ``timewindow`` are completely similar to the ``counter`` and ``countwindow`` (:ref:`tokeninfo`) of HOTP tokens.
+        ``Timestep`` and ``timewindow`` are completely similar to the ``counter``
+        and ``countwindow`` (:ref:`tokeninfo`) of HOTP tokens.
 
    Revoked Token
         Tokens can be ``revoked``. Usually this means the token is ``disabled and locked``. A locked token can
@@ -301,7 +302,7 @@ Glossary
 
         To use the ``privacyIDEA-Serial`` in the RADIUS response, you need to include
         the ``dictionary.netknights`` in your FreeRADIUS dictionary.
-        You can get it here [#netknights_dict]_.
+        You can get it `here <https://github.com/privacyidea/FreeRADIUS/blob/master/dictionary.netknights>`_.
 
         **Return user attributes:**
 
@@ -325,7 +326,7 @@ Glossary
         You can also address different sections in the privacyIDEA detail response by
         changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
 
-        You can find a detailed explanation `here <https://www.youtube.com/watch?v=uERhuCLxz0o/>`_.
+        You can find a detailed explanation in `this video <https://www.youtube.com/watch?v=uERhuCLxz0o/>`_.
 
    UserID
         The id of the user in a :term:`Resolver(UserId)`.
@@ -333,12 +334,12 @@ Glossary
 
    Admins
         privacyIDEA comes with its own admins, who are stored in a database table
-        ``Admin`` in its own database (:ref:`code_db`). You can use the tool
-        ``pi-manage`` to
+        ``Admin`` in its own database (:ref:`code_db`). You can use the
+        :ref:`pi-manage tool <pimanage>` to
         manage those admins from the command line as the system's root user. (see
         :ref:`installation`)
 
-        These admin users can logon to the WebUI using the admin's user name and the
+        These admin users can logon to the WebUI using the admins user name and the
         specified password.
         These admins are used to get a simple quick start.
 
@@ -389,7 +390,7 @@ Glossary
 
         * The user entering the PIN/Password of the token
 
-        * Programmatically via a call to /validate/triggerchallenge
+        * Programmatically via a call to ``POST /validate/triggerchallenge``
 
    Extended Policy Conditions
         Since privacyIDEA 3.1, :ref:`policy_conditions` allow to define more advanced rules
@@ -418,9 +419,12 @@ Glossary
    Subscription
         A subscription for support, warranty and enterprise packaging.
 
-        privacyIDEA is enterprise software. Managing lots of authentication devices for lots of users is a task that occurs in a company network.
-        privacyIDEA is licensed under an Open Source license. This guarantees, that a company using the Open Source software privacyIDEA can use this
-        software for life. In contrast proprietary software or software-as-a-service (SaaS) can be changed, billed differently or even completely deleted.
+        privacyIDEA is enterprise software. Managing lots of authentication devices for lots of users is a task that
+        occurs in a company network.
+        privacyIDEA is licensed under an Open Source license. This guarantees, that a company using the Open Source
+        software privacyIDEA can use this
+        software for life. In contrast proprietary software or software-as-a-service (SaaS) can be changed, billed
+        differently or even completely deleted.
         You could not do anything about it. The Open Source privacyIDEA is under your control – forever.
 
         The Open Source license dos not mean that a company has no costs in regards to two factor authentication.
@@ -429,4 +433,6 @@ Glossary
         Getting a subscription provides this warranty.
         A company using privacyIDEA needs to be aware of this.
 
-        For the product privacyIDEA we provide the suitable `support <https://netknights.it/en/produkte/privacyidea/>`_ with a defined response time and with fixed costs.
+        For the product privacyIDEA we provide the suitable
+        `support <https://netknights.it/en/produkte/privacyidea/>`_ with a
+        defined response time and with fixed costs.

@@ -416,7 +416,7 @@ The action is only triggered if the container has or has not at least one token.
 Managing Events
 ---------------
 
-Using the command ``pi-manage events`` you can list, delete, enable and disable events.
+Using the command ``pi-manage config event`` you can list, delete, enable and disable events.
 You can also export the complete event definitions to a file or import the event definitions from a file again.
 During import you can specify if you want to remove all existing events or if you want to add the events from the file
 to the existing events in the database.
