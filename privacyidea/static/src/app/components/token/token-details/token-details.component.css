@@ -349,3 +349,11 @@ mat-select {
 .mat-icon-button {
   font-size: 25px;
 }
+
+.scrollable-container {
+  overflow-y: auto;
+}
+
+.cell-list {
+  height: 48px
+}

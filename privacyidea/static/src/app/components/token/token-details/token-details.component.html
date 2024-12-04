@@ -51,11 +51,13 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    @for (realm of element.value; track realm; let idx = $index) {
-                      <mat-list-item class="object-row">
-                        <span class="object-item">• {{ realm }}</span>
-                      </mat-list-item>
-                    }
+                    <div class="scrollable-container cell-list">
+                      @for (realm of element.value; track realm; let idx = $index) {
+                        <mat-list-item class="object-row">
+                          <span class="object-item">• {{ realm }}</span>
+                        </mat-list-item>
+                      }
+                    </div>
                   }
                 } @else if (element.keyMap.key === "tokengroup") {
                   @if (element.isEditing()) {
@@ -72,11 +74,13 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    @for (tokengroup of element.value; track tokengroup; let idx = $index) {
-                      <mat-list-item class="object-row">
-                        <span class="object-item">• {{ tokengroup }}</span>
-                      </mat-list-item>
-                    }
+                    <div class="scrollable-container cell-list">
+                      @for (tokengroup of element.value; track tokengroup; let idx = $index) {
+                        <mat-list-item class="object-row">
+                          <span class="object-item">• {{ tokengroup }}</span>
+                        </mat-list-item>
+                      }
+                    </div>
                   }
                 } @else if (element.isEditing() && element.keyMap.key !== "maxfail" &&
                 element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {

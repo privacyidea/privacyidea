@@ -18,7 +18,11 @@ td:nth-child(5) {
 }
 
 .scrollable-container {
-  max-height: 52px;
   overflow-y: auto;
+}
+
+.realm-list {
+  max-height: 52px;
   margin-right: -16px;
 }
+

@@ -72,7 +72,7 @@
                 {{ element[column.key] }}
               </a>
             } @else if (column.key === 'realms') {
-              <div class="scrollable-container">
+              <div class="scrollable-container realm-list">
                 @for (realm of element[column.key]; track realm; let idx = $index) {
                   <a attr.aria-label="{{ column.label }} Link" href="#">
                     {{ realm }}
