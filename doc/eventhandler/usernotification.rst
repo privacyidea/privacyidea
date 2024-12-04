@@ -173,6 +173,9 @@ The body may contain the following tags
   * {ua_string} the complete user agent string (including version number), which issued the original request.
   * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
     PIN from the response using the *response mangler*.
+  * {container_serial} the serial number of the container.
+  * {container_url} the url for the registration of the container.
+  * {container_qr} the qr code for the registration of the container.
 
 
 Code

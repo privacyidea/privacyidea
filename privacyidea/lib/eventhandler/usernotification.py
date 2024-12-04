@@ -389,8 +389,11 @@ class UserNotificationEventHandler(BaseEventHandler):
             googleurl_value = content.get("detail", {}).get("googleurl",
                                                             {}).get("value")
             googleurl_img = content.get("detail", {}).get("googleurl", {}).get("img")
-            container_url = content.get("result", {}).get("value", {}).get("container_url", {}).get("value")
-            container_qr = content.get("result", {}).get("value", {}).get("container_url", {}).get("img")
+            container_content = content.get("result", {}).get("value", {})
+            container_url = container_qr = None
+            if isinstance(container_content, dict):
+                container_url = container_content.get("container_url", {}).get("value")
+                container_qr = container_content.get("container_url", {}).get("img")
             tokentype = None
             tokendescription = None
             if serial:
