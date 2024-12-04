@@ -1,4 +1,4 @@
-Version 3.10.2dev1, 2024-11-26
+Version 3.10.2dev2, 2024-11-26
 
   Fixes:
   * Fix some problems with Oracle databases during upgrade (#4105)
