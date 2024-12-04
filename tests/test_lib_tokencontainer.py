@@ -2174,6 +2174,6 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         template.template_options = {}
         options_dict = template.get_template_options_as_dict()
-        self.assertDictEqual({}, options_dict)
+        self.assertDictEqual({'options': {}, 'tokens': []}, options_dict)
 
         template.delete()

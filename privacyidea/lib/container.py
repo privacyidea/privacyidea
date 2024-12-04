@@ -22,7 +22,7 @@ import json
 import logging
 import os
 
-from build.lib.privacyidea.api.lib.utils import send_result
+from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError

@@ -935,6 +935,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}', {}, self.at, 'DELETE')
         delete_policy("policy")
+        get_template_obj(template_name).delete()
 
     def test_33_admin_template_list_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_TEMPLATE_LIST)
@@ -948,12 +949,12 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_35_admin_compare_template_container_allowed(self):
-        # TODO: Test with containers the user might not be allowed to see
         template_name = self.test_29_admin_container_template_create_allowed()
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True})
         self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         delete_policy("policy")
+        get_template_obj(template_name).delete()
 
     def test_36_admin_compare_template_container_denied(self):
         template_name = self.test_29_admin_container_template_create_allowed()
@@ -961,6 +962,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         delete_policy("policy")
+        get_template_obj(template_name).delete()
 
     def test_37_set_options_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_SET_OPTIONS)
@@ -979,7 +981,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_39_admin_create_container_with_template(self):
-        # user is allowed to create container and enroll HOTP, but not TOTP tokens
+        # admin is allowed to create container and enroll HOTP, but not TOTP tokens
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
 
@@ -1458,7 +1460,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("admin")
 
     def test_29_helpdesk_create_container_with_template(self):
-        # user is allowed to create container and enroll HOTP and TOTP tokens for realm 1
+        # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
                    realm=self.realm1)
@@ -1480,8 +1482,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
-        self.assertEqual("hotp", tokens[0].get_type())
+        self.assertEqual(2, len(tokens))
         container_template = container.template
         self.assertEqual(template_params["name"], container_template.name)
 
