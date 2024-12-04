@@ -941,3 +941,79 @@ myApp.directive("containerOptions", ["instanceUrl", "versioningSuffixProvider", 
             }
         }
     }]);
+
+
+myApp.directive("verifyEnrolledToken", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
+    "TokenFactory", "gettextCatalog", "inform",
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, TokenFactory, gettextCatalog, inform,) {
+        return {
+            scope: {
+                enrolledToken: "=",
+                tokenType: "=",
+                newUser: "=",
+                callback: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.verifyEnrolledToken.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+                scope.sendVerifyResponse = function () {
+                    const params = {
+                        "serial": scope.enrolledToken.serial,
+                        "verify": scope.verifyResponse,
+                        "type": scope.tokenType
+                    };
+                    if (scope.enrolledToken.init_params) {
+                        if (scope.enrolledToken.init_params.user) {
+                            params.user = scope.enrolledToken.init_params.user;
+                        }
+                        if (scope.enrolledToken.init_params.realm) {
+                            params.realm = scope.enrolledToken.init_params.realm;
+                        }
+                    }
+                    TokenFactory.enroll(scope.newUser, params, function (data) {
+                        if (data.result.value === true) {
+                            inform.add(gettextCatalog.getString("Token successfully verified"),
+                                {type: "success", ttl: 10000});
+                        }
+                        scope.verifyResponse = "";
+                        scope.callback(data);
+                    });
+                };
+            }
+        }
+    }]);
+
+
+myApp.directive("otpList", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
+    "TokenFactory",
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, TokenFactory) {
+        return {
+            scope: {
+                otpRows: "=",
+                otpRowCount: "=",
+                enrolledToken: "=",
+                piCustomization: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.otpList.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
+                scope.printOtp = function () {
+                    const serial = scope.enrolledToken.serial;
+                    const myWindow = window.open('', 'otpPrintingWindow', 'height=400,width=600');
+                    const css = '<link' +
+                        ' href="' + instanceUrl +
+                        '/static/css/papertoken.css"' +
+                        ' rel="stylesheet">';
+                    myWindow.document.write('<html><head><title>' + serial + '</title>');
+                    myWindow.document.write(css);
+                    myWindow.document.write('</head>' +
+                        '<body onload="window.print(); window.close()">');
+                    let otpTableName = '#otpTable' + serial;
+                    myWindow.document.write($(otpTableName).html());
+                    myWindow.document.write('</body></html>');
+                    myWindow.document.close(); // necessary for IE >= 10
+                    myWindow.focus(); // necessary for IE >= 10
+                    return true;
+                };
+            }
+        }
+    }]);

@@ -102,6 +102,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
         $scope.functionObject = {};
         $scope.editTemplate = false;
+        $scope.showTokenEnrolled = false;
+        $scope.qrCodeWidth = 250;
 
         $scope.$watch('form.containerType', function (newType, oldVal) {
             if (newType && $scope.formData.containerTypes[newType]) {
@@ -299,6 +301,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
             ContainerFactory.createContainer(params, function (data) {
                 $scope.containerSerial = data.result.value.container_serial;
+                let stay = false;
                 if ($scope.initRegistration && AuthFactory.checkRight('container_register')) {
                     let registrationParams =
                         {
@@ -313,11 +316,46 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
                         $scope.pollContainerDetails();
                     });
-                } else {
+                    stay = true;
+                }
+                if (data.result.value.tokens) {
+                    $scope.showTokenEnrolled = true;
+                    $scope.tokenInitData = data.result.value.tokens;
+                    stay = true;
+
+                    angular.forEach($scope.tokenInitData, function (initData, serial) {
+                        if (initData.otps) {
+                            const otps_count = Object.keys(initData.otps).length;
+                            let otp_row_count = parseInt(otps_count / 5 + 0.5);
+                            let otp_rows = Object.keys(initData.otps).slice(0, otp_row_count);
+                            initData["otp_rows"] = otp_rows;
+                            initData["otp_row_count"] = otp_row_count;
+                        }
+                        if (initData.webAuthnRegisterRequest) {
+                            $scope.click_wait = true;
+                            // $scope.register_fido(initData.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
+                        }
+                    });
+                }
+                if (!stay) {
                     $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                 }
 
             });
+        };
+
+        $scope.regenerateToken = function (serial) {
+            let init_params = $scope.tokenInitData[serial].init_params;
+            init_params["serial"] = serial;
+            TokenFactory.enroll({}, init_params, function(data) {
+                $scope.tokenInitData[serial] = data.detail;
+                $scope.tokenInitData[serial].init_params = init_params;
+                $scope.tokenInitData[serial].type = init_params.type;
+            });
+        };
+
+        $scope.verifyTokenCallback = function (response) {
+            $scope.tokenInitData[response.detail.serial]["rollout_state"] = response.detail.rollout_state;
         };
 
         $scope.pollContainerDetails = function () {

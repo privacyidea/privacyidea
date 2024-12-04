@@ -519,10 +519,14 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             })
         };
 
-        $scope.regenerateToken = function () {
+        $scope.regenerateToken = function (serial) {
             const params = $scope.form;
-            params.serial = $scope.enrolledToken.serial;
-            TokenFactory.enroll($scope.newUser, params, $scope.callback);
+            if (serial) {
+                params.serial = serial;
+            } else {
+                params.serial = $scope.enrolledToken.serial;
+            }
+            TokenFactory.enroll(null, params, $scope.callback);
         };
 
         $scope.sendClientPart = function () {
@@ -543,7 +547,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 "serial": $scope.enrolledToken.serial,
                 "verify": $scope.verifyResponse,
                 "type": $scope.form.type
-
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 if (data.result.value === true) {

@@ -16,7 +16,7 @@ SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="form-group" ng-hide="containerRegister">
+<div class="form-group" ng-hide="containerRegister || showTokenEnrolled">
     <h3 translate>Create a New Container</h3>
     <form name="formCreateContainer" role="form"
           ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
@@ -73,7 +73,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         ng-click="editTemplate=true" translate>
                     Edit
                 </button>
-                <button class="btn btn-default form-group btn-group" ng-show="editTemplate" ng-click="editTemplate=false" translate>
+                <button class="btn btn-default form-group btn-group" ng-show="editTemplate"
+                        ng-click="editTemplate=false" translate>
                     Hide
                 </button>
                 <div class="panel panel-default panel-body" ng-show="editTemplate">
@@ -106,7 +107,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <h4 translate>Registration</h4>
             <input type="checkbox" id="init_registration"
                    ng-model="initRegistration">
-            <label for="init_registration" translate>Generate a QR code to register the container on a smartphone.</label>
+            <label for="init_registration" translate>Generate a QR code to register the container on a
+                smartphone.</label>
             <div class="form-group">
                 <buton class="btn btn-default"
                        ng-click="registrationSettings=true"
@@ -137,26 +139,76 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </form>
 </div>
 
-<!--- Container Registration --->
-<div ng-show="containerRegister">
-    <h3 translate>Container Registration</h3>
+<!--- Container Enrolled --->
+<div ng-show="containerRegister || showTokenEnrolled">
+
+    <h3 translate>Container Created</h3>
+
     <span translate>
-            Your container was successfully created with the serial:
-        </span>
+        Your container was successfully created with the serial: </span>
     <a ui-sref="token.containerdetails({containerSerial:containerSerial})">{{ containerSerial }}</a>
 
-    <div class="row">
-        <div class="col-sm-6">
-            <img width="250" ng-src="{{ containerRegistrationQR }}"/>
-        </div>
+    <!--- Container Registration --->
+    <div ng-show="containerRegister">
+        <h4 translate>Registration</h4>
 
-        <div class="col-sm-6">
-            <p class="help-block" translate>
-                Please scan the QR code with the privacyIDEA Authenticator App
-                or click <a href="{{ containerRegistrationURL }}">this link</a> on your
-                smartphone to register your container. It will send the missing registration data to the configured
-                endpoint.
-            </p>
+        <div class="row">
+            <div class="col-sm-6">
+                <img width="250" ng-src="{{ containerRegistrationQR }}"/>
+            </div>
+
+            <div class="col-sm-6">
+                <p class="help-block" translate>
+                    Please scan the QR code with the privacyIDEA Authenticator App
+                    or click <a href="{{ containerRegistrationURL }}">this link</a> on your
+                    smartphone to register your container. It will send the missing registration data to the configured
+                    endpoint.
+                </p>
+            </div>
         </div>
     </div>
+
+    <!--- Tokens enrolled --->
+    <div ng-show="showTokenEnrolled && !containerRegister">
+        <h4 translate>Tokens</h4>
+        <div class="form-group" translate>
+            The following tokens were successfully enrolled in the container using the template
+            <a ui-sref="token.containertemplates.edit({templateName: form.template.name})"
+               ng-show="checkRight('container_template_list')">
+                    {{ form.template.name }}</a>.
+        </div>
+
+
+        <table class="table table-hover">
+            <tr ng-repeat="enrolledToken in tokenInitData">
+                <td>
+                    <label class="table-capitalize"> {{ enrolledToken.type }}
+                        <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">{{ enrolledToken.serial }}</a>
+                    </label>
+
+                    <div otp-list
+                         enrolled-token="enrolledToken"
+                         otp-rows="enrolledToken.otp_rows"
+                         otp-row-count="enrolledToken.otp_row_count"
+                         pi-customization="piCustomization"
+                         ng-if="enrolledToken.otps">
+                    </div>
+
+                    <div ng-if="enrolledToken.otps === undefined">
+                        <ng-include src="instanceUrl +
+                '/static/components/token/views/token.enrolled.' + enrolledToken.type + '.html' + fileVersionSuffix">
+                        </ng-include>
+                    </div>
+
+                    <div verify-enrolled-token
+                         enrolled-token="enrolledToken"
+                         token-type="enrolledToken.type"
+                         new-user="newUser"
+                         callback="verifyTokenCallback">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
 </div>

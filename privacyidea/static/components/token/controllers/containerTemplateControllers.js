@@ -113,18 +113,14 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
 
         // Get the supported token types for each container type once
         $scope.getContainerTypes = function () {
-            ContainerFactory.getTokenTypes(function (data) {
+            ContainerFactory.getTemplateTokenTypes(function (data) {
                 // Get all container types and corresponding token types
                 $scope.containerTypes = data.result.value;
 
                 // Create display string for supported token types of each container type
                 angular.forEach($scope.containerTypes, function (val, containerType) {
-                    if (containerType == 'generic') {
-                        $scope.containerTypes[containerType].token_types_display = 'All';
-                    } else {
-                        $scope.containerTypes[containerType].token_types_display = ContainerUtils.createDisplayList(
-                            $scope.containerTypes[containerType].token_types, true);
-                    }
+                    $scope.containerTypes[containerType].token_types_display = ContainerUtils.createDisplayList(
+                        $scope.containerTypes[containerType].token_types, true);
                 });
 
                 // Sets the supported token types for the selected container type in different formats
@@ -260,7 +256,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                 angular.forEach(diff_list, function (containerDiff, serial) {
                     angular.forEach(["options", "tokens"], function (group) {
                         angular.forEach(["missing", "additional", "different"], function (key) {
-                            if(key !== "different" || group !== "tokens") {
+                            if (key !== "different" || group !== "tokens") {
                                 $scope.templateContainerDiff[serial][group][key] = ContainerUtils.createDisplayList(
                                     diff_list[serial][group][key], false);
                             }
@@ -289,7 +285,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                     tokenList.push(token);
                 }
             });
-            $scope.params.template_options = {"tokens": $scope.selection.tokens, "options": $scope.selection.options};
+            $scope.params.template_options = {"tokens": tokenList, "options": $scope.selection.options};
             $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
