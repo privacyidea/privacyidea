@@ -26,16 +26,16 @@ angular.module('privacyideaApp.infoStates', ['ui.router', 'privacyideaApp.versio
             if (instance === "/") {
                instance = "";
             }
-            var dashboardpath = instance + "/static/components/info/views/";
+            var infopath = instance + "/static/components/info/views/";
             $stateProvider
                 .state('info', {
                     url: "/info",
-                    templateUrl: dashboardpath + "info.rss.html" + versioningSuffixProviderProvider.$get().$get(),
+                    templateUrl: infopath + "info.rss.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "infoController"
                 })
-                .state('info.news', {
-                    url: "/info/news",
-                    templateUrl: tokenPath + "info.rss.html" + versioningSuffixProviderProvider.$get().$get(),
+            .state('info.rss', {
+                    url: "/info/rss",
+                    templateUrl: infopath + "info.rss.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "infoController"
                 })
     }]);

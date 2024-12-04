@@ -19,9 +19,25 @@
  */
 
 
-myApp.controller("infoController", ["infoFactory",
+myApp.controller("infoController", ["InfoFactory",
                                          "$scope", "$location",
-                                         function (Info,
+                                         function (InfoFactory,
                                                    $scope, $location ) {
 
-                                         }]);
+$('html,body').scrollTop(0);
+
+$scope.rss = [];
+$scope.getRSS = function () {
+    InfoFactory.getRSS(function (rssfeeds) {
+        $scope.rss = rssfeeds;
+    });
+}
+
+$scope.getRSS()
+
+ // listen to the reload broadcast
+$scope.$on("piReload", function () {
+    $scope.getRSS();
+});
+
+}]);

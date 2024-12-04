@@ -405,6 +405,8 @@ class ACTION(object):
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
+    RSS_FEEDS = "rss_feeds"
+    RSS_AGE = "rss_age"
 
 
 class TYPE(object):
@@ -2100,7 +2102,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Admin is allowed to list containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _('The RSS feeds fetched for the admin. Configure a dictionary.')},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days.')}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2275,7 +2281,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Users are allowed to list their own containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _('The RSS feeds fetched for the user. Configure a dictionary.')},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days.')}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {

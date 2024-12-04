@@ -26,20 +26,26 @@ RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
 
 import feedparser
 import logging
+from datetime import datetime, timezone, timedelta
+from dateutil.parser import parse
 
 log = logging.getLogger(__name__)
 
 RSS_NEWS = {}
+FETCH_DAYS = 180
 
 
 def get_news(rss_feeds=None, channel=None):
     def _parse_rss(rss):
         feed = []
+        modified = datetime.now(timezone.utc) - timedelta(days=FETCH_DAYS)
         for item in rss.entries:
-            feed.append({"title": item.title,
-                         "link": item.link,
-                         "pub_date": item.published,
-                         "summary": item.summary})
+            pub_date = parse(item.published)
+            if pub_date > modified:
+                feed.append({"title": item.title,
+                             "link": item.link,
+                             "pub_date": item.published,
+                             "summary": item.summary})
         return feed
 
     rss_feeds = rss_feeds or RSS_FEEDS
@@ -49,6 +55,8 @@ def get_news(rss_feeds=None, channel=None):
 
     for k, v in rss_feeds.items():
         try:
+            # Only fetch news from the last 180 days
+            #d = feedparser.parse(v, modified=modified) // does not work correctly/at all
             d = feedparser.parse(v)
             rss_news[k] = _parse_rss(d)
         except Exception as e:
