@@ -9,7 +9,7 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import {MatFabButton, MatIconButton} from '@angular/material/button';
+import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
@@ -17,12 +17,10 @@ import {ContainerService} from '../../../services/container/container.service';
 import {AsyncPipe, NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MatInput, MatSuffix} from '@angular/material/input';
+import {MatInput} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatDivider} from '@angular/material/divider';
 import {MatSelectModule} from '@angular/material/select';
 import {forkJoin, Observable, startWith, switchMap} from 'rxjs';
-import {ValidateService} from '../../../services/validate/validate.service';
 import {RealmService} from '../../../services/realm/realm.service';
 import {UserService} from '../../../services/user/user.service';
 import {catchError, map} from 'rxjs/operators';
@@ -30,6 +28,9 @@ import {TableUtilsService} from '../../../services/table-utils/table-utils.servi
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
 import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
 import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
+import {
+  TokenDetailsActionsComponent
+} from './token-details-actions/token-details-actions.component';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -64,7 +65,6 @@ export const infoDetail = [
     MatCell,
     MatCellDef,
     MatColumnDef,
-    MatFabButton,
     MatHeaderCell,
     MatIcon,
     MatListItem,
@@ -77,8 +77,6 @@ export const infoDetail = [
     MatGridList,
     FormsModule,
     MatInput,
-    MatDivider,
-    MatSuffix,
     MatFormFieldModule,
     MatSelectModule,
     ReactiveFormsModule,
@@ -88,6 +86,7 @@ export const infoDetail = [
     AsyncPipe,
     MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
+    TokenDetailsActionsComponent,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -135,12 +134,8 @@ export class TokenDetailsComponent {
   tokengroupOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
-  hide!: boolean;
   selectedUsername = new FormControl<string>('');
   selectedContainer = new FormControl<string>('');
-  fristOTPValue: string = '';
-  secondOTPValue: string = '';
-  otpOrPinToTest: string = '';
   selectedRealms = new FormControl<string[]>([]);
   userRealm: string = '';
   maxfail: number = 0;
@@ -151,7 +146,6 @@ export class TokenDetailsComponent {
               private containerService: ContainerService,
               private realmService: RealmService,
               private userService: UserService,
-              private validateService: ValidateService,
               protected tableUtilsService: TableUtilsService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
@@ -368,36 +362,6 @@ export class TokenDetailsComponent {
     ).subscribe({
       error: error => {
         console.error('Failed to unassign container', error);
-      }
-    });
-  }
-
-  resyncOTPToken() {
-    this.tokenService.resyncOTPToken(this.serial(), this.fristOTPValue, this.secondOTPValue).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: error => {
-        console.error('Failed to resync OTP token', error);
-      }
-    });
-  }
-
-  testToken() {
-    this.validateService.testToken(this.serial(), this.otpOrPinToTest).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: (error: any) => {
-        console.error('Failed to test token', error);
-      }
-    });
-  }
-
-  verifyOTPValue() {
-    this.validateService.testToken(this.serial(), this.otpOrPinToTest, "1").pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      error: (error: any) => {
-        console.error('Failed to verify OTP value', error);
       }
     });
   }

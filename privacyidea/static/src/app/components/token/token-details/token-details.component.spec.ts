@@ -224,34 +224,6 @@ describe('TokenDetailsComponent', () => {
     expect(infoKeys[1].textContent).toContain('key2');
   });
 
-  it('should test and verify token', () => {
-    spyOn(validateService, 'testToken').and.callThrough();
-    component.otpOrPinToTest = '1234';
-    component.testToken();
-    component.verifyOTPValue()
-    expect(validateService.testToken).toHaveBeenCalledWith('Mock serial', '1234');
-  });
-
-  it('should resync OTP token', () => {
-    component.fristOTPValue = 'otp1';
-    component.secondOTPValue = 'otp2';
-
-    spyOn(tokenService, 'resyncOTPToken').and.callThrough();
-    component.resyncOTPToken();
-    expect(tokenService.resyncOTPToken).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
-  });
-
-  it('should resync OTP token on button click', () => {
-    component.fristOTPValue = 'otp1';
-    component.secondOTPValue = 'otp2';
-
-    const resyncSpy = spyOn(tokenService, 'resyncOTPToken').and.callThrough();
-
-    const resyncButton = fixture.nativeElement.querySelector('.pin-input-button button');
-    resyncButton.click();
-    expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
-  });
-
   it('should filter container options correctly', () => {
     const result = component['_filterContainerOptions']('admin');
     expect(result).toEqual(['admin-container']);
