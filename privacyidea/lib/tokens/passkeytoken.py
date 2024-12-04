@@ -386,7 +386,7 @@ class PasskeyTokenClass(TokenClass):
         rp_id = get_required(options, WEBAUTHNACTION.RELYING_PARTY_ID)
         challenge = bytes_to_base64url(geturandom(32))
         transaction_id = get_rand_digit_str(20)
-        message = PasskeyTokenClass.get_default_challenge_text()
+        message = PasskeyTokenClass.get_default_challenge_text_auth()
         db_challenge = Challenge(self.get_serial(), transaction_id=transaction_id, challenge=challenge)
         db_challenge.save()
         ret = {

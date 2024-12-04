@@ -1896,7 +1896,7 @@ def fido2_auth(request, action):
 
 
 def get_first_policy_value(policy_action: str, default: str, scope,
-                           allowed_values: list[str] = None, user_object=None) -> str:
+                           allowed_values = None, user_object=None) -> str:
     policies = (Match.user(g, scope=scope, action=policy_action, user_object=user_object)
                 .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
     policy_value = list(policies)[0] if policies else default
@@ -1922,7 +1922,7 @@ def fido2_enroll(request, action):
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-    WEAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+    WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
     ACTION.CHALLENGETEXT, respectively.
 

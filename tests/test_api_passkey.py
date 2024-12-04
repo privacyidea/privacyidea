@@ -74,7 +74,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                 self.assertIn(param["type"], ["public-key"])
                 self.assertIn(param["alg"], [-7, -37, -257])
             # ExcludeCredentials should be empty because no other passkey token is registered for the user
-            self.assertEquals(len(passkey_registration["excludeCredentials"]), 0)
+            self.assertEqual(len(passkey_registration["excludeCredentials"]), 0)
             return res.json
 
     def _token_init_step_two(self, transaction_id, serial):
@@ -122,7 +122,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         set_policy("key_algorithm", scope=SCOPE.ENROLL,
                    action=f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
         set_policy("attestation", scope=SCOPE.ENROLL, action=f"{PasskeyAction.AttestationConveyancePreference}="
-                                                             f"{AttestationConveyancePreference.ENTERPRISE}")
+                                                             f"{AttestationConveyancePreference.ENTERPRISE.value}")
         set_policy("user_verification", scope=SCOPE.ENROLL,
                    action=f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT}=required")
 

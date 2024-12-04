@@ -1279,11 +1279,9 @@ class WebAuthnTokenClass(TokenClass):
                     uv_required=uv_req
                 ).verify())
             except AuthenticationRejectedException as e:
-                # The authentication ceremony failed.
                 log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))
                 return -1
 
-            # All clear? Nice!
             return self.get_otp_count()
 
         else:
