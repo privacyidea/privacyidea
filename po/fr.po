@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-12-03 14:00+0000\n"
+"PO-Revision-Date: 2024-12-04 15:00+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -4455,15 +4455,21 @@ msgstr ""
 "Le PIN mOTP est le code PIN qui doit être saisi sur le téléphone mobile."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:1
+#, fuzzy
 msgid ""
 "The mOTP token is a time based OTP token for mobile devices.\n"
 "    You can\n"
 "    have the server generate the secret and scan the QR code."
 msgstr ""
+"Le jeton mOTP est un jeton OTP basé sur le temps pour les téléphones mobiles."
+"\n"
+"Vous pouvez\n"
+"demander au serveur de générer le secret puis scannez le code QR."
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
+#, fuzzy
 msgid "The number of lookahead OTP values. Default 10."
-msgstr ""
+msgstr "Le nombre de valeurs OTP anticipées. Défaut 10."
 
 #: privacyidea/static/components/token/views/token.lost.html:17
 msgid ""
@@ -4481,19 +4487,23 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
-msgstr ""
+msgstr "Le mot de passe ne peut plus être affiché, revenez plus tard!"
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
 "        <b>{{ lostResult.password }}</b>"
 msgstr ""
+"Le mot de passe nécessitant d'être combiné avec le PIN OTP:\n"
+"<b>{{ lostResult.password }}</b>"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:10
+#, fuzzy
 msgid "The path to the directory containing the trust anchors."
-msgstr ""
+msgstr "Le chemin du dossier contenant les balises de confiance."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:34
+#, fuzzy
 msgid ""
 "The privacyIDEA authentication backend is licensed under the\n"
 "                    AGPLv3.\n"
@@ -4507,6 +4517,16 @@ msgid ""
 "target=\"github\">backend\n"
 "                        service itself</a>."
 msgstr ""
+"Le backend d'authentification de privacyIDEA est licencié sous le\n"
+"AGPLv3.\n"
+"Certains composants peuvent faire partis d'autres licences.\n"
+"privacyIDEA est un fork original de LinOTP, qui était\n"
+"licencié\n"
+"par LSE Leading Security Experts GmbH.\n"
+"Pour des informations détaillées, veuillez consulter\n"
+"<a href=\"http://github.com/privacyidea/privacyidea\" target=\"github\">"
+"service\n"
+"backend</a>."
 
 #: privacyidea/static/app.js:154
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
@@ -4520,6 +4540,11 @@ msgid ""
 "    presented with a random questions and needs to provide his previously\n"
 "    defined answer."
 msgstr ""
+"Le questionnaire vous permet de définir une série de questions. Le jeton\n"
+"questionnaire nécessite de définir des réponses à ces questions et l'"
+"utilisateur\n"
+"recevra des questions aléatoires et devra fournir les réponses précédemment\n"
+"définies."
 
 #: privacyidea/static/components/token/views/token.enroll.registration.html:1
 msgid ""
@@ -4529,6 +4554,11 @@ msgid ""
 "can\n"
 "    not be used anymore."
 msgstr ""
+"Le jeton enregistrement est un code que l'utilisateur peut utiliser pour s'"
+"authentifier\n"
+"une seule fois. Après avoir utilisé ce code pour se connecter, le jeton d'"
+"enregistrement\n"
+"est effacé et ne peut plus être utilisé."
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:1
 msgid ""
@@ -4536,6 +4566,9 @@ msgid ""
 "    privacyIDEA server. You can choose if the PIN should be stripped and\n"
 "    checked locally."
 msgstr ""
+"Le jeton distant transfère la requête d'authentification à un autre\n"
+"serveur privacyIDEA. Vous pouvez choisir si le PIN doit être traité et\n"
+"vérifié localement."
 
 #: privacyidea/static/app.js:90
 msgid "The resource name must consist of letters, numbers and '_', '-', '.'"
@@ -4560,16 +4593,21 @@ msgstr ""
 "_ », « - », « . » et ne doit pas être égal à « test »"
 
 #: privacyidea/static/app.js:105
+#, fuzzy
 msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'test_request'"
 msgstr ""
+"Le nom de la ressource doit contenir des lettres, nombres et '_', '-', '.' "
+"et ne doit pas être le mot 'test_request'"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:15
 msgid ""
 "The separator that is used to separate the passwords of the\n"
 "        different tokens."
 msgstr ""
+"Le séparateur utilisé pour séparer les mots de passe des\n"
+"différents jetons."
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:28
 msgid "The serial number on the remote server"
@@ -4601,6 +4639,8 @@ msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the database. You can later download the PKCS#12 file."
 msgstr ""
+"Le serveur créera la clé privée RSA et la stockera dans la\n"
+"base de données. Vous pourrez télécharger plus tard le fichier PKCS#12."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
 #, fuzzy
@@ -4618,10 +4658,14 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned with the Token2 app."
 msgstr ""
+"Le serveur créera la clé secrète\n"
+"et un code QR\n"
+"vous sera\n"
+"affiché pour être scanné avec l'application Token2."
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:16
 msgid "The server will create the static password."
-msgstr ""
+msgstr "Le serveur créera le mot de passe statique."
 
 #: privacyidea/static/components/token/views/token.enroll.html:152
 msgid ""
@@ -4629,17 +4673,25 @@ msgid ""
 "                    should be entered in the format\n"
 "                    <em>YYYY-MM-DDThh:mm+oooo</em>."
 msgstr ""
+"L'heure de début et de fin de la période de validité\n"
+"doivent être entrées dans le format\n"
+"<em>YYYY-MM-DDThh:mm+oooo</em>."
 
 #: privacyidea/static/components/config/views/config.token.email.html:20
 #: privacyidea/static/components/config/views/config.token.sms.html:25
+#, fuzzy
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
 msgstr ""
+"La durée de validité en secondes de la valeur OTP envoyée\n"
+"pour l'authentification."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:54
 msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr ""
+"La durée pendant laquelle le mot de passe peut être utilisé. Par exemple "
+"'1d' or '12h'."
 
 #: privacyidea/static/components/token/views/token.enroll.html:200
 #, fuzzy
@@ -4671,29 +4723,35 @@ msgid ""
 "span>\n"
 "    ."
 msgstr ""
+"Le jeton est actuellement assigné au conteneur\n"
+"<a ui-sref=\"token.containerdetails({containerSerial: containerSerial})\" ng-"
+"hide=\"!checkRight('container_list')\">\n"
+"{{ containerSerial }}\n"
+"</a>\n"
+"<span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</span>."
 
 #: privacyidea/static/components/token/views/token.details.html:591
 msgid "The token is currently in no container."
-msgstr ""
+msgstr "Le jeton n'est actuellement dans aucun conteneur."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:34
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:32
 msgid "The token is enrolled."
-msgstr ""
+msgstr "Le jeton est enrôlé."
 
 #: privacyidea/static/components/token/views/token.lost.html:52
 msgid "The token is valid till {{ lostResult.end_date }}."
-msgstr ""
+msgstr "Le jeton est valide jusqu'à {{ lostResult.end_date }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:219
 msgid ""
 "The token was enrolled, but you still need to verify it before you can use "
 "it!"
-msgstr ""
+msgstr "Le jeton a été enrôlé mais vous devez le vérifier avant de l'utiliser!"
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
-msgstr ""
+msgstr "Le jeton a été marqué perdu avec succès."
 
 #: privacyidea/static/components/token/views/token.enroll.html:185
 msgid ""
@@ -4728,54 +4786,65 @@ msgstr ""
 "                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
+#, fuzzy
 msgid "The trust_anchor_dir must be an absolute path."
-msgstr ""
+msgstr "Le chemin de trust_anchor_dir doit être un chemin absolu."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:37
+#, fuzzy
 msgid "The trust_anchor_dir must not end with a \"/\"."
-msgstr ""
+msgstr "Le chemin de trust_anchor_dir ne doit pas finir par un \"/\"."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:98
 msgid ""
 "The user data in this database can be modified from within\n"
 "                    privacyIDEA."
 msgstr ""
+"Les données de l'utilisateur peuvent être modifiées à partir de\n"
+"privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
 msgid ""
 "The user data in this database can be modified from within\n"
 "                privacyIDEA."
 msgstr ""
+"Les données d'utilisateur dans cette base de données peuvent\n"
+"être modifiées à partir de privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.lost.html:12
 msgid ""
 "The user will have to authenticate with the old OTP PIN he knows and this\n"
 "    newly generated password."
 msgstr ""
+"L'utilisateur devra s'authentifier avec l'ancien PIN OTP qu'il connait et "
+"ce\n"
+"mot de passe nouvellement généré."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:51
 msgid "The username on the RADIUS server"
-msgstr ""
+msgstr "Le nom d'utilisateur sur le serveur RADIUS"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:40
 msgid "The username on the remote server"
-msgstr ""
+msgstr "Le nom d'utilisateur sur le serveur distant"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:42
 msgid "The value of open source"
-msgstr ""
+msgstr "La valeur de l'open source"
 
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:18
 msgid "The value of the indexed secret will be set by a policy."
-msgstr ""
+msgstr "La valeur du secret indexé sera définie par une politique."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid "The website of the identity provider"
-msgstr ""
+msgstr "Le site web du fournisseur d'identité"
 
 #: privacyidea/static/components/config/views/config.token.question.html:23
+#, fuzzy
 msgid "These are the possible questions, a user may define answers to."
 msgstr ""
+"Voici les questions possibles dont l'utilisateur doit définir les réponses."
 
 #: privacyidea/static/components/user/views/user.add.html:18
 msgid ""
@@ -4786,12 +4855,19 @@ msgid ""
 "                        that\n"
 "                        contain this resolver."
 msgstr ""
+"Voici les interpréteurs marqués comme éditables. Vous pouvez\n"
+"ajouter un utilisateur\n"
+"à l'interpréteur. L'utilisateur apparaitra dans le domaine,\n"
+"qui contient cet interpréteur."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:116
+#, fuzzy
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
 msgstr ""
+"Ces adresses IP ou sous réseaux de clients sont\n"
+"autorisés à se faire passer pour un autre client."
 
 #: privacyidea/static/components/config/views/config.system.doc.html:2
 msgid ""
@@ -4799,6 +4875,9 @@ msgid ""
 "    configuration of your system in restructured text. You can use\n"
 "    this to document your installed system."
 msgstr ""
+"Cette documentation contient la configuration\n"
+"actuelle de votre système en texte reformaté. Vous pouvez l'utiliser\n"
+"pour documenter votre installation."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:19
 msgid ""
@@ -4824,8 +4903,11 @@ msgid ""
 "This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.\n"
 "    The Yubikey emits a 44 character on time password."
 msgstr ""
+"C'est une Yubikey en mode Yubico authentifiée par privacyIDEA.\n"
+"La Yubikey délivre un mot de passe à usage unique de 44 caractères."
 
 #: privacyidea/static/components/token/views/token.import.html:58
+#, fuzzy
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
 "            Values in the PSKC files may be unencrypted or\n"
@@ -4835,14 +4917,24 @@ msgid ""
 "the\n"
 "            password."
 msgstr ""
+"C'est un fichier PSKC conforme à la RFC6030OATH.\n"
+"Les valeurs dans les fichiers PSKC peuvent être non chiffrées ou\n"
+"<em>sinon</em> chiffrées avec une\n"
+"<em>Clé partagée</em> ou <em>un mot de passe</em>. Si les valeurs sont\n"
+"chiffrées, veuillez spécifier la clé partagée au format hex ou le mot de\n"
+"passe."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:132
+#, fuzzy
 msgid ""
 "This is the CRL file, which is written when a certificate\n"
 "                    is revoked or the CRL is created otherwise."
 msgstr ""
+"Ceci est le fichier CRL, qui est écrit quand un certificat\n"
+"est révoqué ou quand le CRL est créé autrement."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:79
+#, fuzzy
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
@@ -4851,14 +4943,20 @@ msgid ""
 "target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
+"Ceci est la suite OCRA utilisée par l'application TiQR.\n"
+"La suite OCRA par défaut est OCRA-1:HOTP-SHA1-6:QN10.\n"
+"Pour plus de détails, consultez la\n"
+"<a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">RFC\n"
+"6287</a>."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
+#, fuzzy
 msgid "This is the directory were certificates get written to."
-msgstr ""
+msgstr "Ceci est le dossier où les certificats sont créés."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:33
 msgid "This is the display name of your service in the TiQR app."
-msgstr ""
+msgstr "Ceci est le nom de votre service affiché dans l'application TiQR."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:64
 msgid ""
@@ -4874,42 +4972,55 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.question.html:12
 msgid "This is the number of answers a user needs to define to enroll a token."
 msgstr ""
+"Le nombre de réponses qu'un utilisateur doit définir pour enrôler un jeton."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:43
 msgid ""
 "This is the service identifier that will be passed to the TiQR app.\n"
 "        This should contain a reverse FQDN (defaults to org.privacyidea)."
 msgstr ""
+"L'identifiant du service qui sera transmis à l'application TiQR.\n"
+"Il doit contenir un FQDN inverse (par défaut à org.privacyidea)."
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:22
 msgid ""
 "This is the unique identifying name\n"
 "                for this group definition."
 msgstr ""
+"Nom d'identification unique\n"
+"pour cette définition de groupe."
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:22
 msgid ""
 "This is the unique identifying name\n"
 "                for this service definition."
 msgstr ""
+"Nom d'identification unique\n"
+"pour cette définition de service."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:22
 msgid ""
 "This is the unique identifying name\n"
 "                of the RADIUS server definition."
 msgstr ""
+"Nom d'identification unique\n"
+"pour cette définition de serveur RADIUS."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:22
 msgid ""
 "This is the unique identifying name\n"
 "                of the SMTP server definition."
 msgstr ""
+"Nom d'identification unique\n"
+"pour cette définition de serveur SMTP."
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:22
 msgid ""
 "This is the unique identifying name\n"
 "                of the privacyIDEA server definition."
 msgstr ""
+"Nom d'identification unique\n"
+"pour cette définition de serveur privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:45
 msgid ""
@@ -4917,6 +5028,9 @@ msgid ""
 "        to the RADIUS server. It can be different from the owner of this\n"
 "        RADIUS token."
 msgstr ""
+"Le nom d'utilisateur qui est envoyé\n"
+"au serveur RADIUS. Il peut être différent du propriétaire de ce\n"
+"jeton RADIUS."
 
 #: privacyidea/static/components/token/views/token.enroll.registration.html:6
 msgid ""
@@ -4925,15 +5039,21 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:13
+#, fuzzy
 msgid ""
 "This must be a valid FQDN with also a valid top level domain -\n"
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
 msgstr ""
+"Doit être un FQDN valide avec un domaine de premier niveau\n"
+"valide également sinon vous pouvez recevoir une erreur 2 U2F (Mauvaise "
+"requête)."
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:241
 msgid ""
 "This setting activates a LDAP server pool that is persisted between requests."
 msgstr ""
+"Ce paramètre active un groupement de serveurs LDAP qui est persistant entre "
+"les requêtes."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:13
 msgid ""
@@ -4944,50 +5064,56 @@ msgid ""
 "attest\n"
 "        authenticators during enrollment."
 msgstr ""
+"Doit être un chemin vers un répertoire local sur le serveur, dont\n"
+"privacyIDEA à le droit de lecture. Il doit contenir les fichiers de "
+"certificats.\n"
+"Tous les certificats de ce dossier seront approuvés pour attester "
+"correctement\n"
+"les authentificateurs pendant l'enrôlement."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
-msgstr ""
+msgstr "Serveur d'authentification TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:66
 msgid "TiQR Info URL"
-msgstr ""
+msgstr "URL de l'information TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:54
 msgid "TiQR Logo URL"
-msgstr ""
+msgstr "URL du logo TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
-msgstr ""
+msgstr "Serveur d'enregistrement TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:41
 msgid ""
 "TiQR Service\n"
 "        Identifier"
-msgstr ""
+msgstr "Identifiant de service TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:32
 msgid "TiQR Service Displayname"
-msgstr ""
+msgstr "Nom d'affichage du service TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:1
 msgid "TiQR Token settings"
-msgstr ""
+msgstr "Paramètres jeton TiQR"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:48
 #: privacyidea/static/components/config/views/config.smtp.edit.html:47
 msgid "Timeout"
-msgstr ""
+msgstr "Délai d'expiration"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
-msgstr ""
+msgstr "Délai d'expiration (secondes)"
 
 #: privacyidea/static/components/login/factories/u2f.js:31
 msgid "Timeout while waiting for signing response."
-msgstr ""
+msgstr "Délai d'expiration de l'attente de la réponse de signature."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:48
 #: privacyidea/static/components/token/views/token.enroll.totp.html:61
@@ -5003,6 +5129,8 @@ msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
+"Pour définir les ID de service allez à <a ui-sref=\"config.serviceid\""
+">Configuration ID de Service</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5011,6 +5139,10 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</"
 "a>."
 msgstr ""
+"Pour faciliter l'enrôlement des jetons RADIUS vous pouvez\n"
+"définir les valeurs par défaut dans la\n"
+"<a ui-sref=\"config.tokens({tokentype:'radius'})\">Configuration jeton "
+"RADIUS</a>."
 
 #: privacyidea/static/components/token/views/token.html:113
 #, fuzzy
@@ -5019,7 +5151,7 @@ msgstr "Application"
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
-msgstr ""
+msgstr "Type Jeton"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:7
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:6
@@ -5047,31 +5179,34 @@ msgstr "Détails pour le jeton {{ tokenSerial }}"
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:4
 msgid "Token enrolled"
-msgstr ""
+msgstr "Jeton enrôlé"
 
 #: privacyidea/static/components/token/views/token.html:74
 msgid ""
 "Token enrollment\n"
 "                                wizard"
 msgstr ""
+"Assistant d'enrôlement de\n"
+"jeton"
 
 #: privacyidea/static/components/user/views/user.details.html:140
 msgid "Token of {{username}} without a container"
-msgstr ""
+msgstr "Jeton de {{username}} sans conteneur"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:284
 #: privacyidea/static/components/token/views/token.containerdetails.html:522
 #: privacyidea/static/components/token/views/token.list.html:76
+#, fuzzy
 msgid "Token realms"
-msgstr ""
+msgstr "Domaines du jeton"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:331
 msgid "Token resync failed."
-msgstr ""
+msgstr "Echec de resynchronisation jeton."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:328
 msgid "Token resync successful."
-msgstr ""
+msgstr "Resynchronisation jeton réussie."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:550
 #, fuzzy
@@ -5085,11 +5220,11 @@ msgstr "Le jeton {{ selectedToken.serial }} est perdu ?"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:67
 msgid "Tokengroup saved."
-msgstr ""
+msgstr "Groupe de jeton sauvegardé."
 
 #: privacyidea/static/components/config/views/config.system.html:126
 msgid "Tokengroups"
-msgstr ""
+msgstr "Groupes de jetons"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:48
@@ -5101,15 +5236,15 @@ msgstr "Jetons"
 
 #: privacyidea/static/components/machine/views/machine.details.html:34
 msgid "Tokens and Applications for machine {{ machineid }}"
-msgstr ""
+msgstr "Jetons et Applications pour la machine {{ machineid }}"
 
 #: privacyidea/static/components/user/views/user.details.html:139
 msgid "Tokens for user {{ username }}"
-msgstr ""
+msgstr "Jetons pour l'utilisateur {{ username }}"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:255
 msgid "Tokens in the Container"
-msgstr ""
+msgstr "Jetons dans le conteneur"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:17
 msgid "Total"
@@ -5117,15 +5252,15 @@ msgstr "Total"
 
 #: privacyidea/static/components/token/views/token.challenges.html:1
 msgid "Total Challenges:"
-msgstr ""
+msgstr "Challenges totaux:"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:12
 msgid "Total Containers: {{ containerdata.count }}"
-msgstr ""
+msgstr "Conteneurs totaux: {{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
-msgstr ""
+msgstr "ID transaction"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:7
 #: privacyidea/static/components/token/views/token.containerlist.html:44
@@ -5134,7 +5269,7 @@ msgstr ""
 #: privacyidea/static/components/user/views/user.details.html:250
 #: privacyidea/static/components/user/views/user.details.html:356
 msgid "Type"
-msgstr ""
+msgstr "Type"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:40
@@ -5147,92 +5282,98 @@ msgstr "Répéter le mot de passe"
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
 #: privacyidea/static/components/user/views/user.password.html:55
 msgid "Type a password"
-msgstr ""
+msgstr "Saisissez un mot de passe"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:1
 msgid "U2F Token settings"
-msgstr ""
+msgstr "Paramètres jeton U2F"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:330
 msgid "UID Type"
-msgstr ""
+msgstr "Type UID"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:6
 msgid "URL"
-msgstr ""
+msgstr "URL"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:27
 msgid "URL of the privacyIDEA server"
-msgstr ""
+msgstr "URL du serveur privacyIDEA"
 
 #: privacyidea/static/components/user/views/user.details.html:217
 msgid "Unassign"
-msgstr ""
+msgstr "Désassigner"
 
 #: privacyidea/static/components/token/views/token.details.html:555
 msgid "Unassign Token"
-msgstr ""
+msgstr "Désassigner jeton"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:212
 #: privacyidea/static/components/token/views/token.details.html:529
 msgid "Unassign User"
-msgstr ""
+msgstr "Désassigner utilisateur"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:31
 msgid "Unassigned Hardware"
-msgstr ""
+msgstr "Désassigner matériel"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:35
 msgid "Unassigned Software"
-msgstr ""
+msgstr "Désassigner logiciel"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:22
 msgid "Upload Certificate"
-msgstr ""
+msgstr "Téléverser un certificat"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:17
 msgid "Upload Request"
-msgstr ""
+msgstr "Téléverser une requête"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:5
 msgid "Upload Subscription File"
-msgstr ""
+msgstr "Téléverser un fichier d'abonnement"
 
 #: privacyidea/static/components/token/views/token.import.html:139
 msgid "Uploaded File"
-msgstr ""
+msgstr "Fichier téléversé"
 
 #: privacyidea/static/components/token/views/token.import.html:142
 msgid "Uploaded Tokens"
-msgstr ""
+msgstr "Jetons téléversés"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:7
 msgid ""
 "Use @ sign to split the username\n"
 "            and the realm."
 msgstr ""
+"Utiliser le signe @ pour séparer le nom d'utilisateur\n"
+"et le domaine."
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:56
 msgid "Use HTTP proxy"
-msgstr ""
+msgstr "Utiliser un proxy HTTP"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
 msgid "Use SSL"
-msgstr ""
+msgstr "Utiliser SSL"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
 msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr ""
+"Utiliser STARTTLS sur une connexion LDAP simple habituellement sur le port "
+"389."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:113
 msgid "Use StartTLS"
-msgstr ""
+msgstr "Utiliser StartTLS"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:37
 #: privacyidea/static/components/token/views/token.enroll.totp.html:37
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr ""
+"Utiliser l'enrôlement en 2 étapes avec l'application privacyIDEA "
+"Authenticator"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:227
 #: privacyidea/static/components/config/views/config.policies.list.html:24
@@ -5242,18 +5383,20 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.containerlist.html:50
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
-msgstr ""
+msgstr "Utilisateur"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:93
 msgid ""
 "User Cache\n"
 "            expiration in seconds"
 msgstr ""
+"Expiration du\n"
+"cache utilisateur en secondes"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:227
 #: privacyidea/static/components/token/views/token.details.html:544
 msgid "User Id"
-msgstr ""
+msgstr "ID utilisateur"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:17
 msgid "User account created. An Email has been sent to you."
@@ -5273,16 +5416,16 @@ msgstr "Utilisateur mis à jour avec succès."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:186
 msgid "User-Realm"
-msgstr ""
+msgstr "Domaine-Utilisateur"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:203
 msgid "User-Resolver"
-msgstr ""
+msgstr "Interpréteur-Utilisateur"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:528
 #: privacyidea/static/components/token/views/token.list.html:82
 msgid "UserId"
-msgstr ""
+msgstr "IdUtilisateur"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:72
 #: privacyidea/static/components/directives/views/directive.assignuser.html:13
@@ -5300,7 +5443,7 @@ msgstr "Nom d'utilisateur"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:241
 msgid "Username case-insensitive."
-msgstr ""
+msgstr "Nom d'utilisateur non sensible à la casse."
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
 #: privacyidea/static/components/config/views/config.html:62
@@ -5309,21 +5452,22 @@ msgid "Users"
 msgstr "Utilisateurs"
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:9
+#, fuzzy
 msgid "VASCO Token blob"
-msgstr ""
+msgstr "Blob jeton VASCO"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:16
 msgid "Valid subscription"
-msgstr ""
+msgstr "Abonnement valide"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:281
 msgid "Valid time"
-msgstr ""
+msgstr "Durée de validité"
 
 #: privacyidea/static/components/token/views/token.details.html:265
 #: privacyidea/static/components/token/views/token.enroll.html:132
 msgid "Validity End"
-msgstr ""
+msgstr "Fin de validité"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:140
 msgid "Validity Period"
@@ -5346,39 +5490,39 @@ msgstr "Vérifier le certificat SSL"
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
-msgstr ""
+msgstr "Vérifier TLS"
 
 #: privacyidea/static/components/token/views/token.details.html:80
 #: privacyidea/static/components/token/views/token.enroll.html:229
 msgid "Verify Token"
-msgstr ""
+msgstr "Vérifier le jeton"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 msgid "Verify the TLS cerificate of the server."
-msgstr ""
+msgstr "Vérifier le certificat TLS du serveur."
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:40
 msgid "Verify the certificate"
-msgstr ""
+msgstr "Vérifier le certificat"
 
 #: privacyidea/static/components/token/views/token.details.html:4
 #: privacyidea/static/components/token/views/token.lost.html:4
 msgid "View token in Audit log"
-msgstr ""
+msgstr "Voir le jeton dans le journal d'audit"
 
 #: privacyidea/static/components/user/views/user.details.html:17
 msgid "View user in Audit log"
-msgstr ""
+msgstr "Voir l'utilisateur dans le journal d'audit"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:1
 msgid "WebAuthn Token settings"
-msgstr ""
+msgstr "Paramètres jeton WebAuthn"
 
 #: privacyidea/static/components/login/factories/webauthn.js:42
 #: privacyidea/static/components/login/factories/webauthn.js:69
 msgid "WebAuthn is not supported by this browser, or in this context."
-msgstr ""
+msgstr "WebAuthn n'est pas compatible avec ce navigateur, ou dans ce contexte."
 
 #: privacyidea/static/components/dialogs/views/dialog.no.token.html:15
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
@@ -5403,6 +5547,10 @@ msgid ""
 "    if you want to approve the authentication step.\n"
 "    You can accept or deny the authentication on your smartphone."
 msgstr ""
+"Avec le jeton PUSH, privacyIDEA envoie une notification à votre smartphone "
+"enregistré demandant\n"
+"si vous voulez approuver l'étape d'authentification.\n"
+"Vous pouvez accepter or refuser l'authentification sur votre smartphone."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:82
 msgid "Working Directory"
