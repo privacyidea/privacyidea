@@ -1,0 +1,91 @@
+<div class="info-container">
+  <span class="info-title">Information</span>
+  <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
+         mat-table>
+    <ng-container matColumnDef="value">
+      <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+      <td *matCellDef="let element" class="detail-row editable-row value-td" mat-cell>
+        <div class="value-container">
+          <mat-list>
+            @for (key of Object.keys(element.value); track key) {
+              @if (isEditingInfo()) {
+                <div class="edit-info-row">
+                  <mat-list-item class="object-row">
+                    <div class="flex">
+                      <mat-form-field>
+                        <mat-label style="font-size: 14px"
+                                   class="object-item">{{ key }}
+                        </mat-label>
+                        <textarea matInput class="info-input" rows="1"
+                                  [(ngModel)]="element.value[key]"></textarea>
+                      </mat-form-field>
+                      <button mat-icon-button class="delete-info-icon"
+                              (click)="deleteInfo(key)">
+                        <mat-icon class="mat-icon-button">delete_outlined</mat-icon>
+                      </button>
+                    </div>
+                  </mat-list-item>
+                </div>
+              } @else {
+                <mat-list-item class="object-row onepx">
+                  <div class="info-span">
+                          <span style="margin-left: -4px; font-size: 14px" class="object-item">
+                            {{ key }}:
+                          </span>
+                    <span class="object-item"
+                          style="margin-left: 2px">{{ element.value[key] }}</span>
+                    <mat-divider style="width: 87%; margin-bottom: 5px; margin-left: -8px;
+                           margin-top: 3px"/>
+                  </div>
+                </mat-list-item>
+              }
+            }
+            @if (isEditingInfo()) {
+              <div class="flex">
+                <mat-list-item class="object-row">
+                  <mat-form-field style="width: 47%; margin-right: 5px">
+                    <input matInput class="info-input" [(ngModel)]="newInfo().key"
+                           placeholder="Add new key"/>:
+                  </mat-form-field>
+                  <mat-form-field style="width: 51%">
+                            <textarea matInput rows="1" class="info-input"
+                                      [(ngModel)]="newInfo().value"
+                                      placeholder="Add new info"></textarea>
+                  </mat-form-field>
+                </mat-list-item>
+              </div>
+            }
+          </mat-list>
+        </div>
+    </ng-container>
+    <ng-container matColumnDef="edit">
+      <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+      <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
+        <div class="edit-button-container">
+          @if (!isAnyEditing()) {
+            <button mat-icon-button class="edit-button"
+                    (click)="toggleEditMode(element, 'edit')">
+              <mat-icon class="mat-icon-button">edit
+              </mat-icon>
+            </button>
+          } @else if (!isEditingInfo()) {
+            <br/>
+          }
+          @if (isEditingInfo()) {
+            <button mat-icon-button class="edit-button save-button"
+                    (click)="toggleEditMode(element, 'save')">
+              <mat-icon class="mat-icon-button">save_as
+              </mat-icon>
+            </button>
+            <button mat-icon-button class="cancel-button"
+                    (click)="toggleEditMode(element,'cancel')">
+              <mat-icon class="mat-icon-button">cancel
+              </mat-icon>
+            </button>
+          }
+        </div>
+      </td>
+    </ng-container>
+    <tr *matRowDef="let row; columns: ['value', 'edit'];" class="detail-row" mat-row></tr>
+  </table>
+</div>

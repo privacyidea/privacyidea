@@ -1,4 +1,4 @@
-import {Component, effect, Input, Output, signal, WritableSignal} from '@angular/core';
+import {Component, computed, effect, Input, Output, signal, WritableSignal} from '@angular/core';
 import {
   MatCell,
   MatCellDef,
@@ -11,7 +11,7 @@ import {
 } from '@angular/material/table';
 import {MatFabButton, MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
-import {MatList, MatListItem} from '@angular/material/list';
+import {MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
 import {AsyncPipe, NgClass} from '@angular/common';
@@ -29,6 +29,7 @@ import {catchError, map} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
 import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
+import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -81,12 +82,12 @@ export const infoDetail = [
     MatFormFieldModule,
     MatSelectModule,
     ReactiveFormsModule,
-    MatList,
     MatIconButton,
     TokenDetailsUserComponent,
     MatAutocomplete,
     AsyncPipe,
     MatAutocompleteTrigger,
+    TokenDetailsInfoComponent,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'
@@ -94,41 +95,47 @@ export const infoDetail = [
 export class TokenDetailsComponent {
   protected readonly Array = Array;
   protected readonly Object = Object;
+  protected readonly signal = signal;
   @Input() serial!: WritableSignal<string>
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Output() isEditingUser: WritableSignal<boolean> = signal(false);
+  @Output() isEditingInfo: WritableSignal<boolean> = signal(false);
   @Output() setPinValue: WritableSignal<string> = signal('');
   @Output() repeatPinValue: WritableSignal<string> = signal('');
   @Output() filteredUserOptions!: Observable<string[]>;
   @Output() realmOptions = signal<string[]>([]);
-  detailData = signal<{
+  @Output() detailData = signal<{
     value: any;
     keyMap: { label: string; key: string },
-    isEditing: boolean
+    isEditing: WritableSignal<boolean>
   }[]>([]);
+  @Output() infoData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: WritableSignal<boolean>
+  }[]>([]);
+  @Output()
+  isAnyEditing = computed(() => {
+    const detailData = this.detailData();
+    return (
+      (detailData?.some((element) => element.isEditing()) ?? false) ||
+      this.isEditingUser() ||
+      this.isEditingInfo()
+    );
+  });
   userData = signal<{
     value: any;
     keyMap: { label: string; key: string },
-    isEditing: boolean
-  }[]>([]);
-  infoData = signal<{
-    value: any;
-    keyMap: { label: string; key: string },
-    isEditing: boolean
+    isEditing: WritableSignal<boolean>
   }[]>([]);
   containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
-  newInfo: WritableSignal<{
-    key: string;
-    value: string
-  }> = signal({key: '', value: ''});
   hide!: boolean;
-  isEditingInfo: boolean = false;
   selectedUsername = new FormControl<string>('');
   selectedContainer = new FormControl<string>('');
   fristOTPValue: string = '';
@@ -201,19 +208,19 @@ export class TokenDetailsComponent {
         this.detailData.set(details.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
-          isEditing: false
+          isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
         this.userData.set(userDetail.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
-          isEditing: false
+          isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
         this.infoData.set(infoDetail.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
-          isEditing: false
+          isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
         this.realmOptions.set(Object.keys(realms.result.value));
@@ -243,7 +250,7 @@ export class TokenDetailsComponent {
   }
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
-    element.isEditing = !element.isEditing;
+    element.isEditing.set(!element.isEditing());
 
     if (action === 'cancel') {
       this.handleCancelAction(type);
@@ -260,10 +267,6 @@ export class TokenDetailsComponent {
       case 'realms':
         this.handleRealms(action);
         break;
-      case 'info':
-        this.isEditingInfo = !this.isEditingInfo;
-        this.handleInfo(element, action);
-        break;
       default:
         this.handleDefault(element, action);
         break;
@@ -271,7 +274,7 @@ export class TokenDetailsComponent {
   }
 
   private handleContainerSerial(element: any, action: string): void {
-    if (element.isEditing && this.containerOptions().length === 0) {
+    if (element.isEditing() && this.containerOptions().length === 0) {
       this.containerService.getContainerData().subscribe({
         next: (containers: any) => {
           this.containerOptions.set(Object.values(containers.result.value.containers as {
@@ -291,7 +294,7 @@ export class TokenDetailsComponent {
   }
 
   private handleTokengroup(element: any, action: string): void {
-    if (element.isEditing) {
+    if (element.isEditing()) {
       this.tokenService.getTokengroups().subscribe({
         next: (tokengroups: any) => {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
@@ -313,15 +316,6 @@ export class TokenDetailsComponent {
     }
   }
 
-  private handleInfo(element: any, action: string): void {
-    if (action === 'save') {
-      this.saveInfo(element.value);
-      this.newInfo.set({key: '', value: ''});
-    } else {
-      this.newInfo.set({key: '', value: ''});
-    }
-  }
-
   private handleDefault(element: any, action: string): void {
     if (action === 'save') {
       this.saveDetail(element.keyMap.key, element.value);
@@ -339,23 +333,10 @@ export class TokenDetailsComponent {
       case 'realms':
         this.selectedRealms.setValue(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);
         break;
-      case 'info':
-        this.isEditingInfo = false;
-        this.newInfo.set({key: '', value: ''});
-        break;
       default:
         this.showTokenDetail(this.serial()).subscribe();
         break;
     }
-  }
-
-  @Output()
-  isAnyEditing(): boolean {
-    if (this.detailData) {
-      return this.detailData().some((element) => element.isEditing)
-        || this.isEditingUser() || this.isEditingInfo;
-    }
-    return false;
   }
 
   saveDetail(key: string, value: string): void {
@@ -367,43 +348,6 @@ export class TokenDetailsComponent {
       },
       error: error => {
         console.error('Failed to save token detail', error);
-      }
-    });
-  }
-
-  saveInfo(infos: any): void {
-    if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
-      infos[this.newInfo().key] = this.newInfo().value;
-    }
-    this.tokenService.setTokenInfos(this.serial(), infos).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
-    ).subscribe({
-      next: () => {
-        this.showTokenDetail(this.serial());
-      },
-      error: error => {
-        console.error('Failed to save token infos', error);
-      }
-    });
-  }
-
-  deleteInfo(key: string): void {
-    this.tokenService.deleteInfo(this.serial(), key).pipe(
-      switchMap(() => this.showTokenDetail(this.serial())),
-      switchMap(() => {
-        const info = this.detailData()
-          .find(detail => detail.keyMap.key === 'info');
-        if (info) {
-          this.isEditingInfo = true;
-        }
-        return new Observable<void>(observer => {
-          observer.next();
-          observer.complete();
-        });
-      })
-    ).subscribe({
-      error: error => {
-        console.error('Failed to delete info', error);
       }
     });
   }

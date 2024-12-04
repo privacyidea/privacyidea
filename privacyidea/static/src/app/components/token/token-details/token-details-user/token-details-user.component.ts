@@ -1,4 +1,4 @@
-import {Component, Input, signal, WritableSignal} from '@angular/core';
+import {Component, Input, Signal, signal, WritableSignal} from '@angular/core';
 import {FormControl, FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {
   MatCell,
@@ -60,16 +60,16 @@ export class TokenDetailsUserComponent {
   @Input() userData = signal<{
     value: any;
     keyMap: { label: string; key: string },
-    isEditing: boolean
+    isEditing: WritableSignal<boolean>
   }[]>([]);
   @Input() selectedUsername = new FormControl<string>('');
   @Input() selectedUserRealm!: WritableSignal<string>;
-  @Input() serial!: WritableSignal<string>
+  @Input() serial!: WritableSignal<string>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() setPinValue!: WritableSignal<string>
-  @Input() repeatPinValue!: WritableSignal<string>
-  @Input() isEditingUser!: WritableSignal<boolean>
-  @Input() isAnyEditing!: () => boolean;
+  @Input() setPinValue!: WritableSignal<string>;
+  @Input() repeatPinValue!: WritableSignal<string>;
+  @Input() isEditingUser!: WritableSignal<boolean>;
+  @Input() isAnyEditing!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
   @Input() filteredUserOptions!: Observable<string[]>;
 

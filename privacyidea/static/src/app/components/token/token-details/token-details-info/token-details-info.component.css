@@ -1,4 +1,4 @@
-@import '../../../../styles/table.css';
+@import '../../../../../styles/table.css';
 
 .detail-table {
   display: flex;
@@ -28,12 +28,20 @@
   margin-left: 10px;
 }
 
-.detail-row {
-  min-width: 143px;
-  height: 50px;
+.info-table th:nth-child(odd),
+.info-table td:nth-child(odd) {
+  border: 1px solid #E0E2EC;
+  background: #f3f3f3;
 }
 
-.user-detail-row {
+.info-table th:nth-child(even),
+.info-table td:nth-child(even) {
+  border: 1px solid #E0E2EC;
+  background: #ffffff;
+}
+
+.detail-row {
+  min-width: 143px;
   height: 50px;
 }
 
@@ -92,14 +100,6 @@
   margin-top: 10px;
   flex-direction: row;
   display: flex;
-  width: auto;
-}
-
-.otp-container {
-  flex-direction: column;
-  display: flex;
-  gap: 10px;
-  margin-left: 3px;
   width: auto;
 }
 
@@ -168,43 +168,6 @@ mat-grid-tile {
   justify-content: center;
 }
 
-.otp-pin-input {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.pin-input-button {
-  display: flex;
-  justify-content: center;
-}
-
-.user-pin {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.user-pin-input {
-  display: flex;
-  gap: 10px;
-}
-
-.user-pin-button {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-flow: column;
-}
-
-.assign-container {
-  display: flex;
-  justify-content: center;
-  flex-direction: column;
-}
-
 .mat-form-field {
   width: 100%;
 }
@@ -221,32 +184,6 @@ mat-grid-tile {
   color: var(--green-base);
 }
 
-.card-button-activate {
-  color: white;
-  height: 40px;
-  width: 257px;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-green);
-  box-shadow: var(--box-shadow-green);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-activate.activ,
-.card-button-activate:hover {
-  background: var(--background-green-inset);
-  box-shadow: var(--box-shadow-green-inset);
-  transition: 0ms;
-}
-
-h3 {
-  margin-left: 10px;
-  margin-bottom: 0;
-  margin-top: 0;
-}
-
 .info-input {
   margin-left: 5px;
 }
@@ -257,13 +194,6 @@ h3 {
 
 .flex {
   display: flex;
-}
-
-.verify-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
 }
 
 .value-container {
@@ -321,11 +251,6 @@ h3 {
   margin-left: 5px;
 }
 
-.cut-textarea {
-  font-size: 12px;
-  margin-top: -2px;
-}
-
 .onepx {
   margin-top: 1px;
 }
@@ -336,14 +261,6 @@ mat-label {
 
 mat-select {
   font-size: 12px;
-}
-
-.visibility-button {
-  margin-right: 86px;
-}
-
-.visibility-icon {
-  font-size: 25px;
 }
 
 .mat-icon-button {

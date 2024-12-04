@@ -107,7 +107,7 @@ span {
 .filter-text {
   padding: 10px;
   font-size: 14px;
-  display: flex;
+  display: inline-block;
   align-items: center;
 }
 

@@ -59,14 +59,6 @@ class MockTokenService {
   resyncOTPToken() {
     return of(null);
   }
-
-  setTokenInfos() {
-    return of(null);
-  }
-
-  deleteInfo() {
-    return of(null);
-  }
 }
 
 class MockContainerService {
@@ -120,17 +112,17 @@ describe('TokenDetailsComponent', () => {
     component.revoked = signal(false);
     component.userOptions = signal(['user1', 'user2', 'admin']);
     component.containerOptions = signal(['container1', 'container2', 'admin-container']);
-    component.tokengroupOptions.set(['group1', 'group2']);
-    component.infoData.set([{
+    component.tokengroupOptions = signal(['group1', 'group2']);
+    component.infoData = signal([{
       keyMap: {key: 'info', label: 'Info'},
       value: {key1: 'value1', key2: 'value2'},
-      isEditing: false
+      isEditing: signal(false)
     }]);
-    component.realmOptions.set(['realm1', 'realm2']);
-    component.detailData.set([{
+    component.realmOptions = signal(['realm1', 'realm2']);
+    component.detailData = signal([{
       keyMap: {key: 'container_serial', label: 'Container'},
       value: 'container1',
-      isEditing: false
+      isEditing: signal(false)
     }]);
     tokenService = TestBed.inject(TokenService);
     containerService = TestBed.inject(ContainerService);
@@ -197,19 +189,6 @@ describe('TokenDetailsComponent', () => {
     expect(tokenService.setTokenDetail).toHaveBeenCalledWith('Mock serial', 'key', 'value');
   });
 
-  it('should handle error when deleting info fails', () => {
-    spyOn(tokenService, 'deleteInfo').and.returnValue(throwError(() => new Error('Deletion failed')));
-    spyOn(console, 'error');
-    component.deleteInfo('infoKey');
-    expect(console.error).toHaveBeenCalledWith('Failed to delete info', jasmine.any(Error));
-  });
-
-  it('should delete info', () => {
-    spyOn(tokenService, 'deleteInfo').and.callThrough();
-    component.deleteInfo('infoKey');
-    expect(tokenService.deleteInfo).toHaveBeenCalledWith('Mock serial', 'infoKey');
-  });
-
   it('should reset fail count', () => {
     spyOn(tokenService, 'resetFailCount').and.callThrough();
     component.resetFailCount();
@@ -220,6 +199,7 @@ describe('TokenDetailsComponent', () => {
     spyOn(containerService, 'getContainerData').and.callThrough();
     component.showTokenDetail('Mock serial').subscribe(() => {
       expect(containerService.getContainerData).toHaveBeenCalledWith(1, 10);
+      expect(component.containerOptions().length).toBe(3);
     });
   });
 
@@ -235,14 +215,6 @@ describe('TokenDetailsComponent', () => {
     spyOn(containerService, 'unassignContainer').and.callThrough();
     component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
-  });
-
-  it('should set token infos', () => {
-    component.newInfo.set({key: 'infoKey', value: 'infoValue'});
-
-    spyOn(tokenService, 'setTokenInfos').and.callThrough();
-    component.saveInfo({});
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith('Mock serial', jasmine.any(Object));
   });
 
   it('should dynamically render info data', () => {
@@ -284,19 +256,5 @@ describe('TokenDetailsComponent', () => {
     const result = component['_filterContainerOptions']('admin');
     expect(result).toEqual(['admin-container']);
   });
-
-  it('should handle edit and save for information details', () => {
-    component.isEditingInfo = true;
-    fixture.detectChanges();
-
-    component.newInfo.set({key: 'newKey', value: 'newValue'});
-    fixture.detectChanges();
-
-    const saveButton = fixture.nativeElement.querySelector('.edit-button-container button:nth-child(1)');
-    saveButton.click();
-    fixture.detectChanges();
-
-    const newInfo = component.infoData().find(info => info.keyMap.key === 'info')?.value;
-    expect(newInfo).toEqual(jasmine.objectContaining({newKey: 'newValue'}));
-  });
 });
+

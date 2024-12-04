@@ -20,7 +20,7 @@
               <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
               <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
                 @if (element.keyMap.key === "container_serial") {
-                  @if (element.isEditing) {
+                  @if (element.isEditing()) {
                     <mat-form-field class="detail-table-input">
                       <mat-label>Select Container</mat-label>
                       <input matInput
@@ -37,7 +37,7 @@
                     <span>{{ element.value }}</span>
                   }
                 } @else if (element.keyMap.key === "realms") {
-                  @if (element.isEditing) {
+                  @if (element.isEditing()) {
                     <mat-form-field class="detail-table-input">
                       <mat-label>Select Realms</mat-label>
                       <mat-select [formControl]="selectedRealms" multiple>
@@ -58,7 +58,7 @@
                     }
                   }
                 } @else if (element.keyMap.key === "tokengroup") {
-                  @if (element.isEditing) {
+                  @if (element.isEditing()) {
                     <mat-form-field class="detail-table-input">
                       <mat-label>Select Token Group</mat-label>
                       <mat-select [formControl]="selectedTokengroup" multiple>
@@ -78,12 +78,13 @@
                       </mat-list-item>
                     }
                   }
-                } @else if (element.isEditing && element.keyMap.key !== "maxfail" &&
+                } @else if (element.isEditing() && element.keyMap.key !== "maxfail" &&
                 element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {
                   <mat-form-field class="detail-table-input">
-                    <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
+                    <textarea matInput rows="1" class="cut-textarea"
+                              [(ngModel)]="element.value"></textarea>
                   </mat-form-field>
-                } @else if (element.isEditing) {
+                } @else if (element.isEditing()) {
                   <mat-form-field class="detail-table-input">
                     <input type="number" matInput [(ngModel)]="element.value"/>
                   </mat-form-field>
@@ -126,7 +127,7 @@
                       </button>
                     </div>
                   }
-                } @else if (element.keyMap.key === "container_serial" && element.isEditing) {
+                } @else if (element.keyMap.key === "container_serial" && element.isEditing()) {
                   <div class="edit-button-container">
                     <button mat-icon-button class="edit-button"
                             (click)="toggleEditMode(element, 'container_serial', 'save')">
@@ -152,7 +153,7 @@
                           edit
                         </mat-icon>
                       </button>
-                    } @else if (element.isEditing) {
+                    } @else if (element.isEditing()) {
                       <button mat-icon-button class="edit-button"
                               (click)="toggleEditMode(element, element.keyMap.key, 'save')">
                         <mat-icon class="mat-icon-button">save_as</mat-icon>
@@ -188,97 +189,11 @@
                               [userData]="userData"></app-token-details-user>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="9" [rowspan]="6">
-      <div class="info-container">
-        <span class="info-title">Information</span>
-        <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
-               mat-table>
-          <ng-container matColumnDef="value">
-            <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-            <td *matCellDef="let element" class="detail-row editable-row value-td" mat-cell>
-              <div class="value-container">
-                <mat-list>
-                  @for (key of Object.keys(element.value); track key) {
-                    @if (isEditingInfo) {
-                      <div class="edit-info-row">
-                        <mat-list-item class="object-row">
-                          <div class="flex">
-                            <mat-form-field>
-                              <mat-label style="font-size: 14px"
-                                         class="object-item">{{ key }}
-                              </mat-label>
-                              <textarea matInput class="info-input" rows="1"
-                                        [(ngModel)]="element.value[key]"></textarea>
-                            </mat-form-field>
-                            <button mat-icon-button class="delete-info-icon"
-                                    (click)="deleteInfo(key)">
-                              <mat-icon class="mat-icon-button">delete_outlined</mat-icon>
-                            </button>
-                          </div>
-                        </mat-list-item>
-                      </div>
-                    } @else {
-                      <mat-list-item class="object-row onepx">
-                        <div class="info-span">
-                          <span style="margin-left: -4px; font-size: 14px" class="object-item">
-                            {{ key }}:
-                          </span>
-                          <span class="object-item"
-                                style="margin-left: 2px">{{ element.value[key] }}</span>
-                          <mat-divider style="width: 87%; margin-bottom: 5px; margin-left: -8px;
-                           margin-top: 3px"/>
-                        </div>
-                      </mat-list-item>
-                    }
-                  }
-                  @if (isEditingInfo) {
-                    <div class="flex">
-                      <mat-list-item class="object-row">
-                        <mat-form-field style="width: 47%; margin-right: 5px">
-                          <input matInput class="info-input" [(ngModel)]="newInfo().key"
-                                 placeholder="Add new key"/>:
-                        </mat-form-field>
-                        <mat-form-field style="width: 51%">
-                            <textarea matInput rows="1" class="info-input"
-                                      [(ngModel)]="newInfo().value"
-                                      placeholder="Add new info"></textarea>
-                        </mat-form-field>
-                      </mat-list-item>
-                    </div>
-                  }
-                </mat-list>
-              </div>
-          </ng-container>
-          <ng-container matColumnDef="edit">
-            <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-            <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
-              <div class="edit-button-container">
-                @if (!isAnyEditing()) {
-                  <button mat-icon-button class="edit-button"
-                          (click)="toggleEditMode(element, 'info', 'edit')">
-                    <mat-icon class="mat-icon-button">edit
-                    </mat-icon>
-                  </button>
-                } @else if (!isEditingInfo) {
-                  <br/>
-                }
-                @if (isEditingInfo) {
-                  <button mat-icon-button class="edit-button"
-                          (click)="toggleEditMode(element, 'info', 'save')">
-                    <mat-icon class="mat-icon-button">save_as
-                    </mat-icon>
-                  </button>
-                  <button mat-icon-button class="cancel-button"
-                          (click)="toggleEditMode(element,'info', 'cancel')">
-                    <mat-icon class="mat-icon-button">cancel
-                    </mat-icon>
-                  </button>
-                }
-              </div>
-            </td>
-          </ng-container>
-          <tr *matRowDef="let row; columns: ['value', 'edit'];" class="detail-row" mat-row></tr>
-        </table>
-      </div>
+      <app-token-details-info [detailData]="detailData" [infoData]="infoData"
+                              [isAnyEditing]="isAnyEditing" [isEditingInfo]="isEditingInfo"
+                              [refreshTokenDetails]="refreshTokenDetails"
+                              [serial]="serial"
+      ></app-token-details-info>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="5" [rowspan]="5">
       <div class="otp-container">

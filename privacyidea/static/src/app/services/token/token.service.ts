@@ -65,7 +65,6 @@ export class TokenService {
         filterPairs,
         remainingFilterText
       } = this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
-      console.log(filterValue)
       filterPairs.forEach(({label, value}) => {
         if (label === 'user' || label === 'infokey' || label === 'infovalue' || label === 'active'
           || label === 'assigned' || label === 'container_serial') {

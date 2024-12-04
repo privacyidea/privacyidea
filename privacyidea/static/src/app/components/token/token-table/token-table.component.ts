@@ -76,7 +76,6 @@ export class TokenTableComponent {
     this.tokenService.getTokenData(
       this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
-        console.log('Token data', response);
         this.length = response.result.value.count;
         this.updateDataSource(response.result.value.tokens);
       },
