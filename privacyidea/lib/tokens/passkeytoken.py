@@ -362,8 +362,12 @@ class PasskeyTokenClass(TokenClass):
         return 1
 
     @classmethod
-    def get_default_challenge_text(cls):
-        return lazy_gettext("Please authenticate with your Passkey!")
+    def get_default_challenge_text_auth(cls):
+        return lazy_gettext("Please authenticate with your passkey!")
+
+    @classmethod
+    def get_default_challenge_text_register(cls):
+        return lazy_gettext("Please confirm the registration your passkey!")
 
     def create_challenge(self, transactionid=None, options=None):
         """

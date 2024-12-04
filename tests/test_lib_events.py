@@ -3731,8 +3731,7 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'http://test.com', 'This is a test')
+            text = "A webhook is called at 'https://test.com' with data: 'This is a test'"
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3746,8 +3745,6 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 

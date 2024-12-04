@@ -2159,16 +2159,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
-        # Not a WebAuthn token
+        # Not a WebAuthn token, policies are loaded regardless
         request = RequestMock()
         request.all_data = {
             'serial': 'FOO123'
         }
         fido2_auth(request, None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
-                         DEFAULT_ALLOWED_TRANSPORTS)
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
-                         None)
+        self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
+                         set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)))
+        self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # With policies
         allowed_transports = ALLOWED_TRANSPORTS
@@ -2225,7 +2225,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
-        # Not a WebAuthn token
+        # Not a WebAuthn token, policies are loaded regardless
         request = RequestMock()
         request.all_data = {
             'user': 'foo',
@@ -2233,10 +2233,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'pass': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
-                         None)
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
-                         None)
+        self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
+                         set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)))
+        self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # With policies
         allowed_transports = ALLOWED_TRANSPORTS
@@ -2477,22 +2477,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         fido2_enroll(request, None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID),
-                         rp_id)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME),
-                         rp_name)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
-                         None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
-                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+        self.assertEqual(rp_id, request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID))
+        self.assertEqual(rp_name, request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME))
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
                           for x in PUBKEY_CRED_ALGORITHMS_ORDER
-                          if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE])
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
-                         DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
-                         DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
-                         DEFAULT_CHALLENGE_TEXT_ENROLL)
+                          if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE],
+                         request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
+        self.assertEqual(DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                         request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL))
+        self.assertEqual(DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                         request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM))
+        self.assertEqual(DEFAULT_CHALLENGE_TEXT_ENROLL,
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # Not a WebAuthn token
         request = RequestMock()

@@ -1885,7 +1885,7 @@ def fido2_auth(request, action):
     )
 
     types_defaults = {WebAuthnTokenClass.get_class_type().lower(): DEFAULT_CHALLENGE_TEXT_AUTH,
-             PasskeyTokenClass.get_class_type().lower(): PasskeyTokenClass.get_default_challenge_text()}
+                      PasskeyTokenClass.get_class_type().lower(): PasskeyTokenClass.get_default_challenge_text_auth()}
     for t, d in types_defaults.items():
         action = f"{t}_{ACTION.CHALLENGETEXT}"
         challenge_text = get_first_policy_value(action, d, scope=SCOPE.AUTH)
@@ -1893,23 +1893,6 @@ def fido2_auth(request, action):
 
     request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
     return True
-
-
-def get_challenge_texts_for_types(token_types: list[str], scope: str = SCOPE.AUTH) -> dict[str, str]:
-    """
-    Get the challenge texts for the given token types and scope.
-    Returns a dictionary with the token type as key and the challenge text as value.
-    If no challenge text is found for a token type, the value will be an empty string.
-    """
-    res: dict[str, str] = {}
-    for t in token_types:
-        action = f"{t}_{ACTION.CHALLENGETEXT}"
-        challenge_text_policies = (Match.user(g, scope=scope, action=action, user_object=None)
-                                   .action_values(unique=True, allow_white_space_in_action=True,
-                                                  write_to_audit_log=False))
-        res[t] = list(challenge_text_policies)[0] if challenge_text_policies else ""
-
-    return res
 
 
 def get_first_policy_value(policy_action: str, default: str, scope,
@@ -2009,21 +1992,24 @@ def fido2_enroll(request, action):
                               f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
         authenticator_attestation_level = get_first_policy_value(
-            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-            DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-            ATTESTATION_LEVELS
+            policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+            default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+            scope=SCOPE.ENROLL,
+            allowed_values=ATTESTATION_LEVELS
         )
 
         authenticator_attestation_form = get_first_policy_value(
-            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-            DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-            ATTESTATION_FORMS
+            policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+            default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+            scope=SCOPE.ENROLL,
+            allowed_values=ATTESTATION_FORMS
         )
 
         user_verification_requirement = get_first_policy_value(
-            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-            DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            USER_VERIFICATION_LEVELS
+            policy_action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+            default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
+            scope=SCOPE.ENROLL,
+            allowed_values=USER_VERIFICATION_LEVELS
         )
 
         avoid_double_registration_policy = Match.user(g,
@@ -2032,10 +2018,10 @@ def fido2_enroll(request, action):
                                                       user_object=user_object).any()
 
         # Challenge texts
-        challenge_texts = get_challenge_texts_for_types(types, scope=SCOPE.ENROLL)
-        for t, text in challenge_texts.items():
-            if text:
-                request.all_data[f"{t}_{ACTION.CHALLENGETEXT}"] = text
+        for t in [PasskeyTokenClass, WebAuthnTokenClass]:
+            action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+            challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
+            request.all_data[action] = challenge_text
 
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
