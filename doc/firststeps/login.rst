@@ -11,7 +11,7 @@ system and to manage all tokens, while normal users will only be able
 to manage their own tokens.
 
 You should enter your username with the right realm.
-You need to 
+You need to
 append the realm to the username like ``username@realm``.
 
 Login for administrators
@@ -23,7 +23,7 @@ the management UI.
 Administrators are stored in the database table ``Admin`` and can be managed
 with the tool::
 
-   pi-manage admin ...
+   pi-manage admin
 
 The administrator just logs in with his username.
 
@@ -43,8 +43,8 @@ with the password from their user source.
 E.g. if the users are located in an LDAP or Active Directory
 the user needs to authenticate with his LDAP/AD password.
 
-But before a user can login, the administrator needs to configure 
-realms, which is described in the next step :ref:`first_steps_realm`. 
+But before a user can login, the administrator needs to configure
+realms, which is described in the next step :ref:`first_steps_realm`.
 
 .. note:: The user may either login with his password from the userstore
    or with any of his tokens.
@@ -55,4 +55,3 @@ realms, which is described in the next step :ref:`first_steps_realm`.
    I.e. this way the user needs to authenticate with
    a second factor/token to access the self service
    portal. (see the policy section :ref:`policy_login_mode`)
-
