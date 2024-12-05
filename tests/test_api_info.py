@@ -38,7 +38,7 @@ class RSSTest(MyApiTestCase):
         # Wrong policy
         set_policy("rssfeed", scope=SCOPE.WEBUI,
                    action=f'{ACTION.RSS_FEEDS}="Community News": "https://community.privacyidea.org/c/news.rss"')
-        with (mock.patch("logging.Logger.warning") as mock_log):
+        with mock.patch("logging.Logger.warning") as mock_log:
             with self.app.test_request_context('/info/rss',
                                                method='GET',
                                                headers={'Authorization': self.at}):
