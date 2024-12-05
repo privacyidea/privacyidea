@@ -518,19 +518,21 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         # set realm2 to a token in no realm shall not work
         self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
-                                'POST')
+                                       'POST')
         # check realm is not set
         t3_realms = t3.get_realms()
         self.assertEqual(0, len(t3_realms))
         self.assertNotIn(self.realm2, t3_realms)
 
         # set realm1 to token without realm shall not work
-        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]}, self.at, 'POST')
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]},
+                                       self.at, 'POST')
         t3_realms = t3.get_realms()
         self.assertEqual(0, len(t3_realms))
 
         # set realm3 to a token in realm1 shall work
-        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at, 'POST')
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at,
+                                'POST')
 
         # set realm2 to a token in realm 1 shall fail (no exception)
         self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm2]}, self.at, 'POST')
