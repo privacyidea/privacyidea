@@ -65,34 +65,14 @@ In case if authenticating a serial number:
 
 """
 
+import json
+import logging
 import threading
 
 from flask import (Blueprint, request, g, current_app)
-from huey.consumer_options import option
 
-from privacyidea.lib.user import get_user_from_param, log_used_user, User
-from .lib.utils import send_result, getParam, get_required, get_optional
-from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from .lib.utils import required
-from privacyidea.lib import _
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
-from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
-                                   find_fido2_token_by_credential_id, verify_fido2_challenge)
-from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent, AUTH_RESPONSE
-from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.config import (return_saml_attributes, get_from_config,
-                                    return_saml_attributes_on_fail,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib.audit import getAudit
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
-from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
-                                           api_key_required, mangle,
-                                           save_client_application_type,
-                                           check_base_action, pushtoken_validate, fido2_auth,
-                                           webauthntoken_authz,
-                                           webauthntoken_request, check_application_tokentype,
-                                           increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -102,24 +82,42 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode)
-from privacyidea.lib.policy import PolicyClass, Match, SCOPE
-from privacyidea.lib.event import EventConfiguration
-import logging
-from privacyidea.api.register import register_blueprint
+from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
+                                           api_key_required, mangle,
+                                           save_client_application_type,
+                                           check_base_action, pushtoken_validate, fido2_auth,
+                                           webauthntoken_authz,
+                                           webauthntoken_request, check_application_tokentype,
+                                           increase_failcounter_on_challenge, get_first_policy_value)
+from privacyidea.api.lib.utils import get_all_params
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
-from privacyidea.lib.event import event
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
-from privacyidea.lib.subscriptions import CheckSubscription
-from privacyidea.api.auth import admin_required
-from privacyidea.lib.policy import ACTION
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.machine import list_machine_tokens
+from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
+from privacyidea.lib.config import (return_saml_attributes, get_from_config,
+                                    return_saml_attributes_on_fail,
+                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.event import event
+from privacyidea.lib.machine import list_machine_tokens
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import PolicyClass, Match, SCOPE
+from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.lib.token import (check_user_pass, check_serial_pass,
+                                   check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
+                                   find_fido2_token_by_credential_id, verify_fido2_challenge)
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-import json
-
+from privacyidea.lib.user import get_user_from_param, log_used_user, User
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, create_img
+from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
+from .lib.utils import required
+from .lib.utils import send_result, getParam, get_required, get_optional
+from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.framework import get_app_config_value
+from ..lib.tokens.passkeytoken import PasskeyAction
 from ..lib.tokens.webauthntoken import WEBAUTHNACTION
 
 log = logging.getLogger(__name__)
@@ -724,33 +722,25 @@ def initialize():
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
     @param type: The type of the token, for which a challenge should be created.
     """
-
     token_type = get_optional(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id_policies = (Match.user(g,
-                                     scope=SCOPE.ENROLL,
-                                     action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                                     user_object=None)
-                          .action_values(unique=True))
-
-        if not rp_id_policies:
+        rp_id = get_first_policy_value(policy_action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                       default="",
+                                       scope=SCOPE.ENROLL)
+        if not rp_id:
             raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
 
-        rp_id = list(rp_id_policies)[0]
         challenge = create_fido2_challenge(rp_id)
-
-        user_verification_policies = Match.user(g,
-                                                scope=SCOPE.AUTH,
-                                                action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-                                                user_object=None).action_values(unique=True)
-        challenge["user_verification"] = (list(user_verification_policies)[0]
-                                          if user_verification_policies
-                                          else "preferred")
+        challenge["user_verification"] = get_first_policy_value(
+            policy_action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+            default="preferred",
+            scope=SCOPE.AUTH
+        )
         if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
-
         details["passkey"] = challenge
+
     else:
         raise ParameterError("Unsupported token type for authentication initialization!")
 

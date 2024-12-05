@@ -67,7 +67,6 @@ class PasskeyTokenClass(TokenClass):
         - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
-
     def __init__(self, db_token):
         super().__init__(db_token)
         self.set_type(self.get_class_type())
@@ -104,6 +103,18 @@ class PasskeyTokenClass(TokenClass):
                         'desc': _("Alternative challenge message to use when authenticating with a passkey."
                                   "You can also use tags for replacement, "
                                   "check the documentation for more details.")
+                    },
+                    PasskeyAction.CrossDeviceSignInURL: {
+                        'type': 'str',
+                        'desc': _("URL of the /validate/check endpoint of your privacyidea server. "
+                                  "E.g. https://example.com/validate/check. The privacyIEDA Authenticator App will send"
+                                  "the passkey response to this URL after scanning the Cross-Device Sign-In QR code."),
+                    },
+                    PasskeyAction.CrossDeviceSignInDisableSSL: {
+                        'type': 'bool',
+                        'desc': _("Disable SSL certificate verification for the Cross-Device Sign-In feature."
+                                  "This is not recommended for production environments. "
+                                  "By default, SSL is enabled."),
                     }
                 },
                 SCOPE.ENROLL: {
@@ -377,9 +388,9 @@ class PasskeyTokenClass(TokenClass):
         The returned dict has the format:
         {
             "transaction_id": "12345678901234567890",
-            "challenge": "AAAAAAAAAAAAAAA",
+            "challenge": <32 random bytes base64url encoded>,
             "rpId": "example.com",
-            "message": "authenticate or whatever"
+            "message": "Please authenticate with your Passkey!"
         }
         The challenge nonce is encoded in base64url.
         """
@@ -396,3 +407,7 @@ class PasskeyTokenClass(TokenClass):
             "rpId": rp_id
         }
         return ret
+
+    @log_with(log)
+    def use_for_authentication(self, options):
+        return self.is_active()

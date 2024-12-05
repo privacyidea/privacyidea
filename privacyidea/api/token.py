@@ -302,7 +302,7 @@ def init():
     if token_object:
         g.audit_object.log({"success": True})
 
-        # If the token is a fido2 token, find all already enrolled fido2 token for the user
+        # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
         if (token_object.get_type() in ["passkey", "webauthn"]
                 and token_object.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
@@ -318,7 +318,7 @@ def init():
                 remove_token(serial=token_object.get_serial())
             raise e
 
-        # Check if a containerSerial is set and assign the token to the container
+        # Check if a container_serial is set and assign the token to the container
         container_serial = param.get("container_serial", {})
         if container_serial:
             # Check if user is allowed to add tokens to containers

@@ -2489,8 +2489,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         matching_challenge = False
         further_challenge = False
         for token_object in challenge_response_token_list:
-            if token_object.check_challenge_response(passw=passw,
-                                                     options=options) >= 0:
+            if token_object.check_challenge_response(passw=passw, options=options) >= 0:
                 reply_dict["serial"] = token_object.token.serial
                 matching_challenge = True
                 messages = []

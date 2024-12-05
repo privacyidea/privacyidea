@@ -1070,7 +1070,7 @@ class PushTokenClass(TokenClass):
         """
         High level interface which covers the check_pin and check_otp
         This is the method that verifies single shot authentication.
-        The challenge is send to the smartphone app and privacyIDEA
+        The challenge is sent to the smartphone app and privacyIDEA
         waits for the response to arrive.
 
         :param passw: the password which could be pin+otp value

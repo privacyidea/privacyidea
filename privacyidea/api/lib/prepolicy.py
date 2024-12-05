@@ -1866,7 +1866,6 @@ def fido2_auth(request, action):
     The following policy values are added:
     - WEBAUTHNACTION.ALLOWED_TRANSPORTS
     - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
-
     """
     user_object = request.User if hasattr(request, "User") else None
     allowed_transports_policies = (Match.user(g,
@@ -1883,12 +1882,10 @@ def fido2_auth(request, action):
         )
         for transport in allowed_transports_policy.split()
     )
-
-    types_defaults = {WebAuthnTokenClass.get_class_type().lower(): DEFAULT_CHALLENGE_TEXT_AUTH,
-                      PasskeyTokenClass.get_class_type().lower(): PasskeyTokenClass.get_default_challenge_text_auth()}
-    for t, d in types_defaults.items():
-        action = f"{t}_{ACTION.CHALLENGETEXT}"
-        challenge_text = get_first_policy_value(action, d, scope=SCOPE.AUTH)
+    # Challenge texts
+    for t in [WebAuthnTokenClass, PasskeyTokenClass]:
+        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_auth(), scope=SCOPE.AUTH)
         request.all_data[action] = challenge_text
 
     request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] = list(allowed_transports)
@@ -1896,7 +1893,7 @@ def fido2_auth(request, action):
 
 
 def get_first_policy_value(policy_action: str, default: str, scope,
-                           allowed_values = None, user_object=None) -> str:
+                           allowed_values=None, user_object=None) -> str:
     policies = (Match.user(g, scope=scope, action=policy_action, user_object=user_object)
                 .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
     policy_value = list(policies)[0] if policies else default

@@ -95,13 +95,16 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             return btoa(binString);
         };
         let mediation = "silent";
-        const available = PublicKeyCredential.isConditionalMediationAvailable()
-            .then((available) => {
-                console.log("isConditionalMediationAvailable: " + available);
-                if (available) {
-                    mediation = "conditional";
-                }
-            });
+        if (window.PublicKeyCredential) {
+            const available = PublicKeyCredential.isConditionalMediationAvailable()
+                .then((available) => {
+                    console.log("isConditionalMediationAvailable: " + available);
+                    if (available) {
+                        mediation = "conditional";
+                    }
+                });
+        }
+
         $scope.testPasskey = function () {
             $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
                     let data = response.data.detail.passkey;
@@ -139,7 +142,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                         }, function (error) {
                             AuthFactory.authError(error.data)
                         });
-
                     }, function (error) {
                         AuthFactory.authError(error.data)
                     });
@@ -147,10 +149,10 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             )
             ;
         };
-// End Passkey test button
+        // End Passkey test button
 
         $scope.tokenSerial = $stateParams.tokenSerial;
-// This is the parent object
+        // This is the parent object
         $scope.selectedToken = {'serial': $scope.tokenSerial};
         $scope.editCountWindow = false;
         $scope.selectedRealms = {};
@@ -172,10 +174,10 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                     ' check the token.');
             }
         });
-// scroll to the top of the page
+        // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-// define functions
+        // define functions
         $scope.get = function () {
             TokenFactory.getTokenForSerial($scope.tokenSerial, function (data) {
                 let blob;
@@ -214,7 +216,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-// initialize
+        // initialize
         $scope.get();
 
         $scope.returnTo = function () {
@@ -437,10 +439,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-//----------------------------------------------------------------
-//   Admin functions
-//
-
+        //----------------------------------------------------------------
+        //   Admin functions
+        //
         if ($scope.loggedInUser.role === "admin") {
             // These are functions that can only be used by administrators.
             // If the user is admin, we can fetch all realms
@@ -536,9 +537,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         }  // End of admin functions
 
 
-// ===========================================================
-// =============== Tokeninfo Date stuff ======================
-// ===========================================================
+        // ===========================================================
+        // =============== Tokeninfo Date stuff ======================
+        // ===========================================================
 
         $scope.openDate = function ($event) {
             $event.preventDefault();
@@ -546,7 +547,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             return true;
         };
 
-// listen to the reload broadcast
+        // listen to the reload broadcast
         $scope.$on("piReload", $scope.get);
 
         $scope.rolloverTokenAllowed = function (token) {
@@ -558,5 +559,4 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             }
             return false;
         };
-    }])
-;
+    }]);
