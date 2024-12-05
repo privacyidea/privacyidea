@@ -155,9 +155,9 @@ typing-extensions==4.12.2
     #   pydash
 urllib3==2.2.3
     # via requests
-webauthn==2.2.0
-werkzeug==3.0.4
+werkzeug==3.0.6
     # via flask
+webauthn==2.2.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
