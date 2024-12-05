@@ -64,8 +64,6 @@ def get_news(rss_feeds=None, channel=None, days=FETCH_DAYS):
 
     for k, v in rss_feeds.items():
         try:
-            # Only fetch news from the last 180 days
-            #d = feedparser.parse(v, modified=modified) // does not work correctly/at all
             d = feedparser.parse(v)
             rss_news[k] = _parse_rss(d)
         except Exception as e:

@@ -3458,7 +3458,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_71_rss_age_admin(self):
         # Test default for admins:
         g.logged_in_user = {"username": "super",
-                            "role": "admin" }
+                            "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
         env = builder.get_environ()
