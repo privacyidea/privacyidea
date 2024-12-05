@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2024-12-03 10:00+0000\n"
+"PO-Revision-Date: 2024-12-05 15:04+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -619,10 +619,9 @@ msgstr "L'administrateur est autorisé à ajouter un nouveau service ID."
 #, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
 msgstr ""
-"L'administrateur est autorisé à supprimer des définitions de Connecteur CA."
+"L'administrateur est autorisé à supprimer une définition d'ID de service."
 
 #: lib/policy.py:2057
-#, fuzzy
 msgid "The Admin is allowed to manage the tokengroups of a token."
 msgstr "L'administrateur est autorisé à gérer les groupes d'un jeton."
 
@@ -635,8 +634,6 @@ msgid "Admin is allowed to edit the container state."
 msgstr "L'administrateur est autorisé à éditer l'état du conteneur."
 
 #: lib/policy.py:2069
-#, fuzzy
-#| msgid "The admin is allowed to set the token description."
 msgid "Admin is allowed to edit the container description."
 msgstr "L'administrateur est autorisé à éditer la description du conteneur."
 
@@ -651,8 +648,6 @@ msgid "Admin is allowed to delete containers."
 msgstr "L'administrateur est autorisé à supprimer des conteneurs."
 
 #: lib/policy.py:2081
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to add tokens to containers."
 msgstr "L'administrateur est autorisé à ajouter des jetons aux conteneurs."
 
@@ -661,8 +656,6 @@ msgid "Admin is allowed to remove tokens from containers."
 msgstr "L'administrateur est autorisé à supprimer des jetons des conteneurs."
 
 #: lib/policy.py:2089
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to assign users to containers."
 msgstr ""
 "L'administrateur est autorisé à assigner des utilisateurs aux conteneurs."
@@ -682,8 +675,6 @@ msgid "Admin is allowed to set the realm of containers."
 msgstr "L'administrateur est autorisé à définir les domaines de conteneurs."
 
 #: lib/policy.py:2101
-#, fuzzy
-#| msgid "Admin is allowed to list tokens."
 msgid "Admin is allowed to list containers."
 msgstr "L'administrateur est autorisé à lister les conteneurs."
 
@@ -812,23 +803,18 @@ msgstr ""
 "liste déroulante dans les détails du jeton."
 
 #: lib/policy.py:2240
-#, fuzzy
-#| msgid "The user is allowed to disable his own tokens."
 msgid "Users are allowed to edit the state of their own containers."
 msgstr ""
-"Les utilisateurs sont autorisés à éditer l'état de leurs propres conteneurs."
+"Les utilisateurs sont autorisés à modifier l'état de leurs propres "
+"conteneurs."
 
 #: lib/policy.py:2244
-#, fuzzy
-#| msgid "The user is allowed to set the token description."
 msgid "Users are allowed to edit the description of their own containers."
 msgstr ""
-"L'utilisateur est autorisé à éditer la description de leurs propres "
+"Les utilisateurs sont autorisés à modifier la description de leurs propres "
 "conteneurs."
 
 #: lib/policy.py:2249
-#, fuzzy
-#| msgid "The user is allowed to enable his own tokens."
 msgid "Users are allowed to create containers."
 msgstr "Les utilisateurs sont autorisés à créer des conteneurs."
 
@@ -852,15 +838,12 @@ msgstr ""
 "Les utilisateurs sont autorisés à supprimer leurs jetons de leurs conteneurs."
 
 #: lib/policy.py:2267
-#, fuzzy
 msgid "Users are allowed to assign themselves to containers without an owner."
 msgstr ""
 "Les utilisateurs sont autorisés à s'assigner des conteneurs sans "
 "propriétaire."
 
 #: lib/policy.py:2272
-#, fuzzy
-#| msgid "The user is allowed to unassign his own tokens."
 msgid "Users are allowed to unassign themselves from containers."
 msgstr "Les utilisateurs sont autorisés à se désassigner de leurs conteneurs."
 
