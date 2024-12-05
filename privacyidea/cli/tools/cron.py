@@ -127,7 +127,7 @@ It runs periodic tasks that are specified in the database.
     """.format('v{0!s}'.format(get_version_number())))
 
 
-@cli.command()
+@cli.command("run_manually")
 @click.option("-n", "--node", "node_string",
               help="Override the node name (read from privacyIDEA config by default)")
 @click.option("-t", "--task", "task_name",
@@ -168,7 +168,7 @@ def list_tasks():
                                         **ptask))
 
 
-@cli.command()
+@cli.command("run_scheduled")
 @click.option("-d", "--dryrun",
               is_flag=True,
               help="Do not run any tasks, only show what would be done")

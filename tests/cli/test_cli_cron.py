@@ -27,7 +27,9 @@ class PICronTestCase(CliTestCase):
         result = runner.invoke(privacyidea_cron, ["-h"])
         self.assertIn("Execute all periodic tasks that are scheduled to run.",
                       result.output, result)
+        self.assertIn("run_scheduled", result.output, result)
         self.assertIn("Show a list of available tasks that could be run.",
                       result.output, result)
         self.assertIn("Manually run a periodic task",
                       result.output, result)
+        self.assertIn("run_manually", result.output, result)
