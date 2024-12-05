@@ -23,7 +23,8 @@ import logging
 from .lib.utils import send_result, getParam
 from ..lib.log import log_with
 from privacyidea.api.lib.prepolicy import prepolicy, rss_age
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import Match, SCOPE, ACTION
+from json import JSONDecodeError, loads
 
 
 info_blueprint = Blueprint('info_blueprint', __name__)
@@ -55,8 +56,18 @@ def rss():
 
     :return: JSON response with the news
     """
+    feeds = None
     param = request.all_data
     age = int(getParam(param, ACTION.RSS_AGE, default=FETCH_DAYS))
     channel = getParam(param, "channel")
-    r = get_news(channel=channel, days=age)
+    feeds_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_FEEDS,
+                             user_object=request.User if hasattr(request, 'User') else None)
+                  .action_values(allow_white_space_in_action=True, unique=True))
+    if len(feeds_list) == 1:
+        try:
+            fk = list(feeds_list)[0]
+            feeds = loads(fk)
+        except JSONDecodeError as _e:
+            log.warning(u"RSS feeds could not be parsed. Check your policy {0!s}".format(feeds_list))
+    r = get_news(channel=channel, days=age, rss_feeds=feeds)
     return send_result(r)
