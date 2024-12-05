@@ -3455,21 +3455,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("jwt_validity")
 
-    def test_71_rss_age(self):
+    def test_71_rss_age_admin(self):
+        # Test default for admins:
+        g.logged_in_user = {"username": "super",
+                            "role": "admin" }
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(180, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+    def test_72_rss_age_user(self):
         g.logged_in_user = {"username": "cornelius",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
         env = builder.get_environ()
-        # Set policy
+        # Test default for users:
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        # Set policy for user to 12 days.
         set_policy(name="rssage",
                    scope=SCOPE.WEBUI,
                    action=f"{ACTION.RSS_AGE}=12")
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
-
-        # The validity of the JWT is set.
         r = rss_age(req, None)
         self.assertTrue(r)
         self.assertEqual(12, req.all_data.get(f"{ACTION.RSS_AGE}"))

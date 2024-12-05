@@ -475,6 +475,8 @@ type: ``str``
 With this policy you may specify a custom privacy statement link which is displayed
 in the WebUI baseline.
 
+.. _policy_rss_feeds:
+
 rss_feeds
 ~~~~~~~~~
 
@@ -492,6 +494,8 @@ The default is::
 This way you can display news feeds from the community, privacyIDEA and NetKnights informing you about new
 updates or other critical information.
 You can use your own internal news feeds, if you want to provide your own information to users.
+
+.. _policy_rss_age:
 
 rss_age
 ~~~~~~~
