@@ -139,3 +139,59 @@ def get_token_user_attributes(serial: str):
     if token:
         token_realms = token.get_realms()
     return username, realm, resolver, token_realms
+
+
+def check_token_action_allowed(g, action: str, serial: str, role: str, username: str, realm: str, resolver: str,
+                               adminuser: str, adminrealm: str):
+    """
+    Retrieves user attributes from the token and checks if the logged-in user is allowed to perform the action on the
+    token.
+
+    For admins, the policies either need to match the token owner or at least one of the token realms.
+    If no user attributes (username, realm, resolver) are available, the policies are filtered for generic policies
+    without conditions on the user. Only for the action ASSIGN, all policies are considered, ignoring the username,
+    realm, and resolver conditions. Only token realms are still taken into account. This shall allow helpdesk admins
+    to assign their users to tokens without user.
+
+    :param g: The global flask object g
+    :param action: The action to be performed on the token
+    :param serial: The serial of the token
+    :param role: The role of the logged-in user (user or admin)
+    :param username: The username of the logged-in user (only for users)
+    :param realm: The realm of the logged-in user (only for users)
+    :param resolver: The resolver of the logged-in user (only for users)
+    :param adminuser: The username of the logged-in admin (only for admins)
+    :param adminrealm: The realm of the logged-in admin (only for admins)
+    :return: True if the action is allowed, False otherwise
+    """
+    token_realms = None
+    if role == "admin":
+        if serial:
+            username, realm, resolver, token_realms = get_token_user_attributes(serial)
+
+        if action == ACTION.ASSIGN:
+            # Assigning a user to a token is only possible if the token has no owner yet.
+            # To avoid helpdesk admins (for a specific resolver) lose their tokens while changing the owner of a
+            # token, they are allowed to assign their users to tokens without owner.
+            # Note: the policies are still filtered by the token realms.
+            username = username or None
+            realm = realm or None
+            resolver = resolver or None
+        else:
+            # If no user is available, explicitly filter for generic policies without conditions on the user
+            username = username or ""
+            realm = realm or ""
+            resolver = resolver or ""
+
+    # Check action for the token
+    action_allowed = Match.generic(g,
+                                   scope=role,
+                                   action=action,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=realm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser,
+                                   additional_realms=token_realms).allowed()
+
+    return action_allowed

@@ -255,6 +255,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
     def test_02_two_resolver_in_realm_policy_condition(self):
         self.setUp_user_realms()
+        self.setUp_user_realm2()
         # add a second resolver to the realm
         save_resolver({"resolver": self.resolvername2,
                        "type": "passwdresolver",
@@ -280,6 +281,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
                                                      resolver=self.resolvername2,
                                                      realm=self.realm1))
         t2 = init_token({'type': 'spass'})
+        token_no_user = init_token({'type': 'spass'})
+        token_only_realm = init_token({'type': 'spass', 'realm': self.realm2})
 
         # assigning a token to a user from resolver2 should fail
         with self.app.test_request_context('/token/assign',
@@ -316,6 +319,23 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertIn('pol-reso1', entry['policies'], entry)
 
         remove_token(t2.token.serial)
+
+        # assigning a token from another realm to a user from my resolver should fail
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"serial": token_only_realm.get_serial(),
+                                                 "user": "nönäscii",
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.data)
+            result = res.json.get("result")
+            self.assertEqual(303, result.get('error').get('code'), result)
+            self.assertIsNone(token_only_realm.token.first_owner, token_only_realm.token.first_owner)
+        # check the audit log for a failed entry
+        entry = self.find_most_recent_audit_entry(action='*/token/assign')
+        self.assertFalse(entry['success'], entry)
+        self.assertIn('Admin actions are defined, but the action assign', entry['info'], entry)
 
         # unassign a token from a user in resolver2 should fail
         with self.app.test_request_context('/token/unassign',
@@ -369,6 +389,16 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         remove_token(t2.token.serial)
 
+        # disabling an active token from no user should fail
+        with self.app.test_request_context('/token/disable/{0!s}'.format(token_no_user.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
+
         # enable an inactive token from a user from resolver2 should fail
         t1.enable(enable=False)
         with self.app.test_request_context('/token/enable/{0!s}'.format(t1.token.serial),
@@ -395,6 +425,17 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertTrue(result.get('value'), result)
             self.assertTrue(t2.is_active())
 
+        # enable an inactive token from no user should fail
+        token_no_user.enable(enable=False)
+        with self.app.test_request_context('/token/enable/{0!s}'.format(token_no_user.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
+
         # token delete should fail for a token assigned to a user from resolver2
         with self.app.test_request_context('/token/{0!s}'.format(t1.token.serial),
                                            method='DELETE',
@@ -413,6 +454,15 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get('value'), result)
             self.assertFalse(token_exist(t2.token.serial))
+
+        # token delete should fail for a token assigned to no user
+        with self.app.test_request_context('/token/{0!s}'.format(token_no_user.token.serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
 
         # cleanup
         remove_token(t1.token.serial)
@@ -444,10 +494,12 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # disable token from realm2 should fail
         self.request_denied_assert_403(f"/token/disable/{t2.get_serial()}", {}, self.at, 'POST')
 
-        # assign / unassign user from realm1 should work
+        # assign user from realm1 should work
         data = {"serial": t3.get_serial(), "user": "nönäscii", "realm": self.realm1}
         self.request_assert_200("/token/assign", data, self.at, 'POST')
+        # unassign user from realm1 should work
         self.request_assert_200("/token/unassign", {"serial": t3.get_serial()}, self.at, 'POST')
+        t3.set_realms([], add=False)
 
         # assign / unassign user from realm2 should fail
         self.request_denied_assert_403("/token/unassign", {"serial": t2.get_serial()}, self.at, 'POST')
@@ -464,15 +516,18 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertNotIn(self.realm1, t2_realms)
         self.assertIn(self.realm2, t2_realms)
 
-        # set realm2 to a token in no realm shall work
-        self.request_assert_200(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
+        # set realm2 to a token in no realm shall not work
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
                                 'POST')
         # check realm is not set
         t3_realms = t3.get_realms()
+        self.assertEqual(0, len(t3_realms))
         self.assertNotIn(self.realm2, t3_realms)
 
-        # set realm1 to token without realm shall work
-        self.request_assert_200(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]}, self.at, 'POST')
+        # set realm1 to token without realm shall not work
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]}, self.at, 'POST')
+        t3_realms = t3.get_realms()
+        self.assertEqual(0, len(t3_realms))
 
         # set realm3 to a token in realm1 shall work
         self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at, 'POST')

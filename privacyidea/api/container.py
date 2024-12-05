@@ -259,8 +259,8 @@ def delete(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_token(container_serial):
@@ -292,8 +292,8 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
-@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -332,8 +332,8 @@ def add_all_tokens(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
@@ -365,8 +365,8 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
-@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
@@ -376,7 +376,8 @@ def remove_all_tokens(container_serial):
     :param: container_serial: serial of the container
     :jsonparam: serial: Comma separated list of token serials.
     """
-    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    # allow serial to be empty if the pre-policy removes all tokens
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=True)
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
