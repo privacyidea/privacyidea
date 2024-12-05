@@ -39,8 +39,8 @@
                         <translate>Dashboard</translate>
                     </a></li>
                 <li ng-class="{ 'active': $state.includes('info')}"
-                    ng-show="loggedInUser.role && checkMainMenu('tokens')">
-                    <!-- FIXME: replace checkMainMenu token -> info -->
+                    ng-show="loggedInUser.role && rss_age">
+                    <!-- We can hide this, if rss_age == 0. -->
                     <a ui-sref="info">
                     <span class="glyphicon glyphicon-info-sign"
                           aria-hidden="true"></span>

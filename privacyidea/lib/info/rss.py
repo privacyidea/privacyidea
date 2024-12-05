@@ -21,7 +21,7 @@ This module reads news from the given RSS feeds
 """
 RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
              "privacyIDEA News": "https://privacyidea.org/feed",
-             "NetKnights News": "https://netknights.it/feed"}
+             "NetKnights News": "https://netknights.it/en/feed"}
 
 
 import feedparser
@@ -35,10 +35,19 @@ RSS_NEWS = {}
 FETCH_DAYS = 180
 
 
-def get_news(rss_feeds=None, channel=None):
+def get_news(rss_feeds=None, channel=None, days=FETCH_DAYS):
+    """
+    Fetch news from the given RSS feeds
+
+    :param rss_feeds: The RSS feeds to fetch news from
+    :type rss_feeds: dict
+    :param channel: An optional channel to fetch news from
+    :param days: The age of the news to fetch
+    :return: A dictionary with the news
+    """
     def _parse_rss(rss):
         feed = []
-        modified = datetime.now(timezone.utc) - timedelta(days=FETCH_DAYS)
+        modified = datetime.now(timezone.utc) - timedelta(days=days)
         for item in rss.entries:
             pub_date = parse(item.published)
             if pub_date > modified:

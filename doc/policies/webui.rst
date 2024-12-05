@@ -474,3 +474,30 @@ type: ``str``
 
 With this policy you may specify a custom privacy statement link which is displayed
 in the WebUI baseline.
+
+rss_feeds
+~~~~~~~~~
+
+type: str
+
+This policy defines, which RSS feeds are displayed in the Web UI to the users or administrators.
+This takes a dictionary of feeds. While the key is a description of the corresponding feed.
+
+The default is::
+
+  {"Community News": "https://community.privacyidea.org/c/news.rss",
+   "privacyIDEA News": "https://privacyidea.org/feed",
+   "NetKnights News": "https://netknights.it/en/feed"}
+
+This way you can display news feeds from the community, privacyIDEA and NetKnights informing you about new
+updates or other critical information.
+You can use your own internal news feeds, if you want to provide your own information to users.
+
+rss_age
+~~~~~~~
+
+type: int
+
+This defines the age of the displayed news feeds. The default is 180 days. You can specify a different age in days.
+
+.. _note:: If you specify the age 0, then the UI tab "News" will be hidden.

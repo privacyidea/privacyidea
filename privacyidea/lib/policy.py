@@ -2102,11 +2102,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Admin is allowed to list containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER},
-            ACTION.RSS_FEEDS: {'type': 'str',
-                               'desc': _('The RSS feeds fetched for the admin. Configure a dictionary.')},
-            ACTION.RSS_AGE: {'type': 'int',
-                             'desc': _('The age of the RSS feed entries in days.')}
+                                    'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2281,11 +2277,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Users are allowed to list their own containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER},
-            ACTION.RSS_FEEDS: {'type': 'str',
-                               'desc': _('The RSS feeds fetched for the user. Configure a dictionary.')},
-            ACTION.RSS_AGE: {'type': 'int',
-                             'desc': _('The age of the RSS feed entries in days.')}
+                                    'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -2804,7 +2796,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
-            }
+            },
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _('The RSS feeds fetched for the user. Configure a dictionary.')},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days.')}
         }
 
     }

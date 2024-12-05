@@ -18,10 +18,12 @@
 #
 
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.info.rss import get_news, RSS_FEEDS
+from privacyidea.lib.info.rss import get_news, FETCH_DAYS
 import logging
-from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from .lib.utils import send_result, getParam
 from ..lib.log import log_with
+from privacyidea.api.lib.prepolicy import prepolicy, rss_age
+from privacyidea.lib.policy import ACTION
 
 
 info_blueprint = Blueprint('info_blueprint', __name__)
@@ -42,6 +44,7 @@ To see how to authenticate read :ref:`rest_auth`.
 
 
 @info_blueprint.route('/rss', methods=['GET'])
+@prepolicy(rss_age, request)
 @log_with(log, log_entry=False)
 def rss():
     """
@@ -53,6 +56,7 @@ def rss():
     :return: JSON response with the news
     """
     param = request.all_data
+    age = int(getParam(param, ACTION.RSS_AGE, default=FETCH_DAYS))
     channel = getParam(param, "channel")
-    r = get_news(channel=channel)
+    r = get_news(channel=channel, days=age)
     return send_result(r)

@@ -2348,3 +2348,23 @@ def jwt_validity(request, action):
             log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
     request.all_data[ACTION.JWTVALIDITY] = validity_time
     return True
+
+
+def rss_age(request, action):
+    """
+    This is a decorator for the /info/rss endpoint to adapt the the age of the displayed news feed
+
+    :param request:
+    :param action:
+    :return:
+    """
+    age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
+                user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
+    age = 0
+    if len(age_list) == 1:
+        try:
+            age = int(list(age_list)[0])
+        except ValueError:
+            log.warning(f"Invalid RSS_AGE: {age_list}. Using the default of 0.")
+    request.all_data[ACTION.RSS_AGE] = age
+    return True

@@ -51,7 +51,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, jwt_validity)
+                                           require_description, jwt_validity, rss_age)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3454,6 +3454,39 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(3600, req.all_data.get("jwt_validity"))
 
         delete_policy("jwt_validity")
+
+    def test_71_rss_age(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set policy
+        set_policy(name="rssage",
+                   scope=SCOPE.WEBUI,
+                   action=f"{ACTION.RSS_AGE}=12")
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+
+        # The validity of the JWT is set.
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(12, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        # Now test a bogus policy
+        set_policy(name="rssage",
+                   scope=SCOPE.WEBUI,
+                   action=[f"{ACTION.RSS_AGE}=blubb"])
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = jwt_validity(req, None)
+        self.assertTrue(r)
+        # We receive the default of None
+        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        delete_policy("rssage")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
