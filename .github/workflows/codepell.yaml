@@ -1,0 +1,12 @@
+name: codespell
+on: [pull_request]
+jobs:
+  codespell:
+    name: runner / codespell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: codespell
+        uses: codespell-project/actions-codespell@v2
+        with:
+          skip: privacyidea/static/contrib/*,privacyidea/static/components/translation/*,privacyidea/translations/*,po/*
