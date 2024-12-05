@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-12-05 15:04+0000\n"
+"PO-Revision-Date: 2024-12-06 17:00+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -897,23 +897,17 @@ msgid "Contained Tokens:"
 msgstr "Jetons Conteneurisés:"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:56
-#, fuzzy
-#| msgid "Remote Realm"
 msgid "Container Realms"
-msgstr "Domaine distant"
+msgstr "Domaines du conteneur"
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
-#, fuzzy
-#| msgid "Remote Serial"
 msgid "Container Serial"
-msgstr "Numéro de série distant"
+msgstr "Numéro de série du conteneur"
 
 #: privacyidea/static/components/audit/views/audit.log.html:89
 #: privacyidea/static/components/token/views/token.containercreate.html:5
-#, fuzzy
-#| msgid "Bind Type"
 msgid "Container Type"
-msgstr "Lier le type"
+msgstr "Type de conteneur"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:2
 msgid "Container details for {{ containerSerial }}"
@@ -938,7 +932,6 @@ msgid "Count Window"
 msgstr "Fenêtre du compteur"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:155
-#, fuzzy
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -959,8 +952,6 @@ msgstr "Créer la définition d'une tâche périodique"
 #: privacyidea/static/components/config/views/config.realms.html:17
 #: privacyidea/static/components/config/views/config.realms.list.html:129
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
-#, fuzzy
-#| msgid "Create realm"
 msgid "Create Realm"
 msgstr "Créer un domaine"
 
@@ -1359,7 +1350,6 @@ msgid "Driver"
 msgstr "Pilote"
 
 #: privacyidea/static/components/config/views/config.token.email.html:1
-#, fuzzy
 msgid "EMail Token settings"
 msgstr "Paramètres Jeton Courriel"
 
@@ -1957,13 +1947,12 @@ msgstr ""
 "d'un jeton TOTP."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
-#, fuzzy
 msgid ""
 "Here you can select how many tokens of which realm are required to\n"
 "        perform a successful authentication."
 msgstr ""
 "Ici vous pouvez sélectionner combien de jetons de quels domaines sont\n"
-"requis pour obtenir une authentification réussie."
+"requis pour réussir une authentification."
 
 #: privacyidea/static/components/token/views/token.import.html:20
 msgid ""
@@ -2211,10 +2200,8 @@ msgid "Last Seen"
 msgstr "Vu pour la dernière fois"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:187
-#, fuzzy
-#| msgid "Last Definition Update"
 msgid "Last Updated"
-msgstr "Dernière mise à jour de définition"
+msgstr "Dernière mise à jour"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:19
 msgid "Last seen:"
@@ -2382,9 +2369,8 @@ msgid "Maximum Authentication Count"
 msgstr "Nombre d'authentifications maximum"
 
 #: privacyidea/static/components/token/views/token.details.html:227
-#, fuzzy
 msgid "Maximum Success Auth Count"
-msgstr "Nombre max d'authentifications réussies"
+msgstr "Nombre maximum d'authentifications réussies"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:27
 msgid "Method"
@@ -2444,7 +2430,7 @@ msgstr "Nouveau serveur SMTP"
 #: privacyidea/static/components/config/views/config.system.html:163
 #, fuzzy
 msgid "New Service ID definition"
-msgstr "Lister les définitions du serveur SMTP"
+msgstr "nouvelle définition d'ID de service"
 
 #: privacyidea/static/components/config/views/config.system.html:137
 #, fuzzy
@@ -2707,9 +2693,8 @@ msgstr "Code PIN défini avec succès."
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:35
 #: privacyidea/static/components/token/views/token.enroll.html:62
-#, fuzzy
 msgid "PIN/Password"
-msgstr "Mot de passe"
+msgstr "PIN/Mot de passe"
 
 #: privacyidea/static/components/token/views/token.details.html:206
 msgid "PKCS12"
@@ -2757,7 +2742,7 @@ msgstr "Coller la clé SSH publique"
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:234
 #, fuzzy
 msgid "Per-process server pool"
-msgstr "Groupement du serveur par processus"
+msgstr "Groupement des serveurs par processus"
 
 #: privacyidea/static/components/config/views/config.html:42
 msgid "Periodic Tasks"
@@ -2895,8 +2880,8 @@ msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "            . Otherwise it will be post pended."
 msgstr ""
-"Saisissez le PIN devant la valeur OTP.\n"
-"Sinon il sera posté dans un second temps."
+"Préfixez le PIN devant la valeur OTP.\n"
+"Sinon il sera demandé dans un second temps."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
