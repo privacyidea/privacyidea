@@ -117,14 +117,7 @@ def cli():
 This script is meant to be invoked periodically by the system cron daemon.
 It runs periodic tasks that are specified in the database.
 """
-    click.echo(r"""
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
-  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Cron
-/_/                       /___/
-{0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+    pass
 
 
 @cli.command("run_manually")
