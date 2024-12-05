@@ -146,11 +146,11 @@ mat-grid-tile {
 }
 
 .editable-row {
-  min-width: 288px;
+  min-width: 286px;
 }
 
 .user-editable-row {
-  min-width: 288px;
+  min-width: 286px;
 }
 
 .pin-input {
@@ -200,7 +200,7 @@ mat-grid-tile {
 .user-container {
   display: flex;
   flex-direction: row;
-  gap: 35px;
+  gap: 48px;
 }
 
 .assign-container {

@@ -53,7 +53,8 @@
                   } @else {
                     <div class="scrollable-container cell-list">
                       @for (realm of element.value; track realm; let idx = $index) {
-                        <mat-list-item class="object-row">
+                        <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
+                          'single-item' : ''">
                           <span class="object-item">• {{ realm }}</span>
                         </mat-list-item>
                       }
@@ -76,21 +77,26 @@
                   } @else {
                     <div class="scrollable-container cell-list">
                       @for (tokengroup of element.value; track tokengroup; let idx = $index) {
-                        <mat-list-item class="object-row">
+                        <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
+                          'single-item' : ''">
                           <span class="object-item">• {{ tokengroup }}</span>
                         </mat-list-item>
                       }
                     </div>
                   }
-                } @else if (element.isEditing() && element.keyMap.key !== "maxfail" &&
-                element.keyMap.key !== "count_window" && element.keyMap.key !== "sync_window") {
+                } @else if (element.isEditing() && element.keyMap.key === "description") {
                   <mat-form-field class="detail-table-input">
-                    <textarea matInput rows="1" class="cut-textarea"
+                    <textarea matInput rows="1" class="cut-textarea" [maxlength]="80"
                               [(ngModel)]="element.value"></textarea>
+                  </mat-form-field>
+                } @else if (element.isEditing() && isNumberElement(element.keyMap.key)) {
+                  <mat-form-field class="detail-table-input">
+                    <input type="number" matInput [(ngModel)]="element.value"/>
                   </mat-form-field>
                 } @else if (element.isEditing()) {
                   <mat-form-field class="detail-table-input">
-                    <input type="number" matInput [(ngModel)]="element.value"/>
+                    <textarea matInput rows="1" class="cut-textarea"
+                              [(ngModel)]="element.value"></textarea>
                   </mat-form-field>
                 } @else {
                   <span class="detail-table-item"
@@ -142,13 +148,7 @@
                       <mat-icon class="mat-icon-button">cancel</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "maxfail"
-                || element.keyMap.key === "count_window"
-                || element.keyMap.key === "sync_window"
-                || element.keyMap.key === "description"
-                || element.keyMap.key === "info"
-                || element.keyMap.key === "realms"
-                || element.keyMap.key === "tokengroup") {
+                } @else if (isEditableElement(element.keyMap.key)) {
                   <div class="edit-button-container">
                     @if (!isAnyEditing()) {
                       <button mat-icon-button class="edit-button"

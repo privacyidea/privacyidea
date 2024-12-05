@@ -20,7 +20,7 @@ import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
-import {forkJoin, Observable, startWith, switchMap} from 'rxjs';
+import {forkJoin, Observable, single, startWith, switchMap} from 'rxjs';
 import {RealmService} from '../../../services/realm/realm.service';
 import {UserService} from '../../../services/user/user.service';
 import {catchError, map} from 'rxjs/operators';
@@ -37,6 +37,7 @@ export const details = [
   {key: 'active', label: 'Active'},
   {key: 'maxfail', label: 'Max Count'},
   {key: 'failcount', label: 'Fail Count'},
+  {key: 'rollout_state', label: 'Rollout State'},
   {key: 'otplen', label: 'OTP Length'},
   {key: 'count_window', label: 'Count Window'},
   {key: 'sync_window', label: 'Sync Window'},
@@ -390,5 +391,23 @@ export class TokenDetailsComponent {
         console.error('Failed to set token group', error);
       }
     });
+  }
+
+  isEditableElement(key: any) {
+    return key === "maxfail"
+      || key === "count_window"
+      || key === "sync_window"
+      || key === "description"
+      || key === "info"
+      || key === "realms"
+      || key === "tokengroup"
+  }
+
+  protected readonly single = single;
+
+  isNumberElement(key: any) {
+    return key === "maxfail" ||
+      key === "count_window" ||
+      key === "sync_window";
   }
 }

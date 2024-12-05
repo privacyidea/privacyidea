@@ -85,7 +85,7 @@ export class TokenDetailsUserComponent {
   }
 
   setPin() {
-    if (this.setPinValue !== this.repeatPinValue) {
+    if (this.setPinValue() !== this.repeatPinValue()) {
       console.error('PINs do not match');
       return;
     }

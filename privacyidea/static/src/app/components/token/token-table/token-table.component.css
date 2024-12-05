@@ -4,6 +4,10 @@ td:nth-child(5) {
   text-align: center;
 }
 
+td {
+  max-width: 286px;
+}
+
 .table-filter {
   width: 58%;
 }

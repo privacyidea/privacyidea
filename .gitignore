@@ -34,4 +34,3 @@ __pycache__/
 /private.pem
 dist/
 *.swp
-privacyidea.log*

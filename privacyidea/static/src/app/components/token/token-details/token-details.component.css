@@ -155,7 +155,9 @@ mat-grid-tile {
 }
 
 .editable-row {
-  min-width: 285px;
+  width: 286px;
+  max-width: 286px;
+  min-width: 286px;
 }
 
 .user-editable-row {
@@ -356,4 +358,8 @@ mat-select {
 
 .cell-list {
   height: 48px
+}
+
+.single-item {
+  margin-top: 10px;
 }

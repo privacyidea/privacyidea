@@ -18,7 +18,7 @@ const columns = [
   {key: 'active', label: 'Active'},
   {key: 'description', label: 'Description'},
   {key: 'failcount', label: 'Fail Counter'},
-  {key: 'rollout_state', label: 'Rollout Status'},
+  {key: 'rollout_state', label: 'Rollout State'},
   {key: 'username', label: 'User'},
   {key: 'user_realm', label: 'Realm'},
   {key: 'realms', label: 'Token Realm'},

@@ -9,8 +9,8 @@ mat-card {
 }
 
 mat-tab-group {
-  margin-left: 30px;
-  margin-right: 30px;
+  display: flex;
+  align-items: center;
 }
 
 h4 {

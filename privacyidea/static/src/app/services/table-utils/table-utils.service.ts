@@ -100,7 +100,7 @@ export class TableUtilsService {
       }
     } else if (columnKey === 'failcount') {
       if (element['failcount'] === 0) {
-        return 'highlight-true-clickable';
+        return 'highlight-true';
       } else if (element['failcount'] > 0 && element['failcount'] < element['maxfail']) {
         return 'highlight-warning-clickable';
       } else {
