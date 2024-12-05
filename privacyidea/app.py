@@ -82,23 +82,6 @@ DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
 migrate = Migrate()
 
 
-class PiResponseClass(Response):
-    """Custom Response class overwriting the flask.Response.
-    To avoid caching problems with the json property in the Response class,
-    the property is overwritten using a non-caching approach.
-    """
-    @property
-    def json(self):
-        """This will contain the parsed JSON data if the mimetype indicates
-        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
-        will be ``None``.
-        Caching of the json data is disabled.
-        """
-        return self.get_json(cache=False)
-
-    default_mimetype = 'application/json'
-
-
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
                silent=False, initialize_hsm=False):
