@@ -1453,14 +1453,17 @@ def check_user_params(request=None, action=None):
             action_allowed = True
     elif role == "admin":
         # Check action for new parameters
-        match = Match.generic(g, scope=role,
-                              action=action,
-                              user=param_user,
-                              resolver=param_resolver,
-                              realm=param_realm,
-                              adminrealm=adminrealm,
-                              adminuser=adminuser)
-        action_allowed = match.allowed()
+        if param_user or param_realm or param_resolver:
+            action_allowed = Match.generic(g,
+                                           scope=role,
+                                           action=action,
+                                           user=param_user,
+                                           resolver=param_resolver,
+                                           realm=param_realm,
+                                           adminrealm=adminrealm,
+                                           adminuser=adminuser).allowed()
+        else:
+            action_allowed = True
 
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")

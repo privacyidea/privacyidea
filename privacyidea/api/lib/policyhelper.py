@@ -131,7 +131,7 @@ def get_token_user_attributes(serial: str):
     except ResourceNotFoundError:
         token = None
         token_owner = None
-        log.error("Could not find container with serial {container_serial}.")
+        log.error(f"Could not find token with serial {serial}.")
     if token_owner:
         username = token_owner.login
         realm = token_owner.realm
@@ -151,7 +151,7 @@ def check_token_action_allowed(g, action: str, serial: str, role: str, username:
     If no user attributes (username, realm, resolver) are available, the policies are filtered for generic policies
     without conditions on the user. Only for the action ASSIGN, all policies are considered, ignoring the username,
     realm, and resolver conditions. Only token realms are still taken into account. This shall allow helpdesk admins
-    to assign their users to tokens without user.
+    to assign their users to tokens without owner.
 
     :param g: The global flask object g
     :param action: The action to be performed on the token

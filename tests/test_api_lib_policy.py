@@ -54,7 +54,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
                                            require_description, jwt_validity, check_container_action,
-                                           check_token_action, check_token_list_action)
+                                           check_token_action, check_token_list_action, check_user_params)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3939,6 +3939,63 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         token.delete_token()
         token_another_realm.delete_token()
         token_no_user.delete_token()
+
+    def mock_request_user_params(self, role):
+        """
+        Mocks a request for a user or an admin with a user passed in the parameters.
+
+        :param role: User role for whom to create the request 'admin' or 'user'
+        :return: Request object
+        """
+        if role == "admin":
+            g.logged_in_user = {"username": "admin",
+                                "role": "admin"}
+        elif role == "user":
+            g.logged_in_user = {"username": "cornelius",
+                                "realm": self.realm4,
+                                "resolver": self.resolvername1,
+                                "role": "user"}
+
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {'user': 'cornelius', 'realm': self.realm4}
+        req.User = User("cornelius", self.realm4)
+        g.policy_object = PolicyClass()
+
+        return req
+
+    def test_72_check_user_params_user_success(self):
+        # Mock request object
+        self.setUp_user_realms()
+        req = self.mock_request_user_params("user")
+
+        # User params are equal to logged-in user
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+
+    def test_73_check_user_params_user_denied(self):
+        # Mock request object
+        self.setUp_user_realm2()
+        self.setUp_user_realm4_with_2_resolvers()
+        req = self.mock_request_user_params("user")
+
+        # Different realm
+        req.all_data = {'user': 'cornelius', 'realm': self.realm2}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # Different user
+        req.all_data = {'user': 'selfservice', 'realm': self.realm4}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # Different resolver
+        req.all_data = {'user': 'cornelius', 'realm': self.realm4, 'resolver': self.resolvername3}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # completely different user
+        req.all_data = {'user': 'hans', 'realm': self.realm2}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -403,7 +403,8 @@ class Token(MethodsMixin, db.Model):
                                                 realm_id=r.id).first()
                 if not tr:
                     # If the realm is not yet attached to the token
-                    TokenRealm(token_id=self.id, realm_id=r.id).save()
+                    Tr = TokenRealm(token_id=self.id, realm_id=r.id)
+                    db.session.add(Tr)
         db.session.commit()
 
     def get_realms(self):
