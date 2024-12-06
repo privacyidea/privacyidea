@@ -467,9 +467,9 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                 if attach_qrcode:
                     if googleurl_img:
-                        body = self.attach_qr(body, googleurl_img, mimetype, serial)
+                        body = self.attach_qr(self, body, googleurl_img, mimetype, serial)
                     elif pushurl_img:
-                        body = self.attach_qr(body, pushurl_img, mimetype, serial)
+                        body = self.attach_qr(self, body, pushurl_img, mimetype, serial)
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
