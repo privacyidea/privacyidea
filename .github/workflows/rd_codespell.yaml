@@ -24,5 +24,5 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          codespell -q 3 -S ./privacyidea/static/contrib/*,./privacyidea/static/components/translation/*,./privacyidea/translations/*,./po/* . \
+          codespell -q 3 -S ./privacyidea/static/contrib/*,translations.js,*.po -L assertIn . \
           | reviewdog -efm="%f:%l: %m" -name="codespell" -reporter=github-pr-check -level=warning
