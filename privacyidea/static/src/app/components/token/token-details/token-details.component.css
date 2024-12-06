@@ -23,18 +23,10 @@
   border-collapse: collapse;
 }
 
-.detail-table th,
-.detail-table td {
-  margin-left: 10px;
-}
-
 .detail-row {
   min-width: 143px;
-  height: 50px;
-}
-
-.user-detail-row {
-  height: 50px;
+  height: 52px;
+  overflow-wrap: anywhere;
 }
 
 .edit-info-row {
@@ -83,7 +75,6 @@
   display: flex;
   padding-left: 16px;
   align-items: center;
-  font-size: 14px;
   width: 125px;
   border: 1px solid #E0E2EC;
 }
@@ -151,13 +142,17 @@ mat-grid-tile {
 .edit-column-cell {
   min-width: 86px;
   padding: 0;
-  text-align: center;
 }
 
 .editable-row {
   width: 286px;
   max-width: 286px;
   min-width: 286px;
+  padding-right: 0;
+}
+
+.pad-right {
+  padding-right: 16px;
 }
 
 .user-editable-row {
@@ -179,26 +174,6 @@ mat-grid-tile {
 .pin-input-button {
   display: flex;
   justify-content: center;
-}
-
-.user-pin {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.user-pin-input {
-  display: flex;
-  gap: 10px;
-}
-
-.user-pin-button {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-flow: column;
 }
 
 .assign-container {
@@ -316,7 +291,10 @@ h3 {
 .detail-table-input {
   margin-bottom: -5px;
   margin-top: -4px;
-  font-size: 12px;
+}
+
+::ng-deep .mat-mdc-row {
+  font-size: 14px;
 }
 
 .detail-table-item {
@@ -324,20 +302,11 @@ h3 {
 }
 
 .cut-textarea {
-  font-size: 12px;
   margin-top: -2px;
 }
 
 .onepx {
   margin-top: 1px;
-}
-
-mat-label {
-  font-size: 12px;
-}
-
-mat-select {
-  font-size: 12px;
 }
 
 .visibility-button {
@@ -357,9 +326,28 @@ mat-select {
 }
 
 .cell-list {
-  height: 48px
+  height: 48px;
+  width: 252px;
 }
 
 .single-item {
   margin-top: 10px;
+}
+
+.description {
+  display: flex;
+  margin-top: 10px;
+}
+
+.description-container {
+  height: 52px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
 }

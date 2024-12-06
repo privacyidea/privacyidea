@@ -9,7 +9,7 @@ td {
 }
 
 .table-filter {
-  width: 58%;
+  width: 59%;
 }
 
 .advanced-filter-button {
@@ -23,10 +23,25 @@ td {
 
 .scrollable-container {
   overflow-y: auto;
+  overflow-wrap: anywhere;
+  height: 60px;
+  margin-right: -16px;
+  padding-right: 16px;
+}
+
+.not-realm-list {
+  display: flex;
+  align-items: center;
 }
 
 .realm-list {
-  max-height: 52px;
-  margin-right: -16px;
+  margin-top: 7px;
 }
 
+.realm {
+  margin-top: 17px;
+}
+
+.description {
+  align-items: flex-start;
+}

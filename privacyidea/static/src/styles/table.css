@@ -3,7 +3,6 @@ table {
 }
 
 a {
-  font-size: 14px;
   text-decoration: none;
   color: var(--blue-base);
   cursor: pointer;
@@ -34,9 +33,8 @@ th:nth-child(even) {
 }
 
 .mat-mdc-form-field {
-  font-size: var(--font-size);
   color: var(--blue-base);
-  width: 100%;
+  width: 252px;
 }
 
 .mat-mdc-paginator {
@@ -100,15 +98,16 @@ th:nth-child(even) {
   cursor: pointer;
 }
 
-span {
-  font-size: 12px;
-}
 
 .filter-text {
   padding: 10px;
-  font-size: 14px;
-  display: inline-block;
+  display: flex;
+  flex-direction: row;
   align-items: center;
+}
+
+.filter-keyword-title {
+  margin-top: -4px;
 }
 
 .keyword-button {
@@ -143,6 +142,7 @@ span {
   display: inline-flex;
   vertical-align: bottom;
   margin-right: -3px;
+  margin-bottom: -3px;
   font-size: 22px !important;
 }
 
@@ -152,7 +152,7 @@ span {
 }
 
 .object-item {
-  font-size: 12px;
+  font-size: 14px;
   max-width: 200px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -164,6 +164,7 @@ span {
   color: black;
   background-color: white;
   cursor: pointer;
+  justify-content: center;
 }
 
 .cancel-button {

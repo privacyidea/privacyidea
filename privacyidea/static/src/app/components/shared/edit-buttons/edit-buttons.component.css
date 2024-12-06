@@ -1,0 +1,25 @@
+@import '../../../../styles/table.css';
+
+.red-icon {
+  color: var(--red-base);
+}
+
+.edit-button-container {
+  display: inline-flex;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+.editable-row {
+  width: 286px;
+  max-width: 286px;
+  min-width: 286px;
+  padding-right: 0;
+}
+
+.user-editable-row {
+  min-width: 234px;
+}

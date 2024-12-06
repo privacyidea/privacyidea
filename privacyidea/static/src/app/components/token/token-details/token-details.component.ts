@@ -1,13 +1,11 @@
 import {Component, computed, effect, Input, Output, signal, WritableSignal} from '@angular/core';
 import {
   MatCell,
-  MatCellDef,
   MatColumnDef,
   MatHeaderCell,
-  MatHeaderCellDef,
   MatRow,
-  MatRowDef,
   MatTable,
+  MatTableModule,
 } from '@angular/material/table';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
@@ -31,6 +29,7 @@ import {TokenDetailsInfoComponent} from './token-details-info/token-details-info
 import {
   TokenDetailsActionsComponent
 } from './token-details-actions/token-details-actions.component';
+import {EditButtonsComponent} from '../../shared/edit-buttons/edit-buttons.component';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},
@@ -64,15 +63,13 @@ export const infoDetail = [
   standalone: true,
   imports: [
     MatCell,
-    MatCellDef,
+    MatTableModule,
     MatColumnDef,
     MatHeaderCell,
     MatIcon,
     MatListItem,
     MatRow,
-    MatRowDef,
     MatTable,
-    MatHeaderCellDef,
     NgClass,
     MatGridTile,
     MatGridList,
@@ -88,6 +85,7 @@ export const infoDetail = [
     MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
+    EditButtonsComponent
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.css'

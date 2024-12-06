@@ -30,11 +30,7 @@
 
 .detail-row {
   min-width: 143px;
-  height: 50px;
-}
-
-.user-detail-row {
-  height: 50px;
+  height: 52px;
 }
 
 .edit-info-row {
@@ -83,7 +79,6 @@
   display: flex;
   padding-left: 16px;
   align-items: center;
-  font-size: 14px;
   width: 125px;
   border: 1px solid #E0E2EC;
 }
@@ -151,7 +146,6 @@ mat-grid-tile {
 .edit-column-cell {
   min-width: 86px;
   padding: 0;
-  text-align: center;
 }
 
 .editable-row {
@@ -316,7 +310,6 @@ h3 {
 .detail-table-input {
   margin-bottom: -5px;
   margin-top: -4px;
-  font-size: 12px;
 }
 
 .detail-table-item {
@@ -324,20 +317,11 @@ h3 {
 }
 
 .cut-textarea {
-  font-size: 12px;
   margin-top: -2px;
 }
 
 .onepx {
   margin-top: 1px;
-}
-
-mat-label {
-  font-size: 12px;
-}
-
-mat-select {
-  font-size: 12px;
 }
 
 .visibility-button {

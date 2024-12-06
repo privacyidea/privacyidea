@@ -1,4 +1,5 @@
 @import '../../../../../styles/table.css';
+@import '../token-details.component.css';
 
 .detail-table {
   display: flex;
@@ -25,7 +26,6 @@
 
 .detail-table th,
 .detail-table td {
-  margin-left: 10px;
   border: 1px solid #E0E2EC;
 }
 
@@ -39,14 +39,13 @@
   background: #ffffff;
 }
 
-.detail-row {
-  min-width: 143px;
-  height: 50px;
-}
-
 .user-detail-row {
   min-width: 143px;
-  height: 50px;
+  height: 52px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
 }
 
 .edit-info-row {
@@ -142,7 +141,6 @@ mat-grid-tile {
 .edit-column-cell {
   min-width: 86px;
   padding: 0;
-  text-align: center;
 }
 
 .editable-row {
@@ -319,7 +317,6 @@ h3 {
 .detail-table-input {
   margin-bottom: -5px;
   margin-top: -4px;
-  font-size: 12px;
 }
 
 .detail-table-item {
@@ -328,18 +325,11 @@ h3 {
 
 textarea {
   margin-top: -2px;
+  font-size: 14px;
 }
 
 .onepx {
   margin-top: 1px;
-}
-
-mat-label {
-  font-size: 12px;
-}
-
-mat-select {
-  font-size: 12px;
 }
 
 .visibility-button {

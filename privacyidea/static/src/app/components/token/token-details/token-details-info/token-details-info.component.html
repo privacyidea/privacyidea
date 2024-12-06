@@ -13,9 +13,7 @@
                   <mat-list-item class="object-row">
                     <div class="flex">
                       <mat-form-field>
-                        <mat-label style="font-size: 14px"
-                                   class="object-item">{{ key }}
-                        </mat-label>
+                        <mat-label class="object-item">{{ key }}</mat-label>
                         <textarea matInput class="info-input" rows="1"
                                   [(ngModel)]="element.value[key]"></textarea>
                       </mat-form-field>
@@ -29,7 +27,7 @@
               } @else {
                 <mat-list-item class="object-row onepx">
                   <div class="info-span">
-                          <span style="margin-left: -4px; font-size: 14px" class="object-item">
+                          <span style="margin-left: -4px" class="object-item">
                             {{ key }}:
                           </span>
                     <span class="object-item"
@@ -61,7 +59,7 @@
     <ng-container matColumnDef="edit">
       <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
       <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
-        <div class="edit-button-container">
+        <div class="edit-button-container info-edit">
           @if (!isAnyEditing()) {
             <button mat-icon-button class="edit-button"
                     (click)="toggleEditMode(element, 'edit')">

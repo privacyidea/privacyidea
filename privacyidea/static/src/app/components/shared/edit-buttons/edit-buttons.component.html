@@ -1,0 +1,21 @@
+<div class="edit-button-container">
+  @if (!isAnyEditing()) {
+    <button mat-icon-button class="edit-button"
+            (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
+      <mat-icon class="mat-icon-button">
+        edit
+      </mat-icon>
+    </button>
+  } @else if (element.isEditing()) {
+    <button mat-icon-button class="edit-button"
+            (click)="toggleEditMode(element, element.keyMap.key, 'save')">
+      <mat-icon class="mat-icon-button">save_as</mat-icon>
+    </button>
+    <button mat-icon-button class="edit-button red-icon"
+            (click)="toggleEditMode(element, 'default', 'cancel')">
+      <mat-icon class="mat-icon-button">cancel</mat-icon>
+    </button>
+  } @else {
+    <br/>
+  }
+</div>
