@@ -104,6 +104,8 @@ additional dependencies::
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
 
+And use tests with the `self.assertIn()` function...
+
 Getting and updating submodules
 ===============================
 
