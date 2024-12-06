@@ -103,7 +103,18 @@ class UserNotificationEventHandler(BaseEventHandler):
         """
         return ["post", "pre"]
 
+    @staticmethod
     def attach_qr(self, body, url_img, mimetype, serial):
+        """
+        Attach the QR-Code image to the email body.
+
+        :param body: email body
+        :param url_img: URL of the QR-Code image
+        :param mimetype: mimetype of the email
+        :param serial: serial number of the token
+
+        :return: body with the attached QR-Code image
+        """
         # get the image part of the url
         url = urlopen(url_img)  # nosec B310   # no user input
         mail_body = MIMEMultipart('related')
