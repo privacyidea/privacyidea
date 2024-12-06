@@ -925,11 +925,14 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(count == 2, count)
 
     def test_04_assign_unassign_token(self):
+        token = init_token({"type": "hotp", "genkey": True})
+        serial = token.get_serial()
+
         with self.app.test_request_context('/token/assign',
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "realm": self.realm1,
-                                                 "serial": "S1",
+                                                 "serial": serial,
                                                  "pin": "test"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -942,7 +945,7 @@ class APITokenTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"user": "shadow",
                                                  "realm": self.realm1,
-                                                 "serial": "S1"},
+                                                 "serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -971,7 +974,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/assign',
                                            method='POST',
-                                           data={"serial": "S1"},
+                                           data={"serial": serial},
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -995,7 +998,7 @@ class APITokenTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"user": "shadow",
                                                  "realm": self.realm1,
-                                                 "serial": "S1"},
+                                                 "serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
