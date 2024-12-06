@@ -42,10 +42,13 @@ cryptography==42.0.8
     #   pyopenssl
 defusedxml==0.7.1
     # via privacyIDEA (setup.py)
+feedparser==6.0.11
+    # via privacyIDEA (setup.py)
 flask==3.0.3
     # via
     #   flask-babel
     #   flask-migrate
+    #   flask-script
     #   flask-sqlalchemy
     #   flask-versioned
     #   privacyIDEA (setup.py)
@@ -93,6 +96,10 @@ netaddr==1.3.0
     #   privacyIDEA (setup.py)
     #   pyrad
 passlib[bcrypt]==1.7.4
+    # via
+    #   passlib
+    #   privacyIDEA (setup.py)
+protobuf==4.24.4
     # via privacyIDEA (setup.py)
 protobuf==5.28.2
     # via privacyIDEA (setup.py)
@@ -137,6 +144,7 @@ segno==1.6.1
     # via privacyIDEA (setup.py)
 six==1.16.0
     # via
+    #   configobj
     #   pyrad
     #   python-dateutil
     #   smpplib
@@ -157,6 +165,13 @@ urllib3==2.2.3
     # via requests
 werkzeug==3.0.6
     # via flask
+zipp==3.15.0 ; python_version == "3.7"
+zipp==3.19.1 ; python_version == "3.8"
+    # via
+    #   importlib-metadata
+    #   importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools
+setuptools==68.0.0 ; python_version == "3.7"
+setuptools==70.0.0 ; python_version > "3.7"
+    # via flask-versioned

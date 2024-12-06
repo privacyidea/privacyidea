@@ -470,6 +470,7 @@ angular.module("privacyideaApp")
                     $scope.startRoute = "/token";
                 }
                 $scope.logout_redirect_url = data.result.value.logout_redirect_url;
+                $scope.rss_age = data.result.value.rss_age;
                 $scope.hide_welcome = data.result.value.hide_welcome;
                 $scope.hide_buttons = data.result.value.hide_buttons;
                 $scope.deletion_confirmation = data.result.value.deletion_confirmation;

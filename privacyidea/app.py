@@ -67,6 +67,7 @@ from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
 from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
@@ -170,6 +171,7 @@ def create_app(config_name="development",
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
     app.register_blueprint(container_blueprint, url_prefix='/container')
     app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
+    app.register_blueprint(info_blueprint, url_prefix='/info')
 
     # Set up Plug-Ins
     db.init_app(app)
