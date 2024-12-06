@@ -1,0 +1,18 @@
+name: reviewdog-misspell
+on: [pull_request]
+jobs:
+  reviewdog:
+    name: reviewdog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: misspell
+        uses: reviewdog/action-misspell@v1
+        with:
+          locale: "US"
+          exclude: |
+            ./.git/*
+            ./privacyidea/static/contrib/*
+            ./privacyidea/static/components/translation/*
+            ./privacyidea/translations/*
+            ./po/*
