@@ -925,6 +925,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(count == 2, count)
 
     def test_04_assign_unassign_token(self):
+        # Create a new token instead of using tokens from previous tests, otherwise this test fails
         token = init_token({"type": "hotp", "genkey": True})
         serial = token.get_serial()
 
