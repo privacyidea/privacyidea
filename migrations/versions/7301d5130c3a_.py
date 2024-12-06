@@ -19,10 +19,10 @@ def upgrade():
     session = orm.Session(bind=bind)
     try:
         for row in session.query(EventHandlerOption).filter(EventHandlerOption.Value == 'urlendcode'):
-            row.Value = "urlendcoded"
+            row.Value = "urlencoded"
             row.save()
     except Exception as exx:
-        print("Failed to update urlendcode to urlendcoded in evanthandleroption table.")
+        print("Failed to update urlendcode to urlencoded in evanthandleroption table.")
         print(exx)
         session.rollback()
 
@@ -34,12 +34,12 @@ def downgrade():
     bind = op.get_bind()
     session = orm.Session(bind=bind)
     try:
-        for row in session.query(EventHandlerOption).filter(EventHandlerOption.Value == 'urlendcoded'):
+        for row in session.query(EventHandlerOption).filter(EventHandlerOption.Value == 'urlencoded'):
             row.Value = "urlendcode"
             row.save()
 
     except Exception as exx:
-        print("Failed to revert urlendcoded to urlendcode in evanthandleroption table.")
+        print("Failed to revert urlencoded to urlendcode in evanthandleroption table.")
         print(exx)
         session.rollback()
 
