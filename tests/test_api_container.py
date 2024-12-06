@@ -188,7 +188,8 @@ class APIContainerAuthorization(MyApiTestCase):
         user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
+        set_policy("policy", scope=SCOPE.USER,
+                   action={ACTION.CONTAINER_ADD_TOKEN: True, ACTION.CONTAINER_REMOVE_TOKEN: True})
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
 
@@ -641,13 +642,22 @@ class APIContainerAuthorization(MyApiTestCase):
 
     def test_46_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
-        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm1)
+        set_policy("policy_realm", scope=SCOPE.ADMIN,
+                   action={ACTION.CONTAINER_ADD_TOKEN: True, ACTION.CONTAINER_REMOVE_TOKEN: True}, realm=self.realm1)
         set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
 
         # Add single token
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
+        self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
+                                method='POST')
+
+        # Add token that is in another container
+        token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+        old_container_serial = init_container({"type": "generic", "realm": self.realm1})
+        add_token_to_container(old_container_serial, token_serial, user_role='admin')
         self.request_assert_200(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
                                 method='POST')
 
@@ -694,13 +704,20 @@ class APIContainerAuthorization(MyApiTestCase):
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
 
+        # Helpdesk is not allowed to remove token from old container
+        token.set_realms([self.realm1])
+        add_token_to_container(c_serial_no_user, token_serial, user_role='admin')
+        self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
+                                       method='POST')
+
         # Adding multiple tokens
         token2 = init_token({"genkey": "1", "realm": self.realm3})
         token3 = init_token({"genkey": "1", "realm": self.realm1})
-        token_serials = ','.join([token2.get_serial(), token3.get_serial()])
+        token_serials = ','.join([token.get_serial(), token2.get_serial(), token3.get_serial()])
         # to authorized container
         json = self.request_assert_200(f"/container/{c_serial_user}/addall", {"serial": token_serials}, self.at,
                                        method='POST')
+        self.assertFalse(json["result"]["value"][token.get_serial()])
         self.assertFalse(json["result"]["value"][token2.get_serial()])
         self.assertTrue(json["result"]["value"][token3.get_serial()])
         # to not authorized container

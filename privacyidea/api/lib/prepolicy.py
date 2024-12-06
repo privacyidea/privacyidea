@@ -82,7 +82,7 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_token_action_allowed)
+                                              check_token_action_allowed, check_container_action_allowed)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -1371,51 +1371,8 @@ def check_container_action(request: Request = None, action: str = None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     container_serial = params.get("container_serial")
-    container_realms = None
-    if role == "admin":
-        if container_serial:
-            # get user attributes from the container
-            try:
-                container = find_container_by_serial(container_serial)
-            except ResourceNotFoundError:
-                container = None
-                log.error(f"Could not find container with serial {container_serial}.")
-            if container:
-                container_owners = container.get_users()
-                container_owner = container_owners[0] if container_owners else None
-                if container_owner:
-                    username = container_owner.login
-                    realm = container_owner.realm
-                    resolver = container_owner.resolver
-                else:
-                    username = realm = resolver = None
-                container_realms = [realm.name for realm in container.realms]
-
-        if action == ACTION.CONTAINER_ASSIGN_USER:
-            # Assigning a user to a container is only possible if the container has no owner yet.
-            # To avoid helpdesk admins (for a specific resolver) lose their containers while changing the owner of a
-            # container, they are allowed to assign their users to containers without user.
-            # Note: the policies are still filtered by the container realms.
-            username = username or None
-            realm = realm or None
-            resolver = resolver or None
-        else:
-            # If no user is available, explicitly filter for generic policies without conditions on the user
-            username = username or ""
-            realm = realm or ""
-            resolver = resolver or ""
-
-    # Check action for container
-    match = Match.generic(g,
-                          scope=role,
-                          action=action,
-                          user=username,
-                          resolver=resolver,
-                          realm=realm,
-                          adminrealm=adminrealm,
-                          adminuser=adminuser,
-                          additional_realms=container_realms)
-    action_allowed = match.allowed()
+    action_allowed = check_container_action_allowed(g, action, container_serial, role, username, realm, resolver,
+                                                    adminuser, adminrealm)
 
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")

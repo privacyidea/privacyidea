@@ -3969,10 +3969,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_72_check_user_params_user_success(self):
         # Mock request object
-        self.setUp_user_realms()
+        self.setUp_user_realm4_with_2_resolvers()
         req = self.mock_request_user_params("user")
 
         # User params are equal to logged-in user
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+
+        # Empty user params
+        req.all_data = {}
         self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
 
     def test_73_check_user_params_user_denied(self):
@@ -3996,6 +4000,63 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # completely different user
         req.all_data = {'user': 'hans', 'realm': self.realm2}
         self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+    def test_74_check_user_params_admin_success(self):
+        # Mock request object
+        self.setUp_user_realm4_with_2_resolvers()
+        req = self.mock_request_user_params("admin")
+
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        delete_policy("policy")
+
+        # Policy for the realm
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm4)
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        delete_policy("policy")
+
+        # Policy for the resolver
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, resolver=self.resolvername1)
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        delete_policy("policy")
+
+        # Policy for the user
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, user="cornelius",
+                   realm=self.realm4, resolver=self.resolvername1)
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        delete_policy("policy")
+
+        # Empty user params
+        req.all_data = {}
+        req.User = User()
+        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+
+    def test_75_check_user_params_user_denied(self):
+        # Mock request object
+        self.setUp_user_realm2()
+        self.setUp_user_realm4_with_2_resolvers()
+        req = self.mock_request_user_params("user")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, user="cornelius",
+                   realm=self.realm4, resolver=self.resolvername1)
+
+        # Different realm
+        req.all_data = {'user': 'cornelius', 'realm': self.realm2}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # Different user
+        req.all_data = {'user': 'selfservice', 'realm': self.realm4}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # Different resolver
+        req.all_data = {'user': 'cornelius', 'realm': self.realm4, 'resolver': self.resolvername3}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        # completely different user
+        req.all_data = {'user': 'hans', 'realm': self.realm2}
+        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+
+        delete_policy("policy")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
