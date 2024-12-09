@@ -405,6 +405,8 @@ class ACTION(object):
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
+    RSS_FEEDS = "rss_feeds"
+    RSS_AGE = "rss_age"
 
 
 class TYPE(object):
@@ -2794,7 +2796,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
-            }
+            },
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _('The RSS feeds fetched for the user. Configure a dictionary.')},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days.')}
         }
 
     }

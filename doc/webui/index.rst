@@ -27,6 +27,24 @@ access is displayed in the dashboard.
 .. figure:: images/dashboard.png
    :width: 500
 
+.. _news:
+
+News
+----
+
+.. index:: News, RSS
+
+privacyIDEA allows to fetch news via RSS feeds. This is supposed to help the administrator to keep up with information
+in regards to running your privacyIDEA. Per default privacyIDEA fetches news from privacyidea.org, netknights.it and
+community.privacyidea.org.
+
+News can be displayed to the administrators and to normal users!
+
+You can use the policy :ref:`policy_rss_age` to define the age of the messages to fetch and the policy
+:ref:`policy_rss_feeds` to define the feeds to fetch. This way you can even provide your own feeds to your end users.
+
+Note that setting the `rss_age` to 0 will disable the News tab.
+
 .. _tokensview:
 
 Tokens

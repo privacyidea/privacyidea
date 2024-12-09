@@ -41,6 +41,7 @@ install_requires = [
     "Flask-Migrate",
     "Flask-SQLAlchemy",
     "Flask-Versioned",
+    "feedparser",
     "google-auth",
     "grpcio",
     "huey[redis]",
