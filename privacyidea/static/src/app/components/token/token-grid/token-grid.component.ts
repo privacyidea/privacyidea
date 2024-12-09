@@ -30,7 +30,7 @@ export class TokenGridComponent {
   serial = signal('');
   active = signal(true);
   revoked = signal(true);
-  refreshTokenDetails: WritableSignal<boolean> = signal(false);
+  refreshTokenDetails = signal(false);
   @ViewChild('tokenDetailsComponent') tokenDetailsComponent!: TokenDetailsComponent;
 
   constructor() {

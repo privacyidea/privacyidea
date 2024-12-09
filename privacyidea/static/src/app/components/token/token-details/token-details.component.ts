@@ -12,13 +12,13 @@ import {MatIcon} from '@angular/material/icon';
 import {MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
-import {AsyncPipe, NgClass} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
-import {forkJoin, Observable, single, startWith, switchMap} from 'rxjs';
+import {forkJoin, Observable, single, switchMap} from 'rxjs';
 import {RealmService} from '../../../services/realm/realm.service';
 import {UserService} from '../../../services/user/user.service';
 import {catchError, map} from 'rxjs/operators';
@@ -81,7 +81,6 @@ export const infoDetail = [
     MatIconButton,
     TokenDetailsUserComponent,
     MatAutocomplete,
-    AsyncPipe,
     MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
@@ -99,11 +98,12 @@ export class TokenDetailsComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  isEditingUser: WritableSignal<boolean> = signal(false);
-  isEditingInfo: WritableSignal<boolean> = signal(false);
-  setPinValue: WritableSignal<string> = signal('');
-  repeatPinValue: WritableSignal<string> = signal('');
-  filteredUserOptions!: Observable<string[]>;
+  isEditingUser = signal(false);
+  isEditingInfo = signal(false);
+  setPinValue = signal('');
+  repeatPinValue = signal('');
+  filteredUserOptions = signal<string[]>([]);
+  filteredContainerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   detailData = signal<{
     value: any;
@@ -138,7 +138,6 @@ export class TokenDetailsComponent {
   userRealm: string = '';
   maxfail: number = 0;
   selectedTokengroup = new FormControl<string[]>([]);
-  filteredContainerOptions!: Observable<string[]>;
 
   constructor(private tokenService: TokenService,
               private containerService: ContainerService,
@@ -161,15 +160,18 @@ export class TokenDetailsComponent {
       }
     });
 
-    this.filteredUserOptions = this.selectedUsername.valueChanges.pipe(
-      startWith(''),
+    this.selectedUsername.valueChanges.pipe(
       map(value => this._filterUserOptions(value || ''))
-    );
+    ).subscribe(filteredOptions => {
+      this.filteredUserOptions.set(filteredOptions);
+    });
 
-    this.filteredContainerOptions = this.selectedContainer.valueChanges.pipe(
-      startWith(''),
+    this.selectedContainer.valueChanges.pipe(
       map(value => this._filterContainerOptions(value || ''))
-    );
+    ).subscribe(filteredOptions => {
+      this.filteredContainerOptions.set(filteredOptions);
+    });
+
   }
 
   private _filterUserOptions(value: string): string[] {
@@ -250,10 +252,10 @@ export class TokenDetailsComponent {
 
     switch (type) {
       case 'container_serial':
-        this.handleContainerSerial(element, action);
+        this.handleContainerSerial(action);
         break;
       case 'tokengroup':
-        this.handleTokengroup(element, action);
+        this.handleTokengroup(action);
         break;
       case 'realms':
         this.handleRealms(action);
@@ -266,8 +268,8 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  private handleContainerSerial(element: any, action: string): void {
-    if (element.isEditing() && this.containerOptions().length === 0) {
+  private handleContainerSerial(action: string): void {
+    if (this.containerOptions().length === 0) {
       this.containerService.getContainerData().subscribe({
         next: (containers: any) => {
           this.containerOptions.set(Object.values(containers.result.value.containers as {
@@ -286,8 +288,8 @@ export class TokenDetailsComponent {
     }
   }
 
-  private handleTokengroup(element: any, action: string): void {
-    if (element.isEditing()) {
+  private handleTokengroup(action: string): void {
+    if (this.tokengroupOptions().length === 0) {
       this.tokenService.getTokengroups().subscribe({
         next: (tokengroups: any) => {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));

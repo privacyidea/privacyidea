@@ -41,7 +41,6 @@ import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
     MatIcon,
     MatDivider,
     MatFabButton,
-    AsyncPipe,
     MatRow,
     MatLabel,
     MatRowDef,
@@ -72,7 +71,7 @@ export class TokenDetailsUserComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditing!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
-  @Input() filteredUserOptions!: Observable<string[]>;
+  @Input() filteredUserOptions!: WritableSignal<string[]>;
 
   unassignUser() {
     this.tokenService.unassignUser(this.serial()).subscribe({

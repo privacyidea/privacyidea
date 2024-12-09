@@ -28,7 +28,7 @@
                              [matAutocomplete]="containerAuto">
                       <mat-autocomplete autoActiveFirstOption
                                         #containerAuto="matAutocomplete">
-                        @for (option of filteredContainerOptions | async; track option) {
+                        @for (option of filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
