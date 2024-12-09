@@ -96,15 +96,38 @@ class UserNotificationEventHandler(BaseEventHandler):
     description = "This eventhandler notifies the user about actions on his tokens"
 
     @property
-    def allowed_positions(cls):
+    def allowed_positions(self):
         """
         This returns the allowed positions of the event handler definition.
         :return: list of allowed positions
         """
         return ["post", "pre"]
 
+    @staticmethod
+    def attach_qr(body, url_img, mimetype, serial):
+        """
+        Attach the QR-Code image to the email body.
+
+        :param body: email body
+        :param url_img: URL of the QR-Code image
+        :param mimetype: mimetype of the email
+        :param serial: serial number of the token
+        :return: body with the attached QR-Code image
+        """
+        # get the image part of the url
+        url = urlopen(url_img)  # nosec B310   # no user input
+        mail_body = MIMEMultipart('related')
+        mail_body.attach(MIMEText(body, mimetype))
+        mail_img = MIMEImage(url.read())
+        mail_img.add_header('Content-ID', '<token_image>')
+        mail_img.add_header('Content-Disposition',
+                            'inline; filename="{0!s}.png"'.format(serial))
+        mail_body.attach(mail_img)
+        body = mail_body
+        return body
+
     @property
-    def actions(cls):
+    def actions(self):
         """
         This method returns a dictionary of allowed actions and possible
         options in this handler module.
@@ -166,7 +189,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "body": {
                     "type": "text",
                     "required": False,
-                    "description": _("The body of the mail that is sent.")},
+                    "description": _("The template of the mail body that will be sent. It may contain the following "
+                                     "tags as specified in the documentation: <code>{admin}, {realm}, {action}, "
+                                     "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                     "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                     "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}."
+                                     "</code>")},
                 "To": {
                     "type": "str",
                     "required": True,
@@ -205,7 +234,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "value": smsgateways},
                 "body": {"type": "text",
                          "required": False,
-                         "description": _("The text of the SMS.")},
+                         "description": _("The text template of the SMS. It may contain the following tags "
+                                          "as specified in the documentation: <code>{admin}, {realm}, {action}, "
+                                          "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                          "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                          "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                          "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+                                          "{pin}.</code>")},
                 "To": {"type": "str",
                        "required": True,
                        "description": _("Send notification to this user."),
@@ -215,9 +250,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "body": {
                     "type": "text",
                     "required": True,
-                    "description": _("This is the template content of "
-                                     "the new file. Can contain the tags "
-                                     "as specified in the documentation.")},
+                    "description": _("This is the template content of the new file. It may contain the following tags "
+                                     "as specified in the documentation: <code>{admin}, {realm}, {action}, "
+                                     "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
+                                     "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
+                                     "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}."
+                                     "</code>")},
                 "filename": {
                     "type": "str",
                     "required": True,
@@ -378,17 +417,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                     log.warning("Failed to read email template from file {0!r}: {1!r}".format(filename, e))
                     log.debug("{0!s}".format(traceback.format_exc()))
 
-            subject = handler_options.get("subject") or \
-                      "An action was performed on your token."
-            serial = request.all_data.get("serial") or \
-                     content.get("detail", {}).get("serial") or \
-                     g.audit_object.audit_data.get("serial")
+            subject = handler_options.get("subject") or "An action was performed on your token."
+            serial = (request.all_data.get("serial")
+                      or content.get("detail", {}).get("serial")
+                      or g.audit_object.audit_data.get("serial"))
             registrationcode = content.get("detail", {}).get("registrationcode")
             pin = content.get("detail", {}).get("pin")
             googleurl_value = content.get("detail", {}).get("googleurl",
                                                             {}).get("value")
             googleurl_img = content.get("detail", {}).get("googleurl",
                                                           {}).get("img")
+            pushurl_value = content.get("detail", {}).get("pushurl",
+                                                          {}).get("value")
+            pushurl_img = content.get("detail", {}).get("pushurl",
+                                                        {}).get("img")
             tokentype = None
             tokendescription = None
             if serial:
@@ -405,16 +447,19 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    client_ip=g.client_ip,
                                    pin=pin,
                                    googleurl_value=googleurl_value,
+                                   googleurl_img=googleurl_img,
+                                   pushurl_value=pushurl_value,
+                                   pushurl_img=pushurl_img,
                                    recipient=recipient,
                                    tokenowner=tokenowner,
                                    serial=serial,
                                    tokentype=tokentype,
                                    tokendescription=tokendescription,
                                    registrationcode=registrationcode,
-                                   escape_html=action.lower() == "sendmail" and
-                                               handler_options.get("mimetype", "").lower() == "html")
+                                   escape_html=(action.lower() == "sendmail"
+                                                and handler_options.get("mimetype", "").lower() == "html"))
 
-            body = to_unicode(body).format(googleurl_img=googleurl_img, **tags)
+            body = to_unicode(body).format(**tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
@@ -423,17 +468,11 @@ class UserNotificationEventHandler(BaseEventHandler):
                 useremail = recipient.get("email")
                 attach_qrcode = is_true(handler_options.get("attach_qrcode"))
 
-                if attach_qrcode and googleurl_img:
-                    # get the image part of the googleurl
-                    googleurl = urlopen(googleurl_img)  # nosec B310   # no user input
-                    mail_body = MIMEMultipart('related')
-                    mail_body.attach(MIMEText(body, mimetype))
-                    mail_img = MIMEImage(googleurl.read())
-                    mail_img.add_header('Content-ID', '<token_image>')
-                    mail_img.add_header('Content-Disposition',
-                                        'inline; filename="{0!s}.png"'.format(serial))
-                    mail_body.attach(mail_img)
-                    body = mail_body
+                if attach_qrcode:
+                    if googleurl_img:
+                        body = self.attach_qr(body, googleurl_img, mimetype, serial)
+                    elif pushurl_img:
+                        body = self.attach_qr(body, pushurl_img, mimetype, serial)
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
