@@ -12,7 +12,7 @@
       <mat-icon class="mat-icon-button">save_as</mat-icon>
     </button>
     <button mat-icon-button class="edit-button red-icon"
-            (click)="toggleEditMode(element, 'default', 'cancel')">
+            (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
       <mat-icon class="mat-icon-button">cancel</mat-icon>
     </button>
   } @else {

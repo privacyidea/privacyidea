@@ -53,12 +53,12 @@
             <div class="edit-button-container">
               @if (isEditingUser()) {
                 <button mat-icon-button class="edit-button red-icon"
-                        (click)="toggleEditMode('cancel')">
+                        (click)="toggleUserEditMode('cancel')">
                   <mat-icon class="mat-icon-button">cancel</mat-icon>
                 </button>
               } @else {
                 <button mat-icon-button class="edit-button green-icon"
-                        (click)="toggleEditMode('edit')">
+                        (click)="toggleUserEditMode('edit')">
                   <mat-icon class="mat-icon-button">person_add</mat-icon>
                 </button>
               }
@@ -93,7 +93,7 @@
         </button>
       } @else {
         <button class="card-button-activate" extended mat-fab
-                (click)="toggleEditMode('save')">
+                (click)="toggleUserEditMode('save')">
           <mat-icon class="detail-button-icon">save</mat-icon>
           Assign User
         </button>

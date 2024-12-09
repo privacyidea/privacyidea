@@ -127,37 +127,19 @@
                         </mat-icon>
                       </button>
                     </div>
-                  } @else if (element.keyMap.key === "container_serial" && !isAnyEditing()) {
-                    @if (element.value) {
-                      <div class="edit-button-container">
-                        <button mat-icon-button class="red-icon edit-button"
-                                (click)="deleteContainer()">
-                          <mat-icon class="mat-icon-button">folder_delete</mat-icon>
-                        </button>
-                      </div>
-                    } @else {
-                      <div class="edit-button-container">
-                        <button mat-icon-button class="edit-button"
-                                (click)="toggleEditMode(element, 'container_serial', 'edit')">
-                          <mat-icon class="mat-icon-button">edit</mat-icon>
-                        </button>
-                      </div>
-                    }
-                  } @else if (element.keyMap.key === "container_serial" && element.isEditing()) {
+                  } @else if (element.keyMap.key === "container_serial" && !isAnyEditing() &&
+                  element.value) {
                     <div class="edit-button-container">
-                      <button mat-icon-button class="edit-button"
-                              (click)="toggleEditMode(element, 'container_serial', 'save')">
-                        <mat-icon class="mat-icon-button">save_as</mat-icon>
-                      </button>
-                      <button mat-icon-button class="edit-button red-icon"
-                              (click)="toggleEditMode(element, 'container_serial', 'cancel')">
-                        <mat-icon class="mat-icon-button">cancel</mat-icon>
+                      <button mat-icon-button class="red-icon edit-button"
+                              (click)="deleteContainer()">
+                        <mat-icon class="mat-icon-button">folder_delete</mat-icon>
                       </button>
                     </div>
                   } @else if (isEditableElement(element.keyMap.key)) {
                     <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
                                       [isAnyEditing]="isAnyEditing"
-                                      [element]="element"></app-edit-buttons>
+                                      [element]="element">
+                    </app-edit-buttons>
                   }
                 </div>
               </td>

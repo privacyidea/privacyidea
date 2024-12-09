@@ -62,7 +62,7 @@
         <div class="edit-button-container info-edit">
           @if (!isAnyEditing()) {
             <button mat-icon-button class="edit-button"
-                    (click)="toggleEditMode(element, 'edit')">
+                    (click)="toggleInfoEditMode(element, 'edit')">
               <mat-icon class="mat-icon-button">edit
               </mat-icon>
             </button>
@@ -71,12 +71,12 @@
           }
           @if (isEditingInfo()) {
             <button mat-icon-button class="edit-button save-button"
-                    (click)="toggleEditMode(element, 'save')">
+                    (click)="toggleInfoEditMode(element, 'save')">
               <mat-icon class="mat-icon-button">save_as
               </mat-icon>
             </button>
             <button mat-icon-button class="cancel-button"
-                    (click)="toggleEditMode(element,'cancel')">
+                    (click)="toggleInfoEditMode(element,'cancel')">
               <mat-icon class="mat-icon-button">cancel
               </mat-icon>
             </button>

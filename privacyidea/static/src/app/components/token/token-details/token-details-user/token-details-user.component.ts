@@ -1,11 +1,9 @@
 import {Component, Input, Signal, signal, WritableSignal} from '@angular/core';
 import {FormControl, FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {
-  MatCell,
-  MatCellDef,
+  MatCell, MatCellDef,
   MatColumnDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
+  MatHeaderCell, MatHeaderCellDef,
   MatRow,
   MatRowDef,
   MatTable
@@ -28,8 +26,6 @@ import {RealmService} from '../../../../services/realm/realm.service';
   imports: [
     MatTable,
     MatColumnDef,
-    MatHeaderCellDef,
-    MatCellDef,
     MatHeaderCell,
     MatCell,
     MatFormField,
@@ -45,9 +41,11 @@ import {RealmService} from '../../../../services/realm/realm.service';
     MatDivider,
     MatFabButton,
     AsyncPipe,
-    MatRowDef,
     MatRow,
-    MatLabel
+    MatLabel,
+    MatRowDef,
+    MatHeaderCellDef,
+    MatCellDef
   ],
   templateUrl: './token-details-user.component.html',
   styleUrl: './token-details-user.component.css'
@@ -104,7 +102,7 @@ export class TokenDetailsUserComponent {
     });
   }
 
-  toggleEditMode(action: string = ''): void {
+  toggleUserEditMode(action: string = ''): void {
     this.isEditingUser.set(!this.isEditingUser());
     if (this.selectedUserRealm() === '') {
       this.getDefaultRealm();

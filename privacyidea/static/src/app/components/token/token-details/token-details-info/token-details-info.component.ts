@@ -1,12 +1,10 @@
 import {Component, Input, signal, Signal, WritableSignal} from '@angular/core';
 import {
-  MatCell,
-  MatCellDef,
+  MatCell, MatCellDef,
   MatColumnDef,
   MatHeaderCell,
   MatHeaderCellDef,
-  MatRow,
-  MatRowDef,
+  MatRow, MatRowDef,
   MatTable
 } from '@angular/material/table';
 import {MatList, MatListItem} from '@angular/material/list';
@@ -25,10 +23,8 @@ import {Observable, switchMap} from 'rxjs';
   imports: [
     MatTable,
     MatColumnDef,
-    MatHeaderCellDef,
     MatHeaderCell,
     MatCell,
-    MatCellDef,
     MatList,
     MatListItem,
     MatFormField,
@@ -38,8 +34,10 @@ import {Observable, switchMap} from 'rxjs';
     MatLabel,
     MatIcon,
     MatDivider,
-    MatRowDef,
-    MatRow
+    MatRow,
+    MatHeaderCellDef,
+    MatCellDef,
+    MatRowDef
   ],
   templateUrl: './token-details-info.component.html',
   styleUrl: './token-details-info.component.css'
@@ -65,7 +63,7 @@ export class TokenDetailsInfoComponent {
   constructor(private tokenService: TokenService) {
   }
 
-  protected toggleEditMode(element: any, action: string): void {
+  protected toggleInfoEditMode(element: any, action: string): void {
     this.isEditingInfo.set(!this.isEditingInfo());
     if (action === 'cancel') {
       this.newInfo.set({key: '', value: ''});

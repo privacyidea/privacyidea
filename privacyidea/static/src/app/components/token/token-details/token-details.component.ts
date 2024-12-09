@@ -399,6 +399,7 @@ export class TokenDetailsComponent {
       || key === "info"
       || key === "realms"
       || key === "tokengroup"
+      || key === "container_serial";
   }
 
   protected readonly single = single;
