@@ -1,4 +1,4 @@
-import {Component, Input, Signal} from '@angular/core';
+import {Component, Input, Signal, WritableSignal} from '@angular/core';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 
@@ -15,5 +15,7 @@ export class EditButtonsComponent {
 
   @Input() toggleEditMode!: (element: any, type?: string, action?: string) => void;
   @Input() isAnyEditing!: Signal<boolean>;
+  @Input() isEditingUser!: WritableSignal<boolean>;
+  @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() element: any;
 }

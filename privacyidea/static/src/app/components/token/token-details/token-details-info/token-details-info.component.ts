@@ -16,6 +16,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatDivider} from '@angular/material/divider';
 import {TokenService} from '../../../../services/token/token.service';
 import {Observable, switchMap} from 'rxjs';
+import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
 
 @Component({
   selector: 'app-token-details-info',
@@ -37,7 +38,8 @@ import {Observable, switchMap} from 'rxjs';
     MatRow,
     MatHeaderCellDef,
     MatCellDef,
-    MatRowDef
+    MatRowDef,
+    EditButtonsComponent
   ],
   templateUrl: './token-details-info.component.html',
   styleUrl: './token-details-info.component.css'
@@ -56,6 +58,7 @@ export class TokenDetailsInfoComponent {
   }[]>;
   @Input() isAnyEditing!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
+  @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   newInfo = signal({key: '', value: ''});
   protected readonly Object = Object;
@@ -63,7 +66,7 @@ export class TokenDetailsInfoComponent {
   constructor(private tokenService: TokenService) {
   }
 
-  protected toggleInfoEditMode(element: any, action: string): void {
+  protected toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
     this.isEditingInfo.set(!this.isEditingInfo());
     if (action === 'cancel') {
       this.newInfo.set({key: '', value: ''});

@@ -29,7 +29,7 @@ import {TokenDetailsInfoComponent} from './token-details-info/token-details-info
 import {
   TokenDetailsActionsComponent
 } from './token-details-actions/token-details-actions.component';
-import {EditButtonsComponent} from '../../shared/edit-buttons/edit-buttons.component';
+import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
 
 export const details = [
   {key: 'tokentype', label: 'Type'},

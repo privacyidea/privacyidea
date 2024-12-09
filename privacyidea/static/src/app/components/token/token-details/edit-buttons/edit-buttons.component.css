@@ -1,4 +1,4 @@
-@import '../../../../styles/table.css';
+@import '../../../../../styles/table.css';
 
 .red-icon {
   color: var(--red-base);

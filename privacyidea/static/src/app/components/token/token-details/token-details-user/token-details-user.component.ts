@@ -1,4 +1,4 @@
-import {Component, Input, Signal, signal, WritableSignal} from '@angular/core';
+import {Component, Input, Signal, signal, WritableSignal, effect} from '@angular/core';
 import {FormControl, FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {
   MatCell, MatCellDef,
@@ -19,6 +19,7 @@ import {TokenService} from '../../../../services/token/token.service';
 import {AsyncPipe} from '@angular/common';
 import {Observable} from 'rxjs';
 import {RealmService} from '../../../../services/realm/realm.service';
+import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
 
 @Component({
   selector: 'app-token-details-user',
@@ -45,7 +46,8 @@ import {RealmService} from '../../../../services/realm/realm.service';
     MatLabel,
     MatRowDef,
     MatHeaderCellDef,
-    MatCellDef
+    MatCellDef,
+    EditButtonsComponent
   ],
   templateUrl: './token-details-user.component.html',
   styleUrl: './token-details-user.component.css'
@@ -67,6 +69,7 @@ export class TokenDetailsUserComponent {
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
+  @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditing!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
   @Input() filteredUserOptions!: Observable<string[]>;
@@ -102,7 +105,7 @@ export class TokenDetailsUserComponent {
     });
   }
 
-  toggleUserEditMode(action: string = ''): void {
+  toggleUserEditMode(element: any, type: string = '', action: string = ''): void {
     this.isEditingUser.set(!this.isEditingUser());
     if (this.selectedUserRealm() === '') {
       this.getDefaultRealm();

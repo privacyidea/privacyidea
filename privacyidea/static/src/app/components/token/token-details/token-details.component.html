@@ -138,6 +138,8 @@
                   } @else if (isEditableElement(element.keyMap.key)) {
                     <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
                                       [isAnyEditing]="isAnyEditing"
+                                      [isEditingUser]="isEditingUser"
+                                      [isEditingInfo]="isEditingInfo"
                                       [element]="element">
                     </app-edit-buttons>
                   }
@@ -153,6 +155,7 @@
     <mat-grid-tile [colspan]="14" [rowspan]="3">
       <app-token-details-user [filteredUserOptions]="filteredUserOptions"
                               [isAnyEditing]="isAnyEditing"
+                              [isEditingInfo]="isEditingInfo"
                               [isEditingUser]="isEditingUser"
                               [realmOptions]="realmOptions"
                               [refreshTokenDetails]="refreshTokenDetails"
@@ -165,7 +168,9 @@
     </mat-grid-tile>
     <mat-grid-tile [colspan]="9" [rowspan]="6">
       <app-token-details-info [detailData]="detailData" [infoData]="infoData"
-                              [isAnyEditing]="isAnyEditing" [isEditingInfo]="isEditingInfo"
+                              [isAnyEditing]="isAnyEditing"
+                              [isEditingInfo]="isEditingInfo"
+                              [isEditingUser]="isEditingUser"
                               [refreshTokenDetails]="refreshTokenDetails"
                               [serial]="serial"
       ></app-token-details-info>

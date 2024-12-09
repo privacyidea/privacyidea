@@ -59,29 +59,12 @@
     <ng-container matColumnDef="edit">
       <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
       <td *matCellDef="let element" class="detail-row edit-column-cell" mat-cell>
-        <div class="edit-button-container info-edit">
-          @if (!isAnyEditing()) {
-            <button mat-icon-button class="edit-button"
-                    (click)="toggleInfoEditMode(element, 'edit')">
-              <mat-icon class="mat-icon-button">edit
-              </mat-icon>
-            </button>
-          } @else if (!isEditingInfo()) {
-            <br/>
-          }
-          @if (isEditingInfo()) {
-            <button mat-icon-button class="edit-button save-button"
-                    (click)="toggleInfoEditMode(element, 'save')">
-              <mat-icon class="mat-icon-button">save_as
-              </mat-icon>
-            </button>
-            <button mat-icon-button class="cancel-button"
-                    (click)="toggleInfoEditMode(element,'cancel')">
-              <mat-icon class="mat-icon-button">cancel
-              </mat-icon>
-            </button>
-          }
-        </div>
+        <app-edit-buttons [element]="element"
+                          [isAnyEditing]="isAnyEditing"
+                          [isEditingInfo]="isEditingInfo"
+                          [isEditingUser]="isEditingUser"
+                          [toggleEditMode]="toggleInfoEditMode.bind(this)">
+        </app-edit-buttons>
       </td>
     </ng-container>
     <tr *matRowDef="let row; columns: ['value', 'edit'];" class="detail-row" mat-row></tr>

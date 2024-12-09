@@ -50,19 +50,12 @@
               </button>
             </div>
           } @else {
-            <div class="edit-button-container">
-              @if (isEditingUser()) {
-                <button mat-icon-button class="edit-button red-icon"
-                        (click)="toggleUserEditMode('cancel')">
-                  <mat-icon class="mat-icon-button">cancel</mat-icon>
-                </button>
-              } @else {
-                <button mat-icon-button class="edit-button green-icon"
-                        (click)="toggleUserEditMode('edit')">
-                  <mat-icon class="mat-icon-button">person_add</mat-icon>
-                </button>
-              }
-            </div>
+            <app-edit-buttons [toggleEditMode]="toggleUserEditMode.bind(this)"
+                              [isAnyEditing]="isAnyEditing"
+                              [isEditingUser]="isEditingUser"
+                              [isEditingInfo]="isEditingInfo"
+                              [element]="element">
+            </app-edit-buttons>
           }
         }
       </td>

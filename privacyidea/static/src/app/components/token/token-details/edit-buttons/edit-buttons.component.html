@@ -6,7 +6,9 @@
         edit
       </mat-icon>
     </button>
-  } @else if (element.isEditing()) {
+  } @else if (element.isEditing()
+  || (isEditingUser() && element.keyMap.key === "username")
+  || (isEditingInfo() && element.keyMap.key === "info")) {
     <button mat-icon-button class="edit-button"
             (click)="toggleEditMode(element, element.keyMap.key, 'save')">
       <mat-icon class="mat-icon-button">save_as</mat-icon>
