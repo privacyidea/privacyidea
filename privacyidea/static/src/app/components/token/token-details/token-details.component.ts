@@ -1,4 +1,4 @@
-import {Component, computed, effect, Input, Output, signal, WritableSignal} from '@angular/core';
+import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
 import {
   MatCell,
   MatColumnDef,
@@ -99,23 +99,22 @@ export class TokenDetailsComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Output() isEditingUser: WritableSignal<boolean> = signal(false);
-  @Output() isEditingInfo: WritableSignal<boolean> = signal(false);
-  @Output() setPinValue: WritableSignal<string> = signal('');
-  @Output() repeatPinValue: WritableSignal<string> = signal('');
-  @Output() filteredUserOptions!: Observable<string[]>;
-  @Output() realmOptions = signal<string[]>([]);
-  @Output() detailData = signal<{
+  isEditingUser: WritableSignal<boolean> = signal(false);
+  isEditingInfo: WritableSignal<boolean> = signal(false);
+  setPinValue: WritableSignal<string> = signal('');
+  repeatPinValue: WritableSignal<string> = signal('');
+  filteredUserOptions!: Observable<string[]>;
+  realmOptions = signal<string[]>([]);
+  detailData = signal<{
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
   }[]>([]);
-  @Output() infoData = signal<{
+  infoData = signal<{
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
   }[]>([]);
-  @Output()
   isAnyEditing = computed(() => {
     const detailData = this.detailData();
     return (

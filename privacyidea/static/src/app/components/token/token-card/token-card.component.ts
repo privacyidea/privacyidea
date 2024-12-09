@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output, WritableSignal} from '@angular/core';
+import {Component, Input, signal, WritableSignal} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatTabChangeEvent, MatTabsModule} from '@angular/material/tabs';
 import {MatIcon} from '@angular/material/icon';
@@ -25,16 +25,16 @@ export class TokenCardComponent {
   @Input() selectedTabIndex: number = 0;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Output() tabChange: EventEmitter<number> = new EventEmitter<number>();
   @Input() serial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  tabChange = signal<number>(0);
 
   onTabChange(event: MatTabChangeEvent): void {
     this.selectedTabIndex = event.index;
     this.tokenIsSelected.set(false);
     this.containerIsSelected.set(false);
-    this.tabChange.emit(this.selectedTabIndex);
+    this.tabChange.set(this.selectedTabIndex);
   }
 }

@@ -1,4 +1,4 @@
-import {Component, effect, Output, signal, ViewChild, WritableSignal} from '@angular/core';
+import {Component, effect, signal, ViewChild, WritableSignal} from '@angular/core';
 import {TokenTableComponent} from '../token-table/token-table.component';
 import {CommonModule} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
@@ -24,24 +24,21 @@ import {ContainerDetailsComponent} from '../container-details/container-details.
   styleUrl: './token-grid.component.css'
 })
 export class TokenGridComponent {
-  selectedTabIndex: number = 0;
+  selectedTabIndex = signal(0);
   tokenIsSelected = signal(false);
   containerIsSelected = signal(false);
   serial = signal('');
   active = signal(true);
   revoked = signal(true);
-  @Output() refreshTokenDetails:  WritableSignal<boolean> = signal(false);
+  refreshTokenDetails: WritableSignal<boolean> = signal(false);
   @ViewChild('tokenDetailsComponent') tokenDetailsComponent!: TokenDetailsComponent;
+
   constructor() {
     effect(() => {
-      if(this.refreshTokenDetails()) {
+      if (this.refreshTokenDetails()) {
         this.onRefreshTokenDetails();
       }
     });
-  }
-
-  onTabChange(index: number): void {
-    this.selectedTabIndex = index;
   }
 
   onRefreshTokenDetails(): void {

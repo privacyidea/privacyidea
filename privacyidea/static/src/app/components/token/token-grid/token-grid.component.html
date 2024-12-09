@@ -3,12 +3,11 @@
     <mat-grid-tile [colspan]="2">
       <div class="tile-content">
         <app-token-card
-          (tabChange)="onTabChange($event)"
           [active]="active"
           [containerIsSelected]="containerIsSelected"
           [refreshTokenDetails]="refreshTokenDetails"
           [revoked]="revoked"
-          [selectedTabIndex]="selectedTabIndex"
+          [selectedTabIndex]="selectedTabIndex()"
           [serial]="serial"
           [tokenIsSelected]="tokenIsSelected">
         </app-token-card>
@@ -17,7 +16,7 @@
     <mat-grid-tile [colspan]="8">
       <div class="tile-content">
         <main>
-          @if (selectedTabIndex === 0) {
+          @if (selectedTabIndex() === 0) {
             @if (tokenIsSelected()) {
               <app-token-details #tokenDetailsComponent [serial]="serial"
                                  [tokenIsSelected]="tokenIsSelected" [active]="active"
@@ -27,7 +26,7 @@
               <app-token-table [serial]="serial"
                                [tokenIsSelected]="tokenIsSelected"></app-token-table>
             }
-          } @else if (selectedTabIndex === 1) {
+          } @else if (selectedTabIndex() === 1) {
             @if (containerIsSelected()) {
               <app-container-details [serial]="serial"></app-container-details>
             } @else {
