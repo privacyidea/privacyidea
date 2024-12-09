@@ -52,63 +52,61 @@ import mock
 import re
 from . import smtpmock, ldap3mock, radiusmock
 
-
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
-DICT_FILE="tests/testdata/dictionary"
+DICT_FILE = "tests/testdata/dictionary"
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
-                 "attributes": {'cn': 'alice',
-                                "sn": "Cooper",
-                                "givenName": "Alice",
-                                'userPassword': 'alicepw',
-                                'oid': "2",
-                                "homeDirectory": "/home/alice",
-                                "email": "alice@test.com",
-                                "memberOf": ["cn=admins,o=test", "cn=users,o=test"],
-                                "accountExpires": 131024988000000000,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rM1',
-                                'mobile': ["1234", "45678"]}},
-                {"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "memberOf": ["cn=users,o=test"],
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMw',
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "memberOf": ["cn=helpdesk,o=test", "cn=users,o=test"],
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMT',
-                                'oid': "1"}},
-                {"dn": 'cn=frank,ou=sales,o=test',
-                 "attributes": {'cn': 'frank',
-                                "givenName": "Frank",
-                                "sn": "Hause",
-                                "email": "fh@o",
-                                "memberOf": ["cn=users,o=test"],
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef7\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMT',
-                                'oid': "5"}}
+                  "attributes": {'cn': 'alice',
+                                 "sn": "Cooper",
+                                 "givenName": "Alice",
+                                 'userPassword': 'alicepw',
+                                 'oid': "2",
+                                 "homeDirectory": "/home/alice",
+                                 "email": "alice@test.com",
+                                 "memberOf": ["cn=admins,o=test", "cn=users,o=test"],
+                                 "accountExpires": 131024988000000000,
+                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                               '\x9b\xf9\xcajl\rM1',
+                                 'mobile': ["1234", "45678"]}},
+                 {"dn": 'cn=bob,ou=example,o=test',
+                  "attributes": {'cn': 'bob',
+                                 "sn": "Marley",
+                                 "givenName": "Robert",
+                                 "email": "bob@example.com",
+                                 "memberOf": ["cn=users,o=test"],
+                                 "mobile": "123456",
+                                 "homeDirectory": "/home/bob",
+                                 'userPassword': 'bobpwééé',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                               '\x9b\xf9\xcajl\rMw',
+                                 'oid': "3"}},
+                 {"dn": 'cn=manager,ou=example,o=test',
+                  "attributes": {'cn': 'manager',
+                                 "givenName": "Corny",
+                                 "sn": "keule",
+                                 "email": "ck@o",
+                                 "memberOf": ["cn=helpdesk,o=test", "cn=users,o=test"],
+                                 "mobile": "123354",
+                                 'userPassword': 'ldaptest',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                               '\x9b\xf9\xcajl\rMT',
+                                 'oid': "1"}},
+                 {"dn": 'cn=frank,ou=sales,o=test',
+                  "attributes": {'cn': 'frank',
+                                 "givenName": "Frank",
+                                 "sn": "Hause",
+                                 "email": "fh@o",
+                                 "memberOf": ["cn=users,o=test"],
+                                 "mobile": "123354",
+                                 'userPassword': 'ldaptest',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": '\xef7\x9b\x03\xc0\xe7\xf3B'
+                                               '\x9b\xf9\xcajl\rMT',
+                                 'oid': "5"}}
                  ]
-
 
 OTPs = ["755224",
         "287082",
@@ -132,6 +130,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
     Testcase for issue
     https://github.com/privacyidea/privacyidea/issues/543
     """
+
     @ldap3mock.activate
     def test_00_create_realm(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -142,11 +141,11 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'DN',
                   "resolver": "catchall",
                   "type": "ldapresolver"}
@@ -484,15 +483,15 @@ class AValidateOfflineTestCase(MyApiTestCase):
 
     def test_01_validate_offline(self):
         # create offline app
-        #tokenobj = get_tokens(self.serials[0])[0]
+        # tokenobj = get_tokens(self.serials[0])[0]
         mr_obj = save_machine_resolver({"name": "testresolver",
-                                "type": "hosts",
-                                "filename": HOSTSFILE,
-                                "type.filename": "string",
-                                "desc.filename": "the filename with the "
-                                                 "hosts",
-                                "pw": "secret",
-                                "type.pw": "password"})
+                                        "type": "hosts",
+                                        "filename": HOSTSFILE,
+                                        "type.filename": "string",
+                                        "desc.filename": "the filename with the "
+                                                         "hosts",
+                                        "pw": "secret",
+                                        "type.pw": "password"})
         self.assertTrue(mr_obj > 0)
         # Attach the offline app to pippin
         r = attach_token(self.serials[0], "offline", hostname="pippin",
@@ -1043,9 +1042,9 @@ class ValidateAPITestCase(MyApiTestCase):
                              "user@localhost.localdomain")
             self.assertEqual(attributes.get("givenname"), "Cornelius")
             self.assertEqual(attributes.get("mobile"), "+491111111")
-            self.assertEqual(attributes.get("phone"),  "+491234566")
-            self.assertEqual(attributes.get("realm"),  "realm1")
-            self.assertEqual(attributes.get("username"),  "cornelius")
+            self.assertEqual(attributes.get("phone"), "+491234566")
+            self.assertEqual(attributes.get("realm"), "realm1")
+            self.assertEqual(attributes.get("username"), "cornelius")
 
         # Return SAML attributes On Fail
         with self.app.test_request_context('/validate/samlcheck',
@@ -2018,7 +2017,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # Creating a notification event. The non-existing user must
         # still be able to pass!
         eid = set_event("notify", event=["validate_check"], action="sendmail",
-                  handlermodule="UserNotification", conditions={"token_locked": True})
+                        handlermodule="UserNotification", conditions={"token_locked": True})
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -2799,8 +2798,9 @@ class ValidateAPITestCase(MyApiTestCase):
             json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get("count"), 1)
-            self.assertTrue("logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
-                            json_response.get("result").get("value").get("auditdata"))
+            self.assertTrue(
+                "logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
+                json_response.get("result").get("value").get("auditdata"))
 
         self.assertTrue(delete_realm("tr"))
         self.assertTrue(delete_resolver("myLDAPres"))
@@ -3435,7 +3435,6 @@ class RegistrationAndPasswordToken(MyApiTestCase):
 
 
 class WebAuthn(MyApiTestCase):
-
     username = "selfservice"
     pin = "webauthnpin"
     serial = "WAN0001D434"
@@ -3756,7 +3755,6 @@ class WebAuthn(MyApiTestCase):
 
 
 class MultiChallege(MyApiTestCase):
-
     serial = "hotp1"
 
     """
@@ -4221,7 +4219,6 @@ class PushChallengeTags(MyApiTestCase):
 
 
 class AChallengeResponse(MyApiTestCase):
-
     serial = "hotp1"
     serial_email = "email1"
     serial_sms = "sms1"
@@ -4293,7 +4290,8 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             self.assertEqual(data.get("result").get("authentication"), "REJECT")
             detail = data.get("detail")
-            self.assertEqual(detail.get("message"), "Challenge matches, but token is not fit for challenge. Token is disabled")
+            self.assertEqual(detail.get("message"),
+                             "Challenge matches, but token is not fit for challenge. Token is disabled")
 
         # The token is still disabled. We are checking, if we can do a challenge response
         # for a disabled token
@@ -5975,7 +5973,6 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         toks = get_tokens(user=User("alice", "ldaprealm"), tokentype="email")
         self.assertEqual(0, len(toks))
 
-
     @ldap3mock.activate
     @responses.activate
     def test_04_enroll_SMS(self):
@@ -6143,9 +6140,63 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         toks = get_tokens(user=User("alice", "ldaprealm"), tokentype="email")
         self.assertEqual(0, len(toks))
 
+    def test_06_max_token_policy(self):
+        """
+        There are 5 policies that can limit the number of tokens a user can have, which will deny
+        enroll_via_multichallenge. 4 policies are checked via check_max_token_user:
+        - max_token_per_user
+        - max_active_token_per_user
+        - {type}_max_token_per_user
+        - {type_max_active_token_per_user
+        And 1 via check_max_token_realm:
+        - max_token_per_realm
+        Test that each of these functions correctly deny the enrollment of a token.
+        """
+        self.setUp_user_realms()
+        user = User("hans", "realm1")
+        spass = "12"
+        token1 = init_token({"type": "spass", "pin": spass}, user)
+        self.assertTrue(token1.get_serial())
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+
+        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=1")
+        self._authenticate_no_token_enrolled(user, spass)
+        delete_policy("max_token_per_user")
+
+        set_policy("max_active_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXACTIVETOKENUSER}=1")
+        self._authenticate_no_token_enrolled(user, spass)
+        delete_policy("max_active_token_per_user")
+
+        set_policy("hotp_max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=0")
+        self._authenticate_no_token_enrolled(user, spass)
+        delete_policy("hotp_max_token_per_user")
+
+        set_policy("max_token_per_realm", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENREALM}=1")
+        self._authenticate_no_token_enrolled(user, spass)
+        delete_policy("max_token_per_realm")
+
+        delete_policy("enroll_via_multichallenge")
+        remove_token(token1.get_serial())
+
+    def _authenticate_no_token_enrolled(self, user: User, otp):
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "realm": user.realm, "pass": otp}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertIn("result", data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "ACCEPT")
+            self.assertIn("detail", data)
+            detail = data.get("detail")
+            self.assertNotIn("transaction_id", detail)
+            self.assertNotIn("multi_challenge", detail)
+
 
 class ValidateShortPasswordTestCase(MyApiTestCase):
-
     yubi_otpkey = "9163508031b20d2fbb1868954e041729"
 
     public_uid = "ecebeeejedecebeg"
@@ -6212,7 +6263,6 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
 
 
 class WebAuthnOfflineTestCase(MyApiTestCase):
-
     """
     This Testcase simulates the enrollment and full authentication with a WebAuthn token.
     """

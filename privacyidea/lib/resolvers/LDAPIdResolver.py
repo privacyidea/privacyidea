@@ -207,7 +207,7 @@ def ignore_sizelimit_exception(conn, generator):
             last_entry = next(generator)
             yield last_entry
         except StopIteration:
-            # If the generator is exceed, we stop
+            # If the generator is exceeded, we stop
             break
         except LDAPOperationResult as e:
             # If the size limit has been reached, we stop. All other exceptions are re-raised.
@@ -344,12 +344,10 @@ class IdResolver (UserIdResolver):
             if not have_gssapi:
                 log.warning('gssapi module not available. Kerberos authentication not possible')
                 return False
-            # we need to check credentials with kerberos differently since we
+            # We need to check credentials with kerberos differently since we
             # can not use bind for every user
             upn = self.getUserInfo(uid).get('upn')
-            if upn is not None \
-                and upn != "None" \
-                and upn != "":
+            if upn is not None and upn != "None" and upn != "":
                 name = gssapi.Name(upn.upper())
             else:
                 name = gssapi.Name(self.getUserInfo(uid).get('username'))
