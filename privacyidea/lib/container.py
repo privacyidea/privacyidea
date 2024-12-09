@@ -1326,28 +1326,12 @@ def compare_template_with_container(template: TokenContainerTemplate, container:
                 "tokens": {
                             "missing": ["hotp"],
                             "additional": ["totp"]
-                            },
-                "options": {
-                            "missing": ["hash_algorithm"],
-                            "different": ["encryption_algorithm"],
-                            "additional": ["key_algorithm"]
                             }
             }
     """
     result = {"tokens": {"missing": [], "additional": []},
               "options": {"missing": [], "different": [], "additional": []}}
     template_options = json.loads(template.template_options)
-
-    # compare template options with container info
-    container_info = container.get_container_info_dict()
-    for template_key, template_value in template_options.get("options", {}).items():
-        if template_key not in container_info.keys():
-            result["options"]["missing"].append(template_key)
-        elif container_info[template_key] != template_value:
-            result["options"]["different"].append(template_key)
-    for container_key, value in container_info.items():
-        if container_key not in template_options.get("options", {}).keys():
-            result["options"]["additional"].append(container_key)
 
     # compare tokens
     template_tokens = template_options.get("tokens", [])

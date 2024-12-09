@@ -2155,10 +2155,6 @@ class TokenContainerTemplateTestCase(MyTestCase):
         token_result = result["tokens"]
         self.assertEqual(["totp"], token_result["missing"])
         self.assertEqual(['spass', 'spass'], token_result["additional"])
-        options_result = result["options"]
-        self.assertEqual(1, len(options_result["missing"]))
-        self.assertEqual(1, len(options_result["different"]))
-        self.assertEqual(1, len(options_result["additional"]))
 
     def test_23_get_template_options_as_dict(self):
         # create template

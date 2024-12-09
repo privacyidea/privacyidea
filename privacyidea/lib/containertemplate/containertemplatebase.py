@@ -22,16 +22,8 @@ from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 
 
-class TemplateOptionsBase:
-    OPTIONS = "options"
-    TOKENS = "tokens"
-
-
 class ContainerTemplateBase:
-    template_option_values = {
-        TemplateOptionsBase.OPTIONS: {},
-        TemplateOptionsBase.TOKENS: []
-    }
+    template_option_values = {}
 
     def __init__(self, db_template):
         self._db_template = db_template

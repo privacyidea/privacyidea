@@ -61,8 +61,9 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
-@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_LIST)
+@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
+@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
 @log_with(log)
 def list_containers():
     """
@@ -1115,11 +1116,6 @@ def compare_template_with_containers(template_name):
                             "tokens": {
                                         "missing": ["hotp"],
                                         "additional": ["totp"]
-                                        },
-                            "options": {
-                                        "missing": ["hash_algorithm"],
-                                        "different": ["encryption_algorithm"],
-                                        "additional": ["key_algorithm"]
                                         }
                             }
             }

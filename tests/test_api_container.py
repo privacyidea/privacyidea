@@ -4653,8 +4653,6 @@ class APIContainerTemplate(APIContainerTest):
         token_diff = container_diff["tokens"]
         self.assertListEqual(["push"], token_diff["missing"])
         self.assertListEqual(["totp", "totp"], token_diff["additional"])
-        container_options_diff = container_diff["options"]
-        self.assertListEqual(["key_algorithm"], container_options_diff["missing"])
 
         # Clean up
         container.delete()
