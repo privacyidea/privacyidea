@@ -242,10 +242,9 @@ export class TokenDetailsComponent {
   }
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
-    element.isEditing.set(!element.isEditing());
-
     if (action === 'cancel') {
       this.handleCancelAction(type);
+      element.isEditing.set(!element.isEditing());
       return;
     }
 
@@ -263,6 +262,8 @@ export class TokenDetailsComponent {
         this.handleDefault(element, action);
         break;
     }
+
+    element.isEditing.set(!element.isEditing());
   }
 
   private handleContainerSerial(element: any, action: string): void {
