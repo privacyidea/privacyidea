@@ -5,7 +5,8 @@
 }
 
 .edit-button-container {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
 }
 
 .edit-column-cell {
