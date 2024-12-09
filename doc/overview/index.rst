@@ -76,7 +76,7 @@ to consider the following aspects:
 
 * Authentication data is important. Plan your **backup** and **recovery**
   of your privacyIDEA system. You can use the database level but
-  also need to take a closer look at the :ref`:`pimanage`.
+  also need to take a closer look at the :ref:`pimanage`.
 
 * Think about update- and **upgrade**-processes. Both for privacyIDEA
   and for the OS.
