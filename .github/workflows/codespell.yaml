@@ -19,5 +19,5 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          codespell -q 3 -S $(paste -s -d, .codespell_skip) -I .codespell_ignore . \
+          codespell -q 3 -S $(paste -s -d, .codespell_skip) $(test -e .codespell_ignore && echo "-I .codespell_ignore") . \
           | reviewdog -efm="%f:%l: %m" -name="rd-codespell" -reporter=github-pr-review -level=info
