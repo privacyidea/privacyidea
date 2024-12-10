@@ -10,7 +10,7 @@ policy?
 You can use the *pi-manage* command line tool to list, enable and disable
 policies. See
 
-   pi-manage policy -h
+   pi-manage config policy -h
 
 
 How do policies work anyway?
