@@ -11,7 +11,7 @@ import {VersionService} from '../../../services/version/version.service';
     MatButtonModule
   ],
   templateUrl: './footer.component.html',
-  styleUrl: './footer.component.css'
+  styleUrl: './footer.component.scss'
 })
 export class FooterComponent implements OnInit {
   version!: string;

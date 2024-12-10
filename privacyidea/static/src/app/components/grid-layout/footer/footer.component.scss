@@ -1,0 +1,65 @@
+// Variables
+$footer-bg: #3f3f3f;
+$footer-text-color: white;
+$link-color: #c8c8c8;
+$btn-bg: var(--background-green-brand);
+$box-shadow: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+// Mixin for Flexbox
+@mixin flex-center($justify: space-between, $align: center) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+.footer-container {
+  @include flex-center(space-between, center);
+  background: $footer-bg;
+  color: $footer-text-color;
+  padding: 10px;
+  box-shadow: $box-shadow;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+
+  .footer-right {
+    @include flex-center;
+    margin-left: auto;
+    margin-right: 80px;
+    gap: 20px;
+  }
+
+  .support-btn {
+    height: 40px;
+    margin: 0 20px;
+    border: none;
+    border-radius: $border-radius;
+    background: $btn-bg;
+    cursor: pointer;
+    color: $footer-text-color;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  a {
+    text-decoration: none;
+    color: $link-color;
+
+    &:hover {
+      color: lighten($link-color, 10%);
+    }
+  }
+
+  span {
+    margin-left: 20px;
+    color: $link-color;
+  }
+}

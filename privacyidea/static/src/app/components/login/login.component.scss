@@ -1,0 +1,58 @@
+// Variables
+$login-bg: white;
+$btn-bg: var(--background-blue);
+$btn-hover-bg: var(--background-blue-inset);
+$btn-text-color: white;
+$box-shadow: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: $login-bg;
+
+  .logo {
+    width: 10%;
+    height: auto;
+    border-radius: 50%;
+    box-shadow: $box-shadow;
+    margin-bottom: 20px;
+  }
+
+  .logo-text {
+    width: 20%;
+    height: auto;
+    margin-bottom: 20px;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 100px;
+    width: 300px;
+
+    mat-form-field {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+  }
+
+  .login-btn {
+    text-decoration: none;
+    color: $btn-text-color;
+    padding: 10px;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    background: $btn-bg;
+
+    &:hover {
+      box-shadow: none;
+      background: $btn-hover-bg;
+      color: $btn-text-color;
+      transform: translateY(2px);
+    }
+  }
+}

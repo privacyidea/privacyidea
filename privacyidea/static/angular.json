@@ -26,7 +26,7 @@
             ],
             "styles": [
               "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles/styles.css"
+              "src/styles/styles.scss"
             ],
             "scripts": []
           },

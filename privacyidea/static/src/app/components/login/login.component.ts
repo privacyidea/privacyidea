@@ -15,7 +15,7 @@ import {LocalService} from '../../services/local/local.service';
   templateUrl: './login.component.html',
   standalone: true,
   imports: [FormsModule, MatFormField, MatInput, MatButton, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton, FooterComponent],
-  styleUrl: './login.component.css'
+  styleUrl: './login.component.scss'
 })
 export class LoginComponent {
   username = signal<string>('');

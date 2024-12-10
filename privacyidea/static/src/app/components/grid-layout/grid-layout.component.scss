@@ -1,0 +1,18 @@
+// Variables
+$grid-template-rows: auto 1fr auto;
+
+.layout-grid {
+  display: grid;
+  grid-template-rows: $grid-template-rows;
+
+  header {
+  }
+
+  main {
+  }
+
+  footer {
+    text-align: center;
+    flex-shrink: 0;
+  }
+}

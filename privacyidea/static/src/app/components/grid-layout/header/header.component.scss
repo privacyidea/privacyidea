@@ -1,0 +1,107 @@
+// Variables
+$header-bg: white;
+$header-shadow: var(--box-shadow);
+$menu-link-color: #767676;
+$hover-bg: var(--background-blue);
+$active-bg: var(--blue-base);
+$profile-bg: var(--background-yellow);
+$profile-hover-bg: var(--background-yellow-inset);
+$shadow-white: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+// Mixin for Flexbox
+@mixin flex-center($justify: flex-start, $align: center) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+.header-container {
+  @include flex-center;
+  background: $header-bg;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  box-shadow: $header-shadow;
+  margin-bottom: 16px;
+
+  .brand {
+    @include flex-center;
+    margin-right: 40px;
+
+    img {
+      margin-left: 40px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      box-shadow: $shadow-white;
+    }
+  }
+
+  .nav-menu {
+    @include flex-center;
+
+    a {
+      text-decoration: none;
+      border-radius: 0;
+      color: $menu-link-color;
+      height: 60px;
+      min-width: 120px;
+      padding: 20px;
+      background: $header-bg;
+      box-shadow: none;
+      transition: 0ms;
+
+      &:hover {
+        box-shadow: var(--box-shadow-header);
+        z-index: 1;
+        background: $hover-bg;
+        color: white;
+        transform: translateX(-2px);
+        transition: transform 200ms, box-shadow 200ms ease;
+      }
+
+      &.active {
+        box-shadow: var(--box-shadow-header);
+        z-index: 1;
+        background: $active-bg;
+        color: white;
+        transform: translateX(-2px);
+        transition: transform 200ms, box-shadow 200ms ease;
+      }
+    }
+  }
+
+  .refresh-btn {
+    margin-left: auto;
+    width: 100px;
+    height: 60px;
+    cursor: pointer;
+    border-radius: 0;
+    background: $header-bg;
+    box-shadow: none;
+  }
+
+  .profile-btn {
+    margin-left: 20px;
+    margin-right: 40px;
+    height: 40px;
+    width: 166px;
+    border: none;
+    border-radius: $border-radius;
+    background: $profile-bg;
+    box-shadow: $shadow-white;
+    cursor: pointer;
+    color: white;
+
+    &:hover {
+      box-shadow: none;
+      background: $profile-hover-bg;
+      color: white;
+      transform: translateX(2px);
+    }
+  }
+
+  h4 {
+    margin-left: 4px;
+  }
+}
