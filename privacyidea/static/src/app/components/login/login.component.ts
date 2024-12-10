@@ -7,7 +7,7 @@ import {MatInput} from '@angular/material/input';
 import {MatIconModule} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
-import {FooterComponent} from '../grid-layout/footer/footer.component';
+import {FooterComponent} from '../layout/footer/footer.component';
 import {LocalService} from '../../services/local/local.service';
 
 @Component({

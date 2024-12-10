@@ -22,7 +22,6 @@ $border-radius: var(--border-radius);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   box-shadow: $header-shadow;
-  margin-bottom: 16px;
 
   .brand {
     @include flex-center;

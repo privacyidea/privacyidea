@@ -57,8 +57,11 @@
         </th>
         <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
           <ng-container>
-            <div class="scrollable-container" [ngClass]="[column.key === 'description' ?
-            'description' : '', column.key === 'realms' ? '' : 'not-realm-list']">
+            <div class="scrollable-container" [ngClass]="[
+            column.key === 'description' ? 'description' : '',
+            column.key === 'failcount' ? 'failcount' : '',
+            column.key !== 'description' && column.key !== 'failcount' ? 'max-content' : '',
+            column.key === 'realms' ? '' : 'not-realm-list']">
               @if (column.key === 'username' || column.key === 'container_serial'
               || column.key === 'user_realm') {
                 <a attr.aria-label="{{ column.label }} Link" href="#">

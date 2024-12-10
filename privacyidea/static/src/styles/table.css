@@ -17,7 +17,8 @@ th:nth-child(even) {
 }
 
 .item-table {
-  padding: 20px;
+  padding: 16px;
+  width: 1400px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
@@ -179,5 +180,5 @@ th:nth-child(even) {
 
 ::ng-deep .cdk-overlay-pane {
   position: absolute !important;
-  z-index: 9999;
+  z-index: 1;
 }

@@ -1,7 +1,5 @@
 mat-card {
-  padding-top: 10px;
   background: white;
-  width: 100%;
   box-sizing: content-box;
   border: white;
   border-radius: var(--border-radius);

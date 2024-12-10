@@ -8,6 +8,10 @@ td {
   max-width: 286px;
 }
 
+th.mat-sort-header {
+  padding-right: 0;
+}
+
 .table-filter {
   width: 59%;
 }
@@ -34,6 +38,10 @@ td {
   align-items: center;
 }
 
+.max-content {
+  width: max-content;
+}
+
 .realm-list {
   margin-top: 7px;
 }
@@ -44,4 +52,8 @@ td {
 
 .description {
   align-items: flex-start;
+}
+
+.failcount {
+  justify-content: center;
 }

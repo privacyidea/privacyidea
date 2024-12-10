@@ -4,10 +4,10 @@ import {HeaderComponent} from './header/header.component';
 import {FooterComponent} from './footer/footer.component';
 
 @Component({
-  selector: 'grid-layout',
-  templateUrl: 'grid-layout.component.html',
+  selector: 'layout',
+  templateUrl: 'layout.component.html',
   standalone: true,
   imports: [RouterOutlet, HeaderComponent, FooterComponent],
 })
-export class GridLayoutComponent {
+export class LayoutComponent {
 }

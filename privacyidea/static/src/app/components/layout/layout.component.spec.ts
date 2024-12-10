@@ -1,18 +1,18 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import {GridLayoutComponent} from './grid-layout.component';
+import {LayoutComponent} from './layout.component';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {ActivatedRoute} from '@angular/router';
 import {of} from 'rxjs';
 
 describe('GridLayoutComponent', () => {
-  let component: GridLayoutComponent;
-  let fixture: ComponentFixture<GridLayoutComponent>;
+  let component: LayoutComponent;
+  let fixture: ComponentFixture<LayoutComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GridLayoutComponent],
+      imports: [LayoutComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(), [
         {
           provide: ActivatedRoute,
@@ -23,7 +23,7 @@ describe('GridLayoutComponent', () => {
         }
       ]],
     }).compileComponents();
-    fixture = TestBed.createComponent(GridLayoutComponent);
+    fixture = TestBed.createComponent(LayoutComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

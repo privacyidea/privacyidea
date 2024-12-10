@@ -20,10 +20,10 @@ import {ContainerDetailsComponent} from '../container-details/container-details.
     TokenDetailsComponent,
     ContainerDetailsComponent,
   ],
-  templateUrl: './token-grid.component.html',
-  styleUrl: './token-grid.component.css'
+  templateUrl: './token-layout.component.html',
+  styleUrl: './token-layout.component.scss'
 })
-export class TokenGridComponent {
+export class TokenLayoutComponent {
   selectedTabIndex = signal(0);
   tokenIsSelected = signal(false);
   containerIsSelected = signal(false);

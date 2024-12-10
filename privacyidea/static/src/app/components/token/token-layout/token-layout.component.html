@@ -1,0 +1,44 @@
+<div aria-label="Token Layout" class="token-layout">
+  <app-token-card
+    [active]="active"
+    [containerIsSelected]="containerIsSelected"
+    [refreshTokenDetails]="refreshTokenDetails"
+    [revoked]="revoked"
+    [selectedTabIndex]="selectedTabIndex"
+    [serial]="serial"
+    [tokenIsSelected]="tokenIsSelected">
+  </app-token-card>
+  <main>
+    @let tabIndex = selectedTabIndex();
+    @if (tabIndex === 0) {
+      @let tokenSelected = tokenIsSelected();
+      @if (tokenSelected) {
+        <app-token-details
+          #tokenDetailsComponent
+          [serial]="serial"
+          [tokenIsSelected]="tokenIsSelected"
+          [active]="active"
+          [revoked]="revoked"
+          [refreshTokenDetails]="refreshTokenDetails">
+        </app-token-details>
+      } @else {
+        <app-token-table
+          [serial]="serial"
+          [tokenIsSelected]="tokenIsSelected">
+        </app-token-table>
+      }
+    } @else if (tabIndex === 1) {
+      @let containerSelected = containerIsSelected();
+      @if (containerSelected) {
+        <app-container-details
+          [serial]="serial">
+        </app-container-details>
+      } @else {
+        <app-container-table
+          [serial]="serial"
+          [containerIsSelected]="containerIsSelected">
+        </app-container-table>
+      }
+    }
+  </main>
+</div>

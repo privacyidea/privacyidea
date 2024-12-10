@@ -1,8 +1,12 @@
 @import '../../../../styles/table.css';
 
-.detail-table {
+mat-grid-list {
+  width: 1406px;
+  background: white;
+}
+
+.details {
   display: flex;
-  width: auto;
   max-width: fit-content;
   justify-content: center;
 }
@@ -119,7 +123,7 @@
 }
 
 mat-grid-tile {
-  /* border: 1px solid red; *//* DEBUG */
+  /* border: 1px solid #f29910; *//* DEBUG */
   display: flex;
 }
 

@@ -11,6 +11,7 @@ import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {max} from 'rxjs';
 
 const columns = [
   {key: 'serial', label: 'Serial'},
@@ -158,4 +159,6 @@ export class TokenTableComponent {
       this.resetFailCount(element);
     }
   }
+
+  protected readonly max = max;
 }
