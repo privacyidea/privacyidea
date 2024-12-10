@@ -14,14 +14,13 @@ import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
 import {NgClass} from '@angular/common';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
-import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 import {forkJoin, Observable, single, switchMap} from 'rxjs';
 import {RealmService} from '../../../services/realm/realm.service';
-import {UserService} from '../../../services/user/user.service';
-import {catchError, map} from 'rxjs/operators';
+import {catchError} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
 import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
@@ -102,7 +101,6 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal('');
   repeatPinValue = signal('');
-  filteredUserOptions = signal<string[]>([]);
   filteredContainerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   detailData = signal<{
@@ -130,53 +128,25 @@ export class TokenDetailsComponent {
   }[]>([]);
   containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
-  userOptions = signal<string[]>([]);
-  selectedUserRealm = signal<string>('');
-  selectedUsername = new FormControl<string>('');
-  selectedContainer = new FormControl<string>('');
-  selectedRealms = new FormControl<string[]>([]);
+  selectedContainer = signal<string>('');
+  selectedRealms = signal<string[]>([]);
+  selectedTokengroup = signal<string[]>([]);
   userRealm: string = '';
   maxfail: number = 0;
-  selectedTokengroup = new FormControl<string[]>([]);
 
   constructor(private tokenService: TokenService,
               private containerService: ContainerService,
               private realmService: RealmService,
-              private userService: UserService,
               protected tableUtilsService: TableUtilsService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();
     });
+
     effect(() => {
-      if (this.selectedUserRealm()) {
-        this.userService.getUsers(this.selectedUserRealm()).subscribe({
-          next: (users: any) => {
-            this.userOptions.set(users.result.value.map((user: any) => user.username));
-          },
-          error: error => {
-            console.error('Failed to get users', error);
-          }
-        });
-      }
-    });
-
-    this.selectedUsername.valueChanges.pipe(
-      map(value => this._filterUserOptions(value || ''))
-    ).subscribe(filteredOptions => {
-      this.filteredUserOptions.set(filteredOptions);
-    });
-
-    this.selectedContainer.valueChanges.pipe(
-      map(value => this._filterContainerOptions(value || ''))
-    ).subscribe(filteredOptions => {
+      const value = this.selectedContainer();
+      const filteredOptions = this._filterContainerOptions(value || '');
       this.filteredContainerOptions.set(filteredOptions);
     });
-
-  }
-
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
   private _filterContainerOptions(value: string): string[] {
@@ -198,7 +168,7 @@ export class TokenDetailsComponent {
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer.setValue(tokenDetails.container_serial);
+        this.selectedContainer.set(tokenDetails.container_serial);
         this.detailData.set(details.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
@@ -218,7 +188,7 @@ export class TokenDetailsComponent {
         })).filter(detail => detail.value !== undefined));
 
         this.realmOptions.set(Object.keys(realms.result.value));
-        this.selectedRealms.setValue(tokenDetails.realms);
+        this.selectedRealms.set(tokenDetails.realms);
         this.userRealm = this.userData().find(
           detail => detail.keyMap.key === 'user_realm')?.value;
         return new Observable<void>(observer => {
@@ -275,7 +245,7 @@ export class TokenDetailsComponent {
           this.containerOptions.set(Object.values(containers.result.value.containers as {
             serial: string
           }[]).map(container => container.serial));
-          this.selectedContainer.setValue(this.selectedContainer.value);
+          this.selectedContainer.set(this.selectedContainer());
         },
         error: error => {
           console.error('Failed to get containers', error);
@@ -283,7 +253,7 @@ export class TokenDetailsComponent {
       });
     }
     if (action === 'save') {
-      this.selectedContainer.setValue(this.selectedContainer.value?.trim() ?? null);
+      this.selectedContainer.set(this.selectedContainer().trim() ?? null);
       this.saveContainer();
     }
   }
@@ -293,7 +263,7 @@ export class TokenDetailsComponent {
       this.tokenService.getTokengroups().subscribe({
         next: (tokengroups: any) => {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
-          this.selectedTokengroup.setValue(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+          this.selectedTokengroup.set(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
         },
         error: error => {
           console.error('Failed to get tokengroups', error);
@@ -301,7 +271,7 @@ export class TokenDetailsComponent {
       });
     }
     if (action === 'save') {
-      this.saveTokengroup(this.selectedTokengroup.value);
+      this.saveTokengroup(this.selectedTokengroup());
     }
   }
 
@@ -320,13 +290,13 @@ export class TokenDetailsComponent {
   private handleCancelAction(type: string): void {
     switch (type) {
       case 'container_serial':
-        this.selectedContainer.reset();
+        this.selectedContainer.set('');
         break;
       case 'tokengroup':
-        this.selectedTokengroup.reset();
+        this.selectedTokengroup.set([]);
         break;
       case 'realms':
-        this.selectedRealms.setValue(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);
+        this.selectedRealms.set(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);
         break;
       default:
         this.showTokenDetail(this.serial()).subscribe();
@@ -348,7 +318,7 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    this.containerService.assignContainer(this.serial(), this.selectedContainer.value).pipe(
+    this.containerService.assignContainer(this.serial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       error: error => {
@@ -358,7 +328,7 @@ export class TokenDetailsComponent {
   }
 
   deleteContainer() {
-    this.containerService.unassignContainer(this.serial(), this.selectedContainer.value).pipe(
+    this.containerService.unassignContainer(this.serial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       error: error => {
@@ -368,7 +338,7 @@ export class TokenDetailsComponent {
   }
 
   private saveRealms() {
-    this.tokenService.setTokenRealm(this.serial(), this.selectedRealms.value).pipe(
+    this.tokenService.setTokenRealm(this.serial(), this.selectedRealms()).pipe(
       switchMap(() => this.showTokenDetail(this.serial()))
     ).subscribe({
       next: () => {

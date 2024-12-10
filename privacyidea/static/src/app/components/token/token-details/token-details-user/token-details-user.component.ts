@@ -1,5 +1,5 @@
 import {Component, Input, Signal, signal, WritableSignal, effect} from '@angular/core';
-import {FormControl, FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {
   MatCell, MatCellDef,
   MatColumnDef,
@@ -16,10 +16,9 @@ import {MatFabButton, MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatDivider} from '@angular/material/divider';
 import {TokenService} from '../../../../services/token/token.service';
-import {AsyncPipe} from '@angular/common';
-import {Observable} from 'rxjs';
 import {RealmService} from '../../../../services/realm/realm.service';
 import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
+import {UserService} from '../../../../services/user/user.service';
 
 @Component({
   selector: 'app-token-details-user',
@@ -53,7 +52,26 @@ import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
 })
 export class TokenDetailsUserComponent {
 
-  constructor(private tokenService: TokenService, private realmService: RealmService) {
+  constructor(private tokenService: TokenService, private realmService: RealmService, private userService: UserService) {
+    effect(() => {
+      if (this.selectedUserRealm()) {
+        this.userService.getUsers(this.selectedUserRealm()).subscribe({
+          next: (users: any) => {
+            console.log('Got users', users);
+            this.userOptions.set(users.result.value.map((user: any) => user.username));
+          },
+          error: error => {
+            console.error('Failed to get users', error);
+          }
+        });
+      }
+    });
+
+    effect(() => {
+      const value = this.selectedUsername();
+      const filteredOptions = this._filterUserOptions(value || '');
+      this.filteredUserOptions.set(filteredOptions);
+    });
   }
 
   @Input() userData = signal<{
@@ -61,8 +79,7 @@ export class TokenDetailsUserComponent {
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
   }[]>([]);
-  @Input() selectedUsername = new FormControl<string>('');
-  @Input() selectedUserRealm!: WritableSignal<string>;
+  @Input() selectedUsername = signal<string>('');
   @Input() serial!: WritableSignal<string>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() setPinValue!: WritableSignal<string>;
@@ -71,7 +88,14 @@ export class TokenDetailsUserComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditing!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
-  @Input() filteredUserOptions!: WritableSignal<string[]>;
+  userOptions = signal<string[]>([]);
+  selectedUserRealm = signal<string>('');
+  filteredUserOptions = signal<string[]>([]);
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
+  }
 
   unassignUser() {
     this.tokenService.unassignUser(this.serial()).subscribe({
@@ -112,7 +136,7 @@ export class TokenDetailsUserComponent {
     if (action === 'save') {
       this.saveUser();
     } else if (action === 'cancel') {
-      this.selectedUsername.reset();
+      this.selectedUsername.set('');
     }
   }
 
@@ -121,11 +145,11 @@ export class TokenDetailsUserComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.assignUser(this.serial(), this.selectedUsername.value, this.selectedUserRealm(), this.setPinValue()).subscribe({
+    this.tokenService.assignUser(this.serial(), this.selectedUsername(), this.selectedUserRealm(), this.setPinValue()).subscribe({
       next: () => {
         this.setPinValue.set('');
         this.repeatPinValue.set('');
-        this.selectedUsername.reset();
+        this.selectedUsername.set('');
         this.selectedUserRealm.set('');
         this.refreshTokenDetails.set(true)
       },

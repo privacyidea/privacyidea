@@ -66,7 +66,7 @@ export class TokenDetailsInfoComponent {
   constructor(private tokenService: TokenService) {
   }
 
-  protected toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
+  toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
     this.isEditingInfo.set(!this.isEditingInfo());
     if (action === 'cancel') {
       this.newInfo.set({key: '', value: ''});

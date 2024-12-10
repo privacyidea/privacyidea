@@ -5,8 +5,9 @@ import {TokenService} from '../../../../services/token/token.service';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {of, throwError} from 'rxjs';
-import {signal} from '@angular/core';
+import {computed, signal} from '@angular/core';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {By} from '@angular/platform-browser';
 
 class MockTokenService {
   setTokenInfos() {
@@ -38,7 +39,10 @@ describe('TokenDetailsInfoComponent', () => {
     component = fixture.componentInstance;
     component.serial = signal('Mock serial');
     component.isEditingInfo = signal(false);
-    component.isAnyEditing = signal(false);
+    component.isEditingUser = signal(false);
+    component.isAnyEditing = computed(() => {
+      return (component.isEditingInfo());
+    });
     component.refreshTokenDetails = signal(false);
     component.newInfo = signal({key: '', value: ''});
     component.infoData = signal([{
@@ -66,16 +70,25 @@ describe('TokenDetailsInfoComponent', () => {
 
   it('should handle edit and save for information details', () => {
     spyOn(tokenService, 'setTokenInfos').and.callThrough();
+    spyOn(component, 'saveInfo').and.callThrough();
 
     component.isEditingInfo.set(true);
     fixture.detectChanges();
+    expect(component.isAnyEditing()).toBeTruthy();
 
     component.newInfo.set({key: 'newKey', value: 'newValue'});
     fixture.detectChanges();
 
-    const saveButton = fixture.nativeElement.querySelector('.save-button');
+    const editButtonsComponent = fixture.debugElement.query(By.css('app-edit-buttons'));
+    expect(editButtonsComponent).toBeTruthy();
+
+    const saveButton = editButtonsComponent.nativeElement.querySelector('.edit-button-container .edit-button:nth-child(1)');
+    expect(saveButton).toBeTruthy();
+
     saveButton.click();
     fixture.detectChanges();
+
+    expect(component.saveInfo).toHaveBeenCalled();
 
     const newInfo = component.infoData().find(info => info.keyMap.key === 'info')?.value;
     expect(newInfo).toEqual(jasmine.objectContaining({newKey: 'newValue'}));

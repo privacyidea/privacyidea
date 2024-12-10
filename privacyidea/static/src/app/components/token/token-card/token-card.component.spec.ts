@@ -21,6 +21,7 @@ describe('TokenCardComponent', () => {
     component = fixture.componentInstance;
     component.tokenIsSelected = signal(false);
     component.containerIsSelected = signal(false);
+    component.selectedTabIndex = signal(0);
     fixture.detectChanges();
   });
 

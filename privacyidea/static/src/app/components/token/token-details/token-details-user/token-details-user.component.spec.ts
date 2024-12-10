@@ -15,7 +15,7 @@ describe('TokenDetailsUserComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenDetailsUserComponent, AppComponent],
-       providers: [TokenService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [TokenService, provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     tokenService = TestBed.inject(TokenService);
@@ -27,6 +27,7 @@ describe('TokenDetailsUserComponent', () => {
     component.setPinValue = signal('');
     component.repeatPinValue = signal('');
     component.selectedUserRealm = signal('');
+    component.userOptions = signal(['user1', 'user2', 'admin']);
     fixture.detectChanges();
   });
 
@@ -35,7 +36,7 @@ describe('TokenDetailsUserComponent', () => {
   });
 
   it('should assign user', () => {
-    component.selectedUsername.setValue('testUser');
+    component.selectedUsername.set('testUser');
     component.selectedUserRealm.set('testRealm');
     component.setPinValue.set('1234');
     component.repeatPinValue.set('1234');
@@ -52,5 +53,10 @@ describe('TokenDetailsUserComponent', () => {
     spyOn(tokenService, 'assignUser').and.callThrough();
     component.saveUser();
     expect(tokenService.assignUser).not.toHaveBeenCalled();
+  });
+
+  it('should filter user options correctly', () => {
+    const result = component['_filterUserOptions']('user');
+    expect(result).toEqual(['user1', 'user2']);
   });
 });

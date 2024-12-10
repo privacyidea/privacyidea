@@ -7,7 +7,6 @@ import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
 import {ValidateService} from '../../../services/validate/validate.service';
 import {of, throwError} from 'rxjs';
-import {FormControl} from '@angular/forms';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 
 class MockTokenService {
@@ -110,7 +109,6 @@ describe('TokenDetailsComponent', () => {
     component.tokenIsSelected = signal(false);
     component.active = signal(false);
     component.revoked = signal(false);
-    component.userOptions = signal(['user1', 'user2', 'admin']);
     component.containerOptions = signal(['container1', 'container2', 'admin-container']);
     component.tokengroupOptions = signal(['group1', 'group2']);
     component.infoData = signal([{
@@ -178,10 +176,6 @@ describe('TokenDetailsComponent', () => {
     expect(containerCell.textContent).toContain('Container');
   });
 
-  it('should filter user options correctly', () => {
-    const result = component['_filterUserOptions']('user');
-    expect(result).toEqual(['user1', 'user2']);
-  });
 
   it('should save token detail', () => {
     spyOn(tokenService, 'setTokenDetail').and.callThrough();
@@ -204,14 +198,14 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should assign container', () => {
-    component.selectedContainer = new FormControl('container1');
+    component.selectedContainer = signal('container1');
     spyOn(containerService, 'assignContainer').and.callThrough();
     component.saveContainer();
     expect(containerService.assignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
   });
 
   it('should unassign container', () => {
-    component.selectedContainer = new FormControl('container1');
+    component.selectedContainer = signal('container1');
     spyOn(containerService, 'unassignContainer').and.callThrough();
     component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith('Mock serial', 'container1');

@@ -15,7 +15,7 @@
           <mat-form-field>
             <mat-label>Select User</mat-label>
             <input matInput
-                   [formControl]="selectedUsername"
+                   [(ngModel)]="selectedUsername"
                    [matAutocomplete]="userAuto">
             <mat-autocomplete autoActiveFirstOption
                               #userAuto="matAutocomplete">

@@ -24,7 +24,7 @@
                     <mat-form-field class="detail-table-input pad-right">
                       <mat-label>Select Container</mat-label>
                       <input matInput
-                             [formControl]="selectedContainer"
+                             [(ngModel)]="selectedContainer"
                              [matAutocomplete]="containerAuto">
                       <mat-autocomplete autoActiveFirstOption
                                         #containerAuto="matAutocomplete">
@@ -40,7 +40,7 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="detail-table-input pad-right">
                       <mat-label>Select Realms</mat-label>
-                      <mat-select [formControl]="selectedRealms" multiple>
+                      <mat-select [(ngModel)]="selectedRealms" multiple>
                         @for (option of realmOptions(); track option; ) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
@@ -64,7 +64,7 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="detail-table-input pad-right">
                       <mat-label>Select Token Group</mat-label>
-                      <mat-select [formControl]="selectedTokengroup" multiple>
+                      <mat-select [(ngModel)]="selectedTokengroup" multiple>
                         @for (option of tokengroupOptions(); track option; ) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
@@ -153,15 +153,12 @@
       </div>
     </mat-grid-tile>
     <mat-grid-tile [colspan]="14" [rowspan]="3">
-      <app-token-details-user [filteredUserOptions]="filteredUserOptions"
-                              [isAnyEditing]="isAnyEditing"
+      <app-token-details-user [isAnyEditing]="isAnyEditing"
                               [isEditingInfo]="isEditingInfo"
                               [isEditingUser]="isEditingUser"
                               [realmOptions]="realmOptions"
                               [refreshTokenDetails]="refreshTokenDetails"
                               [repeatPinValue]="repeatPinValue"
-                              [selectedUserRealm]="selectedUserRealm"
-                              [selectedUsername]="selectedUsername"
                               [serial]="serial"
                               [setPinValue]="setPinValue"
                               [userData]="userData"></app-token-details-user>
