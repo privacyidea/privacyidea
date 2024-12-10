@@ -86,13 +86,6 @@
   font-size: 18px;
 }
 
-.info-container {
-  flex-direction: column;
-  display: flex;
-  gap: 10px;
-  width: auto;
-}
-
 .input {
   height: 40px;
   width: 116px;

@@ -9,10 +9,12 @@
   } @else if (element.isEditing()
   || (isEditingUser() && element.keyMap.key === "username")
   || (isEditingInfo() && element.keyMap.key === "info")) {
-    <button mat-icon-button class="edit-button"
-            (click)="toggleEditMode(element, element.keyMap.key, 'save')">
-      <mat-icon class="mat-icon-button">save_as</mat-icon>
-    </button>
+    @if (!isEditingUser()) {
+      <button mat-icon-button class="edit-button"
+              (click)="toggleEditMode(element, element.keyMap.key, 'save')">
+        <mat-icon class="mat-icon-button">save_as</mat-icon>
+      </button>
+    }
     <button mat-icon-button class="edit-button red-icon"
             (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
       <mat-icon class="mat-icon-button">cancel</mat-icon>

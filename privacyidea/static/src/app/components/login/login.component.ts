@@ -5,7 +5,7 @@ import {FormsModule} from '@angular/forms';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatIconModule} from '@angular/material/icon';
-import {MatButton, MatFabButton} from '@angular/material/button';
+import {MatFabButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
 import {FooterComponent} from '../grid-layout/footer/footer.component';
 import {LocalService} from '../../services/local/local.service';
@@ -14,7 +14,7 @@ import {LocalService} from '../../services/local/local.service';
   selector: 'app-login',
   templateUrl: './login.component.html',
   standalone: true,
-  imports: [FormsModule, MatFormField, MatInput, MatButton, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton, FooterComponent],
+  imports: [FormsModule, MatFormField, MatInput, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton, FooterComponent],
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {

@@ -86,14 +86,12 @@
         </button>
       } @else {
         <button class="card-button-activate" extended mat-fab
-                (click)="toggleUserEditMode('save')">
+                (click)="toggleUserEditMode(null, '', 'save')">
           <mat-icon class="detail-button-icon">save</mat-icon>
           Assign User
         </button>
         <br style="margin-bottom: 40px">
       }
     </div>
-    <br/>
-    <mat-divider/>
   </div>
 </div>

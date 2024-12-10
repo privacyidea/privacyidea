@@ -20,7 +20,7 @@ const columns = [
   {key: 'failcount', label: 'Fail Counter'},
   {key: 'rollout_state', label: 'Rollout State'},
   {key: 'username', label: 'User'},
-  {key: 'user_realm', label: 'Realm'},
+  {key: 'user_realm', label: 'User Realm'},
   {key: 'realms', label: 'Token Realm'},
   {key: 'container_serial', label: 'Container'},
 ];
