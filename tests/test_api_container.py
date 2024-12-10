@@ -711,15 +711,18 @@ class APIContainerAuthorization(MyApiTestCase):
                                        method='POST')
 
         # Adding multiple tokens
-        token2 = init_token({"genkey": "1", "realm": self.realm3})
+        token2 = init_token({"genkey": "1"}, user=User("hans", self.realm1))
         token3 = init_token({"genkey": "1", "realm": self.realm1})
-        token_serials = ','.join([token.get_serial(), token2.get_serial(), token3.get_serial()])
+        token_no_user = init_token({"genkey": "1"})
+        token_serials = ','.join(
+            [token.get_serial(), token2.get_serial(), token_no_user.get_serial(), token3.get_serial()])
         # to authorized container
         json = self.request_assert_200(f"/container/{c_serial_user}/addall", {"serial": token_serials}, self.at,
                                        method='POST')
         self.assertFalse(json["result"]["value"][token.get_serial()])
-        self.assertFalse(json["result"]["value"][token2.get_serial()])
+        self.assertTrue(json["result"]["value"][token2.get_serial()])
         self.assertTrue(json["result"]["value"][token3.get_serial()])
+        self.assertFalse(json["result"]["value"][token_no_user.get_serial()])
         # to not authorized container
         container = find_container_by_serial(c_serial_user)
         container.remove_user(User("selfservice", self.realm1))

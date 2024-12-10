@@ -3891,6 +3891,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realm2()
         self.setUp_user_realm3()
         req, token = self.mock_token_request("admin")
+        req.User = User()
 
         # create token with another user from another realm and resolver and token without a user
         token_another_realm = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))

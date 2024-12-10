@@ -441,7 +441,7 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
 
 def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list):
     """
-    Add the result False for all tokens, the user is not authorized to manage.
+    Add the result False for all tokens the user is not authorized to manage.
 
     :param result: The result dictionary in the format {token_serial: success}
     :param not_authorized_serials: A list of token serials the user is not authorized to manage

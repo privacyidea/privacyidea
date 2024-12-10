@@ -22,7 +22,7 @@ These are logical policy functions that are usually used in policy API decorator
 in some cases also used beside the API.
 Like policies, that are supposed to read and pass parameters during enrollment of a token.
 """
-
+from dataclasses import dataclass
 import logging
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
@@ -32,6 +32,17 @@ from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class UserAttributes:
+    role: str = None
+    username: str = None
+    realm: str = None
+    resolver: str = None
+    adminuser: str = None
+    adminrealm: str = None
+    additional_realms: list = None
 
 
 @log_with(log)
@@ -123,9 +134,9 @@ def get_token_user_attributes(serial: str):
     Get the user attributes from the token owner and the token realms.
 
     :param serial: The serial of the token
-    :return: username (str), realm (str), resolver (str), token_realms (list)
+    :return: UserAttributes dataclass
     """
-    username = realm = resolver = token_realms = None
+    user_attributes = UserAttributes()
     # get user attributes from the token
     try:
         token = get_tokens_from_serial_or_user(serial, user=None)[0]
@@ -135,16 +146,15 @@ def get_token_user_attributes(serial: str):
         token_owner = None
         log.error(f"Could not find token with serial {serial}.")
     if token_owner:
-        username = token_owner.login
-        realm = token_owner.realm
-        resolver = token_owner.resolver
+        user_attributes.username = token_owner.login
+        user_attributes.realm = token_owner.realm
+        user_attributes.resolver = token_owner.resolver
     if token:
-        token_realms = token.get_realms()
-    return username, realm, resolver, token_realms
+        user_attributes.additional_realms = token.get_realms()
+    return user_attributes
 
 
-def check_token_action_allowed(g, action: str, serial: str, role: str, username: str, realm: str, resolver: str,
-                               adminuser: str, adminrealm: str):
+def check_token_action_allowed(g, action: str, serial: str, user_attributes: UserAttributes):
     """
     Retrieves user attributes from the token and checks if the logged-in user is allowed to perform the action on the
     token.
@@ -158,43 +168,40 @@ def check_token_action_allowed(g, action: str, serial: str, role: str, username:
     :param g: The global flask object g
     :param action: The action to be performed on the token
     :param serial: The serial of the token
-    :param role: The role of the logged-in user (user or admin)
-    :param username: The username of the logged-in user (only for users)
-    :param realm: The realm of the logged-in user (only for users)
-    :param resolver: The resolver of the logged-in user (only for users)
-    :param adminuser: The username of the logged-in admin (only for admins)
-    :param adminrealm: The realm of the logged-in admin (only for admins)
+    :param user_attributes: User attributes of the logged-in user
     :return: True if the action is allowed, False otherwise
     """
-    token_realms = None
-    if role == "admin":
+    if user_attributes.role == "admin":
         if serial:
-            username, realm, resolver, token_realms = get_token_user_attributes(serial)
+            token_owner_attributes = get_token_user_attributes(serial)
+        else:
+            token_owner_attributes = UserAttributes()
 
         if action == ACTION.ASSIGN:
             # Assigning a user to a token is only possible if the token has no owner yet.
-            # To avoid helpdesk admins (for a specific resolver) lose their tokens while changing the owner of a
-            # token, they are allowed to assign their users to tokens without owner.
+            # To avoid helpdesk admins (for a specific resolver) lose access on their tokens while changing the owner
+            # of a token, they are allowed to assign their users to tokens without owner.
             # Note: the policies are still filtered by the token realms.
-            username = username or None
-            realm = realm or None
-            resolver = resolver or None
+            user_attributes.username = token_owner_attributes.username or None
+            user_attributes.realm = token_owner_attributes.realm or None
+            user_attributes.resolver = token_owner_attributes.resolver or None
         else:
             # If no user is available, explicitly filter for generic policies without conditions on the user
-            username = username or ""
-            realm = realm or ""
-            resolver = resolver or ""
+            user_attributes.username = token_owner_attributes.username or ""
+            user_attributes.realm = token_owner_attributes.realm or ""
+            user_attributes.resolver = token_owner_attributes.resolver or ""
+        user_attributes.additional_realms = token_owner_attributes.additional_realms or None
 
     # Check action for the token
     action_allowed = Match.generic(g,
-                                   scope=role,
+                                   scope=user_attributes.role,
                                    action=action,
-                                   user=username,
-                                   resolver=resolver,
-                                   realm=realm,
-                                   adminrealm=adminrealm,
-                                   adminuser=adminuser,
-                                   additional_realms=token_realms).allowed()
+                                   user=user_attributes.username,
+                                   resolver=user_attributes.resolver,
+                                   realm=user_attributes.realm,
+                                   adminrealm=user_attributes.adminrealm,
+                                   adminuser=user_attributes.adminuser,
+                                   additional_realms=user_attributes.additional_realms).allowed()
 
     if action_allowed and action == ACTION.CONTAINER_ADD_TOKEN:
         # Adding a token to a container will remove it from the old container: Check if the remove action is allowed
@@ -205,7 +212,7 @@ def check_token_action_allowed(g, action: str, serial: str, role: str, username:
 
         if old_container:
             action_allowed = check_container_action_allowed(g, ACTION.CONTAINER_REMOVE_TOKEN, old_container.serial,
-                                                            role, username, realm, resolver, adminuser, adminrealm)
+                                                            user_attributes)
             if not action_allowed:
                 log.info(f"Token {serial} is in container {old_container.serial}. The user is not allowed to remove the"
                          " token from this container.")
@@ -213,31 +220,29 @@ def check_token_action_allowed(g, action: str, serial: str, role: str, username:
     return action_allowed
 
 
-def check_container_action_allowed(g, action: str, container_serial: str, role: str, username: str, realm: str,
-                                   resolver: str, adminuser: str, adminrealm: str):
+def check_container_action_allowed(g, action: str, container_serial: str, user_attributes: UserAttributes):
     """
-        Retrieves user attributes from the container and checks if the logged-in user is allowed to perform the action
-        on the container.
+    Retrieves user attributes from the container and checks if the logged-in user is allowed to perform the action
+    on the container.
 
-        For admins, the policies either need to match the container owner or at least one of the container realms.
-        If no user attributes (username, realm, resolver) are available, the policies are filtered for generic policies
-        without conditions on the user. Only for the action ASSIGN, all policies are considered, ignoring the username,
-        realm, and resolver conditions. The container realms are still taken into account. This shall allow helpdesk
-        admins to assign their users to containers without owner.
+    For admins, the policies either need to match the container owner or at least one of the container realms.
+    If no user attributes (username, realm, resolver) are available, the policies are filtered for generic policies
+    without conditions on the user. Only for the action CONTAINER_ASSIGN_USER, all policies are considered, ignoring
+    the username, realm, and resolver conditions. The container realms are still taken into account. This shall allow
+    helpdesk admins to assign their users to containers without owner.
 
-        :param g: The global flask object g
-        :param action: The action to be performed on the container
-        :param container_serial: The serial of the container
-        :param role: The role of the logged-in user (user or admin)
-        :param username: The username of the logged-in user (only for users)
-        :param realm: The realm of the logged-in user (only for users)
-        :param resolver: The resolver of the logged-in user (only for users)
-        :param adminuser: The username of the logged-in admin (only for admins)
-        :param adminrealm: The realm of the logged-in admin (only for admins)
-        :return: True if the action is allowed, False otherwise
-        """
-    container_realms = None
-    if role == "admin":
+    For the action CONTAINER_CREATE, the user attributes from the parameters are considered, as the container has no
+    owner yet.
+
+    :param g: The global flask object g
+    :param action: The action to be performed on the container
+    :param container_serial: The serial of the container
+    :param user_attributes: User attributes of the logged-in user
+    :return: True if the action is allowed, False otherwise
+    """
+    user_attributes.additional_realms = None
+    container_owner_attributes = UserAttributes()
+    if user_attributes.role == "admin":
         if container_serial:
             # get user attributes from the container
             try:
@@ -249,36 +254,40 @@ def check_container_action_allowed(g, action: str, container_serial: str, role: 
                 container_owners = container.get_users()
                 container_owner = container_owners[0] if container_owners else None
                 if container_owner:
-                    username = container_owner.login
-                    realm = container_owner.realm
-                    resolver = container_owner.resolver
-                else:
-                    username = realm = resolver = None
-                container_realms = [realm.name for realm in container.realms]
+                    container_owner_attributes.username = container_owner.login
+                    container_owner_attributes.realm = container_owner.realm
+                    container_owner_attributes.resolver = container_owner.resolver
+                container_owner_attributes.additional_realms = [realm.name for realm in container.realms]
 
         if action == ACTION.CONTAINER_ASSIGN_USER:
             # Assigning a user to a container is only possible if the container has no owner yet.
-            # To avoid helpdesk admins (for a specific resolver) lose their containers while changing the owner of a
-            # container, they are allowed to assign their users to containers without user.
+            # To avoid helpdesk admins (for a specific resolver) lose access on their containers while changing the
+            # owner of a container, they are allowed to assign their users to containers without user.
             # Note: the policies are still filtered by the container realms.
-            username = username or None
-            realm = realm or None
-            resolver = resolver or None
+            user_attributes.username = container_owner_attributes.username or None
+            user_attributes.realm = container_owner_attributes.realm or None
+            user_attributes.resolver = container_owner_attributes.resolver or None
+        elif action == ACTION.CONTAINER_CREATE:
+            # If the container is created, it has no owner yet, instead check the user attributes from the parameters
+            user_attributes.username = user_attributes.username or ""
+            user_attributes.realm = user_attributes.realm or ""
+            user_attributes.resolver = user_attributes.resolver or ""
         else:
             # If no user is available, explicitly filter for generic policies without conditions on the user
-            username = username or ""
-            realm = realm or ""
-            resolver = resolver or ""
+            user_attributes.username = container_owner_attributes.username or ""
+            user_attributes.realm = container_owner_attributes.realm or ""
+            user_attributes.resolver = container_owner_attributes.resolver or ""
+        user_attributes.additional_realms = container_owner_attributes.additional_realms or None
 
     # Check action for container
     action_allowed = Match.generic(g,
-                                   scope=role,
+                                   scope=user_attributes.role,
                                    action=action,
-                                   user=username,
-                                   resolver=resolver,
-                                   realm=realm,
-                                   adminrealm=adminrealm,
-                                   adminuser=adminuser,
-                                   additional_realms=container_realms).allowed()
+                                   user=user_attributes.username,
+                                   resolver=user_attributes.resolver,
+                                   realm=user_attributes.realm,
+                                   adminrealm=user_attributes.adminrealm,
+                                   adminuser=user_attributes.adminuser,
+                                   additional_realms=user_attributes.additional_realms).allowed()
 
     return action_allowed

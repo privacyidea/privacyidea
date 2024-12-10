@@ -64,10 +64,10 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
 import logging
+from dataclasses import replace
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.container import find_container_by_serial
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -82,7 +82,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_token_action_allowed, check_container_action_allowed)
+                                              check_token_action_allowed, check_container_action_allowed,
+                                              UserAttributes)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -1284,7 +1285,7 @@ def check_token_action(request: Request = None, action: str = None):
     condition. This allows helpdesk admins to assign their users to tokens without any owner. Note that the token
     realms are still considered.
 
-    For admins additionally the token realms are determined and passed as additional_realms to the policy match.
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
     That means all policies either matching the user attribute triplet or at least one out of the token realms are
     considered.
 
@@ -1296,10 +1297,10 @@ def check_token_action(request: Request = None, action: str = None):
     user_object = request.User
     resolver = user_object.resolver if user_object else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     serial = params.get("serial")
 
-    action_allowed = check_token_action_allowed(g, action, serial, role, username, realm, resolver, adminuser,
-                                                adminrealm)
+    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
@@ -1313,7 +1314,7 @@ def check_token_list_action(request: Request = None, action: str = None):
     and writes it to the log. Additionally, a list of the not authorized serials is added to the request with the
     key 'not_authorized_serials'.
 
-    For admins additionally the token realms are determined and passed as additional_realms to the policy match.
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
     That means all policies either matching the user attribute triplet or at least one out of the token realms are
     considered.
 
@@ -1325,14 +1326,14 @@ def check_token_list_action(request: Request = None, action: str = None):
     user_object = request.User
     resolver = user_object.resolver if user_object else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
 
     serial_list = params.get("serial")
     serial_list = serial_list.replace(" ", "").split(",") if serial_list else []
     new_serial_list = []
     not_authorized_serials = []
     for serial in serial_list:
-        action_allowed = check_token_action_allowed(g, action, serial, role, username, realm, resolver, adminuser,
-                                                    adminrealm)
+        action_allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
         if action_allowed:
             new_serial_list.append(serial)
         else:
@@ -1369,10 +1370,10 @@ def check_container_action(request: Request = None, action: str = None):
     user_object = request.User
     resolver = user_object.resolver if user_object else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
 
     container_serial = params.get("container_serial")
-    action_allowed = check_container_action_allowed(g, action, container_serial, role, username, realm, resolver,
-                                                    adminuser, adminrealm)
+    action_allowed = check_container_action_allowed(g, action, container_serial, user_attributes)
 
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
@@ -1383,7 +1384,7 @@ def check_user_params(request=None, action=None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
     verifies if the logged-in user is allowed to set the passed user attributes.
-    With the role USER, the user is only allowed to set its own attributes. For the role ADMIN, a policy matching is
+    With the role USER, the user is only allowed to set its own attributes. For the role ADMIN, policy matching is
     done with the user attributes from the parameters in the request.
 
     :param request: The request object
