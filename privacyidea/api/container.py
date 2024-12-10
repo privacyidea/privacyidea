@@ -23,8 +23,8 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import (prepolicy,
-                                           check_admin_tokenlist, check_container_action,
+from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
+                                           check_admin_tokenlist, check_container_action, check_token_list_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action,
                                            check_user_is_container_owner, check_user_is_container_owner_or_has_no_owner,
@@ -43,7 +43,8 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_container_classes, create_container_from_db_object,
                                        compare_template_with_container, unregister,
                                        finalize_registration, init_container_rollover,
-                                       set_options, get_container_realms)
+                                       set_options, get_container_realms,
+                                       remove_multiple_tokens_from_container, add_not_authorized_tokens_result)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
@@ -108,6 +109,7 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
+@prepolicy(check_user_params, request, action=ACTION.CONTAINER_ASSIGN_USER)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
 @prepolicy(check_user_is_container_owner_or_has_no_owner, request)
 @event('container_assign', request, g)
@@ -132,6 +134,7 @@ def assign(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
+@prepolicy(check_user_params, request, action=ACTION.CONTAINER_UNASSIGN_USER)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
 @prepolicy(check_user_is_container_owner, request)
 @event('container_unassign', request, g)
@@ -156,6 +159,7 @@ def unassign(container_serial):
 
 
 @container_blueprint.route('init', methods=['POST'])
+@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_CREATE)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_CREATE)
 @event('container_init', request, g)
 @log_with(log)
@@ -234,6 +238,7 @@ def delete(container_serial):
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_user_is_container_owner, request)
 @event('container_add_token', request, g)
 @log_with(log)
@@ -269,6 +274,7 @@ def add_token(container_serial):
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
 @prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_user_is_container_owner, request)
 @event('container_add_token', request, g)
 @log_with(log)
@@ -283,9 +289,11 @@ def add_all_tokens(container_serial):
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
-    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role, allowed_realms)
+    res = add_multiple_tokens_to_container(container_serial, token_serials, user, user_role)
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
+    res = add_not_authorized_tokens_result(res, not_authorized_serials)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -308,6 +316,7 @@ def add_all_tokens(container_serial):
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
 @prepolicy(get_allowed_realms, request, action=ACTION.CONTAINER_ADD_TOKEN)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @prepolicy(check_user_is_container_owner, request)
 @event('container_remove_token', request, g)
 @log_with(log)
@@ -342,6 +351,7 @@ def remove_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
 @prepolicy(check_user_is_container_owner, request)
 @event('container_remove_token', request, g)
 @log_with(log)
@@ -352,13 +362,16 @@ def remove_all_tokens(container_serial):
     :param container_serial: serial of the container
     :jsonparam serial: Comma separated list of token serials.
     """
-    serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
+    # allow serial to be empty if the pre-policy removes all tokens
+    serial = getParam(request.all_data, "serial", optional=False, allow_empty=True)
     token_serials = serial.replace(' ', '').split(',')
     user = request.User
     user_role = g.logged_in_user.get("role")
-    allowed_realms = getattr(request, "pi_allowed_realms", None)
 
-    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role, allowed_realms)
+    res = remove_multiple_tokens_from_container(container_serial, token_serials, user, user_role)
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
+    res = add_not_authorized_tokens_result(res, not_authorized_serials)
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -479,6 +492,7 @@ def get_state_types():
 
 @container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
 @admin_required
+@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_REALMS)
 @prepolicy(check_container_action, request, action=ACTION.CONTAINER_REALMS)
 @event('container_set_realms', request, g)
 @log_with(log)

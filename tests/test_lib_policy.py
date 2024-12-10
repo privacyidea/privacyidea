@@ -1575,33 +1575,27 @@ class PolicyTestCase(MyTestCase):
                    user="userA", resolver="resolverA")
         set_policy(name="scopeA_r_realmA_userA_resolverB", scope="scopeA", action="read", realm="realmA",
                    user="userA", resolver="resolverB")
-
         P = PolicyClass()
-
         # get policies for action read
         policies = P.list_policies(action="read")
         self.assertEqual(10, len(policies))
-
         # get policies applicable for realm A
         policies = P.list_policies(action="read", realm="realmA")
         self.assertEqual(7, len(policies))
         correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
                             "scopeA_r_resolverB", "scopeA_r_realmA_userA_resolverA", "scopeA_r_realmA_userA_resolverB"]
         self.assertListEqual(correct_policies, [p["name"] for p in policies])
-
         # get policies applicable for any user and resolver of realm A
         policies = P.list_policies(action="read", realm="realmA", user="", resolver="")
         self.assertEqual(2, len(policies))
         correct_policies = ["scopeA_r", "scopeA_r_realmA"]
         self.assertListEqual(correct_policies, [p["name"] for p in policies])
-
         # get policies applicable of userA in realmA of resolverA
         policies = P.list_policies(action="read", realm="realmA", user="userA", resolver="resolverA")
         self.assertEqual(5, len(policies))
         correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
                             "scopeA_r_realmA_userA_resolverA"]
         self.assertListEqual(correct_policies, [p["name"] for p in policies])
-
         # get policies applicable to userA in realmA of resolverA or realmB+resolverA
         policies = P.list_policies(action="read", realm="realmA", user="userA", resolver="resolverA",
                                    additional_realms=["realmB"])
@@ -1609,9 +1603,7 @@ class PolicyTestCase(MyTestCase):
         correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmB", "scopeA_r_realmA_userA",
                             "scopeA_r_resolverA", "scopeA_r_realmA_userA_resolverA"]
         self.assertListEqual(correct_policies, [p["name"] for p in policies])
-
         # Pass also a list to realm
-
         delete_policy("scopeA_w")
         delete_policy("scopeA_r")
         delete_policy("scopeA_r_realmA")

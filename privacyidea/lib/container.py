@@ -545,8 +545,7 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
     return res
 
 
-def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user",
-                                     allowed_realms=[]):
+def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user"):
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
@@ -557,7 +556,6 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
     :param token_serials: A list of token serials to add
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
-    :param allowed_realms: A list of realms the admin is allowed to add tokens to, optional
     :return: A dictionary in the format {token_serial: success}
     """
     # Raises ResourceNotFound if container does not exist
@@ -574,6 +572,20 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
         ret[token_serial] = res
 
     return ret
+
+
+def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list):
+    """
+    Add the result False for all tokens the user is not authorized to manage.
+
+    :param result: The result dictionary in the format {token_serial: success}
+    :param not_authorized_serials: A list of token serials the user is not authorized to manage
+    :return: The result dictionary with the not authorized tokens added
+    """
+    if not_authorized_serials:
+        for serial in not_authorized_serials:
+            result[serial] = False
+    return result
 
 
 def get_container_classes_descriptions():
@@ -628,8 +640,7 @@ def remove_token_from_container(container_serial, token_serial, user: User = Non
     return res
 
 
-def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user",
-                                          allowed_realms=[]):
+def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user"):
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
@@ -642,7 +653,6 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
     :param token_serials: A list of token serials to remove
     :param user: The user adding the tokens
     :param user_role: The role of the user ('admin' or 'user')
-    :param allowed_realms: A list of realms the admin is allowed to remove tokens from, optional
     :return: A dictionary in the format {token_serial: success}
     """
     # Check that container exists

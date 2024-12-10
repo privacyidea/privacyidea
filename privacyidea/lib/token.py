@@ -1343,7 +1343,7 @@ def remove_token(serial=None, user=None):
 
 
 @log_with(log)
-def set_realms(serial, realms=None, add=False):
+def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
     """
     Set all realms of a token. This sets the realms new. I.e. it does not add
     realms. So realms that are not contained in the list will not be assigned
@@ -1359,6 +1359,7 @@ def set_realms(serial, realms=None, add=False):
     :type realms: list
     :param add: if the realms should be added and not replaced
     :type add: bool
+    :param allowed_realms: A list of realms, that the admin is allowed to manage
     """
     realms = realms or []
     corrected_realms = []
@@ -1369,7 +1370,23 @@ def set_realms(serial, realms=None, add=False):
             corrected_realms.append(realm)
 
     tokenobject = get_one_token(serial=serial)
-    tokenobject.set_realms(corrected_realms, add=add)
+
+    # Check if admin is allowed to set the realms
+    old_realms = tokenobject.get_realms()
+
+    matching_realms = corrected_realms
+    if allowed_realms:
+        matching_realms = list(set(corrected_realms).intersection(allowed_realms))
+        excluded_realms = list(set(corrected_realms) - set(matching_realms))
+        if len(excluded_realms) > 0:
+            log.info(f"User is not allowed to set realms {excluded_realms} for token {serial}.")
+
+        # Check if admin is allowed to remove the old realms
+        not_allowed_realms = set(old_realms) - set(allowed_realms)
+        # Add realms that are not allowed to be removed to the set list
+        matching_realms = list(set(matching_realms).union(not_allowed_realms))
+
+    tokenobject.set_realms(matching_realms, add=add)
     tokenobject.save()
 
 

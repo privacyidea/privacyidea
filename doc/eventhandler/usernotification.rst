@@ -57,18 +57,21 @@ Possible mime types are:
   * html
 
 You can choose if the email should be sent as plain text or HTML. If the
-email is sent as HTML, you can do the following::
+email is sent as HTML, you can use the following text::
 
    <a href={googleurl_value}>Your new token</a>
 
-Which will create a clickable link. Clicked on the smartphone, the token will
-be imported to the smartphone app.
+to create a clickable link with the token data. When clicked on the smartphone,
+the token will be imported to the smartphone app.
 
 You can also do this::
 
   <img src={googleurl_img}>
 
 This will add the QR Code as an inline data image into the HTML email.
+
+Alternatively, if this event is triggered by enrolling a :ref:`push-token`, the
+tags are called ``pushurl_value`` and ``pushurl_img``.
 
 .. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
    text. Everyone who receives this data has a detailed copy of this token.
@@ -166,6 +169,8 @@ The body may contain the following tags
   * {recipient_surname} the surname of the recipient.
   * {googleurl_value} is the KEY URI for a google authenticator.
   * {googleurl_img} is the data image source of the google authenticator QR code.
+  * {pushurl_value} is the KEY URI from a push token for enrolled in a authenticator app.
+  * {pushurl_img} is the data image source of a push token qr code for enrolled in a authenticator app.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
   * {client_ip} the client IP of the client, which issued the original request.

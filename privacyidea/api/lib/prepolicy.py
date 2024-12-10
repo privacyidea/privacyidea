@@ -64,17 +64,17 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
 import logging
+from dataclasses import replace
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.container import get_container_realms
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
-from flask import g, current_app
+from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
+from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
@@ -82,7 +82,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_matching_realms, get_container_user_attributes_for_policy_match,
+                                              check_token_action_allowed, check_container_action_allowed,
+                                              UserAttributes, check_matching_realms, get_container_user_attributes_for_policy_match,
                                               user_is_container_owner)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
@@ -1272,14 +1273,123 @@ def check_base_action(request=None, action=None, anonymous=False):
     return True
 
 
-def check_container_action(request=None, action=None):
+def check_token_action(request: Request = None, action: str = None):
     """
-    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER or CONTAINER.
-    This decorator is used for api calls that perform actions on container. If a token serial is passed, it also checks
-    the policy for the token realm.
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    is used for api calls that perform actions on a single token.
 
-    :param request:
-    :param action:
+    If a serial is passed in the request and the logged-in user is an admin, the user attributes (username, realm,
+    resolver) are determined from the token. Otherwise, they are determined from the request parameters.
+    If no user attributes are available, they are set to empty strings "". Therefore, only policies that do not specify
+    the respective parameter in the conditions are matched. Only for the action 'assign' the user attributes are set to
+    None if they cannot be determined from the token. Therefore, all policies are matched regardless of the user
+    condition. This allows helpdesk admins to assign their users to tokens without any owner. Note that the token
+    realms are still considered.
+
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the token realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True otherwise raises an Exception
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    serial = params.get("serial")
+
+    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
+    if not action_allowed:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_token_list_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER.
+    It expects a serial list of tokens in the request. The action is verified for each token in the list.
+    It does not throw an exception if the action is not allowed for a token, but removes the token from the list
+    and writes it to the log. Additionally, a list of the not authorized serials is added to the request with the
+    key 'not_authorized_serials'.
+
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the token realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+
+    serial_list = params.get("serial")
+    serial_list = serial_list.replace(" ", "").split(",") if serial_list else []
+    new_serial_list = []
+    not_authorized_serials = []
+    for serial in serial_list:
+        action_allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        if action_allowed:
+            new_serial_list.append(serial)
+        else:
+            not_authorized_serials.append(serial)
+            log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
+                     f"It is removed from the token list and will not further processed in the request.")
+    request.all_data["serial"] = ",".join(new_serial_list)
+    request.all_data["not_authorized_serials"] = not_authorized_serials
+    return True
+
+
+def check_container_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    is used for api calls that perform actions on container.
+
+    If a container_serial is passed in the request and the logged-in user is an admin, the user attributes (username,
+    realm, resolver) are determined from the container. Otherwise, they are determined from the request parameters.
+    If no user attributes are available, they are set to empty strings "". Therefore, only policies that do not specify
+    the respective parameter in the conditions are matched. Only for the action 'assign' the user attributes are set to
+    None if they cannot be determined from the container. Therefore, all policies are matched regardless of the user
+    condition. This allows helpdesk admins to assign their users to containers without any owner.
+    Note that the container realms are still considered.
+
+    For admins additionally the container realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the container realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True if the action is allowed, otherwise raises an Exception
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+
+    container_serial = params.get("container_serial")
+    action_allowed = check_container_action_allowed(g, action, container_serial, user_attributes)
+
+    if not action_allowed:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_user_params(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    verifies if the logged-in user is allowed to set the passed user attributes.
+    With the role USER, the user is only allowed to set its own attributes. For the role ADMIN, policy matching is
+    done with the user attributes from the parameters in the request.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
     :return: True if action is allowed, otherwise raises an Exception
     """
     params = request.all_data
@@ -1291,67 +1401,35 @@ def check_container_action(request=None, action=None):
         role, adminuser, adminrealm = None, None, None
         username, realm = "", ""
 
-    if not username and not realm:
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
-            # resolver = user_object.resolver
+    param_user = params.get("user")
+    param_realm = params.get("realm")
+    param_resolver = params.get("resolver") or resolver
+
+    if role == "user":
+        if param_user and param_user != username:
+            action_allowed = False
+        elif param_realm and param_realm != realm:
+            action_allowed = False
+        elif param_resolver and param_resolver != resolver:
+            action_allowed = False
         else:
-            # container has no owner
-            username = params.get("user")
-            realm = params.get("realm")
-            resolver = params.get("resolver")
-
-    # Check action for (container) realm
-    match = Match.generic(g, scope=role,
-                          action=action,
-                          user=username,
-                          resolver=resolver,
-                          realm=realm,
-                          adminrealm=adminrealm,
-                          adminuser=adminuser)
-    action_allowed = match.allowed()
-
-    # Get allowed realms
-    request.pi_allowed_realms = match.get_policy_realms()
-
-    # get the realm by the container serial
-    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
-    # TODO: Refactor Match.generic() to support multiple realms
-    container_serial = params.get("container_serial")
-    if action_allowed and container_serial:
-        action_allowed = check_matching_realms(container_serial, request.pi_allowed_realms, params)
+            action_allowed = True
+    elif role == "admin":
+        # Check action for new parameters
+        if param_user or param_realm or param_resolver:
+            action_allowed = Match.generic(g,
+                                           scope=role,
+                                           action=action,
+                                           user=param_user,
+                                           resolver=param_resolver,
+                                           realm=param_realm,
+                                           adminrealm=adminrealm,
+                                           adminuser=adminuser).allowed()
+        else:
+            action_allowed = True
 
     if not action_allowed:
-        if not role:
-            role = "container"
-        raise PolicyError(f"{role} actions are defined, but the action {action} is not allowed!")
-    return True
-
-
-def check_client_container_action(request=None, action=None):
-    """
-    This decorator function takes the request and verifies the given action for the SCOPE CONTAINER.
-    This decorator is used for api calls that perform actions on container requested from a client. If a token serial
-    is passed, it also checks the policy for the token realm.
-
-    :param request:
-    :param action:
-    :return: True if action is allowed, otherwise raises an Exception
-    """
-    username, user_realm, resolver, container_realms = get_container_user_attributes_for_policy_match(request)
-
-    # Check action for (container) realm
-    match = Match.generic(g, scope=SCOPE.CONTAINER,
-                          action=action,
-                          user=username,
-                          resolver=resolver,
-                          realm=user_realm,
-                          additional_realms=container_realms)
-    action_allowed = match.allowed()
-
-    if not action_allowed:
-        raise PolicyError(f"Container actions are defined, but the action {action} is not allowed!")
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
 
 

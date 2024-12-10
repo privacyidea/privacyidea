@@ -837,7 +837,7 @@ class PolicyClass(object):
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
-                                              additional_realms=additional_realms, sort_by_priority=sort_by_priority)
+                                              sort_by_priority=sort_by_priority, additional_realms=additional_realms)
 
         # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
@@ -3325,7 +3325,6 @@ class Match(object):
             else:
                 allowed_realms.extend(pol.get("realm"))
         return allowed_realms
-
 
 def get_allowed_custom_attributes(g, user_obj):
     """

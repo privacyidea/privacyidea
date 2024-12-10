@@ -1372,6 +1372,9 @@ def create_tag_dict(logged_in_user=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
+                    googleurl_img=None,
+                    pushurl_value=None,
+                    pushurl_img=None,
                     client_ip=None,
                     pin=None,
                     challenge=None,
@@ -1394,6 +1397,9 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param tokendescription: The description of the token
     :param googleurl_value: The URL for the QR code during token enrollemnt
+    :param googleurl_img: The image data blob of the QR-code during token enrollment
+    :param pushurl_value: The URL for the Push-Token enrollment
+    :param pushurl_img: The image data blob of the Push-Token enrollment QR-code
     :param client_ip: The IP of the client
     :param pin: The PIN of a token
     :param challenge: The challenge data
@@ -1422,6 +1428,9 @@ def create_tag_dict(logged_in_user=None,
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
                 googleurl_value=googleurl_value,
+                googleurl_img=googleurl_img,
+                pushurl_value=pushurl_value,
+                pushurl_img=pushurl_img,
                 time=time,
                 date=date,
                 client_ip=client_ip,
