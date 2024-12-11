@@ -1081,7 +1081,7 @@ class APITokenTestCase(MyApiTestCase):
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
         container_serial, _ = init_container({"type": "generic"})
-        add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
+        add_token_to_container(container_serial, "EToken")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',

@@ -30,6 +30,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_realms_of_token
+from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +157,35 @@ def get_token_user_attributes(serial: str):
     return user_attributes
 
 
+def get_container_user_attributes(container_serial: str):
+    """
+    Get the user and container realms from the request.
+    If a user attribute (username, realm, resolver) is not available, it is set to None.
+    If no container realms are available an empty list is set.
+
+    :param container_serial: Serial of the container
+    :return: container_owner_attributes
+    :rtype: UserAttributes
+    """
+    container_owner_attributes = UserAttributes()
+
+    try:
+        container = find_container_by_serial(container_serial)
+    except ResourceNotFoundError:
+        container = None
+        log.error(f"Could not find container with serial {container_serial}.")
+    if container:
+        container_owners = container.get_users()
+        container_owner = container_owners[0] if container_owners else None
+        if container_owner:
+            container_owner_attributes.username = container_owner.login
+            container_owner_attributes.realm = container_owner.realm
+            container_owner_attributes.resolver = container_owner.resolver
+        container_owner_attributes.additional_realms = [realm.name for realm in container.realms]
+
+    return container_owner_attributes
+
+
 def check_token_action_allowed(g, action: str, serial: str, user_attributes: UserAttributes):
     """
     Retrieves user attributes from the token and checks if the logged-in user is allowed to perform the action on the
@@ -173,12 +203,12 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
     :param user_attributes: User attributes of the logged-in user
     :return: True if the action is allowed, False otherwise
     """
-    if user_attributes.role == "admin":
-        if serial:
-            token_owner_attributes = get_token_user_attributes(serial)
-        else:
-            token_owner_attributes = UserAttributes()
+    if serial:
+        token_owner_attributes = get_token_user_attributes(serial)
+    else:
+        token_owner_attributes = UserAttributes()
 
+    if user_attributes.role == "admin":
         if action == ACTION.ASSIGN:
             # Assigning a user to a token is only possible if the token has no owner yet.
             # To avoid helpdesk admins (for a specific resolver) lose access on their tokens while changing the owner
@@ -193,6 +223,11 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
             user_attributes.realm = token_owner_attributes.realm or ""
             user_attributes.resolver = token_owner_attributes.resolver or ""
         user_attributes.additional_realms = token_owner_attributes.additional_realms or None
+    elif user_attributes.role == "user" and serial:
+        # for adding / removing tokens from a container, the user has to be the owner of the token
+        if action in [ACTION.CONTAINER_ADD_TOKEN, ACTION.CONTAINER_REMOVE_TOKEN]:
+            if not user_is_owner(user_attributes, token_owner_attributes, allow_no_owner=False):
+                return False
 
     # Check action for the token
     action_allowed = Match.generic(g,
@@ -244,23 +279,11 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     """
     user_attributes.additional_realms = None
     container_owner_attributes = UserAttributes()
-    if user_attributes.role == "admin":
-        if container_serial:
-            # get user attributes from the container
-            try:
-                container = find_container_by_serial(container_serial)
-            except ResourceNotFoundError:
-                container = None
-                log.error(f"Could not find container with serial {container_serial}.")
-            if container:
-                container_owners = container.get_users()
-                container_owner = container_owners[0] if container_owners else None
-                if container_owner:
-                    container_owner_attributes.username = container_owner.login
-                    container_owner_attributes.realm = container_owner.realm
-                    container_owner_attributes.resolver = container_owner.resolver
-                container_owner_attributes.additional_realms = [realm.name for realm in container.realms]
+    if container_serial:
+        # get user attributes from the container
+        container_owner_attributes = get_container_user_attributes(container_serial)
 
+    if user_attributes.role == "admin":
         if action == ACTION.CONTAINER_ASSIGN_USER:
             # Assigning a user to a container is only possible if the container has no owner yet.
             # To avoid helpdesk admins (for a specific resolver) lose access on their containers while changing the
@@ -280,6 +303,18 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             user_attributes.realm = container_owner_attributes.realm or ""
             user_attributes.resolver = container_owner_attributes.resolver or ""
         user_attributes.additional_realms = container_owner_attributes.additional_realms or None
+    elif user_attributes.role == "user" and container_serial:
+        # check if the user is the owner of the container
+        if action == ACTION.CONTAINER_CREATE:
+            # container has no owner yet, skip this check
+            is_owner = True
+        elif action == ACTION.CONTAINER_ASSIGN_USER:
+            # users are allowed to assign containers without owner
+            is_owner = user_is_owner(user_attributes, container_owner_attributes, allow_no_owner=True)
+        else:
+            is_owner = user_is_owner(user_attributes, container_owner_attributes, allow_no_owner=False)
+        if not is_owner:
+            return False
 
     # Check action for container
     action_allowed = Match.generic(g,
@@ -291,104 +326,21 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
                                    adminrealm=user_attributes.adminrealm,
                                    adminuser=user_attributes.adminuser,
                                    additional_realms=user_attributes.additional_realms).allowed()
-
     return action_allowed
 
 
-
-def check_matching_realms(container_serial, allowed_realms, params):
+def user_is_owner(logged_in_user_attr: UserAttributes, owner_attr: UserAttributes, allow_no_owner=False):
     """
-    Checks if at least one realm of the container is contained in the allowed realms.
-    If a token serial is given in the request parameters, it is also evaluated for the token realms.
+    Checks if the logged-in user is the owner of the token or container.
 
-    :param container_serial: The serial of the container
-    :param allowed_realms: A list of the realms that are allowed to perform the action
-    :param params: The request parameters
-    :return: True if at least one realm is allowed, False otherwise
+    :param logged_in_user_attr: User attributes of the logged-in user
+    :param owner_attr: User attributes of the token or container owner
+    :param allow_no_owner: If True, the user is considered the owner if the owner is None
+    :return: True if the user is the owner, False otherwise
     """
-    action_allowed = True
-    container_realms = get_container_realms(container_serial)
-
-    # Check if at least one container realm is allowed
-    if allowed_realms and container_realms:
-        matching_realms = list(set(container_realms).intersection(allowed_realms))
-        action_allowed = len(matching_realms) > 0
-
-    # get the realm by the token serial:
-    token_realms = None
-    if params.get("serial"):
-        serial = params.get("serial")
-        if serial.isalnum():
-            # single serial, no list
-            token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
-
-        # Check if at least one token realm is allowed
-        if action_allowed and allowed_realms and token_realms:
-            matching_realms = list(set(token_realms).intersection(allowed_realms))
-            action_allowed = len(matching_realms) > 0
-
-    return action_allowed
-
-
-def get_container_user_attributes_for_policy_match(request):
-    """
-    Get the user and container realms from the request.
-    If a user attribute (username, realm, resolver) is not available, an empty string is returned.
-    If no container realms are available or if it is equal to the user realm, an empty list is returned.
-
-    :param request: The request object
-    :return: username, realm, resolver, container realms
-    :rtype: str, str, str, list
-    """
-    params = request.all_data
-    container_serial = params.get("container_serial")
-    user_object = request.User
-    username = realm = resolver = ""
-    try:
-        container_realms = get_container_realms(container_serial)
-    except ResourceNotFoundError:
-        log.info(f"Container serial {container_serial} passed as request parameter does not exist.")
-        container_realms = []
-
-    if user_object:
-        username = user_object.login
-        realm = user_object.realm
-        resolver = user_object.resolver
-
-    if len(container_realms) == 1 and realm in container_realms:
-        container_realms = None
-    elif len(container_realms) == 0:
-        container_realms = None
-
-    return username, realm, resolver, container_realms
-
-
-def user_is_container_owner(params, username, realm, allow_no_owner=False):
-    """
-    This decorator checks if the user is the owner of the container.
-    A user is only allowed to manage and edit its own containers.
-    If the user is not the owner of the container, a PolicyError is raised.
-    If no container is found, the user is allowed to do the action.
-
-    :param request: The request object
-    :param allow_no_owner: If True, the user is allowed to manage a container without owner
-    :return: True if the user is the owner of the container, otherwise raises a PolicyError
-    """
-
-    container_serial = params.get("container_serial")
-    try:
-        container = find_container_by_serial(container_serial) if container_serial else None
-    except ResourceNotFoundError:
-        log.info(f"Container with serial {container_serial} not found.")
-    if container:
-        container_owners = container.get_users()
-        is_owner = False
-        for owner in container_owners:
-            if owner.login == username and owner.realm == realm:
-                is_owner = True
-                break
-        if allow_no_owner and len(container_owners) == 0:
-            is_owner = True
-        if not is_owner:
-            raise PolicyError("User is not the owner of the container.")
+    user = User(logged_in_user_attr.username, logged_in_user_attr.realm, logged_in_user_attr.resolver)
+    owner = User(owner_attr.username, owner_attr.realm, owner_attr.resolver)
+    is_owner = user == owner
+    if not is_owner and allow_no_owner and not owner:
+        is_owner = True
     return is_owner

@@ -329,8 +329,7 @@ def init():
                          f"{container_serial}.")
             if container_add_token_right:
                 try:
-                    logged_in_user_role = g.logged_in_user.get("role")
-                    add_token_to_container(container_serial, tokenobject.get_serial(), user, logged_in_user_role)
+                    add_token_to_container(container_serial, tokenobject.get_serial())
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
                     g.audit_object.log({"container_serial": container_serial,

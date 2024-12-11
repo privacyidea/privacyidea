@@ -23,15 +23,14 @@ from privacyidea.lib.container import (get_container_classes, delete_container_b
                                        find_container_by_serial, set_container_states, add_container_states,
                                        set_container_description, add_container_info, delete_container_info,
                                        assign_user, unassign_user, set_container_info,
-                                       remove_multiple_tokens_from_container, add_multiple_tokens_to_container,
-                                       _check_user_access_on_container, unregister)
+                                       add_multiple_tokens_to_container,
+                                       unregister, add_token_to_container)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import logging
 
 from privacyidea.lib.token import enable_token
-from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -320,9 +319,7 @@ class ContainerEventHandler(BaseEventHandler):
                                    content.get("detail", {}).get("serial") or \
                                    g.audit_object.audit_data.get("serial")
                     if token_serial:
-                        user = request.User
-                        user_role = g.logged_in_user.get("role")
-                        add_multiple_tokens_to_container(new_serial, [token_serial], user=user, user_role=user_role)
+                        add_token_to_container(new_serial, token_serial)
                     else:
                         log.debug(f"No token found to add to container {new_serial}")
 

@@ -588,7 +588,7 @@ class APIEventsTestCase(MyApiTestCase):
         # Get container serial from token
         token_serial = "SPASS0001"
         init_token({"type": "spass", "serial": token_serial})
-        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
+        add_token_to_container(container_serial, token_serial)
 
         payload = {"serial": token_serial}
         request = self.app.test_request_context('/token/enable',
