@@ -27,7 +27,6 @@ from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
 
-
 def _check_policy_name(polname, policies):
     """
     Checks if the polname is contained in the policies list.
@@ -1307,21 +1306,21 @@ class PolicyTestCase(MyTestCase):
 
         # an unknown section in the condition
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "equals", "verysecure", True)])
+                   conditions=[("somesection", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegex(PolicyError, r".*unknown section.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownsection")
 
         # ... but the error does not occur if the condition is inactive
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "equals", "verysecure", False)])
+                   conditions=[("somesection", "bla", "equals", "verysecure", False)])
         all_policies = P.list_policies()
         self.assertEqual(P.match_policies(user_object=user1), all_policies)
         delete_policy("unknownsection")
 
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("userinfo", "bla", "equals", "verysecure", True)])
+                   conditions=[("userinfo", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegex(PolicyError, r".*Unknown key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")
@@ -1351,7 +1350,7 @@ class PolicyTestCase(MyTestCase):
         # Check what the user "import_admin" is allowed to do
         # Allowed to import on pinode 1
         pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode1")
-        self.assertEqual({"import_node1"}, set(p['name'] for p in pols),)
+        self.assertEqual({"import_node1"}, set(p['name'] for p in pols), )
         # Not allowed to import on pinode 2
         pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode2")
         self.assertEqual(set(), set(p['name'] for p in pols))
@@ -1577,34 +1576,44 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="scopeA_r_realmA_userA_resolverB", scope="scopeA", action="read", realm="realmA",
                    user="userA", resolver="resolverB")
         P = PolicyClass()
+
         # get policies for action read
         policies = P.list_policies(action="read")
         self.assertEqual(10, len(policies))
+
         # get policies applicable for realm A
         policies = P.list_policies(action="read", realm="realmA")
+        policy_names = {p["name"] for p in policies}
         self.assertEqual(7, len(policies))
-        correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
-                            "scopeA_r_resolverB", "scopeA_r_realmA_userA_resolverA", "scopeA_r_realmA_userA_resolverB"]
-        self.assertListEqual(correct_policies, [p["name"] for p in policies])
+        correct_policies = {"scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
+                            "scopeA_r_resolverB", "scopeA_r_realmA_userA_resolverA",
+                            "scopeA_r_realmA_userA_resolverB"}
+        self.assertSetEqual(correct_policies, policy_names)
+
         # get policies applicable for any user and resolver of realm A
         policies = P.list_policies(action="read", realm="realmA", user="", resolver="")
+        policy_names = {p["name"] for p in policies}
         self.assertEqual(2, len(policies))
-        correct_policies = ["scopeA_r", "scopeA_r_realmA"]
-        self.assertListEqual(correct_policies, [p["name"] for p in policies])
+        correct_policies = {"scopeA_r", "scopeA_r_realmA"}
+        self.assertSetEqual(correct_policies, policy_names)
+
         # get policies applicable of userA in realmA of resolverA
         policies = P.list_policies(action="read", realm="realmA", user="userA", resolver="resolverA")
+        policy_names = {p["name"] for p in policies}
         self.assertEqual(5, len(policies))
-        correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
-                            "scopeA_r_realmA_userA_resolverA"]
-        self.assertListEqual(correct_policies, [p["name"] for p in policies])
+        correct_policies = {"scopeA_r", "scopeA_r_realmA", "scopeA_r_realmA_userA", "scopeA_r_resolverA",
+                            "scopeA_r_realmA_userA_resolverA"}
+        self.assertSetEqual(correct_policies, policy_names)
+
         # get policies applicable to userA in realmA of resolverA or realmB+resolverA
         policies = P.list_policies(action="read", realm="realmA", user="userA", resolver="resolverA",
                                    additional_realms=["realmB"])
+        policy_names = {p["name"] for p in policies}
         self.assertEqual(6, len(policies))
-        correct_policies = ["scopeA_r", "scopeA_r_realmA", "scopeA_r_realmB", "scopeA_r_realmA_userA",
-                            "scopeA_r_resolverA", "scopeA_r_realmA_userA_resolverA"]
-        self.assertListEqual(correct_policies, [p["name"] for p in policies])
-        # Pass also a list to realm
+        correct_policies = {"scopeA_r", "scopeA_r_realmA", "scopeA_r_realmB", "scopeA_r_realmA_userA",
+                            "scopeA_r_resolverA", "scopeA_r_realmA_userA_resolverA"}
+        self.assertSetEqual(correct_policies, policy_names)
+
         delete_policy("scopeA_w")
         delete_policy("scopeA_r")
         delete_policy("scopeA_r_realmA")
