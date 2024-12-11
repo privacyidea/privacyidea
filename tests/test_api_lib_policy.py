@@ -3715,7 +3715,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                 "resolver": self.resolvername3,
                                 "role": "user"}
         # create container for user hans (realm3) and realm 1
-        container_serial, _ = init_container({"type": container_type})
+        container_serial = init_container({"type": container_type})["container_serial"]
         container = find_container_by_serial(container_serial)
         builder = EnvironBuilder(method='POST', data={'container_serial': container_serial}, headers={})
         env = builder.get_environ()
@@ -4112,7 +4112,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         :return: Request object and container object
         """
         # create container for user hans (realm3) and realm 1
-        container_serial, _ = init_container({"type": "smartphone"})
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
         builder = EnvironBuilder(method='POST', data={'container_serial': container_serial}, headers={})
         env = builder.get_environ()

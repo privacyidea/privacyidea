@@ -3106,7 +3106,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token = HotpTokenClass(db_token)
         token.add_user(User("cornelius", self.realm1))
         token.set_pin(pin)
-        container_serial, _ = init_container({"type": "smartphone"})
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
         container.add_token(token)
 

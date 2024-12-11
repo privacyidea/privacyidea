@@ -571,7 +571,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertIsNotNone(container_serial)
 
         # Get container serial from request
-        container_serial, _ = init_container({"type": "Generic", "description": "test description!!"})
+        container_serial = init_container({"type": "Generic", "description": "test description!!"})["container_serial"]
         payload = {"container_serial": container_serial, "states": ["active"]}
         request = self.app.test_request_context(f'/container/{container_serial}/states',
                                                 method='POST',
@@ -880,7 +880,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
     @classmethod
     def setup_container_with_tokens(cls):
         # create container
-        container_serial, _ = init_container({"type": "smartphone"})
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # create tokens

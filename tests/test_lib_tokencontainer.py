@@ -50,8 +50,9 @@ class TokenContainerManagementTestCase(MyTestCase):
     spass_serial_gen = "SPASS000001"
 
     def test_01_create_empty_container(self):
-        serial, _ = init_container(
-            {"type": "generic", "container_serial": self.empty_container_serial, "description": "test container"})
+        serial = init_container({"type": "generic",
+                                 "container_serial": self.empty_container_serial,
+                                 "description": "test container"})["container_serial"]
         empty_container = find_container_by_serial(self.empty_container_serial)
         self.assertEqual("test container", empty_container.description)
         self.assertIsNotNone(empty_container.serial)
@@ -60,25 +61,25 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Init container with user and realm
         self.setUp_user_realms()
-        serial, _ = init_container({"type": "generic",
-                                    "container_serial": self.generic_serial,
-                                    "user": "hans",
-                                    "realm": self.realm1})
+        serial = init_container({"type": "generic",
+                                 "container_serial": self.generic_serial,
+                                 "user": "hans",
+                                 "realm": self.realm1})["container_serial"]
         container = find_container_by_serial(serial)
         self.assertEqual(self.realm1, container.realms[0].name)
         self.assertEqual("hans", container.get_users()[0].login)
 
         # Init smartphone container with realm
-        serial, _ = init_container(
-            {"type": "smartphone", "container_serial": self.smartphone_serial, "realm": self.realm1})
+        serial = init_container({"type": "smartphone",
+                                 "container_serial": self.smartphone_serial,
+                                 "realm": self.realm1})["container_serial"]
         smartphone = find_container_by_serial(serial)
         self.assertEqual(self.realm1, smartphone.realms[0].name)
         self.assertEqual("smartphone", smartphone.type)
 
         # Init yubikey container
-        self.yubikey_serial, _ = init_container({"type": "yubikey", "container_serial": self.yubikey_serial})
-        self.assertIsNotNone(self.yubikey_serial)
-        self.assertNotEqual("", self.yubikey_serial)
+        serial = init_container({"type": "yubikey", "container_serial": self.yubikey_serial})["container_serial"]
+        self.assertEqual(self.yubikey_serial, serial)
 
     def test_02_create_container_fails(self):
         # Unknown container type raises exception
@@ -88,13 +89,13 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_03_create_container_wrong_user_parameters(self):
         # Init container with user: User shall not be assigned (realm required)
-        serial, _ = init_container({"type": "Generic", "user": "hans"})
+        serial = init_container({"type": "Generic", "user": "hans"})["container_serial"]
         container = find_container_by_serial(serial)
         self.assertEqual(0, len(container.realms))
         self.assertEqual(0, len(container.get_users()))
 
         # Init with non-existing user
-        serial, _ = init_container({"type": "Generic", "user": "random", "realm": "random"})
+        serial = init_container({"type": "Generic", "user": "random", "realm": "random"})["container_serial"]
         container = find_container_by_serial(serial)
         self.assertEqual(0, len(container.realms))
         self.assertEqual(0, len(container.get_users()))
@@ -254,7 +255,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsNone(container_result)
 
         # Token with container
-        container_serial, _ = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         add_token_to_container(container_serial, token.get_serial())
         container_result = find_container_for_token(token.get_serial())
         self.assertEqual(container_serial, container_result.serial)
@@ -296,7 +297,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_18_find_container_success(self):
         # Find by serial
-        serial, _ = init_container({"type": "generic", "description": "find container"})
+        serial = init_container({"type": "generic", "description": "find container"})["container_serial"]
         container = find_container_by_serial(serial)
         self.assertEqual(serial, container.serial)
 
@@ -308,7 +309,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Arrange
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial, _ = init_container({"type": "generic", "description": "Set Realm Container"})
+        container_serial = init_container({"type": "generic", "description": "Set Realm Container"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Set existing realms
@@ -342,7 +343,7 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_20_add_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        container_serial, _ = init_container({"type": "generic", "description": "test container"})
+        container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Add existing realm
@@ -385,7 +386,7 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_21_assign_user(self):
         # Arrange
         self.setUp_user_realms()
-        container_serial, _ = init_container({"type": "generic", "description": "assign user"})
+        container_serial = init_container({"type": "generic", "description": "assign user"})["container_serial"]
         container = find_container_by_serial(container_serial)
         user_hans = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         user_root = User(login="root", realm=self.realm1, resolver=self.resolvername1)
@@ -407,7 +408,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_22_add_container_info(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "add container info"})
+        container_serial = init_container({"type": "generic", "description": "add container info"})["container_serial"]
 
         # Add container info
         add_container_info(container_serial, "key1", "value1")
@@ -433,7 +434,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_23_set_container_info(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "add container info"})
+        container_serial = init_container({"type": "generic", "description": "add container info"})["container_serial"]
 
         # Set container info
         res = set_container_info(container_serial, {"key1": "value1"})
@@ -472,7 +473,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_24_delete_container_info(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "delete container info"})
+        container_serial = init_container({"type": "generic", "description": "delete container info"})["container_serial"]
         container = find_container_by_serial(container_serial)
         info = {"key1": "value1", "key2": "value2", "key3": "value3"}
         set_container_info(container_serial, info)
@@ -499,7 +500,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_25_set_description(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "Initial description"})
+        container_serial = init_container({"type": "generic", "description": "Initial description"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Set empty description
@@ -516,7 +517,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_26_set_states(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "Set states"})
+        container_serial = init_container({"type": "generic", "description": "Set states"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # check initial state
@@ -558,7 +559,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_27_add_states(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic", "description": "Set states"})
+        container_serial = init_container({"type": "generic", "description": "Set states"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Check initial state
@@ -617,7 +618,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         realms = ["realm1", "realm2", "realm1", "realm2", "realm1", "realm1"]
         container_serials = []
         for t, r in zip(types, realms):
-            serial, _ = init_container({"type": t, "description": "test container", "realm": r})
+            serial = init_container({"type": t, "description": "test container", "realm": r})["container_serial"]
             container_serials.append(serial)
 
         # Filter for container serial
@@ -692,7 +693,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
-        cserial, _ = init_container({"type": "smartphone", "template": template_params})
+        init_container({"type": "smartphone", "template": template_params})
 
         # check filter by template
         container_data = get_all_containers(template="test")
@@ -796,7 +797,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_34_get_as_dict(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
         # Tokens
         hotp = init_token({"genkey": True, "type": "hotp"})
@@ -831,7 +832,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_35_get_as_dict_no_tokens_no_user(self):
         # Arrange
-        container_serial, _ = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Act
@@ -851,7 +852,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertListEqual([], container_dict["tokens"])
 
     def test_36_set_default_options(self):
-        smph_serial, _ = init_container({"type": "smartphone"})
+        smph_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smph_serial)
 
         # Invalid key
@@ -875,7 +876,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
                    SmartphoneOptions.ENCRYPT_MODE: "GCM"}
 
-        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smph_serial = init_container({"type": "smartphone", "options": options})["container_serial"]
         smartphone = find_container_by_serial(smph_serial)
         container_info = smartphone.get_container_info_dict()
         self.assertEqual("secp384r1", container_info[SmartphoneOptions.KEY_ALGORITHM])
@@ -891,7 +892,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                    SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "xxx",
                    SmartphoneOptions.ENCRYPT_MODE: "DEF"}
 
-        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smph_serial = init_container({"type": "smartphone", "options": options})["container_serial"]
         smartphone = find_container_by_serial(smph_serial)
         container_info_keys = smartphone.get_container_info_dict().keys()
         self.assertNotIn(SmartphoneOptions.KEY_ALGORITHM, container_info_keys)
@@ -902,7 +903,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_39_init_smartphone_with_invalid_option_keys(self):
         options = {YubikeyOptions.PIN_POLICY: "Maybe"}
-        smph_serial, _ = init_container({"type": "smartphone", "options": options})
+        smph_serial = init_container({"type": "smartphone", "options": options})["container_serial"]
         smartphone = find_container_by_serial(smph_serial)
         container_info_keys = smartphone.get_container_info_dict().keys()
         self.assertNotIn(YubikeyOptions.PIN_POLICY, container_info_keys)
@@ -913,7 +914,7 @@ class TokenContainerSynchronization(MyTestCase):
     def register_smartphone_initialize_success(self, server_url, passphrase_params=None,
                                                smartphone_serial: str = None):
         if not smartphone_serial:
-            smartphone_serial, _ = init_container({"type": "smartphone"})
+            smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         scope = create_endpoint_url(server_url, "container/register/finalize")
 
@@ -983,7 +984,7 @@ class TokenContainerSynchronization(MyTestCase):
         scope = "https://pi.net/container/register/finalize"
 
         # Mock smartphone with guessed params (no prepare)
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         nonce = geturandom(20, hex=True)
         device_brand = "LG"
@@ -1033,7 +1034,7 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_02_register_smartphone_terminate(self):
         # container is not registered
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         smartphone.terminate_registration()
 
@@ -1132,7 +1133,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn("private_key_server", container_info_keys)
 
     def test_06_create_container_challenge(self):
-        container_serial, _ = init_container({"type": "smartphone"})
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
         scope = "https://pi.net/container/SMPH0001/sync"
 
@@ -1181,7 +1182,7 @@ class TokenContainerSynchronization(MyTestCase):
         return params, private_enc_key_smph
 
     def test_08_challenge_sync_smartphone_success(self):
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Create challenge for synchronization
@@ -1338,7 +1339,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn("public_server_key", res.keys())
 
     def test_14_synchronize_without_registration(self):
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Init sync
@@ -1375,7 +1376,7 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_16_synchronize_container_details(self):
         # Arrange
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         hotp_token = init_token({"genkey": True, "type": "hotp"})
         _, _, otp_dict = hotp_token.get_multi_otp(2)
@@ -1417,7 +1418,7 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_17_finalize_container_rollover(self):
         # create smartphone container with all possible token types
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         hotp_token = init_token({"genkey": True, "type": "hotp"})
         hotp_secret = hotp_token.token.get_otpkey().getKey().decode("utf-8")
@@ -1571,7 +1572,7 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_20_initial_synchronize_smartphone(self):
         # setup container
-        smartphone_serial, _ = init_container({"type": "smartphone"})
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Registration
@@ -1819,8 +1820,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         template = get_template_obj("test")
         # create container with a template
         template_params = {"name": "test", "container_type": "smartphone", "template_options": {}}
-        smph1, _ = init_container({"type": "smartphone", "template": template_params})
-        smph2, _ = init_container({"type": "smartphone", "template": template_params})
+        smph1 = init_container({"type": "smartphone", "template": template_params})["container_serial"]
+        smph2 = init_container({"type": "smartphone", "template": template_params})["container_serial"]
 
         containers = template.containers
         self.assertEqual(2, len(containers))
@@ -2013,7 +2014,9 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # Create container with template
         container_params = {"type": "smartphone", "template": {"name": "test", "container_type": "smartphone",
                                                                "template_options": template_options}}
-        container_serial, template_tokens = init_container(container_params)
+        init_res = init_container(container_params)
+        container_serial = init_res["container_serial"]
+        template_tokens = init_res["template_tokens"]
         self.assertEqual(template_options["tokens"], template_tokens)
 
         # check container properties
@@ -2037,7 +2040,9 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         container_params = {"type": "smartphone", "template": {"name": "test", "container_type": "generic",
                                                                "template_options": template_options}}
-        container_serial, template_tokens = init_container(container_params)
+        init_res = init_container(container_params)
+        container_serial = init_res["container_serial"]
+        template_tokens = init_res["template_tokens"]
         container = find_container_by_serial(container_serial)
         self.assertEqual([], template_tokens)
         self.assertIsNone(container.template)
@@ -2058,7 +2063,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # create container with tokens
         container_params = {"type": "generic", "template": {"name": "test", "container_type": "generic",
                                                             "template_options": template_options}}
-        container_serial, template_tokens = init_container(container_params)
+        container_serial = init_container(container_params)["container_serial"]
+
         container = find_container_by_serial(container_serial)
         for token_details in [{"type": "hotp", "genkey": True}, {"type": "spass"}, {"type": "spass"}]:
             token = init_token(token_details)

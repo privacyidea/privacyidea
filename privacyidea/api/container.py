@@ -179,11 +179,13 @@ def init():
             # The container has to be in one realm the admin is allowed to manage
             request.all_data["realm"] = allowed_realms[0]
 
-    serial, template_tokens = init_container(request.all_data)
+    init_res = init_container(request.all_data)
+    serial = init_res["container_serial"]
     res = {"container_serial": serial}
     container = find_container_by_serial(serial)
 
     # Template handling
+    template_tokens = init_res["template_tokens"]
     if template_tokens:
         res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request)
 

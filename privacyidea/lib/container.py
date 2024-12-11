@@ -348,7 +348,15 @@ def init_container(params):
 
         To assign a user to the container, the user and realm are required.
 
-    :return: The serial of the created container
+    :return: Dictionary containing the serial of the created container and a list of init details for tokens from the
+        template if used such as
+
+        ::
+
+            {
+                "container_serial": "CONT0001",
+                "template_tokens": [{"type": "hotp", ...}, ...]
+            }
     """
     ctype = params.get("type")
     if not ctype:
@@ -403,7 +411,9 @@ def init_container(params):
             log.warning(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
-    return serial, template_tokens
+
+    res = {"container_serial": serial, "template_tokens": template_tokens}
+    return res
 
 
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):

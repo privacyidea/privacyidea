@@ -307,7 +307,7 @@ class ContainerEventHandler(BaseEventHandler):
                     else:
                         log.debug(f"No user found to assign to container {container_serial}")
 
-                new_serial, _ = init_container(params)
+                new_serial = init_container(params)["container_serial"]
                 # assign remaining users to container
                 for user in users[1:]:
                     container = find_container_by_serial(new_serial)
