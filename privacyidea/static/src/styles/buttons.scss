@@ -1,0 +1,77 @@
+// Mixins for common button styles
+@mixin button-base($height, $width, $border-radius, $background, $box-shadow, $cursor: pointer) {
+  height: $height;
+  width: $width;
+  border: none;
+  justify-content: start;
+  border-radius: $border-radius;
+  background: $background;
+  box-shadow: $box-shadow;
+  cursor: $cursor;
+  transition: 0ms;
+}
+
+@mixin button-hover($background, $box-shadow) {
+  &:hover {
+    background: $background;
+    box-shadow: $box-shadow;
+    transition: 0ms;
+  }
+}
+
+// Buttons
+.card-button {
+  @include button-base(40px, 240px, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
+}
+
+.card-button-reset {
+  @include button-base(40px, 240px, var(--border-radius), var(--background-green), var(--box-shadow-green));
+}
+
+.card-button-activ {
+  @include button-base(40px, 240px, var(--border-radius), var(--background-blue-inset), var(--box-shadow-blue-inset));
+}
+
+.card-button-delete {
+  margin-right: 5px;
+  @include button-base(40px, 240px, var(--border-radius), var(--background-red), var(--box-shadow-red));
+
+  &.activ,
+  &:hover {
+    background: var(--background-red-inset);
+    box-shadow: var(--box-shadow-red-inset);
+    transition: 0ms;
+  }
+}
+
+.card-button-activate {
+  color: white;
+  @include button-base(40px, 240px, var(--border-radius), var(--background-green), var(--box-shadow-green));
+
+  &.activ,
+  &:hover {
+    background: var(--background-green-inset);
+    box-shadow: var(--box-shadow-green-inset);
+    transition: 0ms;
+  }
+}
+
+.detail-button {
+  color: white;
+  @include button-base(40px, 240px, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
+}
+
+.detail-button-icon {
+  vertical-align: bottom;
+  margin-bottom: -6px;
+  font-size: 18px;
+}
+
+.delete-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}

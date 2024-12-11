@@ -10,10 +10,10 @@ html, body {
 
 :root {
   // General Variables
-  --blur: 0px;
-  --border-radius: 0px;
-  --light-distance: 0px;
-  --shadow-distance: 0px;
+  --blur: 4px;
+  --border-radius: 3px;
+  --light-distance: -4px;
+  --shadow-distance: 2px;
 
   // Shadow Colors
   --shadow: #cccccc;

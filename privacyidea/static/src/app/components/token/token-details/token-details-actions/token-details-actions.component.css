@@ -1,4 +1,5 @@
 @import '../../../../../styles/table.css';
+@import '../../../../../styles/buttons.scss';
 
 .detail-table {
   display: flex;
@@ -30,7 +31,6 @@
 
 .detail-row {
   min-width: 143px;
-  height: 52px;
 }
 
 .edit-info-row {
@@ -46,25 +46,6 @@
   gap: 10px;
 }
 
-.detail-button {
-  height: 40px;
-  width: 257px;
-  color: white;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-blue);
-  box-shadow: var(--box-shadow-blue);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.detail-button:hover {
-  background: var(--background-blue-inset);
-  box-shadow: var(--box-shadow-blue-inset);
-  transition: 0ms;
-}
-
 .detail-button-icon {
   vertical-align: bottom;
   margin-bottom: -6px;
@@ -75,31 +56,16 @@
   min-width: 0;
 }
 
-.info-title {
-  display: flex;
-  padding-left: 16px;
-  align-items: center;
-  width: 125px;
-  border: 1px solid #E0E2EC;
-}
-
-.info-container {
-  flex-direction: row;
-  display: flex;
-  width: auto;
-}
-
 .otp-container {
   flex-direction: column;
   display: flex;
   gap: 10px;
-  margin-left: 3px;
-  width: auto;
+  padding: 0 16px;
 }
 
 .input {
   height: 40px;
-  width: 116px;
+  width: 107px;
   border-radius: var(--border-radius);
 }
 
@@ -113,7 +79,7 @@
 
 .input-full {
   height: 40px;
-  width: 116px;
+  width: 107px;
   border-radius: var(--border-radius);
 }
 
@@ -138,46 +104,23 @@ mat-grid-tile {
   padding: 0;
 }
 
-.edit-button-container {
-  display: inline-flex;
-}
-
-.edit-column-cell {
-  min-width: 86px;
-  padding: 0;
-}
-
-.editable-row {
-  width: 286px;
-  max-width: 286px;
-  min-width: 286px;
-}
-
-.user-editable-row {
-  min-width: 234px;
-}
-
 .pin-input {
   display: flex;
   gap: 10px;
-  justify-content: center;
 }
 
 .otp-pin-input {
   display: flex;
   gap: 10px;
-  justify-content: center;
 }
 
 .pin-input-button {
   display: flex;
-  justify-content: center;
 }
 
 .user-pin {
   display: flex;
   justify-content: center;
-  align-items: center;
   flex-direction: column;
   gap: 10px;
 }
@@ -190,13 +133,11 @@ mat-grid-tile {
 .user-pin-button {
   display: flex;
   gap: 10px;
-  justify-content: center;
   flex-flow: column;
 }
 
 .assign-container {
   display: flex;
-  justify-content: center;
   flex-direction: column;
 }
 
@@ -214,26 +155,6 @@ mat-grid-tile {
 
 .green-icon {
   color: var(--green-base);
-}
-
-.card-button-activate {
-  color: white;
-  height: 40px;
-  width: 257px;
-  border: none;
-  justify-content: start;
-  border-radius: var(--border-radius);
-  background: var(--background-green);
-  box-shadow: var(--box-shadow-green);
-  cursor: pointer;
-  transition: 0ms;
-}
-
-.card-button-activate.activ,
-.card-button-activate:hover {
-  background: var(--background-green-inset);
-  box-shadow: var(--box-shadow-green-inset);
-  transition: 0ms;
 }
 
 h3 {
@@ -259,20 +180,6 @@ h3 {
   flex-direction: column;
   justify-content: center;
   gap: 10px;
-}
-
-.value-container {
-  width: 286px;
-}
-
-.value-td {
-  padding: 0;
-}
-
-.info-span {
-  display: flex;
-  flex-direction: column;
-  margin-left: 8px;
 }
 
 ::ng-deep .mat-mdc-text-field-wrapper {
@@ -311,20 +218,12 @@ h3 {
   margin-top: -4px;
 }
 
-.detail-table-item {
-  margin-left: 5px;
-}
-
 .cut-textarea {
   margin-top: -2px;
 }
 
 .onepx {
   margin-top: 1px;
-}
-
-.visibility-button {
-  margin-right: 86px;
 }
 
 .visibility-icon {

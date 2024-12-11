@@ -22,6 +22,7 @@ $border-radius: var(--border-radius);
   position: fixed;
   bottom: 0;
   width: 100%;
+  z-index: 1;
 
   .footer-right {
     @include flex-center;

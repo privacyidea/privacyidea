@@ -4,20 +4,10 @@
   color: var(--red-base);
 }
 
-.edit-button-container {
-  display: flex;
-  justify-content: center;
-}
-
-.edit-column-cell {
-  min-width: 86px;
-  padding: 0;
-}
-
 .editable-row {
-  width: 286px;
-  max-width: 286px;
-  min-width: 286px;
+  width: 18rem;
+  max-width: 18rem;
+  min-width: 18rem;
   padding-right: 0;
 }
 

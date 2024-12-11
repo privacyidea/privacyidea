@@ -40,7 +40,7 @@
     </ng-container>
     <ng-container matColumnDef="edit">
       <th *matHeaderCellDef class="user-detail-row" mat-header-cell></th>
-      <td *matCellDef="let element" class="user-detail-row edit-column-cell flex-center" mat-cell>
+      <td *matCellDef="let element" class="edit-column-cell flex-center" mat-cell>
         @if (element.keyMap.key === "username" && !(isAnyEditing() && !isEditingUser())) {
           @if (element.value) {
             <div class="edit-button-container">
@@ -93,5 +93,7 @@
         <br style="margin-bottom: 40px">
       }
     </div>
+    <br/>
+    <mat-divider/>
   </div>
 </div>

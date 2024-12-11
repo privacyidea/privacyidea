@@ -1,7 +1,11 @@
 .token-layout {
   display: flex;
-  justify-content: space-around;
-  margin: 16px;
-  flex: 1;
+  justify-content: center;
+  gap: 2rem;
   overflow: auto;
+}
+
+.main-margin {
+  margin-top: 2rem;
+  margin-bottom: 6rem;
 }

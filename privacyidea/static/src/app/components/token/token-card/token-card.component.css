@@ -4,6 +4,8 @@ mat-card {
   border: white;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
+  padding: 2rem;
+  margin-top: 2rem;
 }
 
 mat-tab-group {
@@ -11,8 +13,13 @@ mat-tab-group {
   align-items: center;
 }
 
+.mat-mdc-card-content {
+  padding: 0;
+}
+
 h4 {
   padding: 8px;
+  margin: 0;
 }
 
 .active {

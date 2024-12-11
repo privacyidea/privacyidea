@@ -18,7 +18,6 @@ th:nth-child(even) {
 
 .item-table {
   padding: 16px;
-  width: 1400px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
@@ -35,7 +34,7 @@ th:nth-child(even) {
 
 .mat-mdc-form-field {
   color: var(--blue-base);
-  width: 252px;
+  width: 14rem;
 }
 
 .mat-mdc-paginator {
@@ -165,6 +164,16 @@ th:nth-child(even) {
   color: black;
   background-color: white;
   cursor: pointer;
+  justify-content: center;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+.edit-button-container {
+  display: flex;
   justify-content: center;
 }
 

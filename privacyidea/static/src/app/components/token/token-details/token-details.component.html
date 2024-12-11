@@ -1,105 +1,102 @@
 <div aria-label="Details" class="details">
-  <mat-grid-list cols="23" rowHeight="7vh">
-    <mat-grid-tile [colspan]="23" [rowspan]="1">
-      <div class="token-detail-header">
-        <h2>Details for Token: </h2>
-        <h2 style="color: var(--blue-base)"> {{ serial() }} </h2>
-      </div>
-    </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="9">
-      <div class="details-wrapper">
-        <div class="details-section">
-          <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
-                 class="detail-table" mat-table>
-            <ng-container matColumnDef="key">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="value">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
-                @if (element.keyMap.key === "container_serial") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="detail-table-input pad-right">
-                      <mat-label>Select Container</mat-label>
-                      <input matInput
-                             [(ngModel)]="selectedContainer"
-                             [matAutocomplete]="containerAuto">
-                      <mat-autocomplete autoActiveFirstOption
-                                        #containerAuto="matAutocomplete">
-                        @for (option of filteredContainerOptions(); track option) {
-                          <mat-option [value]="option">{{ option }}</mat-option>
-                        }
-                      </mat-autocomplete>
-                    </mat-form-field>
-                  } @else {
-                    <span>{{ element.value }}</span>
-                  }
-                } @else if (element.keyMap.key === "realms") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="detail-table-input pad-right">
-                      <mat-label>Select Realms</mat-label>
-                      <mat-select [(ngModel)]="selectedRealms" multiple>
-                        @for (option of realmOptions(); track option; ) {
-                          @if (option === userRealm) {
-                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <div class="scrollable-container cell-list pad-right">
-                      @for (realm of element.value; track realm; let idx = $index) {
-                        <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
-                          'single-item' : ''">
-                          <span class="object-item">• {{ realm }}</span>
-                        </mat-list-item>
+  <div class="details-header flex-box">
+    <div class="token-detail-header">
+      <h3>Details for Token: </h3>
+      <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
+    </div>
+    <div class="details-wrapper flex-box flex-9">
+      <div class="details-section">
+        <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
+               class="detail-table" mat-table>
+          <ng-container matColumnDef="key">
+            <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="detail-row" mat-cell>{{ element.keyMap.label }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="value">
+            <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="detail-row editable-row" mat-cell>
+              @if (element.keyMap.key === "container_serial") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="detail-table-input pad-right">
+                    <mat-label>Select Container</mat-label>
+                    <input matInput
+                           [(ngModel)]="selectedContainer"
+                           [matAutocomplete]="containerAuto">
+                    <mat-autocomplete autoActiveFirstOption
+                                      #containerAuto="matAutocomplete">
+                      @for (option of filteredContainerOptions(); track option) {
+                        <mat-option [value]="option">{{ option }}</mat-option>
                       }
-                    </div>
-                  }
-                } @else if (element.keyMap.key === "tokengroup") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="detail-table-input pad-right">
-                      <mat-label>Select Token Group</mat-label>
-                      <mat-select [(ngModel)]="selectedTokengroup" multiple>
-                        @for (option of tokengroupOptions(); track option; ) {
-                          @if (option === userRealm) {
-                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <div class="scrollable-container cell-list pad-right">
-                      @for (tokengroup of element.value; track tokengroup; let idx = $index) {
-                        <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
-                          'single-item' : ''">
-                          <span class="object-item">• {{ tokengroup }}</span>
-                        </mat-list-item>
-                      }
-                    </div>
-                  }
-                } @else if (element.isEditing() && element.keyMap.key === "description") {
-                  <mat-form-field class="detail-table-input pad-right">
-                    <textarea matInput rows="1" class="cut-textarea" [maxlength]="80"
-                              [(ngModel)]="element.value"></textarea>
-                  </mat-form-field>
-                } @else if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                  <mat-form-field class="detail-table-input pad-right">
-                    <input type="number" matInput [(ngModel)]="element.value"/>
-                  </mat-form-field>
-                } @else if (element.isEditing()) {
-                  <mat-form-field class="detail-table-input pad-right">
-                    <textarea matInput rows="1" class="cut-textarea"
-                              [(ngModel)]="element.value"></textarea>
+                    </mat-autocomplete>
                   </mat-form-field>
                 } @else {
-                  <div [ngClass]="element.keyMap.key === 'description'
+                  <span>{{ element.value }}</span>
+                }
+              } @else if (element.keyMap.key === "realms") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="detail-table-input pad-right">
+                    <mat-label>Select Realms</mat-label>
+                    <mat-select [(ngModel)]="selectedRealms" multiple>
+                      @for (option of realmOptions(); track option; ) {
+                        @if (option === userRealm) {
+                          <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                        } @else {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <div class="scrollable-container cell-list pad-right">
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
+                          'single-item' : ''">
+                        <span class="object-item">• {{ realm }}</span>
+                      </mat-list-item>
+                    }
+                  </div>
+                }
+              } @else if (element.keyMap.key === "tokengroup") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="detail-table-input pad-right">
+                    <mat-label>Select Token Group</mat-label>
+                    <mat-select [(ngModel)]="selectedTokengroup" multiple>
+                      @for (option of tokengroupOptions(); track option; ) {
+                        @if (option === userRealm) {
+                          <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                        } @else {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <div class="scrollable-container cell-list pad-right">
+                    @for (tokengroup of element.value; track tokengroup; let idx = $index) {
+                      <mat-list-item class="object-row" [ngClass]="element.value.length === 1 ?
+                          'single-item' : ''">
+                        <span class="object-item">• {{ tokengroup }}</span>
+                      </mat-list-item>
+                    }
+                  </div>
+                }
+              } @else if (element.isEditing() && element.keyMap.key === "description") {
+                <mat-form-field class="detail-table-input pad-right">
+                    <textarea matInput rows="1" class="cut-textarea" [maxlength]="80"
+                              [(ngModel)]="element.value"></textarea>
+                </mat-form-field>
+              } @else if (element.isEditing() && isNumberElement(element.keyMap.key)) {
+                <mat-form-field class="detail-table-input pad-right">
+                  <input type="number" matInput [(ngModel)]="element.value"/>
+                </mat-form-field>
+              } @else if (element.isEditing()) {
+                <mat-form-field class="detail-table-input pad-right">
+                    <textarea matInput rows="1" class="cut-textarea"
+                              [(ngModel)]="element.value"></textarea>
+                </mat-form-field>
+              } @else {
+                <div [ngClass]="element.keyMap.key === 'description'
                    ? 'scrollable-container description-container pad-right' : 'pad-right'">
                     <span class="detail-table-item"
                           [ngClass]="[tableUtilsService.getClassForKeyMap(element.keyMap.key,
@@ -110,72 +107,68 @@
                           revoked())
                       }}
                     </span>
-                  </div>
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="edit">
-              <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
-              <td *matCellDef="let element" class="detail-row edit-column-cell"
-                  mat-cell>
-                <div class="flex-center">
-                  @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
-                    <div class="edit-button-container">
-                      <button mat-icon-button class="edit-button" (click)="resetFailCount()">
-                        <mat-icon class="mat-icon-button">
-                          lock_reset
-                        </mat-icon>
-                      </button>
-                    </div>
-                  } @else if (element.keyMap.key === "container_serial" && !isAnyEditing() &&
-                  element.value) {
-                    <div class="edit-button-container">
-                      <button mat-icon-button class="red-icon edit-button"
-                              (click)="deleteContainer()">
-                        <mat-icon class="mat-icon-button">folder_delete</mat-icon>
-                      </button>
-                    </div>
-                  } @else if (isEditableElement(element.keyMap.key)) {
-                    <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                      [isAnyEditing]="isAnyEditing"
-                                      [isEditingUser]="isEditingUser"
-                                      [isEditingInfo]="isEditingInfo"
-                                      [element]="element">
-                    </app-edit-buttons>
-                  }
                 </div>
-              </td>
-            </ng-container>
-            <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
-                mat-row></tr>
-          </table>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="edit">
+            <th *matHeaderCellDef class="detail-row" mat-header-cell></th>
+            <td *matCellDef="let element" class="detail-row edit-column-cell"
+                mat-cell>
+              <div class="flex-center">
+                @if (element.keyMap.key === "failcount" && !isAnyEditing()) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="edit-button" (click)="resetFailCount()">
+                      <mat-icon class="mat-icon-button">
+                        lock_reset
+                      </mat-icon>
+                    </button>
+                  </div>
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditing() &&
+                element.value) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="red-icon edit-button"
+                            (click)="deleteContainer()">
+                      <mat-icon class="mat-icon-button">folder_delete</mat-icon>
+                    </button>
+                  </div>
+                } @else if (isEditableElement(element.keyMap.key)) {
+                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                                    [isAnyEditing]="isAnyEditing"
+                                    [isEditingUser]="isEditingUser"
+                                    [isEditingInfo]="isEditingInfo"
+                                    [element]="element">
+                  </app-edit-buttons>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="detail-row"
+              mat-row></tr>
+        </table>
+      </div>
+
+      <div class="details-user flex-box flex-14">
+        <app-token-details-user [isAnyEditing]="isAnyEditing"
+                                [isEditingInfo]="isEditingInfo"
+                                [isEditingUser]="isEditingUser"
+                                [realmOptions]="realmOptions"
+                                [refreshTokenDetails]="refreshTokenDetails"
+                                [repeatPinValue]="repeatPinValue"
+                                [serial]="serial"
+                                [setPinValue]="setPinValue"
+                                [userData]="userData"></app-token-details-user>
+        <div class="details-info flex-box flex-5">
+          <app-token-details-info [detailData]="detailData" [infoData]="infoData"
+                                  [isAnyEditing]="isAnyEditing"
+                                  [isEditingInfo]="isEditingInfo"
+                                  [isEditingUser]="isEditingUser"
+                                  [refreshTokenDetails]="refreshTokenDetails"
+                                  [serial]="serial"></app-token-details-info>
+          <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
+                                     [serial]="serial"></app-token-details-actions>
         </div>
       </div>
-    </mat-grid-tile>
-    <mat-grid-tile [colspan]="14" [rowspan]="3">
-      <app-token-details-user [isAnyEditing]="isAnyEditing"
-                              [isEditingInfo]="isEditingInfo"
-                              [isEditingUser]="isEditingUser"
-                              [realmOptions]="realmOptions"
-                              [refreshTokenDetails]="refreshTokenDetails"
-                              [repeatPinValue]="repeatPinValue"
-                              [serial]="serial"
-                              [setPinValue]="setPinValue"
-                              [userData]="userData"></app-token-details-user>
-    </mat-grid-tile>
-    <mat-grid-tile [colspan]="9" [rowspan]="6">
-      <app-token-details-info [detailData]="detailData" [infoData]="infoData"
-                              [isAnyEditing]="isAnyEditing"
-                              [isEditingInfo]="isEditingInfo"
-                              [isEditingUser]="isEditingUser"
-                              [refreshTokenDetails]="refreshTokenDetails"
-                              [serial]="serial"
-      ></app-token-details-info>
-    </mat-grid-tile>
-    <mat-grid-tile [colspan]="5" [rowspan]="5">
-      <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
-                                 [serial]="serial"
-      ></app-token-details-actions>
-    </mat-grid-tile>
-  </mat-grid-list>
+    </div>
+  </div>
 </div>

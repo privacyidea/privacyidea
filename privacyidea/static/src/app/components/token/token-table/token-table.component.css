@@ -29,7 +29,7 @@ th.mat-sort-header {
   overflow-y: auto;
   overflow-wrap: anywhere;
   height: 60px;
-  margin-right: -16px;
+  margin-right: -1rem;
   padding-right: 16px;
 }
 
