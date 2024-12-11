@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-12-06 17:00+0000\n"
+"PO-Revision-Date: 2024-12-12 11:00+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -3296,16 +3296,15 @@ msgid "SSH Tokens attached to services"
 msgstr "Jetons SSH attachés aux services"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:6
-#, fuzzy
 msgid ""
 "SSH Tokens can be attached to a service ID with a user. The user is the user "
 "on the SSH server\n"
 "        and may differ from the token owner. To attach the token to a "
 "service ID go to the token details."
 msgstr ""
-"Les jetons SSH peuvent être attachés à un ID de service avec un utilisateur. "
-"Celui-ci doit être connu\n"
-"sur le serveur SSH et peut différer du propriétaire du jeton. Pour attacher "
+"Les jetons SSH peuvent être rattachés à un ID de service avec un "
+"utilisateur. Celui-ci doit être connu\n"
+"sur le serveur SSH et peut différer du propriétaire du jeton. Pour rattacher "
 "un jeton à un ID de service, allez sur les informations du jeton."
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:9
@@ -3313,9 +3312,8 @@ msgid "SSH public Key"
 msgstr "Clé publique SSH"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:51
-#, fuzzy
 msgid "SSH user"
-msgstr "Enregistrer l'utilisateur"
+msgstr "Utilisateur SSH"
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:18
 msgid "SSH: Attaching ssh keys to services."
@@ -3342,10 +3340,8 @@ msgid "Save CA"
 msgstr "Sauvegarder CA"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:116
-#, fuzzy
-#| msgid "Save Token Info"
 msgid "Save Container Info"
-msgstr "Enregistrer les informations de jeton"
+msgstr "Enregistrer les informations du conteneur"
 
 #: privacyidea/static/components/config/views/config.events.details.html:104
 #: privacyidea/static/components/config/views/config.events.details.html:311
@@ -3367,10 +3363,8 @@ msgid "Save RADIUS server"
 msgstr "Enregistrer le serveur RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:97
-#, fuzzy
-#| msgid "Save realms"
 msgid "Save Realm"
-msgstr "Enregistrer les domaines"
+msgstr "Enregistrer le domaine"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:253
 msgid "Save Resolver"
@@ -3386,15 +3380,12 @@ msgid "Save SMTP server"
 msgstr "Enregistrer le serveur SMTP"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:39
-#, fuzzy
 msgid "Save Service ID"
-msgstr "Enregistrer le serveur SMTP"
+msgstr "Enregistrer l'ID de service"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:65
-#, fuzzy
-#| msgid "Save SMS gateway"
 msgid "Save States"
-msgstr "Enregistrer la passerelle SMS"
+msgstr "Enregistrer les états"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:235
 msgid "Save System Config"
@@ -3464,14 +3455,12 @@ msgid "Select Realm"
 msgstr "Sélectionner le domaine"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:133
-#, fuzzy
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
 "Sélectionner une\n"
-"                    <a ui-sref=\"config.smtp\">configuration de serveur "
-"SMTP</a> prédéfinie."
+"<a ui-sref=\"config.smtp\">configuration de serveur SMTP</a> prédéfinie."
 
 #: privacyidea/static/components/config/views/config.token.radius.html:9
 msgid ""
@@ -3574,12 +3563,11 @@ msgstr "URI du serveur"
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:216
 #, fuzzy
 msgid "Server pool retry rounds"
-msgstr "Séquences de réessaie du groupement du serveur"
+msgstr "Séquences de réessaie du groupement de serveurs"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
-#, fuzzy
 msgid "Server pool skip timeout (seconds)"
-msgstr "Délai d'expiration du saut du groupement du serveur (secondes)"
+msgstr "Délai d'expiration du saut du groupement de serveurs (secondes)"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:41
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:30
@@ -3595,7 +3583,6 @@ msgid "Service IDs"
 msgstr "IDs de services"
 
 #: privacyidea/static/components/config/views/config.serviceid.list.html:1
-#, fuzzy
 msgid ""
 "Service IDs can be used to attach e.g. SSH keys to certain machines and "
 "services.\n"
@@ -3612,7 +3599,6 @@ msgid "Set PIN"
 msgstr "Définir le code PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:128
-#, fuzzy
 msgid "Set count window"
 msgstr "Définir la fenêtre de comptage"
 
@@ -3633,7 +3619,6 @@ msgid "Set random PIN"
 msgstr "Définir un code PIN aléatoire"
 
 #: privacyidea/static/components/token/views/token.details.html:140
-#, fuzzy
 msgid "Set sync window"
 msgstr "Définir la fenêtre de synchronisation"
 
@@ -3681,7 +3666,6 @@ msgstr "Logiciel"
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:55
 #: privacyidea/static/components/token/views/token.enroll.totp.html:55
-#, fuzzy
 msgid "Some Authenticator Apps only support an OTP length of 6."
 msgstr ""
 "Certaines applications d'authentification supportent seulement un OTP de "
@@ -3702,9 +3686,8 @@ msgid "Some nice words..."
 msgstr "En quelques mots…"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:324
-#, fuzzy
 msgid "Something went wrong!"
-msgstr "Quelque chose s'est mal passé!"
+msgstr "Une erreur est survenue!"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
@@ -3801,12 +3784,10 @@ msgid "Table"
 msgstr "Tableau"
 
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:3
-#, fuzzy
 msgid "Take action on your authenticator"
 msgstr "Poursuivez sur votre authentificateur"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
-#, fuzzy
 msgid "Take action on your token"
 msgstr "Poursuivez sur votre jeton"
 
@@ -3853,7 +3834,6 @@ msgid "Thank you for improving your security!"
 msgstr "Merci d'améliorer votre sécurité !"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:1
-#, fuzzy
 msgid ""
 "The 4 Eyes token will only authenticate if two or more users are\n"
 "    present at once. You can define how many existing tokens of the given\n"
@@ -3922,15 +3902,14 @@ msgstr ""
 "à l'aide d'une application d'authentification qui prend en charge le jeton."
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
-#, fuzzy
 msgid ""
 "The EMail token is a challenge response token that sends the OTP value to\n"
 "    the given email address, when the correct OTP PIN was presented by the "
 "user."
 msgstr ""
-"Le jeton de messagerie est un jeton de réponse de défi qui envoie la valeur "
-"OTP à\n"
-"    l'adresse courriel donnée, lorsque le bon PIN OTP a été présenté par "
+"Le jeton de messagerie est un jeton de réponse de challenge qui envoie la "
+"valeur OTP à\n"
+"l'adresse courriel donnée, lorsque le bon PIN OTP a été présenté par "
 "l'utilisateur."
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:1
@@ -4065,7 +4044,6 @@ msgid ""
 msgstr "Le jeton distant transfère la requête à un autre serveur privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:2
-#, fuzzy
 msgid ""
 "The SMS Token is an event based token. After the user has tried to\n"
 "    authenticate with the OTP PIN, an SMS with an OTP value is sent to the\n"
@@ -4094,13 +4072,12 @@ msgstr ""
 "Celle-ci peut être utilisée pour s'authentifier sur un terminal."
 
 #: privacyidea/static/components/token/views/token.getserial.html:95
-#, fuzzy
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
 "Le numéro de série pour cette valeur OTP {{ otp }} est\n"
-"    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+"<a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
@@ -4186,7 +4163,6 @@ msgstr ""
 "installation privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.enroll.u2f.html:1
-#, fuzzy
 msgid ""
 "The U2F token is a token defined by the Fido Alliance.\n"
 "    You can register this token with any webservice and with as many web\n"
@@ -4273,7 +4249,6 @@ msgstr ""
 "l'utilisateur."
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
-#, fuzzy
 msgid ""
 "The Yubikey Token is an USB device that emits an event based One Time\n"
 "    Password. You can initialize the Yubikey using the YubiKey "
@@ -4347,7 +4322,6 @@ msgstr ""
 "Protocole de Validation Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
-#, fuzzy
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
@@ -4404,7 +4378,6 @@ msgstr ""
 "nouvellement créés. Peut être PHPASS, SHA, SSHA, SSHA256, SHA512, OTRS."
 
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:1
-#, fuzzy
 msgid ""
 "The indexed secret Token is based on a shared secret between privacyIDEA\n"
 "    and the user.\n"
@@ -4424,7 +4397,6 @@ msgstr ""
 "Le PIN mOTP est le code PIN qui doit être saisi sur le téléphone mobile."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:1
-#, fuzzy
 msgid ""
 "The mOTP token is a time based OTP token for mobile devices.\n"
 "    You can\n"
@@ -4562,7 +4534,6 @@ msgstr ""
 "_ », « - », « . » et ne doit pas être égal à « test »"
 
 #: privacyidea/static/app.js:105
-#, fuzzy
 msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'test_request'"
@@ -4647,7 +4618,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:20
 #: privacyidea/static/components/config/views/config.token.sms.html:25
-#, fuzzy
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
@@ -4749,12 +4719,10 @@ msgstr ""
 "                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
-#, fuzzy
 msgid "The trust_anchor_dir must be an absolute path."
 msgstr "Le chemin de trust_anchor_dir doit être un chemin absolu."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:37
-#, fuzzy
 msgid "The trust_anchor_dir must not end with a \"/\"."
 msgstr "Le chemin de trust_anchor_dir ne doit pas finir par un \"/\"."
 
@@ -4809,7 +4777,6 @@ msgstr ""
 "Voici les questions possibles dont l'utilisateur doit définir les réponses."
 
 #: privacyidea/static/components/user/views/user.add.html:18
-#, fuzzy
 msgid ""
 "These are the resolvers marked as editable. You can add\n"
 "                        a user\n"
@@ -4883,7 +4850,6 @@ msgstr ""
 "La Yubikey délivre un mot de passe à usage unique de 44 caractères."
 
 #: privacyidea/static/components/token/views/token.import.html:58
-#, fuzzy
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
 "            Values in the PSKC files may be unencrypted or\n"
@@ -4893,7 +4859,7 @@ msgid ""
 "the\n"
 "            password."
 msgstr ""
-"C'est un fichier PSKC conforme à la RFC6030OATH.\n"
+"C'est un fichier PSKC conforme à la RFC6030 OATH.\n"
 "Les valeurs dans les fichiers PSKC peuvent être non chiffrées ou\n"
 "<em>sinon</em> chiffrées avec une\n"
 "<em>Clé partagée</em> ou <em>un mot de passe</em>. Si les valeurs sont\n"
@@ -4901,7 +4867,6 @@ msgstr ""
 "passe."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:132
-#, fuzzy
 msgid ""
 "This is the CRL file, which is written when a certificate\n"
 "                    is revoked or the CRL is created otherwise."
@@ -4910,7 +4875,6 @@ msgstr ""
 "est révoqué ou quand le CRL est créé autrement."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:79
-#, fuzzy
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
@@ -4926,7 +4890,6 @@ msgstr ""
 "6287</a>."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
-#, fuzzy
 msgid "This is the directory were certificates get written to."
 msgstr "Ceci est le dossier où les certificats sont créés."
 
@@ -5125,9 +5088,8 @@ msgstr ""
 "RADIUS</a>."
 
 #: privacyidea/static/components/token/views/token.html:113
-#, fuzzy
 msgid "Token Applications"
-msgstr "Application"
+msgstr "Applications du jeton"
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
@@ -5176,17 +5138,16 @@ msgstr "Jeton de {{username}} sans conteneur"
 #: privacyidea/static/components/token/views/token.containerdetails.html:284
 #: privacyidea/static/components/token/views/token.containerdetails.html:522
 #: privacyidea/static/components/token/views/token.list.html:76
-#, fuzzy
 msgid "Token realms"
 msgstr "Domaines du jeton"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:331
 msgid "Token resync failed."
-msgstr "Echec de resynchronisation jeton."
+msgstr "Echec de resynchronisation du jeton."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:328
 msgid "Token resync successful."
-msgstr "Resynchronisation jeton réussie."
+msgstr "Resynchronisation du jeton réussie."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:550
 msgid "Token successfully verified"
@@ -5194,7 +5155,7 @@ msgstr "Jeton vérifié avec succès"
 
 #: privacyidea/static/components/token/views/token.lost.html:2
 msgid "Token {{ selectedToken.serial }} is lost?"
-msgstr "Le jeton {{ selectedToken.serial }} est perdu ?"
+msgstr "Le jeton {{ selectedToken.serial }} est perdu ?"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:67
 msgid "Tokengroup saved."
