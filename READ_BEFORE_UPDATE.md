@@ -2,6 +2,9 @@
 
 ## Update from 3.9 to 3.10
 
+* Due to stability and performance reasons, unanswered challenges will remain in the database table
+  and are not cleaned up automatically. This can be achieved with the command `pi-manage config challenge cleanup`.
+  A commented line in the privacyIDEA crontab-file is added as an example to perform this cleanup regularly.
 * The `PI_NODES` configuration option is not used anymore. The nodes will be added
   to the database with a unique identifier for each installation.
 * The columns *user_agent*, *version*, *container_serial* and *container_type*
