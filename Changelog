@@ -1,17 +1,19 @@
-Version 3.10.2dev2, 2024-11-26
+Version 3.10.2, 2024-11-26
 
   Fixes:
   * Fix some problems with Oracle databases during upgrade (#4105)
-  * PUSH: Require presence was not working when another token was triggered (#4122)
   * Fix broken database restore from backup (#4143)
+  * Fix broken privacyidea-cron commands and banner output (#4171)
+  * Fix text replacement in JSON format with webhook event handler (#4116)
   * UI: Fix setting of custom user attributes (#4151)
   * UI: Improve display of challenge message during login (#4121)
   * UI: Fix adding token to a container from the user view (#4109)
   * UI: Stop unnecessary polling after PUSH token enrollment (#4124)
+  * PUSH: Require presence was not working when another token was triggered (#4122)
+  * Improve documentation on challenge cleanup and add commented crontab entry (#4172)
   * Offline tokens can now be deleted without detaching them first (#4136)
   * Update privacyidea-diag script to work with new pi-manage commands (#4145)
   * Make deprecated commands and options available in pi-manage (#4158, #4141)
-  * Fix text replacement in JSON format with webhook event handler (#4116)
   * Disable log message when container serial is "null" during token enrollment (#4110)
   * Add PEM format check for certificate token (#4138)
 
