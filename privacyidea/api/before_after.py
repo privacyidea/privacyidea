@@ -104,7 +104,6 @@ def teardown_request(exc):
 
 
 @token_blueprint.before_request
-# @container_blueprint.before_request
 @audit_blueprint.before_request
 @system_blueprint.before_request
 @user_required
@@ -150,6 +149,14 @@ def before_admin_request():
 
 @container_blueprint.before_request
 def before_container_request():
+    """
+    This function is executed before a request to a container endpoint.
+    It defines a list of endpoints that do not require an auth token and verifies the auth token for all other
+    endpoints.
+    The user is resolved either from the logged-in user or from the container owner. The user and some information
+    about the container are stored in the audit log.
+    Additionally, the policy object, the audit object and the event configuration object are set to the global variable.
+    """
     # auth free endpoints
     ensure_no_config_object()
     request.all_data = get_all_params(request)
@@ -158,7 +165,7 @@ def before_container_request():
                                  f"/container/register/{container_serial}/terminate/client",
                                  f"/container/{container_serial}/challenge",
                                  f"/container/{container_serial}/sync",
-                                 f"/container/{container_serial}/rollover",]
+                                 f"/container/{container_serial}/rollover", ]
     is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path == endpoint]
 
     # Get auth token
@@ -172,83 +179,66 @@ def before_container_request():
         g.logged_in_user = {"username": r.get("username"),
                             "realm": r.get("realm"),
                             "role": r.get("role")}
-        before_request()
+        resolve_logged_in_user()
     else:
         if auth_token:
             # if an auth token is present, but it is not mandatory for the endpoint, write it in the params to be
             # verified later
             request.all_data["auth_token"] = auth_token
-
-        ensure_no_config_object()
-        request.all_data = get_all_params(request)
+        # Client requests does not provide a logged-in user, hence it cannot be resolved is set to None
         request.User = None
 
-        g.policy_object = PolicyClass()
-        g.audit_object = getAudit(current_app.config, g.startdate)
-        g.event_config = EventConfiguration()
-        # access_route contains the ip addresses of all clients, hops and proxies.
-        g.client_ip = get_client_ip(request,
-                                    get_from_config(SYSCONF.OVERRIDECLIENT))
-        # Save the HTTP header in the localproxy object
-        g.request_headers = request.headers
-        privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-        g.serial = None
+    get_before_request_config()
+    g.serial = None
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+    # Get info about the container and resolve user from the container if not yet set
+    container_serial = getParam(request.all_data, "container_serial")
+    container = None
+    container_type = None
+    if container_serial and "*" not in container_serial:
+        try:
+            container = find_container_by_serial(container_serial)
+        except ResourceNotFoundError:
+            # The container serial might not exist
+            pass
+    if container:
+        container_type = container.type
+        if request.User is None or request.User.is_empty():
+            owners = container.get_users()
+            if len(owners) == 1:
+                request.User = owners[0]
 
-        # Container info
-        container_serial = getParam(request.all_data, "container_serial")
-        container = None
-        container_type = None
-        if container_serial and "*" not in container_serial:
-            try:
-                container = find_container_by_serial(container_serial)
-            except ResourceNotFoundError:
-                # The container serial might not exist
-                pass
-        if container:
-            container_type = container.type
-            if request.User is None or request.User.is_empty():
-                owners = container.get_users()
-                if len(owners) == 1:
-                    request.User = owners[0]
+    if request.User:
+        audit_username = request.User.login
+        audit_realm = request.User.realm
+        audit_resolver = request.User.resolver
+    else:
+        audit_realm = getParam(request.all_data, "realm")
+        audit_resolver = getParam(request.all_data, "resolver")
+        audit_username = getParam(request.all_data, "user")
 
-        if request.User:
-            audit_username = request.User.login
-            audit_realm = request.User.realm
-            audit_resolver = request.User.resolver
-        else:
-            audit_realm = getParam(request.all_data, "realm")
-            audit_resolver = getParam(request.all_data, "resolver")
-            audit_username = getParam(request.all_data, "user")
-
-        ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
-        g.audit_object.log({"success": False,
-                            "user": audit_username,
-                            "realm": audit_realm,
-                            "resolver": audit_resolver,
-                            "container_serial": container_serial,
-                            "container_type": container_type,
-                            "client": g.client_ip,
-                            "user_agent": ua_name,
-                            "user_agent_version": ua_version,
-                            "privacyidea_server": privacyidea_server,
-                            "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                            "action_detail": "",
-                            "thread_id": "{0!s}".format(threading.current_thread().ident),
-                            "info": ""})
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.audit_object.log({"success": False,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
+                        "container_serial": container_serial,
+                        "container_type": container_type,
+                        "client": g.client_ip,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
+                        "privacyidea_server": privacyidea_server,
+                        "action": f"{request.method} {request.url_rule}",
+                        "action_detail": "",
+                        "thread_id": threading.current_thread().ident,
+                        "info": ""})
 
 
-def before_request():
+def resolve_logged_in_user():
     """
-    This is executed before the request.
-
-    user_required checks if there is a logged in admin or user
-
-    The checks for ONLY admin are preformed in api/system.py
+    Resolve the user attributes (username, realm and resolver) from the logged-in user and set them in the request
+    object.
     """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    ensure_no_config_object()
-    request.all_data = get_all_params(request)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.
@@ -269,14 +259,37 @@ def before_request():
         # policy and will not resolve to a user object
         request.User = User()
 
+
+def get_before_request_config():
+    """
+    Gets the policy object, the audit object and the event configuration object and sets them to the global flask
+    variable. Additionally, reads the client IP and the HTTP headers from the request object and writes them to the
+    global flask variable.
+    """
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
     # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
+
+
+def before_request():
+    """
+    This is executed before the request.
+
+    user_required checks if there is a logged in admin or user
+
+    The checks for ONLY admin are preformed in api/system.py
+    """
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    ensure_no_config_object()
+    request.all_data = get_all_params(request)
+    resolve_logged_in_user()
+    get_before_request_config()
+
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
@@ -324,10 +337,6 @@ def before_request():
                 break
     if container:
         container_type = container.type
-        if request.User is None or request.User.is_empty():
-            owners = container.get_users()
-            if len(owners) == 1:
-                request.User = owners[0]
 
     if request.User:
         audit_username = request.User.login
