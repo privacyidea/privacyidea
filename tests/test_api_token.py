@@ -1,4 +1,4 @@
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -710,6 +710,8 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_01_list_tokens(self):
         init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+
+        # Get all tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -860,6 +862,26 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(hotp_token.get_serial())
         remove_token(totp_token.get_serial())
         remove_token(spass_token.get_serial())
+
+        # create token in container
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        token_in_container = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+        container = find_container_by_serial(container_serial)
+        container.add_token(token_in_container)
+        # get tokens for container
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string={"container_serial": container.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            tokens = result.get("value").get("tokens")
+            self.assertEqual(1, len(tokens))
+            self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
+            self.assertEqual(container.serial, tokens[0]["container_serial"])
+        remove_token(token_in_container.get_serial())
+        container.delete()
 
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
