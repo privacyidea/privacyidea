@@ -139,7 +139,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.first_serial = token.get_serial()
 
         self.validate_default_passkey_registration(init_detail["passkey_registration"])
-        passkey_registration = json.loads(init_detail["passkey_registration"])
+        passkey_registration = init_detail["passkey_registration"]
 
         self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 2)
         self.assertEqual(passkey_registration["pubKeyCredParams"][0]["type"], "public-key")
@@ -198,7 +198,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_request = self._initialize_registration(options)
         token = registration_request.token
         init_detail = registration_request.init_detail
-        passkey_registration = json.loads(init_detail["passkey_registration"])
+        passkey_registration = init_detail["passkey_registration"]
         # Verify that the custom settings are set in the registration options
         self.assertIn("pubKeyCredParams", passkey_registration)
         self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 3)

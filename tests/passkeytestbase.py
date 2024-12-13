@@ -80,33 +80,32 @@ class PasskeyTestBase(unittest.TestCase):
             "credential_id": self.credential_id,
         }
 
-    def validate_default_passkey_registration(self, passkey_registration: str):
+    def validate_default_passkey_registration(self, passkey_registration: dict):
         """
         Validates the passkey registration response with the default values and the values set in this class
         Only checks if pubKeyCredParams and excludeCredentials exists not their content
         """
-        pk_reg = json.loads(passkey_registration)
         # RP
-        self.assertIn("rp", pk_reg)
-        self.assertEqual(pk_reg["rp"]["id"], self.rp_id)
-        self.assertEqual(pk_reg["rp"]["name"], self.rp_id)
+        self.assertIn("rp", passkey_registration)
+        self.assertEqual(passkey_registration["rp"]["id"], self.rp_id)
+        self.assertEqual(passkey_registration["rp"]["name"], self.rp_id)
         # User
-        self.assertIn("user", pk_reg)
-        self.assertIn("name", pk_reg["user"])
-        self.assertEqual("hans", pk_reg["user"]["name"])
-        self.assertIn("id", pk_reg["user"])
-        self.assertIn("displayName", pk_reg["user"])
+        self.assertIn("user", passkey_registration)
+        self.assertIn("name", passkey_registration["user"])
+        self.assertEqual("hans", passkey_registration["user"]["name"])
+        self.assertIn("id", passkey_registration["user"])
+        self.assertIn("displayName", passkey_registration["user"])
         # Challenge should be the mock_nonce
-        self.assertIn("challenge", pk_reg)
-        self.assertEqual(self.registration_challenge, pk_reg["challenge"])
+        self.assertIn("challenge", passkey_registration)
+        self.assertEqual(self.registration_challenge, passkey_registration["challenge"])
         # PubKeyCredParams: Via the API, all three key algorithms are valid by default
-        self.assertIn("pubKeyCredParams", pk_reg)
-        self.assertIn("timeout", pk_reg)
-        self.assertIn("excludeCredentials", pk_reg)
+        self.assertIn("pubKeyCredParams", passkey_registration)
+        self.assertIn("timeout", passkey_registration)
+        self.assertIn("excludeCredentials", passkey_registration)
         # AuthenticatorSelection: Require residentKey and userVerification is preferred by default
-        self.assertIn("authenticatorSelection", pk_reg)
-        self.assertEqual(pk_reg["authenticatorSelection"]["requireResidentKey"], True)
-        self.assertEqual(pk_reg["authenticatorSelection"]["residentKey"], "required")
-        self.assertEqual(pk_reg["authenticatorSelection"]["userVerification"], "preferred")
+        self.assertIn("authenticatorSelection", passkey_registration)
+        self.assertEqual(passkey_registration["authenticatorSelection"]["requireResidentKey"], True)
+        self.assertEqual(passkey_registration["authenticatorSelection"]["residentKey"], "required")
+        self.assertEqual(passkey_registration["authenticatorSelection"]["userVerification"], "preferred")
         # Attestation is none by default
-        self.assertEqual(pk_reg["attestation"], "none")
+        self.assertEqual(passkey_registration["attestation"], "none")

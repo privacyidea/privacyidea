@@ -67,7 +67,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             detail = res.json["detail"]
             self.assertIn("passkey_registration", detail)
             self.validate_default_passkey_registration(detail["passkey_registration"])
-            passkey_registration = json.loads(detail["passkey_registration"])
+            passkey_registration = detail["passkey_registration"]
             # PubKeyCredParams: Via the API, all three key algorithms (from webauthn) are valid by default
             self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 3)
             for param in passkey_registration["pubKeyCredParams"]:
@@ -137,7 +137,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             data = res.json
             self.assertIn("detail", data)
             self.assertIn("passkey_registration", data["detail"])
-            passkey_registration = json.loads(data["detail"]["passkey_registration"])
+            passkey_registration = data["detail"]["passkey_registration"]
             # PubKeyCredParams: Only ecdsa should be allowed
             self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 1)
             self.assertEqual(passkey_registration["pubKeyCredParams"][0]["alg"], COSE_ALGORITHM.ES256)

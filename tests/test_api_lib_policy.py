@@ -2491,19 +2491,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_ENROLL,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
-        # Not a WebAuthn token, policy values are loaded regardless
+        # Not a WebAuthn token: policy values are not loaded
         request = RequestMock()
         request.all_data = {
             "type": "footoken"
         }
         fido2_enroll(request, None)
-        self.assertEqual("webauthn.io", request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID))
-        self.assertEqual("Web Authentication", request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME))
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID))
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME))
         self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT))
-        self.assertEqual([-7, -37, -257], request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
-        self.assertEqual("untrusted", request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL))
-        self.assertEqual("direct", request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM))
-        self.assertEqual("Please confirm with your WebAuthn token",
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL))
+        self.assertEqual(None, request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM))
+        self.assertEqual(None,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # With policies

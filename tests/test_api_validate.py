@@ -6328,6 +6328,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
             self.assertEqual(200, res.status_code)
             data = res.json
+            print(data)
             self.assertTrue("transaction_id" in data.get("detail"))
             self.assertEqual(self.serial, data.get("detail").get("serial"))
             self.assertEqual("Please confirm with your WebAuthn token (my description)",
@@ -6385,6 +6386,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
             self.assertEqual(200, res.status_code)
             data = res.json
+            print(data)
             detail = data.get("detail")
             result = data.get("result")
             self.assertTrue(result.get("status"))
