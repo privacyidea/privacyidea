@@ -10,8 +10,8 @@
     >
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'active': selectedTabIndex() === 0 }">shield</mat-icon>
-          <h4 [ngClass]="{ 'active': selectedTabIndex() === 0 }">Token</h4>
+          <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">shield</mat-icon>
+          <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">Token</h4>
         </ng-template>
         <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
                        [revoked]="revoked" [serial]="serial"
@@ -19,8 +19,8 @@
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'active': selectedTabIndex() === 1 }">folder</mat-icon>
-          <h4 [ngClass]="{ 'active': selectedTabIndex() === 1 }">Container</h4>
+          <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">folder</mat-icon>
+          <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
         </ng-template>
         <app-container-tab [containerIsSelected]="containerIsSelected"></app-container-tab>
       </mat-tab>
