@@ -39,7 +39,6 @@ class PAPERACTION(object):
 
 
 class PaperTokenClass(HotpTokenClass):
-
     """
     The Paper Token allows to print out the next e.g. 100 OTP values.
     This sheet of paper can be used to authenticate and strike out the used
@@ -95,7 +94,7 @@ class PaperTokenClass(HotpTokenClass):
                                 'of paper.'),
                'init': {},
                'config': {},
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {

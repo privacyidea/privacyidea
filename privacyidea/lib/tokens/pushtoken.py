@@ -89,6 +89,7 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = [f"{x}" for x in string.ascii_uppercase]
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
 
+
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
     REGISTRATION_URL = "push_registration_url"
@@ -197,6 +198,7 @@ def _get_presence_options(options):
         available_presence_options = custom_presence_options.split(
             ":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
     return available_presence_options
+
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
                            presence_options=None):
@@ -1058,7 +1060,7 @@ class PushTokenClass(TokenClass):
             # If the message contains {} we replace it with the data
             # otherwise we add a new text
             if "{}" in message:
-                message = message.format(data.split(",").pop()) # The correct presence option is the last one
+                message = message.format(data.split(",").pop())  # The correct presence option is the last one
             else:
                 message += f" Please press: {data.split(',').pop()}"  # The correct presence option is the last one
         return True, message, transactionid, reply_dict
