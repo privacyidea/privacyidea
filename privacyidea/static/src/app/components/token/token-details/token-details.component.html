@@ -93,9 +93,8 @@
                               [(ngModel)]="element.value"></textarea>
               </mat-form-field>
             } @else {
-              <div [ngClass]="{
-              'details-scrollable-container' : element.keyMap.key === 'description'}">
-                    <span [ngClass]="[tableUtilsService.getClassForKeyMap(element.keyMap.key,
+              <div [ngClass]="[tableUtilsService.getDivClassForKeyMap(element.keyMap.key)]">
+                    <span [ngClass]="[tableUtilsService.getSpanClassForKeyMap(element.keyMap.key,
                           element.value, maxfail)]">
                       {{
                         tableUtilsService.getDisplayTextForKeyMap(element.keyMap.key, element.value,

@@ -125,13 +125,14 @@ export class TableUtilsService {
     return element[columnKey];
   }
 
-  getClassForKeyMap(key: string, value: any, maxfail: any): string {
+  getSpanClassForKeyMap(key: string, value: any, maxfail: any): string {
     if (key === 'description') {
       return 'details-table-item details-description'
     }
     if (key === 'active') {
       return value === true ? 'highlight-true' : 'highlight-false';
-    } else if (key === 'failcount') {
+    }
+    if (key === 'failcount') {
       if (value === 0) {
         return 'highlight-true';
       } else if (value >= 1 && value < maxfail) {
@@ -141,6 +142,20 @@ export class TableUtilsService {
       }
     }
     return 'details-table-item';
+  }
+
+  getDivClassForKeyMap(key: string) {
+    if (key === 'description') {
+      return 'details-scrollable-container';
+    } else if (
+      key === 'maxfail' ||
+      key === 'count_window' ||
+      key === 'sync_window'
+    ) {
+      return 'details-value';
+    }
+
+    return '';
   }
 
   getClassForColumnKey(columnKey: string): string {
