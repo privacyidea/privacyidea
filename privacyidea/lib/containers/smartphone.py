@@ -126,7 +126,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Returns a description of the container class.
         """
-        return "A smartphone that uses an authenticator app."
+        return _("A smartphone that uses an authenticator app.")
 
     def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params={}):
         """
@@ -289,7 +289,11 @@ class SmartphoneContainer(TokenContainerClass):
         else:
             # this might be a rollover, delete old device information
             self.delete_container_info("device")
-        self.add_container_info("registration_state", "registered")
+
+        # The rollover is completed with the first synchronization
+        registration_state = container_info.get("registration_state", "")
+        if registration_state != "rollover":
+            self.add_container_info("registration_state", "registered")
 
         # check right for initial token transfer
         if params.get("client_policies", {}).get("container_initial_token_transfer"):
@@ -314,11 +318,6 @@ class SmartphoneContainer(TokenContainerClass):
         self.delete_container_info("registration_state")
         self.delete_container_info("challenge_ttl")
         self.delete_container_info("initial_synchronized")
-
-        # Delete challenges
-        challenge_list = get_challenges(serial=self.serial)
-        for challenge in challenge_list:
-            challenge.delete()
 
     def create_challenge(self, scope, validity_time=2, data={}):
         """
@@ -479,6 +478,7 @@ class SmartphoneContainer(TokenContainerClass):
                                            "type": "hotp"}]}
                 }
         """
+        container_info = self.get_container_info_dict()
         container_dict = {"container": self.get_as_dict(include_tokens=False, public_info=True)}
         server_token_serials = [token.get_serial() for token in self.get_tokens()]
 
@@ -500,11 +500,17 @@ class SmartphoneContainer(TokenContainerClass):
 
         # map client and server tokens
         client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
-        missing_serials = list(set(server_token_serials).difference(set(client_serials)))
-        same_serials = list(set(server_token_serials).intersection(set(client_serials)))
+
+        registration_state = container_info.get("registration_state", "")
+        if registration_state == "rollover":
+            # rollover all tokens: generate new enroll info for all tokens
+            missing_serials = server_token_serials
+            same_serials = []
+        else:
+            missing_serials = list(set(server_token_serials).difference(set(client_serials)))
+            same_serials = list(set(server_token_serials).intersection(set(client_serials)))
 
         # Initial synchronization after registration or rollover
-        container_info = self.get_container_info_dict()
         if initial_transfer_allowed and container_info.get("initial_synchronized") == "False":
             self.add_container_info("initial_synchronized", "True")
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
@@ -526,6 +532,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Get info for same serials: token details
         update_dict = []
+        black_list_token_info = ["private_key_server", "private_key_server.type"]
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
             token_dict = token.get_as_dict()
@@ -533,6 +540,13 @@ class SmartphoneContainer(TokenContainerClass):
             if "count" in token_dict:
                 token_dict["counter"] = token_dict["count"]
                 del token_dict["count"]
+
+            # remove sensible token infos
+            for key in black_list_token_info:
+                if key in token_dict["info"]:
+                    del token_dict["info"][key]
+
+            # add otp values to allow the client identifying the token if he has no serial yet
             otp = serial_otp_map.get(serial)
             if otp:
                 token_dict["otp"] = otp

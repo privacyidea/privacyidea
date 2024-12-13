@@ -20,6 +20,7 @@
 import logging
 
 from privacyidea.api.lib.utils import verify_auth_token
+from privacyidea.lib import _
 from privacyidea.lib.containerclass import TokenContainerClass
 
 log = logging.getLogger(__name__)
@@ -79,4 +80,4 @@ class YubikeyContainer(TokenContainerClass):
         """
         Returns a description of the container class.
         """
-        return "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
+        return _("Yubikey hardware device that can hold HOTP, certificate and webauthn token")

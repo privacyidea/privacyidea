@@ -865,6 +865,11 @@ def synchronize(container_serial: str):
     # Update last sync time
     container.update_last_synchronization()
 
+    # Rollover completed: Change registration state to registered
+    registration_state = container.get_container_info_dict().get("registration_state")
+    if registration_state == "rollover":
+        container.add_container_info("registration_state", "registered")
+
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
                         "container_type": container.type,
@@ -956,7 +961,7 @@ def get_class_options():
 
 # TEMPLATES
 @container_blueprint.route('/templates', methods=['GET'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
 @log_with(log)
 def get_template():
     """
@@ -966,6 +971,8 @@ def get_template():
     :jsonparam container_type: Type of the container, optional
     :jsonparam page: Number of the page (starts with 1), optional
     :jsonparam pagesize: Number of templates displayed per page, optional
+    :jsonparam sortdir: Sort direction, optional, default is "asc"
+    :jsonparam sortby: column name to sort by, optional, default is "name"
 
     :return: Dictionary with at least an entry "templates" and further entries if pagination is used.
 
@@ -988,8 +995,11 @@ def get_template():
     container_type = getParam(params, "container_type", optional=True)
     page = int(getParam(params, "page", optional=True, default=0) or 0)
     pagesize = int(getParam(params, "pagesize", optional=True, default=0) or 0)
+    sortdir = getParam(params, "sortdir", optional=True, default="asc")
+    sortby = getParam(params, "sortby", optional=True, default="name")
 
-    templates_dict = get_templates_by_query(name=name, container_type=container_type, page=page, pagesize=pagesize)
+    templates_dict = get_templates_by_query(name=name, container_type=container_type, page=page, pagesize=pagesize,
+                                            sortdir=sortdir, sortby=sortby)
 
     # Audit log
     g.audit_object.log({"success": True})
@@ -1096,7 +1106,10 @@ def compare_template_with_containers(template_name):
     Compares a template with it's created containers.
     Only containers the user is allowed to manage are included in the comparison.
 
+    If a container serial is provided, only this container will be compared with the template.
+
     :param template_name: Name of the template
+    :jsonparam container_serial: Serial of the container to compare with the template, optional
     :return: A dictionary with the differences between the template and each container in the format:
 
         ::
@@ -1112,9 +1125,13 @@ def compare_template_with_containers(template_name):
     allowed_realms = getattr(request, "pi_allowed_container_realms", None)
     user = request.User
     user_role = g.logged_in_user.get("role")
+    container_serial = getParam(request.all_data, "container_serial", optional=True)
 
     template = get_template_obj(template_name)
-    container_list = [create_container_from_db_object(db_container) for db_container in template.containers]
+    if container_serial:
+        container_list = [find_container_by_serial(container_serial)]
+    else:
+        container_list = [create_container_from_db_object(db_container) for db_container in template.containers]
 
     result = {}
     for container in container_list:

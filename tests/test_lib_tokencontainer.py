@@ -19,7 +19,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
                                        finalize_registration, finalize_container_rollover, init_container_rollover)
-from privacyidea.lib.container import get_container_classes
+from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.smartphone import SmartphoneOptions, SmartphoneContainer
 from privacyidea.lib.containers.yubikey import YubikeyOptions, YubikeyContainer
@@ -1087,7 +1087,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertEqual(3, len(challenges))
 
         # Terminate registration
-        smartphone.terminate_registration()
+        unregister(smartphone)
         # Check that the container info is deleted
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
@@ -1488,11 +1488,10 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn("public_key_server", container_info_keys)
         self.assertIn("private_key_server", container_info_keys)
         self.assertEqual(f"{device_brand} {device_model}", container_info["device"])
-        self.assertEqual("registered", container_info["registration_state"])
+        self.assertEqual("rollover", container_info["registration_state"])
         self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
-        self.assertEqual("registered", container_info["registration_state"])
 
         # rollover entries removed
         self.assertNotIn("rollover_server_url", container_info_keys)
@@ -1890,9 +1889,28 @@ class TokenContainerTemplateTestCase(MyTestCase):
                                   options={})
 
         # Get all templates
-        templates_res = get_templates_by_query()
+        templates_res = get_templates_by_query(sortdir="asc", sortby="name")
         self.assertIn("templates", templates_res.keys())
         self.assertEqual(3, len(templates_res["templates"]))
+        self.assertEqual("generic", templates_res["templates"][0]["name"])
+        self.assertEqual("smph", templates_res["templates"][1]["name"])
+        self.assertEqual("yubi", templates_res["templates"][2]["name"])
+
+        # Sort descending
+        templates_res = get_templates_by_query(sortdir="desc", sortby="name")
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(3, len(templates_res["templates"]))
+        self.assertEqual("yubi", templates_res["templates"][0]["name"])
+        self.assertEqual("smph", templates_res["templates"][1]["name"])
+        self.assertEqual("generic", templates_res["templates"][2]["name"])
+
+        # Sort by type
+        templates_res = get_templates_by_query(sortdir="asc", sortby="container_type")
+        self.assertIn("templates", templates_res.keys())
+        self.assertEqual(3, len(templates_res["templates"]))
+        self.assertEqual("generic", templates_res["templates"][0]["name"])
+        self.assertEqual("smph", templates_res["templates"][1]["name"])
+        self.assertEqual("yubi", templates_res["templates"][2]["name"])
 
         # Get smartphone templates
         templates_res = get_templates_by_query(container_type="smartphone")

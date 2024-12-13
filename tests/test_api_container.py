@@ -2237,6 +2237,7 @@ class APIContainer(APIContainerTest):
 
     def test_21_get_all_containers_paginate(self):
         # Arrange
+        self.setUp_user_realms()
         # Create containers
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
@@ -2245,7 +2246,7 @@ class APIContainer(APIContainerTest):
             container_serials.append(serial)
         # Add token to container 1
         container = find_container_by_serial(container_serials[1])
-        token = init_token({"genkey": "1"})
+        token = init_token({"genkey": "1"}, user=User("shadow", self.realm1))
         token_serial = token.get_serial()
         add_token_to_container(container_serials[1], token_serial)
         # Assign user to container 1
@@ -3945,7 +3946,110 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_48_sync_with_rollover_challenge_fails(self):
+    def test_48_client_self_rollover(self):
+        # Registration
+        smartphone_serial, priv_key_smph, _ = self.register_smartphone_success()
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # token
+        self.setUp_user_realms()
+        hotp_params = {"type": "hotp",
+                       "genkey": True,
+                       "realm": self.realm1,
+                       "user": "hans"}
+        result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
+        initial_enroll_url = result["detail"]["googleurl"]["value"]
+        hotp = get_one_token(serial=result["detail"]["serial"])
+        smartphone.add_token(hotp)
+
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
+                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+
+        # Challenge for init rollover
+        scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        challenge_data = result["result"]["value"]
+
+        # Mock smartphone for init rollover
+        rollover_scope = f"https://pi.net/container/{smartphone_serial}/rollover"
+        params, _ = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                         scope=rollover_scope,
+                                                         nonce=challenge_data["nonce"],
+                                                         registration_time=challenge_data["time_stamp"],
+                                                         private_key_smph=priv_key_smph)
+        params.update({"passphrase_prompt": "Enter your phone number.", "passphrase_response": "123456789"})
+
+        # Rollover init
+        data = {"container_serial": smartphone_serial, "rollover": True,
+                "passphrase_prompt": "Enter your phone number.", "passphrase_response": "123456789"}
+        result = self.request_assert_success(f'container/register/initialize', data, self.at, 'POST')
+
+        init_response_data = result["result"]["value"]
+        self.assertIn("container_url", init_response_data)
+        self.assertIn("nonce", init_response_data)
+        self.assertIn("time_stamp", init_response_data)
+        self.assertIn("key_algorithm", init_response_data)
+        self.assertIn("hash_algorithm", init_response_data)
+        self.assertIn("ssl_verify", init_response_data)
+        self.assertIn("ttl", init_response_data)
+        self.assertIn("passphrase_prompt", init_response_data)
+        # Check if the url contains all relevant data
+        qr_url = init_response_data["container_url"]["value"]
+        self.assertIn(f"pia://container/{smartphone_serial}", qr_url)
+        self.assertIn("issuer=privacyIDEA", qr_url)
+        self.assertIn("ttl=36", qr_url)
+        self.assertIn("nonce=", qr_url)
+        self.assertIn("time=", qr_url)
+        self.assertIn("url=https://new-pi.net/", qr_url)
+        self.assertIn(f"serial={smartphone_serial}", qr_url)
+        self.assertIn("key_algorithm=", qr_url)
+        self.assertIn("hash_algorithm", qr_url)
+        self.assertIn("passphrase=Enter%20your%20phone%20number.", qr_url)
+
+        # smartphone finalizes rollover
+        params, priv_key_new_smph = self.mock_smartphone_register_params(serial=smartphone_serial,
+                                                                         scope="https://new-pi.net/container/register/finalize",
+                                                                         nonce=init_response_data["nonce"],
+                                                                         registration_time=init_response_data[
+                                                                             "time_stamp"],
+                                                                         passphrase="123456789")
+        result = self.request_assert_success('container/register/finalize',
+                                             params,
+                                             None, 'POST')
+        # Check if the response contains the expected values
+        self.assertIn("public_server_key", result["result"]["value"])
+        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
+
+        # Challenge for Sync
+        scope = f"https://new-pi.net/container/{smartphone_serial}/sync"
+        result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
+                                             {"scope": scope}, None, 'POST')
+        container_client = {"serial": smartphone_serial, "type": "smartphone",
+                            "tokens": [{"serial": hotp.get_serial(), "type": "HOTP", "label": hotp.get_serial(),
+                                        "issuer": "privacIDEA", "pin": False, "algorithm": "SHA1", "digits": 6}]}
+        params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
+                                                                 priv_key_new_smph, scope, json.dumps(container_client))
+        # Sync
+        result = self.request_assert_success(f'container/{smartphone_serial}/sync',
+                                             params, None, 'POST')
+        container_dict_server_enc = result["result"]["value"]["container_dict_server"]
+        pub_key_server = X25519PublicKey.from_public_bytes(
+            base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
+        shared_key = private_enc_key_smph.exchange(pub_key_server)
+        container_dict_server = json.loads(decrypt_ecc(container_dict_server_enc, shared_key, "AES",
+                                                       result["result"]["value"]["encryption_params"]).decode("utf-8"))
+        token_diff = container_dict_server["tokens"]
+        self.assertEqual(1, len(token_diff["add"]))
+        self.assertNotEqual(initial_enroll_url, token_diff["add"][0])
+        self.assertEqual(0, len(token_diff["update"]))
+
+        # smartphone got new token secrets: rollover completed
+        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+
+        delete_policy("policy")
+
+    def test_49_sync_with_rollover_challenge_fails(self):
         # Registration
         set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial, priv_key_smph, result = self.register_smartphone_success()
@@ -3979,7 +4083,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy")
         delete_policy("policy_rollover")
 
-    def test_49_rollover_server_success(self):
+    def test_50_rollover_server_success(self):
         # Registration
         smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -4037,23 +4141,31 @@ class APIContainerSynchronization(APIContainerTest):
                                              None, 'POST')
         # Check if the response contains the expected values
         self.assertIn("public_server_key", result["result"]["value"])
+        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
+
+        container_client = {"serial": smartphone_serial, "type": "smartphone",
+                            "tokens": [{"serial": hotp.get_serial(), "type": "HOTP", "label": hotp.get_serial(),
+                                        "issuer": "privacIDEA", "pin": False, "algorithm": "SHA1", "digits": 6}]}
 
         # Try to sync with old smartphone
         scope = f"https://pi.net/container/{smartphone_serial}/sync"
         result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
                                              {"scope": scope}, None, 'POST')
-        params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_old_smph, scope)
+        params, _ = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial, priv_key_old_smph, scope,
+                                              json.dumps(container_client))
         # Sync
         result = self.request_assert_error(400, f'container/{smartphone_serial}/sync',
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
+        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
 
         # Sync with new smartphone
         scope = f"https://new-pi.net/container/{smartphone_serial}/sync"
         result = self.request_assert_success(f'container/{smartphone_serial}/challenge',
                                              {"scope": scope}, None, 'POST')
+
         params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
-                                                                 priv_key_new_smph, scope)
+                                                                 priv_key_new_smph, scope, json.dumps(container_client))
         # Sync
         result = self.request_assert_success(f'container/{smartphone_serial}/sync',
                                              params, None, 'POST')
@@ -4067,9 +4179,12 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(1, len(token_diff["add"]))
         self.assertNotEqual(initial_enroll_url, token_diff["add"][0])
 
+        # smartphone got new token secrets: rollover completed
+        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+
         delete_policy("policy")
 
-    def test_50_rollover_server_not_completed(self):
+    def test_51_rollover_server_not_completed(self):
         # Registration
         smartphone_serial, priv_key_old_smph, _ = self.register_smartphone_success()
         smartphone = find_container_by_serial(smartphone_serial)
@@ -4224,13 +4339,13 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_tokens = smartphone.get_tokens()
         self.assertEqual(0, len(smartphone_tokens))
 
-    def test_51_synchronize_initial_token_transfer_no_user_success(self):
+    def test_52_synchronize_initial_token_transfer_no_user_success(self):
         # Generic policy
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
         self.sync_with_initial_token_transfer_allowed()
         delete_policy("transfer_policy")
 
-    def test_52_synchronize_initial_token_transfer_no_user_denied(self):
+    def test_53_synchronize_initial_token_transfer_no_user_denied(self):
         # No policy
         self.sync_with_initial_token_transfer_denied()
 
@@ -4241,7 +4356,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_denied()
         delete_policy("transfer_policy")
 
-    def test_53_synchronize_initial_token_transfer_user_success(self):
+    def test_54_synchronize_initial_token_transfer_user_success(self):
         self.setUp_user_realms()
 
         # Generic policy
@@ -4279,7 +4394,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_allowed(smartphone_serial)
         delete_policy("transfer_policy")
 
-    def test_54_synchronize_initial_token_transfer_user_denied(self):
+    def test_55_synchronize_initial_token_transfer_user_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -4307,7 +4422,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_denied(smartphone_serial)
         delete_policy("transfer_policy")
 
-    def test_55_synchronize_initial_token_transfer_user_realm_success(self):
+    def test_56_synchronize_initial_token_transfer_user_realm_success(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         user = User("hans", self.realm1)
@@ -4333,7 +4448,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.sync_with_initial_token_transfer_allowed(smartphone.serial)
         delete_policy("transfer_policy")
 
-    def test_56_synchronize_initial_token_transfer_user_realm_denied(self):
+    def test_57_synchronize_initial_token_transfer_user_realm_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         self.setUp_user_realm3()
@@ -4938,8 +5053,15 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_17_compare_template_with_containers(self):
         template_options = {"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"},
-                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "push", "genkey": True}]}
+                            "tokens": [{"type": "hotp", "genkey": True}, {"type": "daypassword", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
+
+        # create container with template
+        request_params = json.dumps({"type": "smartphone",
+                                     "template": {"name": "test", "container_type": "smartphone",
+                                                  "template_options": template_options}})
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        equal_cserial = result["result"]["value"]["container_serial"]
 
         # Create container with tokens and link with template
         cserial = init_container({"type": "smartphone"})["container_serial"]
@@ -4953,12 +5075,31 @@ class APIContainerTemplate(APIContainerTest):
         container.add_token(totp1)
         container.add_token(totp2)
 
-        # Compare template with container
+        # Compare template with all containers
         result = self.request_assert_success(f"/container/template/test/compare", {}, self.at, "GET")
+        # Check result for equal container
+        container_diff = result["result"]["value"][equal_cserial]
+        token_diff = container_diff["tokens"]
+        self.assertEqual(0, len(token_diff["missing"]))
+        self.assertEqual(0, len(token_diff["additional"]))
+        self.assertTrue(token_diff["equal"])
+        # Check result for unequal container
         container_diff = result["result"]["value"][cserial]
         token_diff = container_diff["tokens"]
-        self.assertListEqual(["push"], token_diff["missing"])
-        self.assertListEqual(["totp", "totp"], token_diff["additional"])
+        self.assertSetEqual({"daypassword"}, set(token_diff["missing"]))
+        self.assertSetEqual({"totp", "totp"}, set(token_diff["additional"]))
+        self.assertFalse(token_diff["equal"])
+
+        # Compare template with specific container
+        result = self.request_assert_success(f"/container/template/test/compare", {"container_serial": cserial},
+                                             self.at, "GET")
+        # Check result for unequal container
+        container_diff = result["result"]["value"][cserial]
+        token_diff = container_diff["tokens"]
+        self.assertSetEqual({"daypassword"}, set(token_diff["missing"]))
+        self.assertSetEqual({"totp", "totp"}, set(token_diff["additional"]))
+        self.assertFalse(token_diff["equal"])
+        self.assertNotIn(equal_cserial, result["result"]["value"].keys())
 
         # Clean up
         container.delete()

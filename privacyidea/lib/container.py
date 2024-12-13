@@ -23,7 +23,7 @@ import logging
 import os
 
 from privacyidea.api.lib.utils import send_result
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
@@ -49,6 +49,9 @@ def delete_container_by_id(container_id: int):
 
     container = find_container_by_id(container_id)
 
+    # Delete challenges
+    delete_challenges(serial=container.serial)
+
     return container.delete()
 
 
@@ -64,9 +67,7 @@ def delete_container_by_serial(serial: str):
     container = find_container_by_serial(serial)
 
     # Delete challenges
-    challenge_list = get_challenges(serial=serial)
-    for challenge in challenge_list:
-        challenge.delete()
+    delete_challenges(serial=serial)
 
     return container.delete()
 
@@ -181,7 +182,7 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
         sql_query = sql_query.join(TokenContainer.template).filter(TokenContainerTemplate.name == template)
 
     if isinstance(sortby, str):
-        # Check that the sort column exists and convert it to a Token column
+        # Check that the sort column exists and convert it to a container column
         cols = TokenContainer.__table__.columns
         if sortby in cols:
             sortby = cols.get(sortby)
@@ -995,9 +996,7 @@ def finalize_container_rollover(container: TokenContainer):
             log.debug(f"Error during rollover of token {token.get_serial()} in container rollover: {ex}")
 
     # Delete previous challenges of the container
-    challenge_list = get_challenges(serial=container.serial)
-    for challenge in challenge_list:
-        challenge.delete()
+    delete_challenges(container.serial)
 
 
 def init_container_rollover(container: TokenContainer, server_url: str, challenge_ttl: int, registration_ttl: int,
@@ -1041,9 +1040,7 @@ def unregister(container: TokenContainer):
     container.terminate_registration()
 
     # Delete all challenges of the container
-    challenge_list = get_challenges(serial=container.serial)
-    for challenge in challenge_list:
-        challenge.delete()
+    delete_challenges(serial=container.serial)
 
     return True
 
@@ -1141,7 +1138,7 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
 
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
-                           pagesize: int = 0):
+                           pagesize: int = 0, sortdir: str = "asc", sortby: str = "name"):
     """
     Returns a list of all templates or a list filtered by the given parameters.
 
@@ -1150,6 +1147,8 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     :param default: Filters for default templates if True or non-default if False, optional
     :param page: The number of the page to view. 0 if no pagination shall be used
     :param pagesize: The size of the page. 0 if no pagination shall be used
+    :param sortdir: The sort direction, either 'asc' or 'desc'
+    :param sortby: The attribute to sort by
     :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
              'next', 'current', 'count')
     """
@@ -1160,6 +1159,20 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
         sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
     if default is not None:
         sql_query = sql_query.filter(TokenContainerTemplate.default == default)
+
+    if isinstance(sortby, str):
+        # Check that the sort column exists and convert it to a template column
+        cols = TokenContainerTemplate.__table__.columns
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.info(f'Unknown sort column "{sortby}". Using "name" instead.')
+            sortby = TokenContainerTemplate.name
+
+    if sortdir == "desc":
+        sql_query = sql_query.order_by(sortby.desc())
+    else:
+        sql_query = sql_query.order_by(sortby.asc())
 
     # paginate if requested
     if page > 0 or pagesize > 0:
@@ -1291,5 +1304,11 @@ def compare_template_with_container(template: TokenContainerTemplate, container:
         count_template = template_token_count.get(ttype, 0)
         if count_template < count_container:
             result["tokens"]["additional"].extend([ttype] * (count_container - count_template))
+
+    # Check if container and template are equal
+    if len(result["tokens"]["missing"]) == 0 and len(result["tokens"]["additional"]) == 0:
+        result["tokens"]["equal"] = True
+    else:
+        result["tokens"]["equal"] = False
 
     return result
