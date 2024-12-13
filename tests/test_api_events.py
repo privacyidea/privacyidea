@@ -1036,13 +1036,13 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 Hello {user},
 
                 the administrator {admin}@{realm} initialized a registration for your container {container_serial}.
-                To complete the registration, please scan the attached QR code or click on this link {container_url}
-                on your smartphone.
+                To complete the registration, please scan the attached QR code or click on this link 
+                {container_url_value} on your smartphone.
                 
                 The QR code allows you to synchronize the tokens on your smartphone with the server. 
                 Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
                 
-                {container_qr}
+                <img src={container_url_img}>
 
                 To check your container you may login to the Web UI:
                 {url}
@@ -1055,7 +1055,9 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                "reply_to": "email",
                                "reply_to email": "privacyidea@example.com",
                                "subject": "Container Registration.",
-                               "body": msg})
+                               "body": msg,
+                               "attach_qrcode": True,
+                               "mimetype": "html"})
         self.assertTrue(r > 0)
 
         smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
@@ -1109,7 +1111,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                "reply_to": "email",
                                "reply_to email": "privacyidea@example.com",
                                "subject": "Your container was unregistered.",
-                               "body": msg})
+                               "body": msg,
+                               "mimetype": "html"})
         self.assertTrue(r > 0)
 
         smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
@@ -1156,7 +1159,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                "reply_to": "email",
                                "reply_to email": "privacyidea@example.com",
                                "subject": "Container Rollover.",
-                               "body": msg},
+                               "body": msg,
+                               "mimetype": "html"},
                       position="post")
         self.assertTrue(r > 0)
 
@@ -1211,13 +1215,13 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 Hello {user},
 
                 the administrator {admin}@{realm} initialized a rollover for your container {container_serial}.
-                To complete the rollover, please scan the attached QR code or click on this link {container_url}
+                To complete the rollover, please scan the attached QR code or click on this link {container_url_value}
                 on your smartphone.
                 
                 The QR code allows you to synchronize the tokens on your smartphone with the server. 
                 Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
                 
-                {container_qr}
+                <img src={container_url_img}>
                 
                 After the rollover is completed, the tokens and container on the old device are not valid anymore.
 
@@ -1232,7 +1236,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                "reply_to": "email",
                                "reply_to email": "privacyidea@example.com",
                                "subject": "Container Rollover.",
-                               "body": msg},
+                               "body": msg,
+                               "mimetype": "html"},
                       position="post")
         self.assertTrue(r > 0)
 

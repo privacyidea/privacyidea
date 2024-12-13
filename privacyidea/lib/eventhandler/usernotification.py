@@ -194,7 +194,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                                      "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
                                      "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
                                      "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
-                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}."
+                                     "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+                                     "{client_ip}, {ua_browser}, {ua_string}, {pin}."
                                      "</code>")},
                 "To": {
                     "type": "str",
@@ -239,7 +240,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                                           "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
                                           "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
                                           "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
-                                          "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+                                          "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+                                          "{client_ip}, {ua_browser}, {ua_string}, "
                                           "{pin}.</code>")},
                 "To": {"type": "str",
                        "required": True,
@@ -255,7 +257,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                                      "{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm}, "
                                      "{tokentype}, {tokendescription}, {registrationcode}, {recipient_givenname}, "
                                      "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
-                                     "{pushurl_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {pin}."
+                                     "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+                                     "{client_ip}, {ua_browser}, {ua_string}, {pin}."
                                      "</code>")},
                 "filename": {
                     "type": "str",
@@ -433,10 +436,10 @@ class UserNotificationEventHandler(BaseEventHandler):
             pushurl_img = content.get("detail", {}).get("pushurl",
                                                         {}).get("img")
             container_content = content.get("result", {}).get("value", {})
-            container_url = container_qr = None
+            container_url_value = container_url_img = None
             if isinstance(container_content, dict):
-                container_url = container_content.get("container_url", {}).get("value")
-                container_qr = container_content.get("container_url", {}).get("img")
+                container_url_value = container_content.get("container_url", {}).get("value")
+                container_url_img = container_content.get("container_url", {}).get("img")
             tokentype = None
             tokendescription = None
             if serial:
@@ -465,8 +468,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    registrationcode=registrationcode,
                                    escape_html=(action.lower() == "sendmail"
                                                 and handler_options.get("mimetype", "").lower() == "html"),
-                                   container_url=container_url,
-                                   container_qr=container_qr)
+                                   container_url_value=container_url_value,
+                                   container_url_img=container_url_img)
 
             body = to_unicode(body).format(**tags)
             subject = subject.format(**tags)
@@ -482,6 +485,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                         body = self.attach_qr(body, googleurl_img, mimetype, serial)
                     elif pushurl_img:
                         body = self.attach_qr(body, pushurl_img, mimetype, serial)
+                    elif container_url_img:
+                        body = self.attach_qr(body, container_url_img, mimetype, serial)
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
