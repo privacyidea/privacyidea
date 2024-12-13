@@ -1934,115 +1934,112 @@ def fido2_enroll(request, action):
     :return:
     :rtype:
     """
-    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
-    ttype = request.all_data.get("type")
-    if ttype and ttype.lower() in types:
-        user_object = request.User if hasattr(request, 'User') else None
-        rp_id_policies = (Match.user(g,
-                                     scope=SCOPE.ENROLL,
-                                     action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                                     user_object=user_object)
-                          .action_values(unique=True))
-        if rp_id_policies:
-            rp_id = list(rp_id_policies)[0]
-        else:
-            raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_ID}")
+    user_object = request.User if hasattr(request, 'User') else None
+    rp_id_policies = (Match.user(g,
+                                 scope=SCOPE.ENROLL,
+                                 action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                                 user_object=user_object)
+                      .action_values(unique=True))
+    if rp_id_policies:
+        rp_id = list(rp_id_policies)[0]
+    else:
+        raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_ID}")
 
-        rp_name_policies = Match.user(g,
-                                      scope=SCOPE.ENROLL,
-                                      action=WEBAUTHNACTION.RELYING_PARTY_NAME,
-                                      user_object=user_object).action_values(unique=True,
-                                                                             allow_white_space_in_action=True)
-        if rp_name_policies:
-            rp_name = list(rp_name_policies)[0]
-        else:
-            raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_NAME}")
+    rp_name_policies = Match.user(g,
+                                  scope=SCOPE.ENROLL,
+                                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
+                                  user_object=user_object).action_values(unique=True,
+                                                                         allow_white_space_in_action=True)
+    if rp_name_policies:
+        rp_name = list(rp_name_policies)[0]
+    else:
+        raise PolicyError(f"Missing enrollment policy for WebauthnToken: {WEBAUTHNACTION.RELYING_PARTY_NAME}")
 
-        # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
-        if not is_fqdn(rp_id):
-            message = f"Illegal value for {WEBAUTHNACTION.RELYING_PARTY_ID} (must be a domain name): {rp_id}"
-            log.warning(message)
-            raise PolicyError(message)
+    # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
+    if not is_fqdn(rp_id):
+        message = f"Illegal value for {WEBAUTHNACTION.RELYING_PARTY_ID} (must be a domain name): {rp_id}"
+        log.warning(message)
+        raise PolicyError(message)
 
-        authenticator_attachment_policies = Match.user(g,
-                                                       scope=SCOPE.ENROLL,
-                                                       action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-                                                       user_object=user_object).action_values(unique=True)
-        authenticator_attachment = None
-        if (authenticator_attachment_policies
-                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES):
-            authenticator_attachment = list(authenticator_attachment_policies)[0]
+    authenticator_attachment_policies = Match.user(g,
+                                                   scope=SCOPE.ENROLL,
+                                                   action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                                                   user_object=user_object).action_values(unique=True)
+    authenticator_attachment = None
+    if (authenticator_attachment_policies
+            and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES):
+        authenticator_attachment = list(authenticator_attachment_policies)[0]
 
-        # We need to set 'unique' to False since this policy can contain multiple values
-        pubkey_credential_algo_pref_policies = Match.user(
-            g,
-            scope=SCOPE.ENROLL,
-            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-            user_object=user_object).action_values(unique=False)
+    # We need to set 'unique' to False since this policy can contain multiple values
+    pubkey_credential_algo_pref_policies = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+        user_object=user_object).action_values(unique=False)
 
-        pubkey_credential_algo_pref = (pubkey_credential_algo_pref_policies.keys()
-                                       if pubkey_credential_algo_pref_policies
-                                       else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE)
+    pubkey_credential_algo_pref = (pubkey_credential_algo_pref_policies.keys()
+                                   if pubkey_credential_algo_pref_policies
+                                   else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE)
 
-        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in pubkey_credential_algo_pref]):
-            raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
-                              f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
+    if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in pubkey_credential_algo_pref]):
+        raise PolicyError(f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
+                          f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
-        authenticator_attestation_level = get_first_policy_value(
-            policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-            default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-            scope=SCOPE.ENROLL,
-            allowed_values=ATTESTATION_LEVELS
-        )
+    authenticator_attestation_level = get_first_policy_value(
+        policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+        scope=SCOPE.ENROLL,
+        allowed_values=ATTESTATION_LEVELS
+    )
 
-        authenticator_attestation_form = get_first_policy_value(
-            policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-            default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-            scope=SCOPE.ENROLL,
-            allowed_values=ATTESTATION_FORMS
-        )
+    authenticator_attestation_form = get_first_policy_value(
+        policy_action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+        default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+        scope=SCOPE.ENROLL,
+        allowed_values=ATTESTATION_FORMS
+    )
 
-        user_verification_requirement = get_first_policy_value(
-            policy_action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-            default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            scope=SCOPE.ENROLL,
-            allowed_values=USER_VERIFICATION_LEVELS
-        )
+    user_verification_requirement = get_first_policy_value(
+        policy_action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+        default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        scope=SCOPE.ENROLL,
+        allowed_values=USER_VERIFICATION_LEVELS
+    )
 
-        avoid_double_registration_policy = Match.user(g,
-                                                      scope=SCOPE.ENROLL,
-                                                      action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
-                                                      user_object=user_object).any()
-
-        # Challenge texts
-        for t in [PasskeyTokenClass, WebAuthnTokenClass]:
-            action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
-            challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
-            request.all_data[action] = challenge_text
-
-        request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
-        request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
-
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] = ([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
-                                                                              for x in PUBKEY_CRED_ALGORITHMS_ORDER
-                                                                              if
-                                                                              x in pubkey_credential_algo_pref])
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
-
-        request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
-        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
-        passkey_attestation_policies = Match.user(g,
+    avoid_double_registration_policy = Match.user(g,
                                                   scope=SCOPE.ENROLL,
-                                                  action=PasskeyAction.AttestationConveyancePreference,
-                                                  user_object=user_object).action_values(unique=True)
+                                                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+                                                  user_object=user_object).any()
 
-        passkey_attestation = (list(passkey_attestation_policies)[0]
-                               if passkey_attestation_policies
-                               else None)
-        if passkey_attestation:
-            request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
+    # Challenge texts
+    for t in [PasskeyTokenClass, WebAuthnTokenClass]:
+        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
+        request.all_data[action] = challenge_text
+
+    request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
+    request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
+
+    request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+    request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] = ([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                                                                          for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                                                                          if
+                                                                          x in pubkey_credential_algo_pref])
+    request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
+    request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
+
+    request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
+    request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
+    passkey_attestation_policies = Match.user(g,
+                                              scope=SCOPE.ENROLL,
+                                              action=PasskeyAction.AttestationConveyancePreference,
+                                              user_object=user_object).action_values(unique=True)
+
+    passkey_attestation = (list(passkey_attestation_policies)[0]
+                           if passkey_attestation_policies
+                           else None)
+    if passkey_attestation:
+        request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
 
     return True
 

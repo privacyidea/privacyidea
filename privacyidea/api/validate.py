@@ -89,7 +89,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value)
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -117,7 +117,6 @@ from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.framework import get_app_config_value
-from ..lib.tokens.passkeytoken import PasskeyAction
 from ..lib.tokens.webauthntoken import WEBAUTHNACTION
 
 log = logging.getLogger(__name__)
@@ -408,7 +407,8 @@ def check():
 
     details: dict = {}
     # Passkey/FIDO2: Identify the user by the credential ID
-    credential_id: str = get_optional(request.all_data, "credential_id")
+    credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
+
     # If only the credential ID is given, try to use it to identify the token
     if credential_id:
         # Find the token that responded to the challenge
@@ -670,7 +670,6 @@ def poll_transaction(transaction_id=None):
     matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
-
     declined_challenges = []
     if answered_challenges:
         result = True
@@ -715,7 +714,7 @@ def poll_transaction(transaction_id=None):
     return send_result(result, rid=2, details=details)
 
 
-@validate_blueprint.route('/initialize', methods=['POST'])
+@validate_blueprint.route('/initialize', methods=['POST', 'GET'])
 @prepolicy(fido2_auth, request=request)
 def initialize():
     """

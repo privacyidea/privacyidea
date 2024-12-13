@@ -60,6 +60,8 @@ from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.tokenclass import ROLLOUTSTATE
+from ..lib.tokens.passkeytoken import PasskeyTokenClass
+from ..lib.tokens.webauthntoken import WebAuthnTokenClass
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -304,7 +306,7 @@ def init():
 
         # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
-        if (token_object.get_type() in ["passkey", "webauthn"]
+        if (token_object.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
                 and token_object.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
             param["registered_credential_ids"] = get_credential_ids_for_user(user)
 

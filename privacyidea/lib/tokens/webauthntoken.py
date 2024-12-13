@@ -1290,11 +1290,11 @@ class WebAuthnTokenClass(TokenClass):
 
     @classmethod
     def get_default_challenge_text_auth(cls):
-        return DEFAULT_CHALLENGE_TEXT_AUTH
+        return str(DEFAULT_CHALLENGE_TEXT_AUTH)
 
     @classmethod
     def get_default_challenge_text_register(cls):
-        return DEFAULT_CHALLENGE_TEXT_ENROLL
+        return str(DEFAULT_CHALLENGE_TEXT_ENROLL)
 
 
 def is_webauthn_assertion_response(request_data):

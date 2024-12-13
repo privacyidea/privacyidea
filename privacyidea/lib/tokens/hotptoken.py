@@ -91,8 +91,6 @@ class HotpTokenClass(TokenClass):
 
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = True
 
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
@@ -276,8 +274,8 @@ class HotpTokenClass(TokenClass):
                                         user_obj=user,
                                         extra_data=extra_data)
                     response_detail["googleurl"] = {"description":
-                                                    _("URL for google "
-                                                      "Authenticator"),
+                                                        _("URL for google "
+                                                          "Authenticator"),
                                                     "value": goo_url,
                                                     "img": create_img(goo_url)
                                                     }
@@ -865,7 +863,7 @@ class HotpTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
-        detail["messages"] = [ message ]
+        detail["messages"] = [message]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
@@ -886,3 +884,7 @@ class HotpTokenClass(TokenClass):
         except AttributeError:
             # Certain from HOTP inherited tokenclasses might not set currently_in_challenge
             return False
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return True

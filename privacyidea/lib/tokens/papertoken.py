@@ -1,4 +1,4 @@
-#  2016-12-05 Cornelisu Kölbel <cornelius.koelbel@netknights.it>
+#  2016-12-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy papertoken_count
 #
 #  2015-11-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -45,8 +45,6 @@ class PaperTokenClass(HotpTokenClass):
     This sheet of paper can be used to authenticate and strike out the used
     OTP values.
     """
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = False
 
     @log_with(log)
     def __init__(self, db_token):
@@ -142,3 +140,7 @@ class PaperTokenClass(HotpTokenClass):
         if "verify" not in param:
             otps = self.get_multi_otp(count=papertoken_count)
             self.add_init_details("otps", otps[2].get("otp", {}))
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return False

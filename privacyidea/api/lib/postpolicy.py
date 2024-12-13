@@ -40,37 +40,39 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import datetime
+import functools
+import json
 import logging
+import re
 import traceback
 from urllib.parse import quote
-from privacyidea.lib.error import PolicyError, ValidateError
+
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
+
+from privacyidea.api.lib.utils import get_all_params
+from privacyidea.lib import lazy_gettext
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
+from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.crypto import Sign
+from privacyidea.lib.error import PolicyError, ValidateError
+from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE_LIST
 from privacyidea.lib.policy import Match
-from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
-from privacyidea.lib.machine import get_auth_items
-from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
-from .prepolicy import check_max_token_user, check_max_token_realm
-import functools
-import json
-import re
-import netaddr
-from privacyidea.lib.crypto import Sign
-from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.auth import ROLE
-from privacyidea.lib.user import User
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
+from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
+from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, get_version
-from privacyidea.lib.config import get_privacyidea_node
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
-from privacyidea.lib import _, lazy_gettext
+from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll
+from ...lib.tokens.passkeytoken import PasskeyTokenClass
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +102,7 @@ class postpolicy(object):
     function.
     The postpolicy decorator is to be used in the API calls.
     """
+
     def __init__(self, function, request=None):
         """
         :param function: This is the policy function the is to be called
@@ -120,6 +123,7 @@ class postpolicy(object):
         :type wrapped_function: API function
         :return: Response object
         """
+
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
             response = wrapped_function(*args, **kwds)
@@ -132,6 +136,7 @@ class postrequest(object):
     """
     Decorator that is supposed to be used with after_request.
     """
+
     def __init__(self, function, request=None):
         """
         :param function: This is the policy function the is to be called
@@ -286,7 +291,7 @@ def check_tokeninfo(request, response):
     serial = response.json.get("detail", {}).get("serial")
 
     if serial:
-        tokeninfos_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO)\
+        tokeninfos_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO) \
             .action_values(unique=False, allow_white_space_in_action=True)
         if tokeninfos_pol:
             tokens = get_tokens(serial=serial)
@@ -324,7 +329,7 @@ def no_detail_on_success(request, response):
     content = response.json
 
     # get the serials from a policy definition
-    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS)\
+    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS) \
         .policies(write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
@@ -353,7 +358,7 @@ def preferred_client_mode(request, response):
     user_object = request.User
 
     # get the preferred client mode from a policy definition
-    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object) \
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
@@ -398,7 +403,7 @@ def add_user_detail_to_response(request, response):
     content = response.json
 
     # Check for ADD USER IN RESPONSE
-    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User) \
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -412,7 +417,7 @@ def add_user_detail_to_response(request, response):
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
-    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User) \
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
@@ -596,7 +601,7 @@ def get_webui_settings(request, response):
         hide_buttons = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
                                      user=loginname, realm=realm).any()
         deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION,
-                                     user=loginname, realm=realm).any()
+                                              user=loginname, realm=realm).any()
         default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
                                               user=loginname, realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
@@ -728,7 +733,7 @@ def autoassign(request, response):
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
         user_obj = request.User
-        #user_obj = get_user_from_param(request.all_data)
+        # user_obj = get_user_from_param(request.all_data)
         password = request.all_data.get("pass", "")
         if user_obj.login and user_obj.realm:
             # If there is no user in the request (because it is a serial
@@ -814,25 +819,52 @@ def multichallenge_enroll_via_validate(request, response):
         user = request.User
         if user.login and user.realm:
             enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
-                                    user_object=user).action_values(unique=True, write_to_audit_log=False)
+                                         user_object=user).action_values(unique=True, write_to_audit_log=False)
             # check if we have a multi enroll policy
             if enroll_policies:
                 tokentype = list(enroll_policies)[0]
+                tokentype = tokentype.lower()
                 # Check if the user already has a token of the type that should be enrolled
                 # If so, do not enroll another one
                 if len(get_tokens(tokentype=tokentype, user=user)) == 0:
-                    if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                    if tokentype in get_multichallenge_enrollable_tokentypes():
                         # Now get the alternative text from the policies
                         text_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
-                                              user_object=user).action_values(unique=True,
-                                                                                  write_to_audit_log=False,
-                                                                                  allow_white_space_in_action=True)
+                                                   user_object=user).action_values(unique=True,
+                                                                                   write_to_audit_log=False,
+                                                                                   allow_white_space_in_action=True)
                         message = None
                         if text_policies:
                             message = list(text_policies)[0]
-                        tokenclass = get_token_class(tokentype)
-                        tokenclass.enroll_via_validate(g, content, user, message)
-                        response.set_data(json.dumps(content))
+                        # ------------------------------
+                        if tokentype == PasskeyTokenClass.get_class_type().lower():
+                            fido2_enroll(request, None)
+                            request.all_data["type"] = tokentype
+                            token = init_token(request.all_data, user)
+                            try:
+                                init_details = token.get_init_detail(request.all_data, user)
+                                if not init_details:
+                                    token.token.delete()
+                                content.get("result")["value"] = False
+                                content.get("result")["authentication"] = "CHALLENGE"
+                                detail = content.setdefault("detail", {})
+                                detail["transaction_ids"] = [init_details["transaction_id"]]
+                                detail["multi_challenge"] = [init_details]
+                                detail["serial"] = token.token.serial
+                                detail["type"] = tokentype
+                                detail.pop("otplen", None)
+                                detail["message"] = PasskeyTokenClass.get_default_challenge_text_register()
+                                detail["client_mode"] = "webauthn"
+                            except Exception as e:
+                                log.error(f"Error during enroll_via_validate: {e}")
+                                token.token.delete()
+                                raise e
+                            response.set_data(json.dumps(content))
+                        # ------------------------------
+                        else:
+                            tokenclass = get_token_class(tokentype)
+                            tokenclass.enroll_via_validate(g, content, user, message)
+                            response.set_data(json.dumps(content))
 
     return response
 
@@ -850,7 +882,7 @@ def construct_radius_response(request, response):
     :return:
     """
     if request.url_rule.rule == '/validate/radiuscheck':
-        return_code = 400 # generic 400 error by default
+        return_code = 400  # generic 400 error by default
         if response.json['result']['status']:
             if response.json['result']['value']:
                 # user was successfully authenticated

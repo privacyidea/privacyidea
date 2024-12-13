@@ -105,7 +105,6 @@ from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTIO
 from base64 import b32encode
 from binascii import unhexlify
 
-
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
 optional = True
@@ -168,8 +167,6 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = False
 
     @log_with(log)
     def __init__(self, db_token):
@@ -362,7 +359,7 @@ class TokenClass(object):
         return self.init_details
 
     @log_with(log)
-    def get_init_details(self):
+    def get_init_details(self, params=None, user=None):
         """
         return the status of the token rollout
 
@@ -1989,3 +1986,7 @@ class TokenClass(object):
         token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
         token_dict["info_list"] = self.get_tokeninfo(decrypted=True)
         return token_dict
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return False

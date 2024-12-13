@@ -76,7 +76,7 @@ from sqlalchemy.sql.expression import FunctionElement
 from webauthn import base64url_to_bytes
 from webauthn.helpers import bytes_to_base64url
 
-from privacyidea.api.lib.utils import get_required, get_optional
+from privacyidea.api.lib.utils import get_required, get_optional, get_required_one_of, get_optional_one_of
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
@@ -2537,8 +2537,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     break
 
         if not res and not further_challenge:
-            # We did not find any successful response, so we need to increase the
-            # failcounters
+            # We did not find any successful response, so we need to increase the failcounters
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
@@ -2928,10 +2927,10 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:
-    - authenticatorData
-    - clientDataJSON
-    - signature
-    - userHandle
+    - authenticatorData or authenticatordata
+    - clientDataJSON or clientdata
+    - signature or signaturedata
+    - userHandle or userhandle
     - HTTP_ORIGIN
     """
     db_challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
@@ -2939,10 +2938,10 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
     options = {
         "challenge": db_challenge.challenge,
-        "authenticatorData": get_required(params, "authenticatorData"),
-        "clientDataJSON": get_required(params, "clientDataJSON"),
-        "signature": get_required(params, "signature"),
-        "userHandle": get_required(params, "userHandle"),
+        "authenticatorData": get_required_one_of(params, ["authenticatorData", "authenticatordata"]),
+        "clientDataJSON": get_required_one_of(params, ["clientDataJSON", "clientdata"]),
+        "signature": get_required_one_of(params, ["signature", "signaturedata"]),
+        "userHandle": get_optional_one_of(params, ["userHandle", "userhandle"]),
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
         "user_verification": get_optional(params, "webauthn_user_verification_requirement", "preferred")
     }

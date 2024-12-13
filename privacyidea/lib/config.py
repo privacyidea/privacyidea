@@ -1100,7 +1100,6 @@ def get_multichallenge_enrollable_tokentypes():
     enrollable_tokentypes = []
     # If the token is enrollable via multichallenge
     for tclass in get_token_classes():
-        if tclass.is_multichallenge_enrollable:
+        if tclass.is_multichallenge_enrollable():
             enrollable_tokentypes.append(tclass.get_class_type())
-
     return enrollable_tokentypes

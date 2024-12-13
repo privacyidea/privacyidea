@@ -332,8 +332,6 @@ class PushTokenClass(TokenClass):
     """
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
     client_mode = CLIENTMODE.POLL
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = True
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
@@ -1172,9 +1170,7 @@ class PushTokenClass(TokenClass):
         """
         # Get the firebase configuration from the policies
         params = get_pushtoken_add_config(g, user_obj=user_obj)
-        token_obj = init_token({"type": cls.get_class_type(),
-                                "genkey": 1,
-                                "2stepinit": 1}, user=user_obj)
+        token_obj = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token_obj.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
@@ -1184,14 +1180,12 @@ class PushTokenClass(TokenClass):
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        c = token_obj.create_challenge(options={"g": g, "user": user_obj,
-                                                "session": CHALLENGE_SESSION.ENROLLMENT})
+        c = token_obj.create_challenge(options={"g": g, "user": user_obj, "session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
-                                                       token_type=cls.get_class_type())
+        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
         params.update(enroll_params)
-        init_details = token_obj.get_init_detail(params=params,
-                                                 user=user_obj)
+        init_details = token_obj.get_init_detail(params=params, user=user_obj)
+
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
@@ -1201,3 +1195,7 @@ class PushTokenClass(TokenClass):
                 "message": message or _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return True

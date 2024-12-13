@@ -85,11 +85,31 @@ def get_required(param, key, default=None, allow_empty=False, allowed_values=Non
     return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
 
 
+def get_required_one_of(param, keys, default=None, allow_empty=False, allowed_values=None):
+    """
+    Get the first parameter from the list of keys that is present in the param dictionary.
+    If none of the keys is present, raise a ParameterError.
+    """
+    for key in keys:
+        ret = _get_param(param, key, default)
+        if ret is not None:
+            return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+    raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
+
+
 def get_optional(param, key, default=None, allow_empty=True, allowed_values=None):
     ret = _get_param(param, key, default)
     if not allow_empty and ret == "":
         raise ParameterError(f"Parameter {key} must not be empty", id=905)
     return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+
+
+def get_optional_one_of(param, keys, default=None, allow_empty=True, allowed_values=None):
+    for key in keys:
+        ret = _get_param(param, key, default)
+        if ret is not None:
+            return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+    return default
 
 
 def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
