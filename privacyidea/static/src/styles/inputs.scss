@@ -12,9 +12,3 @@ $focus-outline: 3px solid var(--blue-light);
     outline: $focus-outline;
   }
 }
-
-::ng-deep .mat-mdc-form-field {
-  font-size: 14px;
-  width: 214px;
-}
-

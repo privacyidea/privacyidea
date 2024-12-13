@@ -5,7 +5,7 @@ import {Component, Input, WritableSignal} from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './container-details.component.html',
-  styleUrl: './container-details.component.css'
+  styleUrl: './container-details.component.scss'
 })
 export class ContainerDetailsComponent {
   @Input() serial!: WritableSignal<string>;

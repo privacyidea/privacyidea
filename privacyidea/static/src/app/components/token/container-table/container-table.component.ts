@@ -29,7 +29,7 @@ const columns = [
     MatSortModule, NgClass, MatIcon, MatFabButton
   ],
   templateUrl: './container-table.component.html',
-  styleUrl: './container-table.component.css'
+  styleUrl: './container-table.component.scss'
 })
 export class ContainerTableComponent {
   dataSource = signal(new MatTableDataSource());

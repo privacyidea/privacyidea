@@ -2,7 +2,7 @@
   @if (!isAnyEditing()) {
     <button mat-icon-button class="black"
             (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
-      <mat-icon class="icon-button">
+      <mat-icon>
         edit
       </mat-icon>
     </button>
@@ -12,12 +12,12 @@
     @if (!isEditingUser()) {
       <button mat-icon-button class="black"
               (click)="toggleEditMode(element, element.keyMap.key, 'save')">
-        <mat-icon class="icon-button">save_as</mat-icon>
+        <mat-icon>save_as</mat-icon>
       </button>
     }
     <button mat-icon-button class="red"
             (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
-      <mat-icon class="icon-button">cancel</mat-icon>
+      <mat-icon>cancel</mat-icon>
     </button>
   } @else {
     <br/>

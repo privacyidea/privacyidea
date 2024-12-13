@@ -1,9 +1,7 @@
 import {Component, Input, WritableSignal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
-import {MatTab, MatTabLabel} from '@angular/material/tabs';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatButton} from '@angular/material/button';
-import {MatDivider} from '@angular/material/divider';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {NgClass} from '@angular/common';
 
@@ -12,16 +10,13 @@ import {NgClass} from '@angular/common';
   standalone: true,
   imports: [
     MatIcon,
-    MatTabLabel,
     MatList,
-    MatTab,
     MatListItem,
     MatButton,
-    MatDivider,
     NgClass
   ],
   templateUrl: './container-tab.component.html',
-  styleUrl: './container-tab.component.css',
+  styleUrl: './container-tab.component.scss',
   animations: [
     trigger('toggleState', [
       state('false', style({

@@ -42,16 +42,12 @@ $table-cell-font-size: 14px;
   }
 
   .info-value-container {
-    width: calc(18rem - 2px);
+    width: 19rem;
   }
 
   .info-input {
     margin-left: 5px;
     margin-top: 0.25rem;
-  }
-
-  .info-delete-icon {
-    margin-top: 10px;
   }
 
   .info-row {
@@ -62,7 +58,7 @@ $table-cell-font-size: 14px;
     display: flex;
     flex-direction: column;
     margin-left: 0.5rem;
-    margin-top: 0.313rem;
+    margin-top: 0.2rem;
     font-size: $table-cell-font-size;
     line-height: 1.6;
   }
@@ -77,17 +73,26 @@ $table-cell-font-size: 14px;
   }
 
   .info-divider {
-    width: 87%;
+    width: 16rem;
     margin: 0.188rem 0 0.25rem -0.5rem;
   }
 
   ::ng-deep {
+    .mat-mdc-list-item {
+      padding: 0;
+    }
+
     .mat-mdc-form-field-subscript-wrapper {
       height: 4px;
     }
 
     .mat-mdc-text-field-wrapper {
       padding-left: 5px;
+    }
+
+    .mat-mdc-form-field {
+      font-size: 14px;
+      width: 16rem;
     }
 
     .mat-mdc-form-field-infix {

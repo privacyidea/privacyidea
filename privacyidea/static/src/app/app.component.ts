@@ -8,7 +8,7 @@ import {AuthService} from './services/auth/auth.service';
   standalone: true,
   imports: [RouterOutlet, FormsModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.scss'
 })
 export class AppComponent {
   constructor(private authService: AuthService) {

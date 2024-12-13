@@ -79,7 +79,7 @@ $scrollable-max-height: 50px;
   }
 
   .details-value {
-    margin-top: 5px;
+    margin-top: 7px;
   }
 
   ::ng-deep {
@@ -98,6 +98,13 @@ $scrollable-max-height: 50px;
 
     .mat-mdc-row {
       font-size: 14px;
+    }
+
+    .details-table .material-icons {
+      font-size: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 }

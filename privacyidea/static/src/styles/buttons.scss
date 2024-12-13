@@ -7,6 +7,8 @@ $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
 $keyword-bg: #f3f3f3;
+$keyword-font-size: 18px;
+$keyword-color: #999999;
 
 // Mixins for common button styles
 @mixin button-base($height, $width, $border-radius, $background, $box-shadow, $cursor: pointer) {
@@ -110,4 +112,21 @@ $keyword-bg: #f3f3f3;
   &.more-keyword-button {
     padding: 0 0 0 8px;
   }
+}
+
+.keyword-button-icon {
+  font-size: $keyword-font-size;
+  vertical-align: bottom;
+  margin-right: 0;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.add-keyword {
+  color: $keyword-color;
+}
+
+.remove-keyword {
+  color: var(--red-light);
 }

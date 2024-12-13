@@ -6,10 +6,8 @@ $paginator-bg: var(--table-color);
 $highlight-padding: 2px 6px;
 $border-radius: 4px;
 $font-color-white: white;
-$keyword-color: #999999;
 $divider-color: #E0E2EC;
 $icon-font-size: 22px;
-$keyword-font-size: 18px;
 $fix-width: 20rem;
 
 table {
@@ -86,21 +84,6 @@ th:nth-child(even) {
 
   .filter-keyword-title {
     margin-top: -4px;
-  }
-
-  .keyword-button-icon {
-    font-size: $keyword-font-size;
-    vertical-align: bottom;
-    margin-bottom: -6px;
-    margin-right: -1px;
-  }
-
-  .add-keyword {
-    color: $keyword-color;
-  }
-
-  .remove-keyword {
-    color: var(--red-light);
   }
 }
 

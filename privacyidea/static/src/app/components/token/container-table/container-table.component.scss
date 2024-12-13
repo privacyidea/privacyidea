@@ -9,13 +9,13 @@ $scrollable-padding-right: 1rem;
 $realm-margin-top: 17px;
 $realm-list-margin-top: 7px;
 
-.token-table-container {
+.container-table-container {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
 
-  .token-table {
+  .container-table {
     border-collapse: collapse;
 
     td,
@@ -32,11 +32,11 @@ $realm-list-margin-top: 7px;
     }
   }
 
-  .token-table-filter {
+  .container-table-filter {
     width: $filter-width;
   }
 
-  .table-scrollable-container {
+  .container-scrollable-container {
     overflow-y: auto;
     overflow-wrap: anywhere;
     height: $scrollable-height;
