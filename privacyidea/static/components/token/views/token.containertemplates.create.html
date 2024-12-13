@@ -52,7 +52,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
     <div class="form-group">
         <button class="btn btn-capitalize btn-primary"
-                ng-disabled="!selection.templateName || !selection.containerType"
+                ng-disabled="!selection.templateName || !selection.containerType ||
+                             !checkRight('container_template_create')"
                 ng-click="createTemplate()"
                 translate>
             Create Template

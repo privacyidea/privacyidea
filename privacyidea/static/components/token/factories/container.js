@@ -244,9 +244,10 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data);
                 });
             },
-            compareTemplateWithContainers: function (template_name, callback) {
+            compareTemplateWithContainers: function (template_name, params, callback) {
                 $http.get(containerUrl + "/template/" + template_name + "/compare", {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
                 }).then(function (response) {
                     callback(response.data);
                 }, function (error) {

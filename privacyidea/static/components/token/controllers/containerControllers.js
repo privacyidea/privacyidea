@@ -21,7 +21,7 @@
 
 myApp.service('ContainerUtils', function () {
 
-    this.createDisplayList = function (stringList, capitalize) {
+    let helperCreateDisplayList = function (stringList, capitalize) {
         // Creates a comma separated list as a single string out of a list of string objects.
         // Each string is capitalized.
 
@@ -37,6 +37,10 @@ myApp.service('ContainerUtils', function () {
 
         return displayList;
     }
+
+    this.createDisplayList = function (stringList, capitalize) {
+        return helperCreateDisplayList(stringList, capitalize);
+    };
 
     this.setAllowedTokenTypes = function (containerType, tokensForContainerTypes, allTokenTypes) {
         let allowedTokenTypes = {};
@@ -60,6 +64,23 @@ myApp.service('ContainerUtils', function () {
             allowedTokenTypes.default = types[0];
         }
         return allowedTokenTypes;
+    };
+
+    this.containerTemplateDiffCallback = function (data) {
+        let diff_list = data.result.value;
+        let templateContainerDiff = diff_list;
+
+        angular.forEach(diff_list, function (containerDiff, serial) {
+            angular.forEach(["options", "tokens"], function (group) {
+                angular.forEach(["missing", "additional", "different"], function (key) {
+                    if (key !== "different" || group !== "tokens") {
+                        templateContainerDiff[serial][group][key] = helperCreateDisplayList(
+                            diff_list[serial][group][key], true);
+                    }
+                });
+            });
+        });
+        return templateContainerDiff;
     };
 
 });
@@ -154,11 +175,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 angular.forEach($scope.realms, function (realm, realmname) {
                     if (size === 1) {
                         // if there is only one realm, preset it
-                        $scope.newUser = {user: "", realm: realmname};
+                        $scope.newUser = {user: "", realm: realmname, realmOnly: false};
                     }
                     // if there is a default realm, preset the default realm
                     if (realm.default && !$stateParams.realmname) {
-                        $scope.newUser = {user: "", realm: realmname};
+                        $scope.newUser = {user: "", realm: realmname, realmOnly: false};
                         //debug: console.log("tokenEnrollController");
                         //debug: console.log($scope.newUser);
                     }
@@ -181,7 +202,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             });
         } else if (AuthFactory.getRole() === 'user') {
             // init the user, if token.containercreate was called as a normal user
-            $scope.newUser = {user: AuthFactory.getUser().username, realm: AuthFactory.getUser().realm};
+            $scope.newUser = {
+                user: AuthFactory.getUser().username,
+                realm: AuthFactory.getUser().realm,
+                realmOnly: false
+            };
             if ($scope.checkRight('userlist')) {
                 UserFactory.getUserDetails({}, function (data) {
                     $scope.User = data.result.value[0];
@@ -202,12 +227,16 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.defaultTemplates = {};
         $scope.templates = {};
         $scope.getTemplates = function () {
+            // Get the templates from the db
             ContainerFactory.getTemplates({}, function (data) {
                 let templatesList = data.result.value.templates;
+                // sort them by the container type and add for each type a "No Template" option
                 angular.forEach(["generic", "smartphone", "yubikey"], function (containerType) {
                     $scope.templates[containerType] = {"No Template": {"name": "noTemplate"}};
                 });
+                // default selection
                 $scope.form.template = $scope.templates["generic"]["No Template"];
+                // Sort the templates by the container type
                 angular.forEach(templatesList, function (template) {
                     $scope.templates[template.container_type][template.name] = template;
                     if (template.default) {
@@ -224,6 +253,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         };
 
         $scope.selectTemplate = function (defaultSelection) {
+            // Sets all template options according to the selected template
+            // optionally first select the default template
             if (defaultSelection) {
                 // select default template if one exists or no template otherwise
                 $scope.form.template = $scope.defaultTemplates[$scope.form.containerType];
@@ -295,6 +326,9 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 params["user"] = fixUser($scope.newUser.user);
                 params["realm"] = $scope.newUser.realm;
             }
+            if ($scope.newUser.realmOnly && $scope.newUser.realm) {
+                params["realm"] = $scope.newUser.realm;
+            }
             if ($scope.form.description) {
                 params["description"] = $scope.form.description;
             }
@@ -347,7 +381,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.regenerateToken = function (serial) {
             let init_params = $scope.tokenInitData[serial].init_params;
             init_params["serial"] = serial;
-            TokenFactory.enroll({}, init_params, function(data) {
+            TokenFactory.enroll({}, init_params, function (data) {
                 $scope.tokenInitData[serial] = data.detail;
                 $scope.tokenInitData[serial].init_params = init_params;
                 $scope.tokenInitData[serial].type = init_params.type;
@@ -374,7 +408,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             });
         };
 
-        // Read the tokentypes and container types from the server
+        // Read the token types and container types from the server
         $scope.getTokenAndContainerTypes = function () {
             TokenFactory.getEnrollTokens(function (data) {
                 $scope.tokenSettings["tokenTypes"] = data.result.value;
@@ -462,9 +496,9 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
     }]);
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory',
-    'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location',
+    'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location', 'ContainerUtils',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                        TokenFactory, $state, $rootScope, $timeout, $location) {
+                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils) {
         $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
@@ -727,11 +761,24 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
+        $scope.showDisableAllTokens = 0;
+        $scope.startCountown = 8;
         $scope.unregisterContainer = function () {
             ContainerFactory.terminateRegistration($scope.containerSerial, function () {
                 $scope.showQR = false;
                 $scope.getContainer();
+                $scope.showDisableAllTokens = $scope.startCountown;
+                $scope.disableCountdown();
             });
+        };
+        $scope.disableCountdown = function () {
+            // Recursively call this function every second until the countdown is over
+            if ($scope.showDisableAllTokens > 0) {
+                $timeout(function () {
+                    $scope.showDisableAllTokens -= 1;
+                    $scope.disableCountdown();
+                }, 1000);
+            }
         };
 
         $scope.pollContainerDetails = function () {
@@ -743,6 +790,18 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 // stop polling if the page changed or the container was (un)registered
                 $timeout($scope.pollContainerDetails, 2500);
             }
+        };
+
+        $scope.showDiff = false;
+        $scope.compareWithTemplate = function (template) {
+
+            ContainerFactory.compareTemplateWithContainers(
+                $scope.container.template, {"container_serial": $scope.container.serial},
+                function (data) {
+                    $scope.templateContainerDiff = ContainerUtils.containerTemplateDiffCallback(data);
+                    $scope.showDiff = true;
+                }
+            );
         };
 
         if ($scope.loggedInUser.isAdmin) {
@@ -790,11 +849,24 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $rootScope.returnTo = "token.containerdetails({containerSerial:$scope.containerSerial})";
         };
 
+        $scope.allTokensDisabled = function () {
+            let allDisabled = true;
+            angular.forEach($scope.container.tokens, function (token) {
+                if (token.active) {
+                    allDisabled = false;
+                }
+            });
+            return allDisabled;
+        };
+
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (serial) {
                 $scope.disableToken(serial);
             });
+            if ($scope.showDisableAllTokens > 0) {
+                $scope.showDisableAllTokens = 0;
+            }
         };
 
         $scope.enableAllTokens = function () {

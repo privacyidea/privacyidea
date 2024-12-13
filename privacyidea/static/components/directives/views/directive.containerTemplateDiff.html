@@ -1,0 +1,32 @@
+<span translate>Tokens</span>:
+<span ng-show="diff[containerSerial]['tokens']['equal']">
+                        <span translate>Equal</span>
+                        <span class="glyphicon glyphicon-ok"></span>
+                    </span>
+<table class="table table-transparent"
+       ng-hide="diff[containerSerial]['tokens']['equal']">
+    <tbody>
+    <tr>
+        <td translate>
+            Missing
+        </td>
+        <td ng-show="diff[containerSerial]['tokens']['missing'].length > 0">
+            {{ diff[containerSerial]["tokens"]["missing"] }}
+        </td>
+        <td ng-hide="diff[containerSerial]['tokens']['missing'].length > 0">
+            -
+        </td>
+    </tr>
+    <tr>
+        <td translate>
+            Additional
+        </td>
+        <td ng-show="diff[containerSerial]['tokens']['additional'].length > 0">
+            {{ diff[containerSerial]["tokens"]["additional"] }}
+        </td>
+        <td ng-hide="diff[containerSerial]['tokens']['additional'].length > 0">
+            -
+        </td>
+    </tr>
+    </tbody>
+</table>

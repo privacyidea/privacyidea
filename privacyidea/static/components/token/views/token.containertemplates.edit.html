@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <h3 translate>Edit Template {{ templateData.name }}</h3>
 
     <div class="form-group">
-        Container Type: {{ templateData.container_type }}
+        <span translate>Container Type</span>: {{ templateData.container_type | capitalize }}
     </div>
     <div class="form-group">
         <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </div>
 
     <hr class="horizontal-line-invisible">
-    <div class="form-group">
+    <div class="form-group" ng-show="checkRight('container_list')">
         <h4 translate>Containers Created With This Template</h4>
         <div class="form-group">
             <button class="btn btn-default btn-capitalize"
@@ -117,28 +117,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     {{ c_realm }}</a><span ng-show="!$last ">,</span>
                 </span>
                 </td>
-                <td ng-show="showDiff">
-                    <span translate>Tokens:</span>
-                    <table class="table table-transparent">
-                        <tbody>
-                        <tr>
-                            <td translate>
-                                Missing
-                            </td>
-                            <td>
-                                {{ templateContainerDiff[container.serial]["tokens"]["missing"] }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td translate>
-                                Additional
-                            </td>
-                            <td>
-                                {{ templateContainerDiff[container.serial]["tokens"]["additional"] }}
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <td ng-show="showDiff && templateContainerDiff[container.serial]">
+                    <div container-template-diff
+                         diff="templateContainerDiff"
+                         container-serial="container.serial">
+                    </div>
                 </td>
             </tr>
         </table>

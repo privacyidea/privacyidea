@@ -153,8 +153,27 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     {{ container.template }}</a>
                 <span ng-hide="checkRight('container_template_list')">
                     {{ container.template }}</span>
+                <div container-template-diff
+                     ng-show="showDiff"
+                     diff="templateContainerDiff"
+                     container-serial="container.serial">
+                </div>
             </td>
-            <td></td>
+            <td>
+                <button class="btn btn-primary"
+                        ng-disabled="!checkRight('container_template_list')"
+                        ng-hide="showDiff || (!checkRight('container_template_list') && hide_buttons)"
+                        ng-click="compareWithTemplate() "
+                        translate>
+                    Compare
+                </button>
+                <button class="btn btn-primary"
+                        ng-show="showDiff"
+                        ng-click="showDiff=false"
+                        translate>
+                    Hide
+                </button>
+            </td>
         </tr>
         <tr>
             <td translate>Info</td>
@@ -280,6 +299,21 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </div>
 
+    <div class="well" ng-show="showDisableAllTokens > 0 && checkRight('disable') && !allTokensDisabled()">
+        <div class="row">
+            <div class="col-sm-6">
+                <div translate>Do you want to disable all tokens in this container?</div>
+                <div translate>Window closes in {{ showDisableAllTokens }} s.</div>
+            </div>
+            <div class="col-sm-6">
+                <button class="btn btn-danger"
+                        ng-click="disableAllTokens()"
+                        translate>
+                    Disable All Tokens
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- =================== USER ASSIGN ================= -->
@@ -328,7 +362,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <form ng-hide="containerOwner.user_id"
           name="formAssignContainer"
           role="form" validate>
-        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false></div>
+        <div assign-user
+             new-user-object="newUser"
+             realms="realms"
+             enable-set-pin=false
+             enable-realm-only=false>
+        </div>
 
         <div class="text-center">
             <button type="button" ng-click="assignUser()"
@@ -492,7 +531,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
                     <button class="btn btn-danger"
                             ng-click="deleteOneToken(token.serial, false)"
-                            ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                            ng-show="(showDialog[token.serial] && checkRight('delete')) || !hide_buttons"
                             ng-disabled="!checkRight('delete')">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>

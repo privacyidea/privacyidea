@@ -32,7 +32,6 @@ myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'C
 
         // Change the pagination
         $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.get();
         };
 
@@ -240,7 +239,6 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
 
         // Get containers created with the template
         $scope.getContainers = function () {
-            // TODO: Add pagination and filter stuff
             let params = {"template": $stateParams.templateName}
             ContainerFactory.getContainers(params, function (data) {
                 $scope.containerData = data.result.value;
@@ -249,20 +247,8 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
 
         $scope.compareContainersWithTemplate = function () {
             $scope.showDiff = true;
-            ContainerFactory.compareTemplateWithContainers($stateParams.templateName, function (data) {
-                let diff_list = data.result.value;
-                $scope.templateContainerDiff = diff_list;
-
-                angular.forEach(diff_list, function (containerDiff, serial) {
-                    angular.forEach(["options", "tokens"], function (group) {
-                        angular.forEach(["missing", "additional", "different"], function (key) {
-                            if (key !== "different" || group !== "tokens") {
-                                $scope.templateContainerDiff[serial][group][key] = ContainerUtils.createDisplayList(
-                                    diff_list[serial][group][key], false);
-                            }
-                        })
-                    })
-                });
+            ContainerFactory.compareTemplateWithContainers($stateParams.templateName, {}, function (data) {
+                $scope.templateContainerDiff = ContainerUtils.containerTemplateDiffCallback(data);
             })
         };
 

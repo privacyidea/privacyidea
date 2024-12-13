@@ -198,6 +198,7 @@
                     <ul ng-show="$state.includes('token.containertemplates')"
                         class="nav nav-pills nav-stacked pi-submenu nav-capitalize">
                         <li role="presentation"
+                            ng-show="checkRight('container_template_list')"
                             ng-class="{active: $state.includes('token.containertemplates.list')}">
                             <a ui-sref="token.containertemplates.list">
                                 <span class="glyphicon glyphicon-list"></span>
@@ -210,6 +211,7 @@
                             Template {{ $stateParams.templateName }}</a>
                         </li>
                         <li role="presentation"
+                            ng-show="checkRight('container_template_create')"
                             ng-class="{active: $state.includes('token.containertemplates.create')}">
                             <a ui-sref="token.containertemplates.create">
                                 <span class="glyphicon glyphicon-plus"></span>

@@ -43,13 +43,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
 
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
-        <div class="form-group">
+        <div class="form-group" ng-show="loggedInUser.role=='admin'">
             <hr class="horizontal-line-invisible">
-            <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>
+            <h4  translate>
                 Assign the Container to a User
             </h4>
-            <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
-                <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
+            <div>
+                <div assign-user
+                     new-user-object="newUser"
+                     realms="realms"
+                     enable-set-pin=false
+                     enable-realm-only=true>
                 </div>
             </div>
         </div>
@@ -93,14 +97,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </div>
         </div>
 
-        <!-- Options: only display if no template is used and options are available -->
-        <div class="form-group" ng-show="form.template.name === 'noTemplate'">
-            <div container-options
-                 selection="form"
-                 default-options="defaultTemplateOptions">
-            </div>
-        </div>
-
         <!-- Init registration -->
         <div class="form-group" ng-show="checkRight('container_register') && form.containerType == 'smartphone'">
             <hr class="horizontal-line-invisible">
@@ -133,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <div class="text-center" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
             <button type="button" ng-click="createContainer()"
                     class="btn btn-primary">
-                <span>Create</span>
+                <span translate>Create</span>
             </button>
         </div>
     </form>

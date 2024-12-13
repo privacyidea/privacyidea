@@ -111,7 +111,8 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
         scope: {
             newUserObject: '=',
             realms: '=',
-            enableSetPin: '='
+            enableSetPin: '=',
+            enableRealmOnly: '='
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
@@ -1014,6 +1015,20 @@ myApp.directive("otpList", ["instanceUrl", "versioningSuffixProvider", "ConfigFa
                     myWindow.focus(); // necessary for IE >= 10
                     return true;
                 };
+            }
+        }
+    }]);
+
+myApp.directive("containerTemplateDiff", ["instanceUrl", "versioningSuffixProvider",
+    function (instanceUrl, versioningSuffixProvider) {
+        return {
+            scope: {
+                diff: "=",
+                containerSerial: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.containerTemplateDiff.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+
             }
         }
     }]);
