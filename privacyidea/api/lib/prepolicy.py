@@ -1934,6 +1934,12 @@ def fido2_enroll(request, action):
     :return:
     :rtype:
     """
+    # Check if this is an enrollment request for a WebAuthn/Passkey token. If not, exit immediately.
+    token_type = request.all_data.get("type")
+    if not token_type or token_type.lower() not in [WebAuthnTokenClass.get_class_type().lower(),
+                                                    PasskeyTokenClass.get_class_type().lower()]:
+        return True
+
     user_object = request.User if hasattr(request, 'User') else None
     rp_id_policies = (Match.user(g,
                                  scope=SCOPE.ENROLL,
