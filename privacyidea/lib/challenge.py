@@ -32,7 +32,6 @@ from ..models import Challenge, db
 log = logging.getLogger(__name__)
 
 
-
 @log_with(log)
 def get_challenges(serial=None, transaction_id=None, challenge=None):
     """
@@ -103,7 +102,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     challenges = pagination.items
     prev = None
     if pagination.has_prev:
-        prev = page-1
+        prev = page - 1
     next_page = None
     if pagination.has_next:
         next_page = page + 1
@@ -143,7 +142,7 @@ def _create_challenge_query(serial=None, transaction_id=None):
             # match with "like"
             sql_query = sql_query.filter(Challenge.transaction_id.like(
                 transaction_id.replace(
-                "*", "%")))
+                    "*", "%")))
         else:
             # exact match
             sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
@@ -167,3 +166,17 @@ def extract_answered_challenges(challenges):
             if status is True:
                 answered_challenges.append(challenge)
     return answered_challenges
+
+
+def delete_challenges(serial: str = None, transaction_id: str = None):
+    """
+    This function deletes challenges from the database.
+
+    :param serial: challenges for this very serial number
+    :param transaction_id: challenges with this very transaction id
+    :return: number of deleted challenges
+    """
+    challenges = get_challenges(serial=serial, transaction_id=transaction_id)
+    for challenge in challenges:
+        challenge.delete()
+    return len(challenges)
