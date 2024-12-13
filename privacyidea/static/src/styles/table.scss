@@ -1,0 +1,160 @@
+$table-bg: var(--table-color);
+$link-color: var(--blue-base);
+$even-bg: #f3f3f3;
+$dimgray-color: dimgray;
+$paginator-bg: var(--table-color);
+$highlight-padding: 2px 6px;
+$border-radius: 4px;
+$font-color-white: white;
+$keyword-color: #999999;
+$divider-color: #E0E2EC;
+$icon-font-size: 22px;
+$keyword-font-size: 18px;
+$fix-width: 20rem;
+
+table {
+  background-color: $table-bg;
+}
+
+a {
+  text-decoration: none;
+  color: $link-color;
+  cursor: pointer;
+}
+
+td:nth-child(even),
+th:nth-child(even) {
+  background: $even-bg;
+}
+
+.ng-tns-c508571215-2 {
+  color: $dimgray-color;
+}
+
+.mat-mdc-form-field {
+  color: $link-color;
+}
+
+.mat-mdc-paginator {
+  background-color: $paginator-bg;
+}
+
+.filter-paginator-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.highlight-true,
+.highlight-warning,
+.highlight-false,
+.highlight-true-clickable,
+.highlight-warning-clickable,
+.highlight-false-clickable {
+  border-radius: $border-radius;
+  padding: $highlight-padding;
+  color: $font-color-white;
+  display: inline-block;
+
+  &.highlight-true,
+  &.highlight-true-clickable {
+    background-color: var(--green-light);
+  }
+
+  &.highlight-warning,
+  &.highlight-warning-clickable {
+    background-color: var(--yellow-light-active);
+  }
+
+  &.highlight-false,
+  &.highlight-false-clickable {
+    background-color: var(--red-light);
+  }
+
+  &.highlight-true-clickable,
+  &.highlight-warning-clickable,
+  &.highlight-false-clickable {
+    cursor: pointer;
+  }
+}
+
+.filter-keyword-container {
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  .filter-keyword-title {
+    margin-top: -4px;
+  }
+
+  .keyword-button-icon {
+    font-size: $keyword-font-size;
+    vertical-align: bottom;
+    margin-bottom: -6px;
+    margin-right: -1px;
+  }
+
+  .add-keyword {
+    color: $keyword-color;
+  }
+
+  .remove-keyword {
+    color: var(--red-light);
+  }
+}
+
+.filter-icon {
+  display: inline-flex;
+  vertical-align: bottom;
+  margin-right: -3px;
+  margin-bottom: -3px;
+  font-size: $icon-font-size !important;
+}
+
+.edit-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+.mat-divider {
+  border-top-color: $divider-color;
+}
+
+::ng-deep .cdk-overlay-pane {
+  position: absolute !important;
+  z-index: 1;
+}
+
+.height-52 {
+  height: 52px;
+}
+
+.fix-width-18-padr-0 {
+  width: $fix-width !important;
+  max-width: $fix-width;
+  min-width: $fix-width;
+  padding-right: 0;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.height-auto {
+  height: auto;
+}
+
+.mat-mdc-table {
+  min-width: 0;
+}
+
+.details-key-row {
+  min-width: 9rem;
+}

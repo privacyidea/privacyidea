@@ -1,17 +1,16 @@
-<div aria-label="Token Table" class="item-table">
+<div aria-label="Token Table" class="token-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field class="table-filter" subscriptSizing="dynamic">
+    <mat-form-field class="token-table-filter" subscriptSizing="dynamic">
       <mat-label>Filter</mat-label>
       <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
-             class="filter-input" matInput
-             placeholder="Example query: 'type: hotp userid: 1000'">
+             matInput placeholder="Example query: 'type: hotp userid: 1000'">
     </mat-form-field>
     <mat-paginator (page)="handlePageEvent($event)" [length]="length"
                    [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
                    [pageSize]="pageSize" aria-label="Select page of tokens" showFirstLastButtons>
     </mat-paginator>
   </div>
-  <div class="filter-text">
+  <div class="filter-keyword-container">
     <div class="filter-keyword-title">
       <mat-icon class="filter-icon">filter_alt</mat-icon>
       Filter by:&nbsp;
@@ -19,17 +18,21 @@
     @for (filterKeyword of apiFilter; track filterKeyword) {
       <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
               class="keyword-button">
-        <mat-icon class="filter-button-icon"
-                  [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove-icon' : 'add-icon'">
-          {{ this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove_circle' : 'add_circle' }}
+        <mat-icon class="keyword-button-icon"
+                  [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
+                  ? 'remove-keyword' : 'add-keyword'">
+          {{
+            this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
+              ? 'remove_circle' : 'add_circle'
+          }}
         </mat-icon>
         {{ filterKeyword }}
       </button>
     }
-    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())" class="advanced-filter-button"
+    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())" class="more-keyword-button"
             extended
             mat-fab>
-      <mat-icon class="filter-button-icon">
+      <mat-icon class="keyword-button-icon">
         {{ showAdvancedFilter() ? 'remove' : 'add' }}
       </mat-icon>
     </button>
@@ -37,8 +40,9 @@
       @for (filterKeyword of advancedApiFilter; track filterKeyword) {
         <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
                 class="keyword-button">
-          <mat-icon class="filter-button-icon"
-                    [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove-icon' : 'add-icon'">
+          <mat-icon class="keyword-button-icon"
+                    [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword,
+                    input.value) ? 'remove-keyword' : 'add-keyword'">
             {{ this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove_circle' : 'add_circle' }}
           </mat-icon>
           {{ filterKeyword }}
@@ -57,12 +61,9 @@
         </th>
         <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell>
           <ng-container>
-            <div class="scrollable-container" [ngClass]="[
-            column.key === 'description' ? 'description' : '',
-            column.key === 'failcount' ? 'failcount' : '',
-            column.key !== 'description' && column.key !== 'failcount' ? 'max-content' : '',
-            column.key === 'realms' ? '' : 'not-realm-list']">
-              @if (column.key === 'username' || column.key === 'container_serial'
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @if (column.key === 'username'
+              || column.key === 'container_serial'
               || column.key === 'user_realm') {
                 <a attr.aria-label="{{ column.label }} Link" href="#">
                   {{ element[column.key] }}
@@ -72,7 +73,8 @@
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link" href="#">
                       {{ realm }}
-                    </a><br style="margin-top: 3px"/>
+                    </a>
+                    <br style="margin-top: 3px"/>
                   }
                 </div>
               } @else if (column.key === 'serial') {
@@ -95,7 +97,7 @@
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row" class="mat-row">
-      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell" class="mat-cell">
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell">
         No data matching the filter.
       </td>
     </tr>

@@ -34,7 +34,7 @@ const columns = [
     MatSortModule, NgClass, MatIcon, MatFabButton
   ],
   templateUrl: './token-table.component.html',
-  styleUrl: './token-table.component.css'
+  styleUrl: './token-table.component.scss'
 })
 export class TokenTableComponent {
   dataSource = signal(new MatTableDataSource());

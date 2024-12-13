@@ -71,7 +71,7 @@ describe('TokenDetailsActionsComponent', () => {
 
     const resyncSpy = spyOn(tokenService, 'resyncOTPToken').and.callThrough();
 
-    const resyncButton = fixture.nativeElement.querySelector('.pin-input-button button');
+    const resyncButton = fixture.nativeElement.querySelector('.actions-pin-input-button button');
     resyncButton.click();
     expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
   });

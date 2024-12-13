@@ -126,6 +126,9 @@ export class TableUtilsService {
   }
 
   getClassForKeyMap(key: string, value: any, maxfail: any): string {
+    if (key === 'description') {
+      return 'details-table-item details-description'
+    }
     if (key === 'active') {
       return value === true ? 'highlight-true' : 'highlight-false';
     } else if (key === 'failcount') {
@@ -137,7 +140,18 @@ export class TableUtilsService {
         return 'highlight-false';
       }
     }
-    return '';
+    return 'details-table-item';
+  }
+
+  getClassForColumnKey(columnKey: string): string {
+    if (columnKey === 'description') {
+      return 'table-scrollable-container description';
+    } else if (columnKey === 'failcount') {
+      return 'failcount';
+    } else if (columnKey !== 'realms') {
+      return 'flex ali-center';
+    }
+    return 'table-scrollable-container';
   }
 
   getDisplayTextForKeyMap(key: string, value: any, revoked: boolean): string {

@@ -1,0 +1,97 @@
+@import '../../../../styles/table';
+@import '../../../../styles/styles.scss';
+@import '../../../../styles/buttons.scss';
+
+$table-border-color: #E0E2EC;
+$table-max-width: 20rem;
+$gap-small: 8px;
+$margin-left-small: 10px;
+$padding-top-small: 8px;
+$description-width: 18rem;
+$scrollable-max-height: 50px;
+
+.details-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+  padding: var(--global-padding);
+
+  .details-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      max-width: $table-max-width;
+      margin-left: $margin-left-small;
+      border: 1px solid $table-border-color;
+    }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+    gap: $gap-small;
+    margin-left: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 1rem 0;
+  }
+
+  .details-flex-layout {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background: white;
+
+    &.flex-9 {
+      flex-direction: row;
+    }
+
+    &.flex-14 {
+      flex-direction: column;
+    }
+
+    &.flex-5 {
+      flex-direction: row;
+    }
+  }
+
+  .details-scrollable-container {
+    display: block;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    max-height: $scrollable-max-height;
+  }
+
+  .details-description {
+    display: flex;
+    width: $description-width;
+    padding-top: $padding-top-small;
+  }
+
+  .details-table-item {
+    margin-left: 5px;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 0;
+    }
+
+    .details-table .mat-mdc-form-field-infix {
+      padding-bottom: 0;
+      margin-bottom: -6px;
+    }
+
+    .mat-mdc-row {
+      font-size: 14px;
+    }
+  }
+}

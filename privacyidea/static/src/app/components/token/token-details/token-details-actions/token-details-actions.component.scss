@@ -1,0 +1,32 @@
+@import '../../../../../styles/table';
+@import '../../../../../styles/buttons.scss';
+@import '../../../../../styles/inputs.scss';
+@import '../../../../../styles/styles.scss';
+
+$gap-small: 10px;
+$padding-horizontal: 16px;
+
+.actions-otp-container {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-small;
+  padding: 0 $padding-horizontal;
+
+  .actions-pin-input,
+  .actions-otp-pin-input {
+    display: flex;
+    gap: $gap-small;
+  }
+
+  .actions-pin-input-button,
+  .actions-visibility-button {
+    display: flex;
+    justify-content: center;
+  }
+
+  .actions-pin-button {
+    display: flex;
+    gap: $gap-small;
+    flex-direction: column;
+  }
+}

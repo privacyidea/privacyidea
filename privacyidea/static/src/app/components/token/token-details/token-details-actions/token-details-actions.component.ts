@@ -19,7 +19,7 @@ import {MatSuffix} from '@angular/material/form-field';
     MatSuffix
   ],
   templateUrl: './token-details-actions.component.html',
-  styleUrl: './token-details-actions.component.css'
+  styleUrl: './token-details-actions.component.scss'
 })
 export class TokenDetailsActionsComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;

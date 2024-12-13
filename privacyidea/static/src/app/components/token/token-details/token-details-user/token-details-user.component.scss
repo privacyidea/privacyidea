@@ -1,0 +1,71 @@
+@import '../../../../../styles/table';
+@import '../../../../../styles/buttons.scss';
+@import '../../../../../styles/inputs.scss';
+@import '../../../../../styles/styles.scss';
+
+$border-color: #E0E2EC;
+$gap-large: 1rem;
+$gap-small: 10px;
+$padding-horizontal: 16px;
+$min-width-editable: 18rem;
+
+.user-container {
+  display: flex;
+  flex-direction: row;
+  gap: $gap-large;
+  padding: 0 var(--global-padding);
+
+  .user-details-table {
+    border-collapse: collapse;
+    display: flex;
+    width: auto;
+    max-width: fit-content;
+    justify-content: center;
+    border-bottom: 0;
+
+    th,
+    td {
+      border: 1px solid $border-color;
+    }
+  }
+
+  .user-detail-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .user-editable-row {
+    min-width: $min-width-editable;
+  }
+
+  .user-pin-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: $gap-small;
+    padding: 0 $padding-horizontal;
+    margin-top: auto;
+
+    .user-pin-input {
+      display: flex;
+      gap: $gap-small;
+    }
+
+    .user-pin-button {
+      display: flex;
+      flex-direction: column;
+      gap: $gap-small;
+    }
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 0;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding-bottom: 0;
+      margin-bottom: -8px;
+    }
+  }
+}

@@ -1,13 +1,6 @@
-import {Component, Input, Signal, signal, WritableSignal, effect} from '@angular/core';
+import {Component, effect, Input, signal, Signal, WritableSignal} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
-import {
-  MatCell, MatCellDef,
-  MatColumnDef,
-  MatHeaderCell, MatHeaderCellDef,
-  MatRow,
-  MatRowDef,
-  MatTable
-} from '@angular/material/table';
+import {MatCell, MatColumnDef, MatRow, MatTableModule} from '@angular/material/table';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatAutocomplete, MatAutocompleteTrigger, MatOption} from '@angular/material/autocomplete';
@@ -24,9 +17,8 @@ import {UserService} from '../../../../services/user/user.service';
   selector: 'app-token-details-user',
   standalone: true,
   imports: [
-    MatTable,
+    MatTableModule,
     MatColumnDef,
-    MatHeaderCell,
     MatCell,
     MatFormField,
     MatInput,
@@ -42,13 +34,10 @@ import {UserService} from '../../../../services/user/user.service';
     MatFabButton,
     MatRow,
     MatLabel,
-    MatRowDef,
-    MatHeaderCellDef,
-    MatCellDef,
     EditButtonsComponent
   ],
   templateUrl: './token-details-user.component.html',
-  styleUrl: './token-details-user.component.css'
+  styleUrl: './token-details-user.component.scss'
 })
 export class TokenDetailsUserComponent {
 

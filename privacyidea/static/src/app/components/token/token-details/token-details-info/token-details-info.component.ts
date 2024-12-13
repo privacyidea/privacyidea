@@ -1,12 +1,5 @@
 import {Component, Input, signal, Signal, WritableSignal} from '@angular/core';
-import {
-  MatCell, MatCellDef,
-  MatColumnDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
-  MatRow, MatRowDef,
-  MatTable
-} from '@angular/material/table';
+import {MatCell, MatColumnDef, MatRow, MatTableModule} from '@angular/material/table';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
@@ -22,9 +15,8 @@ import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
   selector: 'app-token-details-info',
   standalone: true,
   imports: [
-    MatTable,
+    MatTableModule,
     MatColumnDef,
-    MatHeaderCell,
     MatCell,
     MatList,
     MatListItem,
@@ -36,13 +28,10 @@ import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
     MatIcon,
     MatDivider,
     MatRow,
-    MatHeaderCellDef,
-    MatCellDef,
-    MatRowDef,
     EditButtonsComponent
   ],
   templateUrl: './token-details-info.component.html',
-  styleUrl: './token-details-info.component.css'
+  styleUrl: './token-details-info.component.scss'
 })
 export class TokenDetailsInfoComponent {
   @Input() serial!: WritableSignal<string>;

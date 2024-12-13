@@ -19,7 +19,7 @@ import {NgClass} from '@angular/common';
     NgClass,
   ],
   templateUrl: './token-card.component.html',
-  styleUrls: ['./token-card.component.css']
+  styleUrls: ['./token-card.component.scss']
 })
 export class TokenCardComponent {
   @Input() tokenIsSelected!: WritableSignal<boolean>;

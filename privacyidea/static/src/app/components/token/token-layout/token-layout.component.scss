@@ -1,11 +1,14 @@
+$gap-large: 2rem;
+$margin-top-main: 2rem;
+$margin-bottom-main: 6rem;
+
 .token-layout {
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: $gap-large;
   overflow: auto;
 }
 
 .main-margin {
-  margin-top: 2rem;
-  margin-bottom: 6rem;
+  margin: $margin-top-main 0 $margin-bottom-main 0;
 }

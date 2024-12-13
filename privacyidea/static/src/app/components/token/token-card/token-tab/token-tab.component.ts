@@ -20,7 +20,7 @@ import {TokenService} from '../../../../services/token/token.service';
     NgClass
   ],
   templateUrl: './token-tab.component.html',
-  styleUrl: './token-tab.component.css',
+  styleUrl: './token-tab.component.scss',
   animations: [
     trigger('toggleState', [
       state('false', style({

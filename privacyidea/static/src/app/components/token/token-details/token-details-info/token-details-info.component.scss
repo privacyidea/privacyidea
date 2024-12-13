@@ -1,0 +1,96 @@
+@import '../../../../../styles/table';
+@import '../../../../../styles/inputs.scss';
+@import '../../../../../styles/styles.scss';
+
+$border-color: #E0E2EC;
+$odd-row-bg: #f3f3f3;
+$even-row-bg: #ffffff;
+$table-cell-font-size: 14px;
+
+.info-container {
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  border-top: 0;
+  padding: 0 var(--global-padding);
+
+  .info-title {
+    display: flex;
+    align-items: center;
+    padding-left: 1rem;
+    border-left: 1px solid $border-color;
+    border-bottom: 1px solid $border-color;
+    box-sizing: border-box;
+    font-size: $table-cell-font-size;
+  }
+
+  .info-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: 1px solid $border-color;
+      border-top: none;
+      box-sizing: border-box;
+
+      &:nth-child(odd) {
+        background: $odd-row-bg;
+      }
+
+      &:nth-child(even) {
+        background: $even-row-bg;
+      }
+    }
+  }
+
+  .info-value-container {
+    width: calc(18rem - 2px);
+  }
+
+  .info-input {
+    margin-left: 5px;
+    margin-top: 0.25rem;
+  }
+
+  .info-delete-icon {
+    margin-top: 10px;
+  }
+
+  .info-row {
+    margin-top: 0.063rem;
+  }
+
+  .info-span {
+    display: flex;
+    flex-direction: column;
+    margin-left: 0.5rem;
+    margin-top: 0.313rem;
+    font-size: $table-cell-font-size;
+    line-height: 1.6;
+  }
+
+  .info-span-title {
+    margin-left: -4px;
+  }
+
+  .info-span-value {
+    margin-left: 2px;
+    margin-top: 3px;
+  }
+
+  .info-divider {
+    width: 87%;
+    margin: 0.188rem 0 0.25rem -0.5rem;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 4px;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding-top: 24px;
+      padding-bottom: 0;
+    }
+  }
+}

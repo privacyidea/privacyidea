@@ -1,3 +1,13 @@
+$button-height: 40px;
+$button-width: 240px;
+$keyword-height: 28px;
+$keyword-padding: 2px 8px;
+$gap-small: 10px;
+$padding-horizontal: 16px;
+$detail-icon-font-size: 18px;
+$margin-bottom-small: -6px;
+$keyword-bg: #f3f3f3;
+
 // Mixins for common button styles
 @mixin button-base($height, $width, $border-radius, $background, $box-shadow, $cursor: pointer) {
   height: $height;
@@ -19,23 +29,22 @@
   }
 }
 
-// Buttons
 .card-button {
-  @include button-base(40px, 240px, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
   @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-reset {
-  @include button-base(40px, 240px, var(--border-radius), var(--background-green), var(--box-shadow-green));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-green), var(--box-shadow-green));
 }
 
 .card-button-activ {
-  @include button-base(40px, 240px, var(--border-radius), var(--background-blue-inset), var(--box-shadow-blue-inset));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-delete {
   margin-right: 5px;
-  @include button-base(40px, 240px, var(--border-radius), var(--background-red), var(--box-shadow-red));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-red), var(--box-shadow-red));
 
   &.activ,
   &:hover {
@@ -47,7 +56,7 @@
 
 .card-button-activate {
   color: white;
-  @include button-base(40px, 240px, var(--border-radius), var(--background-green), var(--box-shadow-green));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-green), var(--box-shadow-green));
 
   &.activ,
   &:hover {
@@ -59,19 +68,46 @@
 
 .detail-button {
   color: white;
-  @include button-base(40px, 240px, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
   @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .detail-button-icon {
   vertical-align: bottom;
-  margin-bottom: -6px;
-  font-size: 18px;
+  margin-bottom: $margin-bottom-small;
+  font-size: $detail-icon-font-size;
 }
 
 .delete-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 16px;
+  gap: $gap-small;
+  padding: 0 $padding-horizontal;
+}
+
+.cancel-button {
+  color: var(--red-base);
+  background-color: white;
+  cursor: pointer;
+}
+
+.keyword-button,
+.more-keyword-button {
+  background-color: $keyword-bg;
+  border-radius: var(--border-radius);
+  height: $keyword-height;
+  margin: 3px;
+  box-shadow: none;
+
+  &.keyword-button {
+    padding: $keyword-padding;
+
+    &:hover .add-keyword {
+      color: var(--green-light);
+    }
+  }
+
+  &.more-keyword-button {
+    padding: 0 0 0 8px;
+  }
 }

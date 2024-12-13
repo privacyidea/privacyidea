@@ -169,11 +169,8 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should display token details correctly', () => {
-    const detailHeader = fixture.nativeElement.querySelector('.token-detail-header h2:last-child');
+    const detailHeader = fixture.nativeElement.querySelector('.details-header h3:last-child');
     expect(detailHeader.textContent).toContain('Mock serial');
-
-    const containerCell = fixture.nativeElement.querySelector('.detail-table .detail-row');
-    expect(containerCell.textContent).toContain('Container');
   });
 
 
@@ -209,13 +206,6 @@ describe('TokenDetailsComponent', () => {
     spyOn(containerService, 'unassignContainer').and.callThrough();
     component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
-  });
-
-  it('should dynamically render info data', () => {
-    const infoKeys = fixture.nativeElement.querySelectorAll('.info-container mat-list-item .object-item:first-child');
-    expect(infoKeys.length).toBe(2);
-    expect(infoKeys[0].textContent).toContain('key1');
-    expect(infoKeys[1].textContent).toContain('key2');
   });
 
   it('should filter container options correctly', () => {

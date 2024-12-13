@@ -62,6 +62,34 @@ describe('TokenDetailsInfoComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('should dynamically render and toggle editing state', () => {
+    component.isEditingInfo.set(false);
+    fixture.detectChanges();
+
+    let nonEditingItems = fixture.nativeElement.querySelectorAll('.info-row');
+    expect(nonEditingItems.length).toBeGreaterThan(0);
+    nonEditingItems.forEach((item: any) => {
+      expect(item.querySelector('.info-span-title')).toBeTruthy();
+      expect(item.querySelector('.info-span-value')).toBeTruthy();
+    });
+
+    component.isEditingInfo.set(true);
+    fixture.detectChanges();
+
+    let editingItems = fixture.nativeElement.querySelectorAll('.flex-row');
+    expect(editingItems.length).toBeGreaterThan(0);
+    editingItems.forEach((item: any) => {
+      expect(item.querySelector('mat-label')).toBeTruthy();
+      expect(item.querySelector('textarea.info-input')).toBeTruthy();
+    });
+
+    const newKeyInput = fixture.nativeElement.querySelector('input[placeholder="Add new key"]');
+    const newValueTextarea = fixture.nativeElement.querySelector('textarea[placeholder="Add new info"]');
+
+    expect(newKeyInput).toBeTruthy();
+    expect(newValueTextarea).toBeTruthy();
+  });
+
   it('should set token infos', () => {
     spyOn(tokenService, 'setTokenInfos').and.callThrough();
     component.saveInfo({});
@@ -82,7 +110,8 @@ describe('TokenDetailsInfoComponent', () => {
     const editButtonsComponent = fixture.debugElement.query(By.css('app-edit-buttons'));
     expect(editButtonsComponent).toBeTruthy();
 
-    const saveButton = editButtonsComponent.nativeElement.querySelector('.edit-button-container .edit-button:nth-child(1)');
+    const saveButton = editButtonsComponent.nativeElement.querySelector('.edit-button-container' +
+      ' .black:nth-child(1)');
     expect(saveButton).toBeTruthy();
 
     saveButton.click();

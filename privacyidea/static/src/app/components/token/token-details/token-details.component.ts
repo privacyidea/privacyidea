@@ -13,7 +13,6 @@ import {MatListItem} from '@angular/material/list';
 import {TokenService} from '../../../services/token/token.service';
 import {ContainerService} from '../../../services/container/container.service';
 import {NgClass} from '@angular/common';
-import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -70,8 +69,6 @@ export const infoDetail = [
     MatRow,
     MatTable,
     NgClass,
-    MatGridTile,
-    MatGridList,
     FormsModule,
     MatInput,
     MatFormFieldModule,
@@ -86,7 +83,7 @@ export const infoDetail = [
     EditButtonsComponent
   ],
   templateUrl: './token-details.component.html',
-  styleUrl: './token-details.component.css'
+  styleUrl: './token-details.component.scss'
 })
 export class TokenDetailsComponent {
   protected readonly Array = Array;
@@ -293,7 +290,7 @@ export class TokenDetailsComponent {
         this.selectedContainer.set('');
         break;
       case 'tokengroup':
-        this.selectedTokengroup.set([]);
+        this.selectedTokengroup.set(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
         break;
       case 'realms':
         this.selectedRealms.set(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);

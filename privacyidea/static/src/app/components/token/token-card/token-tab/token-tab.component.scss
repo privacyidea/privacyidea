@@ -1,0 +1,20 @@
+@import '../../../../../styles/table.scss';
+@import '../../../../../styles/buttons.scss';
+
+$tab-padding: 1rem;
+$list-width: 240px;
+$list-padding: var(--global-padding);
+
+::ng-deep .mat-mdc-tab {
+  padding-left: $tab-padding;
+  padding-right: $tab-padding;
+}
+
+.mdc-list {
+  padding: $list-padding 0;
+  width: $list-width;
+}
+
+.mat-mdc-list-item {
+  padding: 0;
+}

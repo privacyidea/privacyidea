@@ -1,0 +1,65 @@
+@import '../../../../styles/table';
+@import '../../../../styles/buttons.scss';
+
+$table-border-color: #E0E2EC;
+$td-max-width: 18rem;
+$filter-width: 59%;
+$scrollable-height: 60px;
+$scrollable-margin-right: -1rem;
+$scrollable-padding-right: 1rem;
+$realm-margin-top: 17px;
+$realm-list-margin-top: 7px;
+
+.token-table-container {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+
+  .token-table {
+    border-collapse: collapse;
+
+    td,
+    th {
+      border: 1px solid $table-border-color;
+    }
+
+    td {
+      max-width: $td-max-width;
+    }
+
+    th.mat-sort-header {
+      padding-right: 0;
+    }
+  }
+
+  .token-table-filter {
+    width: $filter-width;
+  }
+
+  .table-scrollable-container {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    height: $scrollable-height;
+    margin-right: $scrollable-margin-right;
+    padding-right: $scrollable-padding-right;
+  }
+
+  .failcount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .description {
+    align-items: flex-start;
+  }
+
+  .realm-list {
+    margin-top: $realm-list-margin-top;
+  }
+
+  .realm {
+    margin-top: $realm-margin-top;
+  }
+}

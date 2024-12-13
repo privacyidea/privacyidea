@@ -9,7 +9,7 @@ import {MatIcon} from '@angular/material/icon';
     MatIcon
   ],
   templateUrl: './edit-buttons.component.html',
-  styleUrl: './edit-buttons.component.css'
+  styleUrl: './edit-buttons.component.scss'
 })
 export class EditButtonsComponent {
 
