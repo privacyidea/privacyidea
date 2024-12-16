@@ -13,7 +13,7 @@ import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {max} from 'rxjs';
 
-const columns = [
+const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
   {key: 'tokentype', label: 'Type'},
   {key: 'active', label: 'Active'},
@@ -39,8 +39,7 @@ const columns = [
 export class TokenTableComponent {
   dataSource = signal(new MatTableDataSource());
   showAdvancedFilter = signal(false);
-  displayedColumns: string[] = columns.map(column => column.key);
-  columnDefinitions = columns;
+  displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
   pageIndex = 0;
@@ -55,7 +54,7 @@ export class TokenTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  protected readonly columns = columns;
+  protected readonly columns = columnsKeyMap;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -74,11 +73,20 @@ export class TokenTableComponent {
   }
 
   private fetchTokenData() {
+    const emptyData = Array.from({ length: this.pageSize }, () => {
+      const emptyRow: any = {};
+      columnsKeyMap.forEach(column => {
+        emptyRow[column.key] = '';
+      });
+      return emptyRow;
+    });
+
+    this.dataSource.set(new MatTableDataSource(emptyData));
     this.tokenService.getTokenData(
-      this.pageIndex + 1, this.pageSize, columns, this.sortby_sortdir, this.filterValue).subscribe({
+      this.pageIndex + 1, this.pageSize, columnsKeyMap, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
-        this.updateDataSource(response.result.value.tokens);
+        this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
       },
       error: error => {
         console.error('Failed to get token data', error);
@@ -143,10 +151,6 @@ export class TokenTableComponent {
     });
   }
 
-  private updateDataSource(data: any[]) {
-    this.dataSource.set(new MatTableDataSource(data));
-  }
-
   tokenSelected(serial: string) {
     this.serial.set(serial);
     this.tokenIsSelected.set(true)
@@ -161,4 +165,5 @@ export class TokenTableComponent {
   }
 
   protected readonly max = max;
+  protected readonly columnsKeyMap = columnsKeyMap;
 }

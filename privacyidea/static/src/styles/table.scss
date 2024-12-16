@@ -77,7 +77,7 @@ th:nth-child(even) {
 }
 
 .filter-keyword-container {
-  padding: 10px;
+  padding: 10px 0;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -109,16 +109,11 @@ th:nth-child(even) {
   border-top-color: $divider-color;
 }
 
-::ng-deep .cdk-overlay-pane {
-  position: absolute !important;
-  z-index: 1;
-}
-
 .height-52 {
   height: 52px;
 }
 
-.fix-width-18-padr-0 {
+.fix-width-20-padr-0 {
   width: $fix-width !important;
   max-width: $fix-width;
   min-width: $fix-width;
@@ -140,4 +135,11 @@ th:nth-child(even) {
 
 .details-key-row {
   min-width: 9rem;
+}
+
+::ng-deep {
+  .cdk-overlay-pane {
+    position: absolute !important;
+    z-index: 1;
+  }
 }

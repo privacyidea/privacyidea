@@ -3,7 +3,7 @@
 $border-color: #E0E2EC;
 $gap-small: 10px;
 $padding-horizontal: 16px;
-$min-width-editable: 18rem;
+$min-width-editable: 20rem;
 
 .user-container {
   display: flex;
@@ -59,9 +59,14 @@ $min-width-editable: 18rem;
       height: 0;
     }
 
+    .mat-mdc-text-field-wrapper {
+      padding-right: 10px;
+    }
+
     .mat-mdc-form-field-infix {
       padding-bottom: 0;
       margin-bottom: -8px;
+      width: 17rem;
     }
   }
 }

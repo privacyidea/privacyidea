@@ -29,7 +29,7 @@ import {
 } from './token-details-actions/token-details-actions.component';
 import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
 
-export const details = [
+export const detailsKeyMap = [
   {key: 'tokentype', label: 'Type'},
   {key: 'active', label: 'Active'},
   {key: 'maxfail', label: 'Max Count'},
@@ -45,14 +45,14 @@ export const details = [
   {key: 'container_serial', label: 'Container Serial'},
 ];
 
-export const userDetail = [
+export const userDetailsKeyMap = [
   {key: 'user_realm', label: 'User Realm'},
   {key: 'username', label: 'User'},
   {key: 'resolver', label: 'Resolver'},
   {key: 'user_id', label: 'User ID'},
 ];
 
-export const infoDetail = [
+export const infoDetailsKeyMap = [
   {key: 'info', label: 'Information'},
 ];
 
@@ -156,6 +156,23 @@ export class TokenDetailsComponent {
   }
 
   showTokenDetail(serial: string): Observable<void> {
+    this.detailData.set(detailsKeyMap.map(detail => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false)
+    })).filter(detail => detail.value !== undefined));
+    this.userData.set(userDetailsKeyMap.map(detail => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false)
+    })).filter(detail => detail.value !== undefined));
+
+    this.infoData.set(infoDetailsKeyMap.map(detail => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false)
+    })).filter(detail => detail.value !== undefined));
+
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
       this.realmService.getRealms(),
@@ -166,19 +183,19 @@ export class TokenDetailsComponent {
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
         this.selectedContainer.set(tokenDetails.container_serial);
-        this.detailData.set(details.map(detail => ({
+        this.detailData.set(detailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
-        this.userData.set(userDetail.map(detail => ({
+        this.userData.set(userDetailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
-        this.infoData.set(infoDetail.map(detail => ({
+        this.infoData.set(infoDetailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: signal(false)

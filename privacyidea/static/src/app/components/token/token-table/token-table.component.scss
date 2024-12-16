@@ -2,7 +2,7 @@
 
 $table-border-color: #E0E2EC;
 $td-max-width: 18rem;
-$filter-width: 59%;
+$filter-width: 54.5rem;
 $scrollable-height: 60px;
 $scrollable-margin-right: -1rem;
 $scrollable-padding-right: 1rem;
@@ -14,6 +14,7 @@ $realm-list-margin-top: 7px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
+  min-width: 88rem;
 
   .token-table {
     border-collapse: collapse;
@@ -60,5 +61,25 @@ $realm-list-margin-top: 7px;
 
   .realm {
     margin-top: $realm-margin-top;
+  }
+
+  ::ng-deep {
+    .mat-mdc-paginator-page-size {
+      margin-right: 0;
+      width: 11.5rem;
+    }
+
+    .mat-mdc-paginator-page-size-label {
+      margin: 0;
+    }
+
+    .mat-mdc-paginator-range-label {
+      margin: 3px 16px 0 16px;
+      width: 9rem;
+    }
+
+    .mat-mdc-paginator-container {
+      padding: 0 0 0 16px;
+    }
   }
 }

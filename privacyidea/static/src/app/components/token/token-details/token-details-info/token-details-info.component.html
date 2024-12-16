@@ -3,7 +3,7 @@
   <table [dataSource]="infoData()" aria-label="Token Detail Data Table" class="info-table"
          mat-table>
     <ng-container matColumnDef="value">
-      <td *matCellDef="let element" class="height-52 fix-width-18-padr-0" mat-cell>
+      <td *matCellDef="let element" class="height-52 fix-width-20-padr-0" mat-cell>
         <div class="info-value-container">
           <mat-list>
             @for (key of Object.keys(element.value); track key) {
