@@ -21,7 +21,7 @@
 myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
     "ConfigFactory",
     function ($scope, $stateParams,
-              $location, ConfigFactory) {
+        $location, ConfigFactory) {
         if ($location.path() === "/config/policies") {
             $location.path("/config/policies/list");
         }
@@ -79,8 +79,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
     "ConfigFactory", "$state",
     "PolicyTemplateFactory",
     function ($scope, $stateParams,
-              ConfigFactory, $state,
-              PolicyTemplateFactory) {
+        ConfigFactory, $state,
+        PolicyTemplateFactory) {
         // init
         $scope.realms = [];
         $scope.adminRealms = [];
@@ -163,7 +163,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             //debug: console.log($scope.policyDefs);
             // fill the scope:
             angular.forEach($scope.policyDefs, function (value, key) {
-                $scope.scopes.push({name: key, ticked: false});
+                $scope.scopes.push({ name: key, ticked: false });
             });
             $scope.policyDefsLoaded = true;
             check_all_loaded();
@@ -176,7 +176,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         ConfigFactory.getPINodes(function (data) {
             $scope.pinodes = [];
             angular.forEach(data.result.value, function (node) {
-                $scope.pinodes.push({name: node.name, uuid: node.uuid, ticked: false});
+                $scope.pinodes.push({ name: node.name, uuid: node.uuid, ticked: false });
             });
             $scope.pinodesLoaded = true;
             check_all_loaded();
@@ -185,7 +185,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         ConfigFactory.getRealms(function (data) {
             var realms = data.result.value;
             angular.forEach(realms, function (value, key) {
-                $scope.realms.push({name: key, ticked: false});
+                $scope.realms.push({ name: key, ticked: false });
             });
             // after everything is loaded, we can preset the values
             $scope.realmsLoaded = true;
@@ -194,7 +194,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         ConfigFactory.getAdminRealms(function (data) {
             var adminRealms = data.result.value;
             angular.forEach(adminRealms, function (value, key) {
-                $scope.adminRealms.push({name: value, ticked: false});
+                $scope.adminRealms.push({ name: value, ticked: false });
             });
             $scope.adminRealmsLoaded = true;
             check_all_loaded();
@@ -202,7 +202,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         ConfigFactory.getResolvers(function (data) {
             var resolvers = data.result.value;
             angular.forEach(resolvers, function (value, key) {
-                $scope.resolvers.push({name: key, ticked: false});
+                $scope.resolvers.push({ name: key, ticked: false });
             });
             // after realms and resolvers have loaded, we can preset the policy values
             $scope.resolversLoaded = true;
@@ -243,7 +243,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 if (policyActions && policyActions[key] === true) {
                     ticked = true;
                 }
-                $scope.actions.push({name: key, help: value.desc, ticked: ticked});
+                $scope.actions.push({ name: key, help: value.desc, ticked: ticked });
                 // Check if we need to do actionValues
                 if (value.type !== "bool") {
                     $scope.isActionValues = true;
@@ -500,7 +500,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             let pat = escapeRegexp(pattern);
             let re = RegExp(pat, 'i');
             return ($scope.actionCheckBox[action.name] ||
-                    !$scope.onlySelectedVisible) &&
+                !$scope.onlySelectedVisible) &&
                 (re.test(action.name) || re.test(action.desc));
         };
     }]);
@@ -510,10 +510,10 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
     "ConfigFactory", "instanceUrl",
     "inform", "gettextCatalog",
     function ($scope, $location,
-              $rootScope, $state,
-              $stateParams,
-              ConfigFactory, instanceUrl,
-              inform, gettextCatalog) {
+        $rootScope, $state,
+        $stateParams,
+        ConfigFactory, instanceUrl,
+        inform, gettextCatalog) {
         $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
         $scope.tokentype = $stateParams.tokentype || "hotp";
         $scope.form = {};
@@ -572,7 +572,7 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
             ConfigFactory.saveSystemConfig(save_params, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("System Config saved."),
-                        {type: "info"});
+                        { type: "info" });
                 }
             });
         };
@@ -581,7 +581,7 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
             ConfigFactory.delSystemConfig(apiId, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("System entry deleted."),
-                        {type: "info"});
+                        { type: "info" });
                     $scope.loadSystemConfig();
                 }
             });
@@ -607,9 +607,9 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
     "$state", "ConfigFactory", "instanceUrl",
     "inform", "gettextCatalog",
     function ($scope, $location, $rootScope,
-              $state, ConfigFactory,
-              instanceUrl, inform,
-              gettextCatalog) {
+        $state, ConfigFactory,
+        instanceUrl, inform,
+        gettextCatalog) {
         $scope.instanceUrl = instanceUrl;
         $scope.params = {};
         $('html,body').scrollTop(0);
@@ -640,7 +640,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         };
 
         // TODO: This information needs to be fetched from the server
-        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver'];
+        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver', 'tokenresolver'];
         // TODO: This information needs to be fetched from the server
         $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
         // TODO: This information needs to be fetched from the server
@@ -702,7 +702,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
 
         $scope.editResolver = function (resolvername, r_type) {
             // change the view to the config.resolvers.edit
-            $state.go("config.resolvers.edit" + r_type, {'resolvername': resolvername});
+            $state.go("config.resolvers.edit" + r_type, { 'resolvername': resolvername });
             $rootScope.returnTo = "config.resolvers.list";
         };
 
@@ -717,7 +717,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
                 //debug: console.log($scope.params);
                 //debug: console.log(data);
                 inform.add(gettextCatalog.getString("System Config saved."),
-                    {type: "info"});
+                    { type: "info" });
             });
         };
         $scope.getSystemConfig = function () {
@@ -757,7 +757,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
 myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",
     "$state", "$stateParams",
     function ($scope, ConfigFactory,
-              $state, $stateParams) {
+        $state, $stateParams) {
         $scope.params = {
             type: 'passwdresolver',
             fileName: "/etc/passwd"
@@ -786,7 +786,7 @@ myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",
 myApp.controller("hostsResolverController", ["$scope", "ConfigFactory",
     "$state", "$stateParams",
     function ($scope, ConfigFactory,
-              $state, $stateParams) {
+        $state, $stateParams) {
         $scope.params = {
             type: 'hosts',
             filename: "/etc/hosts"
@@ -815,8 +815,8 @@ myApp.controller("hostsResolverController", ["$scope", "ConfigFactory",
 myApp.controller("CAConnectorController", ["$scope", "ConfigFactory", "$state",
     "$rootScope", "$location",
     function ($scope, ConfigFactory,
-              $state, $rootScope,
-              $location) {
+        $state, $rootScope,
+        $location) {
         if ($location.path() === "/config/caconnectors") {
             $location.path("/config/caconnectors/list");
         }
@@ -837,7 +837,7 @@ myApp.controller("CAConnectorController", ["$scope", "ConfigFactory", "$state",
         $scope.editCAConnector = function (connectorname, c_type) {
             //debug: console.log(connectorname);
             $state.go("config.caconnectors.edit" + c_type,
-                {'connectorname': connectorname});
+                { 'connectorname': connectorname });
             $rootScope.returnTo = "config.caconnectors.list";
         };
 
@@ -848,7 +848,7 @@ myApp.controller("CAConnectorController", ["$scope", "ConfigFactory", "$state",
 myApp.controller("LocalCAConnectorController", ["$scope", "$stateParams",
     "ConfigFactory", "$state",
     function ($scope, $stateParams,
-              ConfigFactory, $state) {
+        ConfigFactory, $state) {
         $scope.params = {
             type: 'local'
         };
@@ -879,7 +879,7 @@ myApp.controller("LocalCAConnectorController", ["$scope", "$stateParams",
 myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
     "ConfigFactory", "$state",
     function ($scope, $stateParams,
-              ConfigFactory, $state) {
+        ConfigFactory, $state) {
         $scope.params = {
             type: 'microsoft'
         };
@@ -921,8 +921,8 @@ myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
     "$state", "$rootScope",
     "$location",
     function ($scope, ConfigFactory,
-              $state, $rootScope,
-              $location) {
+        $state, $rootScope,
+        $location) {
         if ($location.path() === "/config/machineresolvers") {
             $location.path("/config/machineresolvers/list");
         }
@@ -942,7 +942,7 @@ myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
 
         $scope.editResolver = function (resolvername, r_type) {
             // change the view to the config.mresolvers.edit
-            $state.go("config.mresolvers.edit" + r_type, {'resolvername': resolvername});
+            $state.go("config.mresolvers.edit" + r_type, { 'resolvername': resolvername });
             $rootScope.returnTo = "config.mresolvers.list";
         };
 
@@ -954,8 +954,8 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
     "$stateParams", "inform",
     "gettextCatalog",
     function ($scope, ConfigFactory,
-              $state, $stateParams,
-              inform, gettextCatalog) {
+        $state, $stateParams,
+        inform, gettextCatalog) {
         /*
          BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
          LDAPSEARCHFILTER,
@@ -987,10 +987,10 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.result = {};
         $scope.resolvername = $stateParams.resolvername;
         $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
-        $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
-            {value: "4", name: "TLS v1.1"},
-            {value: "5", name: "TLS v1.2"},
-            {value: "2", name: "TLS v1.3"}];
+        $scope.tls_version_options = [{ value: "3", name: "TLS v1.0" },
+        { value: "4", name: "TLS v1.1" },
+        { value: "5", name: "TLS v1.2" },
+        { value: "2", name: "TLS v1.3" }];
         $scope.ldap_pooling_strategy_options = ["ROUND_ROBIN", "FIRST", "RANDOM"];
 
         $('html,body').scrollTop(0);
@@ -1050,10 +1050,10 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             ConfigFactory.testResolver(params, function (data) {
                 if (data.result.value === true) {
                     inform.add(data.detail.description,
-                        {type: "success", ttl: 10000});
+                        { type: "success", ttl: 10000 });
                 } else {
                     inform.add(data.detail.description,
-                        {type: "danger", ttl: 10000});
+                        { type: "danger", ttl: 10000 });
                 }
             });
         };
@@ -1063,12 +1063,12 @@ myApp.controller("ScimResolverController", ["$scope", "ConfigFactory", "$state",
     "$stateParams", "inform",
     "gettextCatalog",
     function ($scope, ConfigFactory,
-              $state, $stateParams,
-              inform, gettextCatalog) {
+        $state, $stateParams,
+        inform, gettextCatalog) {
         /*
          Authserver, Resourceserver, Client, Secret
          */
-        $scope.params = {type: "scimresolver"};
+        $scope.params = { type: "scimresolver" };
         $scope.result = {};
         $scope.resolvername = $stateParams.resolvername;
 
@@ -1095,10 +1095,10 @@ myApp.controller("ScimResolverController", ["$scope", "ConfigFactory", "$state",
             ConfigFactory.testResolver($scope.params, function (data) {
                 if (data.result.value === true) {
                     inform.add(data.detail.description,
-                        {type: "success", ttl: 10000});
+                        { type: "success", ttl: 10000 });
                 } else {
                     inform.add(data.detail.description,
-                        {type: "danger", ttl: 10000});
+                        { type: "danger", ttl: 10000 });
                 }
             });
         };
@@ -1108,8 +1108,8 @@ myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
     "$stateParams", "inform",
     "gettextCatalog",
     function ($scope, ConfigFactory,
-              $state, $stateParams,
-              inform, gettextCatalog) {
+        $state, $stateParams,
+        inform, gettextCatalog) {
         $scope.params = {
             type: 'sqlresolver'
         };
@@ -1177,10 +1177,10 @@ myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
             ConfigFactory.testResolver(params, function (data) {
                 if (data.result.value >= 0) {
                     inform.add(data.detail.description,
-                        {type: "success", ttl: 10000});
+                        { type: "success", ttl: 10000 });
                 } else {
                     inform.add(data.detail.description,
-                        {type: "danger", ttl: 10000});
+                        { type: "danger", ttl: 10000 });
                 }
             });
         };
@@ -1189,8 +1189,8 @@ myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
 myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
     "$stateParams", "inform",
     function ($scope, ConfigFactory,
-              $state, $stateParams,
-              inform) {
+        $state, $stateParams,
+        inform) {
         $scope.params = {
             type: "httpresolver",
             endpoint: "",
@@ -1233,9 +1233,71 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.testResolver = function () {
             ConfigFactory.testResolver($scope.params, function (data) {
                 if (data.result.value === true) {
-                    inform.add(data.detail.description, {type: "success", ttl: 10000});
+                    inform.add(data.detail.description, { type: "success", ttl: 10000 });
                 } else {
-                    inform.add(data.detail.description, {type: "danger", ttl: 10000});
+                    inform.add(data.detail.description, { type: "danger", ttl: 10000 });
+                }
+            });
+        };
+    }]);
+
+myApp.controller("TokenResolverController", ["$scope", "ConfigFactory", "$state",
+    "$stateParams", "inform",
+    function ($scope, ConfigFactory,
+        $state, $stateParams,
+        inform) {
+        $scope.params = {
+            type: "tokenresolver",
+            responseMapping: "",
+            allowedMethod: "HS256",
+            responseMapping: "",
+        };
+
+        $scope.method_allowed_options = [
+            { value: "HS256", name: "HMAC using SHA-256" },
+            { value: "HS384", name: "HMAC using SHA-384" },
+            { value: "HS512", name: "HMAC using SHA-512" },
+            { value: "ES256", name: "ECDSA signature algorithm using SHA-256" },
+            { value: "ES256K", name: "ECDSA signature algorithm with secp256k1 curve using SHA-256" },
+            { value: "ES384", name: "ECDSA signature algorithm using SHA-384" },
+            { value: "ES512", name: "ECDSA signature algorithm using SHA-512" },
+            { value: "RS256", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-256" },
+            { value: "RS384", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-384" },
+            { value: "RS512", name: "RSASSA-PKCS1-v1_5 signature algorithm using SHA-512" },
+            { value: "PS256", name: "RSASSA-PSS signature using SHA-256 and MGF1 padding with SHA-256" },
+            { value: "PS384", name: "RSASSA-PSS signature using SHA-384 and MGF1 padding with SHA-384" },
+            { value: "PS512", name: "RSASSA-PSS signature using SHA-512 and MGF1 padding with SHA-512" },
+        ];
+
+        $scope.resolvername = $stateParams.resolvername;
+        if ($scope.resolvername) {
+            /* If we have a resolvername, we do an Edit
+                 and we need to fill all the $scope.params */
+            ConfigFactory.getResolver($scope.resolvername, function (data) {
+                var resolver = data.result.value[$scope.resolvername];
+                $scope.params = resolver.data;
+                $scope.params.type = "tokenresolver";
+            });
+        }
+
+        $scope.setResolver = function () {
+            // Do Not Persist the Test Token to the Database
+            delete $scope.params["testToken"];
+            ConfigFactory.setResolver($scope.resolvername, $scope.params, function (
+                data
+            ) {
+                $scope.set_result = data.result.value;
+                $scope.getResolvers();
+                $state.go("config.resolvers.list");
+            });
+        };
+
+        $scope.testResolver = function () {
+            ConfigFactory.testResolver($scope.params, function (data) {
+                if (data.result.value === true) {
+                    inform.add(data.detail.description, { type: "success", ttl: 10000 });
+                } else {
+                    inform.add(data.detail.description, { type: "danger", ttl: 10000 });
                 }
             });
         };
