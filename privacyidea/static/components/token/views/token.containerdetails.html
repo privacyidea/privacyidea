@@ -299,18 +299,21 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </div>
 
-    <div class="well" ng-show="showDisableAllTokens > 0 && checkRight('disable') && !allTokensDisabled()">
-        <div class="row">
-            <div class="col-sm-6">
-                <div translate>Do you want to disable all tokens in this container?</div>
-                <div translate>Window closes in {{ showDisableAllTokens }} s.</div>
-            </div>
-            <div class="col-sm-6">
-                <button class="btn btn-danger"
-                        ng-click="disableAllTokens()"
-                        translate>
-                    Disable All Tokens
-                </button>
+    <div class="well" ng-show="showDisableAllTokens >= -0.25 && checkRight('disable') && !allTokensDisabled()">
+        <div class="form-group">
+            <div translate>Do you want to disable all tokens in this container?</div>
+            <button class="btn btn-danger"
+                    ng-click="disableAllTokens()"
+                    translate>
+                Disable All Tokens
+            </button>
+        </div>
+        <div class="form-group progress">
+            <div class="progress-bar progress-bar-info" role="progressbar"
+                 aria-valuenow="{{ showDisableAllTokens }}"
+                 aria-valuemin="0" aria-valuemax="{{ startCountdown }}"
+                 style="width:{{ 100 * showDisableAllTokens / startCountdown }}%"
+                 translate>
             </div>
         </div>
     </div>

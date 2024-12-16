@@ -761,23 +761,23 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
-        $scope.showDisableAllTokens = 0;
-        $scope.startCountown = 8;
+        $scope.showDisableAllTokens = -1.0;
+        $scope.startCountdown = 5;
         $scope.unregisterContainer = function () {
             ContainerFactory.terminateRegistration($scope.containerSerial, function () {
                 $scope.showQR = false;
                 $scope.getContainer();
-                $scope.showDisableAllTokens = $scope.startCountown;
+                $scope.showDisableAllTokens = $scope.startCountdown;
                 $scope.disableCountdown();
             });
         };
         $scope.disableCountdown = function () {
             // Recursively call this function every second until the countdown is over
-            if ($scope.showDisableAllTokens > 0) {
+            if ($scope.showDisableAllTokens >= -0.25) {
                 $timeout(function () {
-                    $scope.showDisableAllTokens -= 1;
+                    $scope.showDisableAllTokens -= 0.25;
                     $scope.disableCountdown();
-                }, 1000);
+                }, 250);
             }
         };
 

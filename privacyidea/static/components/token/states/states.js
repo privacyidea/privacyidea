@@ -111,7 +111,8 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "containerDetailsController"
                 })
                 .state('token.containertemplates', {
-                    url: "/container/templates"
+                    url: "/container/templates",
+                    controller: "containerTemplateController"
                 })
                 .state('token.containertemplates.list', {
                     url: "/list",

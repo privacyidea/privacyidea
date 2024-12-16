@@ -24,6 +24,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                placeholder="{{ 'A unique name for this policy'|translate }}"
                required
                ng-model="selection.templateName"/>
+        <div ng-show="invalidName">
+            <span class="glyphicon glyphicon-exclamation-sign text text-danger"></span>
+            <span class="text text-danger" translate>
+                A template with this name already exists. Please choose a different name.
+            </span>
+        </div>
     </div>
 
     <div class="form-group">
@@ -53,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <div class="form-group">
         <button class="btn btn-capitalize btn-primary"
                 ng-disabled="!selection.templateName || !selection.containerType ||
-                             !checkRight('container_template_create')"
+                             !checkRight('container_template_create') || invalidName"
                 ng-click="createTemplate()"
                 translate>
             Create Template

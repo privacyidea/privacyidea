@@ -16,10 +16,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <div class="form-group">
-    <h3 translate>Edit Template {{ templateData.name }}</h3>
+    <h3 translate>Edit Template {{ template.name }}</h3>
 
     <div class="form-group">
-        <span translate>Container Type</span>: {{ templateData.container_type | capitalize }}
+        <span translate>Container Type</span>: {{ template.container_type | capitalize }}
     </div>
     <div class="form-group">
         <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
@@ -71,9 +71,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     </button>
                 </th>
                 <th translate>
-                    Type
-                </th>
-                <th translate>
                     Description
                 </th>
                 <th ng-show="loggedInUser.role == 'admin'" translate>
@@ -94,9 +91,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <tr ng-repeat="container in containerData.containers track by $index">
                 <td>
                     <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
-                </td>
-                <td class="table-capitalize">
-                    {{ container.type }}
                 </td>
                 <td>
                     {{ container.description }}
