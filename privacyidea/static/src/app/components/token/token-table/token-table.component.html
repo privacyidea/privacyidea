@@ -50,7 +50,6 @@
       }
     }
   </div>
-  <div class="flex just-center">
     <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()"
            aria-label="Token Data Table"
            class="token-table" mat-table matSort>
@@ -60,8 +59,8 @@
               mat-sort-header>
             {{ column.label }}
           </th>
-          <td *matCellDef="let element" attr.aria-label="{{ column.label
-           }} Cell" mat-cell>
+          <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell
+              [ngClass]="{'rem-18': column.key === 'description'}">
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @if (column.key === 'username'
@@ -104,5 +103,4 @@
         </td>
       </tr>
     </table>
-  </div>
 </div>

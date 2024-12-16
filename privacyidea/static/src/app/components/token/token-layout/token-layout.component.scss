@@ -6,8 +6,8 @@ $margin-bottom-main: 6rem;
 
 .token-layout {
   display: flex;
-  justify-content: center;
   gap: $gap-large;
+  padding: 0 $gap-large;
   overflow: auto;
 }
 

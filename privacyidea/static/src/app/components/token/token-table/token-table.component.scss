@@ -14,7 +14,6 @@ $realm-list-margin-top: 7px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
-  min-width: 88rem;
 
   .token-table {
     border-collapse: collapse;
@@ -26,10 +25,11 @@ $realm-list-margin-top: 7px;
 
     td {
       max-width: $td-max-width;
+      min-width: 7.55rem;
     }
 
     th.mat-sort-header {
-      padding-right: 5px;
+      padding-right: 0;
     }
   }
 
@@ -61,6 +61,10 @@ $realm-list-margin-top: 7px;
 
   .realm {
     margin-top: $realm-margin-top;
+  }
+
+  .rem-18 {
+    width: 18rem;
   }
 
   ::ng-deep {
