@@ -17,6 +17,7 @@ $realm-list-margin-top: 7px;
 
   .token-table {
     border-collapse: collapse;
+    width: 100%;
 
     td,
     th {
@@ -25,11 +26,10 @@ $realm-list-margin-top: 7px;
 
     td {
       max-width: $td-max-width;
-      min-width: 7.55rem;
     }
 
     th.mat-sort-header {
-      padding-right: 0;
+      padding-right: 5px;
     }
   }
 
@@ -70,7 +70,6 @@ $realm-list-margin-top: 7px;
   ::ng-deep {
     .mat-mdc-paginator-page-size {
       margin-right: 0;
-      width: 11.5rem;
     }
 
     .mat-mdc-paginator-page-size-label {
@@ -79,7 +78,7 @@ $realm-list-margin-top: 7px;
 
     .mat-mdc-paginator-range-label {
       margin: 3px 16px 0 16px;
-      width: 9rem;
+      width: 141px;
     }
 
     .mat-mdc-paginator-container {
