@@ -29,7 +29,7 @@ from flask import json
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.crypto import verify_ecc
+from privacyidea.lib.crypto import verify_ecc, decryptPassword
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, privacyIDEAError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
@@ -624,6 +624,7 @@ class TokenContainerClass:
                 if device_model:
                     message += f"|{device_model}"
                 if passphrase:
+                    passphrase = decryptPassword(passphrase)
                     message += f"|{passphrase}"
                 if key:
                     message += f"|{key}"

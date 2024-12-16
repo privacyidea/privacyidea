@@ -647,6 +647,20 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.assertIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
 
+        # Compare specific container
+        # container of the user
+        result = self.request_assert_success(f'/container/template/{template_name}/compare',
+                                             {"container_serial": container_serial_user}, self.at_user, 'GET')
+        containers = result["result"]["value"].keys()
+        self.assertIn(container_serial_user, containers)
+        self.assertNotIn(container_serial_no_user, containers)
+        # container without user
+        result = self.request_assert_success(f'/container/template/{template_name}/compare',
+                                             {"container_serial": container_serial_no_user}, self.at_user, 'GET')
+        containers = result["result"]["value"].keys()
+        self.assertNotIn(container_serial_user, containers)
+        self.assertNotIn(container_serial_no_user, containers)
+
         delete_policy("policy")
 
     def test_33_user_compare_template_container_denied(self):
@@ -1773,8 +1787,31 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.assertIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
 
+        # Compare specific container
+        # container of the user
+        result = self.request_assert_success(f'/container/template/{template_name}/compare',
+                                             {"container_serial": container_serial_user}, self.at_user, 'GET')
+        containers = result["result"]["value"].keys()
+        self.assertIn(container_serial_user, containers)
+        self.assertNotIn(container_serial_no_user, containers)
+        # container without user
+        result = self.request_assert_success(f'/container/template/{template_name}/compare',
+                                             {"container_serial": container_serial_no_user}, self.at_user, 'GET')
+        containers = result["result"]["value"].keys()
+        self.assertNotIn(container_serial_user, containers)
+        self.assertNotIn(container_serial_no_user, containers)
+
         delete_policy("policy")
         delete_policy("admin")
+
+        # Helpdesk has no container_list rights for the realm of the container
+        set_policy("policy", scope=SCOPE.ADMIN,
+                   action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True}, realm=self.realm2)
+        result = self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
+        containers = result["result"]["value"].keys()
+        self.assertNotIn(container_serial_user, containers)
+        self.assertNotIn(container_serial_no_user, containers)
+        delete_policy("policy")
 
     def test_29_helpdesk_create_container_with_template(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1

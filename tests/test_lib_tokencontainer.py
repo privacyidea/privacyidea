@@ -26,7 +26,8 @@ from privacyidea.lib.containers.yubikey import YubikeyOptions, YubikeyContainer
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
-from privacyidea.lib.crypto import geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc
+from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc,
+                                    decryptPassword)
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered)
 from privacyidea.lib.token import init_token, remove_token
@@ -473,7 +474,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_24_delete_container_info(self):
         # Arrange
-        container_serial = init_container({"type": "generic", "description": "delete container info"})["container_serial"]
+        container_serial = init_container({"type": "generic", "description": "delete container info"})[
+            "container_serial"]
         container = find_container_by_serial(container_serial)
         info = {"key1": "value1", "key2": "value2", "key3": "value3"}
         set_container_info(container_serial, info)
@@ -1114,7 +1116,8 @@ class TokenContainerSynchronization(MyTestCase):
         # Check that passphrase is included in the challenge
         challenge = get_challenges(serial=smartphone_serial)[0]
         challenge_data = json.loads(challenge.data)
-        self.assertEqual(passphrase_params["passphrase_response"], challenge_data["passphrase_response"])
+        self.assertEqual(passphrase_params["passphrase_response"],
+                         decryptPassword(challenge_data["passphrase_response"]))
 
         # Mock smartphone
         params, _ = self.mock_smartphone_register_params(init_result["nonce"], init_result["time_stamp"],

@@ -175,6 +175,8 @@ class SmartphoneContainer(TokenContainerClass):
         if passphrase_ad:
             if not passphrase_prompt:
                 passphrase_prompt = "Please enter your AD passphrase."
+        if passphrase_response:
+            passphrase_response = encryptPassword(passphrase_response)
         challenge_params = {"scope": scope, "passphrase_prompt": passphrase_prompt,
                             "passphrase_response": passphrase_response,
                             "passphrase_ad": passphrase_ad}
@@ -340,6 +342,7 @@ class SmartphoneContainer(TokenContainerClass):
         # Create challenge
         nonce = geturandom(20, hex=True)
         data["scope"] = scope
+        data["type"] = "container"
         data_str = json.dumps(data)
         if validity_time:
             validity_time *= 60

@@ -102,7 +102,9 @@ def list_containers():
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms)
     result["containers"] = containers
 
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": True,
+                        "info": f"allowed_container_realms={allowed_container_realms}, "
+                                f"allowed_token_realms={allowed_token_realms}"})
     return send_result(result)
 
 
@@ -544,16 +546,15 @@ def set_container_options(container_serial):
     """
     options = getParam(request.all_data, "options", required)
 
-    set_options(container_serial, options)
-
     # Audit log
     container = find_container_by_serial(container_serial)
     option_str = ", ".join([f"{k}: {v}" for k, v in options.items()])
     g.audit_object.log({"container_serial": container_serial,
                         "container_type": container.type,
-                        "action_detail": option_str,
-                        "success": True})
+                        "action_detail": option_str})
 
+    set_options(container_serial, options)
+    g.audit_object.log({"success": True})
     return send_result(True)
 
 
@@ -589,6 +590,14 @@ def registration_init():
     registration_ttl = getParam(params, "registration_ttl")
     ssl_verify = getParam(params, "ssl_verify")
 
+    # Audit log
+    info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
+                f"ssl_verify={ssl_verify}")
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"rollover={container_rollover}",
+                        "info": info_str})
+
     # Check registration state: registration init is only allowed for None and "client_wait"
     registration_state = container.get_container_info_dict().get("registration_state")
     if container_rollover:
@@ -618,12 +627,7 @@ def registration_init():
         container.add_container_info("challenge_ttl", challenge_ttl)
 
     # Audit log
-    action_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
-                  f"ssl_verify={ssl_verify}, rollover={container_rollover}")
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": action_str,
-                        "success": True})
+    g.audit_object.log({"success": True})
 
     return send_result(res)
 
@@ -652,6 +656,7 @@ def registration_finalize():
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
+
     res = finalize_registration(container_serial, params)
 
     # Add policy information to the response
@@ -747,8 +752,13 @@ def create_challenge(container_serial: str):
     """
     # Get params
     scope = getParam(request.all_data, "scope", optional=False)
-
     container = find_container_by_serial(container_serial)
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"scope={scope}"})
+
     container_info = container.get_container_info_dict()
     registration_state = container_info.get("registration_state")
     if registration_state != "registered" and registration_state != "rollover":
@@ -768,12 +778,7 @@ def create_challenge(container_serial: str):
     res.update({'server_url': server_url})
 
     # Audit log
-    info_str = f"registration_state={registration_state}, server_url={server_url}, challenge_ttl={challenge_ttl}min"
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": f"scope={scope}",
-                        "info": info_str,
-                        "success": res})
+    g.audit_object.log({"success": True})
 
     return send_result(res)
 
@@ -822,7 +827,17 @@ def synchronize(container_serial: str):
     params = request.all_data
     container_client_str = getParam(params, "container_dict_client", optional=True)
     container_client = json.loads(container_client_str) if container_client_str else {}
+
+    # write client token serials to audit log
+    client_serials = ", ".join(
+        [token.get("serial") or str(token.get("otp")) for token in container_client.get("tokens", [])])
+
     container = find_container_by_serial(container_serial)
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"client_serials={client_serials}"})
 
     # Get server url
     server_url = container.get_container_info_dict().get("server_url")
@@ -836,6 +851,11 @@ def synchronize(container_serial: str):
     container.check_challenge_response(params)
     initial_token_transfer = request.all_data.get("client_policies").get(ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
     container_dict = container.synchronize_container_details(container_client, initial_token_transfer)
+
+    # Write token serials to audit log
+    add_serials = ", ".join([serial for serial in container_dict["tokens"]["add"]])
+    equal_serials = ", ".join([token.get("serial") for token in container_dict["tokens"]["update"]])
+    audit_info = f"Client: add={add_serials}, update={equal_serials}"
 
     # Get enroll information for missing tokens
     enroll_info = []
@@ -869,12 +889,11 @@ def synchronize(container_serial: str):
     registration_state = container.get_container_info_dict().get("registration_state")
     if registration_state == "rollover":
         container.add_container_info("registration_state", "registered")
+    audit_info += f", rollover: {registration_state == "rollover"}"
 
     # Audit log
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": f"container_dict_client={container_client_str}",
-                        "success": res})
+    g.audit_object.log({"info": audit_info,
+                        "success": True})
 
     return send_result(res)
 
@@ -908,12 +927,11 @@ def rollover(container_serial):
     res_rollover = init_container_rollover(container, server_url, challenge_ttl, registration_ttl, ssl_verify, params)
 
     # Audit log
-    action_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
-                  f"ssl_verify={ssl_verify}")
+    info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
+                f"ssl_verify={ssl_verify}, registration_state={registration_state}")
     g.audit_object.log({"container_serial": container_serial,
                         "container_type": container.type,
-                        "action_detail": action_str,
-                        "info": f"registration_state={registration_state}",
+                        "info": info_str,
                         "success": True})
 
     return send_result(res_rollover)
@@ -1026,7 +1044,7 @@ def get_template_options():
 
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_CREATE)
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_CREATE)
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
@@ -1047,6 +1065,12 @@ def create_template_with_name(container_type, template_name):
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}
     default_template = getParam(params, "default", optional=True, default=False)
+
+    # Audit log
+    g.audit_object.log({"container_type": container_type,
+                        "action_detail": f"template_name={template_name}, default={default_template}"})
+
+    # Check parameters
     if not isinstance(template_options, dict):
         raise ParameterError("'template_options' must be a dictionary!")
 
@@ -1062,35 +1086,37 @@ def create_template_with_name(container_type, template_name):
         template.template_options = template_options
         template_id = template.id
         log.info(f"A template with the name '{template_name}' already exists. Updating template options.")
+        audit_info = "Updated existing template"
     else:
         # create new template
         template_id = create_container_template(container_type, template_name, template_options, default_template)
+        audit_info = "Created new template"
 
     # Set template as default for this container type
     if default_template:
         set_default_template(template_name)
 
     # Audit log
-    audit_log_data = {"container_type": container_type,
-                      "action_detail": f"template_name={template_name}",
-                      "success": True}
-    g.audit_object.log(audit_log_data)
+    g.audit_object.log({"success": True,
+                        "info": audit_info})
     return send_result({"template_id": template_id})
 
 
 @container_blueprint.route('template/<string:template_name>', methods=['DELETE'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_TEMPLATE_DELETE)
+@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_DELETE)
 @log_with(log)
 def delete_template(template_name):
     """
     Deletes the template of the given name.
     """
+    # Audit log
+    g.audit_object.log({"action_detail": f"template_name={template_name}"})
+
     template = get_template_obj(template_name)
     template.delete()
 
     # Audit log
     g.audit_object.log({"container_type": template.get_class_type(),
-                        "action_detail": f"template_name={template_name}",
                         "success": True})
 
     return send_result(True)
@@ -1127,6 +1153,10 @@ def compare_template_with_containers(template_name):
     user_role = g.logged_in_user.get("role")
     container_serial = getParam(request.all_data, "container_serial", optional=True)
 
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "action_detail": f"template_name={template_name}"})
+
     template = get_template_obj(template_name)
     if container_serial:
         container_list = [find_container_by_serial(container_serial)]
@@ -1154,7 +1184,7 @@ def compare_template_with_containers(template_name):
 
     # Audit log
     g.audit_object.log({"container_type": template.get_class_type(),
-                        "action_detail": f"template_name={template_name}",
+                        "info": f"allowed_realms={allowed_realms}",
                         "success": True})
 
     return send_result(result)
