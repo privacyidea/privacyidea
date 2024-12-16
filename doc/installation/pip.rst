@@ -90,12 +90,12 @@ An encryption key for encrypting the secrets in the database and a key for
 signing the :ref:`audit` log is also needed (the following commands should be
 executed inside the virtual environment)::
 
-    pi-manage create_enckey  # encryption key for the database
-    pi-manage create_audit_keys  # key for verification of audit log entries
+    pi-manage setup create_enckey  # encryption key for the database
+    pi-manage setup create_audit_keys  # key for verification of audit log entries
 
 To create the database tables execute::
 
-    pi-manage create_tables
+    pi-manage setup create_tables
 
 Stamping the database to the current database schema version is important for
 the update process later::
