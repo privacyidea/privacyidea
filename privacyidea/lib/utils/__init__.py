@@ -1380,8 +1380,8 @@ def create_tag_dict(logged_in_user=None,
                     challenge=None,
                     escape_html=False,
                     container_serial=None,
-                    container_url=None,
-                    container_qr=None):
+                    container_url_value=None,
+                    container_url_img=None):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1405,8 +1405,8 @@ def create_tag_dict(logged_in_user=None,
     :param challenge: The challenge data
     :param escape_html: Whether the values for the tags should be html escaped
     :param container_serial: The serial number of the container
-    :param container_url: The URL for the container registration
-    :param container_qr: The URL as QR code for the container registration
+    :param container_url_value: The URL for the container registration
+    :param container_url_img: The URL as QR code for the container registration
     :return: The tag dictionary
     """
     time = datetime.now().strftime("%H:%M:%S")
@@ -1439,8 +1439,8 @@ def create_tag_dict(logged_in_user=None,
                 ua_string=request.user_agent.string if request else "",
                 challenge=challenge if challenge else "",
                 container_serial=container_serial,
-                container_url=container_url,
-                container_qr=container_qr)
+                container_url_value=container_url_value,
+                container_url_img=container_url_img)
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
