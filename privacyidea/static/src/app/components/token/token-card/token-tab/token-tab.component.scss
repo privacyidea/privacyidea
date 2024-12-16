@@ -12,6 +12,7 @@ $list-padding: var(--global-padding);
 .mdc-list {
   padding: $list-padding 0;
   width: $list-width;
+  overflow: hidden;
 }
 
 .mat-mdc-list-item {
