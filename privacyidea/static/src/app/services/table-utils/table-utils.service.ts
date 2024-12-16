@@ -89,6 +89,9 @@ export class TableUtilsService {
 
   getClassForColumn(columnKey: string, element: any): string {
     if (columnKey === 'active') {
+      if (element['active'] === '') {
+        return '';
+      }
       if (element['locked']) {
         return 'highlight-false-clickable';
       } else if (element['revoked']) {
@@ -99,6 +102,9 @@ export class TableUtilsService {
         return 'highlight-true-clickable';
       }
     } else if (columnKey === 'failcount') {
+      if (element['failcount'] === '') {
+        return '';
+      }
       if (element['failcount'] === 0) {
         return 'highlight-true';
       } else if (element['failcount'] > 0 && element['failcount'] < element['maxfail']) {
@@ -112,6 +118,9 @@ export class TableUtilsService {
 
   getDisplayText(columnKey: string, element: any): string {
     if (columnKey === 'active') {
+      if (element['active'] === '') {
+        return '';
+      }
       if (element['revoked']) {
         return 'revoked';
       } else if (element['locked']) {
@@ -130,10 +139,15 @@ export class TableUtilsService {
       return 'details-table-item details-description'
     }
     if (key === 'active') {
+      if (value === '') {
+        return '';
+      }
       return value === true ? 'highlight-true' : 'highlight-false';
     }
     if (key === 'failcount') {
-      if (value === 0) {
+      if (value === '') {
+        return '';
+      } else if (value === 0) {
         return 'highlight-true';
       } else if (value >= 1 && value < maxfail) {
         return 'highlight-warning';
@@ -170,6 +184,9 @@ export class TableUtilsService {
   }
 
   getDisplayTextForKeyMap(key: string, value: any, revoked: boolean): string {
+    if (value === '') {
+      return '';
+    }
     if (key === 'active') {
       return revoked ? 'revoked' : (value ? 'active' : 'deactivated');
     }

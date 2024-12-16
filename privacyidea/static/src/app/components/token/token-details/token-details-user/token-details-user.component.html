@@ -38,7 +38,7 @@
     </ng-container>
     <ng-container matColumnDef="edit">
       <td *matCellDef="let element" class="edit-column-cell" mat-cell>
-        @if (element.keyMap.key === "username" && !(isAnyEditing() && !isEditingUser())) {
+        @if (element.keyMap.key === "username" && !(isAnyEditingOrRevoked() && !isEditingUser())) {
           @if (element.value) {
             <div class="edit-button-container">
               <button mat-icon-button class="yellow"
@@ -48,7 +48,7 @@
             </div>
           } @else {
             <app-edit-buttons [toggleEditMode]="toggleUserEditMode.bind(this)"
-                              [isAnyEditing]="isAnyEditing"
+                              [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                               [isEditingUser]="isEditingUser"
                               [isEditingInfo]="isEditingInfo"
                               [element]="element">

@@ -75,7 +75,7 @@ export class TokenDetailsUserComponent {
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isAnyEditing!: Signal<boolean>;
+  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');

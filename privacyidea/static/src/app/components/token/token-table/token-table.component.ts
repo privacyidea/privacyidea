@@ -37,8 +37,6 @@ const columnsKeyMap = [
   styleUrl: './token-table.component.scss'
 })
 export class TokenTableComponent {
-  dataSource = signal(new MatTableDataSource());
-  showAdvancedFilter = signal(false);
   displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
@@ -48,7 +46,15 @@ export class TokenTableComponent {
   apiFilter = this.tokenService.apiFilter;
   advancedApiFilter = this.tokenService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
-
+  dataSource = signal(new MatTableDataSource(
+    Array.from({length: this.pageSize}, () => {
+      const emptyRow: any = {};
+      columnsKeyMap.forEach(column => {
+        emptyRow[column.key] = '';
+      });
+      return emptyRow;
+    })));
+  showAdvancedFilter = signal(false);
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() serial!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -73,15 +79,6 @@ export class TokenTableComponent {
   }
 
   private fetchTokenData() {
-    const emptyData = Array.from({ length: this.pageSize }, () => {
-      const emptyRow: any = {};
-      columnsKeyMap.forEach(column => {
-        emptyRow[column.key] = '';
-      });
-      return emptyRow;
-    });
-
-    this.dataSource.set(new MatTableDataSource(emptyData));
     this.tokenService.getTokenData(
       this.pageIndex + 1, this.pageSize, columnsKeyMap, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {

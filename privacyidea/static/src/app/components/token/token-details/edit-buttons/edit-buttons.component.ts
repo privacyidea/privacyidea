@@ -14,7 +14,7 @@ import {MatIcon} from '@angular/material/icon';
 export class EditButtonsComponent {
 
   @Input() toggleEditMode!: (element: any, type?: string, action?: string) => void;
-  @Input() isAnyEditing!: Signal<boolean>;
+  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() element: any;

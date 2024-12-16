@@ -45,7 +45,7 @@ export class TokenDetailsInfoComponent {
     value: any;
     isEditing: WritableSignal<boolean>
   }[]>;
-  @Input() isAnyEditing!: Signal<boolean>;
+  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;

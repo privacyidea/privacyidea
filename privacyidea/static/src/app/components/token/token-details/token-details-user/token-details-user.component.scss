@@ -9,7 +9,7 @@ $min-width-editable: 20rem;
   display: flex;
   flex-direction: row;
   gap: var(--global-padding);
-  padding: 0 var(--global-padding);
+  padding: 0 0 0 var(--global-padding);
 
   .user-details-table {
     border-collapse: collapse;

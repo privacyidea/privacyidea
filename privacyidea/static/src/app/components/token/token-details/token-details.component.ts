@@ -104,25 +104,39 @@ export class TokenDetailsComponent {
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
-  }[]>([]);
+  }[]>(detailsKeyMap.map(detail => ({
+    keyMap: detail,
+    value: '',
+    isEditing: signal(false)
+  })));
   infoData = signal<{
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
-  }[]>([]);
-  isAnyEditing = computed(() => {
-    const detailData = this.detailData();
-    return (
-      (detailData?.some((element) => element.isEditing()) ?? false) ||
-      this.isEditingUser() ||
-      this.isEditingInfo()
-    );
-  });
+  }[]>(infoDetailsKeyMap.map(detail => ({
+    keyMap: detail,
+    value: '',
+    isEditing: signal(false)
+  })));
   userData = signal<{
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
-  }[]>([]);
+  }[]>(userDetailsKeyMap.map(detail => ({
+    keyMap: detail,
+    value: '',
+    isEditing: signal(false)
+  })));
+  isAnyEditingOrRevoked = computed(() => {
+    const detailData = this.detailData();
+
+    return (
+      detailData.some(element => element.isEditing()) ||
+      this.isEditingUser() ||
+      this.isEditingInfo() ||
+      this.revoked()
+    );
+  });
   containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
   selectedContainer = signal<string>('');
@@ -156,23 +170,6 @@ export class TokenDetailsComponent {
   }
 
   showTokenDetail(serial: string): Observable<void> {
-    this.detailData.set(detailsKeyMap.map(detail => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false)
-    })).filter(detail => detail.value !== undefined));
-    this.userData.set(userDetailsKeyMap.map(detail => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false)
-    })).filter(detail => detail.value !== undefined));
-
-    this.infoData.set(infoDetailsKeyMap.map(detail => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false)
-    })).filter(detail => detail.value !== undefined));
-
     return forkJoin([
       this.tokenService.getTokenDetails(serial),
       this.realmService.getRealms(),
@@ -188,7 +185,6 @@ export class TokenDetailsComponent {
           value: tokenDetails[detail.key],
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
-
         this.userData.set(userDetailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],

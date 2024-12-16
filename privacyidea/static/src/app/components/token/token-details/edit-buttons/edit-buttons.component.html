@@ -1,5 +1,5 @@
 <div class="edit-button-container">
-  @if (!isAnyEditing()) {
+  @if (!isAnyEditingOrRevoked()) {
     <button mat-icon-button class="black"
             (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
       <mat-icon>

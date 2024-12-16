@@ -40,7 +40,7 @@ describe('TokenDetailsInfoComponent', () => {
     component.serial = signal('Mock serial');
     component.isEditingInfo = signal(false);
     component.isEditingUser = signal(false);
-    component.isAnyEditing = computed(() => {
+    component.isAnyEditingOrRevoked = computed(() => {
       return (component.isEditingInfo());
     });
     component.refreshTokenDetails = signal(false);
@@ -102,7 +102,7 @@ describe('TokenDetailsInfoComponent', () => {
 
     component.isEditingInfo.set(true);
     fixture.detectChanges();
-    expect(component.isAnyEditing()).toBeTruthy();
+    expect(component.isAnyEditingOrRevoked()).toBeTruthy();
 
     component.newInfo.set({key: 'newKey', value: 'newValue'});
     fixture.detectChanges();
