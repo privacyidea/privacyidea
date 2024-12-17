@@ -167,7 +167,7 @@ export class TableUtilsService {
     return 'details-table-item';
   }
 
-  getDivClassForKeyMap(key: string) {
+  getDivClassForKey(key: string) {
     if (key === 'description') {
       return 'details-scrollable-container';
     } else if (
@@ -202,4 +202,15 @@ export class TableUtilsService {
     return value;
   }
 
+  getTdClassForKey(key: string) {
+    const classes = ['fix-width-20-padr-0'];
+    if (key === 'description') {
+      classes.push('height-104');
+    } else if (['realms', 'tokengroup'].includes(key)) {
+      classes.push('height-78');
+    } else {
+      classes.push('height-52');
+    }
+    return classes;
+  }
 }

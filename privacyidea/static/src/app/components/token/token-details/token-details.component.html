@@ -13,11 +13,8 @@
           </td>
         </ng-container>
         <ng-container matColumnDef="value">
-          <td *matCellDef="let element" [ngClass]="['fix-width-20-padr-0',
-          element.keyMap.key === 'description' ? 'height-104' : '',
-          element.keyMap.key === 'realms'
-          || element.keyMap.key === 'tokengroup' ? 'height-78' : 'height-52']" class="" mat-cell>
-
+          <td *matCellDef="let element" mat-cell
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)">
             @if (element.keyMap.key === "container_serial") {
               @if (element.isEditing()) {
                 <mat-form-field class="width-18">
@@ -96,7 +93,7 @@
                               [(ngModel)]="element.value"></textarea>
               </mat-form-field>
             } @else {
-              <div [ngClass]="[tableUtilsService.getDivClassForKeyMap(element.keyMap.key)]">
+              <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
                     <span [ngClass]="[tableUtilsService.getSpanClassForKeyMap(element.keyMap.key,
                           element.value, maxfail)]">
                       {{
