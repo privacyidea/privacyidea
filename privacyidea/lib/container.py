@@ -854,7 +854,7 @@ def get_container_realms(serial):
 
 
 def create_container_dict(container_list, no_token=False, user=None, logged_in_user_role='user',
-                          allowed_token_realms=[]):
+                          allowed_token_realms=[], hide_token_info: list = None):
     """
     Create a dictionary for each container in the list.
     It contains the container properties, owners, realms, tokens and info.
@@ -865,6 +865,7 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     :param user: The user object requesting the containers
     :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
     :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
+    :param hide_token_info: Whitespace separated list of token info keys to hide in the response, optional
     :return: List of container dictionaries
 
     Example of a returned list:
@@ -908,7 +909,8 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
             if len(token_serials) > 0:
                 tokens = get_tokens(serial=token_serials)
                 tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
-                                                                  allowed_realms=allowed_token_realms)
+                                                                  allowed_realms=allowed_token_realms,
+                                                                  hidden_token_info=hide_token_info)
             container_dict["tokens"] = tokens_dict_list
 
         res.append(container_dict)

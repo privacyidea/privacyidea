@@ -421,7 +421,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
-def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None):
+def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None, hidden_token_info=None):
     """
     Convert a list of token objects to a list of dictionaries.
     Additionally, checks whether the requesting user is allowed to see the token information.
@@ -435,6 +435,7 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
     :type user_role: str
     :param allowed_realms: A list of the realms the admin is allowed to see, None if the admin is allowed to see all
                            realms
+    :param hidden_token_info: List of token-info keys to remove from the results
     :return: A list of dictionaries
     :rtype: list
     """
@@ -458,6 +459,11 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
+
+            if hidden_token_info:
+                for key in list(token_dict['info']):
+                    if key in hidden_token_info:
+                        token_dict['info'].pop(key)
 
             # check if token is in a container
             token_dict["container_serial"] = ""

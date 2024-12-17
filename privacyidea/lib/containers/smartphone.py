@@ -447,7 +447,8 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False):
+    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False,
+                                      hide_token_info: list = None):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -468,6 +469,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
                                 {"otp": ["1234", "9876"], "type": "hotp"}]
                 }
+        :param hide_token_info: List of token info keys to be excluded from the token dict.
 
         :return: container dictionary like
         An example of a returned container dictionary:
@@ -536,6 +538,8 @@ class SmartphoneContainer(TokenContainerClass):
         # Get info for same serials: token details
         update_dict = []
         black_list_token_info = ["private_key_server", "private_key_server.type"]
+        if hide_token_info:
+            black_list_token_info.extend(hide_token_info)
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
             token_dict = token.get_as_dict()

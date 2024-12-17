@@ -655,12 +655,13 @@ class TokenContainerClass:
 
         return valid_challenge
 
-    def get_as_dict(self, include_tokens=True, public_info=True):
+    def get_as_dict(self, include_tokens=True, public_info=True, additional_hide_info=None):
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
         :param include_tokens: If True, the tokens are included in the dictionary
         :param public_info: If True, only public information is included and sensitive information is omitted
+        :param additional_hide_info: List of keys that shall be omitted from the dictionary
         :return: Dictionary with the container details
 
         Example response
@@ -693,9 +694,13 @@ class TokenContainerClass:
                    "last_synchronization": self.last_synchronization,
                    "states": self.get_states()}
 
-        if public_info:
-            black_key_list = ["private_key_server", "public_key_server", "public_key_container", "rollover_server_url",
-                              "rollover_challenge_ttl"]
+        if public_info or additional_hide_info:
+            black_key_list = []
+            if public_info:
+                black_key_list = ["private_key_server", "public_key_server", "public_key_container",
+                                  "rollover_server_url", "rollover_challenge_ttl"]
+            if additional_hide_info:
+                black_key_list.extend(additional_hide_info)
             info = self.get_container_info()
             info_dict = {i.key: i.value for i in info if i.key not in black_key_list}
         else:

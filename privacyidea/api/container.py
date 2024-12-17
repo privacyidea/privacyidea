@@ -26,7 +26,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
                                            check_admin_tokenlist, check_container_action, check_token_list_action,
                                            check_container_register_rollover, container_registration_config,
-                                           smartphone_config, check_client_container_action)
+                                           smartphone_config, check_client_container_action, hide_tokeninfo)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -63,6 +63,7 @@ API for managing token containers
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(hide_tokeninfo, request)
 @log_with(log)
 def list_containers():
     """
@@ -93,13 +94,15 @@ def list_containers():
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
     allowed_token_realms = getattr(request, "pi_allowed_realms", None)
+    hide_token_info = getParam(param, "hidden_tokeninfo", optional=True)
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
                                 realms=allowed_container_realms, template=template,
                                 sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
-    containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms)
+    containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
+                                       hide_token_info=hide_token_info)
     result["containers"] = containers
 
     g.audit_object.log({"success": True,
@@ -889,7 +892,7 @@ def synchronize(container_serial: str):
     registration_state = container.get_container_info_dict().get("registration_state")
     if registration_state == "rollover":
         container.add_container_info("registration_state", "registered")
-    audit_info += f", rollover: {registration_state == "rollover"}"
+    audit_info += f", rollover: {registration_state == 'rollover'}"
 
     # Audit log
     g.audit_object.log({"info": audit_info,
