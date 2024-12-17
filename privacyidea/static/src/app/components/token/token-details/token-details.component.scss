@@ -6,7 +6,6 @@ $gap-small: 8px;
 $margin-left-small: 10px;
 $padding-top-small: 8px;
 $description-width: 18rem;
-$scrollable-max-height: 50px;
 
 .details-container {
   display: flex;
@@ -65,13 +64,11 @@ $scrollable-max-height: 50px;
     align-items: center;
     overflow-y: auto;
     overflow-wrap: anywhere;
-    max-height: $scrollable-max-height;
   }
 
   .details-description {
     display: flex;
     width: $description-width;
-    padding-top: $padding-top-small;
   }
 
   .details-table-item {
@@ -94,6 +91,10 @@ $scrollable-max-height: 50px;
     .details-table .mat-mdc-form-field-infix {
       padding-bottom: 10px;
       margin-bottom: -6px;
+    }
+
+    .details-table .description .mat-mdc-form-field-infix{
+        padding-top: 0;
     }
 
     .mat-mdc-row {

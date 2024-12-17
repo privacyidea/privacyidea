@@ -44,10 +44,7 @@ export class TokenService {
     return this.http.post(this.baseUrl + 'reset', {"serial": serial}, {headers})
   }
 
-  getTokenData(page: number, pageSize: number, columns: {
-    key: string;
-    label: string
-  }[], sort?: Sort, filterValue?: string): Observable<any> {
+  getTokenData(page: number, pageSize: number, sort?: Sort, filterValue?: string): Observable<any> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams()
       .set('page', page.toString())

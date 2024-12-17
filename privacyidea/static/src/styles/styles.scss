@@ -3,6 +3,7 @@
 @import 'table.scss';
 @import 'buttons.scss';
 @import 'inputs.scss';
+@import 'tab.scss';
 
 html, body {
   background: #e6e6e6;
@@ -118,6 +119,10 @@ html, body {
 }
 
 .width-18 {
+  width: 18rem;
+}
+
+.rem-18 {
   width: 18rem;
 }
 

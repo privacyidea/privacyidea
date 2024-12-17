@@ -1,3 +1,12 @@
+$table-border-color: #E0E2EC;
+$td-max-width: 18rem;
+$filter-width: 54.5rem;
+$scrollable-height: 60px;
+$scrollable-margin-right: -1rem;
+$scrollable-padding-right: 1rem;
+$realm-margin-top: 17px;
+$realm-list-margin-top: 7px;
+
 $table-bg: var(--table-color);
 $link-color: var(--blue-base);
 $even-bg: #f3f3f3;
@@ -9,6 +18,81 @@ $font-color-white: white;
 $divider-color: #E0E2EC;
 $icon-font-size: 22px;
 $fix-width: 20rem;
+
+@mixin table-container-styles {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+}
+
+@mixin base-table-structure($table-class: ".table", $filter-class: ".table-filter", $scroll-container: ".table-scrollable-container") {
+  #{$table-class} {
+    border-collapse: collapse;
+    width: 100%;
+
+    td, th {
+      border: 1px solid $table-border-color;
+    }
+
+    td {
+      max-width: $td-max-width;
+    }
+
+    th.mat-sort-header {
+      padding-right: 5px;
+    }
+  }
+
+  #{$filter-class} {
+    width: $filter-width;
+  }
+
+  #{$scroll-container} {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    height: $scrollable-height;
+    margin-right: $scrollable-margin-right;
+    padding-right: $scrollable-padding-right;
+  }
+
+  .failcount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .description {
+    align-items: flex-start;
+  }
+
+  .realm-list {
+    margin-top: $realm-list-margin-top;
+  }
+
+  .realm {
+    margin-top: $realm-margin-top;
+  }
+
+  ::ng-deep {
+    .mat-mdc-paginator-page-size {
+      margin-right: 0;
+    }
+
+    .mat-mdc-paginator-page-size-label {
+      margin: 0;
+    }
+
+    .mat-mdc-paginator-range-label {
+      margin: 2px 16px 0 16px;
+      width: 141px;
+    }
+
+    .mat-mdc-paginator-container {
+      padding: 0 0 0 16px;
+    }
+  }
+}
 
 table {
   background-color: $table-bg;
@@ -23,10 +107,6 @@ a {
 td:nth-child(even),
 th:nth-child(even) {
   background: $even-bg;
-}
-
-.ng-tns-c508571215-2 {
-  color: $dimgray-color;
 }
 
 .mat-mdc-form-field {
@@ -51,7 +131,7 @@ th:nth-child(even) {
 .highlight-false-clickable {
   border-radius: $border-radius;
   padding: $highlight-padding;
-  color: $font-color-white;
+  color: $font-color_white;
   display: inline-block;
 
   &.highlight-true,
@@ -111,6 +191,14 @@ th:nth-child(even) {
 
 .height-52 {
   height: 52px;
+}
+
+.height-104 {
+  height: 104px;
+}
+
+.height-78 {
+  height: 78px;
 }
 
 .fix-width-20-padr-0 {

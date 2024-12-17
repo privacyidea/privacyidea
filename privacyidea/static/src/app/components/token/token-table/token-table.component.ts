@@ -11,7 +11,6 @@ import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
-import {max} from 'rxjs';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -37,6 +36,7 @@ const columnsKeyMap = [
   styleUrl: './token-table.component.scss'
 })
 export class TokenTableComponent {
+  protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
@@ -60,8 +60,6 @@ export class TokenTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  protected readonly columns = columnsKeyMap;
-
   constructor(private router: Router,
               private authService: AuthService,
               protected tokenService: TokenService,
@@ -80,7 +78,7 @@ export class TokenTableComponent {
 
   private fetchTokenData() {
     this.tokenService.getTokenData(
-      this.pageIndex + 1, this.pageSize, columnsKeyMap, this.sortby_sortdir, this.filterValue).subscribe({
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
         this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
@@ -160,7 +158,4 @@ export class TokenTableComponent {
       this.resetFailCount(element);
     }
   }
-
-  protected readonly max = max;
-  protected readonly columnsKeyMap = columnsKeyMap;
 }

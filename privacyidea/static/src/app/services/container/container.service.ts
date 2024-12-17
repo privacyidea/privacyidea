@@ -12,10 +12,12 @@ import {TableUtilsService} from '../table-utils/table-utils.service';
 export class ContainerService {
   private baseUrl = 'http://127.0.0.1:5000/container/';
   apiFilter = [
-    'user',
     'container_serial',
     'type',
-    'token_serial',
+    'user',
+  ];
+  advancedApiFilter = [
+    'token_serial'
   ];
 
   constructor(private http: HttpClient,

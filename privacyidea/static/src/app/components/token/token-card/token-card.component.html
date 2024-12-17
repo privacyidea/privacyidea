@@ -3,7 +3,7 @@
     <mat-tab-group
       (selectedTabChange)="onTabChange($event)"
       [(selectedIndex)]="selectedTabIndex"
-      animationDuration="200ms"
+      animationDuration="400ms"
       fitInkBarToContent
       mat-align-tabs="center"
       mat-stretch-tabs="false"
@@ -13,16 +13,20 @@
           <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">shield</mat-icon>
           <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">Token</h4>
         </ng-template>
-        <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
-                       [revoked]="revoked" [serial]="serial"
-                       [tokenIsSelected]="tokenIsSelected"></app-token-tab>
+        <ng-template matTabContent>
+          <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
+                         [revoked]="revoked" [serial]="serial"
+                         [tokenIsSelected]="tokenIsSelected"></app-token-tab>
+        </ng-template>
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">folder</mat-icon>
           <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
         </ng-template>
-        <app-container-tab [containerIsSelected]="containerIsSelected"></app-container-tab>
+        <ng-template matTabContent>
+          <app-container-tab [containerIsSelected]="containerIsSelected"></app-container-tab>
+        </ng-template>
       </mat-tab>
     </mat-tab-group>
   </mat-card-content>

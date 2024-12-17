@@ -12,7 +12,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 
-const columns = [
+const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
   {key: 'type', label: 'Type'},
   {key: 'description', label: 'Description'},
@@ -32,22 +32,29 @@ const columns = [
   styleUrl: './container-table.component.scss'
 })
 export class ContainerTableComponent {
-  dataSource = signal(new MatTableDataSource());
-  displayedColumns: string[] = columns.map(column => column.key);
-  columnDefinitions = columns;
+  protected readonly columnsKeyMap = columnsKeyMap;
+  displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
   pageIndex = 0;
-  pageSizeOptions = [10];
+  pageSizeOptions = [5, 10, 15];
   filterValue = '';
   apiFilter = this.containerService.apiFilter;
+  advancedApiFilter = this.containerService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
-
+  dataSource = signal(new MatTableDataSource(
+    Array.from({length: this.pageSize}, () => {
+      const emptyRow: any = {};
+      columnsKeyMap.forEach(column => {
+        emptyRow[column.key] = '';
+      });
+      return emptyRow;
+    })));
+  showAdvancedFilter = signal(false);
+  @Input() containerIsSelected!: WritableSignal<boolean>;
+  @Input() serial!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
-  protected readonly columns = columns;
-  @Input() serial!: WritableSignal<string>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -70,7 +77,7 @@ export class ContainerTableComponent {
       this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
       next: response => {
         this.length = response.result.value.count;
-        this.updateDataSource(response.result.value.containers);
+        this.processDataSource(response.result.value.containers);
       },
       error: error => {
         console.error('Failed to get container data', error);
@@ -85,7 +92,10 @@ export class ContainerTableComponent {
   }
 
   handleSortEvent() {
-    this.sortby_sortdir = this.sort ? {active: this.sort.active, direction: this.sort.direction} : undefined;
+    this.sortby_sortdir = this.sort ? {
+      active: this.sort.active,
+      direction: this.sort.direction
+    } : undefined;
     this.pageIndex = 0;
     this.fetchContainerData();
   }
@@ -102,7 +112,7 @@ export class ContainerTableComponent {
     inputElement.focus();
   }
 
-  private updateDataSource(data: any[]) {
+  private processDataSource(data: any[]) {
     const processedData = data.map((item) => ({
       ...item,
       users: item.users && item.users.length > 0 ? item.users[0]["user_name"] : '',

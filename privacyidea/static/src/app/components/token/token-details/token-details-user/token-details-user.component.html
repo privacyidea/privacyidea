@@ -8,7 +8,8 @@
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
-      <td *matCellDef="let element" class="user-editable-row fix-width-20-padr-0" mat-cell>
+      <td *matCellDef="let element" class="user-editable-row height-52 fix-width-20-padr-0"
+          mat-cell>
         @if (isEditingUser() && element.keyMap.key === "username" && selectedUserRealm() !== '') {
           <mat-form-field>
             <mat-label>Select User</mat-label>

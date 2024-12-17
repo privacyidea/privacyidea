@@ -8,13 +8,16 @@
       <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
              class="details-table" mat-table>
         <ng-container matColumnDef="key">
-          <td *matCellDef="let element" class="height-52 details-key-row"
+          <td *matCellDef="let element" class="details-key-row"
               mat-cell>{{ element.keyMap.label }}
           </td>
         </ng-container>
         <ng-container matColumnDef="value">
-          <th *matHeaderCellDef class="height-52" mat-header-cell></th>
-          <td *matCellDef="let element" class="height-52 fix-width-20-padr-0" mat-cell>
+          <td *matCellDef="let element" [ngClass]="['fix-width-20-padr-0',
+          element.keyMap.key === 'description' ? 'height-104' : '',
+          element.keyMap.key === 'realms'
+          || element.keyMap.key === 'tokengroup' ? 'height-78' : 'height-52']" class="" mat-cell>
+
             @if (element.keyMap.key === "container_serial") {
               @if (element.isEditing()) {
                 <mat-form-field class="width-18">
@@ -47,7 +50,7 @@
                   </mat-select>
                 </mat-form-field>
               } @else {
-                <div class="details-scrollable-container">
+                <div class="details-scrollable-container height-78">
                   @for (realm of element.value; track realm; let idx = $index) {
                     <mat-list-item class="height-auto">
                       <span class="font-14">• {{ realm }}</span>
@@ -70,7 +73,7 @@
                   </mat-select>
                 </mat-form-field>
               } @else {
-                <div class="details-scrollable-container">
+                <div class="details-scrollable-container height-78">
                   @for (tokengroup of element.value; track tokengroup; let idx = $index) {
                     <mat-list-item class="height-auto">
                       <span class="font-14">• {{ tokengroup }}</span>
@@ -79,8 +82,8 @@
                 </div>
               }
             } @else if (element.isEditing() && element.keyMap.key === "description") {
-              <mat-form-field class="width-18">
-                    <textarea matInput rows="1" [maxlength]="80"
+              <mat-form-field class="width-18 description">
+                    <textarea matInput rows="4" [maxlength]="80"
                               [(ngModel)]="element.value"></textarea>
               </mat-form-field>
             } @else if (element.isEditing() && isNumberElement(element.keyMap.key)) {
@@ -106,7 +109,7 @@
           </td>
         </ng-container>
         <ng-container matColumnDef="edit">
-          <td *matCellDef="let element" class="height-52 edit-column-cell"
+          <td *matCellDef="let element" class="edit-column-cell"
               mat-cell>
             <div class="ali-center">
               @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {

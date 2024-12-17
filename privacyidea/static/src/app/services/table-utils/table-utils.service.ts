@@ -87,6 +87,15 @@ export class TableUtilsService {
     return regex.test(inputValue);
   }
 
+  isLink(columnKey: string) {
+    return columnKey === 'username'
+      || columnKey === 'container_serial'
+      || columnKey === 'user_realm'
+      || columnKey === 'users'
+      || columnKey === 'user_realm'
+      || columnKey === 'realms';
+  }
+
   getClassForColumn(columnKey: string, element: any): string {
     if (columnKey === 'active') {
       if (element['active'] === '') {
