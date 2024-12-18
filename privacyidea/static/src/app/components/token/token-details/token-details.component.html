@@ -13,87 +13,102 @@
           </td>
         </ng-container>
         <ng-container matColumnDef="value">
-          <td *matCellDef="let element" mat-cell
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)">
-            @if (element.keyMap.key === "container_serial") {
-              @if (element.isEditing()) {
-                <mat-form-field class="width-18">
-                  <mat-label>Select Container</mat-label>
-                  <input matInput
-                         [(ngModel)]="selectedContainer"
-                         [matAutocomplete]="containerAuto">
-                  <mat-autocomplete autoActiveFirstOption
-                                    #containerAuto="matAutocomplete">
-                    @for (option of filteredContainerOptions(); track option) {
-                      <mat-option [value]="option">{{ option }}</mat-option>
-                    }
-                  </mat-autocomplete>
-                </mat-form-field>
-              } @else {
-                <span>{{ element.value }}</span>
-              }
-            } @else if (element.keyMap.key === "realms") {
-              @if (element.isEditing()) {
-                <mat-form-field class="width-18">
-                  <mat-label>Select Realms</mat-label>
-                  <mat-select [(ngModel)]="selectedRealms" multiple>
-                    @for (option of realmOptions(); track option; ) {
-                      @if (option === userRealm) {
-                        <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
-                      } @else {
-                        <mat-option value="{{ option }}">{{ option }}</mat-option>
+          <td *matCellDef="let element"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              mat-cell>
+            @switch (element.keyMap.key) {
+              @case ("container_serial") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="width-18">
+                    <mat-label>Select Container</mat-label>
+                    <input matInput
+                           [(ngModel)]="selectedContainer"
+                           [matAutocomplete]="containerAuto">
+                    <mat-autocomplete autoActiveFirstOption
+                                      #containerAuto="matAutocomplete">
+                      @for (option of filteredContainerOptions(); track option) {
+                        <mat-option [value]="option">{{ option }}</mat-option>
                       }
-                    }
-                  </mat-select>
-                </mat-form-field>
-              } @else {
-                <div class="details-scrollable-container height-78">
-                  @for (realm of element.value; track realm; let idx = $index) {
-                    <mat-list-item class="height-auto">
-                      <span class="font-14">• {{ realm }}</span>
-                    </mat-list-item>
-                  }
-                </div>
+                    </mat-autocomplete>
+                  </mat-form-field>
+                } @else {
+                  <span>{{ element.value }}</span>
+                }
               }
-            } @else if (element.keyMap.key === "tokengroup") {
-              @if (element.isEditing()) {
-                <mat-form-field class="width-18">
-                  <mat-label>Select Token Group</mat-label>
-                  <mat-select [(ngModel)]="selectedTokengroup" multiple>
-                    @for (option of tokengroupOptions(); track option; ) {
-                      @if (option === userRealm) {
-                        <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
-                      } @else {
-                        <mat-option value="{{ option }}">{{ option }}</mat-option>
+              @case ("realms") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="width-18">
+                    <mat-label>Select Realms</mat-label>
+                    <mat-select [(ngModel)]="selectedRealms" multiple>
+                      @for (option of realmOptions(); track option; ) {
+                        @if (option === userRealm) {
+                          <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                        } @else {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
                       }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <div class="details-scrollable-list">
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="height-auto">
+                        <span class="font-14">• {{ realm }}</span>
+                      </mat-list-item>
                     }
-                  </mat-select>
-                </mat-form-field>
-              } @else {
-                <div class="details-scrollable-container height-78">
-                  @for (tokengroup of element.value; track tokengroup; let idx = $index) {
-                    <mat-list-item class="height-auto">
-                      <span class="font-14">• {{ tokengroup }}</span>
-                    </mat-list-item>
-                  }
-                </div>
+                  </div>
+                }
               }
-            } @else if (element.isEditing() && element.keyMap.key === "description") {
-              <mat-form-field class="width-18 description">
+              @case ("tokengroup") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="width-18">
+                    <mat-label>Select Token Group</mat-label>
+                    <mat-select [(ngModel)]="selectedTokengroup" multiple>
+                      @for (option of tokengroupOptions(); track option; ) {
+                        @if (option === userRealm) {
+                          <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                        } @else {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <div class="details-scrollable-list">
+                    @for (tokengroup of element.value; track tokengroup; let idx = $index) {
+                      <mat-list-item class="height-auto">
+                        <span class="font-14">• {{ tokengroup }}</span>
+                      </mat-list-item>
+                    }
+                  </div>
+                }
+              }
+              @case ("description") {
+                @if (element.isEditing()) {
+                  <mat-form-field class="width-18 description">
                     <textarea matInput rows="4" [maxlength]="80"
                               [(ngModel)]="element.value"></textarea>
-              </mat-form-field>
-            } @else if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-              <mat-form-field class="width-18">
-                <input type="number" matInput [(ngModel)]="element.value"/>
-              </mat-form-field>
-            } @else if (element.isEditing()) {
-              <mat-form-field class="width-18">
+                  </mat-form-field>
+                } @else {
+                  <div class="details-description-div">
+                    <span class="details-table-item details-description-span">
+                      {{ element.value }}
+                    </span>
+                  </div>
+                }
+              }
+              @default {
+                @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
+                  <mat-form-field class="width-18">
+                    <input type="number" matInput [(ngModel)]="element.value"/>
+                  </mat-form-field>
+                } @else if (element.isEditing()) {
+                  <mat-form-field class="width-18">
                     <textarea matInput rows="1"
                               [(ngModel)]="element.value"></textarea>
-              </mat-form-field>
-            } @else {
-              <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
+                  </mat-form-field>
+                } @else {
+                  <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
                     <span [ngClass]="[tableUtilsService.getSpanClassForKeyMap(element.keyMap.key,
                           element.value, maxfail)]">
                       {{
@@ -101,7 +116,9 @@
                           revoked())
                       }}
                     </span>
-              </div>
+                  </div>
+                }
+              }
             }
           </td>
         </ng-container>

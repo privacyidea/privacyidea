@@ -58,12 +58,19 @@ $description-width: 18rem;
     }
   }
 
-  .details-scrollable-container {
-    display: block;
+  .details-description-div {
+    display: flex;
     flex-direction: column;
     align-items: center;
+    overflow-wrap: anywhere;
+    padding-right: 1rem;
+  }
+
+  .details-scrollable-list {
+    display: block;
     overflow-y: auto;
     overflow-wrap: anywhere;
+    height: 77px;
   }
 
   .details-description {
@@ -93,8 +100,8 @@ $description-width: 18rem;
       margin-bottom: -6px;
     }
 
-    .details-table .description .mat-mdc-form-field-infix{
-        padding-top: 0;
+    .details-table .description .mat-mdc-form-field-infix {
+      padding-top: 0;
     }
 
     .mat-mdc-row {

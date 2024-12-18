@@ -6,7 +6,7 @@ export const tabToggleState = trigger('toggleState', [
   })),
   transition('false => true', [
     style({
-      transform: 'translateY(100%)'
+      transform: 'translateY(60%)'
     }),
     animate('400ms ease-in', style({
       transform: 'translateY(0)'
@@ -14,7 +14,7 @@ export const tabToggleState = trigger('toggleState', [
   ]),
   transition('true => false', [
     style({
-      transform: 'translateY(100%)'
+      transform: 'translateY(60%)'
     }),
     animate('400ms ease-out', style({
       transform: 'translateY(0)'
