@@ -50,7 +50,8 @@
                     </mat-select>
                   </mat-form-field>
                 } @else {
-                  <div class="details-scrollable-list">
+                  <div [ngClass]="{'details-scrollable-container': true,
+                  'details-list': element.value.length > 2}">
                     @for (realm of element.value; track realm; let idx = $index) {
                       <mat-list-item class="height-auto">
                         <span class="font-14">• {{ realm }}</span>
@@ -74,7 +75,8 @@
                     </mat-select>
                   </mat-form-field>
                 } @else {
-                  <div class="details-scrollable-list">
+                  <div [ngClass]="{'details-scrollable-container': true,
+                  'details-list': element.value.length > 2}">
                     @for (tokengroup of element.value; track tokengroup; let idx = $index) {
                       <mat-list-item class="height-auto">
                         <span class="font-14">• {{ tokengroup }}</span>

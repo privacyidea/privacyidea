@@ -41,7 +41,7 @@ export const detailsKeyMap = [
   {key: 'count', label: 'Count'},
   {key: 'description', label: 'Description'},
   {key: 'realms', label: 'Token Realms'},
-  {key: 'tokengroup', label: 'Token Group'},
+  {key: 'tokengroup', label: 'Token Groups'},
   {key: 'container_serial', label: 'Container Serial'},
 ];
 
@@ -63,7 +63,6 @@ export const infoDetailsKeyMap = [
     MatCell,
     MatTableModule,
     MatColumnDef,
-    MatHeaderCell,
     MatIcon,
     MatListItem,
     MatRow,
