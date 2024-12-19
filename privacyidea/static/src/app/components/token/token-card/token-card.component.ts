@@ -5,6 +5,7 @@ import {MatIcon} from '@angular/material/icon';
 import {TokenTabComponent} from './token-tab/token-tab.component';
 import {ContainerTabComponent} from './container-tab/container-tab.component';
 import {NgClass} from '@angular/common';
+import { OverflowService } from '../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-card',
@@ -29,6 +30,8 @@ export class TokenCardComponent {
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() selectedTabIndex!: WritableSignal<number>;
+
+  constructor(protected overflowService: OverflowService) {}
 
   onTabChange(event: MatTabChangeEvent): void {
     this.selectedTabIndex.set(event.index);

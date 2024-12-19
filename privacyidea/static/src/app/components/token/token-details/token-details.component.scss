@@ -9,13 +9,13 @@ $description-width: 18rem;
 
 .details-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  max-width: 100%;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
   padding: var(--global-padding);
+  margin-left: 1rem;
+  overflow: auto;
 
   .details-table {
     border-collapse: collapse;
@@ -41,21 +41,8 @@ $description-width: 18rem;
 
   .details-flex-layout {
     display: flex;
-    flex-direction: column;
     box-sizing: border-box;
     background: white;
-
-    &.flex-9 {
-      flex-direction: row;
-    }
-
-    &.flex-14 {
-      flex-direction: column;
-    }
-
-    &.flex-5 {
-      flex-direction: row;
-    }
   }
 
   .details-description-div {

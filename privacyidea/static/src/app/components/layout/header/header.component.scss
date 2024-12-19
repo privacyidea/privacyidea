@@ -23,6 +23,10 @@ $border-radius: var(--border-radius);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   box-shadow: $header-shadow;
+  z-index: 2;
+  position: sticky;
+  width: fit-content;
+  min-width: 100%;
 
   .brand {
     @include flex-center;

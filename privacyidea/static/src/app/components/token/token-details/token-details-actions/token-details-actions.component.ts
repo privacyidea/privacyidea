@@ -6,6 +6,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatFabButton, MatIconButton} from '@angular/material/button';
 import {MatDivider} from '@angular/material/divider';
 import {MatSuffix} from '@angular/material/form-field';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -29,9 +30,10 @@ export class TokenDetailsActionsComponent {
   otpOrPinToTest: string = '';
   hide: boolean = true;
 
-  constructor(private tokenService: TokenService, private validateService: ValidateService) {
+  constructor(private tokenService: TokenService,
+              private validateService: ValidateService,
+              protected overflowService: OverflowService) {
   }
-
 
   resyncOTPToken() {
     this.tokenService.resyncOTPToken(this.serial(), this.fristOTPValue, this.secondOTPValue).subscribe({

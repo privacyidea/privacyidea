@@ -90,6 +90,7 @@ $fix-width: 20rem;
 
     .mat-mdc-paginator-container {
       padding: 0 0 0 16px;
+      width: 514px;
     }
   }
 }
@@ -121,6 +122,7 @@ th:nth-child(even) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 .highlight-true,
@@ -157,13 +159,16 @@ th:nth-child(even) {
 }
 
 .filter-keyword-container {
-  padding: 10px 0;
   display: flex;
   flex-direction: row;
   align-items: center;
+  padding: 10px 76px 10px 0;
+  width: fit-content;
+  min-width: 986px;
 
   .filter-keyword-title {
     margin-top: -4px;
+    min-width: 89px;
   }
 }
 
@@ -211,6 +216,11 @@ th:nth-child(even) {
 .flex-row {
   display: flex;
   flex-direction: row;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
 }
 
 .height-auto {

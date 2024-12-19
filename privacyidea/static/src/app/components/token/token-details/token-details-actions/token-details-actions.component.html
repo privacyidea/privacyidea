@@ -1,5 +1,9 @@
 <br/>
 <div class="actions-otp-container">
+  @if (this.overflowService.isOverflowing1580('.token-layout')) {
+    <mat-divider/>
+    <br/>
+  }
   <div class="actions-pin-input">
     <input [(ngModel)]="fristOTPValue"
            class="input" placeholder="First OTP">

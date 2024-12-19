@@ -1,12 +1,5 @@
 import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
-import {
-  MatCell,
-  MatColumnDef,
-  MatHeaderCell,
-  MatRow,
-  MatTable,
-  MatTableModule,
-} from '@angular/material/table';
+import {MatCell, MatColumnDef, MatRow, MatTable, MatTableModule,} from '@angular/material/table';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatListItem} from '@angular/material/list';
@@ -28,6 +21,8 @@ import {
   TokenDetailsActionsComponent
 } from './token-details-actions/token-details-actions.component';
 import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
+import {OverflowService} from '../../../services/overflow/overflow.service';
+import {MatDivider} from '@angular/material/divider';
 
 export const detailsKeyMap = [
   {key: 'tokentype', label: 'Type'},
@@ -79,7 +74,8 @@ export const infoDetailsKeyMap = [
     MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
-    EditButtonsComponent
+    EditButtonsComponent,
+    MatDivider
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.scss'
@@ -147,6 +143,7 @@ export class TokenDetailsComponent {
   constructor(private tokenService: TokenService,
               private containerService: ContainerService,
               private realmService: RealmService,
+              protected overflowService: OverflowService,
               protected tableUtilsService: TableUtilsService) {
     effect(() => {
       this.showTokenDetail(this.serial()).subscribe();

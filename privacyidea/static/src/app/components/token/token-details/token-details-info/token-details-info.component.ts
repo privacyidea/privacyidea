@@ -10,6 +10,8 @@ import {MatDivider} from '@angular/material/divider';
 import {TokenService} from '../../../../services/token/token.service';
 import {Observable, switchMap} from 'rxjs';
 import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
+import {NgClass} from '@angular/common';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -28,7 +30,8 @@ import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
     MatIcon,
     MatDivider,
     MatRow,
-    EditButtonsComponent
+    EditButtonsComponent,
+    NgClass
   ],
   templateUrl: './token-details-info.component.html',
   styleUrl: './token-details-info.component.scss'
@@ -52,7 +55,8 @@ export class TokenDetailsInfoComponent {
   newInfo = signal({key: '', value: ''});
   protected readonly Object = Object;
 
-  constructor(private tokenService: TokenService) {
+  constructor(private tokenService: TokenService,
+              protected overflowService: OverflowService) {
   }
 
   toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {

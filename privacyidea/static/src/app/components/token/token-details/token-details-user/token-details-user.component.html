@@ -1,4 +1,7 @@
-<div class="user-container">
+<div [ngClass]="[
+        this.overflowService.isOverflowing1580('.token-layout') ? 'flex-column' : 'flex-row',
+        this.overflowService.isOverflowing1310('.token-layout') ? 'pad-0' :
+        '']" class="user-container ali-center">
   <table [dataSource]="userData()" aria-label="User Detail Data Table"
          class="user-details-table"
          mat-table>

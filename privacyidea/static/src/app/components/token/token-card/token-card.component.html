@@ -1,4 +1,5 @@
-<mat-card appearance="outlined">
+<mat-card [ngClass]="{'card-margin-pad':
+!this.overflowService.isOverflowing1880('.token-layout')}" appearance="outlined">
   <mat-card-content>
     <mat-tab-group
       (selectedTabChange)="onTabChange($event)"

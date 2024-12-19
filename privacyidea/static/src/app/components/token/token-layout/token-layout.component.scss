@@ -1,16 +1,54 @@
 @import '../../../../styles/styles.scss';
 
-$gap-large: 2rem;
-$margin-top-main: 2rem;
+$gap-2rem: 2rem;
 $margin-bottom-main: 6rem;
 
 .token-layout {
   display: flex;
-  gap: $gap-large;
-  padding: 0 $gap-large;
+}
+
+.token-drawer {
+  height: fit-content;
+  margin-top: 2rem;
+  box-shadow: 2px 2px 32px #656668;
+  border-radius: var(--border-radius);
+}
+
+main {
   overflow: auto;
 }
 
 .main-margin {
-  margin: $margin-top-main 0 $margin-bottom-main 0;
+  margin: $gap-2rem $gap-2rem $margin-bottom-main 0;
+}
+
+.mat-drawer {
+  width: fit-content;
+}
+
+.mat-drawer-container {
+  width: 100%;
+}
+
+.mat-drawer-content {
+  display: flex;
+  background: var(--background);
+}
+
+.drawer-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.drawer-content-div {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 20px;
+  overflow: scroll;
+}
+
+.margin-right-1 {
+  margin-right: 1rem;
 }

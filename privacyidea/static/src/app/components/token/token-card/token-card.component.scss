@@ -3,7 +3,7 @@
 $card-bg: white;
 $card-border: white;
 $card-padding: var(--global-padding);
-$card-margin-top: 2rem;
+$card-margin: 2rem;
 $tab-active-color: var(--blue-base);
 $h4-padding: 8px;
 $h4-margin: 0;
@@ -16,7 +16,10 @@ mat-card {
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   padding: $card-padding;
-  margin-top: $card-margin-top;
+}
+
+.card-margin-pad {
+  margin: $card-margin 0 0 $card-margin;
 }
 
 mat-tab-group {

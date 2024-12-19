@@ -77,6 +77,10 @@ $table-cell-font-size: 14px;
     margin: 0.188rem 0 0.25rem -0.5rem;
   }
 
+  .border-top {
+    border-top: 1px solid $border-color;
+  }
+
   ::ng-deep {
     .mat-mdc-list-item {
       padding: 0;
@@ -100,4 +104,8 @@ $table-cell-font-size: 14px;
       padding-bottom: 4px;
     }
   }
+}
+
+.margin-top-20 {
+  margin-top: 20px;
 }

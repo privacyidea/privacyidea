@@ -12,6 +12,8 @@ import {TokenService} from '../../../../services/token/token.service';
 import {RealmService} from '../../../../services/realm/realm.service';
 import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
 import {UserService} from '../../../../services/user/user.service';
+import {NgClass} from '@angular/common';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-details-user',
@@ -34,14 +36,18 @@ import {UserService} from '../../../../services/user/user.service';
     MatFabButton,
     MatRow,
     MatLabel,
-    EditButtonsComponent
+    EditButtonsComponent,
+    NgClass
   ],
   templateUrl: './token-details-user.component.html',
   styleUrl: './token-details-user.component.scss'
 })
 export class TokenDetailsUserComponent {
 
-  constructor(private tokenService: TokenService, private realmService: RealmService, private userService: UserService) {
+  constructor(private tokenService: TokenService,
+              private realmService: RealmService,
+              private userService: UserService,
+              protected overflowService: OverflowService) {
     effect(() => {
       if (this.selectedUserRealm()) {
         this.userService.getUsers(this.selectedUserRealm()).subscribe({
