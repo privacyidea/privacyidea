@@ -2,7 +2,7 @@ myApp.controller("tokenLostController", ['$scope', 'TokenFactory',
                                          'UserFactory', '$stateParams',
                                          function ($scope, TokenFactory,
                                                    UserFactory, $stateParams) {
-    $scope.selectedToken.serial = $stateParams.tokenSerial;
+    $scope.selectedToken = {serial: $stateParams.tokenSerial};
     $scope.tokenLost = false;
 
     $scope.setTokenLost = function() {

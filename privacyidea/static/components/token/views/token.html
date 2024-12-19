@@ -119,7 +119,7 @@
                         ng-show="($state.includes('token.details')||
                         $state.includes('token.lost')) &&
                         checkRight('losttoken')">
-                        <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
+                        <a ui-sref="token.lost({tokenSerial: $stateParams.tokenSerial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
                             <span translate>Lost Token</span>
                         </a>
@@ -196,7 +196,3 @@
     </div>
 
 </div>
-
-
-
-
