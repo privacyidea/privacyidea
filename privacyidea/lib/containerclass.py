@@ -677,8 +677,8 @@ class TokenContainerClass:
         details = {"type": self.type,
                    "serial": self.serial,
                    "description": self.description,
-                   "last_authentication": self.last_authentication,
-                   "last_synchronization": self.last_synchronization,
+                   "last_authentication": self.last_authentication.isoformat() if self.last_authentication else None,
+                   "last_synchronization": self.last_synchronization.isoformat() if self.last_synchronization else None,
                    "states": self.get_states()}
 
         if public_info or additional_hide_info:
