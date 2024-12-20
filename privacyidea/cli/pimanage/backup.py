@@ -211,7 +211,7 @@ def backup_restore(backup_file):
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database)])
         with open(sqlfile, "r") as sql_file:
-            p = subprocess.run(cmd, input=sql_file.read())
+            p = subprocess.run(cmd, input=sql_file.read(), text=True)
             if p.returncode == 0:
                 os.unlink(sqlfile)
     else:

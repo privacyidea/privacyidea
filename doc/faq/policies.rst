@@ -7,10 +7,10 @@ How to disable policies?
 I create an evil admin policy and locked myself out. How can I disable a
 policy?
 
-You can use the *pi-manage* command line tool to list, enable and disable
-policies. See
+You can use :ref:`the pi-manage command line tool <pimanage>` to list, enable and disable
+policies. See::
 
-   pi-manage policy -h
+   pi-manage config policy -h
 
 
 How do policies work anyway?
@@ -73,6 +73,3 @@ taken into account by the decorator when determining the defined policy.
 .. note:: Each decorator represents one policy and defines its own logic
    i.e. checking filtering for IP address and fetching the necessary policy
    sets from the policy object.
-
-
-
