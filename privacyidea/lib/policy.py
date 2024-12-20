@@ -2904,7 +2904,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_CHALLENGE_TTL: {
                 'type': 'int',
                 'desc': _('After the client (a registered container) has challenged an action such as synchronization '
-                          'or unregistration, this defines the time in minutes that the client has to complete the '
+                          'or unregistration, this defines the time in minutes the client has to complete the '
                           'action. '
                           'The default is two minutes.'),
                 'group': GROUP.REGISTRATION

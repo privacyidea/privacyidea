@@ -28,7 +28,7 @@ from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneConta
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
 from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc,
                                     decryptPassword)
-from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
+from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User

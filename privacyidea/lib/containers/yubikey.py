@@ -45,13 +45,6 @@ class YubikeyContainer(TokenContainerClass):
     def __init__(self, db_container):
         super().__init__(db_container)
 
-    def finalize_synchronization(self, params):
-        """
-        Finalize the synchronization of the container.
-        """
-        verify_auth_token(params)
-        pass
-
     @classmethod
     def get_class_type(cls):
         """

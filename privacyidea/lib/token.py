@@ -1073,16 +1073,14 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_serial_by_otp_list(token_list, otp_list=[], window=10):
+def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10):
     """
     Returns a list of serials for a given list of OTP values
     The tokenobject_list would be created by get_tokens()
 
     :param token_list: the list of token objects to be investigated
-    :type token_list: list of token objects
     :param otp_list: a list of otp values, that need to be found
     :param window: the window of search
-    :type window: int
 
     :return: the serial for a given OTP value and the user
     :rtype: basestring

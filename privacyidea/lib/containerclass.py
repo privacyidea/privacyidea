@@ -534,44 +534,31 @@ class TokenContainerClass:
 
     def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params):
         """
-        Initialize the registration of a pi container on a physical container.
+        Initializes the registration: Generates a QR code containing all relevant data.
 
         :param server_url: URL of the server reachable for the client.
         :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
-        :param params: Container specific parameters.
+        :param params: Container specific parameters
         """
         raise privacyIDEAError("Registration is not implemented for this container type.")
 
     def finalize_registration(self, params):
         """
-        Finalize the registration of a pi container on a physical container.
+        Finalize the registration of a container.
         """
         raise privacyIDEAError("Registration is not implemented for this container type.")
 
     def terminate_registration(self):
         """
-        Terminate the registration of a pi container on a physical container.
+        Terminate the synchronisation of the container with privacyIDEA.
         """
         raise privacyIDEAError("Registration is not implemented for this container type.")
 
-    def init_sync(self, params):
-        """
-        Initialize the synchronization of a container with the pi server.
-        It creates a challenge for the container to allow the registration.
-        """
-        raise privacyIDEAError("Synchronization is not implemented for this container type.")
-
-    def check_synchronization_challenge(self, params):
-        """
-        Checks if the one who is requesting the synchronization is allowed to receive these information.
-        """
-        raise privacyIDEAError("Synchronization is not implemented for this container type.")
-
     def check_challenge_response(self, params):
         """
-        Check the response of a challenge.
+        Checks if the response to a challenge is valid.
         """
         return False
 
@@ -581,7 +568,7 @@ class TokenContainerClass:
         """
         return {}
 
-    def validate_challenge(self, signature, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
+    def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
                            key: str = None, container: str = None, device_brand: str = None, device_model: str = None):
         """
         Verifies the response of a challenge:
@@ -655,7 +642,7 @@ class TokenContainerClass:
 
         return valid_challenge
 
-    def get_as_dict(self, include_tokens=True, public_info=True, additional_hide_info=None):
+    def get_as_dict(self, include_tokens: bool = True, public_info: bool = True, additional_hide_info: list = None):
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
@@ -766,6 +753,6 @@ class TokenContainerClass:
     def encrypt_dict(self, container_dict: dict, params: dict):
         """
         Encrypts a dictionary with the public key of the container.
-        It is not supported by all container classes. Classes not supporting the encryption return the original data.
+        It is not supported by all container classes. Classes not supporting the encryption raise a privacyIDEA error.
         """
-        return container_dict
+        raise privacyIDEAError("Encryption is not implemented for this container type.")

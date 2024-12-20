@@ -74,11 +74,12 @@ def list_containers():
     :query container_serial: Serial of a single container
     :query type: Type of the containers to return
     :query token_serial: Serial of a token assigned to the container
+    :query template: Name of the template the container is created from
     :query sortby: Sort by a container attribute (serial or type)
     :query sortdir: Sort direction (asc or desc)
     :query pagesize: Number of containers per page
     :query page: Page number
-    :query no_token: no_token=1: Do not return tokens assigned to the container
+    :jsonparam no_token: no_token=1: Do not return tokens assigned to the container
     """
     param = request.all_data
     user = request.User
@@ -523,7 +524,7 @@ def set_container_info(container_serial, key):
 
     :param container_serial: Serial of the container
     :param key: Key of the container info
-    :jsonparam: value: Value to set
+    :jsonparam value: Value to set
     """
     value = getParam(request.all_data, "value", required)
     res = add_container_info(container_serial, key, value)
@@ -571,22 +572,29 @@ def registration_init():
     Prepares the registration of a container. It returns all information required for the container to register.
 
     :jsonparam container_serial: Serial of the container
-    :return: Result of the registration process as dictionary. At least the registration url for the second step is
-        provided.
+    :return: Result of the registration process as dictionary. The information may differ depending on the container
+        type.
 
-    An example response looks like this:
+    An example response for smartphones looks like this:
         ::
 
             {
-                "container_registration_url": "http://test/container/register/finalize"
+                "container_url": {"description": "URL for privacyIDEA Container Registration",
+                                  "img": <QR code>,
+                                  "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."},
+                "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
+                "time_stamp": "2024-12-20T09:53:40.158319+00:00",
+                "server_url": "https://pi.net",
+                "ttl": 10,
+                "ssl_verify": "True",
+                "key_algorithm": "secp384r1",
+                "hash_algorithm": "sha256"
             }
-    Further information might be provided depending on the container type.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
     container_rollover = getParam(params, "rollover", optional=True)
     container = find_container_by_serial(container_serial)
-    res = {"container_serial": container_serial}
     # Params set by pre-policies
     server_url = getParam(params, "server_url")
     challenge_ttl = getParam(params, "challenge_ttl")
@@ -616,8 +624,7 @@ def registration_init():
 
     # registration
     scope = create_endpoint_url(server_url, "container/register/finalize")
-    res_registration = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
-    res.update(res_registration)
+    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
 
     if container_rollover:
         # Set registration state
@@ -642,20 +649,12 @@ def registration_init():
 def registration_finalize():
     """
     This endpoint is called from a container as second step for the registration process.
-    At least the container serial has to be passed in the parameters. Further parameters might be required, depending on
+    At least the container serial has to be passed in the parameters. Further parameters might be required depending on
     the container type.
 
-    :param container_serial: Serial of the container
-    :return: Result of the registration process as dictionary
-
-    An example response looks like this:
-        ::
-
-            {
-                "server_url": "https://pi.net"
-            }
-
-    Depending on the container type, more information might be provided.
+    :jsonparam container_serial: Serial of the container
+    :return: Result of the registration process as dictionary. The information may differ depending on the container
+        type.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -682,7 +681,10 @@ def registration_terminate(container_serial: str):
     Terminates the synchronization of a container with privacyIDEA.
 
     :param container_serial: Serial of the container
-    :return: True if the container was unregistered successfully
+    :return: dictionary with success information such as
+        ::
+
+            {"success": True}
     """
     container = find_container_by_serial(container_serial)
 
@@ -707,7 +709,10 @@ def registration_terminate_client(container_serial: str):
 
     :param container_serial: Serial of the container
     :jsonparam signature: Signature of the client
-    :return: True if the container was unregistered successfully
+    :return: dictionary with success information such as
+        ::
+
+            {"success": True}
     """
     params = request.all_data
     container = find_container_by_serial(container_serial)
@@ -739,7 +744,7 @@ def create_challenge(container_serial: str):
 
     :param container_serial: Serial of the container
     :jsonparam scope: Scope of the challenge, e.g. 'https://pi.com/container/SMPH001/sync'
-    :return: dictionary with the required information for the scope
+    :return: dictionary with the challenge information
 
     An example response looks like this:
 
@@ -748,10 +753,9 @@ def create_challenge(container_serial: str):
         {
             "server_url": "https://pi.net"
             "nonce": "123456",
-            "timestamp": "2024-10-23T05:45:02.484954+00:00",
+            "time_stamp": "2024-10-23T05:45:02.484954+00:00",
         }
 
-    Further entries are possible depending on the container type.
     """
     # Get params
     scope = getParam(request.all_data, "scope", optional=False)
@@ -791,10 +795,12 @@ def create_challenge(container_serial: str):
 @event('container_synchronize', request, g)
 def synchronize(container_serial: str):
     """
-    Validates the challenge if the container is authorized to synchronize. If successful, the server returns the
-    container's state, including all attributes and tokens. The token secrets are also included.
-    The full data is encrypted.
+    Compares the client tokens with the server tokens and returns the differences. Returns a dictionary with the
+    container properties and the tokens to be added or updated. For the tokens to be added, the enroll information is
+    provided containing the tokens secret. For the tokens to be updated, the token details are returned as dictionary.
+    Additionally, the container rights read from the policies are included in the response.
     Additional parameters and entries in the response are possible, depending on the container type.
+    The container is only authorized to synchronize if the challenge is valid.
 
     :param container_serial: Serial of the container
     :jsonparam container_dict_client: container data with included tokens from the client. The provided information
@@ -806,24 +812,29 @@ def synchronize(container_serial: str):
         ::
 
             {
-                "container": {...},
-                "tokens": [{"serial": "TOTP001", "active": True,...},
-                           {"otp": ["1234", "4567"], "type": "hotp"}]
+                "serial": "SMPH001",
+                "type": "smartphone",
+                "tokens": [{"serial": "TOTP001", ...},
+                           {"otp": ["1234", "4567"], "tokentype": "hotp"}]
             }
 
-    :return: dictionary including the container properties and the tokens. The provided enroll information depends on
-        the token type as well as the returned information for the tokens to be updated.
+    :return: dictionary including the container properties, the tokens and the container policies.
+        The provided enroll information depends on the token type as well as the returned information for the tokens to
+        be updated.
 
     Example response:
         ::
 
             {
-                "container":   {"states": ["active]},
+                "container":   {"serial": "SMPH001", "states": ["active"], ...},
                 "tokens": {"add": [<enroll information token1>, <enroll information token2>, ...],
                            "update": [{"serial": "TOTP001", "active": True},
                                       {"serial": "HOTP001", "active": False,
-                                       "otp": ["1234", "9876"], "type": "hotp"}]},
-                "policies": {"rollover_allowed": True, "initial_token_transfer": False}
+                                       "otp": ["1234", "9876"], "tokentype": "hotp"}]},
+                "policies": {"container_client_rollover": True,
+                             "container_initial_token_transfer": False,
+                             "client_token_deletable": False,
+                             "client_container_unregister": True}
             }
 
     """
@@ -908,10 +919,29 @@ def synchronize(container_serial: str):
 def rollover(container_serial):
     """
     Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
-    The data or qr code is returned for the container to re-register.
+    The data or QR code is returned for the container to re-register.
     This endpoint can be used to transfer a container from one device to another.
+    Parameters and entries in the returned dictionary are container type specific.
 
-    parameters and entries in the returned dictionary are container type specific
+    :return: Result of the rollover process as dictionary. The information may differ depending on the container
+        type.
+
+    An example response for smartphones looks like this:
+        ::
+
+            {
+                "container_url": {"description": "URL for privacyIDEA Container Registration",
+                                  "img": <QR code>,
+                                  "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."},
+                "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
+                "time_stamp": "2024-12-20T09:53:40.158319+00:00",
+                "server_url": "https://pi.net",
+                "ttl": 10,
+                "ssl_verify": "True",
+                "key_algorithm": "secp384r1",
+                "hash_algorithm": "sha256",
+                "passphrase_prompt": ""
+            }
     """
     params = request.all_data
     container = find_container_by_serial(container_serial)
@@ -988,12 +1018,12 @@ def get_template():
     """
     Get all container templates filtered by the given parameters.
 
-    :jsonparam name: Name of the template, optional
-    :jsonparam container_type: Type of the container, optional
-    :jsonparam page: Number of the page (starts with 1), optional
-    :jsonparam pagesize: Number of templates displayed per page, optional
-    :jsonparam sortdir: Sort direction, optional, default is "asc"
-    :jsonparam sortby: column name to sort by, optional, default is "name"
+    :query name: Name of the template, optional
+    :query container_type: Type of the container, optional
+    :query page: Number of the page (starts with 1), optional
+    :query pagesize: Number of templates displayed per page, optional
+    :query sortdir: Sort direction, optional, default is "asc"
+    :query sortby: column name to sort by, optional, default is "name"
 
     :return: Dictionary with at least an entry "templates" and further entries if pagination is used.
 
@@ -1059,8 +1089,8 @@ def create_template_with_name(container_type, template_name):
     :jsonparam template_options: Dictionary with the template options
     :jsonparam default: Set this template as default for the container type
     :return: ID of the created template or the template that was updated as dictionary such as
-
         ::
+
             {
                 "template_id": 1
             }
@@ -1111,6 +1141,8 @@ def create_template_with_name(container_type, template_name):
 def delete_template(template_name):
     """
     Deletes the template of the given name.
+
+    :return: True if the template was deleted successfully, raises an exception otherwise
     """
     # Audit log
     g.audit_object.log({"action_detail": f"template_name={template_name}"})
@@ -1135,7 +1167,7 @@ def compare_template_with_containers(template_name):
     Compares a template with it's created containers.
     Only containers the user is allowed to manage are included in the comparison.
 
-    If a container serial is provided, only this container will be compared with the template.
+    If a container serial is provided, only this container will be compared to the template.
 
     :param template_name: Name of the template
     :jsonparam container_serial: Serial of the container to compare with the template, optional
@@ -1197,7 +1229,8 @@ def compare_template_with_containers(template_name):
 @log_with(log)
 def get_template_token_types():
     """
-    Returns a dictionary with the container types as keys and their description and supported token types as values.
+    Returns a dictionary with the template container types as keys and their description and supported token types as
+    values.
 
     ::
 

@@ -4394,6 +4394,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         self.setUp_user_realm3()
 
+        # No container policy at all: use default values
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
+        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
+        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
                    action=[ACTION.CONTAINER_CLIENT_ROLLOVER,

@@ -344,7 +344,8 @@ def init_container(params):
                 "description": ..., (optional)
                 "container_serial": ..., (optional)
                 "user": ..., Name of the user (optional)
-                "realm": ... Name of the realm (optional)
+                "realm": ..., Name of the realm (optional)
+                "template": {...}, Template as dictionary (optional)
             }
 
         To assign a user to the container, the user and realm are required.
@@ -419,13 +420,24 @@ def init_container(params):
 
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):
     """
-    Create tokens for the container from the given template.
+    Create tokens for the container from the given template. The token policies are checked and the enroll information
+    are read from the policies for each token. The tokens owner and the enroll information are set to the request
+    object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
+    tokens.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
-    contains the details for a token to be enrolled
+        contains the details for a token to be enrolled
     :param request: The request object
-    :return: A dictionary containing the init details for each created token
+    :return: A dictionary containing the enroll details for each created token in the format:
+
+    ::
+
+        {
+            <token_serial>: {"serial": <token_serial>,
+                             "type": <token_type>,
+                             "init_params": <params used for the enrollment>, ...},
+        }
     """
     container = find_container_by_serial(container_serial)
 
@@ -546,14 +558,14 @@ def add_token_to_container(container_serial, token_serial):
     return res
 
 
-def add_multiple_tokens_to_container(container_serial, token_serials):
+def add_multiple_tokens_to_container(container_serial: str, token_serials: list):
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to add
-    :return: A dictionary in the format {token_serial: success}
+    :return: A dictionary in the format {<token_serial>: <success>}
     """
     # Raises ResourceNotFound if container does not exist
     find_container_by_serial(container_serial)
@@ -577,7 +589,7 @@ def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list)
 
     :param result: The result dictionary in the format {token_serial: success}
     :param not_authorized_serials: A list of token serials the user is not authorized to manage
-    :return: The result dictionary with the not authorized tokens added
+    :return: The result dictionary with the not authorized tokens added like {<token_serial>: False}
     """
     if not_authorized_serials:
         for serial in not_authorized_serials:
@@ -865,7 +877,7 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     :param user: The user object requesting the containers
     :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
     :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
-    :param hide_token_info: Whitespace separated list of token info keys to hide in the response, optional
+    :param hide_token_info: List of token info keys to hide in the response, optional
     :return: List of container dictionaries
 
     Example of a returned list:
@@ -918,13 +930,15 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     return res
 
 
-def create_endpoint_url(base_url, endpoint):
+def create_endpoint_url(base_url: str, endpoint: str):
     """
-    Creates the url for an endpoint.
+    Creates the url for an endpoint. It concat the base_url and the endpoint if the endpoint is not already in the
+    base_url. base_url and endpoint are separated by a slash.
 
     :param base_url: The base url of the host
     :param endpoint: The endpoint
     :return: The url for the endpoint
+    :rtype: str
     """
     if endpoint not in base_url:
         if base_url[-1] != "/":
@@ -938,7 +952,7 @@ def create_endpoint_url(base_url, endpoint):
 def finalize_registration(container_serial: str, params: dict):
     """
     Finalize the registration of a container if the challenge response is valid.
-    It also finalizes a container rollover.
+    If the container is in the registration_state `rollover`, it also finalizes the container rollover.
 
     :param container_serial: The serial of the container
     :param params: The parameters for the registration as dictionary
@@ -1009,6 +1023,10 @@ def init_container_rollover(container: TokenContainer, server_url: str, challeng
     The new registration info is not finally set until the new container successfully finalized the registration.
 
     :param container: The container object
+    :param server_url: The server url of the privacyIDEA server the client can contact
+    :param challenge_ttl: The time to live of the challenge in minutes
+    :param registration_ttl: The time to live of the challenge for the registration in minutes
+    :param ssl_verify: If the client has to verify the ssl certificate of the server
     :param params: Container type specific parameters for the registration as dictionary
     :return: dictionary with container specific information for the client
     """
@@ -1033,7 +1051,7 @@ def init_container_rollover(container: TokenContainer, server_url: str, challeng
 
 def unregister(container: TokenContainer):
     """
-    Unregister a container from the synchronization. The user has to be an admin or the owner of the container.
+    Unregister a container from the synchronization and deletes all challenges for the container.
 
     :param container: The container object
     :return: True on success
@@ -1089,16 +1107,16 @@ def create_container_template(container_type: str, template_name: str, options: 
 
     :param container_type: The type of the container
     :param template_name: The name of the template
-    :param options: The options for the template as dictionary such as
+    :param options: The options for the template as dictionary
+    :param default: If True, the template is set as default, optional
 
+    Example for the options dictionary:
         ::
 
             {
-                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...],
-                "options": {"key": "value", ...}
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...]
             }
 
-    :param default: If True, the template is set as default
     :return: ID of the created template
     """
     # Check container type
@@ -1124,7 +1142,7 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
     """
     Create a TokenContainerTemplate object from the given db object.
 
-    :param db_template: The db object to create the container template from
+    :param db_template: The DB object to create the container template from
     :return: The created container template object or None if the container template type is not supported
     """
 
@@ -1238,11 +1256,11 @@ def set_default_template(name: str):
 
 def compare_template_dicts(template_a: dict, template_b: dict):
     """
-    Compares two template dictionaries for equality.
+    Compares two template dictionaries for equal tokens.
 
     :param template_a: The first template dictionary
     :param template_b: The second template dictionary
-    :return: True if the templates contain the same content, False otherwise.
+    :return: True if the templates contain the same tokens, False otherwise.
     """
     equal = True
 
@@ -1270,11 +1288,11 @@ def compare_template_dicts(template_a: dict, template_b: dict):
 
 def compare_template_with_container(template: TokenContainerTemplate, container: TokenContainer):
     """
-    Compares the template with the container.
+    Compares the template with the container. It is only evaluated if the token types are equal.
 
     :param template: The template object
     :param container: The container object
-    :return A dictionary with the differences between the template and the container
+    :return: A dictionary with the differences between the template and the container
 
     Example of a returned dictionary:
         ::

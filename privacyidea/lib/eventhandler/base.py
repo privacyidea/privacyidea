@@ -442,30 +442,28 @@ class BaseEventHandler(object):
             CONDITION.CONTAINER_REALM:
                 {
                     "type": "multi",
-                    "desc": _("The container is in this realm or in no realm at all. Multiple realms can be passed as "
-                              "comma separated list without white spaces, e.g. 'realm1,realm2'. The condition is "
-                              "fulfilled if the container is in at least one realm of the list. The condition is not "
-                              "checked if the container has no realm, hence the condition would match."),
+                    "desc": _("The container is in this realm or in no realm at all. If multiple realms are selected, "
+                              "the condition is fulfilled if the container is in at least one realm of the list. The "
+                              "condition is not checked if the container has no realm, hence the action would be "
+                              "triggered."),
                     "value": [{"name": r} for r in realms],
                     "group": GROUP.CONTAINER
                 },
             CONDITION.CONTAINER_RESOLVER:
                 {
                     "type": "multi",
-                    "desc": _("An owner of the container is in this resolver. Multiple resolvers can be passed as "
-                              "comma separated list without white spaces, e.g. 'resolver1,resolver2'. The condition is "
-                              "fulfilled if at least one owner is in one resolver. The condition is not checked if the "
-                              "container has no owner, hence the condition would match."),
+                    "desc": _("An owner of the container is in this resolver. If multiple resolvers are selected, the "
+                              "condition is fulfilled if at least one owner is in one resolver. The condition is not "
+                              "checked if the container has no owner, hence the action would be triggered."),
                     "value": [{"name": r} for r in resolvers],
                     "group": GROUP.CONTAINER
                 },
             CONDITION.CONTAINER_INFO:
                 {
                     "type": "str",
-                    "desc": _("This condition can check any arbitrary container info "
-                              "field. You need to enter something like "
-                              "'<fieldname> == <fieldvalue>', '<fieldname> > "
-                              "<fieldvalue>' or '<fieldname> < <fieldvalue>'."),
+                    "desc": _("This condition can check any arbitrary container info field. You need to enter "
+                              "something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or 'fieldname < "
+                              "fieldvalue'."),
                     "group": GROUP.CONTAINER
                 },
             CONDITION.CONTAINER_LAST_AUTH:
