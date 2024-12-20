@@ -48,7 +48,7 @@ def create_container_registration_url(nonce, time_stamp, server_url, container_s
     Create a URL for binding a container to a physical container.
 
     :param nonce: Nonce (some random bytes).
-    :param time_stamp: Timestamp of the registration in iso format.
+    :param time_stamp: Time stamp of the registration in iso format.
     :param server_url: URL of the server reachable for the client.
     :param container_serial: Serial of the container.
     :param key_algorithm: Algorithm to use to generate the ECC key pair, e.g. 'secp384r1'.
@@ -128,7 +128,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return _("A smartphone that uses an authenticator app.")
 
-    def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params={}):
+    def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool, params: dict = None):
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
@@ -136,16 +136,15 @@ class SmartphoneContainer(TokenContainerClass):
         :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
-        :param params: Container specific parameters like
-        An example params dictionary:
-            ::
+        :param params: Container specific parameters in the format:
 
-                {
-                    "passphrase_ad": <bool, whether the AD password shall be used>, (optional)
-                    "passphrase_prompt": <str, the prompt for the passphrase displayed in the app>, (optional)
-                    "passphrase_response": <str, passphrase>, (optional)
-                    "extra_data": <dict, any additional data>, (optional)
-                }
+        ::
+
+            {
+                "passphrase_prompt": <str, the prompt for the passphrase displayed in the app>, (optional)
+                "passphrase_response": <str, passphrase>, (optional)
+                "extra_data": <dict, any additional data>, (optional)
+            }
 
         :return: A dictionary with the registration data
 
@@ -162,12 +161,13 @@ class SmartphoneContainer(TokenContainerClass):
                     "time_stamp": "2020-08-25T14:00:00.000000+00:00",
                     "key_algorithm": "secp384r1",
                     "hash_algorithm": "SHA256",
-                    "ssl_verify": <bool>,
-                    "ttl": <int>,
+                    "ssl_verify": "True",
+                    "ttl": 10,
                     "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
                 }
         """
         # get params
+        params = params or {}
         extra_data = getParam(params, 'extra_data', optional=True) or {}
         passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
         passphrase_prompt = getParam(params, 'passphrase_prompt', optional=True) or ""
@@ -233,27 +233,28 @@ class SmartphoneContainer(TokenContainerClass):
 
         return response_detail
 
-    def finalize_registration(self, params):
+    def finalize_registration(self, params: dict):
         """
-        Finalize the registration of a pi container on a physical container.
+        Finalize the registration of a container.
         Validates whether the smartphone is authorized to register. If successful, the server generates a key pair.
-        Raises a privacyIDEAError on any failure to not disclose information.
+        Raises a ContainerInvalidSignature error if the signature is no valid.
 
         :param params: The parameters from the smartphone for the registration as dictionary like:
-        An example params dictionary:
+
+        ::
+
+            {
+                "container_serial": <serial of the container, str>,
+                "signature": <sign(message), str>,
+                "public_client_key": <public key of the smartphone base 64 url safe encoded>,
+                "device_brand": <Brand of the smartphone, str> (optional),
+                "device_model": <Model of the smartphone, str> (optional),
+            }
+
+        :return: The public key of the server in a dictionary like
             ::
 
-                {
-                    "container_serial": <serial of the container>,
-                    "signature": <sign(message)>,
-                    "message": <nonce|timestamp|registration_url|serial[|passphrase]>,
-                    "public_key": <public key of the smartphone base 64 url safe encoded>,
-                    "device_brand": <Brand of the smartphone> (optional),
-                    "device_model": <Model of the smartphone> (optional),
-                    "passphrase": <passphrase> (optional)
-                }
-
-        :return: The public key of the server in a dictionary like {"public_key": <pub key base 64 url encoded>}.
+                {"public_key": <pub key base 64 url encoded>}.
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
@@ -321,24 +322,25 @@ class SmartphoneContainer(TokenContainerClass):
         self.delete_container_info("challenge_ttl")
         self.delete_container_info("initial_synchronized")
 
-    def create_challenge(self, scope, validity_time=2, data={}):
+    def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None):
         """
         Create a challenge for the container.
 
-        :param scope: The scope (endpoint) of the challenge, e.g. "container/SMPH001/sync"
+        :param scope: The scope (endpoint) of the challenge, e.g. "https://pi.com/container/SMPH001/sync"
         :param validity_time: The validity time of the challenge in minutes.
         :param data: Additional data for the challenge.
-        :return: A dictionary with the challenge data
-
-        An example of a returned challenge dictionary:
+        :return: A dictionary with the challenge data in the format:
             ::
 
                 {
-                    "nonce": <nonce>,
-                    "time_stamp": <timestamp iso format>,
-                    "enc_key_algorithm": <encryption key algorithm>
+                    "nonce": <nonce, str>,
+                    "time_stamp": <time stamp iso format, str>,
+                    "enc_key_algorithm": <encryption key algorithm, str>
                 }
         """
+        if not data:
+            data = {}
+
         # Create challenge
         nonce = geturandom(20, hex=True)
         data["scope"] = scope
@@ -364,7 +366,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Checks if the response to a challenge is valid.
 
-        :param params: Dictionary with the parameters for the challenge.
+        :param params: Dictionary with the parameters for the challenge. The device information is optional.
 
         An example params dictionary:
             ::
@@ -373,6 +375,9 @@ class SmartphoneContainer(TokenContainerClass):
                     "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
                     "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
                     "container_dict_client": {"serial": "SMPH0001", "type": "smartphone", ...}
+                    "scope": "https://pi/container/SMPH001/sync",
+                    "device_brand": "XYZ",
+                    "device_model": "123"
                 }
 
         :return: True if a valid challenge exists, raises a privacyIDEAError otherwise.
@@ -414,7 +419,7 @@ class SmartphoneContainer(TokenContainerClass):
             ::
 
                 {
-                    "public_server_key_encry": <public key of the server for encryption base 64 url safe encoded>,
+                    "public_server_key": <public key of the server for encryption base 64 url safe encoded>,
                     "encryption_algorithm": "AES",
                     "encryption_params": {"mode": "GCM", "init_vector": "init_vector", "tag": "tag"},
                     "container_dict_server": <encrypted container dict from server>
@@ -460,6 +465,7 @@ class SmartphoneContainer(TokenContainerClass):
         further information is provided.
 
         :param initial_transfer_allowed: If True, all tokens from the client are added to the container
+        :param hide_token_info: List of token info keys to be excluded from the token dict.
         :param container_client: The container from the client as dictionary.
         An example container dictionary from the client:
             ::
@@ -469,21 +475,19 @@ class SmartphoneContainer(TokenContainerClass):
                     "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
                                 {"otp": ["1234", "9876"], "type": "hotp"}]
                 }
-        :param hide_token_info: List of token info keys to be excluded from the token dict.
 
-        :return: container dictionary like
+        :return: container dictionary
         An example of a returned container dictionary:
             ::
 
                 {
-                    "container": {"states": ["active"]},
+                    "container": {"states": ["active"], ...},
                     "tokens": {"add": ["enroll_url1", "enroll_url2"],
-                               "update": [{"serial": "TOTP001", "active": True},
+                               "update": [{"serial": "TOTP001", "active": True, ...},
                                           {"serial": "HOTP001", "active": False, "otp": ["1234", "9876"],
-                                           "type": "hotp"}]}
+                                           "tokentype": "hotp", ...}]}
                 }
         """
-        container_info = self.get_container_info_dict()
         container_dict = {"container": self.get_as_dict(include_tokens=False, public_info=True)}
         server_token_serials = [token.get_serial() for token in self.get_tokens()]
 
@@ -494,18 +498,21 @@ class SmartphoneContainer(TokenContainerClass):
             dict_keys = token.keys()
             # Get serial from otp if required
             if "serial" not in dict_keys and "otp" in dict_keys:
-                token_type = token.get("type")
+                token_type = token.get("tokentype")
                 token_list = get_tokens(tokentype=token_type)
                 serial_list = get_serial_by_otp_list(token_list, otp_list=token["otp"])
                 if len(serial_list) == 1:
                     serial = serial_list[0]
                     token["serial"] = serial
                     serial_otp_map[serial] = token["otp"]
+                elif len(serial_list) > 1:
+                    log.debug(f"Multiple serials found for otp {token['otp']}. Ignoring this token.")
                 # shall we ignore otp values where multiple serials are found?
 
         # map client and server tokens
         client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
 
+        container_info = self.get_container_info_dict()
         registration_state = container_info.get("registration_state", "")
         if registration_state == "rollover":
             # rollover all tokens: generate new enroll info for all tokens
