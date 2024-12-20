@@ -241,6 +241,27 @@
                             <span class="glyphicon glyphicon-info-sign"></span>
                             <span translate>Help about Container Details</span></a>
                     </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#templates' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Templates</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.create'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Template</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.edit'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Template Details</span></a>
+                    </li>
                 </ul>
             </div>
         </div>

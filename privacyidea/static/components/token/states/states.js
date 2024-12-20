@@ -125,9 +125,8 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "containerTemplateCreateController"
                 })
                 .state('token.containertemplates.edit', {
-                    url: "/edit",
+                    url: "/edit/:templateName",
                     templateUrl: tokenPath + "token.containertemplates.edit.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "containerTemplateEditController",
-                    params: {templateName: null}
+                    controller: "containerTemplateEditController"
                 })
         }]);

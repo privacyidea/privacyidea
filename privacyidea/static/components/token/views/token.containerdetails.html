@@ -161,7 +161,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </td>
             <td>
                 <button class="btn btn-primary"
-                        ng-disabled="!checkRight('container_template_list')"
+                        ng-disabled="!checkRight('container_template_list') || !container.template"
                         ng-hide="showDiff || (!checkRight('container_template_list') && hide_buttons)"
                         ng-click="compareWithTemplate() "
                         translate>

@@ -20,25 +20,21 @@
 
 myApp.controller("containerTemplateController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
     'ConfigFactory', 'TokenFactory', '$location', '$state', 'ContainerUtils',
-    function containerTemplateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state, ContainerUtils) {
+    function containerTemplateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory,
+                                         $location, $state, ContainerUtils) {
         $scope.templatesPerPage = $scope.token_page_size;
         $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {sortdir: "asc"};
+        $scope.params = {sortby: "name", sortdir: "asc", pagesize: $scope.templatesPerPage};
         $scope.templatedata = [];
+        $scope.templatesReady = false;
 
         // Get all templates
-        $scope.get = function () {
-            $scope.params.sortby = $scope.sortby;
-            if ($scope.reverse) {
-                $scope.params.sortdir = "desc";
-            } else {
-                $scope.params.sortdir = "asc";
-            }
-            $scope.params.pagesize = $scope.token_page_size;
-
+        $scope.getAllTemplates = function () {
+            $scope.templatesReady = false;
             ContainerFactory.getTemplates($scope.params,
                 function (data) {
                     $scope.templatedata = data.result.value;
+                    $scope.templatesReady = true;
                 });
         };
 
@@ -52,6 +48,7 @@ myApp.controller("containerTemplateController", ['$scope', '$http', '$q', 'Conta
             selectedTokenType: ""
         };
         $scope.getAllContainerAndTokenTypes = function () {
+            $scope.typesReady = false;
             TokenFactory.getEnrollTokens(function (data) {
                 $scope.tokenSettings["tokenTypes"] = data.result.value;
                 $scope.getContainerTypes();
@@ -71,10 +68,11 @@ myApp.controller("containerTemplateController", ['$scope', '$http', '$q', 'Conta
                     $scope.containerTypes[containerType].token_types_display = ContainerUtils.createDisplayList(
                         $scope.containerTypes[containerType].token_types, true);
                 });
+                $scope.typesReady = true;
             });
         };
 
-        $scope.get();
+        $scope.getAllTemplates();
         $scope.getAllContainerAndTokenTypes();
 
         if ($location.path() === "token.containertemplates") {
@@ -86,17 +84,22 @@ myApp.controller("containerTemplateController", ['$scope', '$http', '$q', 'Conta
 myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
     'ConfigFactory', 'TokenFactory', '$location', '$state',
     function containerTemplateListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state) {
-        $scope.templatesPerPage = $scope.token_page_size;
-        $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {sortdir: "asc"};
-
-        if ($location.path() === "token.containertemplates") {
-            $location.path("token.containertemplates.list");
-        }
 
         // Change the pagination
         $scope.pageChanged = function () {
-            $scope.get();
+            $scope.getAllTemplates();
+        };
+
+        // get templates sorted: called from pi-sort-by directive
+        // directive can only interact with the list controller and not with the parent controller
+        $scope.get = function () {
+            $scope.params.sortby = $scope.sortby;
+            if ($scope.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
+            }
+            $scope.getAllTemplates();
         };
 
         $scope.editTemplate = function (templateName) {
@@ -180,7 +183,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
             $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
-                $scope.get();
+                $scope.getAllTemplates();
                 $state.go("token.containertemplates.list");
             });
         };
@@ -194,7 +197,6 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
     function containerTemplateEditController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
                                              TokenFactory, $location, $state, $stateParams, ContainerUtils) {
         $scope.loggedInUser = AuthFactory.getUser();
-        $scope.params = {};
         $scope.containerClassOptions = {};
         $scope.template = {};
 
@@ -202,6 +204,8 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         $scope.initialOptions = {};
         $scope.functionObject = {};
 
+        $scope.containersPerPage = $scope.token_page_size;
+        $scope.params = {"template": $stateParams.templateName, sortdir: "asc"};
         $scope.containerData = [];
         $scope.showContainers = false;
         $scope.templateContainerDiff = {};
@@ -213,28 +217,58 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
             displaySelection: {},
         };
 
-        angular.forEach($scope.templatedata.templates, function (template) {
-            if (template.name === $stateParams.templateName) {
-                $scope.template = template;
-                $scope.selection.containerType = $scope.template.container_type;
-                $scope.selection.tokens = $scope.template.template_options.tokens || [];
-                $scope.selection.default = $scope.template.default || false;
-                $scope.initialOptions[$scope.selection.containerType] = $scope.template.template_options.options || {};
+        $scope.getOneTemplate = function () {
+            angular.forEach($scope.templatedata.templates, function (template) {
+                if (template.name === $stateParams.templateName) {
+                    $scope.template = template;
+                    $scope.selection.containerType = $scope.template.container_type;
+                    $scope.selection.tokens = $scope.template.template_options.tokens || [];
+                    $scope.selection.default = $scope.template.default || false;
+                    $scope.initialOptions[$scope.selection.containerType] = $scope.template.template_options.options || {};
 
-                // Sets the supported token types for the selected container type in different formats
-                // (list, display list, display selection of each type, default type for the selection)
-                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.selection.containerType,
-                    $scope.containerTypes, $scope.tokenSettings.tokenTypes);
-                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
+                    // Sets the supported token types for the selected container type in different formats
+                    // (list, display list, display selection of each type, default type for the selection)
+                    $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.selection.containerType,
+                        $scope.containerTypes, $scope.tokenSettings.tokenTypes);
+                    $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
+                }
+            });
+        }
+
+        // Wait for the templateController to finish loading the templates and token types
+        $scope.$watch('templatesReady', function (newTemplatesReady, oldVal) {
+            if (newTemplatesReady && $scope.typesReady && !oldVal) {
+                $scope.getOneTemplate();
             }
-        });
+        }, true);
+        $scope.$watch('typesReady', function (newTypesReady, oldVal) {
+            if (newTypesReady && $scope.templatesReady && !oldVal) {
+                $scope.getOneTemplate();
+            }
+        }, true);
+
+        // Initially get the template if data is already loaded
+        if ($scope.templatesReady && $scope.typesReady) {
+            $scope.getOneTemplate();
+        }
 
         // Get containers created with the template
         $scope.getContainers = function () {
-            let params = {"template": $stateParams.templateName}
-            ContainerFactory.getContainers(params, function (data) {
+            $scope.params.sortby = $scope.sortby;
+            if ($scope.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
+            }
+            $scope.params.pagesize = $scope.token_page_size;
+            ContainerFactory.getContainers($scope.params, function (data) {
                 $scope.containerData = data.result.value;
             });
+        };
+
+        // Change the pagination
+        $scope.pageChanged = function () {
+            $scope.getContainers();
         };
 
         $scope.compareContainersWithTemplate = function () {
@@ -267,15 +301,20 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
             $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
-                $scope.get();
+                $scope.getAllTemplates();
                 $state.go("token.containertemplates.list");
             });
         };
 
-        // Initial call
+        // Initial calls
         $scope.getContainers();
 
+        $scope.editGet = function () {
+            $scope.getAllTemplates();
+            $scope.getContainers();
+        };
+
         // listen to the reload broadcast
-        $scope.$on("piReload", $scope.get);
+        $scope.$on("piReload", $scope.editGet);
     }]);
 

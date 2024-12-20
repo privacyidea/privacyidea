@@ -60,65 +60,79 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 Compare
             </button>
         </div>
-        <table class="table table-bordered table-striped table-capitalize-header"
-               ng-show="showContainers">
-            <thead>
-            <tr>
-                <th class="pifilter">
-                    <button class="btn btn-default unsorted"
-                            pi-sort-by="serial"
-                            translate>Serial
-                    </button>
-                </th>
-                <th translate>
-                    Description
-                </th>
-                <th ng-show="loggedInUser.role == 'admin'" translate>
-                    User
-                </th>
-                <th ng-show="loggedInUser.role == 'admin'" translate>
-                    Realm
-                </th>
-                <th ng-show="loggedInUser.role == 'admin'" translate>
-                    Container Realms
-                </th>
-                <th ng-show="showDiff" translate>
-                    Differences to the template
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr ng-repeat="container in containerData.containers track by $index">
-                <td>
-                    <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
-                </td>
-                <td>
-                    {{ container.description }}
-                </td>
-                <td ng-show="loggedInUser.role == 'admin'">
-                    <a ui-sref="user.details({username: container.users[0].user_name,
+
+        <div ng-show="showContainers">
+            <div uib-pagination ng-show="containerData.count > containersPerPage"
+                 total-items="containerData.count" ng-model="params.page"
+                 previous-text="{{ 'Previous'|translate }}"
+                 next-text="{{ 'Next'|translate }}"
+                 last-text="{{ 'Last'|translate }}"
+                 first-text="{{ 'First'|translate }}"
+                 items-per-page="{{ containersPerPage }}"
+                 max-size="5"
+                 boundary-links="true" ng-change="pageChanged()">
+            </div>
+
+            <div translate>Total Containers: {{ containerData.count }}</div>
+            <table class="table table-bordered table-striped table-capitalize-header">
+                <thead>
+                <tr>
+                    <th class="pifilter">
+                        <button class="btn btn-default unsorted"
+                                pi-sort-by="serial"
+                                translate>Serial
+                        </button>
+                    </th>
+                    <th translate>
+                        Description
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        User
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        Realm
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        Container Realms
+                    </th>
+                    <th ng-show="showDiff" translate>
+                        Differences to the template
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="container in containerData.containers track by $index">
+                    <td>
+                        <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
+                    </td>
+                    <td>
+                        {{ container.description }}
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
+                        <a ui-sref="user.details({username: container.users[0].user_name,
                             realmname: container.users[0].user_realm,
                             resolvername: token.resolver,
                             editable: false})">
-                        {{ container.users[0].user_name }}</a>
-                </td>
-                <td ng-show="loggedInUser.role == 'admin'">
-                    <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
-                </td>
-                <td ng-show="loggedInUser.role == 'admin'">
+                            {{ container.users[0].user_name }}</a>
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
+                        <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
                 <span ng-repeat="c_realm in container.realms">
                     <a ui-sref="config.realms.list">
                     {{ c_realm }}</a><span ng-show="!$last ">,</span>
                 </span>
-                </td>
-                <td ng-show="showDiff && templateContainerDiff[container.serial]">
-                    <div container-template-diff
-                         diff="templateContainerDiff"
-                         container-serial="container.serial">
-                    </div>
-                </td>
-            </tr>
-        </table>
+                    </td>
+                    <td ng-show="showDiff && templateContainerDiff[container.serial]">
+                        <div container-template-diff
+                             diff="templateContainerDiff"
+                             container-serial="container.serial">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
     <div class="form-group text-center">
