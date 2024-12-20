@@ -701,7 +701,6 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 functionObj: "=",
                 markAddRemove: "=",
                 showDefaultSelection: "=",
-                defaultOptions: "="
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.containertemplate.details.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {
@@ -884,63 +883,6 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
 
             }
         };
-    }]);
-
-myApp.directive("containerOptions", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
-    "ContainerFactory",
-    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, ContainerFactory) {
-        return {
-            scope: {
-                selection: "=",
-                defaultOptions: "=",
-            },
-            templateUrl: instanceUrl + "/static/components/directives/views/directive.container.options.html" + versioningSuffixProvider.$get(),
-            link: function (scope, element, attr) {
-                scope.containerClassOptions = {};
-
-                scope.$watch('selection.containerType', function (newType, oldType) {
-                    // Set the default options for the new container type
-                    scope.setSelection(newType);
-                });
-
-                scope.setSelection = function (containerType) {
-                    scope.selection.options = {};
-                    angular.forEach(scope.containerClassOptions[containerType], function (value, key) {
-                        if (scope.defaultOptions !== undefined && scope.defaultOptions[containerType] !== undefined &&
-                            scope.defaultOptions[containerType][key] !== undefined) {
-                            scope.selection.options[key] = scope.defaultOptions[containerType][key];
-                        } else {
-                            scope.selection.options[key] = "-";
-                        }
-                    });
-                };
-
-                scope.keyLength = function (obj) {
-                    if (obj === undefined) {
-                        return 0;
-                    } else {
-                        return Object.keys(obj).length;
-                    }
-                }
-
-                scope.getContainerClassOptions = function () {
-                    ContainerFactory.getClassOptions({"only_selectable": true}, function (data) {
-                        scope.containerClassOptions = data.result.value;
-                        angular.forEach(scope.containerClassOptions, function (options, containerType) {
-                            angular.forEach(options, function (value, key) {
-                                scope.containerClassOptions[containerType][key] = ["-"].concat(scope.containerClassOptions[containerType][key]);
-                                if (scope.selection.containerType === containerType && scope.selection.options[key] === undefined) {
-                                    scope.selection.options[key] = "-";
-                                }
-                            });
-                        });
-                        scope.setSelection(scope.selection.containerType);
-                    });
-                };
-
-                scope.getContainerClassOptions();
-            }
-        }
     }]);
 
 

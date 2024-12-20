@@ -7,7 +7,6 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial)
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.containers.yubikey import YubikeyOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, remove_token_from_container)
@@ -18,7 +17,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (init_token, get_tokens_paginate, get_one_token, get_tokens_from_serial_or_user,
+from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo)
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -670,31 +669,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
         delete_policy("policy")
 
-    def test_34_set_options_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_SET_OPTIONS)
-        container_serial = self.create_container_for_user("smartphone")
-        data = json.dumps({"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}})
-        self.request_assert_success(f"/container/{container_serial}/options", data, self.at_user, 'POST')
-        delete_policy("policy")
-
-    def test_35_set_options_denied(self):
-        data = {"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}}
-
-        # User does not have CONTAINER_SET_OPTIONS rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
-        container_serial = self.create_container_for_user("smartphone")
-        self.request_denied_assert_403(f"/container/{container_serial}/options", data, self.at_user, 'POST')
-
-        # User is not the owner of the container
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_SET_OPTIONS)
-        container_serial = init_container({"type": "smartphone",
-                                           "user": "hans",
-                                           "realm": self.realm1})["container_serial"]
-        self.request_denied_assert_403(f"/container/{container_serial}/options", data, self.at_user, 'POST')
-
-        delete_policy("policy")
-
-    def test_36_create_container_with_template(self):
+    def test_34_create_container_with_template(self):
         # user is allowed to create container and enroll HOTP tokens, but not TOTP tokens
         set_policy("policy", scope=SCOPE.USER, action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
 
@@ -1052,23 +1027,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
         get_template_obj(template_name).delete()
 
-    def test_37_set_options_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_SET_OPTIONS)
-        container_serial = self.create_container_for_user("smartphone")
-        data = json.dumps({"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}})
-        self.request_assert_success(f"/container/{container_serial}/options", data, self.at, 'POST')
-        delete_policy("policy")
-
-    def test_38_set_options_denied(self):
-        # Admin does not have CONTAINER_SET_OPTIONS rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
-        container_serial = self.create_container_for_user("smartphone")
-        data = json.dumps({"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}})
-        self.request_denied_assert_403(f"/container/{container_serial}/options", data, self.at, 'POST')
-
-        delete_policy("policy")
-
-    def test_39_admin_create_container_with_template(self):
+    def test_37_admin_create_container_with_template(self):
         # admin is allowed to create container and enroll HOTP, but not TOTP tokens
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
@@ -1741,24 +1700,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
         delete_policy("container_policy")
 
-    def test_26_set_options_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_SET_OPTIONS, realm=self.realm1)
-        container_serial = self.create_container_for_user("smartphone")
-        data = json.dumps({"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}})
-        self.request_assert_success(f"/container/{container_serial}/options", data, self.at, 'POST')
-        delete_policy("policy")
-
-    def test_27_set_options_denied(self):
-        data = {"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"}}
-
-        # Admin does not have CONTAINER_SET_OPTIONS rights for the realm of teh container
-        container_serial = self.create_container_for_user("smartphone")
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_SET_OPTIONS, realm=self.realm2)
-        self.request_denied_assert_403(f"/container/{container_serial}/options", data, self.at, 'POST')
-
-        delete_policy("policy")
-
-    def test_28_helpdesk_compare_template_container(self):
+    def test_26_helpdesk_compare_template_container(self):
         template_name = "test"
         template_params = {"name": "test",
                            "container_type": "smartphone",
@@ -1813,7 +1755,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.assertNotIn(container_serial_no_user, containers)
         delete_policy("policy")
 
-    def test_29_helpdesk_create_container_with_template(self):
+    def test_28_helpdesk_create_container_with_template(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
@@ -2358,92 +2300,6 @@ class APIContainer(APIContainerTest):
                                              {"token_serial": "non-existing", "pagesize": 15},
                                              self.at, 'GET')
         self.assertEqual(result["result"]["value"]["count"], 0)
-
-    def test_23_get_class_options_all(self):
-        result = self.request_assert_success('/container/classoptions', {}, self.at, 'GET')
-        result = result["result"]["value"]
-
-        self.assertIn("generic", result)
-
-        self.assertIn("smartphone", result)
-        smartphone_options = result["smartphone"]
-        smartphone_required_keys = [SmartphoneOptions.KEY_ALGORITHM, SmartphoneOptions.ENCRYPT_KEY_ALGORITHM,
-                                    SmartphoneOptions.HASH_ALGORITHM, SmartphoneOptions.ENCRYPT_ALGORITHM,
-                                    SmartphoneOptions.ENCRYPT_MODE]
-        for key in smartphone_required_keys:
-            self.assertIn(key, smartphone_options)
-
-        self.assertIn("yubikey", result)
-        yubikey_options = result["yubikey"]
-        self.assertIn(YubikeyOptions.PIN_POLICY, yubikey_options)
-
-    def test_24_get_class_options_smartphone(self):
-        result = self.request_assert_success('/container/classoptions', {"container_type": "smartphone"}, self.at,
-                                             'GET')
-        result = result["result"]["value"]
-
-        self.assertNotIn("generic", result)
-        self.assertNotIn("yubikey", result)
-
-        self.assertIn("smartphone", result)
-        smartphone_options = result["smartphone"]
-        smartphone_required_keys = [SmartphoneOptions.KEY_ALGORITHM, SmartphoneOptions.ENCRYPT_KEY_ALGORITHM,
-                                    SmartphoneOptions.HASH_ALGORITHM, SmartphoneOptions.ENCRYPT_ALGORITHM,
-                                    SmartphoneOptions.ENCRYPT_MODE]
-        for key in smartphone_required_keys:
-            self.assertIn(key, smartphone_options)
-
-    def test_25_get_class_options_invalid_type(self):
-        result = self.request_assert_error(400, '/container/classoptions',
-                                           {"container_type": "invalid"}, self.at,
-                                           'GET')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-
-    def test_26_init_smartphone_with_options(self):
-        options = {SmartphoneOptions.KEY_ALGORITHM: "secp384r1",
-                   SmartphoneOptions.HASH_ALGORITHM: "SHA256",
-                   SmartphoneOptions.ENCRYPT_ALGORITHM: "ABC",  # invalid value
-                   SmartphoneOptions.ENCRYPT_KEY_ALGORITHM: "x25519",
-                   SmartphoneOptions.ENCRYPT_MODE: "GCM",
-                   YubikeyOptions.PIN_POLICY: "disabled"}  # invalid key
-
-        data = json.dumps({"type": "smartphone", "options": options})
-        result = self.request_assert_success('/container/init', data, self.at, )
-        serial = result["result"]["value"]["container_serial"]
-        smartphone = find_container_by_serial(serial)
-
-        # valid key value pairs set
-        smartphone_info = smartphone.get_container_info_dict()
-        self.assertEqual("secp384r1", smartphone_info[SmartphoneOptions.KEY_ALGORITHM])
-        self.assertEqual("SHA256", smartphone_info[SmartphoneOptions.HASH_ALGORITHM])
-        self.assertEqual("x25519", smartphone_info[SmartphoneOptions.ENCRYPT_KEY_ALGORITHM])
-        self.assertEqual("GCM", smartphone_info[SmartphoneOptions.ENCRYPT_MODE])
-
-        # invalid key / values not set
-        smartphone_info_keys = smartphone_info.keys()
-        self.assertNotIn(SmartphoneOptions.ENCRYPT_ALGORITHM, smartphone_info_keys)
-        self.assertNotIn(YubikeyOptions.PIN_POLICY, smartphone_info_keys)
-
-    def test_27_set_options_success(self):
-        container_serial = init_container({"type": "smartphone"})["container_serial"]
-
-        data = json.dumps({"options": {SmartphoneOptions.KEY_ALGORITHM: 'secp384r1'}})
-        self.request_assert_success(f'/container/{container_serial}/options', data, self.at, 'POST')
-
-    def test_28_set_options_fail(self):
-        container_serial = init_container({"type": "smartphone"})["container_serial"]
-
-        # Missing options parameter
-        result = self.request_assert_error(400, f'/container/{container_serial}/options',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'options'", error["message"])
-
-        # Missing container serial
-        self.request_assert_405('/container/options', {"options": {SmartphoneOptions.KEY_ALGORITHM: 'secp384r1'}},
-                                self.at, 'POST')
 
 
 class APIContainerSynchronization(APIContainerTest):
@@ -5064,14 +4920,7 @@ class APIContainerTemplate(APIContainerTest):
         [token.delete_token() for token in tokens]
         delete_policy("enrollment")
 
-    def test_15_get_template_options(self):
-        result = self.request_assert_success('/container/template/options', {}, self.at, 'GET')
-        list_keys = list(result["result"]["value"].keys())
-        self.assertIn("generic", list_keys)
-        self.assertIn("smartphone", list_keys)
-        self.assertIn("yubikey", list_keys)
-
-    def test_16_get_template(self):
+    def test_15_get_template(self):
         create_container_template(container_type="smartphone",
                                   template_name="test1",
                                   options={})
@@ -5088,7 +4937,7 @@ class APIContainerTemplate(APIContainerTest):
         self.assertEqual(1, result["result"]["value"]["current"])
         self.assertEqual(2, len(result["result"]["value"]["templates"]))
 
-    def test_17_compare_template_with_containers(self):
+    def test_16_compare_template_with_containers(self):
         template_options = {"options": {SmartphoneOptions.KEY_ALGORITHM: "secp384r1"},
                             "tokens": [{"type": "hotp", "genkey": True}, {"type": "daypassword", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
@@ -5145,7 +4994,7 @@ class APIContainerTemplate(APIContainerTest):
         totp2.delete_token()
         get_template_obj("test").delete()
 
-    def test_18_get_template_token_types(self):
+    def test_17_get_template_token_types(self):
         result = self.request_assert_success('/container/template/tokentypes', {}, self.at, 'GET')
         self.assertEqual(3, len(result["result"]["value"]))
         template_token_types = result["result"]["value"]

@@ -386,16 +386,8 @@ def init_container(params):
             if original_template_used:
                 container.template = original_template["name"]
         template_options = template.get("template_options", {})
-        # set container options from template
-        options = template_options.get("options", {})
-        container.add_options(options)
         # tokens from template
         template_tokens = template_options.get("tokens", [])
-
-    # container options
-    options = params.get("options")
-    if options and not template:
-        container.add_options(options)
 
     user = params.get("user")
     realm = params.get("realm")
@@ -1304,8 +1296,7 @@ def compare_template_with_container(template: TokenContainerTemplate, container:
                             }
             }
     """
-    result = {"tokens": {"missing": [], "additional": []},
-              "options": {"missing": [], "different": [], "additional": []}}
+    result = {"tokens": {"missing": [], "additional": []}}
     template_options = json.loads(template.template_options)
 
     # compare tokens

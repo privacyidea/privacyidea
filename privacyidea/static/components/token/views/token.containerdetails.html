@@ -263,7 +263,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <span translate>Regenerate QR Code</span>
                 </button>
                 <button class="btn btn-primary"
-                        ng-show="container.info['registration_state'] && (checkRight('container_rollover') || !hideButtons)"
+                        ng-show="(container.info['registration_state'] === 'registered'
+                                 || container.info['registration_state'] === 'rollover')
+                                 && (checkRight('container_rollover') || !hideButtons)"
                         ng-disabled="!checkRight('container_rollover')"
                         ng-click="registerContainer(true)">
                     <span translate>Rollover</span>

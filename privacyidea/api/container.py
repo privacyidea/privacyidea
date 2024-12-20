@@ -537,31 +537,6 @@ def set_container_info(container_serial, key):
     return send_result(res)
 
 
-@container_blueprint.route("<container_serial>/options", methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_SET_OPTIONS)
-@event('container_set_options', request, g)
-@log_with(log)
-def set_container_options(container_serial):
-    """
-    Set the options of a container. Overwrites the old options if they already exist.
-
-    :param container_serial: Serial of the container
-    :jsonparam options: Options to set (container type specific)
-    """
-    options = getParam(request.all_data, "options", required)
-
-    # Audit log
-    container = find_container_by_serial(container_serial)
-    option_str = ", ".join([f"{k}: {v}" for k, v in options.items()])
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": option_str})
-
-    set_options(container_serial, options)
-    g.audit_object.log({"success": True})
-    return send_result(True)
-
-
 @container_blueprint.route('register/initialize', methods=['POST'])
 @prepolicy(check_container_register_rollover, request)
 @prepolicy(container_registration_config, request)
@@ -970,46 +945,6 @@ def rollover(container_serial):
     return send_result(res_rollover)
 
 
-@container_blueprint.route('classoptions', methods=['GET'])
-def get_class_options():
-    """
-    Get the class options for the container type or for all container classes if no type is given.
-    Raises a ParameterError if the container type is not found.
-
-    :jsonparam container_type: Type of the container, optional
-    :jsonparam only_selectable: If set to True, only options with at least two selectable values are returned, optional
-    :return: Dictionary with the class options for the given container type or for all container types.
-
-    An example response looks like this:
-        ::
-
-            {
-                "generic": {},
-                "smartphone": {"key_algorithm": ["secp384r1", "secp256r1", ...], "encrypt_algorithm": ["AES", ...], ...},
-                "yubikey": {"pin_policy": [""]}
-            }
-    """
-    container_type = getParam(request.all_data, "container_type", optional=True)
-    only_selectable = getParam(request.all_data, "only_selectable", optional=True, default=False)
-    options = {}
-    container_classes = get_container_classes()
-    if container_type:
-        if container_type not in container_classes:
-            raise ParameterError(f"Container type {container_type} not found.")
-        options[container_type] = container_classes[container_type].get_class_options(only_selectable)
-    else:
-        # Get options for all container types
-        for ctype in container_classes:
-            options[ctype] = container_classes[ctype].get_class_options(only_selectable)
-
-    # Audit log
-    g.audit_object.log({"container_type": container_type,
-                        "action_detail": f"only_selectable={only_selectable}",
-                        "success": True})
-
-    return send_result(options)
-
-
 # TEMPLATES
 @container_blueprint.route('/templates', methods=['GET'])
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
@@ -1056,24 +991,6 @@ def get_template():
     g.audit_object.log({"success": True})
 
     return send_result(templates_dict)
-
-
-@container_blueprint.route('template/options', methods=['GET'])
-@log_with(log)
-def get_template_options():
-    """
-    Get the template options for all container types
-    """
-    template_options = {}
-    template_classes = get_container_template_classes()
-
-    for container_type in template_classes:
-        template_options[container_type] = template_classes[container_type].get_template_class_options()
-
-    # Audit log
-    g.audit_object.log({"success": True})
-
-    return send_result(template_options)
 
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])

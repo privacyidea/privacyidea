@@ -71,13 +71,9 @@ myApp.service('ContainerUtils', function () {
         let templateContainerDiff = diff_list;
 
         angular.forEach(diff_list, function (containerDiff, serial) {
-            angular.forEach(["options", "tokens"], function (group) {
-                angular.forEach(["missing", "additional", "different"], function (key) {
-                    if (key !== "different" || group !== "tokens") {
-                        templateContainerDiff[serial][group][key] = helperCreateDisplayList(
-                            diff_list[serial][group][key], true);
-                    }
-                });
+            angular.forEach(["missing", "additional"], function (key) {
+                templateContainerDiff[serial]["tokens"][key] = helperCreateDisplayList(
+                    diff_list[serial]["tokens"][key], true);
             });
         });
         return templateContainerDiff;
@@ -96,7 +92,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.form = {
             containerType: "generic",
             description: "",
-            options: {},
             template: {},
             tokens: []
         };
@@ -223,7 +218,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
         }
 
-        $scope.defaultTemplateOptions = {};
         $scope.defaultTemplates = {};
         $scope.templates = {};
         $scope.getTemplates = function () {
@@ -240,8 +234,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 angular.forEach(templatesList, function (template) {
                     $scope.templates[template.container_type][template.name] = template;
                     if (template.default) {
-                        // save default options
-                        $scope.defaultTemplateOptions[template.container_type] = template.template_options.options;
+                        // save default template
                         $scope.defaultTemplates[template.container_type] = template;
                         if (template.container_type == $scope.form.containerType) {
                             // select default template for selected container type
@@ -268,26 +261,13 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 $scope.editTemplate = false;
             }
 
-            // set tokens and options according to the selected template
-            // for the options each key needs to be set to not overwrite the default options from the directive for
-            // keys without a value in the template
+            // set tokens according to the selected template
             let templateOptions = $scope.form.template.template_options;
             if (templateOptions !== undefined) {
                 $scope.form.tokens = templateOptions.tokens || [];
-                let options = templateOptions.options || {};
-                angular.forEach($scope.form.options, function (value, key) {
-                    if (options[key] !== undefined) {
-                        $scope.form.options[key] = options[key];
-                    } else {
-                        $scope.form.options[key] = "-";
-                    }
-                });
             } else {
                 // no template is used or the template has no options
                 $scope.form.tokens = [];
-                angular.forEach($scope.form.options, function (value, key) {
-                    $scope.form.options[key] = "-";
-                });
             }
         };
 
@@ -296,12 +276,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             let params = {"type": ctype};
             if (templateListRight && $scope.form.template && $scope.form.template.name !== "noTemplate") {
                 params["template"] = $scope.form.template;
-                params["template"]["template_options"]["options"] = {};
-                angular.forEach($scope.form.options, function (value, key) {
-                    if (value !== "-") {
-                        params["template"]["template_options"]["options"][key] = value;
-                    }
-                });
                 params["template"]["template_options"]["tokens"] = [];
                 if ($scope.form.tokens.length > 0) {
                     angular.forEach($scope.form.tokens, function (token) {
@@ -313,15 +287,8 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         }
                     });
                 }
-            } else if ($scope.form.options) {
-                // only set the options if no template is used (which already defines the options)
-                params["options"] = {};
-                angular.forEach($scope.form.options, function (value, key) {
-                    if (value !== "-") {
-                        params["options"][key] = value;
-                    }
-                });
             }
+
             if ($scope.newUser.user) {
                 params["user"] = fixUser($scope.newUser.user);
                 params["realm"] = $scope.newUser.realm;

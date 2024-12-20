@@ -87,19 +87,6 @@ class ContainerTemplateBase:
                 raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
         validated_options["tokens"] = tokens
 
-        # Validates other options
-        allowed_options = self.get_template_class_options()
-        container_options = options.get("options", {})
-        validated_container_options = {}
-        for option in list(container_options.keys()):
-            if option not in allowed_options.keys():
-                raise ParameterError(f"Unsupported option {option} for {self.get_class_type()} templates!")
-            if container_options[option] not in allowed_options[option]:
-                raise ParameterError(
-                    f"Unsupported value {container_options[option]} for option {option} in {self.get_class_type()} templates!")
-            validated_container_options[option] = container_options[option]
-        validated_options["options"] = validated_container_options
-
         self._db_template.options = json.dumps(validated_options)
         self._db_template.save()
 

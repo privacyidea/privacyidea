@@ -200,8 +200,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
         $scope.containerClassOptions = {};
         $scope.template = {};
 
-        $scope.selection = {containerType: "", options: {}, tokens: []};
-        $scope.initialOptions = {};
+        $scope.selection = {containerType: "", tokens: []};
         $scope.functionObject = {};
 
         $scope.containersPerPage = $scope.token_page_size;
@@ -224,7 +223,6 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                     $scope.selection.containerType = $scope.template.container_type;
                     $scope.selection.tokens = $scope.template.template_options.tokens || [];
                     $scope.selection.default = $scope.template.default || false;
-                    $scope.initialOptions[$scope.selection.containerType] = $scope.template.template_options.options || {};
 
                     // Sets the supported token types for the selected container type in different formats
                     // (list, display list, display selection of each type, default type for the selection)
@@ -282,11 +280,6 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
             $scope.functionObject.saveOpenProperties();
             $scope.params.name = $scope.template.name;
             $scope.params.type = $scope.template.container_type;
-            angular.forEach($scope.selection.options, function (value, key) {
-                if (value === "-") {
-                    delete $scope.selection.options[key];
-                }
-            });
 
             let tokenList = [];
             angular.forEach($scope.selection.tokens, function (token) {
@@ -297,7 +290,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                     tokenList.push(token);
                 }
             });
-            $scope.params.template_options = {"tokens": tokenList, "options": $scope.selection.options};
+            $scope.params.template_options = {"tokens": tokenList};
             $scope.params.default = $scope.selection.default;
 
             ContainerFactory.createTemplate($scope.params, function (data) {
