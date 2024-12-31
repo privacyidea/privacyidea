@@ -4,12 +4,12 @@
 # nicolas hahang <nicolas.hahang@gmail.com>, 2024.
 # Julien Mutterer <Julien_M@users.noreply.hosted.weblate.org>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
-# Gregory Bouzinac <gregory.b@orange.fr>, 2024.
+# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-12-31 11:00+0000\n"
+"PO-Revision-Date: 2025-01-01 12:00+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -651,7 +651,7 @@ msgstr "Options spécifiques de l'Autorité de Certification (CA)"
 
 #: privacyidea/static/components/config/views/config.system.html:178
 msgid "CAs"
-msgstr "CAs"
+msgstr "CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
@@ -2363,7 +2363,7 @@ msgstr "Port du serveur de signatures Microsoft CA"
 #: privacyidea/static/components/register/views/register.html:60
 #: privacyidea/static/components/user/views/user.password.html:40
 msgid "Mobile"
-msgstr "Mobile"
+msgstr "Téléphone"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:321
 msgid "Multivalue Attributes"
@@ -4348,7 +4348,6 @@ msgstr ""
 "demander au serveur de générer le secret puis scannez le code QR."
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
-#, fuzzy
 msgid "The number of lookahead OTP values. Default 10."
 msgstr "Le nombre de valeurs OTP anticipées. Défaut 10."
 
@@ -4381,10 +4380,9 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.webauthn.html:10
 #, fuzzy
 msgid "The path to the directory containing the trust anchors."
-msgstr "Le chemin du dossier contenant les balises de confiance."
+msgstr "Le chemin du dossier contenant les ancres de confiance."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:34
-#, fuzzy
 msgid ""
 "The privacyIDEA authentication backend is licensed under the\n"
 "                    AGPLv3.\n"
@@ -4398,7 +4396,7 @@ msgid ""
 "target=\"github\">backend\n"
 "                        service itself</a>."
 msgstr ""
-"Le backend d'authentification de privacyIDEA est licencié sous le\n"
+"Le back-end d'authentification de privacyIDEA est licencié sous le\n"
 "AGPLv3.\n"
 "Certains composants peuvent faire partis d'autres licences.\n"
 "privacyIDEA est un fork original de LinOTP, qui était\n"
@@ -4731,7 +4729,6 @@ msgstr ""
 "contenant cet interpréteur."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:116
-#, fuzzy
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
@@ -4750,7 +4747,6 @@ msgstr ""
 "pour documenter votre installation."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:19
-#, fuzzy
 msgid ""
 "This does not need to be set for WebAuthn to work, however without\n"
 "        this, privacyIDEA can not check, whether an attestation certificate "
@@ -4771,7 +4767,6 @@ msgstr ""
 "à \"approuvé\" par une politique de n'importe quel utilisateur."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:18
-#, fuzzy
 msgid ""
 "This is a Single Page Application client that acts as a\n"
 "                        frontend for\n"
@@ -4912,7 +4907,6 @@ msgstr ""
 "jeton RADIUS."
 
 #: privacyidea/static/components/token/views/token.enroll.registration.html:6
-#, fuzzy
 msgid ""
 "This is used, so that the user can enroll a token on his own, after\n"
 "    logging in for the first time."
@@ -4921,7 +4915,6 @@ msgstr ""
 "connecté pour la première fois."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:13
-#, fuzzy
 msgid ""
 "This must be a valid FQDN with also a valid top level domain -\n"
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
@@ -5153,9 +5146,8 @@ msgstr "Type"
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:40
 #: privacyidea/static/components/token/views/token.enroll.html:66
-#, fuzzy
 msgid "Type a PIN or password"
-msgstr "Répéter le mot de passe"
+msgstr "Saisir un PIN ou un mot de passe"
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
@@ -5409,16 +5401,13 @@ msgid "Welcome"
 msgstr "Bienvenue"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:176
-#, fuzzy
 msgid "Where statement"
 msgstr "Où la déclaration"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:277
 #: privacyidea/static/components/user/views/user.details.html:159
-#, fuzzy
-#| msgid "window"
 msgid "Window"
-msgstr "fenêtre"
+msgstr "Fenêtre"
 
 #: privacyidea/static/components/token/views/token.enroll.push.html:1
 msgid ""
@@ -5447,7 +5436,6 @@ msgstr ""
 "et créera un nouveau jeton avec une nouvelle clé secrète !"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -5455,7 +5443,7 @@ msgid ""
 "further\n"
 "                credentials."
 msgstr ""
-"Vous êtes authentifié par le serveur web comme utilisateur\n"
+"Vous êtes authentifié par le serveur web en tant qu'utilisateur\n"
 "<b>{{ remoteUser }}</b>\n"
 "Vous pouvez vous connecter avec cet utilisateur à privacyIDEA sans\n"
 "identification supplémentaire."
@@ -5467,7 +5455,7 @@ msgid ""
 "                            @  {{ loggedInUser.realm }}."
 msgstr ""
 "Vous êtes connecté en tant que {{ loggedInUser.username }}\n"
-"                            @ {{ loggedInUser.realm }}."
+"                            @  {{ loggedInUser.realm }}."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:535
 msgid ""
@@ -5496,7 +5484,6 @@ msgstr ""
 "vérifiée."
 
 #: privacyidea/static/components/user/views/user.add.html:54
-#, fuzzy
 msgid ""
 "You have no editable resolvers defined. So you can not write\n"
 "                to any user store. If you want to add users, you need to\n"
@@ -5505,11 +5492,11 @@ msgid ""
 "                (like SQLResolver) and check the\n"
 "                box \"Edit user store\"."
 msgstr ""
-"Vous n'avez aucun interpréteur éditable défini. Vous ne pouvez\n"
+"Vous n'avez aucun interpréteur modifiable défini. Vous ne pouvez\n"
 "donc écrire dans aucun magasin d'utilisateurs. Si vous voulez ajouter des "
 "utilisateurs, vous\n"
 "devez <a ui-sref=\"config.resolvers.list\"> définir un interpréteur\n"
-"éditable</a>\n"
+"modifiable</a>\n"
 "(comme SQLResolver) et cocher la case\n"
 "\"Editer le magasin d'utilisateurs\"."
 
@@ -5573,7 +5560,6 @@ msgid "Your Password:"
 msgstr "Votre mot de passe :"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:4
-#, fuzzy
 msgid ""
 "Your certificate request is taken under submission and waiting for\n"
 "    administrative approval."
@@ -5680,7 +5666,6 @@ msgid "administrator"
 msgstr "administrateur"
 
 #: privacyidea/static/components/token/views/token.getserial.html:48
-#, fuzzy
 msgid "an optional serial substring"
 msgstr "une sous-chaine optionnelle de série"
 
@@ -5689,17 +5674,14 @@ msgid "appId"
 msgstr "IdApp"
 
 #: privacyidea/static/components/audit/views/audit.log.html:57
-#, fuzzy
-#| msgid "Authentications"
 msgid "authentication"
-msgstr "Authentifications"
+msgstr "authentification"
 
 #: privacyidea/static/components/token/views/token.details.html:199
 msgid "certificate"
 msgstr "certificat"
 
 #: privacyidea/static/components/audit/views/audit.log.html:151
-#, fuzzy
 msgid "clearance"
 msgstr "autorisation"
 
@@ -5796,7 +5778,7 @@ msgstr "ligne_manquante"
 
 #: privacyidea/static/components/user/views/user.list.html:40
 msgid "mobile"
-msgstr "mobile"
+msgstr "téléphone"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:14
 #: privacyidea/static/components/config/views/config.realms.list.html:108
@@ -5808,10 +5790,9 @@ msgid "number"
 msgstr "nombre"
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:19
-#, fuzzy
 msgid "offline: Use HOTP token for offline login to notebooks."
 msgstr ""
-"hors ligne : Utilise un jeton HOTP pour se connecter à des ordinateurs hors "
+"offline : Utilise un jeton HOTP pour se connecter à des ordinateurs hors "
 "lignes."
 
 #. Translation in dynamic user creation
@@ -5835,10 +5816,8 @@ msgstr "politiques"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:254
 #: privacyidea/static/components/config/views/config.realms.create.html:43
-#, fuzzy
-#| msgid "New privacyIDEA server"
 msgid "privacyIDEA Nodes"
-msgstr "Nouveau serveur privacyIDEA"
+msgstr "Nœuds privacyIDEA"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:88
 msgid "privacyIDEA Server Config saved."
@@ -5853,7 +5832,6 @@ msgid "privacyIDEA UI is locked"
 msgstr "Interface privacyIDEA verrouillée"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:33
-#, fuzzy
 msgid "privacyIDEA authentication backend"
 msgstr "back-end d'authentification privacyIDEA"
 
@@ -5938,7 +5916,7 @@ msgstr "numéro de série, graine, type, suite ocra"
 #: privacyidea/static/components/token/views/token.import.html:30
 #, fuzzy
 msgid "serial number, seed, type, otplen, timeStep"
-msgstr "numéro de série, graine, type, otplen, timeStep"
+msgstr "numéro de série, graine, type, long. otp, pas de temps"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "set Default"
@@ -6002,16 +5980,15 @@ msgid "total users:"
 msgstr "Total des utilisateurs :"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
-#, fuzzy
 msgid ""
 "true if privacyidea should retry to execute this periodic task if it fails\n"
 "                false if privacyidea should just try onetime regardless the "
 "failing of the task"
 msgstr ""
-"vrai si privacyidea doit ressayer d'exécuter cette tâche périodique si elle "
+"vrai si privacyidea doit réessayer d'exécuter cette tâche périodique si elle "
 "échoue\n"
-"faux si privacyidea doit juste essayer une fois sans prendre en compte "
-"l'échec de la tâche"
+"faux si privacyidea doit juste essayer une fois sans tenir compte de l'échec "
+"de la tâche"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:9
 #, fuzzy
@@ -6046,10 +6023,8 @@ msgid "user"
 msgstr "utilisateur"
 
 #: privacyidea/static/components/audit/views/audit.log.html:131
-#, fuzzy
-#| msgid "username"
 msgid "user agent"
-msgstr "nom d'utilisateur"
+msgstr "agent utilisateur"
 
 #: privacyidea/static/components/audit/views/audit.log.html:137
 msgid "user agent version"
