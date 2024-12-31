@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2024-12-05 15:04+0000\n"
+"PO-Revision-Date: 2024-12-31 13:00+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -616,7 +616,6 @@ msgid "The Admin is allowed to add a new service ID definition."
 msgstr "L'administrateur est autorisé à ajouter un nouveau service ID."
 
 #: lib/policy.py:2052
-#, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
 msgstr ""
 "L'administrateur est autorisé à supprimer une définition d'ID de service."
@@ -642,8 +641,6 @@ msgid "Admin is allowed to create containers."
 msgstr "L'administrateur est autorisé à créer des conteneurs."
 
 #: lib/policy.py:2077
-#, fuzzy
-#| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete containers."
 msgstr "L'administrateur est autorisé à supprimer des conteneurs."
 
@@ -661,18 +658,13 @@ msgstr ""
 "L'administrateur est autorisé à assigner des utilisateurs aux conteneurs."
 
 #: lib/policy.py:2093
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to unassign users from containers."
 msgstr ""
-"L'administrateur est autorisé à désassigner des utilisateurs à des "
-"conteneurs."
+"L'administrateur est autorisé à désassigner des utilisateurs des conteneurs."
 
 #: lib/policy.py:2097
-#, fuzzy
-#| msgid "Admin is allowed to manage the realms of a token."
 msgid "Admin is allowed to set the realm of containers."
-msgstr "L'administrateur est autorisé à définir les domaines de conteneurs."
+msgstr "L'administrateur est autorisé à définir le domaine des conteneurs."
 
 #: lib/policy.py:2101
 msgid "Admin is allowed to list containers."
@@ -819,20 +811,15 @@ msgid "Users are allowed to create containers."
 msgstr "Les utilisateurs sont autorisés à créer des conteneurs."
 
 #: lib/policy.py:2253
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to delete their own containers."
 msgstr "Les utilisateurs sont autorisés à supprimer leurs propres conteneurs."
 
 #: lib/policy.py:2257
-#, fuzzy
 msgid "Users are allowed to add their own tokens to their own containers."
 msgstr ""
 "Les utilisateurs sont autorisés à ajouter leurs jetons à leurs conteneurs."
 
 #: lib/policy.py:2262
-#, fuzzy
-#| msgid "Admin is allowed to remove tokens from the database."
 msgid "Users are allowed to remove their own tokens from their own containers."
 msgstr ""
 "Les utilisateurs sont autorisés à supprimer leurs jetons de leurs conteneurs."
@@ -856,13 +843,12 @@ msgid "Limit the number of allowed tokens in a realm."
 msgstr "Limiter le nombre de jetons autorisés dans un domaine."
 
 #: lib/policy.py:2287
-#, fuzzy
 msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
-"Durant l'enrôlement, cette politique impose une description pour tous les "
-"types de jetons sélectionnés."
+"Durant le processus de déploiement, cette politique impose une description "
+"pour tous les types de jetons sélectionnés."
 
 #: lib/policy.py:2295
 msgid "Limit the number of tokens a user may have assigned."
@@ -943,7 +929,6 @@ msgstr ""
 "autres apps comme FreeOTP (format de fichiers supportés: PNG, JPG et GIF)."
 
 #: lib/policy.py:2354
-#, fuzzy
 msgid ""
 "Users can assign a token just by using the unassigned token to authenticate."
 msgstr ""
@@ -981,14 +966,12 @@ msgstr ""
 "caractères autorisés [1234567890]"
 
 #: lib/policy.py:2387
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
 msgstr ""
 "Définir la longueur du mot de passe pour les jetons avec mot de passe auto-"
 "généré."
 
 #: lib/policy.py:2391
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
@@ -999,7 +982,6 @@ msgstr ""
 "de caractères autorisés [1234567890]"
 
 #: lib/policy.py:2399
-#, fuzzy
 msgid ""
 "Specify the email validator that should be used to validate email addresses "
 "during enrollment."
@@ -1008,7 +990,6 @@ msgstr ""
 "adresses email pendant l'enrôlement."
 
 #: lib/policy.py:2405
-#, fuzzy
 msgid ""
 "Specify the list of token types, that must be verified during enrollment."
 msgstr ""
@@ -1024,21 +1005,13 @@ msgstr ""
 "ou n'utilisez aucun composant de mot de passe fixe."
 
 #: lib/policy.py:2423
-#, fuzzy
-#| msgid ""
-#| "This is a whitespace separated list of tokentypes, that can be used with "
-#| "challenge response."
 msgid ""
 "Specify the list of token types, that must be used with challenge response."
 msgstr ""
-"Liste des types de jetons, qui doivent être utilisés lors de la réponse au "
-"challenge."
+"Spécifier la liste des types de jetons, qui doivent être utilisés lors de la "
+"réponse au challenge."
 
 #: lib/policy.py:2431
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter an OTP "
 "value. You can also use tags for automated replacement. Check out the "
@@ -1070,23 +1043,21 @@ msgstr ""
 "/ réponse."
 
 #: lib/policy.py:2453
-#, fuzzy
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
 msgstr ""
-"La synchro automatique d'un jeton peut être faite via un message de réponse "
-"au challenge. Vous devez activer 'Synchronisation automatique' dans les "
-"paramètres généraux!"
+"La synchronisation automatique d'un jeton peut être faite via un message de "
+"réponse au challenge. Vous devez activer 'Synchronisation automatique' dans "
+"les paramètres généraux !"
 
 #: lib/policy.py:2458
-#, fuzzy
 msgid ""
 "In case of a successful authentication the following tokentype is enrolled. "
 "The maximum number of tokens for a user is checked."
 msgstr ""
 "En cas d'authentification réussie, le type de jeton suivant est enrôlé. Le "
-"nombre maximal de jetons d'un utilisateur est vérifié."
+"nombre maximal de jetons de l'utilisateur est vérifié."
 
 #: lib/policy.py:2464
 msgid "Change the default text that is shown during enrolling a token."
@@ -1147,7 +1118,6 @@ msgstr ""
 "d'échec de tous ses jetons."
 
 #: lib/policy.py:2505
-#, fuzzy
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
@@ -1171,11 +1141,10 @@ msgid ""
 "webauthn poll u2f</code>"
 msgstr ""
 "Vous pouvez définir les modes client dans l'ordre que vous préférez. Par "
-"exemple: \"interactive webauthn poll u2f\". Les valeurs acceptées sont: "
-"<code>interactive webauthn poll u2f</code>"
+"exemple : \"interactif webauthn poll u2f\". Les valeurs acceptées sont: "
+"<code>interactif webauthn poll u2f</code>"
 
 #: lib/policy.py:2522
-#, fuzzy
 msgid ""
 "When enabled, authentication attempts will be interpreted as either the PIN "
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
@@ -1384,10 +1353,9 @@ msgstr ""
 "utilisateur."
 
 #: lib/policy.py:2688
-#, fuzzy
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
-msgstr "Spécifie le nombre d'entrées affichées par page sur la vue audit."
+msgstr "Définit le nombre d'entrées affichées par page sur la vue audit."
 
 #: lib/policy.py:2693
 msgid "Use your own html template for the web UI menu."
@@ -1487,13 +1455,12 @@ msgstr ""
 "vous cochez cette action, les boutons désactivés sont cachés."
 
 #: lib/policy.py:2765
-#, fuzzy
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 "Si coché, il y aura une demande de confirmation à l'effacement de "
-"politiques, événements, mresolver, interpréteurs ou tâches périodiques!"
+"politiques, événements, mresolver, interpréteurs ou tâches périodiques !"
 
 #: lib/policy.py:2770
 msgid ""
@@ -1567,13 +1534,12 @@ msgstr ""
 "de la requête HTTP sont remplies."
 
 #: lib/policy.py:2850
-#, fuzzy
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
 msgstr ""
-"La politique est appliquée seulement si certaines conditions dans les "
-"informations d'utilisateurs sont remplies."
+"La politique correspond seulement si certaines conditions dans "
+"l'environnement HTTP sont remplies."
 
 #: lib/radiusserver.py:223 lib/radiusserver.py:255
 msgid "The RADIUS secret is too long"
@@ -1584,11 +1550,11 @@ msgid "My subscription has expired."
 msgstr "Mon abonnement a expiré."
 
 #: lib/token.py:159
+#, fuzzy
 msgid "create_tokenclass_object failed:  {0!r}"
-msgstr "create_tokenclass_object failed:  {0!r}"
+msgstr "create_tokenclass_object échoué :  {0!r}"
 
 #: lib/token.py:325
-#, fuzzy
 msgid "I can only create SQL filters from tokeninfo of length 1."
 msgstr "Je peux seulement créer des filtres SQL de tokeninfo de longueur 1."
 
@@ -1602,15 +1568,15 @@ msgstr "Plus d'un jeton correspondant trouvé."
 
 #: lib/token.py:1035
 msgid "multiple tokens are matching this OTP value!"
-msgstr "plusieurs jetons correspondent à cette valeur OTP!"
+msgstr "plusieurs jetons correspondent à cette valeur OTP !"
 
 #: lib/token.py:1195
 msgid "init token failed: unknown token type {0!r}"
-msgstr "initialisation du jeton échouée: type de jeton inconnu {0!r}"
+msgstr "initialisation du jeton échouée : type de jeton inconnu {0!r}"
 
 #: lib/token.py:1216
 msgid "initToken failed: {0!s}"
-msgstr "initToken échoué: {0!s}"
+msgstr "initToken échouée : {0!s}"
 
 #: lib/token.py:1376
 msgid "Token already assigned to user {0!r}"
@@ -1626,12 +1592,11 @@ msgstr "Désassignation jeton échouée pour {0!r}/{1!r}: {2!r}"
 
 #: lib/token.py:1494
 msgid "Parameter user must not be a string: {0!r}"
-msgstr "Le paramètre de l'utilisateur ne doit pas être une chaine: {0!r}"
+msgstr "Le paramètre de l'utilisateur ne doit pas être une chaine : {0!r}"
 
 #: lib/token.py:2047
-#, fuzzy
 msgid "You can only define a lost token for an assigned token."
-msgstr "Vous ne pouvez définir un jeton perdu seulement pour un jeton attribué."
+msgstr "Vous ne pouvez définir un jeton perdu que s'il est assigné."
 
 #: lib/token.py:2073
 msgid "temporary replacement for {0!s}"
@@ -1715,13 +1680,12 @@ msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Indiquer la longueur minimale d'un PIN du jeton {0!s}."
 
 #: lib/token.py:2679
-#, fuzzy
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Spécifier le contenu requis dans un PIN du jeton {0!s} . (c)aractères, (n)"
-"umériques, (s)péciaux, (o)autres. [+/-]!"
+"Spécifier le contenu requis du PIN du jeton {0!s} . (c)aractères, (n)"
+"umériques, (s)péciaux, (o)autres. [+/-] !"
 
 #: lib/token.py:2724 lib/token.py:2740
 msgid "The tokengroup does not exist."
@@ -1729,7 +1693,7 @@ msgstr "Le groupe de jetons n'existe pas."
 
 #: lib/tokenclass.py:1691
 msgid "please enter otp: "
-msgstr "Veuillez saisir votre otp: "
+msgstr "Veuillez saisir votre otp : "
 
 #: lib/applications/ssh.py:105
 msgid "The username on the SSH server."
@@ -1801,10 +1765,8 @@ msgid "The result.status within the response is True or False."
 msgstr "La valeur result.status de la réponse est True ou False."
 
 #: lib/eventhandler/base.py:250
-#, fuzzy
-#| msgid "The result.value within the response is True or False."
 msgid "The result.authentication within the response is the given value."
-msgstr "La valeur result.authentication de la réponse est la valeur attendue."
+msgstr "La valeur result.authentication dans la réponse est la valeur attendue."
 
 #: lib/eventhandler/base.py:258
 msgid "Check if the max failcounter of the token is reached."
@@ -1842,8 +1804,6 @@ msgstr ""
 "L'action est déclenchée, si l'utilisateur a ce nombre de jeton associé."
 
 #: lib/eventhandler/base.py:309
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of containers assigned."
 msgstr ""
@@ -1945,13 +1905,12 @@ msgid "Trigger the action, if the client IP matches."
 msgstr "Déclenche l'action si l'ip du Client correspond."
 
 #: lib/eventhandler/base.py:405
-#, fuzzy
 msgid ""
 "The container is in the specified states, but can additionally be in other "
 "states."
 msgstr ""
 "Le conteneur est dans l'état spécifié, mais peut additionnellement être dans "
-"un autre état."
+"d'autres états."
 
 #: lib/eventhandler/base.py:412
 msgid "The container is only in the specified states."
@@ -1982,14 +1941,13 @@ msgstr "Description du conteneur"
 msgid "Assign container to user in request or to token/container owner"
 msgstr ""
 "Assigner le conteneur à l'utilisateur indiqué dans la requête ou au "
-"propriétaire du jeton/conteneur."
+"propriétaire du jeton/conteneur"
 
 #: lib/eventhandler/containerhandler.py:109
 msgid "Add token from request to container"
-msgstr "Ajouter le jeton indiqué dans la requête au conteneur."
+msgstr "Ajouter le jeton indiqué dans la requête au conteneur"
 
 #: lib/eventhandler/containerhandler.py:129
-#, fuzzy
 msgid "Set this container info key (deletes all existing keys)."
 msgstr ""
 "Définir la clé dans les infos de ce conteneur (efface toutes les clés "
@@ -2018,7 +1976,6 @@ msgid "The user for whom the custom attribute should be set."
 msgstr "L'utilisateur pour lequel l'attribut personnalisé doit être défini."
 
 #: lib/eventhandler/customuserattributeshandler.py:68
-#, fuzzy
 msgid "The key of the custom user attribute that should be set."
 msgstr ""
 "La clé de l'attribut personnalisé de l'utilisateur qui doit être définie."
@@ -2296,7 +2253,6 @@ msgid "Set the above key to this value."
 msgstr "Donner à la clé ci-dessous cette valeur."
 
 #: lib/eventhandler/tokenhandler.py:337
-#, fuzzy
 msgid ""
 "Interpret the tokeninfo as 'int' and increase the tokeninfo value by the "
 "given offset."
@@ -2305,7 +2261,6 @@ msgstr ""
 "spécifié."
 
 #: lib/eventhandler/tokenhandler.py:343
-#, fuzzy
 msgid ""
 "The increment the tokeninfo key should be increased. Can be positive or "
 "negative, s.th. like +1 or -7."
@@ -2330,25 +2285,22 @@ msgid "The ID of the machine you want to attach the token to"
 msgstr "L'ID de la machine que vous voulez attacher à ce jeton"
 
 #: lib/eventhandler/tokenhandler.py:389
-#, fuzzy
 msgid "Set the service_id for an SSH application."
 msgstr "Spécifie le service_id pour une application SSH."
 
 #: lib/eventhandler/tokenhandler.py:397
-#, fuzzy
 msgid ""
 "Set a token application like 'offline' or 'SSH'. Note: Not all tokens work "
 "well with all applications!"
 msgstr ""
-"Défini une application de jeton comme 'offline' ou 'SSH'. Note: tous les "
-"jetons ne fonctionnent pas correctement avec toutes les applications!"
+"Définit une application de jeton comme 'offline' ou 'SSH'. Note : tous les "
+"jetons ne fonctionnent pas correctement avec toutes les applications !"
 
 #: lib/eventhandler/tokenhandler.py:408
 msgid "The number of offline OTP values available"
 msgstr "Le nombre de valeurs OTP hors ligne disponibles"
 
 #: lib/eventhandler/tokenhandler.py:416
-#, fuzzy
 msgid "The number of rounds for password hashing"
 msgstr "Le nombre de passes pour le hachage du mot de passe"
 
@@ -2424,7 +2376,7 @@ msgstr "L'encodage qui est envoyé au WebHook, par exemple json"
 #: lib/eventhandler/webhookeventhandler.py:97
 #, fuzzy
 msgid "You can replace placeholder like {logged_in_user}"
-msgstr "Vous pouvez remplacer l'emplacement réservé {logged_in_user}"
+msgstr "Vous pouvez changer l'emplacement réservé comme {logged_in_user}"
 
 #: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
@@ -2492,7 +2444,6 @@ msgid "Password in case of basic authentication."
 msgstr "Mot de passe en cas d'authentification de base."
 
 #: lib/smsprovider/HttpSMSProvider.py:267
-#, fuzzy
 msgid "Should the SSL certificate be verified."
 msgstr "Le certificat SSL doit-il être vérifié."
 
@@ -2523,7 +2474,6 @@ msgid "The timeout in seconds."
 msgstr "Le délai d'expiration en secondes."
 
 #: lib/smsprovider/SMSProvider.py:74
-#, fuzzy
 msgid ""
 "Regular expression to modify the phone number to make it compatible with the "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
@@ -2534,13 +2484,13 @@ msgstr ""
 "slashs, entrez quelque chose comme '/[\\\\+/]//'."
 
 #: lib/smsprovider/ScriptSMSProvider.py:113
-#, fuzzy
 msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin."
 msgstr ""
 "Le script dans le dossier des scripts PI_SCRIPT_SMSPROVIDER_DIRECTORY à "
-"appeler. Attend phone comme paramètre et le message de stdin."
+"appeler. Attend le numéro de téléphone comme paramètre et le message de "
+"stdin."
 
 #: lib/smsprovider/SmppSMSProvider.py:125
 msgid "SMSC Host IP"
@@ -2583,7 +2533,6 @@ msgid "The name of the event counter to read."
 msgstr "Le nom du compteur d'événements à lire."
 
 #: lib/task/eventcounter.py:46
-#, fuzzy
 msgid "The name of the stats key to write to the MonitoringStats table."
 msgstr "Le nom de la clé stats à écrire dans la table MonitoringStats."
 
@@ -2621,12 +2570,11 @@ msgid "Number of users with tokens assigned"
 msgstr "Nombre d'utilisateurs avec des jetons assignés"
 
 #: lib/tokens/applicationspecificpasswordtoken.py:74
-#, fuzzy
 msgid ""
 "Application Specific Password: A token with a fixed password. Can be used "
 "for certain applications or services."
 msgstr ""
-"Mot de passe spécifique d'application: un jeton avec un mot de passe fixe. "
+"Mot de passe spécifique d'application : un jeton avec un mot de passe fixe. "
 "Peut être utilisé pour certaines applications et services."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:85
@@ -2662,16 +2610,14 @@ msgstr ""
 "actifs."
 
 #: lib/tokens/certificatetoken.py:301
-#, fuzzy
 msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr ""
-"Enrôler un jeton certificat peut nécessiter un certificat d'attestation. "
-"(Défaut: ignorer)"
+"Enrôler un jeton certificat peut nécessiter un certificat d'attestation. ("
+"Défaut : ignorer)"
 
 #: lib/tokens/certificatetoken.py:310
-#, fuzzy
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
 "Le connecteur CA qui doit être utilisé pendant l'enrôlement de certificats."
@@ -2698,27 +2644,25 @@ msgid "event based OTP token using the HOTP algorithm"
 msgstr "Jeton OTP basé événement utilisant l'algorithme HOTP"
 
 #: lib/tokens/daplugtoken.py:128
-#, fuzzy
 msgid "The user may only have this maximum number of daplug tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons "
 "daplug."
 
 #: lib/tokens/daplugtoken.py:133
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of active daplug tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons "
 "daplug actifs."
 
 #: lib/tokens/daypasswordtoken.py:34
+#, fuzzy
 msgid "Specify the time step of the DayPassword token. For example: \"24h\""
 msgstr ""
-"Spécifie la durée de validité du jeton DayPassword. Par exemple: \"24h\""
+"Spécifie la durée de validité du jeton DayPassword. Par exemple : \"24h\""
 
 #: lib/tokens/daypasswordtoken.py:82
-#, fuzzy
 msgid ""
 "DayPassword: A time-based token with a variable timestep and the possibility "
 "to use the OTP more than once."
@@ -2728,9 +2672,8 @@ msgstr ""
 
 #: lib/tokens/daypasswordtoken.py:119 lib/tokens/hotptoken.py:173
 #: lib/tokens/totptoken.py:159
-#, fuzzy
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
-msgstr "Oblige de mettre un PIN sur l'application PrivacyIDEA Authenticator"
+msgstr "Force à mettre un PIN sur l'application PrivacyIDEA Authenticator"
 
 #: lib/tokens/daypasswordtoken.py:124
 msgid ""
@@ -2785,10 +2728,6 @@ msgstr ""
 "envoyé par courriel."
 
 #: lib/tokens/emailtoken.py:182
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the e-mail. You can also use tags for automated replacement. Check out "
@@ -2834,11 +2773,9 @@ msgstr ""
 "s'authentifier"
 
 #: lib/tokens/foureyestoken.py:141
-#, fuzzy
 msgid "The user may only have this maximum number of 4eyes tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
-"4eyes."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons 4eyes."
 
 #: lib/tokens/foureyestoken.py:146
 msgid ""
@@ -2852,7 +2789,6 @@ msgid "Please enter a valid OTP value of the new token."
 msgstr "Veuillez saisir une valeur OTP valide du nouveau jeton."
 
 #: lib/tokens/hotptoken.py:97
-#, fuzzy
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr ""
 "Spécifier la fonction de hachage à utiliser. Peut être SHA1, SHA256 ou "
@@ -2867,14 +2803,12 @@ msgid "Force the key to be generated on the server."
 msgstr "Forcer la génération de la clé sur le serveur."
 
 #: lib/tokens/hotptoken.py:101
-#, fuzzy
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr ""
 "Spécifier si les utilisateurs sont autorisés ou forcés à utiliser "
 "l'enrôlement en 2 étapes."
 
 #: lib/tokens/hotptoken.py:103
-#, fuzzy
 msgid ""
 "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr ""
@@ -2882,15 +2816,13 @@ msgstr ""
 "2 étapes."
 
 #: lib/tokens/hotptoken.py:140
-#, fuzzy
 msgid "HOTP: Event based One Time Passwords."
-msgstr "HOTP: Mot de passe unique basé événement."
+msgstr "HOTP: Mots de passe uniques basés sur un événement."
 
 #: lib/tokens/hotptoken.py:148
-#, fuzzy
 msgid "The user may only have this maximum number of HOTP tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons HOTP."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons HOTP."
 
 #: lib/tokens/hotptoken.py:153
 msgid ""
@@ -2934,7 +2866,6 @@ msgid "Please enter the positions {0!s} from your secret."
 msgstr "Veuillez entrer les positions {0!s} de votre secret."
 
 #: lib/tokens/indexedsecrettoken.py:98
-#, fuzzy
 msgid "Indexed Secret Token"
 msgstr "Jeton Secret indexé"
 
@@ -2946,21 +2877,18 @@ msgstr ""
 "l'utilisateur."
 
 #: lib/tokens/indexedsecrettoken.py:107
-#, fuzzy
 msgid ""
 "Use an alternative challenge text for telling the user which positions of "
 "the secret he should enter. You can also use tags for automated replacement. "
 "Check out the documentation for more details."
 msgstr ""
-"Utilise un texte alternatif de challenge pour dire à l'utilisateur quelles "
-"positions du secret il doit entrer. Vous pouvez aussi utiliser des tags pour "
+"Utiliser un texte alternatif de challenge pour dire à l'utilisateur quelles "
+"positions du secret il doit saisir. Vous pouvez aussi utiliser des tags pour "
 "un remplacement automatique. Consultez la documentation pour plus de détails."
 
 #: lib/tokens/indexedsecrettoken.py:115
-#, fuzzy
 msgid "Number of necessary positions to be answered by the user."
-msgstr ""
-"Nombre de positions nécessaires qui doivent être répondues par l'utilisateur."
+msgstr "Nombre de positions nécessaires à répondre par l'utilisateur."
 
 #: lib/tokens/indexedsecrettoken.py:122
 msgid "Preset the enrollment with the value of the given attribute."
@@ -2971,11 +2899,10 @@ msgid "The attribute whose value should be force set during enrollment."
 msgstr "L'attribut dont la valeur doit être forcée pendant l'enrôlement."
 
 #: lib/tokens/indexedsecrettoken.py:143
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of indexed secret tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons de "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons de "
 "secret indexé."
 
 #: lib/tokens/indexedsecrettoken.py:148
@@ -2991,10 +2918,9 @@ msgid "mOTP: Classical mobile One Time Passwords."
 msgstr "mOTP: Mot de passe unique mobile classique."
 
 #: lib/tokens/motptoken.py:102
-#, fuzzy
 msgid "The user may only have this maximum number of mOTP tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons mOTP."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons mOTP."
 
 #: lib/tokens/motptoken.py:107
 msgid ""
@@ -3012,10 +2938,9 @@ msgid "OCRA: Enroll an OCRA token."
 msgstr "OCRA: enrôler un jeton OCRA."
 
 #: lib/tokens/ocratoken.py:99
-#, fuzzy
 msgid "The user may only have this maximum number of OCRA tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons OCRA."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons OCRA."
 
 #: lib/tokens/ocratoken.py:104
 msgid ""
@@ -3033,10 +2958,9 @@ msgid "The number of OTP values, which are printed on the paper."
 msgstr "Le nombre de valeurs OTP qui sont imprimées sur le papier."
 
 #: lib/tokens/papertoken.py:112
-#, fuzzy
 msgid "The user may only have this maximum number of paper tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons "
 "papier."
 
 #: lib/tokens/papertoken.py:117
@@ -3047,7 +2971,6 @@ msgstr ""
 "papier actifs."
 
 #: lib/tokens/passwordtoken.py:113
-#, fuzzy
 msgid ""
 "A token with a fixed password. Can be combined  with the OTP PIN. Is used "
 "for the lost token scenario."
@@ -3056,10 +2979,9 @@ msgstr ""
 "Est utilisé pour un scénario de jeton perdu."
 
 #: lib/tokens/passwordtoken.py:125
-#, fuzzy
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons avec "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons avec "
 "mot de passe."
 
 #: lib/tokens/passwordtoken.py:130
@@ -3075,13 +2997,12 @@ msgid "Please confirm the authentication on your mobile device!"
 msgstr "Veuillez confirmer l'authentification sur votre téléphone!"
 
 #: lib/tokens/pushtoken.py:73
-#, fuzzy
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check for a "
 "new Login request."
 msgstr ""
-"Utilise la fonction PUSH de votre application PrivacyIDEA Authenticator pour "
-"vérifier une nouvelle requête de connexion."
+"Utiliser la fonction PUSH de votre application PrivacyIDEA Authenticator "
+"pour vérifier une nouvelle requête de connexion."
 
 #: lib/tokens/pushtoken.py:75
 msgid "Do you want to confirm the login?"
@@ -3116,7 +3037,6 @@ msgstr ""
 "en minutes)."
 
 #: lib/tokens/pushtoken.py:397
-#, fuzzy
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 "Le smartphone nécessite de vérifier SSL pendant l'enrôlement. (défaut 1)"
@@ -3162,7 +3082,6 @@ msgstr ""
 "présence."
 
 #: lib/tokens/pushtoken.py:443
-#, fuzzy
 msgid ""
 "The options that can be presented to the user to confirm the login. "
 "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
@@ -3170,7 +3089,7 @@ msgid ""
 msgstr ""
 "Les options qui peuvent être présentées à l'utilisateur pour confirmer la "
 "connexion. <code>ALPHABETIQUE</code>: A-Z, <code>NUMERIQUE</code>: 01-99, "
-"<code>CUSTOM</code>: prédéfinies. "
+"<code>PERSO</code>: prédéfinies. "
 
 #: lib/tokens/pushtoken.py:452
 #, fuzzy
@@ -3181,7 +3100,7 @@ msgid ""
 "<code>CUSTOM</code>."
 msgstr ""
 "Options personnalisées qui peuvent être présentées à l'utilisateur pour "
-"confirmer la connexion. La chaine doit au moins contenir 2 options et doit "
+"confirmer la connexion. La chaine doit contenir au moins 2 options et doit "
 "être unique. Les options sont séparées par <code>:</code>. e.g.: "
 "<code>01:02:03:1A:1B:1C</code>. to <code>CUSTOM</code>."
 
@@ -3259,20 +3178,18 @@ msgstr ""
 "RADIUS actifs."
 
 #: lib/tokens/registrationtoken.py:127
-#, fuzzy
 msgid ""
 "Registration: A token that creates a registration code that can be used as a "
 "second factor once."
 msgstr ""
-"Registration: Un jeton qui créé un code d'enregistrement qui peut être "
+"Enregistrement : Un jeton qui créé un code d'enregistrement qui peut être "
 "utilisé une seule fois comme second facteur d'authentification."
 
 #: lib/tokens/registrationtoken.py:139
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of registration tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons "
 "d'enregistrement."
 
 #: lib/tokens/registrationtoken.py:144
@@ -3284,16 +3201,14 @@ msgstr ""
 "d'enregistrement actifs."
 
 #: lib/tokens/remotetoken.py:112
-#, fuzzy
 msgid "Remote Token: Forward authentication request to another server."
 msgstr ""
 "Jeton distant: transfère la requête d'authentification à un autre serveur."
 
 #: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:164
-#, fuzzy
 msgid "The user may only have this maximum number of remote tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons "
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons "
 "distants."
 
 #: lib/tokens/remotetoken.py:126 lib/tokens/totptoken.py:169
@@ -3322,7 +3237,6 @@ msgstr ""
 "{otp} et {serial} comme paramètres."
 
 #: lib/tokens/smstoken.py:214
-#, fuzzy
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with one "
 "SMS OTP."
@@ -3331,17 +3245,14 @@ msgstr ""
 "réussie avec un code OTP SMS."
 
 #: lib/tokens/smstoken.py:219
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the SMS. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
-"Utilisez un autre texte de défi pour indiquer à l'utilisateur de saisir le "
-"code à partir du courriel."
+"Utiliser un texte alternatif de challenge pour indiquer à l'utilisateur de "
+"saisir le code reçu par SMS. Vous pouvez aussi utiliser les balises pour un "
+"remplacement automatique. Consultez la documentation pour plus de détails."
 
 #: lib/tokens/smstoken.py:229
 msgid "Choose the gateways the administrator is allowed to set."
@@ -3397,10 +3308,9 @@ msgid "SSH Public Key: The public SSH key."
 msgstr "Clé SSH Publique: La clé publique SSH."
 
 #: lib/tokens/sshkeytoken.py:91
-#, fuzzy
 msgid "The user may only have this maximum number of SSH keys assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de clés SSH."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de clés SSH."
 
 #: lib/tokens/sshkeytoken.py:96
 msgid "The user may only have this maximum number of active SSH keys assigned."
@@ -3461,23 +3371,19 @@ msgid "U2F: Enroll a U2F token."
 msgstr "U2F: Enrôle un jeton U2F."
 
 #: lib/tokens/u2ftoken.py:258
-#, fuzzy
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
 msgstr ""
 "Liste de noms d'hôtes FQDN faisant confiance aux jetons U2F enregistrés."
 
 #: lib/tokens/u2ftoken.py:262
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to confirm with his "
 "U2F device. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
-"Utilisez un autre texte de défi pour indiquer à l'utilisateur de saisir le "
-"code à partir du courriel."
+"Utiliser un texte alternatif de challenge pour indiquer à l'utilisateur de "
+"confirmer avec son jeton U2F. Vous pouvez aussi utiliser des balises pour un "
+"remplacement automatique. Consultez la documentation pour plus de détails."
 
 #: lib/tokens/u2ftoken.py:271
 msgid "Only specified U2F tokens are authorized."
@@ -3492,10 +3398,9 @@ msgid "Do not verify the U2F attestation certificate."
 msgstr "Ne pas vérifier le certificat d'attestation U2F."
 
 #: lib/tokens/u2ftoken.py:289
-#, fuzzy
 msgid "The user may only have this maximum number of U2F tokens assigned."
 msgstr ""
-"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons U2F."
+"L'utilisateur ne peut se voir assigner que ce nombre maximal de jetons U2F."
 
 #: lib/tokens/u2ftoken.py:294
 msgid ""
@@ -3546,38 +3451,34 @@ msgid "WebAuthn: Enroll a Web Authentication token."
 msgstr "WebAuthn: Enrôle un jeton d'authentification Web."
 
 #: lib/tokens/webauthntoken.py:606
-#, fuzzy
 msgid ""
 "A list of transports to prefer to communicate with WebAuthn tokens. Default: "
 "usb ble nfc internal (All standard transports)"
 msgstr ""
 "Une liste de transports préférés pour communiquer avec les jetons WebAuthn. "
-"Défaut: usb ble nfc internal (Tous les transports standards)"
+"Défaut: usb ble nfc interne (Tous les transports standards)"
 
 #: lib/tokens/webauthntoken.py:611
-#, fuzzy
 msgid ""
 "The time in seconds the user has to confirm authorization on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
 "this. Default: 60"
 msgstr ""
 "La durée en secondes que l'utilisateur a pour confirmer l'autorisation sur "
-"son jeton WebAuthn. Note: Vous voudrez incrémenter le ChallengeValidityTime "
-"pour ceci. Défaut: 60"
+"son jeton WebAuthn. Note: Vous pourrez incrémenter le ChallengeValidityTime "
+"si besoin. Défaut : 60"
 
 #: lib/tokens/webauthntoken.py:617
-#, fuzzy
 msgid ""
 "Whether the user's identity should be verified when authenticating with a "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
 msgstr ""
 "Si l'identité de l'utilisateur doit être vérifiée en s'authentifiant avec un "
-"jeton WebAuthn. Défaut: préféré (vérifie l'utilisateur si supporté par le "
+"jeton WebAuthn. Défaut : préféré (vérifie l'utilisateur si supporté par le "
 "jeton)"
 
 #: lib/tokens/webauthntoken.py:627
-#, fuzzy
 msgid ""
 "Use an alternative challenge text for telling the user to confirm the login "
 "with his WebAuthn token. You can also use tags for automated replacement. "
@@ -3585,17 +3486,16 @@ msgid ""
 msgstr ""
 "Utiliser un texte alternatif de challenge pour indiquer à l'utilisateur de "
 "confirmer la connexion avec son jeton WebAuthn. Vous pouvez aussi utiliser "
-"des tags pour un remplacement automatique. Consultez la documentation pour "
-"plus de détails."
+"des balises pour un remplacement automatique. Consultez la documentation "
+"pour plus de détails."
 
 #: lib/tokens/webauthntoken.py:636
-#, fuzzy
 msgid ""
 "A list of WebAuthn authenticators acceptable for authorization, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
 "acceptable."
 msgstr ""
-"Une liste d'authentificateurs WebAuthn acceptés pour l'autorisation, fournis "
+"Une liste d'authentificateurs WebAuthn acceptés pour l'autorisation, fournie "
 "comme une liste de AAGUIDSS séparés par des espaces. Par défaut, tous les "
 "authentificateurs sont acceptés."
 
@@ -3604,14 +3504,12 @@ msgid "Only the specified WebAuthn-tokens are authorized."
 msgstr "Seuls les jetons WebAuthn spécifiés sont autorisés."
 
 #: lib/tokens/webauthntoken.py:649
-#, fuzzy
 msgid "One webauthn token can not be registered to a user more than once."
 msgstr ""
 "Un jeton webauthn ne peut pas être enregistré plus d'une fois par "
 "utilisateur."
 
 #: lib/tokens/webauthntoken.py:654
-#, fuzzy
 msgid "A human-readable name for the organization rolling out WebAuthn tokens."
 msgstr "Un nom lisible pour l'organisation déployant les jetons WebAuthn."
 
@@ -3626,27 +3524,24 @@ msgstr ""
 "des jetons WebAuthn."
 
 #: lib/tokens/webauthntoken.py:665
-#, fuzzy
 msgid ""
 "The time in seconds the user has to confirm enrollment on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
 "this. Default: 60"
 msgstr ""
 "La durée en secondes que l'utilisateur a pour confirmer l'enrôlement de son "
-"jeton WebAuthn. Note: vous voudrez incrémenter le ChallengeValidityTime pour "
-"ceci. Défaut: 60"
+"jeton WebAuthn. Note : vous pourrez incrémenter le ChallengeValidityTime si "
+"besoin. Défaut: 60"
 
 #: lib/tokens/webauthntoken.py:672
-#, fuzzy
 msgid ""
 "Whether to limit roll out of WebAuthn tokens to either only platform "
 "authenticators, or only cross-platform authenticators. Default: either"
 msgstr ""
-"Limiter le déploiement de jetons WebAuthn soit à des authentificateurs mono-"
-"plateforme, ou soit aux authentificateurs multiplateformes. Défaut: tous"
+"Limiter le déploiement de jetons WebAuthn à des authentificateurs mono-"
+"plateforme, ou aux authentificateurs multiplateformes. Défaut : tous"
 
 #: lib/tokens/webauthntoken.py:683
-#, fuzzy
 msgid ""
 "A list of WebAuthn authenticators acceptable for enrollment, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
@@ -3657,14 +3552,13 @@ msgstr ""
 "authentificateurs sont acceptés."
 
 #: lib/tokens/webauthntoken.py:689
-#, fuzzy
 msgid ""
 "Whether the user's identity should be verified when rolling out a new "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
 msgstr ""
 "Si l'identité de l'utilisateur doit être vérifiée lors du déploiement d'un "
-"nouveau jeton WebAuthn. Défaut: préféré (vérifie l'utilisateur si supporté "
+"nouveau jeton WebAuthn. Défaut : préféré (vérifie l'utilisateur si supporté "
 "par le jeton)"
 
 #: lib/tokens/webauthntoken.py:703
