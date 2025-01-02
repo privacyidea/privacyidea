@@ -70,6 +70,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
 
+from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -2956,6 +2957,8 @@ def regenerate_enroll_url(serial, request, g):
     # Get policies for the token
     from privacyidea.api.lib.prepolicy import (pushtoken_add_config, tantoken_count, papertoken_count,
                                                init_tokenlabel)
+    from privacyidea.api.lib.postpolicy import check_verify_enrollment
+
     try:
         pushtoken_add_config(request, None)
         tantoken_count(request, None)
@@ -2970,5 +2973,15 @@ def regenerate_enroll_url(serial, request, g):
     params.update(token_info)
     token = init_token(params)
     enroll_url = token.get_enroll_url(token_owner, params)
+
+    # Check post policies
+    init_result = {}
+    init_result[token.get_serial()] = {"type": token.get_type()}
+    init_result[token.get_serial()].update(token.get_init_detail(params, token_owner))
+    try:
+        response = send_result(True, details=init_result[token.get_serial()])
+        check_verify_enrollment(request, response)
+    except PolicyError as ex:
+        log.warning(f"{ex}")
 
     return enroll_url

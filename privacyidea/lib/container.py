@@ -539,7 +539,7 @@ def add_token_to_container(container_serial, token_serial):
     # Check if the token is in a container
     old_container = find_container_for_token(token_serial)
 
-    if old_container:
+    if old_container and old_container.serial != container.serial:
         # Remove token from old container
         remove_token_from_container(old_container.serial, token_serial)
         log.info(f"Adding token {token.get_serial()} to container {container_serial}: "

@@ -2144,7 +2144,8 @@ def get_static_policy_definitions(scope=None):
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to perform a container rollover.'),
+                                        'desc': _('Admin is allowed to perform a container rollover including a'
+                                                  'rollover of all contained tokens.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
@@ -2344,7 +2345,9 @@ def get_static_policy_definitions(scope=None):
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Users are allowed to perform a container rollover.'),
+                                        'desc': _('Users are allowed to perform a container rollover of their own '
+                                                  'containers. This includes a rollover of all contained tokens even '
+                                                  'if the user is not the owner of a contained token.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
