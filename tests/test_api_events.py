@@ -1081,7 +1081,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
     def test_05_mail_on_unregister(self):
         """
         Send a user notification if the container is unregistered
-        The smpt server is mocked to return an error. The event is successfully triggered if the error occurs in the
+        The smtp server is mocked to return an error. The event is successfully triggered if the error occurs in the
         log.
         """
         # create container with tokens

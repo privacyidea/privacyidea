@@ -622,7 +622,10 @@ class TokenContainerClass:
                 hash_algorithm = container_info.get("hash_algorithm", "SHA256")
 
                 # log to find reason for invalid signature
-                log.debug(f"Message to verify: {message}")
+                log.debug(
+                    f"Challenge data: nonce={nonce}, timestamp={times_stamp}, serial={self.serial}, scope={scope}")
+                log.debug(f"Challenge data from client: device_brand={device_brand}, device_model={device_model}, "
+                          f"key={key}, container={container} ")
                 log.debug(f"Used hash algorithm: {hash_algorithm}")
 
                 # Check signature

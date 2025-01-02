@@ -281,7 +281,7 @@ def before_request():
 
     user_required checks if there is a logged in admin or user
 
-    The checks for ONLY admin are preformed in api/system.py
+    The checks for ONLY admin are performed in api/system.py
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.

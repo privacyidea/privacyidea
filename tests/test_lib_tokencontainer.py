@@ -183,7 +183,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Add multiple tokens with one token that is already in the container
         result = add_multiple_tokens_to_container(self.smartphone_serial,
                                                   [self.totp_serial_smph, self.hotp_serial_yubi])
-        self.assertTrue(result[self.totp_serial_smph])
+        self.assertFalse(result[self.totp_serial_smph])
         self.assertTrue(result[self.hotp_serial_yubi])
 
     def test_09_remove_multiple_tokens_from_container_success(self):
