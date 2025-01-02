@@ -3,13 +3,13 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # sebastien C <sebastien.netknights@outlook.com>, 2023.
-# Gregory Bouzinac <gregory.b@orange.fr>, 2024.
+# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2024-12-31 13:00+0000\n"
+"PO-Revision-Date: 2025-01-03 09:01+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -1141,7 +1141,7 @@ msgid ""
 "webauthn poll u2f</code>"
 msgstr ""
 "Vous pouvez définir les modes client dans l'ordre que vous préférez. Par "
-"exemple : \"interactif webauthn poll u2f\". Les valeurs acceptées sont: "
+"exemple : \"interactif webauthn poll u2f\". Les valeurs acceptées sont : "
 "<code>interactif webauthn poll u2f</code>"
 
 #: lib/policy.py:2522
@@ -1550,7 +1550,6 @@ msgid "My subscription has expired."
 msgstr "Mon abonnement a expiré."
 
 #: lib/token.py:159
-#, fuzzy
 msgid "create_tokenclass_object failed:  {0!r}"
 msgstr "create_tokenclass_object échoué :  {0!r}"
 
@@ -2374,9 +2373,8 @@ msgid "The encoding that is sent to the WebHook, for example json"
 msgstr "L'encodage qui est envoyé au WebHook, par exemple json"
 
 #: lib/eventhandler/webhookeventhandler.py:97
-#, fuzzy
 msgid "You can replace placeholder like {logged_in_user}"
-msgstr "Vous pouvez changer l'emplacement réservé comme {logged_in_user}"
+msgstr "Vous pouvez remplacer l'attribut par défaut comme {logged_in_user}"
 
 #: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
@@ -2537,12 +2535,11 @@ msgid "The name of the stats key to write to the MonitoringStats table."
 msgstr "Le nom de la clé stats à écrire dans la table MonitoringStats."
 
 #: lib/task/eventcounter.py:52
-#, fuzzy
 msgid ""
 "Whether to reset the event_counter, if it is read and written to the "
 "MonitoringStats table."
 msgstr ""
-"Si réinitialisation de event_counter, s'il est lu ou écrit dans la table "
+"S'il faut réinitialiser event_counter, s'il est lu ou écrit dans la table "
 "MonitoringStats."
 
 #: lib/task/simplestats.py:46
@@ -2627,13 +2624,12 @@ msgid "The template that should be used to issue a certificate."
 msgstr "Le modèle qui doit être utilisé pour émettre un certificat."
 
 #: lib/tokens/certificatetoken.py:321
-#, fuzzy
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
 "Une liste d'éléments séparés par des espaces qui sont ajoutés au sujet. Peut "
-"être 'email' et 'realm'."
+"être 'email' et 'domaine'."
 
 #: lib/tokens/certificatetoken.py:329 lib/tokens/certificatetoken.py:336
 msgid "The directory containing attestation certificate chains."
@@ -2657,7 +2653,6 @@ msgstr ""
 "daplug actifs."
 
 #: lib/tokens/daypasswordtoken.py:34
-#, fuzzy
 msgid "Specify the time step of the DayPassword token. For example: \"24h\""
 msgstr ""
 "Spécifie la durée de validité du jeton DayPassword. Par exemple : \"24h\""
@@ -2667,7 +2662,7 @@ msgid ""
 "DayPassword: A time-based token with a variable timestep and the possibility "
 "to use the OTP more than once."
 msgstr ""
-"DayPassword: Un jeton basé sur le temps avec une variable temps et la "
+"DayPassword : Un jeton basé sur le temps avec une variable temps et la "
 "possibilité d'utiliser l'OTP plus d'une fois."
 
 #: lib/tokens/daypasswordtoken.py:119 lib/tokens/hotptoken.py:173
@@ -2706,9 +2701,10 @@ msgid ""
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
-"Le texte qui sera envoyé par courriel pour un jeton de courriel. Utilisez "
-"{otp} et {serial} comme paramètres. Vous pouvez également spécifier un nom "
-"de fichier comme modèle de courriel commençant par « file: »."
+"Le texte qui sera envoyé par courriel pour un jeton de courriel. Plusieurs "
+"tags comme {otp} et {serial} peuvent être utilisés comme paramètres. Vous "
+"pouvez également spécifier un nom de fichier comme modèle de courriel "
+"commençant par \"file:\"."
 
 #: lib/tokens/emailtoken.py:172
 msgid ""
@@ -2817,7 +2813,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:140
 msgid "HOTP: Event based One Time Passwords."
-msgstr "HOTP: Mots de passe uniques basés sur un événement."
+msgstr "HOTP : Mots de passe uniques basés sur un événement."
 
 #: lib/tokens/hotptoken.py:148
 msgid "The user may only have this maximum number of HOTP tokens assigned."
@@ -3014,7 +3010,7 @@ msgstr "Jeton PUSH"
 
 #: lib/tokens/pushtoken.py:370
 msgid "PUSH: Send a push notification to a smartphone."
-msgstr "PUSH: Envoie une notification push à un smartphone."
+msgstr "PUSH : Envoie une notification push à un smartphone."
 
 #: lib/tokens/pushtoken.py:379
 msgid "The configuration of your Firebase application."
@@ -3092,7 +3088,6 @@ msgstr ""
 "<code>PERSO</code>: prédéfinies. "
 
 #: lib/tokens/pushtoken.py:452
-#, fuzzy
 msgid ""
 "Custom options that can be presented to the user to confirm the login. The "
 "string must contain at least 2 options and should be unique. The options are "
@@ -3100,8 +3095,8 @@ msgid ""
 "<code>CUSTOM</code>."
 msgstr ""
 "Options personnalisées qui peuvent être présentées à l'utilisateur pour "
-"confirmer la connexion. La chaine doit contenir au moins 2 options et doit "
-"être unique. Les options sont séparées par <code>:</code>. e.g.: "
+"confirmer la connexion. La chaine doit contenir au moins 2 options et être "
+"unique. Les options sont séparées par <code>:</code>. e.g. : "
 "<code>01:02:03:1A:1B:1C</code>. to <code>CUSTOM</code>."
 
 #: lib/tokens/pushtoken.py:462
@@ -3118,7 +3113,6 @@ msgstr ""
 "dans la première requête."
 
 #: lib/tokens/pushtoken.py:475
-#, fuzzy
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "Configure l'autorisation des jetons push pour les challenges"
 
@@ -3203,7 +3197,7 @@ msgstr ""
 #: lib/tokens/remotetoken.py:112
 msgid "Remote Token: Forward authentication request to another server."
 msgstr ""
-"Jeton distant: transfère la requête d'authentification à un autre serveur."
+"Jeton distant : transfère la requête d'authentification à un autre serveur."
 
 #: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:164
 msgid "The user may only have this maximum number of remote tokens assigned."
@@ -3336,7 +3330,7 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:156
 msgid "TiQR: Enroll a TiQR token."
-msgstr "TiQR: Enrôle un jeton TiQR."
+msgstr "TiQR : Enrôle un jeton TiQR."
 
 #: lib/tokens/tiqrtoken.py:166
 msgid "The user may only have this maximum number of TiQR tokens assigned."
@@ -3448,7 +3442,7 @@ msgstr "Veuillez confirmer avec votre jeton WebAuthn"
 
 #: lib/tokens/webauthntoken.py:596
 msgid "WebAuthn: Enroll a Web Authentication token."
-msgstr "WebAuthn: Enrôle un jeton d'authentification Web."
+msgstr "WebAuthn : Enrôle un jeton d'authentification Web."
 
 #: lib/tokens/webauthntoken.py:606
 msgid ""
@@ -3456,7 +3450,7 @@ msgid ""
 "usb ble nfc internal (All standard transports)"
 msgstr ""
 "Une liste de transports préférés pour communiquer avec les jetons WebAuthn. "
-"Défaut: usb ble nfc interne (Tous les transports standards)"
+"Défaut : usb ble nfc interne (Tous les transports standards)"
 
 #: lib/tokens/webauthntoken.py:611
 msgid ""
@@ -3465,7 +3459,7 @@ msgid ""
 "this. Default: 60"
 msgstr ""
 "La durée en secondes que l'utilisateur a pour confirmer l'autorisation sur "
-"son jeton WebAuthn. Note: Vous pourrez incrémenter le ChallengeValidityTime "
+"son jeton WebAuthn. Note : Vous pourrez incrémenter le ChallengeValidityTime "
 "si besoin. Défaut : 60"
 
 #: lib/tokens/webauthntoken.py:617
@@ -3514,14 +3508,13 @@ msgid "A human-readable name for the organization rolling out WebAuthn tokens."
 msgstr "Un nom lisible pour l'organisation déployant les jetons WebAuthn."
 
 #: lib/tokens/webauthntoken.py:659
-#, fuzzy
 msgid ""
 "A domain name that is a subset of the respective FQDNs for all the "
 "webservices the users should be able to sign in to using WebAuthn tokens."
 msgstr ""
 "Un nom de domaine qui est un sous-ensemble des FQDN respectifs pour tous les "
-"services web où l'utilisateur est susceptible de se connecter en utilisant "
-"des jetons WebAuthn."
+"services web où les utilisateurs sont susceptibles de se connecter en "
+"utilisant des jetons WebAuthn."
 
 #: lib/tokens/webauthntoken.py:665
 msgid ""
@@ -3531,7 +3524,7 @@ msgid ""
 msgstr ""
 "La durée en secondes que l'utilisateur a pour confirmer l'enrôlement de son "
 "jeton WebAuthn. Note : vous pourrez incrémenter le ChallengeValidityTime si "
-"besoin. Défaut: 60"
+"besoin. Défaut : 60"
 
 #: lib/tokens/webauthntoken.py:672
 msgid ""
@@ -3562,29 +3555,25 @@ msgstr ""
 "par le jeton)"
 
 #: lib/tokens/webauthntoken.py:703
-#, fuzzy
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
 msgstr ""
-"Quels algorithmes sont disponibles à l'utilisation pour la création des "
-"identifiants de clé publique pour les jetons WebAuthn. (Défaut: [{0!s}], "
-"Ordre: [{1!s}])"
+"Algorithmes disponibles à l'utilisation pour la création des identifiants de "
+"clé publique pour les jetons WebAuthn. (Défaut : [{0!s}], Ordre : [{1!s}])"
 
 #: lib/tokens/webauthntoken.py:710
-#, fuzzy
 msgid ""
 "Whether to request attestation data when enrolling a new WebAuthn token. "
 "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
 "Default: direct (ask for non-anonymized attestation data)"
 msgstr ""
 "Si les données de l'attestation sont demandées lors de l'enrôlement d'un "
-"nouveau jeton WebAuthn. Note: pour que u2f_req fonctionne avec WebAuthn, il "
-"ne doit pas être défini à aucun. Défaut: direct (demande pour les données "
+"nouveau jeton WebAuthn. Note : pour que u2f_req fonctionne avec WebAuthn, il "
+"ne doit pas être défini à aucun. Défaut : direct (demande pour les données "
 "d'attestation non anonymes)"
 
 #: lib/tokens/webauthntoken.py:722
-#, fuzzy
 msgid ""
 "Whether and how strictly to check authenticator attestation data. Note: If "
 "the attestation form is none, the attestation level needs to also be none. "
@@ -3592,9 +3581,9 @@ msgid ""
 "signed)"
 msgstr ""
 "Si et à quel point les données d'attestation de l'authentificateur sont "
-"vérifiées. Note: si le formulaire d'attestation est aucun, le niveau "
-"d'attestation doit aussi être à aucun. Défaut: untrusted (l'attestation est "
-"requise, mais peut être inconnue ou auto-signée)"
+"vérifiées. Note : si le formulaire d'attestation est aucun, le niveau "
+"d'attestation doit aussi être à aucun. Défaut : non fiable (l'attestation "
+"est requise, mais peut être inconnue ou auto-signée)"
 
 #: lib/tokens/webauthntoken.py:734
 msgid "Only the specified WebAuthn-tokens are allowed to be registered."
@@ -3613,22 +3602,20 @@ msgstr ""
 "WebAuthn actifs."
 
 #: lib/tokens/webauthntoken.py:749
-#, fuzzy
 msgid ""
 "Use an alternative challenge text for telling the user to confirm the "
 "enrollment with his WebAuthn device. You can also use tags for automated "
 "replacement. Check out the documentation for more details."
 msgstr ""
 "Utiliser un texte alternatif de challenge pour indiquer à l'utilisateur de "
-"confirmer l'enrôlement de son appareil WebAuthn. Vous pouvez aussi utiliser "
-"des tags pour le remplacement automatique. Consultez la documentation pour "
-"plus de détails."
+"confirmer l'enrôlement avec son appareil WebAuthn. Vous pouvez aussi "
+"utiliser des tags pour le remplacement automatique. Consultez la "
+"documentation pour plus de détails."
 
 #: lib/tokens/yubicotoken.py:101
-#, fuzzy
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
 msgstr ""
-"Yubikey Mode Cloud: Transfère la requête d'authentification à YubiCloud."
+"Yubikey Mode Cloud : Transfère la requête d'authentification à YubiCloud."
 
 #: lib/tokens/yubicotoken.py:110
 msgid "The user may only have this maximum number of Yubico tokens assigned."
@@ -3644,9 +3631,8 @@ msgstr ""
 "Yubico actifs."
 
 #: lib/tokens/yubikeytoken.py:160
-#, fuzzy
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
-msgstr "Yubikey Mode AES: Mots de passe uniques avec Yubikey."
+msgstr "Yubikey Mode AES : Mots de passe uniques avec Yubikey."
 
 #: lib/tokens/yubikeytoken.py:169
 msgid "The user may only have this maximum number of Yubikey tokens assigned."
@@ -3662,7 +3648,6 @@ msgstr ""
 "Yubikey actifs."
 
 #: lib/tokens/yubikeytoken.py:180
-#, fuzzy
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize "
 "Yubikeys."
@@ -3671,20 +3656,16 @@ msgstr ""
 "initialiser Yubikeys."
 
 #: lib/utils/compare.py:189
-#, fuzzy
 msgid "true if the value of the left attribute contains the right value"
 msgstr "vrai si la valeur de l'attribut de gauche contient la valeur de droite"
 
 #: lib/utils/compare.py:190
-#, fuzzy
 msgid "false if the value of the left attribute contains the right value"
 msgstr "faux si la valeur de l'attribut de gauche contient la valeur de droite"
 
 #: lib/utils/compare.py:192
-#, fuzzy
 msgid "true if the value of the left attribute equals the right value"
-msgstr ""
-"vrai si la valeur de l'attribut de gauche équivaut à la valeur de droite"
+msgstr "vrai si la valeur de l'attribut de gauche égale celle de droite"
 
 #: lib/utils/compare.py:193
 msgid "false if the value of the left attribute equals the right value"
@@ -3692,7 +3673,6 @@ msgstr ""
 "faux si la valeur de l'attribut de gauche équivaut à la valeur de droite"
 
 #: lib/utils/compare.py:195
-#, fuzzy
 msgid ""
 "true if the value of the left attribute completely matches the given regular "
 "expression pattern on the right"
@@ -3701,7 +3681,6 @@ msgstr ""
 "donné de l'expression régulière de droite"
 
 #: lib/utils/compare.py:196
-#, fuzzy
 msgid ""
 "false if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
@@ -3710,7 +3689,6 @@ msgstr ""
 "donné de l'expression régulière de droite"
 
 #: lib/utils/compare.py:198
-#, fuzzy
 msgid ""
 "true if the value of the left attribute is contained in the comma-separated "
 "values on the right"
@@ -3719,7 +3697,6 @@ msgstr ""
 "séparées par des virgules de la valeur de droite"
 
 #: lib/utils/compare.py:199
-#, fuzzy
 msgid ""
 "false if the value of the left attribute is contained in the comma-separated "
 "values on the right"
@@ -3728,7 +3705,6 @@ msgstr ""
 "séparées par des virgules de la valeur de droite"
 
 #: lib/utils/compare.py:201
-#, fuzzy
 msgid ""
 "true if the integer value of the left attribute is smaller than the right "
 "integer value"
@@ -3737,7 +3713,6 @@ msgstr ""
 "droite"
 
 #: lib/utils/compare.py:202
-#, fuzzy
 msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
