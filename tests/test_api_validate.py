@@ -6386,12 +6386,13 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
             self.assertEqual(200, res.status_code)
             data = res.json
-            print(data)
             detail = data.get("detail")
             result = data.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual("Found matching challenge", detail.get("message"))
+            self.assertIn("serial", detail)
+            self.assertIn("auth_items", data)
             auth_items = data.get("auth_items")
             """
             auth_items looks like this:

@@ -518,9 +518,8 @@ def offline_info(request, response):
     """
     This decorator is used with the function /validate/check.
     It is not triggered by an ordinary policy but by a MachineToken definition.
-    If for the given Token an offline application is defined,
-    the response is enhanced with the offline information - the hashes of the
-    OTP.
+    If for the given Token an offline application is defined, the hashes of OTP values or FIDO2 credential information
+    is added to the response.
 
     """
     content = response.json

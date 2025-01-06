@@ -2529,10 +2529,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
                     # clean up all challenges from this and other tokens. I.e.
                     # all challenges with this very transaction_id!
-                    transaction_id = options.get("transaction_id") or \
-                                     options.get("state")
-                    Challenge.query.filter(Challenge.transaction_id == '' +
-                                           transaction_id).delete()
+                    transaction_id = options.get("transaction_id") or options.get("state")
+                    Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
                     # We have one successful authentication, so we bail out
                     break
 
@@ -2870,12 +2868,34 @@ def challenge_text_replace(message, user, token_obj):
     return message
 
 
-def find_fido2_token_by_credential_id(credential_id: str):
+def get_fido2_token_by_transaction_id(transaction_id: str):
+    """
+    Find a fido2 token (WebAuthn or Passkey) by the transaction_id of the challenge.
+    If the challenge or the token is not found, or the token is not a FIDO2 token, None is returned.
+
+    :param transaction_id: The transaction_id of the challenge
+    :return: The token object or None
+    """
+    challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
+    if not challenge:
+        log.info(f"Challenge with transaction_id {transaction_id} not found.")
+        return None
+    token = Token.query.filter(Token.serial == challenge.serial).first()
+    if not token:
+        log.info(f"Token with serial {challenge.serial} not found.")
+        return None
+    if not token.tokentype in ["webauthn", "passkey"]:
+        log.info(f"Token with serial {challenge.serial} is not a FIDO2 token, but {token.serial}.")
+        return None
+    return create_tokenclass_object(token)
+
+
+def get_fido2_token_by_credential_id(credential_id: str):
     """
     Find a fido2 token (WebAuthn or Passkey) by the credential_id.
 
     :param credential_id: The credential_id as returned by an authenticator
-    :return: The token object
+    :return: The token object or None
     """
     h = hashlib.sha256(base64url_to_bytes(credential_id))
     cred_id_hash = h.hexdigest()
@@ -2886,7 +2906,7 @@ def find_fido2_token_by_credential_id(credential_id: str):
         return create_tokenclass_object(token)
     except Exception as ex:
         log.warning(f"Failed to find credential with id: {credential_id}. {ex}")
-        raise ResourceNotFoundError(f"Failed to find credential with id: {credential_id}. {ex}")
+        return None
 
 
 def get_fido2_nonce() -> str:
@@ -2945,6 +2965,10 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
         "user_verification": get_optional(params, "webauthn_user_verification_requirement", "preferred")
     }
+    # These parameters are required for compatibility with the old WebAuthnToken class
+    if token.type == "webauthn":
+        options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
+        options.update({"user": token.user})
     return token.check_otp(None, options=options)
 
 

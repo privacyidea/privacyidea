@@ -98,20 +98,22 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib import _
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.policy import PolicyClass, Match, SCOPE
+from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
-                                   find_fido2_token_by_credential_id, verify_fido2_challenge)
+                                   get_fido2_token_by_credential_id, verify_fido2_challenge,
+                                   get_fido2_token_by_transaction_id)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.user import get_user_from_param, log_used_user, User
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, create_img
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
@@ -413,14 +415,21 @@ def check():
     if credential_id:
         # Find the token that responded to the challenge
         transaction_id: str = get_required(request.all_data, "transaction_id")
-        try:
-            token = find_fido2_token_by_credential_id(credential_id)
+        token = get_fido2_token_by_credential_id(credential_id)
+        if not token:
+            log.info(f"No token found for the given credential id {credential_id}. "
+                     f"Trying to get the token by transaction id...")
+            # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
+            token = get_fido2_token_by_transaction_id(transaction_id)
+            if not token:
+                log.info(f"No token found for the given transaction id {transaction_id}.")
+                return send_result(False, rid=2, details={
+                    "message": "No token found for the given credential ID or transaction ID!"})
+
             if not token.user:
                 return send_result(False, rid=2, details={
                     "message": "No user found for the token with the given credential ID!"})
             user = token.user
-        except ResourceNotFoundError:
-            return send_result(False, rid=2, details={"message": "No token found for the given credential ID!"})
 
         r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
         result = r > 0
@@ -428,7 +437,9 @@ def check():
         if r > 0:
             # If the authentication was successful, return the username of the token owner
             # TODO what is returned could be configurable, attribute mapping
-            details = {"username": token.user.login}
+            details = {"username": token.user.login,
+                       "message": _("Found matching challenge"),
+                       "serial": token.get_serial()}
     # End Passkey
     else:
         if serial:
@@ -473,8 +484,6 @@ def check():
         serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
     else:
         serials = details.get("serial")
-    # serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
-    #          if 'multi_challenge' in details else details.get('serial'))
     ret = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,

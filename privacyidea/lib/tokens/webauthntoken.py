@@ -20,29 +20,30 @@
 #
 
 import binascii
+import logging
 
 from cryptography import x509
 
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
+from privacyidea.api.lib.utils import (getParam, attestation_certificate_allowed, get_required_one_of,
+                                       get_optional_one_of, get_optional)
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
                                              WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
                                              WebAuthnAssertionResponse, AuthenticationRejectedException,
                                              USER_VERIFICATION_LEVEL)
-from privacyidea.lib.tokens.u2ftoken import IMAGES
-from privacyidea.lib.log import log_with
-import logging
-from privacyidea.lib import _, lazy_gettext
-from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
+from privacyidea.lib.utils import hexlify_and_unicode, is_true
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -1208,13 +1209,13 @@ class WebAuthnTokenClass(TokenClass):
         :rtype: int
         """
 
-        if is_webauthn_assertion_response(options) and getParam(options, "challenge", optional):
-            credential_id = getParam(options, "credentialid", required)
-            authenticator_data = getParam(options, "authenticatordata", required)
-            client_data = getParam(options, "clientdata", required)
-            signature_data = getParam(options, "signaturedata", required)
-            user_handle = getParam(options, "userhandle", optional)
-            assertion_client_extensions = getParam(options, "assertionclientextensions", optional)
+        if is_webauthn_assertion_response(options) and get_optional(options, "challenge"):
+            credential_id = get_required_one_of(options, ["credential_id", "credentialid"])
+            authenticator_data = get_required_one_of(options, ["authenticatorData", "authenticatordata"])
+            client_data = get_required_one_of(options, ["clientDataJSON", "clientdata"])
+            signature_data = get_required_one_of(options, ["signature", "signaturedata"])
+            user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
+            assertion_client_extensions = get_optional(options, "assertionClientExtensions")
 
             # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
             # policy exception.
@@ -1311,7 +1312,7 @@ def is_webauthn_assertion_response(request_data):
     :rtype: bool
     """
 
-    return bool(getParam(request_data, "credentialid", optional)
-                and getParam(request_data, "authenticatordata", optional)
-                and getParam(request_data, "clientdata", optional)
-                and getParam(request_data, "signaturedata", optional))
+    return bool(get_optional_one_of(request_data, ["credential_id", "credentialid"])
+                and get_optional_one_of(request_data, ["authenticatorData", "authenticatordata"])
+                and get_optional_one_of(request_data, ["clientDataJSON", "clientdata"])
+                and get_optional_one_of(request_data, ["signature", "signaturedata"]))

@@ -46,7 +46,6 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE
 from privacyidea.lib.tokens.webauthntoken import WEBAUTHNCONFIG, WEBAUTHNACTION, WEBAUTHNINFO
 from privacyidea.models import Challenge
