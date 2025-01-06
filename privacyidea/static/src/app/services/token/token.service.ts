@@ -189,4 +189,9 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     return this.http.get(`http://127.0.0.1:5000/tokengroup`, {headers})
   }
+
+  lostToken(serial: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}lost/` + serial, {headers});
+  }
 }

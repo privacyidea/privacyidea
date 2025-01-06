@@ -1,9 +1,9 @@
-<div [ngClass]="{'margin-top-20': this.overflowService.isOverflowing1580('.token-layout'),
- 'pad-0': this.overflowService.isOverflowing1310('.token-layout')}" class="info-container">
-  <span [ngClass]="{'border-top': this.overflowService.isOverflowing1580('.token-layout')}"
+<div [ngClass]="{'margin-top-20': overflowService.isOverflowing('.token-layout', 1580),
+ 'pad-0': overflowService.isOverflowing('.token-layout', 1310)}" class="info-container">
+  <span [ngClass]="{'border-top': overflowService.isOverflowing('.token-layout', 1580)}"
         class="info-title details-key-row">Information</span>
   <table [dataSource]="infoData()"
-         [ngClass]="{'border-top': this.overflowService.isOverflowing1580('.token-layout')}"
+         [ngClass]="{'border-top': overflowService.isOverflowing('.token-layout', 1580)}"
          aria-label="Token Detail Data Table"
          class="info-table" mat-table>
     <ng-container matColumnDef="value">

@@ -13,9 +13,10 @@ $list-padding: var(--global-padding);
     padding: 0;
   }
 
-  ::ng-deep .mat-mdc-tab {
-    padding-left: $tab-padding;
-    padding-right: $tab-padding;
+  ::ng-deep {
+    .mat-mdc-tab {
+      padding-left: $tab-padding;
+      padding-right: $tab-padding;
+    }
   }
 }
-

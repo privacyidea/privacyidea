@@ -5,8 +5,6 @@ $header-shadow: var(--box-shadow);
 $menu-link-color: #767676;
 $hover-bg: var(--background-blue);
 $active-bg: var(--blue-base);
-$profile-bg: var(--background-yellow);
-$profile-hover-bg: var(--background-yellow-inset);
 $shadow-white: var(--box-shadow-white);
 $border-radius: var(--border-radius);
 
@@ -72,36 +70,6 @@ $border-radius: var(--border-radius);
         transform: translateX(-2px);
         transition: transform 200ms, box-shadow 200ms ease;
       }
-    }
-  }
-
-  .refresh-btn {
-    margin-left: auto;
-    width: 100px;
-    height: 60px;
-    cursor: pointer;
-    border-radius: 0;
-    background: $header-bg;
-    box-shadow: none;
-  }
-
-  .profile-btn {
-    margin-left: 20px;
-    margin-right: 40px;
-    height: 40px;
-    width: 166px;
-    border: none;
-    border-radius: $border-radius;
-    background: $profile-bg;
-    box-shadow: $shadow-white;
-    cursor: pointer;
-    color: white;
-
-    &:hover {
-      box-shadow: none;
-      background: $profile-hover-bg;
-      color: white;
-      transform: translateX(2px);
     }
   }
 

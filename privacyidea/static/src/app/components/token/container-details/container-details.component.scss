@@ -11,6 +11,8 @@ $gap-small: 8px;
   box-shadow: var(--box-shadow);
   background-color: var(--table-color);
   padding: var(--global-padding);
+  margin-left: 1rem;
+  overflow: auto;
 }
 
 h3 {

@@ -10,7 +10,7 @@ $margin-bottom-main: 6rem;
 .token-drawer {
   height: fit-content;
   margin-top: 2rem;
-  box-shadow: 2px 2px 32px #656668;
+  box-shadow: var(--box-shadow-hover);
   border-radius: var(--border-radius);
 }
 

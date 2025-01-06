@@ -143,7 +143,7 @@ export class TableUtilsService {
     return element[columnKey];
   }
 
-  getSpanClassForKeyMap(key: string, value: any, maxfail: any): string {
+  getSpanClassForKey(key: string, value: any, maxfail: any): string {
     if (key === 'description') {
       return 'details-table-item details-description'
     }
@@ -192,7 +192,7 @@ export class TableUtilsService {
     return 'table-scrollable-container';
   }
 
-  getDisplayTextForKeyMap(key: string, value: any, revoked: boolean): string {
+  getDisplayTextForKey(key: string, value: any, revoked: boolean): string {
     if (value === '') {
       return '';
     }

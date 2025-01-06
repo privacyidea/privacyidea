@@ -1,6 +1,6 @@
 <div [ngClass]="[
-        this.overflowService.isOverflowing1580('.token-layout') ? 'flex-column' : 'flex-row',
-        this.overflowService.isOverflowing1310('.token-layout') ? 'pad-0' :
+        overflowService.isOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row',
+        overflowService.isOverflowing('.token-layout', 1310) ? 'pad-0' :
         '']" class="user-container ali-center">
   <table [dataSource]="userData()" aria-label="User Detail Data Table"
          class="user-details-table"

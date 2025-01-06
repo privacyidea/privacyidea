@@ -32,24 +32,6 @@ $border-radius: var(--border-radius);
     gap: 20px;
   }
 
-  .support-btn {
-    height: 40px;
-    margin: 0 20px;
-    border: none;
-    border-radius: $border-radius;
-    background: $btn-bg;
-    cursor: pointer;
-    color: $footer-text-color;
-
-    &:hover {
-      opacity: 0.9;
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
-  }
-
   a {
     text-decoration: none;
     color: $link-color;

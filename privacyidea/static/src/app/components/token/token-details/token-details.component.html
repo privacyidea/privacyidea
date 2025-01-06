@@ -5,7 +5,7 @@
       <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
     </div>
     <div [ngClass]="[
-       this.overflowService.isOverflowing1310('.token-layout') ? 'flex-column' : 'flex-row']"
+       overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
          class="details-flex-layout">
       <div>
         <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
@@ -22,7 +22,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18 container-form-field">
                       <mat-label>Select Container</mat-label>
                       <input matInput
                              [(ngModel)]="selectedContainer"
@@ -114,10 +114,10 @@
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                    <span [ngClass]="[tableUtilsService.getSpanClassForKeyMap(element.keyMap.key,
+                    <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
                           element.value, maxfail)]">
                       {{
-                        tableUtilsService.getDisplayTextForKeyMap(element.keyMap.key, element.value,
+                        tableUtilsService.getDisplayTextForKey(element.keyMap.key, element.value,
                           revoked())
                       }}
                     </span>
@@ -162,7 +162,7 @@
               mat-row></tr>
         </table>
       </div>
-      @if (this.overflowService.isOverflowing1310('.token-layout')) {
+      @if (overflowService.isOverflowing('.token-layout', 1310)) {
         <br style="margin: 10px"/>
         <mat-divider/>
         <br style="margin: 10px"/>
@@ -178,8 +178,8 @@
                                 [setPinValue]="setPinValue"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
-        <div [ngClass]="[
-        this.overflowService.isOverflowing1580('.token-layout') ? 'flex-column ali-center' : 'flex-row']"
+        <div [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
+        ? 'flex-column ali-center' : 'flex-row']"
              class="details-flex-layout">
           <app-token-details-info [detailData]="detailData" [infoData]="infoData"
                                   [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"

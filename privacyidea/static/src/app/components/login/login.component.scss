@@ -47,20 +47,4 @@ $border-radius: var(--border-radius);
       margin-bottom: 16px;
     }
   }
-
-  .login-btn {
-    text-decoration: none;
-    color: $btn-text-color;
-    padding: 10px;
-    border-radius: $border-radius;
-    box-shadow: $box-shadow;
-    background: $btn-bg;
-
-    &:hover {
-      box-shadow: none;
-      background: $btn-hover-bg;
-      color: $btn-text-color;
-      transform: translateY(2px);
-    }
-  }
 }

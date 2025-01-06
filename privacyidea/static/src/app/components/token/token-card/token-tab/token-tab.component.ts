@@ -7,6 +7,8 @@ import {NgClass} from '@angular/common';
 import {switchMap} from 'rxjs';
 import {TokenService} from '../../../../services/token/token.service';
 import {tabToggleState} from '../../../../../styles/animations/animations';
+import {MatDialog} from '@angular/material/dialog';
+import {LostTokenComponent} from './lost-token/lost-token.component';
 
 @Component({
   selector: 'app-token-tab',
@@ -30,7 +32,8 @@ export class TokenTabComponent {
   @Input() revoked!: WritableSignal<boolean>
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
 
-  constructor(private tokenService: TokenService) {
+  constructor(private tokenService: TokenService,
+              private dialog: MatDialog) {
   }
 
   toggleActive(): void {
@@ -67,6 +70,13 @@ export class TokenTabComponent {
       error: error => {
         console.error('Failed to delete token', error);
       }
+    });
+  }
+
+  openLostTokenDialog() {
+    this.dialog.open(LostTokenComponent, {
+      disableClose: true,
+      data: { serial: this.serial }
     });
   }
 }

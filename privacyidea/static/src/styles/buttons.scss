@@ -9,6 +9,11 @@ $margin-bottom-small: -6px;
 $keyword-bg: #f3f3f3;
 $keyword-font-size: 18px;
 $keyword-color: #999999;
+$button-border-radius: 3px;
+$profile-bg: var(--background-yellow);
+$profile-hover-bg: var(--background-yellow-inset);
+$shadow-white: var(--box-shadow-white);
+$header-bg: white;
 
 // Mixins for common button styles
 @mixin button-base($height, $width, $border-radius, $background, $box-shadow, $cursor: pointer) {
@@ -31,22 +36,57 @@ $keyword-color: #999999;
   }
 }
 
+.login-btn {
+  text-decoration: none;
+  color: white;
+  padding: 10px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: var(--background-blue);
+
+  &:hover {
+    box-shadow: none;
+    background: var(--background-blue-inset);
+    color: white;
+    transform: translateY(2px);
+  }
+}
+
+.support-btn {
+  height: 40px;
+  margin: 0 20px;
+  border: none;
+  border-radius: $button-border-radius;
+  background: var(--background-green-brand);
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+
 .card-button {
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue), var(--box-shadow-blue));
   @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-reset {
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-green), var(--box-shadow-green));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
 }
 
 .card-button-activ {
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue-inset), var(--box-shadow-blue-inset));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-delete {
   margin-right: 5px;
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-red), var(--box-shadow-red));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-red), var(--box-shadow-red));
 
   &.activ,
   &:hover {
@@ -58,7 +98,7 @@ $keyword-color: #999999;
 
 .card-button-activate {
   color: white;
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-green), var(--box-shadow-green));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
 
   &.activ,
   &:hover {
@@ -70,7 +110,7 @@ $keyword-color: #999999;
 
 .detail-button {
   color: white;
-  @include button-base($button-height, $button-width, var(--border-radius), var(--background-blue), var(--box-shadow-blue));
+  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue), var(--box-shadow-blue));
   @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
@@ -96,7 +136,7 @@ $keyword-color: #999999;
 .keyword-button,
 .more-keyword-button {
   background-color: $keyword-bg;
-  border-radius: var(--border-radius);
+  border-radius: $button-border-radius;
   height: $keyword-height;
   margin: 3px;
   box-shadow: none;
@@ -129,4 +169,34 @@ $keyword-color: #999999;
 
 .remove-keyword {
   color: var(--red-light);
+}
+
+.refresh-btn {
+  margin-left: auto;
+  width: 100px;
+  height: 60px;
+  cursor: pointer;
+  border-radius: 0;
+  background: $header-bg;
+  box-shadow: none;
+}
+
+.profile-btn {
+  margin-left: 20px;
+  margin-right: 40px;
+  height: 40px;
+  width: 166px;
+  border: none;
+  border-radius: $button-border-radius;
+  background: $profile-bg;
+  box-shadow: $shadow-white;
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    box-shadow: none;
+    background: $profile-hover-bg;
+    color: white;
+    transform: translateX(2px);
+  }
 }

@@ -1,6 +1,6 @@
 <div class="edit-button-container">
   @if (!isAnyEditingOrRevoked()) {
-    <button mat-icon-button class="black"
+    <button mat-icon-button class="black flex"
             (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
       <mat-icon>
         edit
@@ -10,12 +10,12 @@
   || (isEditingUser() && element.keyMap.key === "username")
   || (isEditingInfo() && element.keyMap.key === "info")) {
     @if (!isEditingUser()) {
-      <button mat-icon-button class="black"
+      <button mat-icon-button class="black flex"
               (click)="toggleEditMode(element, element.keyMap.key, 'save')">
         <mat-icon>save_as</mat-icon>
       </button>
     }
-    <button mat-icon-button class="red"
+    <button mat-icon-button class="red flex"
             (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
       <mat-icon>cancel</mat-icon>
     </button>

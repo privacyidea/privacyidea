@@ -13,7 +13,7 @@ html, body {
 
 :root {
   --blur: 4px;
-  --border-radius: 3px;
+  --border-radius: 6px;
   --light-distance: -4px;
   --shadow-distance: 2px;
   --global-padding: 1.25rem;
@@ -80,6 +80,7 @@ html, body {
   --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
 
   --box-shadow-header: 4px 2px var(--blur) var(--shadow);
+  --box-shadow-hover: 2px 2px 32px #656668;
   --table-color: white;
 
   --mdc-filled-text-field-container-color: var(--light);

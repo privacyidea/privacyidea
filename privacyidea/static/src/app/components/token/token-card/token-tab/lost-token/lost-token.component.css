@@ -1,0 +1,17 @@
+@import '../../../../../../styles/styles.scss';
+
+.dialog-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.mat-mdc-button {
+  color: var(--blue-base);
+}
+
+::ng-deep .mat-mdc-dialog-surface {
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-hover);
+}
