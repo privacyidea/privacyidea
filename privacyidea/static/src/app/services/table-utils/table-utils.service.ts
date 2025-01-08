@@ -213,4 +213,12 @@ export class TableUtilsService {
     }
     return classes;
   }
+
+  getSpanClassForState(state: string) {
+    if (state === 'active') {
+      return 'highlight-true';
+    } else {
+      return 'highlight-false';
+    }
+  }
 }

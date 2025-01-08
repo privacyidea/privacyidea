@@ -24,9 +24,9 @@ import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
 import {OverflowService} from '../../../services/overflow/overflow.service';
 import {MatDivider} from '@angular/material/divider';
 
-export const detailsKeyMap = [
+export const tokenDetailsKeyMap = [
   {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Active'},
+  {key: 'active', label: 'Status'},
   {key: 'maxfail', label: 'Max Count'},
   {key: 'failcount', label: 'Fail Count'},
   {key: 'rollout_state', label: 'Rollout State'},
@@ -81,11 +81,7 @@ export const infoDetailsKeyMap = [
   styleUrl: './token-details.component.scss'
 })
 export class TokenDetailsComponent {
-  protected readonly Array = Array;
-  protected readonly Object = Object;
-  protected readonly signal = signal;
   @Input() serial!: WritableSignal<string>
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
@@ -95,11 +91,11 @@ export class TokenDetailsComponent {
   repeatPinValue = signal('');
   filteredContainerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
-  detailData = signal<{
+  tokenDetailData = signal<{
     value: any;
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
-  }[]>(detailsKeyMap.map(detail => ({
+  }[]>(tokenDetailsKeyMap.map(detail => ({
     keyMap: detail,
     value: '',
     isEditing: signal(false)
@@ -123,7 +119,7 @@ export class TokenDetailsComponent {
     isEditing: signal(false)
   })));
   isAnyEditingOrRevoked = computed(() => {
-    const detailData = this.detailData();
+    const detailData = this.tokenDetailData();
 
     return (
       detailData.some(element => element.isEditing()) ||
@@ -146,7 +142,7 @@ export class TokenDetailsComponent {
               protected overflowService: OverflowService,
               protected tableUtilsService: TableUtilsService) {
     effect(() => {
-      this.showTokenDetail(this.serial()).subscribe();
+      this.showTokenDetail().subscribe();
     });
 
     effect(() => {
@@ -165,9 +161,9 @@ export class TokenDetailsComponent {
     return typeof value === 'object' && value !== null;
   }
 
-  showTokenDetail(serial: string): Observable<void> {
+  showTokenDetail(): Observable<void> {
     return forkJoin([
-      this.tokenService.getTokenDetails(serial),
+      this.tokenService.getTokenDetails(this.serial()),
       this.realmService.getRealms(),
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms]) => {
@@ -176,7 +172,7 @@ export class TokenDetailsComponent {
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
         this.selectedContainer.set(tokenDetails.container_serial);
-        this.detailData.set(detailsKeyMap.map(detail => ({
+        this.tokenDetailData.set(tokenDetailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
           isEditing: signal(false)
@@ -211,7 +207,7 @@ export class TokenDetailsComponent {
 
   resetFailCount(): void {
     this.tokenService.resetFailCount(this.serial()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
         console.error('Failed to reset fail counter', error);
@@ -269,7 +265,7 @@ export class TokenDetailsComponent {
       this.tokenService.getTokengroups().subscribe({
         next: (tokengroups: any) => {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
-          this.selectedTokengroup.set(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+          this.selectedTokengroup.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
         },
         error: error => {
           console.error('Failed to get tokengroups', error);
@@ -299,23 +295,23 @@ export class TokenDetailsComponent {
         this.selectedContainer.set('');
         break;
       case 'tokengroup':
-        this.selectedTokengroup.set(this.detailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+        this.selectedTokengroup.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
         break;
       case 'realms':
-        this.selectedRealms.set(this.detailData().find(detail => detail.keyMap.key === 'realms')?.value);
+        this.selectedRealms.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'realms')?.value);
         break;
       default:
-        this.showTokenDetail(this.serial()).subscribe();
+        this.showTokenDetail().subscribe();
         break;
     }
   }
 
   saveDetail(key: string, value: string): void {
     this.tokenService.setTokenDetail(this.serial(), key, value).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
-        this.showTokenDetail(this.serial());
+        this.showTokenDetail();
       },
       error: error => {
         console.error('Failed to save token detail', error);
@@ -325,7 +321,7 @@ export class TokenDetailsComponent {
 
   saveContainer() {
     this.containerService.assignContainer(this.serial(), this.selectedContainer()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
         console.error('Failed to assign container', error);
@@ -335,7 +331,7 @@ export class TokenDetailsComponent {
 
   deleteContainer() {
     this.containerService.unassignContainer(this.serial(), this.selectedContainer()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
         console.error('Failed to unassign container', error);
@@ -345,10 +341,10 @@ export class TokenDetailsComponent {
 
   private saveRealms() {
     this.tokenService.setTokenRealm(this.serial(), this.selectedRealms()).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
-        this.showTokenDetail(this.serial());
+        this.showTokenDetail();
       },
       error: error => {
         console.error('Failed to save token realms', error);
@@ -358,10 +354,10 @@ export class TokenDetailsComponent {
 
   private saveTokengroup(value: any) {
     this.tokenService.setTokengroup(this.serial(), value).pipe(
-      switchMap(() => this.showTokenDetail(this.serial()))
+      switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
-        this.showTokenDetail(this.serial());
+        this.showTokenDetail();
       },
       error: error => {
         console.error('Failed to set token group', error);

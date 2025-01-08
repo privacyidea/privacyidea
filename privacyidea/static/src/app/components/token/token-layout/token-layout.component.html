@@ -1,22 +1,24 @@
 <div aria-label="Token Layout" class="token-layout">
   @if (!overflowService.isOverflowing('.token-layout', 1880)) {
     <app-token-card class="margin-right-1"
-      [active]="active"
-      [containerIsSelected]="containerIsSelected"
-      [refreshTokenDetails]="refreshTokenDetails"
-      [revoked]="revoked"
-      [selectedTabIndex]="selectedTabIndex"
-      [serial]="serial"
-      [tokenIsSelected]="tokenIsSelected">
+                    [active]="tokenIsActive" [states]="states"
+                    [containerIsSelected]="containerIsSelected"
+                    [refreshTokenDetails]="refreshTokenDetails"
+                    [refreshContainerDetails]="refreshContainerDetails"
+                    [revoked]="revoked"
+                    [selectedTabIndex]="selectedTabIndex"
+                    [serial]="serial"
+                    [tokenIsSelected]="tokenIsSelected">
     </app-token-card>
   }
   <mat-drawer-container>
     @if (overflowService.isOverflowing('.token-layout', 1880)) {
       <mat-drawer #drawer [mode]="'over'" class="token-drawer">
         <app-token-card
-          [active]="active"
+          [states]="states"
           [containerIsSelected]="containerIsSelected"
           [refreshTokenDetails]="refreshTokenDetails"
+          [refreshContainerDetails]="refreshContainerDetails"
           [revoked]="revoked"
           [selectedTabIndex]="selectedTabIndex"
           [serial]="serial"
@@ -41,8 +43,7 @@
                 <app-token-details
                   #tokenDetailsComponent
                   [serial]="serial"
-                  [tokenIsSelected]="tokenIsSelected"
-                  [active]="active"
+                  [active]="tokenIsActive"
                   [revoked]="revoked"
                   [refreshTokenDetails]="refreshTokenDetails">
                 </app-token-details>
@@ -56,7 +57,10 @@
               @let containerSelected = containerIsSelected();
               @if (containerSelected) {
                 <app-container-details
-                  [serial]="serial">
+                  #containerDetailsComponent
+                  [serial]="serial"
+                  [states]="states"
+                  [refreshContainerDetails]="refreshContainerDetails">
                 </app-container-details>
               } @else {
                 <app-container-table

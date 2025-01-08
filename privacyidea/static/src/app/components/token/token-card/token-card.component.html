@@ -26,7 +26,9 @@
           <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [containerIsSelected]="containerIsSelected"></app-container-tab>
+          <app-container-tab [states]="states" [refreshContainerDetails]="refreshContainerDetails"
+                             [serial]="serial" [containerIsSelected]="containerIsSelected">
+          </app-container-tab>
         </ng-template>
       </mat-tab>
     </mat-tab-group>

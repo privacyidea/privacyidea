@@ -16,7 +16,7 @@ describe('EditButtonsComponent', () => {
     fixture = TestBed.createComponent(EditButtonsComponent);
     component = fixture.componentInstance;
     component.element = {keyMap: {key: 'value', label: 'label'}};
-    component.isAnyEditingOrRevoked = signal(false);
+    component.shouldHide = signal(false);
     fixture.detectChanges();
   });
 

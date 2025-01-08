@@ -28,7 +28,9 @@ export class TokenCardComponent {
   @Input() serial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
+  @Input() states!: WritableSignal<string[]>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() selectedTabIndex!: WritableSignal<number>;
 
   constructor(protected overflowService: OverflowService) {}

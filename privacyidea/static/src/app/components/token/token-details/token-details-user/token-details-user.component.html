@@ -52,7 +52,7 @@
             </div>
           } @else {
             <app-edit-buttons [toggleEditMode]="toggleUserEditMode.bind(this)"
-                              [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+                              [shouldHide]="isAnyEditingOrRevoked"
                               [isEditingUser]="isEditingUser"
                               [isEditingInfo]="isEditingInfo"
                               [element]="element">

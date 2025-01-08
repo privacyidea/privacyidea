@@ -106,7 +106,6 @@ describe('TokenDetailsComponent', () => {
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
     component.serial = signal('Mock serial');
-    component.tokenIsSelected = signal(false);
     component.active = signal(false);
     component.revoked = signal(false);
     component.containerOptions = signal(['container1', 'container2', 'admin-container']);
@@ -117,7 +116,7 @@ describe('TokenDetailsComponent', () => {
       isEditing: signal(false)
     }]);
     component.realmOptions = signal(['realm1', 'realm2']);
-    component.detailData = signal([{
+    component.tokenDetailData = signal([{
       keyMap: {key: 'container_serial', label: 'Container'},
       value: 'container1',
       isEditing: signal(false)
@@ -139,9 +138,9 @@ describe('TokenDetailsComponent', () => {
 
   it('should load token details on initialization', () => {
     spyOn(tokenService, 'getTokenDetails').and.callThrough();
-    component.showTokenDetail('Mock serial').subscribe(() => {
+    component.showTokenDetail().subscribe(() => {
       expect(tokenService.getTokenDetails).toHaveBeenCalledWith('Mock serial');
-      expect(component.detailData().length).toBeGreaterThan(0);
+      expect(component.tokenDetailData().length).toBeGreaterThan(0);
       expect(component.realmOptions().length).toBeGreaterThan(0);
       expect(component.active()).toBeTrue();
     });
@@ -152,7 +151,7 @@ describe('TokenDetailsComponent', () => {
       throwError(() => new Error('Error fetching token details'))
     );
     spyOn(console, 'error');
-    component.showTokenDetail('Mock serial').subscribe({
+    component.showTokenDetail().subscribe({
       error: () => {
         expect(console.error).toHaveBeenCalledWith('Failed to get token details', jasmine.any(Error));
       },
@@ -161,9 +160,9 @@ describe('TokenDetailsComponent', () => {
 
   it('should handle empty data gracefully', () => {
     spyOn(tokenService, 'getTokenDetails').and.returnValue(of({result: {value: {tokens: []}}}));
-    component.showTokenDetail('empty-serial').subscribe({
+    component.showTokenDetail().subscribe({
       next: () => {
-        expect(component.detailData().length).toBe(0);
+        expect(component.tokenDetailData().length).toBe(0);
       },
     });
   });
@@ -188,7 +187,7 @@ describe('TokenDetailsComponent', () => {
 
   it('should get container data', () => {
     spyOn(containerService, 'getContainerData').and.callThrough();
-    component.showTokenDetail('Mock serial').subscribe(() => {
+    component.showTokenDetail().subscribe(() => {
       expect(containerService.getContainerData).toHaveBeenCalledWith(1, 10);
       expect(component.containerOptions().length).toBe(3);
     });

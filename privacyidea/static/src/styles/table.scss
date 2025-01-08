@@ -19,6 +19,13 @@ $divider-color: #E0E2EC;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
+$table-border-color: #E0E2EC;
+$table-max-width: 20rem;
+$gap-small: 8px;
+$margin-left-small: 10px;
+$padding-top-small: 8px;
+$description-width: 18rem;
+
 @mixin table-container-styles {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
@@ -243,5 +250,95 @@ th:nth-child(even) {
   .cdk-overlay-pane {
     position: absolute !important;
     z-index: 1;
+  }
+}
+
+.details-container {
+  .details-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      max-width: $table-max-width;
+      margin-left: $margin-left-small;
+      border: 1px solid $table-border-color;
+    }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+    gap: $gap-small;
+    margin-left: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 1rem 0;
+  }
+
+  .details-flex-layout {
+    display: flex;
+    box-sizing: border-box;
+    background: white;
+  }
+
+  .details-description-div {
+    display: flex;
+    overflow-wrap: anywhere;
+    padding-right: 1rem;
+    height: 96px;
+  }
+
+  .details-scrollable-container {
+    display: block;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .details-list {
+    height: 77px;
+  }
+
+  .details-description {
+    display: flex;
+    width: $description-width;
+  }
+
+  .details-table-item {
+    margin-left: 5px;
+  }
+
+  .details-value {
+    margin-top: 7px;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 0;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      padding-left: 5px;
+    }
+
+    .details-table .mat-mdc-form-field-infix {
+      padding-bottom: 10px;
+      margin-bottom: -6px;
+    }
+
+    .details-table .description .mat-mdc-form-field-infix {
+      padding-top: 0;
+    }
+
+    .mat-mdc-row {
+      font-size: 14px;
+    }
+
+    .details-table .material-icons {
+      font-size: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 }

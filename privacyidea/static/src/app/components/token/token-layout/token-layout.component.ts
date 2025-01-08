@@ -34,11 +34,14 @@ export class TokenLayoutComponent {
   tokenIsSelected = signal(false);
   containerIsSelected = signal(false);
   serial = signal('');
-  active = signal(true);
+  tokenIsActive = signal(true);
   revoked = signal(true);
   refreshTokenDetails = signal(false);
+  refreshContainerDetails = signal(false);
+  states = signal<string[]>([]);
 
   @ViewChild('tokenDetailsComponent') tokenDetailsComponent!: TokenDetailsComponent;
+  @ViewChild('containerDetailsComponent') containerDetailsComponent!: ContainerDetailsComponent;
   @ViewChild('drawer') drawer!: MatDrawer;
 
   constructor(protected overflowService: OverflowService) {
@@ -47,11 +50,16 @@ export class TokenLayoutComponent {
         this.onRefreshTokenDetails();
       }
     });
+    effect(() => {
+      if (this.refreshContainerDetails()) {
+        this.onRefreshContainerDetails();
+      }
+    });
   }
 
   onRefreshTokenDetails(): void {
     if (this.tokenDetailsComponent) {
-      this.tokenDetailsComponent.showTokenDetail(this.serial()).subscribe({
+      this.tokenDetailsComponent.showTokenDetail().subscribe({
         next: () => {
           this.refreshTokenDetails.set(false);
         },
@@ -61,6 +69,21 @@ export class TokenLayoutComponent {
       });
     } else {
       console.warn('TokenDetailsComponent is not yet initialized');
+    }
+  }
+
+  onRefreshContainerDetails(): void {
+    if (this.containerDetailsComponent) {
+      this.containerDetailsComponent.showContainerDetail().subscribe({
+        next: () => {
+          this.refreshContainerDetails.set(false);
+        },
+        error: (error) => {
+          console.error('Error refreshing token details:', error);
+        }
+      });
+    } else {
+      console.warn('ContainerDetailsComponent is not yet initialized');
     }
   }
 }

@@ -1,8 +1,89 @@
 <div aria-label="Details" class="details-container">
-  <div class="details-flex-layout">
+  <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container: </h3>
       <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
+    </div>
+    <div [ngClass]="[
+       overflowService.isOverflowing('.token-layout', 1310)
+       ? 'flex-column' : 'flex-row']"
+         class="details-flex-layout">
+      <div>
+        <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
+               class="details-table" mat-table>
+          <ng-container matColumnDef="key">
+            <td *matCellDef="let element" class="details-key-row" mat-cell>
+              {{ element.keyMap.label }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="value">
+            <td *matCellDef="let element" mat-cell>
+              @switch (element.keyMap.key) {
+                @case ("states") {
+                  @for (state of element.value; track state; let idx = $index) {
+                    <span class="font-14"
+                          [ngClass]="[tableUtilsService.getSpanClassForState(state)]"> {{ state }}
+                    </span>
+                  }
+                }
+                @case ("realms") {
+                  @if (element.isEditing()) {
+                    <mat-form-field class="width-18">
+                      <mat-label>Select Realms</mat-label>
+                      <mat-select [(ngModel)]="selectedRealms" multiple>
+                        @for (option of realmOptions(); track option; ) {
+                          @if (option === userRealm) {
+                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
+                          } @else {
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                          }
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="height-auto">
+                        <span class="font-14">• {{ realm }}</span>
+                      </mat-list-item>
+                    }
+                  }
+                }
+                @case ("description") {
+                  @if (element.isEditing()) {
+                    <mat-form-field class="width-18 description">
+                    <textarea matInput rows="4"
+                              [(ngModel)]="element.value"></textarea>
+                    </mat-form-field>
+                  } @else {
+                    <div class="details-description-div">
+                    <span class="details-table-item details-description-span">
+                      {{ element.value }}
+                    </span>
+                    </div>
+                  }
+                }
+                @default {
+                  <span>{{ element.value }}</span>
+                }
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="edit">
+            <td *matCellDef="let element" class="edit-column-cell" mat-cell>
+              @if (isEditableElement(element.keyMap.key)) {
+                <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                                  [shouldHide]="isAnyEditing"
+                                  [isEditingUser]="isEditingUser"
+                                  [isEditingInfo]="isEditingInfo"
+                                  [element]="element">
+                </app-edit-buttons>
+              }
+            </td>
+          </ng-container>
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="height-52" mat-row>
+          </tr>
+        </table>
+      </div>
     </div>
   </div>
 </div>

@@ -23,6 +23,17 @@
             Container Details
           </button>
         </mat-list-item>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <mat-list-item>
+          <button (click)="toggleActive()" [ngClass]="{'card-button-delete':
+          states().includes('active'),
+          'card-button-activate': !states().includes('active')}" color="alert" mat-flat-button>
+            <mat-icon>{{ states().includes('active') ? 'auto_delete' : 'play_circle' }}</mat-icon>
+            {{ states().includes('active') ? 'Deactivate' : 'Activate' }}
+          </button>
+        </mat-list-item>
       }
     </div>
   </mat-list>

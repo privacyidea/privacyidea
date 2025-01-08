@@ -8,7 +8,7 @@
        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
          class="details-flex-layout">
       <div>
-        <table [dataSource]="detailData()" aria-label="Token Detail Data Table"
+        <table [dataSource]="tokenDetailData()" aria-label="Token Detail Data Table"
                class="details-table" mat-table>
           <ng-container matColumnDef="key">
             <td *matCellDef="let element" class="details-key-row"
@@ -149,7 +149,7 @@
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
                   <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                    [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+                                    [shouldHide]="isAnyEditingOrRevoked"
                                     [isEditingUser]="isEditingUser"
                                     [isEditingInfo]="isEditingInfo"
                                     [element]="element">
@@ -181,7 +181,7 @@
         <div [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
         ? 'flex-column ali-center' : 'flex-row']"
              class="details-flex-layout">
-          <app-token-details-info [detailData]="detailData" [infoData]="infoData"
+          <app-token-details-info [detailData]="tokenDetailData" [infoData]="infoData"
                                   [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                   [isEditingInfo]="isEditingInfo"
                                   [isEditingUser]="isEditingUser"

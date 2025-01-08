@@ -93,6 +93,41 @@ export class ContainerService {
         console.error('Failed to unassign container', error);
         return throwError(error);
       })
-    );
+    )
+  }
+
+  getContainerDetails(serial: string): Observable<any> {
+    const headers = this.localService.getHeaders();
+    let params = new HttpParams().set('container_serial', serial);
+    return this.http.get(this.baseUrl, {headers, params})
+  }
+
+  setContainerRealm(serial: string, value: string[] | null) {
+    const headers = this.localService.getHeaders();
+    let valueString = value ? value.join(',') : '';
+    return this.http.post(`${this.baseUrl}${serial}/realms`, {
+      realms: valueString
+    }, {headers})
+  }
+
+  setContainerDescription(serial: string, value: any) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}${serial}/description`, {
+      description: value
+    }, {headers})
+  }
+
+  toggleActive(serial: string, states: string[]): Observable<any> {
+    const headers = this.localService.getHeaders();
+    const new_states = states.map(state => {
+      if (state === 'active') {
+        return 'disabled'
+      } else if (state === 'disabled') {
+        return 'active'
+      } else {
+        return state
+      }
+    }).join(',');
+    return this.http.post(`${this.baseUrl}${serial}/states`, {states: new_states}, {headers})
   }
 }
