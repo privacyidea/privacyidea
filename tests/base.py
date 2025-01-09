@@ -46,6 +46,7 @@ class MyTestCase(unittest.TestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     realm3 = "realm3"
+    realm4 = "realm4"
     testadmin = 'testadmin'
     testadminpw = 'testpw'
     testadminmail = "admin@test.tld"
@@ -156,6 +157,36 @@ class MyTestCase(unittest.TestCase):
 
         user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm3', resolver='reso3')"
+        self.assertTrue(user_repr == expected, user_repr)
+
+    def setUp_user_realm4_with_2_resolvers(self):
+        # create user realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        rid = save_resolver({"resolver": self.resolvername3,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm4,
+                                    [{'name': self.resolvername1}, {'name': self.resolvername3}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 2)
+
+        user = User(login="root",
+                    realm=self.realm4,
+                    resolver=self.resolvername3)
+
+        user_str = "{0!s}".format(user)
+        self.assertTrue(user_str == "<root.reso3@realm4>", user_str)
+
+        self.assertFalse(user.is_empty())
+        self.assertTrue(User().is_empty())
+
+        user_repr = "{0!r}".format(user)
+        expected = "User(login='root', realm='realm4', resolver='reso3')"
         self.assertTrue(user_repr == expected, user_repr)
 
     def setUp_sqlite_resolver_realm(self, sqlite_file, realm):

@@ -557,9 +557,10 @@ class PolicyClass(object):
         return value_found, value_excluded
 
     @log_with(log)
-    def list_policies(self, name=None, scope=None, realm=None, active=None,
-                      resolver=None, user=None, client=None, action=None, pinode=None,
-                      adminrealm=None, adminuser=None, sort_by_priority=True):
+    def list_policies(self, name: str = None, scope: str = None, realm: str = None, active: bool = None,
+                      resolver: str = None, user: str = None, client=None, action=None, pinode=None,
+                      adminrealm: str = None, adminuser: str = None, sort_by_priority: bool = True,
+                      additional_realms: list = None):
         """
         Return the policies, filtered by the given values.
 
@@ -575,23 +576,27 @@ class PolicyClass(object):
         The only exception is the ``client`` parameter, which does not accept the empty string,
         and throws a ParameterError if the empty string is passed.
 
+        If additional_realms are passed as well as a user, all policies applicable to a realm of the additional_realms
+        list or applicable to the user realm combination are returned. The user is only matched in combination with the
+        realm parameter and not with the additional realms.
+
         :param name: The name of the policy
         :param scope: The scope of the policy
-        :param realm: The realm in the policy
+        :param realm: The realm of a user in the policy
         :param active: One of None, True, False: All policies, only active or only inactive policies
         :param resolver: Only policies with this resolver
         :param pinode: Only policies with this privacyIDEA node
         :param user: Only policies with this user
-        :type user: basestring
         :param client:
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
         :param adminuser: This is the username of the admin. This in only
             evaluated in the scope admin.
+        :param additional_realms: A list of realms that should be additionally checked besides the user realm
+            combination
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
             by their policy numbers.
-        :type sort_by_priority: bool
         :return: list of policies
         :rtype: list of dicts
         """
@@ -607,7 +612,12 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
 
-        p = [("action", action), ("realm", realm)]
+        if additional_realms:
+            if realm and realm not in additional_realms:
+                additional_realms.append(realm)
+            p = [("action", action), ("realm", additional_realms)]
+        else:
+            p = [("action", action), ("realm", realm)]
         q = [("user", user)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == SCOPE.ADMIN:
@@ -652,7 +662,12 @@ class PolicyClass(object):
                             searchkeys = [x.lower() for x in searchkeys]
                         value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
-                            new_policies.append(policy)
+                            if searchkey == "user" and additional_realms and len(additional_realms) > 1 and realm:
+                                # we need to check if the policy is for the correct user realm
+                                if user in policy.get("user") and realm in policy.get("realm"):
+                                    new_policies.append(policy)
+                            else:
+                                new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
@@ -744,7 +759,7 @@ class PolicyClass(object):
                        resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
                        sort_by_priority=True, audit_data=None, request_headers=None, serial=None,
-                       extended_condition_check=None):
+                       extended_condition_check=None, additional_realms: list = None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -778,6 +793,8 @@ class PolicyClass(object):
             method will add found policies to the dictionary.
         :type audit_data: dict or None
         :param request_headers: A dict with HTTP headers
+        :param additional_realms: A list of realms that should be additionally checked besides the user realm
+            combination
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -802,9 +819,9 @@ class PolicyClass(object):
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
-                                              sort_by_priority=sort_by_priority)
+                                              sort_by_priority=sort_by_priority, additional_realms=additional_realms)
 
-        # filter policy for time. If no time is set or is a time is set and
+        # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
         reduced_policies = [policy for policy in reduced_policies if
                             (policy.get("time") and
@@ -3138,9 +3155,10 @@ class Match(object):
                    time=None, sort_by_priority=True, serial=g.serial)
 
     @classmethod
-    def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
-                client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                active=True, sort_by_priority=True, serial=None, extended_condition_check=None):
+    def generic(cls, g, scope: str = None, realm: str = None, resolver: str = None, user: str = None,
+                user_object: User = None, client=None, action=None, adminrealm: str = None, adminuser: str = None,
+                time=None, active: bool = True, sort_by_priority: bool = True, serial: str = None,
+                extended_condition_check: list = None, additional_realms: list = None):
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -3158,7 +3176,8 @@ class Match(object):
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
-                   sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check)
+                   sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check,
+                   additional_realms=additional_realms)
 
 
 def get_allowed_custom_attributes(g, user_obj):
