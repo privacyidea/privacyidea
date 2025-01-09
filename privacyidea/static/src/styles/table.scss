@@ -265,6 +265,13 @@ th:nth-child(even) {
     }
   }
 
+  .details-table.border-bottom-none {
+    tr:last-child td,
+    tr:last-child th {
+      border-bottom: none !important;
+    }
+  }
+  
   .details-header {
     display: flex;
     align-items: center;

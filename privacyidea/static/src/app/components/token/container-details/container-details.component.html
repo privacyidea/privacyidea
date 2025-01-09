@@ -10,14 +10,16 @@
          class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
-               class="details-table" mat-table>
+               class="details-table border-bottom-none" mat-table>
           <ng-container matColumnDef="key">
             <td *matCellDef="let element" class="details-key-row" mat-cell>
               {{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element" mat-cell>
+            <td *matCellDef="let element"
+                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+                class="fix-width-20-padr-0" mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
                   @for (state of element.value; track state; let idx = $index) {
@@ -41,11 +43,14 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    @for (realm of element.value; track realm; let idx = $index) {
-                      <mat-list-item class="height-auto">
-                        <span class="font-14">• {{ realm }}</span>
-                      </mat-list-item>
-                    }
+                    <div class="details-scrollable-container"
+                         [ngClass]="{'details-list': element.value.length > 2}">
+                      @for (realm of element.value; track realm; let idx = $index) {
+                        <mat-list-item class="height-auto">
+                          <span class="font-14">• {{ realm }}</span>
+                        </mat-list-item>
+                      }
+                    </div>
                   }
                 }
                 @case ("description") {
@@ -72,7 +77,7 @@
             <td *matCellDef="let element" class="edit-column-cell" mat-cell>
               @if (isEditableElement(element.keyMap.key)) {
                 <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                  [shouldHide]="isAnyEditing"
+                                  [shouldHideEdit]="isAnyEditing"
                                   [isEditingUser]="isEditingUser"
                                   [isEditingInfo]="isEditingInfo"
                                   [element]="element">
@@ -82,6 +87,70 @@
           </ng-container>
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="height-52" mat-row>
           </tr>
+        </table>
+        <table [dataSource]="userData()" aria-label="User Detail Data Table"
+               class="details-table"
+               mat-table>
+          <ng-container matColumnDef="key">
+            <td *matCellDef="let element" class="details-key-row"
+                mat-cell>{{ element.keyMap.label }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="value">
+            <td *matCellDef="let element" class="user-editable-row height-52 fix-width-20-padr-0"
+                mat-cell>
+              @if (isEditingUser()
+              && element.keyMap.key === "user_name"
+              && selectedUserRealm() !== '') {
+                <mat-form-field class="width-18">
+                  <mat-label>Select User</mat-label>
+                  <input matInput
+                         [(ngModel)]="selectedUsername"
+                         [matAutocomplete]="userAuto">
+                  <mat-autocomplete autoActiveFirstOption
+                                    #userAuto="matAutocomplete">
+                    @for (option of filteredUserOptions(); track option) {
+                      <mat-option [value]="option">{{ option }}</mat-option>
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+              } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
+                <!-- TODO scrollable realms and description -->
+                <mat-form-field class="width-18">
+                  <mat-label>Select Realm of User</mat-label>
+                  <mat-select [(ngModel)]="selectedUserRealm">
+                    @for (option of realmOptions(); track option; ) {
+                      <mat-option value="{{ option }}">{{ option }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                {{ element.value }}
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="edit">
+            <td *matCellDef="let element" class="edit-column-cell" mat-cell>
+              @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
+                @if (element.value) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button class="yellow"
+                            (click)="unassignUser()">
+                      <mat-icon>person_remove</mat-icon>
+                    </button>
+                  </div>
+                } @else {
+                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                                    [shouldHideEdit]="isAnyEditing"
+                                    [isEditingUser]="isEditingUser"
+                                    [isEditingInfo]="isEditingInfo"
+                                    [element]="element">
+                  </app-edit-buttons>
+                }
+              }
+            </td>
+          </ng-container>
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
       </div>
     </div>

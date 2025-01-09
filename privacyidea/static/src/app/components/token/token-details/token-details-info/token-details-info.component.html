@@ -62,7 +62,7 @@
     <ng-container matColumnDef="edit">
       <td *matCellDef="let element" class="height-52 edit-column-cell" mat-cell>
         <app-edit-buttons [element]="element"
-                          [shouldHide]="isAnyEditingOrRevoked"
+                          [shouldHideEdit]="isAnyEditingOrRevoked"
                           [isEditingInfo]="isEditingInfo"
                           [isEditingUser]="isEditingUser"
                           [toggleEditMode]="toggleInfoEditMode.bind(this)">

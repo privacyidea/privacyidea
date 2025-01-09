@@ -53,8 +53,7 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="{'details-scrollable-container': true,
-                  'details-list': element.value.length > 2}">
+                    <div class="details-scrollable-container" [ngClass]="{'details-list': element.value.length > 2}">
                       @for (realm of element.value; track realm; let idx = $index) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
@@ -149,7 +148,7 @@
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
                   <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                    [shouldHide]="isAnyEditingOrRevoked"
+                                    [shouldHideEdit]="isAnyEditingOrRevoked"
                                     [isEditingUser]="isEditingUser"
                                     [isEditingInfo]="isEditingInfo"
                                     [element]="element">

@@ -15,7 +15,7 @@
     @if (overflowService.isOverflowing('.token-layout', 1880)) {
       <mat-drawer #drawer [mode]="'over'" class="token-drawer">
         <app-token-card
-          [states]="states"
+          [states]="states" [active]="tokenIsActive"
           [containerIsSelected]="containerIsSelected"
           [refreshTokenDetails]="refreshTokenDetails"
           [refreshContainerDetails]="refreshContainerDetails"

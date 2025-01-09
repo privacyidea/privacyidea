@@ -13,12 +13,23 @@ import {MatOption, MatSelect} from '@angular/material/select';
 import {RealmService} from '../../../services/realm/realm.service';
 import {catchError} from 'rxjs/operators';
 import {MatInput} from '@angular/material/input';
+import {MatAutocomplete, MatAutocompleteTrigger} from '@angular/material/autocomplete';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {UserService} from '../../../services/user/user.service';
 
 export const containerDetailsKeyMap = [
   {key: 'type', label: 'Type'},
   {key: 'states', label: 'Status'},
   {key: 'description', label: 'Description'},
   {key: 'realms', label: 'Realms'},
+];
+
+const containerUserDetailsKeyMap = [
+  {key: 'user_realm', label: 'User Realm'},
+  {key: 'user_name', label: 'User'},
+  {key: 'user_resolver', label: 'Resolver'},
+  {key: 'user_id', label: 'User ID'},
 ];
 
 @Component({
@@ -39,6 +50,10 @@ export const containerDetailsKeyMap = [
     FormsModule,
     MatOption,
     MatInput,
+    MatAutocomplete,
+    MatAutocompleteTrigger,
+    MatIcon,
+    MatIconButton,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss'
@@ -47,6 +62,10 @@ export class ContainerDetailsComponent {
   @Input() serial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
+  @Input() selectedUsername = signal<string>('');
+  userOptions = signal<string[]>([]);
+  selectedUserRealm = signal<string>('');
+  filteredUserOptions = signal<string[]>([]);
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   isAnyEditing = computed(() => {
@@ -67,7 +86,11 @@ export class ContainerDetailsComponent {
     value: '',
     isEditing: signal(false)
   })));
-  userData = signal<any>([]);
+  userData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: WritableSignal<boolean>
+  }[]>([]);
   selectedRealms = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   userRealm: string = '';
@@ -75,10 +98,35 @@ export class ContainerDetailsComponent {
   constructor(protected overflowService: OverflowService,
               protected containerService: ContainerService,
               protected tableUtilsService: TableUtilsService,
-              protected realmService: RealmService) {
+              protected realmService: RealmService,
+              protected userService: UserService) {
     effect(() => {
       this.showContainerDetail().subscribe();
     });
+
+    effect(() => {
+      const value = this.selectedUsername();
+      const filteredOptions = this._filterUserOptions(value || '');
+      this.filteredUserOptions.set(filteredOptions);
+    });
+
+    effect(() => {
+      if (this.selectedUserRealm()) {
+        this.userService.getUsers(this.selectedUserRealm()).subscribe({
+          next: (users: any) => {
+            this.userOptions.set(users.result.value.map((user: any) => user.username));
+          },
+          error: error => {
+            console.error('Failed to get users', error);
+          }
+        });
+      }
+    });
+  }
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
   showContainerDetail() {
@@ -92,10 +140,22 @@ export class ContainerDetailsComponent {
           value: containerDetails[detail.key],
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
+        let user = {
+          user_realm: '',
+          user_name: '',
+          user_resolver: '',
+          user_id: ''
+        };
         if (containerDetails['users'].length) {
-          this.userData.set(containerDetails['users'][0]);
-          this.userRealm = this.userData().user_realm;
+          user = containerDetails['users'][0];
         }
+        this.userData.set(containerUserDetailsKeyMap.map(detail => ({
+          keyMap: detail,
+          value: user[detail.key as keyof typeof user],
+          isEditing: signal(false)
+        })).filter(detail => detail.value !== undefined));
+        this.userRealm = this.userData().find(
+          detail => detail.keyMap.key === 'user_realm')?.value;
         this.realmOptions.set(Object.keys(realms.result.value));
         this.selectedRealms.set(containerDetails.realms);
         this.states.set(containerDetails['states']);
@@ -119,6 +179,10 @@ export class ContainerDetailsComponent {
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
     if (action === 'cancel') {
       this.handleCancelAction(type);
+      if (type === 'user_name') {
+        this.isEditingUser.set(!this.isEditingUser());
+        return;
+      }
       element.isEditing.set(!element.isEditing());
       return;
     }
@@ -130,6 +194,10 @@ export class ContainerDetailsComponent {
       case 'description':
         this.handleDescription(action);
         break;
+      case 'user_name':
+        this.isEditingUser.set(!this.isEditingUser());
+        this.handleUser(action);
+        return;
       default:
         this.handleDefault(element, action);
         break;
@@ -161,6 +229,12 @@ export class ContainerDetailsComponent {
     }
   }
 
+  private handleUser(action: string) {
+    if (action === 'save') {
+      this.saveUser();
+    }
+  }
+
   private handleDefault(element: any, action: string) {
     return;
   }
@@ -188,6 +262,31 @@ export class ContainerDetailsComponent {
       },
       error: error => {
         console.error('Failed to save token description', error);
+      }
+    });
+  }
+
+  saveUser() {
+this.containerService.assignUser(this.serial(), this.selectedUsername(), this.userRealm).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to assign user', error);
+      }
+    });
+  }
+
+  unassignUser() {
+    this.containerService.unassignUser(this.serial(), this.userData().find(
+      detail => detail.keyMap.key === 'user_name')?.value,
+      this.userData().find(detail => detail.keyMap.key === 'user_realm')?.value
+    ).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to unassign user', error);
       }
     });
   }

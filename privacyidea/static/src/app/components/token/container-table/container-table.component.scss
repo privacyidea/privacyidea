@@ -2,7 +2,7 @@
 
 .container-table-container {
   @include table-container-styles;
-  @include base-table-structure(".container-table", ".container-table-filter", ".container-scrollable-container");
+  @include base-table-structure(".container-table", ".container-table-filter", ".table-scrollable-container");
   margin-left: 1rem;
   overflow: auto;
 }

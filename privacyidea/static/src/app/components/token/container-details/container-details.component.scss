@@ -14,6 +14,10 @@ $table-border-color: #E0E2EC;
   padding: var(--global-padding);
   margin-left: 1rem;
   overflow: auto;
+
+  ::ng-deep .mat-mdc-form-field-infix {
+    margin-bottom: -8px !important;
+  }
 }
 
 h3 {

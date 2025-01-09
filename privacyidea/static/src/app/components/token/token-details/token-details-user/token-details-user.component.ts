@@ -43,32 +43,6 @@ import {OverflowService} from '../../../../services/overflow/overflow.service';
   styleUrl: './token-details-user.component.scss'
 })
 export class TokenDetailsUserComponent {
-
-  constructor(private tokenService: TokenService,
-              private realmService: RealmService,
-              private userService: UserService,
-              protected overflowService: OverflowService) {
-    effect(() => {
-      if (this.selectedUserRealm()) {
-        this.userService.getUsers(this.selectedUserRealm()).subscribe({
-          next: (users: any) => {
-            console.log('Got users', users);
-            this.userOptions.set(users.result.value.map((user: any) => user.username));
-          },
-          error: error => {
-            console.error('Failed to get users', error);
-          }
-        });
-      }
-    });
-
-    effect(() => {
-      const value = this.selectedUsername();
-      const filteredOptions = this._filterUserOptions(value || '');
-      this.filteredUserOptions.set(filteredOptions);
-    });
-  }
-
   @Input() userData = signal<{
     value: any;
     keyMap: { label: string; key: string },
@@ -86,6 +60,30 @@ export class TokenDetailsUserComponent {
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
   filteredUserOptions = signal<string[]>([]);
+
+  constructor(private tokenService: TokenService,
+              private realmService: RealmService,
+              private userService: UserService,
+              protected overflowService: OverflowService) {
+    effect(() => {
+      if (this.selectedUserRealm()) {
+        this.userService.getUsers(this.selectedUserRealm()).subscribe({
+          next: (users: any) => {
+            this.userOptions.set(users.result.value.map((user: any) => user.username));
+          },
+          error: error => {
+            console.error('Failed to get users', error);
+          }
+        });
+      }
+    });
+
+    effect(() => {
+      const value = this.selectedUsername();
+      const filteredOptions = this._filterUserOptions(value || '');
+      this.filteredUserOptions.set(filteredOptions);
+    });
+  }
 
   private _filterUserOptions(value: string): string[] {
     const filterValue = value.toLowerCase();

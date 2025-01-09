@@ -130,4 +130,20 @@ export class ContainerService {
     }).join(',');
     return this.http.post(`${this.baseUrl}${serial}/states`, {states: new_states}, {headers})
   }
+
+  unassignUser(serial: string, username: string, userRealm: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}${serial}/unassign`, {
+      user: username,
+      realm: userRealm
+    }, {headers})
+  }
+
+  assignUser(serial: string, username: string, userRealm: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}${serial}/assign`, {
+      user: username,
+      realm: userRealm
+    }, {headers})
+  }
 }

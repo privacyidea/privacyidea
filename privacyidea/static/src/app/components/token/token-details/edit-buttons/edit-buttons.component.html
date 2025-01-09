@@ -1,25 +1,27 @@
 <div class="edit-button-container">
-  @if (!shouldHide()) {
+  @let elementIsEditing = element.isEditing()
+    || (isEditingUser() && (element.keyMap.key === "username" || element.keyMap.key === "user_name"))
+    || (isEditingInfo() && element.keyMap.key === "info");
+  @if (!shouldHideEdit()) {
     <button mat-icon-button class="black flex"
             (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
       <mat-icon>
         edit
       </mat-icon>
     </button>
-  } @else if (element.isEditing()
-  || (isEditingUser() && element.keyMap.key === "username")
-  || (isEditingInfo() && element.keyMap.key === "info")) {
-    @if (!isEditingUser()) {
+  } @else if (elementIsEditing) {
+    @let isTokenDetailsUser = isEditingUser() && element.keyMap.key === "username";
+    @if (isTokenDetailsUser) {
+      <br/>
+    } @else {
       <button mat-icon-button class="black flex"
               (click)="toggleEditMode(element, element.keyMap.key, 'save')">
         <mat-icon>save_as</mat-icon>
       </button>
     }
-    <button mat-icon-button class="red flex"
-            (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
-      <mat-icon>cancel</mat-icon>
-    </button>
-  } @else {
-    <br/>
+      <button mat-icon-button class="red flex"
+              (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
+        <mat-icon>cancel</mat-icon>
+      </button>
   }
 </div>
