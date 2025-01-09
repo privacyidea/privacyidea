@@ -66,7 +66,8 @@ class MachineApplication(MachineApplicationBase):
 
         # If the token is a WebAuthn token, we need to store the machine name with the refill token, because
         # the token can be on multiple machines, which need to be managed separately
-        if token_obj.type.lower() == "webauthn":
+        # TODO improve where the information about offline capabilities is stored
+        if token_obj.type.lower() in ["webauthn", "passkey"]:
             computer_name = get_computer_name_from_user_agent(user_agent)
             if computer_name is None:
                 raise ParameterError("Unable to generate refilltoken for a WebAuthn token without a computer name")
@@ -148,7 +149,7 @@ class MachineApplication(MachineApplicationBase):
             otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
             token_obj.add_tokeninfo(key="offline_counter",
                                     value=count)
-        elif token_obj.type.lower() == "webauthn":
+        elif token_obj.type.lower() in ["webauthn", "passkey"]:
             pass
         return otps
 
@@ -161,7 +162,7 @@ class MachineApplication(MachineApplicationBase):
                                 user_agent=None):
         """
         :param token_type: the type of the token. At the moment
-                           we support "HOTP" tokens and "WebAuthn" tokens.
+                           we support HOTP and WebAuthn/Passkey tokens.
                            Supporting time based tokens (TOTP) is difficult, since we would have to
                            return a looooong list of OTP values.
                            Supporting "yubikey" token (AES) would be
@@ -178,38 +179,47 @@ class MachineApplication(MachineApplicationBase):
         ret = {}
         options = options or {}
         password = challenge
-        if token_type.lower() in ["hotp", "webauthn"]:
-            token_obj = get_one_token(serial=serial)
-            user_object = token_obj.user
-            if user_object:
-                user_info = user_object.info
+        token_type = token_type.lower()
+        # TODO improve where the information about offline capabilities is stored
+        if token_type in ["hotp", "webauthn", "passkey"]:
+            token = get_one_token(serial=serial)
+            user = token.user
+            if user:
+                user_info = user.info
                 if "username" in user_info:
                     ret["user"] = ret["username"] = user_info.get("username")
 
-            ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token_obj, user_agent)
+            ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token, user_agent)
 
-            # token specific data
-            if token_type.lower() == "webauthn":
+            # Gather offline data depending on the token type
+            if token_type == "webauthn":
                 # return the pubKey, rpId and the credentialId (contained in the otpkey) to allow the machine to
                 # verify the WebAuthn assertions signed with the token
-                ret["response"] = {"pubKey": token_obj.get_tokeninfo("pubKey"),
-                                   "credentialId": token_obj.decrypt_otpkey(),
-                                   "rpId": token_obj.get_tokeninfo("relying_party_id")}
-            elif token_type.lower() == "hotp":
+                ret["response"] = {
+                    "pubKey": token.get_tokeninfo("pubKey"),
+                    "credentialId": token.decrypt_otpkey(),
+                    "rpId": token.get_tokeninfo("relying_party_id")
+                }
+            elif token_type == "hotp":
                 if password:
-                    _r, otppin, _ = token_obj.split_pin_pass(password)
+                    _r, otppin, _ = token.split_pin_pass(password)
                     if not _r:
                         raise ParameterError("Could not split password")
                 else:
                     otppin = ""
 
-                ret["response"] = MachineApplication.get_offline_otps(token_obj,
+                ret["response"] = MachineApplication.get_offline_otps(token,
                                                                       otppin,
                                                                       int(options.get("count", 100)),
                                                                       int(options.get("rounds", ROUNDS)))
+            elif token_type == "passkey":
+                ret["response"] = {
+                    "pubKey": token.get_tokeninfo("public_key"),
+                    "rpId": token.get_tokeninfo("relying_party_id"),
+                    "credentialId": token.token.get_otpkey().getKey().decode("utf-8")
+                }
         else:
-            log.info("Token %r, type %r is not supported by "
-                     "OFFLINE application module" % (serial, token_type))
+            log.info(f"Token {serial} of type {token_type} is not supported by OFFLINE application module")
 
         return ret
 

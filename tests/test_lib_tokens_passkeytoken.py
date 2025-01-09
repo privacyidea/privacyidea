@@ -147,7 +147,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertIn(passkey_registration["pubKeyCredParams"][0]["alg"], [-7, -257])
         self.assertIn(passkey_registration["pubKeyCredParams"][1]["alg"], [-7, -257])
         # ExcludeCredentials should be empty because no other passkey token is registered for the user
-        self.assertEquals(len(passkey_registration["excludeCredentials"]), 0)
+        self.assertEqual(len(passkey_registration["excludeCredentials"]), 0)
 
         # Complete the registration
         update_response = token.update(registration_request.registration_response)

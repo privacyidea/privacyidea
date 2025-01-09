@@ -69,7 +69,7 @@ def check_user_or_serial(func):
     """
     Decorator to check user and serial at the beginning of a function
     The wrapper will check the parameters user and serial and verify that
-    not both parameters are None. Otherwise it will throw an exception
+    not both parameters are None. Otherwise, it will throw an exception
     ParameterError.
     """
     @functools.wraps(func)

@@ -446,21 +446,20 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
     :rtype: list
     """
     token_dict_list = []
-    for tokenobject in tokens:
-        if isinstance(tokenobject, TokenClass):
-            token_dict = tokenobject.get_as_dict()
+    for token in tokens:
+        if isinstance(token, TokenClass):
+            token_dict = token.get_as_dict()
             # add user information
             # In certain cases the LDAP or SQL server might not be reachable.
             # Then an exception is raised
             token_dict["username"] = ""
             token_dict["user_realm"] = ""
             try:
-                userobject = tokenobject.user
-                if userobject:
-                    token_dict["username"] = userobject.login
-                    token_dict["user_realm"] = userobject.realm
-                    token_dict["user_editable"] = get_resolver_object(
-                        userobject.resolver).editable
+                user = token.user
+                if user:
+                    token_dict["username"] = user.login
+                    token_dict["user_realm"] = user.realm
+                    token_dict["user_editable"] = get_resolver_object(user.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())
@@ -469,7 +468,7 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
             # check if token is in a container
             token_dict["container_serial"] = ""
             from privacyidea.lib.container import find_container_for_token
-            container = find_container_for_token(tokenobject.get_serial())
+            container = find_container_for_token(token.get_serial())
             if container:
                 token_dict["container_serial"] = container.serial
 
@@ -511,8 +510,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     :type token_type_list: list
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
-    :param assigned: Get either assigned (True) or unassigned (False) tokens.
-        If None get all tokens.
+    :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
     :param user: Filter for the Owner of the token
     :type user: User Object
@@ -662,29 +660,29 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
 
     pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
     tokens = pagination.items
-    prev = None
+    previous_page = None
     if pagination.has_prev:
-        prev = page - 1
-    next = None
+        previous_page = page - 1
+    next_page = None
     if pagination.has_next:
-        next = page + 1
+        next_page = page + 1
     token_list = []
     for token in tokens:
-        tokenobject = create_tokenclass_object(token)
-        if isinstance(tokenobject, TokenClass):
-            token_dict = tokenobject.get_as_dict()
+        token = create_tokenclass_object(token)
+        if isinstance(token, TokenClass):
+            token_dict = token.get_as_dict()
             # add user information
             # In certain cases the LDAP or SQL server might not be reachable.
             # Then an exception is raised
             token_dict["username"] = ""
             token_dict["user_realm"] = ""
             try:
-                userobject = tokenobject.user
-                if userobject:
-                    token_dict["username"] = userobject.login
-                    token_dict["user_realm"] = userobject.realm
+                user = token.user
+                if user:
+                    token_dict["username"] = user.login
+                    token_dict["user_realm"] = user.realm
                     token_dict["user_editable"] = get_resolver_object(
-                        userobject.resolver).editable
+                        user.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())
@@ -698,15 +696,15 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
             # check if token is in a container
             token_dict["container_serial"] = ""
             from privacyidea.lib.container import find_container_for_token
-            container = find_container_for_token(tokenobject.get_serial())
+            container = find_container_for_token(token.get_serial())
             if container:
                 token_dict["container_serial"] = container.serial
 
             token_list.append(token_dict)
 
     ret = {"tokens": token_list,
-           "prev": prev,
-           "next": next,
+           "prev": previous_page,
+           "next": next_page,
            "current": page,
            "count": pagination.total}
     return ret
@@ -745,7 +743,7 @@ def get_tokens_from_serial_or_user(serial, user, **kwargs):
 
     :param serial: exact serial number or None
     :param user: a user object or None
-    :param kwargs: additional argumens to ``get_tokens``
+    :param kwargs: additional arguments to ``get_tokens``
     :return: a (possibly empty) list of tokens
     :rtype: list
     """
@@ -826,7 +824,7 @@ def get_realms_of_token(serial, only_first_realm=False):
     :param serial: the exact serial number of the token
     :type serial: basestring
 
-    :param only_first_realm: Wheather we should only return the first realm
+    :param only_first_realm: Whether we should only return the first realm
     :type only_first_realm: bool
 
     :return: list of the realm names
@@ -836,14 +834,13 @@ def get_realms_of_token(serial, only_first_realm=False):
         return []
 
     try:
-        tokenobject = get_one_token(serial=serial)
-        realms = tokenobject.get_realms()
+        token = get_one_token(serial=serial)
+        realms = token.get_realms()
     except ResourceNotFoundError:
         realms = []
 
     if len(realms) > 1:
-        log.debug(
-            "Token {0!s} in more than one realm: {1!s}".format(serial, realms))
+        log.debug(f"Token {serial} in more than one realm: {realms}")
 
     if only_first_realm:
         if realms:
@@ -872,7 +869,7 @@ def token_exist(serial):
 def get_token_owner(serial):
     """
     returns the user object, to which the token is assigned.
-    the token is identified and retrieved by it's serial number
+    the token is identified and retrieved by its serial number
 
     If the token has no owner, None is returned
 
@@ -885,8 +882,8 @@ def get_token_owner(serial):
     :return: The owner of the token
     :rtype: User object or None
     """
-    tokenobject = get_one_token(serial=serial)
-    return tokenobject.user
+    token = get_one_token(serial=serial)
+    return token.user
 
 
 @log_with(log)
@@ -912,7 +909,7 @@ def is_token_owner(serial, user):
 @log_with(log)
 def get_tokens_in_resolver(resolver):
     """
-    Return a list of the token ojects, that contain this very resolver
+    Return a list of the token objects, that contain this very resolver
 
     :param resolver: The resolver, the tokens should be in
     :type resolver: basestring
@@ -960,14 +957,12 @@ def get_otp(serial, current_time=None):
     :return: tuple with (result, pin, otpval, passw)
     :rtype: tuple
     """
-    tokenobject = get_one_token(serial=serial)
-    return tokenobject.get_otp(current_time=current_time)
+    token = get_one_token(serial=serial)
+    return token.get_otp(current_time=current_time)
 
 
 @log_with(log)
-def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
-                  curTime=None,
-                  timestamp=None):
+def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0, current_time=None, timestamp=None):
     """
     This function returns a list of OTP values for the given Token.
     Please note, that the tokentype needs to support this function.
@@ -978,8 +973,8 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
         time based tokens)
     :param epoch_start: unix time start date (used with time based tokens)
     :param epoch_end: unix time end date (used with time based tokens)
-    :param curTime: Simulate the servertime
-    :type curTime: datetime
+    :param current_time: Simulate the servertime
+    :type current_time: datetime
     :param timestamp: Simulate the servertime (unix time in seconds)
     :type timestamp: int
 
@@ -987,19 +982,17 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     :rtype: dictionary
     """
     ret = {"result": False}
-    tokenobject = get_one_token(serial=serial)
-    log.debug("getting multiple otp values for token {0!r}. curTime={1!r}".format(tokenobject, curTime))
+    token = get_one_token(serial=serial)
+    log.debug(f"Getting multiple otp values for token {token}. curTime={current_time}")
 
-    res, error, otp_dict = tokenobject. \
-        get_multi_otp(count=count,
-                      epoch_start=epoch_start,
-                      epoch_end=epoch_end,
-                      curTime=curTime,
-                      timestamp=timestamp)
-    log.debug("received {0!r}, {1!r}, and {2!r} otp values".format(res, error,
-                                                                   len(otp_dict)))
+    res, error, otp_dict = token.get_multi_otp(count=count,
+                                               epoch_start=epoch_start,
+                                               epoch_end=epoch_end,
+                                               curTime=current_time,
+                                               timestamp=timestamp)
+    log.debug(f"Received {res!r}, {error!r}, and {len(otp_dict)} otp values")
 
-    if res is True:
+    if res:
         ret = otp_dict
         ret["result"] = True
     else:
@@ -1011,8 +1004,7 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
 @log_with(log)
 def get_token_by_otp(token_list, otp="", window=10):
     """
-    search the token in the token_list, that creates the given OTP value.
-    The tokenobject_list would be created by get_tokens()
+    Search the token in the token_list, that creates the given OTP value.
 
     :param token_list: the list of token objects to be investigated
     :type token_list: list of token objects
@@ -1022,29 +1014,26 @@ def get_token_by_otp(token_list, otp="", window=10):
     :type window: int
 
     :return: The token, that creates this OTP value
-    :rtype: Tokenobject
+    :rtype: TokenClass
     """
     result_token = None
     result_list = []
 
     for token in token_list:
-        log.debug("checking token {0!r}".format(token.get_serial()))
+        log.debug(f"Checking token {token.get_serial()}")
         try:
             r = token.check_otp_exist(otp=otp, window=window)
-            log.debug("result = {0:d}".format(int(r)))
+            log.debug(f"Result = {int(r):d}")
             if r >= 0:
                 result_list.append(token)
         except Exception as err:
-            # A flaw in a single token should not stop privacyidea from finding
-            # the right token
-            log.warning("error in calculating OTP for token {0!s}: "
-                        "{1!s}".format(token.token.serial, err))
+            # A flaw in a single token should not stop privacyidea from finding the right token
+            log.warning(f"Error calculating OTP for token {token.get_serial()}: {err}")
 
     if len(result_list) == 1:
         result_token = result_list[0]
     elif result_list:
-        raise TokenAdminError(_('multiple tokens are matching this OTP value!'),
-                              id=1200)
+        raise TokenAdminError(_('multiple tokens are matching this OTP value!'), id=1200)
 
     return result_token
 
@@ -1053,7 +1042,7 @@ def get_token_by_otp(token_list, otp="", window=10):
 def get_serial_by_otp(token_list, otp="", window=10):
     """
     Returns the serial for a given OTP value
-    The tokenobject_list would be created by get_tokens()
+    The token_list would be created by get_tokens()
 
     :param token_list: the list of token objects to be investigated
     :type token_list: list of token objects
@@ -1687,7 +1676,7 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
 
     :param count: The counter value
     :type count: int
-    :param user: The user owner of the tokens tokens to modify
+    :param user: The user owner of the tokens to modify
     :type user: User object
     :param serial: The serial number of the one token to modify (exact)
     :type serial: basestring
@@ -2120,9 +2109,9 @@ def check_realm_pass(realm, passw, options=None,
     :param passw: The password containing PIN+OTP
     :param options: Additional options that are passed to the tokens
     :type options: dict
-    :param include_types: List of token types to use for the check
+    :param include_types: List of token types to use
     :type include_types: list or str
-    :param exclude_types: List to token types *not* to use for the check
+    :param exclude_types: List to token types *not* to use
     :type exclude_types: list or str
     :return: tuple of bool and dict
     """
@@ -2682,7 +2671,7 @@ def get_dynamic_policy_definitions(scope=None):
                 'group': GROUP.PIN
             }
 
-    # return sub section, if scope is defined
+    # return subsection, if scope is defined
     # make sure that scope is in the policy key
     # e.g. scope='_' is undefined and would break
     if scope and scope in pol:
@@ -2787,7 +2776,7 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
 
     :param token_dict: The token in a dict
     :param tokenowner: The tokenowner should also be assigned. If the tokenowner can not be found or
-        identified, the token is created anyways, but not assigned to a user; an exception is raised.
+        identified, the token is created anyway, but not assigned to a user; an exception is raised.
     :type tokenowner: bool
     :param overwrite: If a token with the given serial number already exist, it should be overwritten. If the token
         should not be overwritten but already exists, an exception is raised.

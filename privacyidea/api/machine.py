@@ -403,8 +403,7 @@ def get_auth_items_api(application=None):
         if key in filter_param:
             del (filter_param[key])
 
-    ret = get_auth_items(hostname, ip=g.client_ip,
-                         application=application, challenge=challenge,
+    ret = get_auth_items(hostname, application=application, challenge=challenge,
                          filter_param=filter_param)
     g.audit_object.log({'success': True,
                         'info': "host: {0!s}, application: {1!s}".format(hostname,

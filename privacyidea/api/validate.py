@@ -139,8 +139,8 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy and it
-    # can be passed to the innerpolicies.
+    # This audit_object can be used in the postpolicy and prepolicy
+    # It can be passed to the inner policies.
 
     g.policy_object = PolicyClass()
 
@@ -257,7 +257,7 @@ def check():
     In case of successful authentication it returns ``result->value: true``.
 
     In case of a challenge response authentication a parameter ``exception=1``
-    can be passed. This would result in a HTTP 500 Server Error response if
+    can be passed. This would result in an HTTP 500 Server Error response if
     an error occurred during sending of SMS or Email.
 
     In case ``/validate/radiuscheck`` is requested, the responses are
