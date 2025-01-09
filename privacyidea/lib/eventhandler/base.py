@@ -857,7 +857,8 @@ class BaseEventHandler(object):
             if CONDITION.FAILCOUNTER in conditions:
                 failcount = token_obj.get_failcount()
                 cond = conditions.get(CONDITION.FAILCOUNTER)
-                if not compare_condition(cond, failcount):
+                res = compare_condition(cond, failcount)
+                if not res:
                     return False
 
             if CONDITION.TOKENINFO in conditions:

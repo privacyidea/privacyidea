@@ -711,7 +711,7 @@ def get_webui_settings(request, response):
 
                     body = quote(body)
                     content["result"]["value"]["supportmail"] = \
-                        f"mailto:{subscription.get("by_email")}?subject={subject}&body={body}"
+                        f"mailto:{subscription.get('by_email')}?subject={subject}&body={body}"
         response.set_data(json.dumps(content))
     return response
 
