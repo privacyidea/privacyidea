@@ -25,7 +25,7 @@ from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
-from privacyidea.lib.tokens.webauthntoken import WEBAUTHNACTION
+from privacyidea.lib.fido2.policyaction import Fido2Action
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase
 from tests.passkeytestbase import PasskeyTestBase
@@ -45,9 +45,9 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                          resolver=self.resolvername1)
         PasskeyTestBase.__init__(self)
 
-        set_policy("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{WEBAUTHNACTION.RELYING_PARTY_ID}={self.rp_id}")
+        set_policy("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{Fido2Action.RELYING_PARTY_ID}={self.rp_id}")
         set_policy("passkey_rp_name", scope=SCOPE.ENROLL,
-                   action=f"{WEBAUTHNACTION.RELYING_PARTY_NAME}={self.rp_id}")
+                   action=f"{Fido2Action.RELYING_PARTY_NAME}={self.rp_id}")
         self.pk_headers = {'ORIGIN': self.expected_origin, 'Authorization': self.at}
 
     def tearDown(self):
@@ -84,7 +84,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             "credential_id": self.credential_id,
             "rawId": self.credential_id,
             "authenticatorAttachment": self.authenticator_attachment,
-            WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
+            Fido2Action.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": transaction_id,
             "type": "passkey",
             "user": self.user.login,
@@ -120,11 +120,11 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         serial = self._enroll_static_passkey()
 
         set_policy("key_algorithm", scope=SCOPE.ENROLL,
-                   action=f"{WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
+                   action=f"{Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
         set_policy("attestation", scope=SCOPE.ENROLL, action=f"{PasskeyAction.AttestationConveyancePreference}="
                                                              f"{AttestationConveyancePreference.ENTERPRISE.value}")
         set_policy("user_verification", scope=SCOPE.ENROLL,
-                   action=f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
 
         with (self.app.test_request_context('/token/init',
                                             method='POST',
@@ -195,7 +195,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         """
         serial = self._enroll_static_passkey()
         set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -223,7 +223,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
     def test_04_authenticate_with_uv(self):
         serial = self._enroll_static_passkey()
         set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])

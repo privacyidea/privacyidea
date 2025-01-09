@@ -107,6 +107,7 @@ from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.user import get_username
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
@@ -2937,7 +2938,7 @@ def create_fido2_challenge(rp_id: str) -> dict:
     """
     challenge = get_fido2_nonce()
     transaction_id = get_rand_digit_str(20)
-    message = lazy_gettext("Please authenticate with your Passkey!")
+    message = PasskeyTokenClass.get_default_challenge_text_auth()
 
     db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
     db_challenge.save()

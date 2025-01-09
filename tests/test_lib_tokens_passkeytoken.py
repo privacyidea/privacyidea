@@ -32,7 +32,7 @@ from privacyidea.lib.token import (init_token, remove_token, get_credential_ids_
                                    create_fido2_challenge, verify_fido2_challenge)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass, PasskeyAction
-from privacyidea.lib.tokens.webauthntoken import WEBAUTHNACTION
+from privacyidea.lib.fido2.policyaction import Fido2Action
 from privacyidea.lib.user import User
 from tests.base import MyTestCase
 from tests.passkeytestbase import PasskeyTestBase
@@ -73,8 +73,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             param.update(get_init_detail_options)
         # Overwrite these values if they have been in options
         param.update({
-            WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
-            WEBAUTHNACTION.RELYING_PARTY_NAME: self.rp_id
+            Fido2Action.RELYING_PARTY_ID: self.rp_id,
+            Fido2Action.RELYING_PARTY_NAME: self.rp_id
         })
         with patch('privacyidea.lib.tokens.passkeytoken.PasskeyTokenClass._get_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
@@ -89,7 +89,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             "rawId": self.credential_id,
             "authenticatorAttachment": self.authenticator_attachment,
             "HTTP_ORIGIN": self.expected_origin,
-            WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
+            Fido2Action.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": init_detail["transaction_id"]
         }
 
@@ -190,9 +190,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(len(registered_credential_ids), 1)
 
         options = {
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: key_algorithms,
+            Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: key_algorithms,
             PasskeyAction.AttestationConveyancePreference: AttestationConveyancePreference.ENTERPRISE,
-            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: "required",
+            Fido2Action.USER_VERIFICATION_REQUIREMENT: "required",
             "registered_credential_ids": registered_credential_ids
         }
         registration_request = self._initialize_registration(options)
@@ -245,8 +245,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         # Also test setting a description in the first step
         token: TokenClass = init_token({"type": "passkey", "description": "test"}, user=self.user)
         self.assertEqual(token.token.description, "test")
-        param = {WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
-                 WEBAUTHNACTION.RELYING_PARTY_NAME: self.rp_id}
+        param = {Fido2Action.RELYING_PARTY_ID: self.rp_id,
+                 Fido2Action.RELYING_PARTY_NAME: self.rp_id}
 
         # Remove the user before the registration
         unassign_token(token.get_serial())

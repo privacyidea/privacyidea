@@ -119,7 +119,7 @@ from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.framework import get_app_config_value
-from ..lib.tokens.webauthntoken import WEBAUTHNACTION
+from ..lib.fido2.policyaction import Fido2Action
 
 log = logging.getLogger(__name__)
 
@@ -733,15 +733,15 @@ def initialize():
     token_type = get_optional(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=WEBAUTHNACTION.RELYING_PARTY_ID,
+        rp_id = get_first_policy_value(policy_action=Fido2Action.RELYING_PARTY_ID,
                                        default="",
                                        scope=SCOPE.ENROLL)
         if not rp_id:
-            raise PolicyError(f"Missing policy for {WEBAUTHNACTION.RELYING_PARTY_ID}, unable to create challenge!")
+            raise PolicyError(f"Missing policy for {Fido2Action.RELYING_PARTY_ID}, unable to create challenge!")
 
         challenge = create_fido2_challenge(rp_id)
         challenge["user_verification"] = get_first_policy_value(
-            policy_action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+            policy_action=Fido2Action.USER_VERIFICATION_REQUIREMENT,
             default="preferred",
             scope=SCOPE.AUTH
         )

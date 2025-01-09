@@ -807,7 +807,7 @@ class CustomUserAttribute(MethodsMixin, db.Model):
     The Type can hold extra information like e.g. an encrypted value / password.
 
     Note: Since the users are external, i.e. no objects in this database,
-          there is not logic reference on a database level.
+          there is no logic reference on a database level.
           Since users could be deleted from user stores
           without privacyIDEA realizing that, this table could pile up
           with remnants of attributes.
