@@ -1974,6 +1974,10 @@ def fido2_auth(request, action):
         request.all_data[action] = challenge_text
 
     request.all_data[Fido2Action.ALLOWED_TRANSPORTS] = list(allowed_transports)
+
+    rp_id = get_first_policy_value(Fido2Action.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
+    if rp_id:
+        request.all_data[Fido2Action.RELYING_PARTY_ID] = rp_id
     return True
 
 

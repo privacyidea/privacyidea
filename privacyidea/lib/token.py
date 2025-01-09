@@ -68,28 +68,27 @@ import traceback
 from collections import defaultdict
 
 from dateutil.tz import tzlocal
-from flask_babel import lazy_gettext
 from sqlalchemy import (and_, func)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
 from webauthn import base64url_to_bytes
-from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.api.lib.utils import get_required, get_optional, get_required_one_of, get_optional_one_of
-from privacyidea.lib import _
+from privacyidea.lib import _, fido2
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.crypto import geturandom, get_rand_digit_str
+from privacyidea.lib.crypto import get_rand_digit_str
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, AuthError)
+from privacyidea.lib.fido2.util import get_fido2_nonce
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -2264,31 +2263,31 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
-    for token_obj in token_list:
+    for token in token_list:
         # Check if the max auth is succeeded
-        if token_obj.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
+        if token.check_all(message_list):
+            r_chal, message, transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
             # Add the reply to the response
-            message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
+            message = challenge_text_replace(message, user=token.user, token_obj=token)
             message_list.append(message)
             if r_chal:
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
-                challenge_info["serial"] = token_obj.token.serial
-                challenge_info["type"] = token_obj.get_tokentype()
-                challenge_info["client_mode"] = token_obj.client_mode
+                challenge_info["serial"] = token.token.serial
+                challenge_info["type"] = token.get_tokentype()
+                challenge_info["client_mode"] = token.client_mode
                 challenge_info["message"] = message
                 # If they exist, add next pin and next password change
-                next_pin = token_obj.get_tokeninfo("next_pin_change")
+                next_pin = token.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
-                    challenge_info["pin_change"] = token_obj.is_pin_change()
-                next_passw = token_obj.get_tokeninfo(
+                    challenge_info["pin_change"] = token.is_pin_change()
+                next_passw = token.get_tokeninfo(
                     "next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
-                    challenge_info["password_change"] = token_obj.is_pin_change(password=True)
+                    challenge_info["password_change"] = token.is_pin_change(password=True)
                 # FIXME: This is deprecated and should be remove one day
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
@@ -2337,7 +2336,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     :param user: the identified use - as class object
     :param options: additional parameters, which are passed to the token
     :param allow_reset_all_tokens: If set to True, the policy reset_all_user_tokens is evaluated to
-        reset all user tokens accordingly. Note: This parameter is used in the decorator.
+        reset all user tokens accordingly. Note: This parameter is used in the decorator. # TODO not good
 
     :return: tuple of success and optional response
     :rtype: (bool, dict)
@@ -2374,8 +2373,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
     for token_object in sorted(token_object_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):
-            # Avoid a SQL query triggered by ``token_object.user`` in case
-            # the log level is not DEBUG
+            # Avoid a SQL query triggered by ``token_object.user`` in case the log level is not DEBUG
             log.debug(f"Found user with loginId {token_object.user}: {token_object.get_serial()}")
 
         if token_object.is_challenge_response(passw, user=user, options=options):
@@ -2386,8 +2384,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 # This is a transaction_id, that either never existed or has expired.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
-        elif token_object.is_challenge_request(passw, user=user,
-                                               options=options):
+        elif token_object.is_challenge_request(passw, user=user, options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
@@ -2491,8 +2488,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         reply_dict["message"] = ", ".join(message_list)
 
     elif challenge_response_token_list:
-        # The RESPONSE for a previous request of a challenge response token was
-        # found.
+        # The RESPONSE for a previous request of a challenge response token was found.
         matching_challenge = False
         further_challenge = False
         for token_object in challenge_response_token_list:
@@ -2557,8 +2553,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
-        active_challenge_token = [t for t in challenge_request_token_list
-                                  if t.token.active]
+        active_challenge_token = [t for t in challenge_request_token_list if t.token.active]
         if len(active_challenge_token) == 0:
             reply_dict["message"] = _("No active challenge response token found")
         else:
@@ -2916,13 +2911,6 @@ def get_fido2_token_by_credential_id(credential_id: str):
         return None
 
 
-def get_fido2_nonce() -> str:
-    """
-    Generate a random 32 byte nonce for fido2 challenges. The nonce is encoded in base64url.
-    """
-    return bytes_to_base64url(geturandom(32))
-
-
 def create_fido2_challenge(rp_id: str) -> dict:
     """
     Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
@@ -2936,7 +2924,7 @@ def create_fido2_challenge(rp_id: str) -> dict:
     }
     The challenge nonce is encoded in base64url.
     """
-    challenge = get_fido2_nonce()
+    challenge = fido2.util.get_fido2_nonce()
     transaction_id = get_rand_digit_str(20)
     message = PasskeyTokenClass.get_default_challenge_text_auth()
 
@@ -2963,6 +2951,13 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     db_challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
     if not db_challenge:
         raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
+    # If the challenge has been triggered via /validate/check, it is supposed to be answered by a designated token.
+    # Challenges triggered via /validate/initialize are not bound to a token.
+    # Check if the challenge contains a serial and if so, if it matches the token
+    if db_challenge.serial and db_challenge.serial != token.get_serial():
+        log.error(f"Challenge with transaction_id {transaction_id} is not meant for token {token.get_serial()}.")
+        raise AuthError(f"The challenge {transaction_id} is not meant for the token {token.get_serial()}.")
+
     options = {
         "challenge": db_challenge.challenge,
         "authenticatorData": get_required_one_of(params, ["authenticatorData", "authenticatordata"]),

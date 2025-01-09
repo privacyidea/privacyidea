@@ -406,6 +406,10 @@ class TokenClass(object):
         self.token.set_info(add_info)
 
     @check_token_locked
+    def add_tokeninfo_dict(self, info: dict):
+        self.token.set_info(info)
+
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         This checks the OTP value, AFTER the upper level did
@@ -520,8 +524,7 @@ class TokenClass(object):
         otp_counter = -1
         reply = None
 
-        (res, pin, otpval) = self.split_pin_pass(passw, user=user,
-                                                 options=options)
+        (res, pin, otpval) = self.split_pin_pass(passw, user=user, options=options)
         if res:
             # If the otpvalue is too short, we do not check the PIN at all, since res is False
             pin_match = self.check_pin(pin, user=user, options=options)
@@ -1408,11 +1411,11 @@ class TokenClass(object):
         :rtype: tuple
         """
         # The database field is always an integer
-        otplen = self.token.otplen
-        log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
-        pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
-        # If the provided passw is shorter than the expected otplen, we return the status False
-        return len(passw) >= otplen, pin, otpval
+        otp_length = self.token.otplen
+        log.debug(f"Splitting the OTP value of length {otp_length} from the password.")
+        pin, otp_value = split_pin_pass(passw, otp_length, get_prepend_pin())
+        # If the provided passw is shorter than the expected otp_length, we return the status False
+        return len(passw) >= otp_length, pin, otp_value
 
     def status_validation_fail(self):
         """
@@ -1490,7 +1493,7 @@ class TokenClass(object):
         is triggered by overwriting this method.
 
         .. note:: in case of ``pin policy == 2`` (no pin is required)
-                  the ``check_pin`` would always return true! Thus each request
+                  the ``check_pin`` would always return true! Thus, each request
                   containing a ``data`` or ``challenge`` would trigger a challenge!
 
         The Challenge workflow is like this.
@@ -1513,7 +1516,7 @@ class TokenClass(object):
                      V                       V
             challenge_janitor       challenge_janitor
 
-        :param passw: password, which might be pin or pin+otp
+        :param passw: password, which might be the pin or pin+otp
         :type passw: string
         :param user: The user from the authentication request
         :type user: User object
@@ -1612,18 +1615,18 @@ class TokenClass(object):
 
         # get the challenges for this transaction ID
         if transaction_id is not None:
-            challengeobject_list = get_challenges(serial=self.token.serial,
+            challenges = get_challenges(serial=self.token.serial,
                                                   transaction_id=transaction_id)
 
-            for challengeobject in challengeobject_list:
-                if challengeobject.is_valid():
+            for challenge in challenges:
+                if challenge.is_valid():
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
-                    options["challenge"] = challengeobject.challenge
-                    options["data"] = challengeobject.data
-                    if challengeobject.session == CHALLENGE_SESSION.ENROLLMENT:
+                    options["challenge"] = challenge.challenge
+                    options["data"] = challenge.data
+                    if challenge.session == CHALLENGE_SESSION.ENROLLMENT:
                         self.enroll_via_validate_2nd_step(passw, options=options)
-                        challengeobject.delete()
+                        challenge.delete()
                         # Basically we have a successfully answered challenge
                         otp_counter = 0
                     else:
@@ -1632,11 +1635,11 @@ class TokenClass(object):
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
                             # successful result and delete the challenge object.
-                            challengeobject.delete()
+                            challenge.delete()
                             break
                         else:
                             # increase the received_count
-                            challengeobject.set_otp_status()
+                            challenge.set_otp_status()
 
         self.challenge_janitor()
         return otp_counter

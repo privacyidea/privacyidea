@@ -490,7 +490,7 @@ WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
 }
 
 
-class WEBAUTHNGROUP(object):
+class WebAuthnGroup(object):
     """
     Categories used to group WebAuthn token actions.
     """
@@ -604,31 +604,31 @@ class WebAuthnTokenClass(TokenClass):
                     Fido2Action.AVOID_DOUBLE_REGISTRATION: {
                         'type': 'bool',
                         'desc': _("One webauthn token can not be registered to a user more than once."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     Fido2Action.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human-readable name for the organization rolling out WebAuthn tokens."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     Fido2Action.RELYING_PARTY_ID: {
                         'type': 'str',
                         'desc': _("A domain name that is a subset of the respective FQDNs for all the webservices the "
                                   "users should be able to sign in to using WebAuthn tokens."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     Fido2Action.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm enrollment on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60"),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     Fido2Action.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
                         'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform "
                                   "authenticators, or only cross-platform authenticators. Default: either"),
-                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'group': WebAuthnGroup.WEBAUTHN,
                         'value': [
                             "platform",
                             "cross-platform",
@@ -639,13 +639,13 @@ class WebAuthnTokenClass(TokenClass):
                         'type': 'str',
                         'desc': _("A list of WebAuthn authenticators acceptable for enrollment, given as a "
                                   "space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     Fido2Action.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
-                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'group': WebAuthnGroup.WEBAUTHN,
                         'value': [
                             "required",
                             "preferred",
@@ -658,7 +658,7 @@ class WebAuthnTokenClass(TokenClass):
                                   "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
                                   "[{1!s}])".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
                                                     ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER))),
-                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'group': WebAuthnGroup.WEBAUTHN,
                         'multiple': True,
                         'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
                     },
@@ -667,7 +667,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Whether to request attestation data when enrolling a new WebAuthn token. "
                                   "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
                                   "Default: direct (ask for non-anonymized attestation data)"),
-                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'group': WebAuthnGroup.WEBAUTHN,
                         'value': [
                             "none",
                             "indirect",
@@ -679,7 +679,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Whether and how strictly to check authenticator attestation data. "
                                   "Note: If the attestation form is none, the attestation level needs to also be none. "
                                   "Default: untrusted (attestation is required, but can be unknown or self-signed)"),
-                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'group': WebAuthnGroup.WEBAUTHN,
                         'value': [
                             "none",
                             "untrusted",
@@ -689,7 +689,7 @@ class WebAuthnTokenClass(TokenClass):
                     Fido2Action.REQ: {
                         'type': 'str',
                         'desc': _("Only the specified WebAuthn-tokens are allowed to be registered."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     },
                     ACTION.MAXTOKENUSER: {
                         'type': 'int',
@@ -707,7 +707,7 @@ class WebAuthnTokenClass(TokenClass):
                                   "user to confirm the enrollment with his WebAuthn device. "
                                   "You can also use tags for automated replacement. Check out "
                                   "the documentation for more details."),
-                        'group': WEBAUTHNGROUP.WEBAUTHN
+                        'group': WebAuthnGroup.WEBAUTHN
                     }
                 }
             }
@@ -1037,8 +1037,7 @@ class WebAuthnTokenClass(TokenClass):
     def is_challenge_request(self, passw, user=None, options=None):
         """
         Check if the request would start a challenge.
-
-        Every request that is not a response needs to spawn a challenge.
+        Every request that is not a response needs to create a challenge.
 
         Note:
         This function does not need to be decorated with
@@ -1055,9 +1054,7 @@ class WebAuthnTokenClass(TokenClass):
         :rtype: bool
         """
 
-        return self.check_pin(passw,
-                              user=user,
-                              options=options or {})
+        return self.check_pin(passw, user=user, options=options or {})
 
     def create_challenge(self, transactionid=None, options=None):
         """

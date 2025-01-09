@@ -44,9 +44,10 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
+from privacyidea.lib import fido2
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
 from privacyidea.lib.fido2.tokeninfo import Fido2TokenInfo
 from privacyidea.lib.fido2.policyaction import Fido2Action
 from privacyidea.lib.fido2.config import Fido2Config
@@ -72,6 +73,7 @@ class PasskeyTokenClass(TokenClass):
     """
 
     mode = [AUTHENTICATIONMODE.CHALLENGE]
+    client_mode = CLIENTMODE.WEBAUTHN
 
     def __init__(self, db_token):
         super().__init__(db_token)
@@ -84,10 +86,6 @@ class PasskeyTokenClass(TokenClass):
     @staticmethod
     def get_class_prefix():
         return "PIPK"
-
-    @staticmethod
-    def _get_nonce():
-        return bytes_to_base64url(geturandom(32))
 
     @staticmethod
     @log_with(log)
@@ -150,7 +148,7 @@ class PasskeyTokenClass(TokenClass):
 
             response_detail: dict = TokenClass.get_init_detail(self, params, token_user)
 
-            nonce_base64 = self._get_nonce()
+            nonce_base64 = fido2.util.get_fido2_nonce()
             challenge_validity: int = int(get_from_config(Fido2Config.CHALLENGE_VALIDITY_TIME,
                                                           get_from_config('DefaultChallengeValidityTime', 120)))
             challenge: Challenge = Challenge(serial=self.token.serial,
@@ -237,9 +235,7 @@ class PasskeyTokenClass(TokenClass):
         response_detail = {"details": {"serial": self.token.serial}}
 
         attestation = get_optional(param, "attestationObject")
-        print(f"attestation: {attestation}")
         client_data = get_optional(param, "clientDataJSON")
-        print(f"client_data: {client_data}")
 
         if not (attestation and client_data) and not self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
@@ -285,19 +281,20 @@ class PasskeyTokenClass(TokenClass):
                 log.error(f"Invalid JSON structure: {ex}")
                 raise EnrollmentError(f"Invalid JSON structure: {ex}")
 
-            print(f"device type: {registration_verification.credential_device_type}")
-            print(f"backed up: {registration_verification.credential_backed_up}")
             # Verification successful, set the token to enrolled and save information returned by the authenticator
             self.token.rollout_state = ROLLOUTSTATE.ENROLLED
-            public_key_enc: str = bytes_to_base64url(registration_verification.credential_public_key)
-            self.add_tokeninfo("public_key", public_key_enc)
-            self.add_tokeninfo("aaguid", registration_verification.aaguid)
-            self.add_tokeninfo("sign_count", registration_verification.sign_count)
             # Protect the credential_id by setting it as the token secret
             self.set_otpkey(bytes_to_base64url(registration_verification.credential_id))
             # Add a hash of the credential_id to the token info to be able to find
             # the token faster given the credential_id
-            self.add_tokeninfo("credential_id_hash", sha256(registration_verification.credential_id).hexdigest())
+            token_info: dict = {
+                "device_type": registration_verification.credential_device_type,
+                "backed_up": registration_verification.credential_backed_up,
+                "public_key": bytes_to_base64url(registration_verification.credential_public_key),
+                "aaguid": registration_verification.aaguid,
+                "sign_count": registration_verification.sign_count,
+                "credential_id_hash": sha256(registration_verification.credential_id).hexdigest()
+            }
 
             # If the attestation object contains a x5c certificate, save it in the token info
             # and set the description to the CN if it is not already set
@@ -307,11 +304,12 @@ class PasskeyTokenClass(TokenClass):
                     att_cert: Certificate = cryptography.x509.load_der_x509_certificate(att_obj.att_stmt.x5c[0])
                     pem: str = (att_cert.public_bytes(serialization.Encoding.PEM)
                                 .decode("utf-8").replace("\n", ""))
-                    self.add_tokeninfo("attestation_certificate", pem)
+                    token_info["attestation_certificate"] = pem
                     if not self.token.description:
                         attributes: list[NameAttribute] = att_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
                         if attributes:
                             self.set_description(attributes[0].value)
+            self.add_tokeninfo_dict(token_info)
         return response_detail
 
     @check_token_locked
@@ -402,18 +400,15 @@ class PasskeyTokenClass(TokenClass):
         The challenge nonce is encoded in base64url.
         """
         rp_id = get_required(options, Fido2Action.RELYING_PARTY_ID)
-        challenge = bytes_to_base64url(geturandom(32))
-        transaction_id = get_rand_digit_str(20)
+        uv = get_optional(options, "user_verification", "preferred")
+        challenge = fido2.util.get_fido2_nonce()
+        transaction_id = transactionid or get_rand_digit_str(20)
         message = PasskeyTokenClass.get_default_challenge_text_auth()
         db_challenge = Challenge(self.get_serial(), transaction_id=transaction_id, challenge=challenge)
         db_challenge.save()
-        ret = {
-            "transaction_id": transaction_id,
-            "challenge": challenge,
-            "message": message,
-            "rpId": rp_id
-        }
-        return ret
+        challenge_details = {"challenge": challenge, "rpId": rp_id, "userVerification": uv}
+        # TODO this vvv is horrible
+        return True, message, transaction_id, challenge_details
 
     @log_with(log)
     def use_for_authentication(self, options):
@@ -422,3 +417,11 @@ class PasskeyTokenClass(TokenClass):
     @classmethod
     def is_multichallenge_enrollable(cls):
         return True
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        This token type is always challenge-response. If the pin matches, a challenge should be created.
+        """
+
+        return self.check_pin(passw, user=user, options=options or {})

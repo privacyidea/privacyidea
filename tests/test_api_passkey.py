@@ -59,7 +59,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                             method='POST',
                                             data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
                                             headers=self.pk_headers),
-              patch('privacyidea.lib.tokens.passkeytoken.PasskeyTokenClass._get_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -130,7 +130,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                             method='POST',
                                             data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
                                             headers=self.pk_headers),
-              patch('privacyidea.lib.tokens.passkeytoken.PasskeyTokenClass._get_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -154,7 +154,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
 
     def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
         with (self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}),
-              patch('privacyidea.lib.token.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = mock_nonce
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -240,3 +240,67 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
 
         remove_token(serial)
         delete_policy("user_verification")
+
+    def test_05_authenticate_validate_check(self):
+        """
+        Ensure that the passkey token does work with the /validate/check endpoint like any other token type.
+        In this case, the created challenge is bound to the exact token.
+        """
+
+        serial = self._enroll_static_passkey()
+        with (self.app.test_request_context('/validate/check', method='POST',
+                                            data={"user": self.user.login, "pass": ""}),
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+            get_nonce.return_value = self.authentication_challenge_no_uv
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("multi_challenge", detail)
+
+            multi_challenge = detail["multi_challenge"]
+            self.assertEqual(len(multi_challenge), 1)
+
+            challenge = multi_challenge[0]
+            self.assertIn("transaction_id", challenge)
+            transaction_id = challenge["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertIn("challenge", challenge)
+            self.assertEqual(self.authentication_challenge_no_uv, challenge["challenge"])
+
+            self.assertIn("serial", challenge)
+            self.assertEqual(serial, challenge["serial"])
+
+            self.assertIn("type", challenge)
+            self.assertEqual("passkey", challenge["type"])
+
+            self.assertIn("userVerification", challenge)
+            self.assertTrue(challenge["userVerification"])
+
+            self.assertIn("rpId", challenge)
+            self.assertEqual(self.rp_id, challenge["rpId"])
+
+            self.assertIn("message", challenge)
+            self.assertTrue(challenge["message"])
+
+            self.assertIn("client_mode", challenge)
+            self.assertEqual("webauthn", challenge["client_mode"])
+
+            # Answer the challenge
+            data = self.authentication_response_no_uv
+            data["transaction_id"] = transaction_id
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                self._assert_result_value_true(res.json)
+                self.assertIn("result", res.json)
+                self.assertIn("authentication", res.json["result"])
+                self.assertEqual("ACCEPT", res.json["result"]["authentication"])
+                # Should return the username
+                self.assertIn("detail", res.json)
+                detail = res.json["detail"]
+                self.assertIn("username", detail)
+                self.assertEqual(self.user.login, detail["username"])

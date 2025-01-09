@@ -363,7 +363,7 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
         "admin" or "public". If "public", only values with type="public"
         are returned.
     :type role: string
-    :param return_bool: If the a boolean value should be returned. Returns
+    :param return_bool: Whether a boolean value should be returned. Returns
         True if value is "True", "true", 1, "1", True...
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.

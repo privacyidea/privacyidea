@@ -76,7 +76,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             Fido2Action.RELYING_PARTY_ID: self.rp_id,
             Fido2Action.RELYING_PARTY_NAME: self.rp_id
         })
-        with patch('privacyidea.lib.tokens.passkeytoken.PasskeyTokenClass._get_nonce') as get_nonce:
+        with patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
             init_detail = token.get_init_detail(param)
         self.assertIn("serial", init_detail)
@@ -96,7 +96,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         return self.RegistrationRequest(token, init_detail, registration_response)
 
     def _initialize_authentication(self) -> dict:
-        with patch('privacyidea.lib.token.get_fido2_nonce') as get_nonce:
+        with patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             challenge = create_fido2_challenge(self.rp_id)
             self.assertEqual(challenge["challenge"], self.authentication_challenge_no_uv)
@@ -161,7 +161,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertTrue(token_info["public_key"])
         self.assertTrue(token_info["aaguid"])
         self.assertTrue(token_info["sign_count"])
-        self.assertTrue(token_info["user_id"])
+        self.assertTrue(token_info["fido2_user_id"])
         # Since attestation was passed, the cert should be present and the description should be set from the cert CN
         self.assertTrue(token_info["attestation_certificate"])
         self.assertEqual(token.token.description, "Yubico U2F EE Serial 2109467376")
