@@ -10,7 +10,7 @@ import {TableUtilsService} from '../table-utils/table-utils.service';
   providedIn: 'root'
 })
 export class ContainerService {
-  private baseUrl = 'http://127.0.0.1:5000/container/';
+  private containerBaseUrl = 'http://127.0.0.1:5000/container/';
   apiFilter = [
     'container_serial',
     'type',
@@ -61,7 +61,7 @@ export class ContainerService {
       */
     }
 
-    return this.http.get<any>(this.baseUrl, {headers, params}).pipe(
+    return this.http.get<any>(this.containerBaseUrl, {headers, params}).pipe(
       map(response => response),
       catchError(error => {
         console.error('Failed to get container data', error);
@@ -72,7 +72,7 @@ export class ContainerService {
 
   assignContainer(token_serial: string, container_serial: string | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}${container_serial}/add`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/add`, {
       serial: token_serial
     }, {headers}).pipe(
       map(response => response),
@@ -85,7 +85,7 @@ export class ContainerService {
 
   unassignContainer(token_serial: string, container_serial: string | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}${container_serial}/remove`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/remove`, {
       serial: token_serial
     }, {headers}).pipe(
       map(response => response),
@@ -99,20 +99,20 @@ export class ContainerService {
   getContainerDetails(serial: string): Observable<any> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams().set('container_serial', serial);
-    return this.http.get(this.baseUrl, {headers, params})
+    return this.http.get(this.containerBaseUrl, {headers, params})
   }
 
   setContainerRealm(serial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
     let valueString = value ? value.join(',') : '';
-    return this.http.post(`${this.baseUrl}${serial}/realms`, {
+    return this.http.post(`${this.containerBaseUrl}${serial}/realms`, {
       realms: valueString
     }, {headers})
   }
 
   setContainerDescription(serial: string, value: any) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}${serial}/description`, {
+    return this.http.post(`${this.containerBaseUrl}${serial}/description`, {
       description: value
     }, {headers})
   }
@@ -128,12 +128,12 @@ export class ContainerService {
         return state
       }
     }).join(',');
-    return this.http.post(`${this.baseUrl}${serial}/states`, {states: new_states}, {headers})
+    return this.http.post(`${this.containerBaseUrl}${serial}/states`, {states: new_states}, {headers})
   }
 
   unassignUser(serial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}${serial}/unassign`, {
+    return this.http.post(`${this.containerBaseUrl}${serial}/unassign`, {
       user: username,
       realm: userRealm
     }, {headers})
@@ -141,9 +141,26 @@ export class ContainerService {
 
   assignUser(serial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}${serial}/assign`, {
+    return this.http.post(`${this.containerBaseUrl}${serial}/assign`, {
       user: username,
       realm: userRealm
     }, {headers})
+  }
+
+  setContainerInfos(serial: string, infos: any) {
+    const headers = this.localService.getHeaders();
+    const info_url = `${this.containerBaseUrl}${serial}/info`;
+    return Object.keys(infos).map(info => {
+        const infoKey = info;
+        const infoValue = infos[infoKey];
+        return this.http.post(`${info_url}/${infoKey}`, {value: infoValue}, {headers})
+      }
+    );
+  }
+
+  deleteInfo(serial: string, key: string) {
+    const headers = this.localService.getHeaders();
+    //TODO: API is missing the delete endpoint
+    return;
   }
 }

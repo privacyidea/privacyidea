@@ -9,7 +9,7 @@ import {TableUtilsService} from '../table-utils/table-utils.service';
   providedIn: 'root'
 })
 export class TokenService {
-  private baseUrl = 'http://127.0.0.1:5000/token/';
+  private tokenBaseUrl = 'http://127.0.0.1:5000/token/';
   apiFilter = [
     'serial',
     'type',
@@ -36,12 +36,12 @@ export class TokenService {
   toggleActive(serial: string, active: boolean): Observable<any> {
     const headers = this.localService.getHeaders();
     const action = active ? 'disable' : 'enable';
-    return this.http.post(`${this.baseUrl}${action}`, {"serial": serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}${action}`, {"serial": serial}, {headers})
   }
 
   resetFailCount(serial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    return this.http.post(this.baseUrl + 'reset', {"serial": serial}, {headers})
+    return this.http.post(this.tokenBaseUrl + 'reset', {"serial": serial}, {headers})
   }
 
   getTokenData(page: number, pageSize: number, sort?: Sort, filterValue?: string): Observable<any> {
@@ -78,18 +78,18 @@ export class TokenService {
       */
     }
 
-    return this.http.get<any>(this.baseUrl, {headers, params})
+    return this.http.get<any>(this.tokenBaseUrl, {headers, params})
   }
 
   getTokenDetails(serial: string): Observable<any> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams().set('serial', serial);
-    return this.http.get(this.baseUrl, {headers, params})
+    return this.http.get(this.tokenBaseUrl, {headers, params})
   }
 
   setTokenDetail(serial: string, key: string, value: any): Observable<any> {
     const headers = this.localService.getHeaders();
-    const set_url = `${this.baseUrl}set`;
+    const set_url = `${this.tokenBaseUrl}set`;
     if (key === 'maxfail') {
       return this.http.post(set_url, {serial, ["max_failcount"]: value}, {headers});
     } else {
@@ -99,8 +99,8 @@ export class TokenService {
 
   setTokenInfos(serial: string, infos: any): Observable<any> {
     const headers = this.localService.getHeaders();
-    const set_url = `${this.baseUrl}set`;
-    const info_url = `${this.baseUrl}info`;
+    const set_url = `${this.tokenBaseUrl}set`;
+    const info_url = `${this.tokenBaseUrl}info`;
     const requests = Object.keys(infos).map(info => {
         const infoKey = info;
         const infoValue = infos[infoKey];
@@ -118,27 +118,27 @@ export class TokenService {
 
   deleteToken(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(this.baseUrl + serial, {headers})
+    return this.http.delete(this.tokenBaseUrl + serial, {headers})
   }
 
   revokeToken(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}revoke`, {'serial': serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}revoke`, {'serial': serial}, {headers})
   }
 
   deleteInfo(serial: string, infoKey: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.baseUrl}info/` + serial + "/" + infoKey, {headers})
+    return this.http.delete(`${this.tokenBaseUrl}info/` + serial + "/" + infoKey, {headers})
   }
 
   unassignUser(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}unassign`, {serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}unassign`, {serial}, {headers})
   }
 
   assignUser(serial: string, username: string | null, realm: string, pin: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}assign`, {
+    return this.http.post(`${this.tokenBaseUrl}assign`, {
       serial: serial,
       user: username,
       realm: realm,
@@ -148,7 +148,7 @@ export class TokenService {
 
   setPin(serial: string, userPin: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}setpin`, {
+    return this.http.post(`${this.tokenBaseUrl}setpin`, {
       serial: serial,
       otppin: userPin
     }, {headers})
@@ -156,14 +156,14 @@ export class TokenService {
 
   setRandomPin(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}setrandompin`, {
+    return this.http.post(`${this.tokenBaseUrl}setrandompin`, {
       serial: serial
     }, {headers})
   }
 
   resyncOTPToken(serial: string, fristOTPValue: string, secondOTPValue: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}resync`, {
+    return this.http.post(`${this.tokenBaseUrl}resync`, {
       serial: serial,
       otp1: fristOTPValue,
       otp2: secondOTPValue
@@ -172,7 +172,7 @@ export class TokenService {
 
   setTokenRealm(serial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}realm/` + serial, {
+    return this.http.post(`${this.tokenBaseUrl}realm/` + serial, {
       realms: value
     }, {headers})
   }
@@ -180,7 +180,7 @@ export class TokenService {
   setTokengroup(serial: string, value: any) {
     const headers = this.localService.getHeaders();
     const valueArray = Array.isArray(value) ? value : Object.values(value);
-    return this.http.post(`${this.baseUrl}group/` + serial, {
+    return this.http.post(`${this.tokenBaseUrl}group/` + serial, {
       groups: valueArray
     }, {headers});
   }
@@ -192,6 +192,6 @@ export class TokenService {
 
   lostToken(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}lost/` + serial, {headers});
+    return this.http.post(`${this.tokenBaseUrl}lost/` + serial, {headers});
   }
 }

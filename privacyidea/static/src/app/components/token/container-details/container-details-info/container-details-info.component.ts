@@ -7,14 +7,14 @@ import {FormsModule} from '@angular/forms';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatDivider} from '@angular/material/divider';
-import {TokenService} from '../../../../services/token/token.service';
-import {Observable, switchMap} from 'rxjs';
-import {EditButtonsComponent} from '../edit-buttons/edit-buttons.component';
+import {forkJoin} from 'rxjs';
 import {NgClass} from '@angular/common';
 import {OverflowService} from '../../../../services/overflow/overflow.service';
+import {EditButtonsComponent} from '../../token-details/edit-buttons/edit-buttons.component';
+import {ContainerService} from '../../../../services/container/container.service';
 
 @Component({
-  selector: 'app-token-details-info',
+  selector: 'app-container-details-info',
   standalone: true,
   imports: [
     MatTableModule,
@@ -31,12 +31,12 @@ import {OverflowService} from '../../../../services/overflow/overflow.service';
     MatDivider,
     MatRow,
     EditButtonsComponent,
-    NgClass
+    NgClass,
   ],
-  templateUrl: './token-details-info.component.html',
-  styleUrl: './token-details-info.component.scss'
+  templateUrl: './container-details-info.component.html',
+  styleUrl: './container-details-info.component.scss'
 })
-export class TokenDetailsInfoComponent {
+export class ContainerDetailsInfoComponent {
   @Input() serial!: WritableSignal<string>;
   @Input() infoData!: WritableSignal<{
     value: any;
@@ -55,7 +55,7 @@ export class TokenDetailsInfoComponent {
   newInfo = signal({key: '', value: ''});
   protected readonly Object = Object;
 
-  constructor(private tokenService: TokenService,
+  constructor(private containerService: ContainerService,
               protected overflowService: OverflowService) {
   }
 
@@ -70,22 +70,26 @@ export class TokenDetailsInfoComponent {
     this.newInfo.set({key: '', value: ''});
   }
 
+
   saveInfo(infos: any): void {
     if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
       infos[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService.setTokenInfos(this.serial(), infos).subscribe({
+    const requests = this.containerService.setContainerInfos(this.serial(), infos);
+    forkJoin(requests).subscribe({
       next: () => {
         this.refreshDetails.set(true);
       },
       error: error => {
-        console.error('Failed to save token infos', error);
+        console.error('Failed to save container infos', error);
       }
     });
   }
 
   deleteInfo(key: string): void {
-    this.tokenService.deleteInfo(this.serial(), key).pipe(
+    /*
+    TODO
+    this.containerService.deleteInfo(this.serial(), key).pipe(
       switchMap(() => {
         const info = this.detailData()
           .find(detail => detail.keyMap.key === 'info');
@@ -105,5 +109,6 @@ export class TokenDetailsInfoComponent {
         console.error('Failed to delete info', error);
       }
     });
+    */
   }
 }

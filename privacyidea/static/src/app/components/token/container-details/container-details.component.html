@@ -151,6 +151,14 @@
           </ng-container>
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
+        <div class="details-flex-layout">
+        <app-container-details-info [detailData]="containerDetailData" [infoData]="infoData"
+                                [isAnyEditingOrRevoked]="isAnyEditing"
+                                [isEditingInfo]="isEditingInfo"
+                                [isEditingUser]="isEditingUser"
+                                [refreshDetails]="refreshContainerDetails"
+                                [serial]="serial"></app-container-details-info>
+        </div>
       </div>
     </div>
   </div>

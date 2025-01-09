@@ -17,6 +17,10 @@ import {MatAutocomplete, MatAutocompleteTrigger} from '@angular/material/autocom
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {UserService} from '../../../services/user/user.service';
+import {infoDetailsKeyMap} from '../token-details/token-details.component';
+import {
+  ContainerDetailsInfoComponent
+} from './container-details-info/container-details-info.component';
 
 export const containerDetailsKeyMap = [
   {key: 'type', label: 'Type'},
@@ -54,6 +58,7 @@ const containerUserDetailsKeyMap = [
     MatAutocompleteTrigger,
     MatIcon,
     MatIconButton,
+    ContainerDetailsInfoComponent,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss'
@@ -82,6 +87,15 @@ export class ContainerDetailsComponent {
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
   }[]>(containerDetailsKeyMap.map(detail => ({
+    keyMap: detail,
+    value: '',
+    isEditing: signal(false)
+  })));
+  infoData = signal<{
+    value: any;
+    keyMap: { label: string; key: string },
+    isEditing: WritableSignal<boolean>
+  }[]>(infoDetailsKeyMap.map(detail => ({
     keyMap: detail,
     value: '',
     isEditing: signal(false)
@@ -140,6 +154,14 @@ export class ContainerDetailsComponent {
           value: containerDetails[detail.key],
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
+
+        this.infoData.set(infoDetailsKeyMap.map(detail => ({
+          keyMap: detail,
+          value: containerDetails[detail.key],
+          isEditing: signal(false)
+        })).filter(detail => detail.value !== undefined));
+
+
         let user = {
           user_realm: '',
           user_name: '',

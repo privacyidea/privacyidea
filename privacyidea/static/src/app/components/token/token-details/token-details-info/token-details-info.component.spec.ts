@@ -43,7 +43,7 @@ describe('TokenDetailsInfoComponent', () => {
     component.isAnyEditingOrRevoked = computed(() => {
       return (component.isEditingInfo());
     });
-    component.refreshTokenDetails = signal(false);
+    component.refreshDetails = signal(false);
     component.newInfo = signal({key: '', value: ''});
     component.infoData = signal([{
       keyMap: {key: 'info', label: 'Info'},
