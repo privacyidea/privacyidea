@@ -1,0 +1,63 @@
+<div aria-label="Container Details Token Table" class="container-details-token-table-container">
+  <div class="flex-column">
+    <mat-form-field class="container-details-token-table-filter" subscriptSizing="dynamic">
+      <mat-label>Filter</mat-label>
+      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
+             matInput placeholder="Filter across all columns.">
+    </mat-form-field>
+    <mat-paginator
+      [pageSizeOptions]="pageSizeOptions"
+      [pageSize]="pageSize" aria-label="Select page of tokens"
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
+  <table [dataSource]="dataSource()"
+         aria-label="Token Data Table" class="container-details-token-table" mat-table matSort>
+    @for (column of columnsKeyMap; track column) {
+      <ng-container [matColumnDef]="column.key">
+        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell
+            mat-sort-header>
+          {{ column.label }}
+        </th>
+        <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell
+            [ngClass]="{'width-18': column.key === 'description'}">
+          <ng-container>
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @if (column.key === 'realms') {
+                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
+                  @for (realm of element[column.key]; track realm; let idx = $index) {
+                    <a attr.aria-label="{{ column.label }} Link" href="#">
+                      {{ realm }}
+                    </a>
+                    <br style="margin-top: 3px"/>
+                  }
+                </div>
+              } @else if (column.key === 'serial') {
+                <a attr.aria-label="{{ column.label }} Link"
+                   (click)="tokenSelected(element.serial)">
+                  {{ element[column.key] }}
+                </a>
+              } @else if (tableUtilsService.isLink(column.key)) {
+                <a attr.aria-label="{{ column.label }} Link" href="#">
+                  {{ element[column.key] }}
+                </a>
+              } @else {
+                <span
+                  [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                {{ tableUtilsService.getDisplayText(column.key, element) }}
+              </span>
+              }
+            </div>
+          </ng-container>
+        </td>
+      </ng-container>
+    }
+    <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
+    <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
+    <tr *matNoDataRow aria-label="No Data Row">
+      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell">
+        No data matching the filter.
+      </td>
+    </tr>
+  </table>
+</div>

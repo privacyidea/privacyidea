@@ -1,0 +1,11 @@
+@import '../../../../../styles/styles.scss';
+
+.container-details-token-table-container {
+  @include base-table-structure(".container-details-token-table", ".container-details-token-table-filter", ".table-scrollable-container");
+  margin-left: 2rem;
+  overflow: auto;
+
+  .container-details-token-table-filter {
+    width: 33.5rem;
+  }
+}

@@ -217,6 +217,11 @@ th:nth-child(even) {
   height: 78px;
 }
 
+.scroll-margin-pad {
+  margin-right: -1rem;
+  padding-right: 1rem;
+}
+
 .fix-width-20-padr-0 {
   width: $fix-width !important;
   max-width: $fix-width;
@@ -326,6 +331,10 @@ th:nth-child(even) {
 
     .mat-mdc-text-field-wrapper {
       padding-left: 5px;
+    }
+
+    .container-details-token-table-container .mat-mdc-text-field-wrapper {
+      padding-left: 1rem !important;
     }
 
     .details-table .mat-mdc-form-field-infix {

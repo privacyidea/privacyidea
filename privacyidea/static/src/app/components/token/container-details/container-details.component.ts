@@ -1,7 +1,13 @@
 import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
 import {NgClass} from '@angular/common';
 import {OverflowService} from '../../../services/overflow/overflow.service';
-import {MatCell, MatColumnDef, MatRow, MatTableModule} from '@angular/material/table';
+import {
+  MatCell,
+  MatColumnDef,
+  MatRow,
+  MatTableDataSource,
+  MatTableModule
+} from '@angular/material/table';
 import {ContainerService} from '../../../services/container/container.service';
 import {forkJoin, Observable, switchMap} from 'rxjs';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
@@ -21,6 +27,9 @@ import {infoDetailsKeyMap} from '../token-details/token-details.component';
 import {
   ContainerDetailsInfoComponent
 } from './container-details-info/container-details-info.component';
+import {
+  ContainerDetailsTokenTableComponent
+} from './container-details-token-table/container-details-token-table.component';
 
 export const containerDetailsKeyMap = [
   {key: 'type', label: 'Type'},
@@ -59,6 +68,7 @@ const containerUserDetailsKeyMap = [
     MatIcon,
     MatIconButton,
     ContainerDetailsInfoComponent,
+    ContainerDetailsTokenTableComponent,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss'
@@ -73,15 +83,6 @@ export class ContainerDetailsComponent {
   filteredUserOptions = signal<string[]>([]);
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  isAnyEditing = computed(() => {
-    const detailData = this.containerDetailData();
-
-    return (
-      detailData.some(element => element.isEditing()) ||
-      this.isEditingUser() ||
-      this.isEditingInfo()
-    );
-  });
   containerDetailData = signal<{
     value: any;
     keyMap: { label: string; key: string },
@@ -91,6 +92,15 @@ export class ContainerDetailsComponent {
     value: '',
     isEditing: signal(false)
   })));
+  isAnyEditing = computed(() => {
+    const detailData = this.containerDetailData();
+
+    return (
+      detailData.some(element => element.isEditing()) ||
+      this.isEditingUser() ||
+      this.isEditingInfo()
+    );
+  });
   infoData = signal<{
     value: any;
     keyMap: { label: string; key: string },
@@ -108,6 +118,9 @@ export class ContainerDetailsComponent {
   selectedRealms = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   userRealm: string = '';
+  containerTokenData = signal<MatTableDataSource<any>>(
+    new MatTableDataSource<any>([])
+  );
 
   constructor(protected overflowService: OverflowService,
               protected containerService: ContainerService,
@@ -138,11 +151,6 @@ export class ContainerDetailsComponent {
     });
   }
 
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
-  }
-
   showContainerDetail() {
     return forkJoin([
       this.containerService.getContainerDetails(this.serial()),
@@ -161,6 +169,7 @@ export class ContainerDetailsComponent {
           isEditing: signal(false)
         })).filter(detail => detail.value !== undefined));
 
+        this.containerTokenData().data = containerDetails.tokens;
 
         let user = {
           user_realm: '',
@@ -228,6 +237,36 @@ export class ContainerDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
+  saveUser() {
+    this.containerService.assignUser(this.serial(), this.selectedUsername(), this.userRealm).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to assign user', error);
+      }
+    });
+  }
+
+  unassignUser() {
+    this.containerService.unassignUser(this.serial(), this.userData().find(
+        detail => detail.keyMap.key === 'user_name')?.value,
+      this.userData().find(detail => detail.keyMap.key === 'user_realm')?.value
+    ).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to unassign user', error);
+      }
+    });
+  }
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
+  }
+
   private handleCancelAction(type: string) {
     switch (type) {
       case 'realms':
@@ -284,31 +323,6 @@ export class ContainerDetailsComponent {
       },
       error: error => {
         console.error('Failed to save token description', error);
-      }
-    });
-  }
-
-  saveUser() {
-this.containerService.assignUser(this.serial(), this.selectedUsername(), this.userRealm).subscribe({
-      next: () => {
-        this.refreshContainerDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to assign user', error);
-      }
-    });
-  }
-
-  unassignUser() {
-    this.containerService.unassignUser(this.serial(), this.userData().find(
-      detail => detail.keyMap.key === 'user_name')?.value,
-      this.userData().find(detail => detail.keyMap.key === 'user_realm')?.value
-    ).subscribe({
-      next: () => {
-        this.refreshContainerDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to unassign user', error);
       }
     });
   }

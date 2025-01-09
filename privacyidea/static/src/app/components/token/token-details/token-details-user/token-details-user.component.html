@@ -35,6 +35,8 @@
               }
             </mat-select>
           </mat-form-field>
+        } @else if (element.keyMap.key === "username" || element.keyMap.key === "user_realm") {
+          <a href="#">{{ element.value }}</a>
         } @else {
           {{ element.value }}
         }

@@ -8,7 +8,6 @@ import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatDivider} from '@angular/material/divider';
 import {forkJoin} from 'rxjs';
-import {NgClass} from '@angular/common';
 import {OverflowService} from '../../../../services/overflow/overflow.service';
 import {EditButtonsComponent} from '../../token-details/edit-buttons/edit-buttons.component';
 import {ContainerService} from '../../../../services/container/container.service';
@@ -31,7 +30,6 @@ import {ContainerService} from '../../../../services/container/container.service
     MatDivider,
     MatRow,
     EditButtonsComponent,
-    NgClass,
   ],
   templateUrl: './container-details-info.component.html',
   styleUrl: './container-details-info.component.scss'

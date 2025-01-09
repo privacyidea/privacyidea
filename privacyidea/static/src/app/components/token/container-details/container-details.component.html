@@ -4,10 +4,7 @@
       <h3>Details for Container: </h3>
       <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
     </div>
-    <div [ngClass]="[
-       overflowService.isOverflowing('.token-layout', 1310)
-       ? 'flex-column' : 'flex-row']"
-         class="details-flex-layout">
+    <div class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
                class="details-table border-bottom-none" mat-table>
@@ -61,7 +58,7 @@
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                    <span class="details-table-item details-description-span">
+                    <span class="details-table-item details-scrollable-container scroll-margin-pad">
                       {{ element.value }}
                     </span>
                     </div>
@@ -123,6 +120,8 @@
                     }
                   </mat-select>
                 </mat-form-field>
+              } @else if (element.keyMap.key === "user_name" || element.keyMap.key === "user_realm") {
+                <a href="#">{{ element.value }}</a>
               } @else {
                 {{ element.value }}
               }
@@ -152,14 +151,16 @@
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
         <div class="details-flex-layout">
-        <app-container-details-info [detailData]="containerDetailData" [infoData]="infoData"
-                                [isAnyEditingOrRevoked]="isAnyEditing"
-                                [isEditingInfo]="isEditingInfo"
-                                [isEditingUser]="isEditingUser"
-                                [refreshDetails]="refreshContainerDetails"
-                                [serial]="serial"></app-container-details-info>
+          <app-container-details-info [detailData]="containerDetailData" [infoData]="infoData"
+                                      [isAnyEditingOrRevoked]="isAnyEditing"
+                                      [isEditingInfo]="isEditingInfo"
+                                      [isEditingUser]="isEditingUser"
+                                      [refreshDetails]="refreshContainerDetails"
+                                      [serial]="serial"></app-container-details-info>
         </div>
       </div>
+      <app-container-details-token-table [dataSource]="containerTokenData" [serial]="serial">
+      </app-container-details-token-table>
     </div>
   </div>
 </div>

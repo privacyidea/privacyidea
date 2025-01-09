@@ -53,7 +53,8 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div class="details-scrollable-container" [ngClass]="{'details-list': element.value.length > 2}">
+                    <div class="details-scrollable-container"
+                         [ngClass]="{'details-list': element.value.length > 2}">
                       @for (realm of element.value; track realm; let idx = $index) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
@@ -95,7 +96,7 @@
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                    <span class="details-table-item details-description-span">
+                    <span class="details-table-item">
                       {{ element.value }}
                     </span>
                     </div>
