@@ -1570,16 +1570,17 @@ def get_computer_name_from_user_agent(user_agent=None):
     """
     # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
     keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
-    if user_agent:
-        for key in keys:
-            if key in user_agent:
-                try:
-                    return user_agent.split(key + "/")[1].split(" ")[0]
-                except Exception as ex:
-                    log.info(f"Could not extract computer name from user agent: {ex} with key {key}")
-    else:
+    if not user_agent:
         log.warning("No user agent provided, generating refill token this way is not recommended "
                     "because it can lead to collisions.")
-        # TODO keep this, at least for now?
-        # Will generate a computer name in any case, so offline will always work
-        return bytes_to_base64url(hashlib.sha256(user_agent.encode()).digest())[:20]
+        user_agent = ""
+    for key in keys:
+        if key in user_agent:
+            try:
+                return user_agent.split(key + "/")[1].split(" ")[0]
+            except Exception as ex:
+                log.info(f"Could not extract computer name from user agent: {ex} with key {key}")
+
+    # TODO keep this, at least for now?
+    # Will generate a computer name in any case, so offline will always work
+    return bytes_to_base64url(hashlib.sha256(user_agent.encode()).digest())[:20]
