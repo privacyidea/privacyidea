@@ -16,16 +16,16 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-import json
 from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
 
+import privacyidea.lib.token
+from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
-from privacyidea.lib.fido2.policyaction import Fido2Action
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase
 from tests.passkeytestbase import PasskeyTestBase
@@ -45,9 +45,9 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                          resolver=self.resolvername1)
         PasskeyTestBase.__init__(self)
 
-        set_policy("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{Fido2Action.RELYING_PARTY_ID}={self.rp_id}")
+        set_policy("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
         set_policy("passkey_rp_name", scope=SCOPE.ENROLL,
-                   action=f"{Fido2Action.RELYING_PARTY_NAME}={self.rp_id}")
+                   action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
         self.pk_headers = {'ORIGIN': self.expected_origin, 'Authorization': self.at}
 
     def tearDown(self):
@@ -74,7 +74,8 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                 self.assertIn(param["type"], ["public-key"])
                 self.assertIn(param["alg"], [-7, -37, -257])
             # ExcludeCredentials should be empty because no other passkey token is registered for the user
-            self.assertEqual(len(passkey_registration["excludeCredentials"]), 0)
+            self.assertEqual(0, len(passkey_registration["excludeCredentials"]),
+                             "excludeCredentials should be empty")
             return res.json
 
     def _token_init_step_two(self, transaction_id, serial):
@@ -84,7 +85,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             "credential_id": self.credential_id,
             "rawId": self.credential_id,
             "authenticatorAttachment": self.authenticator_attachment,
-            Fido2Action.RELYING_PARTY_ID: self.rp_id,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": transaction_id,
             "type": "passkey",
             "user": self.user.login,
@@ -120,11 +121,11 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         serial = self._enroll_static_passkey()
 
         set_policy("key_algorithm", scope=SCOPE.ENROLL,
-                   action=f"{Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
+                   action=f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
         set_policy("attestation", scope=SCOPE.ENROLL, action=f"{PasskeyAction.AttestationConveyancePreference}="
                                                              f"{AttestationConveyancePreference.ENTERPRISE.value}")
         set_policy("user_verification", scope=SCOPE.ENROLL,
-                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
 
         with (self.app.test_request_context('/token/init',
                                             method='POST',
@@ -187,6 +188,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self._assert_result_value_true(res.json)
+            self.assertNotIn("auth_items", res.json)
         remove_token(serial)
 
     def test_03_authenticate_wrong_uv(self):
@@ -195,7 +197,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         """
         serial = self._enroll_static_passkey()
         set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -223,7 +225,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
     def test_04_authenticate_with_uv(self):
         serial = self._enroll_static_passkey()
         set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{Fido2Action.USER_VERIFICATION_REQUIREMENT}=required")
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -244,9 +246,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
     def test_05_authenticate_validate_check(self):
         """
         Ensure that the passkey token does work with the /validate/check endpoint like any other token type.
-        In this case, the created challenge is bound to the exact token.
         """
-
         serial = self._enroll_static_passkey()
         with (self.app.test_request_context('/validate/check', method='POST',
                                             data={"user": self.user.login, "pass": ""}),
@@ -287,20 +287,209 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             self.assertIn("client_mode", challenge)
             self.assertEqual("webauthn", challenge["client_mode"])
 
-            # Answer the challenge
-            data = self.authentication_response_no_uv
-            data["transaction_id"] = transaction_id
-            with self.app.test_request_context('/validate/check', method='POST',
-                                               data=data,
-                                               headers={"Origin": self.expected_origin}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(res.status_code, 200)
-                self._assert_result_value_true(res.json)
-                self.assertIn("result", res.json)
-                self.assertIn("authentication", res.json["result"])
-                self.assertEqual("ACCEPT", res.json["result"]["authentication"])
-                # Should return the username
-                self.assertIn("detail", res.json)
-                detail = res.json["detail"]
-                self.assertIn("username", detail)
-                self.assertEqual(self.user.login, detail["username"])
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self._assert_result_value_true(res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("authentication", res.json["result"])
+            self.assertEqual("ACCEPT", res.json["result"]["authentication"])
+            # Should return the username
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("username", detail)
+            self.assertEqual(self.user.login, detail["username"])
+            self.assertNotIn("auth_items", res.json)
+        remove_token(serial)
+
+    def test_06_validate_check_wrong_serial(self):
+        """
+        Challenges triggered via /validate/check should be bound to a specific serial.
+        Trying to answer the challenge with a token with a different serial should fail.
+        """
+        serial = self._enroll_static_passkey()
+        with (self.app.test_request_context('/validate/check', method='POST',
+                                            data={"user": self.user.login, "pass": ""}),
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+            get_nonce.return_value = self.authentication_challenge_no_uv
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json["detail"]
+            transaction_id = detail["multi_challenge"][0]["transaction_id"]
+        # Change the token serial
+        token = privacyidea.lib.token.get_tokens(serial=serial)[0]
+        token.token.serial = "123456"
+        token.token.save()
+        # Try to answer the challenge, will fail
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            result = res.json["result"]
+            self.assertIn("error", result)
+            error = result["error"]
+            self.assertIn("message", error)
+            self.assertIn("code", error)
+            self.assertEqual(403, error["code"])
+            self.assertFalse(result["status"])
+        remove_token(token.token.serial)
+
+    def test_07_trigger_challenge(self):
+        """
+        Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
+        /validate/check and that is already tested.
+        """
+        serial = self._enroll_static_passkey()
+        with (self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                            data={"user": self.user.login}, headers=self.pk_headers),
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+            get_nonce.return_value = self.authentication_challenge_no_uv
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("multi_challenge", detail)
+
+            multi_challenge = detail["multi_challenge"]
+            self.assertEqual(len(multi_challenge), 1)
+
+            challenge = multi_challenge[0]
+            self.assertIn("transaction_id", challenge)
+            transaction_id = challenge["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertIn("challenge", challenge)
+            self.assertEqual(self.authentication_challenge_no_uv, challenge["challenge"])
+
+            self.assertIn("serial", challenge)
+            self.assertEqual(serial, challenge["serial"])
+
+            self.assertIn("type", challenge)
+            self.assertEqual("passkey", challenge["type"])
+
+            self.assertIn("userVerification", challenge)
+            self.assertTrue(challenge["userVerification"])
+
+            self.assertIn("rpId", challenge)
+            self.assertEqual(self.rp_id, challenge["rpId"])
+
+            self.assertIn("message", challenge)
+            self.assertTrue(challenge["message"])
+
+            self.assertIn("client_mode", challenge)
+            self.assertEqual("webauthn", challenge["client_mode"])
+        remove_token(serial)
+
+    def test_08_offline(self):
+        serial = self._enroll_static_passkey()
+        data = {"serial": serial, "machineid": 0, "application": "offline", "resolver": ""}
+        with self.app.test_request_context('/machine/token', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            self.assertTrue(res.json["result"]["status"])
+            self.assertIn("value", res.json["result"])
+            self.assertEqual(1, res.json["result"]["value"])
+
+        # A successful authentication should return the offline data now
+        challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        user_agent = "privacyidea-cp/1.1.1 Windows/Laptop-1231312"
+        # IP is needed to get the offline data
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self._assert_result_value_true(res.json)
+            self.assertIn("detail", res.json)
+            self.assertIn("auth_items", res.json)
+            auth_items = res.json["auth_items"]
+            self.assertIn("offline", auth_items)
+            # Offline items for 1 token should be returned
+            offline = auth_items["offline"]
+            self.assertEqual(1, len(offline))
+            offline = offline[0]
+            # At least for this test user=username
+            self.assertIn("user", offline)
+            self.assertEqual(self.user.login, offline["user"])
+            self.assertIn("refilltoken", offline)
+            self.assertTrue(offline["refilltoken"])
+            refill_token = offline["refilltoken"]
+            self.assertIn("username", offline)
+            self.assertEqual(self.user.login, offline["username"])
+            self.assertIn("response", offline)
+            response = offline["response"]
+            self.assertIn("rpId", response)
+            self.assertEqual(self.rp_id, response["rpId"])
+            self.assertIn("pubKey", response)
+            self.assertIn("credentialId", response)
+            # Verify that the returned values are correct
+            token = privacyidea.lib.token.get_tokens(serial=serial)[0]
+            public_key = token.get_tokeninfo("public_key")
+            self.assertEqual(public_key, response["pubKey"])
+            credential_id = token.token.get_otpkey().getKey().decode("utf-8")
+            self.assertEqual(credential_id, response["credentialId"])
+
+        # Try refill
+        data = {"serial": serial, "refilltoken": refill_token, "pass": ""}
+        with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data,
+                                           headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+            # For FIDO2 offline, the refill just checks if the token is still marked as offline and returns
+            # a new refill token
+            self.assertIn("auth_items", res.json)
+            auth_items = res.json["auth_items"]
+            self.assertIn("offline", auth_items)
+            offline = auth_items["offline"]
+            self.assertEqual(1, len(offline))
+            offline = offline[0]
+            self.assertIn("refilltoken", offline)
+            self.assertTrue(offline["refilltoken"])
+            self.assertNotEqual(refill_token, offline["refilltoken"])
+            refill_token = offline["refilltoken"]
+            self.assertIn("serial", offline)
+            self.assertEqual(serial, offline["serial"])
+            self.assertIn("response", offline)
+            self.assertFalse(offline["response"])
+
+        # Disable offline for the token
+        with self.app.test_request_context(f'/machine/token/{serial}/offline/1',
+                                           method='DELETE',
+                                           headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            self.assertTrue(res.json["result"]["status"])
+            self.assertIn("value", res.json["result"])
+            self.assertEqual(1, res.json["result"]["value"])
+
+        # Try to refill again, should indicate that the token is no longer valid for offline use.
+        data.update({"refilltoken": refill_token})
+        with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data,
+                                           headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertIn("result", res.json)
+            result = res.json["result"]
+            self.assertIn("status", result)
+            self.assertFalse(result["status"])
+            self.assertIn("error", result)
+            error = result["error"]
+            self.assertIn("message", error)
+            self.assertTrue(error["message"])
+            self.assertIn("code", error)
+            self.assertEqual(905, error["code"])
+        remove_token(serial)

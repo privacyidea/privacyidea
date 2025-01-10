@@ -1228,26 +1228,26 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
             db_token.save()
 
         # The tokenclass object is created
-        tokenobject = create_tokenclass_object(db_token)
+        token = create_tokenclass_object(db_token)
 
         if token_count == 0:
             # If this token is a newly created one, we have to set up the defaults,
-            # which later might be overwritten by the tokenobject.update(param)
-            tokenobject.set_defaults()
+            # which later might be overwritten by the token.update(param)
+            token.set_defaults()
 
         # Set the user of the token
         if user is not None and user.login != "":
-            tokenobject.add_user(user)
+            token.add_user(user)
 
         # Set the token realms (updates the TokenRealm table)
         if realms or user:
             db_token.set_realms(realms)
 
-        tokenobject.update(param)
+        token.update(param)
 
     except Exception as e:
-        log.error('token create failed: {0!s}'.format(e))
-        log.debug("{0!s}".format(traceback.format_exc()))
+        log.error(f"token create failed: {e}")
+        log.debug(f"{traceback.format_exc()}")
         # Delete the newly created token from the db
         if token_count == 0:
             db_token.delete()
@@ -1256,19 +1256,19 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     # We only set the tokenkind here, if it was explicitly set in the init_token call.
     # In all other cases it is set in the update method of the tokenclass.
     if tokenkind:
-        tokenobject.add_tokeninfo("tokenkind", tokenkind)
+        token.add_tokeninfo("tokenkind", tokenkind)
 
     # Set the validity period
     validity_period_start = param.get("validity_period_start")
     validity_period_end = param.get("validity_period_end")
     if validity_period_end:
-        tokenobject.set_validity_period_end(validity_period_end)
+        token.set_validity_period_end(validity_period_end)
     if validity_period_start:
-        tokenobject.set_validity_period_start(validity_period_start)
+        token.set_validity_period_start(validity_period_start)
 
     # Safe the token object to make sure all changes are persisted in the db
-    tokenobject.save()
-    return tokenobject
+    token.save()
+    return token
 
 
 @log_with(log)
@@ -1286,12 +1286,12 @@ def remove_token(serial=None, user=None):
     :return: The number of deleted token
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
-    token_count = len(tokenobject_list)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
+    token_count = len(tokens)
 
     # Delete challenges of such a token
-    for tokenobject in tokenobject_list:
-        tokenobject.delete_token()
+    for token in tokens:
+        token.delete_token()
 
     return token_count
 
@@ -1323,10 +1323,10 @@ def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
         if realm_is_defined(realm):
             corrected_realms.append(realm)
 
-    tokenobject = get_one_token(serial=serial)
+    token = get_one_token(serial=serial)
 
     # Check if admin is allowed to set the realms
-    old_realms = tokenobject.get_realms()
+    old_realms = token.get_realms()
 
     matching_realms = corrected_realms
     if allowed_realms:
@@ -1340,8 +1340,8 @@ def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
         # Add realms that are not allowed to be removed to the set list
         matching_realms = list(set(matching_realms).union(not_allowed_realms))
 
-    tokenobject.set_realms(matching_realms, add=add)
-    tokenobject.save()
+    token.set_realms(matching_realms, add=add)
+    token.save()
 
 
 @log_with(log)
@@ -1363,7 +1363,7 @@ def set_defaults(serial):
 
 
 @log_with(log)
-def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
+def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
     """
     Assign token to a user.
     If the PIN is given, the PIN is reset.
@@ -1376,27 +1376,27 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     :type pin: basestring
     :param encrypt_pin: Whether the PIN should be stored in an encrypted way
     :type encrypt_pin: bool
-    :param err_message: The error message, that is displayed in case the token is already assigned
-    :type err_message: basestring
+    :param error_message: The error message, that is displayed in case the token is already assigned
+    :type error_message: basestring
     """
-    tokenobject = get_one_token(serial=serial)
+    token = get_one_token(serial=serial)
 
     # Check if the token already belongs to another user
-    old_user = tokenobject.user
+    old_user = token.user
     if old_user:
-        log.warning("token already assigned to user: {0!r}".format(old_user))
-        err_message = err_message or _("Token already assigned to user {0!r}").format(old_user)
-        raise TokenAdminError(err_message, id=1103)
+        log.warning(f"token already assigned to user: {old_user!r}")
+        error_message = error_message or _(f"Token already assigned to user {old_user!r}")
+        raise TokenAdminError(error_message, id=1103)
 
-    tokenobject.add_user(user)
+    token.add_user(user)
     if pin is not None:
-        tokenobject.set_pin(pin, encrypt=encrypt_pin)
+        token.set_pin(pin, encrypt=encrypt_pin)
 
     # reset the OtpFailCounter
-    tokenobject.set_failcount(0)
+    token.set_failcount(0)
 
     try:
-        tokenobject.save()
+        token.save()
     except Exception as e:  # pragma: no cover
         log.error('update Token DB failed')
         raise TokenAdminError(_("Token assign failed for {0!r}/{1!s} : {2!r}").format(user, serial, e), id=1105)
@@ -1416,22 +1416,22 @@ def unassign_token(serial, user=None):
     :param user: A user whose tokens should be unassigned
     :return: number of unassigned tokens
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
-    for tokenobject in tokenobject_list:
-        tokenobject.set_pin("")
-        tokenobject.set_failcount(0)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
+    for token in tokens:
+        token.set_pin("")
+        token.set_failcount(0)
 
         try:
             # Delete the tokenowner entry
-            TokenOwner.query.filter(TokenOwner.token_id == tokenobject.token.id).delete()
-            tokenobject.save()
+            TokenOwner.query.filter(TokenOwner.token_id == token.token.id).delete()
+            token.save()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
-            raise TokenAdminError(_("Token unassign failed for {0!r}/{1!r}: {2!r}").format(serial, user, e), id=1105)
+            raise TokenAdminError(_(f"Token unassign failed for {serial!r}/{user!r}: {e!r}"), id=1105)
 
-        log.debug("successfully unassigned token with serial {0!r}".format(tokenobject))
+        log.debug(f"successfully unassigned token with serial {token!r}")
     # TODO: test with more than 1 token
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1448,16 +1448,18 @@ def resync_token(serial, otp1, otp2, options=None, user=None):
     :type otp2: str
     :param options: additional options like the servertime for TOTP token
     :type options: dict
+    :param user: The user, who's token should be resynced
+    :type user: User object
     :return: result of the resync
     :rtype: bool
     """
     ret = False
 
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        ret = tokenobject.resync(otp1, otp2, options)
-        tokenobject.save()
+    for token in tokens:
+        ret = token.resync(otp1, otp2, options)
+        token.save()
 
     return ret
 
@@ -1473,13 +1475,13 @@ def reset_token(serial, user=None):
     :return: The number of tokens, that were reset
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.reset()
-        tokenobject.save()
+    for token in tokens:
+        token.reset()
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1496,23 +1498,24 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
     :type user: User object
     :param serial: If the serial is specified, the PIN for this very token
         will be set. (exact)
+    :param encrypt_pin: Whether the PIN should be stored in an encrypted way
+    :type encrypt_pin: bool
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
     if isinstance(user, str):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
-        log.warning("Parameter user must not be a string: {0!r}".format(user))
-        raise ParameterError(_("Parameter user must not be a string: {0!r}").format(
-            user), id=1212)
+        log.warning(f"Parameter user must not be a string: {user!r}")
+        raise ParameterError(_(f"Parameter user must not be a string: {user!r}"), id=1212)
 
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_pin(pin, encrypt=encrypt_pin)
-        tokenobject.save()
+    for token in tokens:
+        token.set_pin(pin, encrypt=encrypt_pin)
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1525,16 +1528,18 @@ def set_pin_user(serial, user_pin, user=None):
     :type serial: basestring
     :param user_pin: The user PIN
     :type user_pin: str
+    :param user: The user, for who's token the PIN should be set
+    :type user: User object
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_user_pin(user_pin)
-        tokenobject.save()
+    for token in tokens:
+        token.set_user_pin(user_pin)
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1548,16 +1553,18 @@ def set_pin_so(serial, so_pin, user=None):
     :type serial: basestring
     :param so_pin: The Security Officer PIN
     :type so_pin: basestring
+    :param user: The user, for who's token the SO PIN should be set
+    :type user: User object
     :return: The number of SO PINs set. (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_so_pin(so_pin)
-        tokenobject.save()
+    for token in tokens:
+        token.set_so_pin(so_pin)
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1573,13 +1580,13 @@ def revoke_token(serial, user=None):
     :return: Number of tokens that were enabled/disabled
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(user=user, serial=serial)
+    tokens = get_tokens_from_serial_or_user(user=user, serial=serial)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.revoke()
-        tokenobject.save()
+    for token in tokens:
+        token.revoke()
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)
@@ -1602,13 +1609,13 @@ def enable_token(serial, enable=True, user=None):
     """
     # We search for all matching tokens first, in case the user has
     # provided a wrong serial number. Then we filter for the desired tokens.
-    tokenobject_list = get_tokens_from_serial_or_user(user=user, serial=serial)
+    tokens = get_tokens_from_serial_or_user(user=user, serial=serial)
     count = 0
 
-    for tokenobject in tokenobject_list:
-        if tokenobject.is_active() == (not enable):
-            tokenobject.enable(enable)
-            tokenobject.save()
+    for token in tokens:
+        if token.is_active() == (not enable):
+            token.enable(enable)
+            token.save()
             count += 1
 
     return count
@@ -1624,8 +1631,8 @@ def is_token_active(serial):
     :return: True or False
     :rtype: bool
     """
-    tokenobject = get_one_token(serial=serial)
-    return tokenobject.token.active
+    token = get_one_token(serial=serial)
+    return token.token.active
 
 
 @log_with(log)
@@ -1645,13 +1652,13 @@ def set_otplen(serial, otplen=6, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_otplen(otplen)
-        tokenobject.save()
+    for token in tokens:
+        token.set_otplen(otplen)
+        token.save()
 
-    return len(tokenobject_list)
+    return len(tokens)
 
 
 @log_with(log)

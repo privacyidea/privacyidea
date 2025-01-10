@@ -6231,7 +6231,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
               "W3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7Il" \
               "ggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
 
-    rpid = "netknights.it"
+    rp_id = "netknights.it"
 
     recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
                                  "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
@@ -6247,7 +6247,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action=("webauthn_relying_party_id={0!s}".format(self.rpid)))
+                   action=("webauthn_relying_party_id={0!s}".format(self.rp_id)))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -6412,7 +6412,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             # Offline returns the credential ID and the pub key
             self.assertEqual(self.recorded_allow_credentials, response.get("credentialId"))
             self.assertIn("pubKey", response)
-            self.assertEqual(self.rpid, response.get("rpId"))
+            self.assertEqual(self.rp_id, response.get("rpId"))
             self.refilltokens.append(auth_items.get("offline")[0].get("refilltoken"))
 
             # Set the sign count back to be able to use the same data for authentication again

@@ -20,7 +20,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
-from privacyidea.lib.fido2.policyaction import Fido2Action
+from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
@@ -2156,7 +2156,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         }
 
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
@@ -2167,7 +2167,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'serial': WebAuthnTokenClass.get_class_prefix() + '123'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
@@ -2179,7 +2179,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         }
         fido2_auth(request, None)
         self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
-                         set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)))
+                         set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
@@ -2189,7 +2189,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+            action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
                    + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
@@ -2197,7 +2197,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'user': 'foo'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          challengetext)
@@ -2220,7 +2220,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'pass': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
@@ -2233,7 +2233,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'pass': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
@@ -2247,7 +2247,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         }
         fido2_auth(request, None)
         self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
-                         set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)))
+                         set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
@@ -2257,7 +2257,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+            action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
                    + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
@@ -2266,7 +2266,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'pass': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          challengetext)
@@ -2289,7 +2289,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'password': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
@@ -2300,7 +2300,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+            action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
                    + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
@@ -2309,7 +2309,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             'password': '1234'
         }
         fido2_auth(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.ALLOWED_TRANSPORTS)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          challengetext)
@@ -2337,7 +2337,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          list())
 
         # Not a WebAuthn authorization
@@ -2347,7 +2347,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "pass": ""
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          None)
 
         # With policies
@@ -2355,7 +2355,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTHZ,
-            action=Fido2Action.REQ + '=' + allowed_certs
+            action=FIDO2PolicyAction.REQ + '=' + allowed_certs
         )
         request = RequestMock()
         request.all_data = {
@@ -2368,7 +2368,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          [allowed_certs])
 
         # Reset policies.
@@ -2394,7 +2394,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          list())
 
         # Not a WebAuthn authorization
@@ -2404,7 +2404,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "password": ""
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          None)
 
         # With policies
@@ -2412,7 +2412,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTHZ,
-            action=Fido2Action.REQ + '=' + allowed_certs
+            action=FIDO2PolicyAction.REQ + '=' + allowed_certs
         )
         request = RequestMock()
         request.all_data = {
@@ -2425,7 +2425,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
         }
         webauthntoken_authz(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.REQ),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          [allowed_certs])
 
         # Reset policies
@@ -2454,8 +2454,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.RELYING_PARTY_ID + '=' + 'https://' + rp_id + ','
-                   + Fido2Action.RELYING_PARTY_NAME + '=' + rp_name
+            action=FIDO2PolicyAction.RELYING_PARTY_ID + '=' + 'https://' + rp_id + ','
+                   + FIDO2PolicyAction.RELYING_PARTY_NAME + '=' + rp_name
         )
         request = RequestMock()
         request.all_data = {
@@ -2468,7 +2468,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.RELYING_PARTY_ID + '=' + rp_id
+            action=FIDO2PolicyAction.RELYING_PARTY_ID + '=' + rp_id
         )
         request = RequestMock()
         request.all_data = {
@@ -2480,8 +2480,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.RELYING_PARTY_ID + '=' + rp_id + ','
-                   + Fido2Action.RELYING_PARTY_NAME + '=' + rp_name
+            action=FIDO2PolicyAction.RELYING_PARTY_ID + '=' + rp_id + ','
+                   + FIDO2PolicyAction.RELYING_PARTY_NAME + '=' + rp_name
         )
 
         # Normal request
@@ -2490,17 +2490,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         fido2_enroll(request, None)
-        self.assertEqual(rp_id, request.all_data.get(Fido2Action.RELYING_PARTY_ID))
-        self.assertEqual(rp_name, request.all_data.get(Fido2Action.RELYING_PARTY_NAME))
-        self.assertEqual(None, request.all_data.get(Fido2Action.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual(rp_id, request.all_data.get(FIDO2PolicyAction.RELYING_PARTY_ID))
+        self.assertEqual(rp_name, request.all_data.get(FIDO2PolicyAction.RELYING_PARTY_NAME))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT))
         self.assertEqual([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
                           for x in PUBKEY_CRED_ALGORITHMS_ORDER
                           if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE],
-                         request.all_data.get(Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
+                         request.all_data.get(FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
         self.assertEqual(DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                         request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL))
+                         request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL))
         self.assertEqual(DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                         request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_FORM))
+                         request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_ENROLL,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
@@ -2510,12 +2510,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": "footoken"
         }
         fido2_enroll(request, None)
-        self.assertEqual(None, request.all_data.get(Fido2Action.RELYING_PARTY_ID))
-        self.assertEqual(None, request.all_data.get(Fido2Action.RELYING_PARTY_NAME))
-        self.assertEqual(None, request.all_data.get(Fido2Action.AUTHENTICATOR_ATTACHMENT))
-        self.assertEqual(None, request.all_data.get(Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
-        self.assertEqual(None, request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL))
-        self.assertEqual(None, request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_FORM))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.RELYING_PARTY_ID))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.RELYING_PARTY_NAME))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL))
+        self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM))
         self.assertEqual(None,
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
@@ -2528,11 +2528,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
-                   + Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '='
+            action=FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
+                   + FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '='
                    + public_key_credential_algorithm_preference + ','
-                   + Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
-                   + Fido2Action.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
+                   + FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
+                   + FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
                    + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
@@ -2540,15 +2540,15 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": WebAuthnTokenClass.get_class_type()
         }
         fido2_enroll(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_ATTACHMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
-        self.assertEqual(request.all_data.get(Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
                               public_key_credential_algorithm_preference
                           ]])
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL),
                          authenticator_attestation_level)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_ATTESTATION_FORM),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM),
                          authenticator_attestation_form)
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
                          challengetext)
@@ -2561,21 +2561,21 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
+            action=FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             fido2_enroll(request, None)
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + 'b0rked'
+            action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             fido2_enroll(request, None)
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.AUTHENTICATOR_ATTESTATION_FORM + '=' + 'b0rked'
+            action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             fido2_enroll(request, None)
@@ -2605,11 +2605,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          DEFAULT_TIMEOUT * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          DEFAULT_USER_VERIFICATION_REQUIREMENT)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
                          None)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2623,11 +2623,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          None)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          None)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
                          None)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          None)
@@ -2639,9 +2639,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.TIMEOUT + '=' + str(timeout) + ','
-                   + Fido2Action.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement + ','
-                   + Fido2Action.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+            action=FIDO2PolicyAction.TIMEOUT + '=' + str(timeout) + ','
+                   + FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement + ','
+                   + FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
         )
         request = RequestMock()
         request.all_data = {
@@ -2651,11 +2651,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          timeout * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
-        self.assertEqual(set(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
 
         # Malformed policies
@@ -2669,7 +2669,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.USER_VERIFICATION_REQUIREMENT + '=' + 'b0rked'
+            action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             webauthntoken_request(request, None)
@@ -2694,9 +2694,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          DEFAULT_TIMEOUT * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          DEFAULT_USER_VERIFICATION_REQUIREMENT)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2710,9 +2710,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          DEFAULT_TIMEOUT * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          DEFAULT_USER_VERIFICATION_REQUIREMENT)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2726,9 +2726,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          None)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          None)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          None)
@@ -2739,8 +2739,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.TIMEOUT + '=' + str(timeout) + ','
-                   + Fido2Action.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+            action=FIDO2PolicyAction.TIMEOUT + '=' + str(timeout) + ','
+                   + FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -2750,9 +2750,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          timeout * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
         # Reset policies
@@ -2776,9 +2776,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          DEFAULT_TIMEOUT * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          DEFAULT_USER_VERIFICATION_REQUIREMENT)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2789,8 +2789,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.TIMEOUT + '=' + str(timeout) + ','
-                   + Fido2Action.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+            action=FIDO2PolicyAction.TIMEOUT + '=' + str(timeout) + ','
+                   + FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -2801,9 +2801,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          timeout * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
         # Reset policies
@@ -2832,7 +2832,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
                          None)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2842,7 +2842,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTHZ,
-            action=Fido2Action.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
         )
         request = RequestMock()
         request.all_data = {
@@ -2858,7 +2858,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
 
         # Reset policies
@@ -2882,9 +2882,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          DEFAULT_TIMEOUT * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          DEFAULT_USER_VERIFICATION_REQUIREMENT)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2895,8 +2895,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
-            action=Fido2Action.TIMEOUT + '=' + str(timeout) + ','
-                   + Fido2Action.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+            action=FIDO2PolicyAction.TIMEOUT + '=' + str(timeout) + ','
+                   + FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
         )
         request = RequestMock()
         request.all_data = {
@@ -2907,9 +2907,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.TIMEOUT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.TIMEOUT),
                          timeout * 1000)
-        self.assertEqual(request.all_data.get(Fido2Action.USER_VERIFICATION_REQUIREMENT),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
         # Reset policies
@@ -2938,7 +2938,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST),
+        self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
                          None)
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
@@ -2948,7 +2948,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTHZ,
-            action=Fido2Action.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
         )
         request = RequestMock()
         request.all_data = {
@@ -2964,7 +2964,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "HTTP_ORIGIN": ORIGIN
         }
         webauthntoken_request(request, None)
-        self.assertEqual(set(request.all_data.get(Fido2Action.AUTHENTICATOR_SELECTION_LIST)),
+        self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
 
         # Reset policies
@@ -2989,7 +2989,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.REQ + "=" + allowed_certs
+            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
         )
         self.assertTrue(webauthntoken_allowed(request, None))
 
@@ -2997,7 +2997,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.REQ + "=" + allowed_certs
+            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
         )
         self.assertRaisesRegex(PolicyError,
                                'The WebAuthn token is not allowed to be registered '
@@ -3026,7 +3026,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.REQ + "=" + allowed_certs
+            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
         )
 
         with self.assertRaises(PolicyError):
@@ -3067,7 +3067,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
-            action=Fido2Action.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
         )
 
         with self.assertRaises(PolicyError):

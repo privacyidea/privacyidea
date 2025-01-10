@@ -514,7 +514,7 @@ def assign_api():
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, err_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, error_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 

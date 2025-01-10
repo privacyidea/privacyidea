@@ -74,9 +74,9 @@ from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
-from privacyidea.lib.fido2.config import Fido2Config
-from privacyidea.lib.fido2.tokeninfo import Fido2TokenInfo
-from privacyidea.lib.fido2.policyaction import Fido2Action
+from privacyidea.lib.fido2.config import FIDO2ConfigOptions
+from privacyidea.lib.fido2.tokeninfo import FIDO2TokenInfo
+from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.token import init_token, check_user_pass, remove_token
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.challenge import get_challenges
@@ -215,8 +215,8 @@ class WebAuthnTokenTestCase(MyTestCase):
 
     def _create_challenge(self):
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(CRED_ID)))
-        self.token.add_tokeninfo(Fido2TokenInfo.PUB_KEY, PUB_KEY)
-        self.token.add_tokeninfo(Fido2TokenInfo.RELYING_PARTY_ID, RP_ID)
+        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, PUB_KEY)
+        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, RP_ID)
         (_, _, _, response_details) = self.token.create_challenge(options=self.challenge_options)
         return response_details
 
@@ -229,8 +229,8 @@ class WebAuthnTokenTestCase(MyTestCase):
             'serial': self.token.token.serial,
             'regdata': REGISTRATION_RESPONSE_TMPL['attObj'],
             'clientdata': REGISTRATION_RESPONSE_TMPL['clientData'],
-            Fido2Action.RELYING_PARTY_ID: RP_ID,
-            Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
 
@@ -239,10 +239,10 @@ class WebAuthnTokenTestCase(MyTestCase):
 
         set_policy(name="WebAuthn",
                    scope=SCOPE.ENROLL,
-                   action=Fido2Action.RELYING_PARTY_NAME + "=" + RP_NAME + ","
-                          + Fido2Action.RELYING_PARTY_ID + "=" + RP_ID)
-        set_privacyidea_config(Fido2Config.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
-        set_privacyidea_config(Fido2Config.APP_ID, APP_ID)
+                   action=FIDO2PolicyAction.RELYING_PARTY_NAME + "=" + RP_NAME + ","
+                          + FIDO2PolicyAction.RELYING_PARTY_ID + "=" + RP_ID)
+        set_privacyidea_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
+        set_privacyidea_config(FIDO2ConfigOptions.APP_ID, APP_ID)
 
         self.user = User(login=USER_NAME, realm=self.realm1,
                          resolver=self.resolvername1)
@@ -253,19 +253,19 @@ class WebAuthnTokenTestCase(MyTestCase):
         }, user=self.user)
 
         self.init_params = {
-            Fido2Action.RELYING_PARTY_ID: RP_ID,
-            Fido2Action.RELYING_PARTY_NAME: RP_NAME,
-            Fido2Action.TIMEOUT: TIMEOUT,
-            Fido2Action.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-            Fido2Action.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+            FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
+            FIDO2PolicyAction.RELYING_PARTY_NAME: RP_NAME,
+            FIDO2PolicyAction.TIMEOUT: TIMEOUT,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+            FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         }
 
         self.challenge_options = {
             "user": self.user,
-            Fido2Action.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
-            Fido2Action.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            Fido2Action.TIMEOUT: TIMEOUT
+            FIDO2PolicyAction.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+            FIDO2PolicyAction.TIMEOUT: TIMEOUT
         }
 
     def tearDown(self):
@@ -306,8 +306,8 @@ class WebAuthnTokenTestCase(MyTestCase):
                          web_authn_register_request)
         self.assertEqual(USER_NAME, web_authn_register_request.get("name"))
 
-        self.assertEqual(RP_ID, self.token.get_tokeninfo(Fido2TokenInfo.RELYING_PARTY_ID))
-        self.assertEqual(RP_NAME, self.token.get_tokeninfo(Fido2TokenInfo.RELYING_PARTY_NAME))
+        self.assertEqual(RP_ID, self.token.get_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID))
+        self.assertEqual(RP_NAME, self.token.get_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME))
 
     def test_03_token_update(self):
         self._setup_token()
@@ -318,14 +318,14 @@ class WebAuthnTokenTestCase(MyTestCase):
                         .startswith("Yubico U2F EE Serial"))
         self.assertTrue(self
                         .token
-                        .get_tokeninfo(Fido2TokenInfo.ATTESTATION_ISSUER)
+                        .get_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER)
                         .startswith("CN=Yubico U2F Root CA Serial"))
         self.assertTrue(self
                         .token
-                        .get_tokeninfo(Fido2TokenInfo.ATTESTATION_SUBJECT)
+                        .get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT)
                         .startswith("CN=Yubico U2F EE Serial"))
         self.assertEqual(CRED_ID, self.token.decrypt_otpkey())
-        self.assertEqual(PUB_KEY, self.token.get_tokeninfo(Fido2TokenInfo.PUB_KEY))
+        self.assertEqual(PUB_KEY, self.token.get_tokeninfo(FIDO2TokenInfo.PUB_KEY))
 
     def test_03b_double_registration(self):
         self.assertEqual(self.token.type, "webauthn")
@@ -351,7 +351,7 @@ class WebAuthnTokenTestCase(MyTestCase):
         self._setup_token()
 
         # Set avoid double registration
-        init_params[Fido2Action.AVOID_DOUBLE_REGISTRATION] = True
+        init_params[FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION] = True
         web_authn_register_request = temp_token \
             .get_init_detail(init_params, self.user) \
             .get("webAuthnRegisterRequest")
@@ -411,7 +411,7 @@ class WebAuthnTokenTestCase(MyTestCase):
     def test_07_none_attestation(self):
         with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
             mock_nonce.return_value = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
-            self.init_params[Fido2Action.AUTHENTICATOR_ATTESTATION_FORM] = 'none'
+            self.init_params[FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM] = 'none'
             self.user = User(login=NONE_ATTESTATION_USER_NAME)
             self.token.get_init_detail(self.init_params, self.user)
         self.token.update({
@@ -419,14 +419,14 @@ class WebAuthnTokenTestCase(MyTestCase):
             'serial': self.token.token.serial,
             'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
             'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
-            Fido2Action.RELYING_PARTY_ID: RP_ID,
-            Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
         web_authn_registration_response = self.token.get_init_detail().get('webAuthnRegisterResponse')
 
         self.assertEqual(NONE_ATTESTATION_CRED_ID, self.token.decrypt_otpkey())
-        self.assertEqual(NONE_ATTESTATION_PUB_KEY, self.token.get_tokeninfo(Fido2TokenInfo.PUB_KEY))
+        self.assertEqual(NONE_ATTESTATION_PUB_KEY, self.token.get_tokeninfo(FIDO2TokenInfo.PUB_KEY))
 
     def test_08_missing_attestation(self):
         self.init_params['nonce'] = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
@@ -439,8 +439,8 @@ class WebAuthnTokenTestCase(MyTestCase):
                 'serial': self.token.token.serial,
                 'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
                 'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
-                Fido2Action.RELYING_PARTY_ID: RP_ID,
-                Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.UNTRUSTED,
+                FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
+                FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.UNTRUSTED,
                 'HTTP_ORIGIN': ORIGIN
             })
 
@@ -454,7 +454,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
             "HTTP_ORIGIN": ORIGIN,
-            Fido2Action.REQ: ['subject/.*Yubico.*/']
+            FIDO2PolicyAction.REQ: ['subject/.*Yubico.*/']
         }
         res = self.token.check_otp(otpval=None, options=options)
         self.assertGreaterEqual(res, 0)
@@ -469,7 +469,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
             "HTTP_ORIGIN": ORIGIN,
-            Fido2Action.REQ: ['subject/.*Feitian.*/']
+            FIDO2PolicyAction.REQ: ['subject/.*Feitian.*/']
         }
         self.assertRaisesRegex(
             PolicyError,
@@ -490,7 +490,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
             "HTTP_ORIGIN": ORIGIN,
-            Fido2Action.AUTHENTICATOR_SELECTION_LIST: ['00000000000000000000000000000000']
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: ['00000000000000000000000000000000']
         })
         self.assertGreaterEqual(res, 0)
 
@@ -511,18 +511,18 @@ class WebAuthnTokenTestCase(MyTestCase):
                    "user": self.user,
                    "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
                    "HTTP_ORIGIN": ORIGIN,
-                   Fido2Action.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
+                   FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
                }})
 
     def test_11_uv_required(self):
         self._setup_token()
         # Adjust the token to be able to verify the data used in this test
-        self.token.add_tokeninfo(Fido2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
                                                        "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
                                                        "5a1bd6d263a1554ea4107b74e3e12844c60")
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
                                                                       "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
-        self.token.add_tokeninfo(Fido2TokenInfo.RELYING_PARTY_ID, "cool.nils")
+        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
 
         # Try to authenticate with authenticatordata where the UV bit is not set (B at the end)
         # and UV=required, should fail
@@ -536,7 +536,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode("1BnSt4TYHSsNmQLnQKJr1afBBbJbwIvwPjIEx3fmx-8")),
             "HTTP_ORIGIN": "https://cool.nils:5000",
-            Fido2Action.USER_VERIFICATION_REQUIREMENT: "required"
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"
         })
         self.assertEqual(res, -1)
 
@@ -552,7 +552,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode("jQcrMyYAcLCc3AnuyiuiF78CPaXH1KEEsGEknGwhrXo")),
             "HTTP_ORIGIN": "https://cool.nils:5000",
-            Fido2Action.USER_VERIFICATION_REQUIREMENT: "required"
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"
         })
         # Returns the sign count on success which is 79
         self.assertEqual(res, 79)
@@ -846,26 +846,26 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     nonce2 = 'FnyL0FzVVECu9wMHj2PMXsEPXkLpC--6AQcGn4wY_xg'
 
     init_params = {
-        Fido2Action.RELYING_PARTY_ID: rp_id,
-        Fido2Action.RELYING_PARTY_NAME: rp_name,
-        Fido2Action.TIMEOUT: TIMEOUT,
-        Fido2Action.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-        Fido2Action.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+        FIDO2PolicyAction.RELYING_PARTY_ID: rp_id,
+        FIDO2PolicyAction.RELYING_PARTY_NAME: rp_name,
+        FIDO2PolicyAction.TIMEOUT: TIMEOUT,
+        FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+        FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
     }
     auth_options = {
-        Fido2Action.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
-        Fido2Action.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        Fido2Action.TIMEOUT: TIMEOUT}
+        FIDO2PolicyAction.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
+        FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        FIDO2PolicyAction.TIMEOUT: TIMEOUT}
 
     def setUp(self):
         self.setUp_user_realms()
         set_policy(name="WebAuthn", scope=SCOPE.ENROLL,
-                   action='{0!s}={1!s},{2!s}={3!s}'.format(Fido2Action.RELYING_PARTY_NAME,
+                   action='{0!s}={1!s},{2!s}={3!s}'.format(FIDO2PolicyAction.RELYING_PARTY_NAME,
                                                            self.rp_name,
-                                                           Fido2Action.RELYING_PARTY_ID,
+                                                           FIDO2PolicyAction.RELYING_PARTY_ID,
                                                            self.rp_id))
-        set_privacyidea_config(Fido2Config.APP_ID, self.app_id)
+        set_privacyidea_config(FIDO2ConfigOptions.APP_ID, self.app_id)
         self.user = User(login='hans', realm=self.realm1,
                          resolver=self.resolvername1)
         # TODO: extract token enrollment into a local function
@@ -886,8 +886,8 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             'serial': self.serial1,
             'regdata': self.reg_data1,
             'clientdata': self.client_data1,
-            Fido2Action.RELYING_PARTY_ID: self.rp_id,
-            Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': self.app_id
         })
         res = self.token1.get_init_detail()
@@ -910,8 +910,8 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             'serial': self.serial2,
             'regdata': self.reg_data2,
             'clientdata': self.client_data2,
-            Fido2Action.RELYING_PARTY_ID: self.rp_id,
-            Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': self.app_id
         })
         res = self.token2.get_init_detail()

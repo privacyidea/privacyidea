@@ -800,7 +800,7 @@ class PushTokenClass(TokenClass):
                               hashes.SHA256())
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
-            pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
+            private_key = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
             # We need the registration URL for the challenge
             registration_url = get_action_values_from_options(
                 SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options={'g': g})
@@ -809,20 +809,19 @@ class PushTokenClass(TokenClass):
                                             f' pushtoken {serial}. You need to define a push_registration_url '
                                             'in an enrollment policy.')
             options = {'g': g}
-            challenges = []
-            challengeobject_list = get_challenges(serial=serial)
-            for chal in challengeobject_list:
-                if (chal.get_session() == CHALLENGE_SESSION.DECLINED):
+            challenges = get_challenges(serial=serial)
+            for challenge in challenges:
+                if challenge.get_session() == CHALLENGE_SESSION.DECLINED:
                     continue
                 # check if the challenge is active and not already answered
-                _cnt, answered = chal.get_otp_status()
-                if not answered and chal.is_valid():
-                    # Ensure, if we require presence, that the user has to confirm with the correct button
-                    require_presence = "1" if chal.get_data() else "0"
-                    current_presence_options = chal.get_data().split(",")[:-1] if require_presence == "1" else None
+                _cnt, answered = challenge.get_otp_status()
+                if not answered and challenge.is_valid():
+                    # If we require presence, make sure that the user has to confirm with the correct button
+                    require_presence = "1" if challenge.get_data() else "0"
+                    current_presence_options = challenge.get_data().split(",")[:-1] if require_presence == "1" else None
                     # then return the necessary smartphone data to answer the challenge
-                    sp_data = _build_smartphone_data(tok, chal.challenge,
-                                                     registration_url, pem_privkey, options, current_presence_options)
+                    sp_data = _build_smartphone_data(tok, challenge.challenge, registration_url, private_key, options,
+                                                     current_presence_options)
                     challenges.append(sp_data)
             # return the challenges as a list in the result value
             result = challenges
@@ -934,9 +933,9 @@ class PushTokenClass(TokenClass):
         We need to define the function again, to get rid of the
         is_challenge_request-decorator of the base class
 
-        :param passw: password, which might be pin or pin+otp
+        :param passw: password, which might be the pin or pin+otp
+        :param user: the user object
         :param options: dictionary of additional request parameters
-
         :return: returns true or false
         """
         if options.get(PUSH_ACTION.WAIT):

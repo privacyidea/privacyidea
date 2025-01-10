@@ -32,9 +32,9 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
-from privacyidea.lib.fido2.config import Fido2Config
-from privacyidea.lib.fido2.policyaction import Fido2Action
-from privacyidea.lib.fido2.tokeninfo import Fido2TokenInfo
+from privacyidea.lib.fido2.config import FIDO2ConfigOptions
+from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.tokeninfo import FIDO2TokenInfo
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.token import get_tokens
@@ -485,8 +485,8 @@ optional = True
 required = False
 
 WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
-    Fido2Config.TRUST_ANCHOR_DIR: 'public',
-    Fido2Config.APP_ID: 'public'
+    FIDO2ConfigOptions.TRUST_ANCHOR_DIR: 'public',
+    FIDO2ConfigOptions.APP_ID: 'public'
 }
 
 
@@ -507,7 +507,7 @@ class WebAuthnTokenClass(TokenClass):
 
     @staticmethod
     def _get_challenge_validity_time():
-        return int(get_from_config(Fido2Config.CHALLENGE_VALIDITY_TIME,
+        return int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                    get_from_config('DefaultChallengeValidityTime', 120)))
 
     @staticmethod
@@ -558,18 +558,18 @@ class WebAuthnTokenClass(TokenClass):
             'ui_enroll': ["admin", "user"],
             'policy': {
                 SCOPE.AUTH: {
-                    Fido2Action.ALLOWED_TRANSPORTS: {
+                    FIDO2PolicyAction.ALLOWED_TRANSPORTS: {
                         'type': 'str',
                         'desc': _("A list of transports to prefer to communicate with WebAuthn tokens. "
                                   "Default: usb ble nfc internal (All standard transports)")
                     },
-                    Fido2Action.TIMEOUT: {
+                    FIDO2PolicyAction.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60")
                     },
-                    Fido2Action.USER_VERIFICATION_REQUIREMENT: {
+                    FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when authenticating with a WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
@@ -588,43 +588,43 @@ class WebAuthnTokenClass(TokenClass):
                     }
                 },
                 SCOPE.AUTHZ: {
-                    Fido2Action.AUTHENTICATOR_SELECTION_LIST: {
+                    FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: {
                         'type': 'str',
                         'desc': _("A list of WebAuthn authenticators acceptable for authorization, given as "
                                   "a space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
                         'group': GROUP.CONDITIONS,
                     },
-                    Fido2Action.REQ: {
+                    FIDO2PolicyAction.REQ: {
                         'type': 'str',
                         'desc': _("Only the specified WebAuthn-tokens are authorized."),
                         'group': GROUP.CONDITIONS,
                     }
                 },
                 SCOPE.ENROLL: {
-                    Fido2Action.AVOID_DOUBLE_REGISTRATION: {
+                    FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION: {
                         'type': 'bool',
                         'desc': _("One webauthn token can not be registered to a user more than once."),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    Fido2Action.RELYING_PARTY_NAME: {
+                    FIDO2PolicyAction.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human-readable name for the organization rolling out WebAuthn tokens."),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    Fido2Action.RELYING_PARTY_ID: {
+                    FIDO2PolicyAction.RELYING_PARTY_ID: {
                         'type': 'str',
                         'desc': _("A domain name that is a subset of the respective FQDNs for all the webservices the "
                                   "users should be able to sign in to using WebAuthn tokens."),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    Fido2Action.TIMEOUT: {
+                    FIDO2PolicyAction.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm enrollment on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60"),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    Fido2Action.AUTHENTICATOR_ATTACHMENT: {
+                    FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
                         'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform "
                                   "authenticators, or only cross-platform authenticators. Default: either"),
@@ -635,13 +635,13 @@ class WebAuthnTokenClass(TokenClass):
                             "either"
                         ]
                     },
-                    Fido2Action.AUTHENTICATOR_SELECTION_LIST: {
+                    FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: {
                         'type': 'str',
                         'desc': _("A list of WebAuthn authenticators acceptable for enrollment, given as a "
                                   "space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    Fido2Action.USER_VERIFICATION_REQUIREMENT: {
+                    FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
@@ -652,7 +652,7 @@ class WebAuthnTokenClass(TokenClass):
                             "discouraged"
                         ]
                     },
-                    Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
+                    FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
                         'type': 'str',
                         'desc': _("Which algorithm are available to use for creating public key "
                                   "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
@@ -662,7 +662,7 @@ class WebAuthnTokenClass(TokenClass):
                         'multiple': True,
                         'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
                     },
-                    Fido2Action.AUTHENTICATOR_ATTESTATION_FORM: {
+                    FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
                         'desc': _("Whether to request attestation data when enrolling a new WebAuthn token. "
                                   "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
@@ -674,7 +674,7 @@ class WebAuthnTokenClass(TokenClass):
                             "direct"
                         ]
                     },
-                    Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL: {
+                    FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: {
                         'type': 'str',
                         'desc': _("Whether and how strictly to check authenticator attestation data. "
                                   "Note: If the attestation form is none, the attestation level needs to also be none. "
@@ -686,7 +686,7 @@ class WebAuthnTokenClass(TokenClass):
                             "trusted"
                         ]
                     },
-                    Fido2Action.REQ: {
+                    FIDO2PolicyAction.REQ: {
                         'type': 'str',
                         'desc': _("Only the specified WebAuthn-tokens are allowed to be registered."),
                         'group': WebAuthnGroup.WEBAUTHN
@@ -766,9 +766,9 @@ class WebAuthnTokenClass(TokenClass):
             user_display_name=str(user),
             icon_url=IMAGES.get(self.token.description.lower().split()[0], "") if self.token.description else "",
             credential_id=self.decrypt_otpkey(),
-            public_key=webauthn_b64_encode(binascii.unhexlify(self.get_tokeninfo(Fido2TokenInfo.PUB_KEY))),
+            public_key=webauthn_b64_encode(binascii.unhexlify(self.get_tokeninfo(FIDO2TokenInfo.PUB_KEY))),
             sign_count=self.get_otp_count(),
-            rp_id=self.get_tokeninfo(Fido2TokenInfo.RELYING_PARTY_ID)
+            rp_id=self.get_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID)
         )
 
     def decrypt_otpkey(self):
@@ -815,9 +815,9 @@ class WebAuthnTokenClass(TokenClass):
             serial = self.token.serial
             registration_client_extensions = getParam(param, "registrationclientextensions", optional)
 
-            rp_id = getParam(param, Fido2Action.RELYING_PARTY_ID, required)
-            uv_req = getParam(param, Fido2Action.USER_VERIFICATION_REQUIREMENT, optional)
-            attestation_level = getParam(param, Fido2Action.AUTHENTICATOR_ATTESTATION_LEVEL, required)
+            rp_id = getParam(param, FIDO2PolicyAction.RELYING_PARTY_ID, required)
+            uv_req = getParam(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, optional)
+            attestation_level = getParam(param, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL, required)
 
             try:
                 http_origin = getParam(param, "HTTP_ORIGIN", required, allow_empty=False)
@@ -856,7 +856,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     challenge=webauthn_b64_encode(challenge),
                     attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
-                    trust_anchor_dir=get_from_config(Fido2Config.TRUST_ANCHOR_DIR),
+                    trust_anchor_dir=get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR),
                     uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
                 ).verify([
                     # TODO: this might get slow when a lot of webauthn tokens are registered
@@ -870,24 +870,24 @@ class WebAuthnTokenClass(TokenClass):
 
             self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
             self.set_otp_count(webauthn_credential.sign_count)
-            self.add_tokeninfo(Fido2TokenInfo.PUB_KEY,
+            self.add_tokeninfo(FIDO2TokenInfo.PUB_KEY,
                                hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)))
-            self.add_tokeninfo(Fido2TokenInfo.ORIGIN,
+            self.add_tokeninfo(FIDO2TokenInfo.ORIGIN,
                                webauthn_credential.origin)
-            self.add_tokeninfo(Fido2TokenInfo.ATTESTATION_LEVEL,
+            self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_LEVEL,
                                webauthn_credential.attestation_level)
 
-            self.add_tokeninfo(Fido2TokenInfo.AAGUID,
+            self.add_tokeninfo(FIDO2TokenInfo.AAGUID,
                                hexlify_and_unicode(webauthn_credential.aaguid))
 
             # Add attestation info.
             if webauthn_credential.attestation_cert:
                 # attestation_cert is of type cryptography.x509.Certificate.
-                self.add_tokeninfo(Fido2TokenInfo.ATTESTATION_ISSUER,
+                self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER,
                                    webauthn_credential.attestation_cert.issuer.rfc4514_string())
-                self.add_tokeninfo(Fido2TokenInfo.ATTESTATION_SUBJECT,
+                self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT,
                                    webauthn_credential.attestation_cert.subject.rfc4514_string())
-                self.add_tokeninfo(Fido2TokenInfo.ATTESTATION_SERIAL,
+                self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_SERIAL,
                                    webauthn_credential.attestation_cert.serial_number)
 
                 cn = webauthn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
@@ -949,7 +949,7 @@ class WebAuthnTokenClass(TokenClass):
             challenge.save()
 
             credential_ids = []
-            if is_true(getParam(params, Fido2Action.AVOID_DOUBLE_REGISTRATION, optional)):
+            if is_true(getParam(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION, optional)):
                 # Get the other webauthn tokens of the user
                 webauthn_toks = get_tokens(tokentype=self.type, user=self.user)
                 # add their credential ids
@@ -961,31 +961,31 @@ class WebAuthnTokenClass(TokenClass):
             public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
-                                 Fido2Action.RELYING_PARTY_NAME,
+                                 FIDO2PolicyAction.RELYING_PARTY_NAME,
                                  required),
                 rp_id=getParam(params,
-                               Fido2Action.RELYING_PARTY_ID,
+                               FIDO2PolicyAction.RELYING_PARTY_ID,
                                required),
                 user_id=self.token.serial,
                 user_name=user.login,
                 user_display_name=str(user),
                 timeout=getParam(params,
-                                 Fido2Action.TIMEOUT,
+                                 FIDO2PolicyAction.TIMEOUT,
                                  required),
                 attestation=getParam(params,
-                                     Fido2Action.AUTHENTICATOR_ATTESTATION_FORM,
+                                     FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM,
                                      required),
                 user_verification=getParam(params,
-                                           Fido2Action.USER_VERIFICATION_REQUIREMENT,
+                                           FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                                            required),
                 public_key_credential_algorithms=getParam(params,
-                                                          Fido2Action.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                                          FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                           required),
                 authenticator_attachment=getParam(params,
-                                                  Fido2Action.AUTHENTICATOR_ATTACHMENT,
+                                                  FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT,
                                                   optional),
                 authenticator_selection_list=getParam(params,
-                                                      Fido2Action.AUTHENTICATOR_SELECTION_LIST,
+                                                      FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                                                       optional),
                 credential_ids=credential_ids
             ).registration_dict
@@ -1016,9 +1016,9 @@ class WebAuthnTokenClass(TokenClass):
                 response_detail["webAuthnRegisterRequest"]["excludeCredentials"] = \
                     public_key_credential_creation_options.get("excludeCredentials")
 
-            self.add_tokeninfo(Fido2TokenInfo.RELYING_PARTY_ID,
+            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID,
                                public_key_credential_creation_options["rp"]["id"])
-            self.add_tokeninfo(Fido2TokenInfo.RELYING_PARTY_NAME,
+            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME,
                                public_key_credential_creation_options["rp"]["name"])
 
         elif self.token.rollout_state == "":
@@ -1123,13 +1123,13 @@ class WebAuthnTokenClass(TokenClass):
             challenge=webauthn_b64_encode(nonce),
             webauthn_user=user,
             transports=getParam(options,
-                                Fido2Action.ALLOWED_TRANSPORTS,
+                                FIDO2PolicyAction.ALLOWED_TRANSPORTS,
                                 required),
             user_verification_requirement=getParam(options,
-                                                   Fido2Action.USER_VERIFICATION_REQUIREMENT,
+                                                   FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                                                    required),
             timeout=getParam(options,
-                             Fido2Action.TIMEOUT,
+                             FIDO2PolicyAction.TIMEOUT,
                              required)
         ).assertion_dict
 
@@ -1173,11 +1173,11 @@ class WebAuthnTokenClass(TokenClass):
 
             # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
             # policy exception.
-            allowed_aaguids = getParam(options, Fido2Action.AUTHENTICATOR_SELECTION_LIST, optional)
-            if allowed_aaguids and self.get_tokeninfo(Fido2TokenInfo.AAGUID) not in allowed_aaguids:
+            allowed_aaguids = getParam(options, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, optional)
+            if allowed_aaguids and self.get_tokeninfo(FIDO2TokenInfo.AAGUID) not in allowed_aaguids:
                 log.warning(
                     "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
-                    "restriction {1!s}".format(self.token.serial, Fido2Action.AUTHENTICATOR_SELECTION_LIST))
+                    "restriction {1!s}".format(self.token.serial, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
                 raise PolicyError("The WebAuthn token is not allowed to "
                                   "authenticate due to a policy restriction.")
 
@@ -1185,14 +1185,14 @@ class WebAuthnTokenClass(TokenClass):
             # authorized. If not, we can raise a policy exception.
             if not attestation_certificate_allowed(
                     {
-                        "attestation_issuer": self.get_tokeninfo(Fido2TokenInfo.ATTESTATION_ISSUER),
-                        "attestation_serial": self.get_tokeninfo(Fido2TokenInfo.ATTESTATION_SERIAL),
-                        "attestation_subject": self.get_tokeninfo(Fido2TokenInfo.ATTESTATION_SUBJECT)
+                        "attestation_issuer": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER),
+                        "attestation_serial": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SERIAL),
+                        "attestation_subject": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT)
                     },
-                    getParam(options, Fido2Action.REQ, optional)):
+                    getParam(options, FIDO2PolicyAction.REQ, optional)):
                 log.warning(
                     "The WebAuthn token {0!s} is not allowed to authenticate "
-                    "due to policy restriction {1!s}".format(self.token.serial, Fido2Action.REQ))
+                    "due to policy restriction {1!s}".format(self.token.serial, FIDO2PolicyAction.REQ))
                 raise PolicyError("The WebAuthn token is not allowed to "
                                   "authenticate due to a policy restriction.")
 
@@ -1201,7 +1201,7 @@ class WebAuthnTokenClass(TokenClass):
             except ParameterError:
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
-            uv_req = getParam(options, Fido2Action.USER_VERIFICATION_REQUIREMENT, optional)
+            uv_req = getParam(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, optional)
 
             challenge = binascii.unhexlify(getParam(options, "challenge", required))
 

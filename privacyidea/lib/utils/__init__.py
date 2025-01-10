@@ -41,6 +41,9 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import threading
+
+from webauthn.helpers import bytes_to_base64url
+
 try:
     from importlib import metadata
 except ImportError:
@@ -60,8 +63,8 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
-                          "n": string.digits,         # numbers
-                          "s": string.punctuation}    # special
+                          "n": string.digits,  # numbers
+                          "s": string.punctuation}  # special
 
 
 class AUTH_RESPONSE(object):
@@ -1552,20 +1555,31 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent):
+def get_computer_name_from_user_agent(user_agent=None):
     """
     Searches for entries in the user agent that could identify the machine.
-    It is expected that the string following the key does not contain whitespaces.
     Example: ComputerName/Laptop-3324231
-
+    If the user_agent is None or does not contain any of the keys that could identify the computer name,
+    a name is generated from the hash of the whole user_agent.
+    Since this can be None, collisions are possible, but it will work in any case.
+    Emits a warning that doing this without a user_agent is not recommended.
     :param user_agent: The user agent string
-    :type user_agent: str
-    :return: The computer name or None if nothing is found
-    :rtype: str or None
+    :type user_agent: str or None
+    :return: The computer name or a generated computer name if no matching key was found in the user agent
+    :rtype: str
     """
+    # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
     keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
     if user_agent:
         for key in keys:
             if key in user_agent:
-                return user_agent.split(key + "/")[1].split(" ")[0]
-    return None
+                try:
+                    return user_agent.split(key + "/")[1].split(" ")[0]
+                except Exception as ex:
+                    log.info(f"Could not extract computer name from user agent: {ex} with key {key}")
+    else:
+        log.warning("No user agent provided, generating refill token this way is not recommended "
+                    "because it can lead to collisions.")
+        # TODO keep this, at least for now?
+        # Will generate a computer name in any case, so offline will always work
+        return bytes_to_base64url(hashlib.sha256(user_agent.encode()).digest())[:20]

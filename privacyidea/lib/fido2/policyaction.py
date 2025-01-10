@@ -1,8 +1,4 @@
-class Fido2Action(object):
-    """
-    Policy actions defined for WebAuthn
-    """
-
+class FIDO2PolicyAction:
     ALLOWED_TRANSPORTS = 'webauthn_allowed_transports'
     TIMEOUT = 'webauthn_timeout'
     RELYING_PARTY_NAME = 'webauthn_relying_party_name'

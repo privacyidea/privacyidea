@@ -119,7 +119,7 @@ from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.framework import get_app_config_value
-from ..lib.fido2.policyaction import Fido2Action
+from ..lib.fido2.policyaction import FIDO2PolicyAction
 
 log = logging.getLogger(__name__)
 
@@ -180,35 +180,33 @@ def offlinerefill():
     serial = getParam(request.all_data, "serial", required)
     refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
-    tokenobj_list = get_tokens(serial=serial)
-    if len(tokenobj_list) != 1:
+    tokens = get_tokens(serial=serial)
+    if len(tokens) != 1:
         raise ParameterError("The token does not exist")
     else:
-        tokenobj = tokenobj_list[0]
+        token = tokens[0]
         # check if token is disabled or otherwise not fit for auth
         message_list = []
-        if not tokenobj.check_all(message_list):
-            log.info("Failed to offline refill: {0!s}".format(message_list))
+        if not token.check_all(message_list):
+            log.info(f"Failed to offline refill: {message_list}")
             raise ParameterError("The token is not valid.")
-        tokenattachments = list_machine_tokens(serial=serial, application="offline")
-        if tokenattachments:
+        token_attachments = list_machine_tokens(serial=serial, application="offline")
+        if token_attachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
             # check refill token depending on token type
             refilltoken_stored = None
-            if tokenobj.type.lower() == "hotp":
-                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken")
-            elif tokenobj.type.lower() == "webauthn":
+            if token.type.lower() == "hotp":
+                refilltoken_stored = token.get_tokeninfo("refilltoken")
+            elif token.type.lower() in ["webauthn", "passkey"]:
                 computer_name = get_computer_name_from_user_agent(request.user_agent.string)
-                if computer_name is None:
-                    raise ParameterError("The computer name is missing.")
-                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken_" + computer_name)
+                refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
 
             if refilltoken_stored and refilltoken_stored == refilltoken_request:
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
-                options = tokenattachments[0].get("options")
-                otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken_new = MachineApplication.generate_new_refilltoken(tokenobj, request.user_agent.string)
+                options = token_attachments[0].get("options")
+                otps = MachineApplication.get_refill(token, password, options)
+                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
@@ -733,15 +731,15 @@ def initialize():
     token_type = get_optional(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=Fido2Action.RELYING_PARTY_ID,
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID,
                                        default="",
                                        scope=SCOPE.ENROLL)
         if not rp_id:
-            raise PolicyError(f"Missing policy for {Fido2Action.RELYING_PARTY_ID}, unable to create challenge!")
+            raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
 
         challenge = create_fido2_challenge(rp_id)
         challenge["user_verification"] = get_first_policy_value(
-            policy_action=Fido2Action.USER_VERIFICATION_REQUIREMENT,
+            policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
             default="preferred",
             scope=SCOPE.AUTH
         )

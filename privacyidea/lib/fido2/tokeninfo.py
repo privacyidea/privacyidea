@@ -1,8 +1,4 @@
-class Fido2TokenInfo(object):
-    """
-    Token info fields used by WebAuthn
-    """
-
+class FIDO2TokenInfo(object):
     PUB_KEY = "pubKey"
     ORIGIN = "origin"
     AAGUID = "aaguid"

@@ -220,7 +220,8 @@
                         </span>
                         <span ng-hide="['certificate', 'pkcs12']
                         .indexOf(k)!=-1">
-                            {{ k }}: {{ v | truncate:30 }}
+                            <!-- Truncate at 85 so at least the refilltokens can be shown in full -->
+                            {{ k }}: {{ v | truncate:85 }}
                         </span>
                     </li>
                 </ul>
