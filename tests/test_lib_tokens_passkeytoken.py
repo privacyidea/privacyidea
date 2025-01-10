@@ -46,8 +46,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
     def setUp(self):
         PasskeyTestBase.setUp(self)
         self.setUp_user_realms()
-        self.user = User(login="hans", realm=self.realm1,
-                         resolver=self.resolvername1)
+        self.user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
 
     def _create_token(self) -> TokenClass:
         registration_request = self._initialize_registration()

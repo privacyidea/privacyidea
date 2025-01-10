@@ -76,13 +76,12 @@ class event(object):
                     # copy all values from the original audit entry
                     event_audit_data = dict(self.g.audit_object.audit_data)
                     event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get("handlermodule")}:{e_handler_def.get("action")}")
+                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
                     event_audit_data["action_detail"] = f"{e_handler_def.get("options")}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
 
-                    result = event_handler.do(e_handler_def.get("action"),
-                                              options=options)
+                    result = event_handler.do(e_handler_def.get("action"), options=options)
                     if not result and event_handler.run_details:
                         event_audit_data["info"] += f" ({event_handler.run_details})"
                         event_audit.log(event_audit_data)
@@ -111,7 +110,7 @@ class event(object):
                     # copy all values from the original audit entry
                     event_audit_data = dict(self.g.audit_object.audit_data)
                     event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get("handlermodule")}:{e_handler_def.get("action")}")
+                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
                     event_audit_data["action_detail"] = f"{e_handler_def.get("options")}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
