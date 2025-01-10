@@ -782,17 +782,17 @@ class PushTokenClass(TokenClass):
         # now check the signature
         # first get the token
         try:
-            tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
+            token = get_one_token(serial=serial, tokentype=cls.get_class_type())
             # If the push_allow_polling policy is set to "token" we also
             # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
             # to 'False', polling is not allowed for this token. If the
             # tokeninfo value evaluates to 'True' or is not set at all,
             # polling is allowed for this token.
             if allow_polling == PushAllowPolling.TOKEN:
-                if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                if not is_true(token.get_tokeninfo(POLLING_ALLOWED, default='True')):
                     log.debug(f'Polling not allowed for pushtoken {serial} due to tokeninfo.')
                     raise PolicyError('Polling not allowed!')
-            pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+            pubkey_obj = _build_verify_object(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{serial}|{timestamp}".format(**request_data)
             pubkey_obj.verify(b32decode(signature),
                               sign_data.encode("utf8"),
@@ -800,7 +800,7 @@ class PushTokenClass(TokenClass):
                               hashes.SHA256())
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
-            private_key = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
+            private_key = token.get_tokeninfo(PRIVATE_KEY_SERVER)
             # We need the registration URL for the challenge
             registration_url = get_action_values_from_options(
                 SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options={'g': g})
@@ -808,23 +808,24 @@ class PushTokenClass(TokenClass):
                 raise ResourceNotFoundError('There is no registration_url defined for the '
                                             f' pushtoken {serial}. You need to define a push_registration_url '
                                             'in an enrollment policy.')
-            options = {'g': g}
-            challenges = get_challenges(serial=serial)
-            for challenge in challenges:
+            options = {"g": g}
+            open_challenges = []
+            db_challenges = get_challenges(serial=serial)
+            for challenge in db_challenges:
                 if challenge.get_session() == CHALLENGE_SESSION.DECLINED:
                     continue
                 # check if the challenge is active and not already answered
-                _cnt, answered = challenge.get_otp_status()
+                _, answered = challenge.get_otp_status()
                 if not answered and challenge.is_valid():
                     # If we require presence, make sure that the user has to confirm with the correct button
                     require_presence = "1" if challenge.get_data() else "0"
                     current_presence_options = challenge.get_data().split(",")[:-1] if require_presence == "1" else None
                     # then return the necessary smartphone data to answer the challenge
-                    sp_data = _build_smartphone_data(tok, challenge.challenge, registration_url, private_key, options,
+                    sp_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key, options,
                                                      current_presence_options)
-                    challenges.append(sp_data)
+                    open_challenges.append(sp_data)
             # return the challenges as a list in the result value
-            result = challenges
+            result = open_challenges
         except (ResourceNotFoundError, ParameterError,
                 InvalidSignature, ConfigAdminError, BinasciiError) as e:
             # to avoid disclosing information we always fail with an invalid
