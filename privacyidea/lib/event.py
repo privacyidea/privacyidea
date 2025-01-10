@@ -77,7 +77,7 @@ class event(object):
                     event_audit_data = dict(self.g.audit_object.audit_data)
                     event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
                                                   f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get("options")}"
+                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
 
@@ -111,7 +111,7 @@ class event(object):
                     event_audit_data = dict(self.g.audit_object.audit_data)
                     event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
                                                   f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get("options")}"
+                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
 

@@ -805,8 +805,7 @@ def multichallenge_enroll_via_validate(request, response):
             check_max_token_user(request=request)
             check_max_token_realm(request=request)
         except PolicyError as e:
-            g.audit_object.log({"success": True,
-                                'action_detail': e})
+            g.audit_object.log({"success": True, "action_detail": e})
             return response
 
         user = request.User
@@ -829,10 +828,12 @@ def multichallenge_enroll_via_validate(request, response):
                         message = None
                         if text_policies:
                             message = list(text_policies)[0]
-                        # ------------------------------
+                        # -----------------------------
+                        # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
+                        # TODO should go in this direction instead of putting the stuff in the token class
                         if tokentype == PasskeyTokenClass.get_class_type().lower():
-                            fido2_enroll(request, None)
                             request.all_data["type"] = tokentype
+                            fido2_enroll(request, None)
                             token = init_token(request.all_data, user)
                             try:
                                 init_details = token.get_init_detail(request.all_data, user)
