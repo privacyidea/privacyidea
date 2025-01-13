@@ -1068,14 +1068,11 @@ class UtilsTestCase(MyTestCase):
             "privacyidea-pam/2.2.2 Linux/Server-3": "Server-3",
             "privacyidea-pam/2.2.2 Hostname/Server-4": "Server-4",
             "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
+            "": None,
+            None: None,
+            "privacyidea-mac/3.3.3": None
         }
 
         for k, v in data.items():
             res = get_computer_name_from_user_agent(k)
             self.assertEqual(v, res)
-
-        # If there is no user agent, or it does not contain any info about the computer name, a name is generated
-        # from the hash of the user agent (including empty string)
-        self.assertTrue(get_computer_name_from_user_agent(""))
-        self.assertTrue(get_computer_name_from_user_agent(None))
-        self.assertTrue(get_computer_name_from_user_agent("privacyidea-mac/3.3.3"))

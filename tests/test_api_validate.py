@@ -3561,7 +3561,6 @@ class WebAuthn(MyApiTestCase):
                                                     "Origin": "https://pi.example.com"}):
             res = self.app.full_dispatch_request()
             data = res.json
-            print(data)
             self.assertEqual(200, res.status_code)
             self.assertTrue("transaction_id" in data.get("detail"))
             self.assertEqual(self.serial, data.get("detail").get("serial"))
@@ -6328,7 +6327,6 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
             self.assertEqual(200, res.status_code)
             data = res.json
-            print(data)
             self.assertTrue("transaction_id" in data.get("detail"))
             self.assertEqual(self.serial, data.get("detail").get("serial"))
             self.assertEqual("Please confirm with your WebAuthn token (my description)",
@@ -6439,6 +6437,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         res = self._validate_check(headers, transaction_id)
         self.assertEqual(200, res.status_code)
         data = res.json
+        print(res.json)
         detail = data.get("detail")
         result = data.get("result")
         self.assertTrue(result.get("status"))

@@ -2274,6 +2274,9 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         if token.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
+            # We need to pass the info if a push token has been triggered, so that require presence can re-use the
+            # challenge instead of creating a new one with a different answer
+            options["push_triggered"] = token.get_type() == "push" if not options["push_triggered"] else True
             # Add the reply to the response
             message = challenge_text_replace(message, user=token.user, token_obj=token)
             message_list.append(message)

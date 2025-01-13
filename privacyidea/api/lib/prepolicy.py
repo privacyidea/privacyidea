@@ -2135,7 +2135,10 @@ def fido2_enroll(request, action):
                            else None)
     if passkey_attestation:
         request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
-    request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
+    if request and hasattr(request, "environ"):
+        request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
+    else:
+        log.debug("request or request.environ is not available. Unable to add HTTP_ORIGIN to request data.")
     return True
 
 

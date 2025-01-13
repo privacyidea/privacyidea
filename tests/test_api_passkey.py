@@ -403,13 +403,15 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         transaction_id = challenge["transaction_id"]
         data = self.authentication_response_no_uv
         data["transaction_id"] = transaction_id
+        # A user agent that identifies the machine is required.
         user_agent = "privacyidea-cp/1.1.1 Windows/Laptop-1231312"
+        headers = {"Origin": self.expected_origin, "User-Agent": user_agent}
         # IP is needed to get the offline data
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            environ_base={'REMOTE_ADDR': '10.0.0.17'},
                                            data=data,
-                                           headers={"Origin": self.expected_origin}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self._assert_result_value_true(res.json)
@@ -442,10 +444,25 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
             self.assertEqual(credential_id, response["credentialId"])
 
-        # Try refill
+        # Refill without machine name will fail with parameter error 905
+        data = {"serial": serial, "refilltoken": refill_token, "pass": ""}
+        with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+            self.assertIn("result", res.json)
+            result = res.json["result"]
+            self.assertIn("status", result)
+            self.assertFalse(result["status"])
+            self.assertIn("error", result)
+            self.assertIn("message", result["error"])
+            self.assertTrue(result["error"]["message"])
+            self.assertIn("code", result["error"])
+            self.assertEqual(905, result["error"]["code"])
+
+
+        # Refill with machine name works
         data = {"serial": serial, "refilltoken": refill_token, "pass": ""}
         with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data,
-                                           headers=self.pk_headers):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
             # For FIDO2 offline, the refill just checks if the token is still marked as offline and returns
@@ -592,7 +609,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
-            #response looks like this {'detail': {'message': 'Found matching challenge', 'serial': 'PIPK00008E1B', 'threadid': 133541956595840, 'username': 'hans'}, 'id': 2, 'jsonrpc': '2.0', 'result': {'authentication': 'ACCEPT', 'status': True, 'value': True}, 'time': 1736768141.2746646, 'version': 'privacyIDEA 3.10.dev1', 'versionnumber': '3.10.dev1', 'signature': 'rsa_sha256_pss:'}
+            # response looks like this {'detail': {'message': 'Found matching challenge', 'serial': 'PIPK00008E1B', 'threadid': 133541956595840, 'username': 'hans'}, 'id': 2, 'jsonrpc': '2.0', 'result': {'authentication': 'ACCEPT', 'status': True, 'value': True}, 'time': 1736768141.2746646, 'version': 'privacyIDEA 3.10.dev1', 'versionnumber': '3.10.dev1', 'signature': 'rsa_sha256_pss:'}
             self.assertIn("detail", res.json)
             detail = res.json["detail"]
             self.assertIn("message", detail)
@@ -602,7 +619,6 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             self.assertIn("serial", detail)
             self.assertEqual(passkey_serial, detail["serial"])
             self.assertEqual("ACCEPT", res.json["result"]["authentication"])
-
 
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)

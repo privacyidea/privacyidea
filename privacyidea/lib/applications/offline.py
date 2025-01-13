@@ -72,7 +72,11 @@ class MachineApplication(MachineApplicationBase):
         # the token can be on multiple machines, which need to be managed separately
         # TODO improve where the information about offline capabilities is stored
         if token.type.lower() in ["webauthn", "passkey"]:
-            key = "refilltoken_" + get_computer_name_from_user_agent(user_agent)
+            computer_name = get_computer_name_from_user_agent(user_agent)
+            if not computer_name:
+                log.warning(f"No computer name found in user agent {user_agent}. Unable to generate refill token.")
+                raise ParameterError("Unable to generate refill token without computer name.")
+            key = "refilltoken_" + computer_name
         else:
             key = "refilltoken"
 

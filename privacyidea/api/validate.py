@@ -199,6 +199,10 @@ def offlinerefill():
                 refilltoken_stored = token.get_tokeninfo("refilltoken")
             elif token.type.lower() in ["webauthn", "passkey"]:
                 computer_name = get_computer_name_from_user_agent(request.user_agent.string)
+                if not computer_name:
+                    log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
+                                f"{request.user_agent.string}")
+                    raise ParameterError("Machine can not be identified by user agent!")
                 refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
 
             if refilltoken_stored and refilltoken_stored == refilltoken_request:
