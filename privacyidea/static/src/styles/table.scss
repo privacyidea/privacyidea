@@ -333,7 +333,8 @@ th:nth-child(even) {
       padding-left: 5px;
     }
 
-    .container-details-token-table-container .mat-mdc-text-field-wrapper {
+    .container-details-token-table-container .mat-mdc-text-field-wrapper,
+    .add-token .mat-mdc-text-field-wrapper {
       padding-left: 1rem !important;
     }
 

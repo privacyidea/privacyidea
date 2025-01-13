@@ -27,8 +27,7 @@
                       <input matInput
                              [(ngModel)]="selectedContainer"
                              [matAutocomplete]="containerAuto">
-                      <mat-autocomplete autoActiveFirstOption
-                                        #containerAuto="matAutocomplete">
+                      <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }

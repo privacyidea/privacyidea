@@ -16,6 +16,9 @@ import {AuthService} from '../../../../services/auth/auth.service';
 import {TokenService} from '../../../../services/token/token.service';
 import {TableUtilsService} from '../../../../services/table-utils/table-utils.service';
 import {NgClass} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {ContainerService} from '../../../../services/container/container.service';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -41,18 +44,24 @@ const columnsKeyMap = [
     NgClass,
     MatTableModule,
     MatSortModule,
+    MatIcon,
+    MatIconButton,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss'
 })
 export class ContainerDetailsTokenTableComponent {
-  displayedColumns: string[] = columnsKeyMap.map(column => column.key);
+  displayedColumns: string[] = [
+    ...columnsKeyMap.map(column => column.key),
+    'remove'
+  ];
   pageSize = 10;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
   @Input() dataSource!: WritableSignal<any>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() serial!: WritableSignal<string>;
+  @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -60,7 +69,8 @@ export class ContainerDetailsTokenTableComponent {
   constructor(private router: Router,
               private authService: AuthService,
               protected tokenService: TokenService,
-              protected tableUtilsService: TableUtilsService) {
+              protected tableUtilsService: TableUtilsService,
+              private containerService: ContainerService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
     }
@@ -79,5 +89,34 @@ export class ContainerDetailsTokenTableComponent {
   tokenSelected(serial: string) {
     this.serial.set(serial);
     this.tokenIsSelected.set(true)
+    // TODO fix
+  }
+
+  removeTokenFromContainer(container_serial: string, token_serial: string) {
+    this.containerService.removeTokenFromContainer(container_serial, token_serial).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to remove token from container', error);
+      }
+    });
+  }
+
+  handleColumnClick(columnKey: string, element: any) {
+    if (columnKey === 'active') {
+      this.toggleActive(element);
+    }
+  }
+
+  toggleActive(element: any): void {
+    this.tokenService.toggleActive(element.serial, element.active).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to toggle active', error);
+      }
+    });
   }
 }

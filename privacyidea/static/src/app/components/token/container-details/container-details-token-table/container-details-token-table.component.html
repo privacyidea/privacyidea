@@ -1,5 +1,6 @@
 <div aria-label="Container Details Token Table" class="container-details-token-table-container">
   <div class="flex-column">
+    <h3 class="margin-left-1">Token in Container</h3>
     <mat-form-field class="container-details-token-table-filter" subscriptSizing="dynamic">
       <mat-label>Filter</mat-label>
       <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
@@ -12,7 +13,8 @@
     </mat-paginator>
   </div>
   <table [dataSource]="dataSource()"
-         aria-label="Token Data Table" class="container-details-token-table" mat-table matSort>
+         aria-label="Token of Container Data Table" class="container-details-token-table" mat-table
+         matSort>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
         <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell
@@ -23,16 +25,7 @@
             [ngClass]="{'width-18': column.key === 'description'}">
           <ng-container>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @if (column.key === 'realms') {
-                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
-                  @for (realm of element[column.key]; track realm; let idx = $index) {
-                    <a attr.aria-label="{{ column.label }} Link" href="#">
-                      {{ realm }}
-                    </a>
-                    <br style="margin-top: 3px"/>
-                  }
-                </div>
-              } @else if (column.key === 'serial') {
+              @if (column.key === 'serial') {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="tokenSelected(element.serial)">
                   {{ element[column.key] }}
@@ -42,8 +35,8 @@
                   {{ element[column.key] }}
                 </a>
               } @else {
-                <span
-                  [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                <span (click)="handleColumnClick(column.key, element)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                 {{ tableUtilsService.getDisplayText(column.key, element) }}
               </span>
               }
@@ -52,6 +45,17 @@
         </td>
       </ng-container>
     }
+    <ng-container matColumnDef="remove">
+      <th *matHeaderCellDef aria-label="Remove Column Header" mat-header-cell>
+      </th>
+      <td *matCellDef="let element" aria-label="Remove Button Cell" mat-cell>
+        <div class="flex just-center">
+          <button (click)="removeTokenFromContainer(this.serial(), element.serial)" mat-icon-button>
+            <mat-icon>delete_outlined</mat-icon>
+          </button>
+        </div>
+      </td>
+    </ng-container>
     <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
     <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
     <tr *matNoDataRow aria-label="No Data Row">

@@ -163,4 +163,18 @@ export class ContainerService {
     //TODO: API is missing the delete endpoint
     return;
   }
+
+  addTokenToContainer(container_serial: string, serial: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/add`, {
+      serial: serial
+    }, {headers})
+  }
+
+  removeTokenFromContainer(container_serial: string, token_serial: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/remove`, {
+      serial: token_serial
+    }, {headers})
+  }
 }

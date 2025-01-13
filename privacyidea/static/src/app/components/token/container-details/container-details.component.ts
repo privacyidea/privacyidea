@@ -1,4 +1,13 @@
-import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  Input,
+  signal,
+  ViewChild,
+  WritableSignal
+} from '@angular/core';
 import {NgClass} from '@angular/common';
 import {OverflowService} from '../../../services/overflow/overflow.service';
 import {
@@ -30,6 +39,10 @@ import {
 import {
   ContainerDetailsTokenTableComponent
 } from './container-details-token-table/container-details-token-table.component';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import {TokenService} from '../../../services/token/token.service';
+import {MatDivider} from '@angular/material/divider';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 export const containerDetailsKeyMap = [
   {key: 'type', label: 'Type'},
@@ -44,6 +57,13 @@ const containerUserDetailsKeyMap = [
   {key: 'user_resolver', label: 'Resolver'},
   {key: 'user_id', label: 'User ID'},
 ];
+
+interface TokenOption {
+  serial: string;
+  tokentype: string;
+  active: boolean;
+  username: string;
+}
 
 @Component({
   selector: 'app-container-details',
@@ -69,6 +89,9 @@ const containerUserDetailsKeyMap = [
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
+    MatPaginator,
+    MatDivider,
+    MatCheckbox,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss'
@@ -115,21 +138,33 @@ export class ContainerDetailsComponent {
     keyMap: { label: string; key: string },
     isEditing: WritableSignal<boolean>
   }[]>([]);
+  tokenOptions = signal<TokenOption[]>([]);
   selectedRealms = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
-  userRealm: string = '';
+  tokenToAddFilter = signal('');
+  showOnlyTokenNotInContainer = signal(true);
   containerTokenData = signal<MatTableDataSource<any>>(
     new MatTableDataSource<any>([])
   );
+  userRealm: string = '';
+  length = 0;
+  pageIndex = 0;
+  pageSize = 5;
+  pageSizeOptions = [5, 10, 15];
+  filterValue = '';
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild('tokenFilterInput') tokenFilterInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('tokenAutoTrigger', {read: MatAutocompleteTrigger})
+  tokenAutoTrigger!: MatAutocompleteTrigger;
+
 
   constructor(protected overflowService: OverflowService,
               protected containerService: ContainerService,
               protected tableUtilsService: TableUtilsService,
               protected realmService: RealmService,
-              protected userService: UserService) {
-    effect(() => {
-      this.showContainerDetail().subscribe();
-    });
+              protected userService: UserService,
+              protected tokenService: TokenService) {
 
     effect(() => {
       const value = this.selectedUsername();
@@ -149,13 +184,29 @@ export class ContainerDetailsComponent {
         });
       }
     });
+
+    effect(() => {
+      if (this.showOnlyTokenNotInContainer()) {
+        this.filterValue = this.filterValue + ' container_serial:';
+        this.fetchTokenData();
+      } else {
+        this.filterValue = this.filterValue.replace('container_serial:', '');
+        this.fetchTokenData();
+      }
+    });
+  }
+
+  ngAfterViewInit() {
+    this.showContainerDetail().subscribe();
   }
 
   showContainerDetail() {
     return forkJoin([
       this.containerService.getContainerDetails(this.serial()),
       this.realmService.getRealms(),
-    ]).pipe(switchMap(([containerDetailsResponse, realms]) => {
+      this.tokenService.getTokenData(this.paginator.pageIndex, this.paginator.pageSize, undefined,
+        this.tokenToAddFilter().trim() + ' container_serial:'),
+    ]).pipe(switchMap(([containerDetailsResponse, realms, tokens]) => {
         const containerDetails = containerDetailsResponse.result.value.containers[0];
         this.containerDetailData.set(containerDetailsKeyMap.map(detail => ({
           keyMap: detail,
@@ -170,6 +221,8 @@ export class ContainerDetailsComponent {
         })).filter(detail => detail.value !== undefined));
 
         this.containerTokenData().data = containerDetails.tokens;
+        this.tokenOptions.set(tokens.result.value.tokens);
+        this.length = tokens.result.value.count;
 
         let user = {
           user_realm: '',
@@ -258,6 +311,48 @@ export class ContainerDetailsComponent {
       },
       error: error => {
         console.error('Failed to unassign user', error);
+      }
+    });
+  }
+
+  onPageChanged(event: PageEvent): void {
+    this.pageSize = event.pageSize;
+    this.pageIndex = event.pageIndex;
+    this.fetchTokenData()
+
+    setTimeout(() => {
+      this.tokenFilterInput.nativeElement.focus();
+      this.tokenAutoTrigger.openPanel();
+    }, 0);
+  }
+
+  handleFilterInput(event: Event) {
+    this.filterValue = (event.target as HTMLInputElement).value.trim();
+    this.pageIndex = 0;
+    this.fetchTokenData()
+  }
+
+  addTokenToContainer(option: TokenOption) {
+    this.containerService.addTokenToContainer(this.serial(), option['serial']).pipe(
+      switchMap(() => this.showContainerDetail())
+    ).subscribe({
+      next: () => {
+        this.showContainerDetail();
+      },
+      error: error => {
+        console.error('Failed to add token to container', error);
+      }
+    });
+  }
+
+  private fetchTokenData() {
+    this.tokenService.getTokenData(this.pageIndex + 1, this.pageSize, undefined, this.filterValue).subscribe({
+      next: (response: any) => {
+        this.tokenOptions.set(response.result.value.tokens);
+        this.length = response.result.value.count;
+      },
+      error: error => {
+        console.error('Failed to get token data', error);
       }
     });
   }

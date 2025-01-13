@@ -104,8 +104,7 @@
                   <input matInput
                          [(ngModel)]="selectedUsername"
                          [matAutocomplete]="userAuto">
-                  <mat-autocomplete autoActiveFirstOption
-                                    #userAuto="matAutocomplete">
+                  <mat-autocomplete #userAuto="matAutocomplete">
                     @for (option of filteredUserOptions(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }
@@ -159,8 +158,50 @@
                                       [serial]="serial"></app-container-details-info>
         </div>
       </div>
-      <app-container-details-token-table [dataSource]="containerTokenData" [serial]="serial">
-      </app-container-details-token-table>
+      <div class="flex-column">
+        <div class="flex-row checkbox-paginator-container">
+          <section>
+            <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer">
+             <span> Only display tokens not in a container </span>
+              @if (!showOnlyTokenNotInContainer()) {
+                <br/>
+                <span> Note: Adding a token removes it from</span>
+                <br/>
+                <span style="margin-left: 39px;"> its previous container. </span>
+              }
+            </mat-checkbox>
+          </section>
+        <mat-paginator (page)="onPageChanged($event)" [hidePageSize]="true"
+                       [length]="this.length" [pageIndex]="pageIndex"
+                       [pageSize]="pageSize"
+                       [pageSizeOptions]="this.pageSizeOptions" aria-label="Select page">
+        </mat-paginator>
+        </div>
+        <mat-form-field class="add-token">
+          <mat-label>Add Token to Container</mat-label>
+          <input #tokenAutoTrigger="matAutocompleteTrigger" #tokenFilterInput
+                 (keyup)="handleFilterInput($event)"
+                 [matAutocomplete]="tokenAuto" matInput
+                 placeholder="Example query: 'type: hotp serial: 123'">
+          <mat-autocomplete #tokenAuto="matAutocomplete">
+            @for (option of tokenOptions(); track option) {
+              <mat-option (click)="addTokenToContainer(option)">
+                <span class="token-option-span"> {{ option['serial'] }} </span>
+                <span class="token-option-span"> {{ option['tokentype'] }} </span>
+                <span class="token-option-span" [ngClass]="option['active'] ?
+                'highlight-true' : 'highlight-false'">
+                  {{ option['active'] ? 'active' : 'deactivated' }} </span>
+                <span class="token-option-span"> {{ option['username'] }} </span>
+                <mat-icon>add</mat-icon>
+              </mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+        <mat-divider class="margin-left-2"></mat-divider>
+        <app-container-details-token-table [dataSource]="containerTokenData"
+                                           [refreshContainerDetails]="refreshContainerDetails" [serial]="serial">
+        </app-container-details-token-table>
+      </div>
     </div>
   </div>
 </div>

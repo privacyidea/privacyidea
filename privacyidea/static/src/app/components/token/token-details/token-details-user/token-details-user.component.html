@@ -19,8 +19,7 @@
             <input matInput
                    [(ngModel)]="selectedUsername"
                    [matAutocomplete]="userAuto">
-            <mat-autocomplete autoActiveFirstOption
-                              #userAuto="matAutocomplete">
+            <mat-autocomplete #userAuto="matAutocomplete">
               @for (option of filteredUserOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }

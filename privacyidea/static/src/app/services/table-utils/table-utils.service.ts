@@ -57,8 +57,11 @@ export class TableUtilsService {
         i++;
       }
     }
-    if (currentLabel && currentValue) {
-      filterPairs.push({label: currentLabel.slice(0, -1), value: currentValue.trim()});
+    if (currentLabel) {
+      filterPairs.push({
+        label: currentLabel.slice(0, -1),
+        value: currentValue.trim()
+      });
     }
 
     return {filterPairs, remainingFilterText: remainingFilterText.trim()};
