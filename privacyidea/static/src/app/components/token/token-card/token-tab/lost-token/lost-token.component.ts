@@ -19,7 +19,7 @@ import {TokenService} from '../../../../../services/token/token.service';
     MatIcon
   ],
   templateUrl: './lost-token.component.html',
-  styleUrl: './lost-token.component.css'
+  styleUrl: './lost-token.component.scss'
 })
 export class LostTokenComponent {
   constructor(protected tokenService: TokenService,
