@@ -72,11 +72,11 @@ to consider the following aspects:
   of possibilities to design automatation and **processes** like
   enrollment, revocation, leaving users and more. You will identify
   processes that are mandatory and others might not be relevant for you.
-  You can use again :ref:`policies` and :ref:`event_handler`s to implement these.
+  You can use again :ref:`policies` and :ref:`eventhandler` to implement these.
 
 * Authentication data is important. Plan your **backup** and **recovery**
   of your privacyIDEA system. You can use the database level but
-  also need to take a closer look at the :ref`:`pimanage`.
+  also need to take a closer look at :ref:`the pi-manage script <pimanage>`.
 
 * Think about update- and **upgrade**-processes. Both for privacyIDEA
   and for the OS.

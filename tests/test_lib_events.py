@@ -3735,6 +3735,8 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
+            # This works since we don't have the "replace" option set, otherwise this
+            # would lead to a json decode error since the data is not a valid JSON string
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
@@ -3905,23 +3907,11 @@ class WebhookTestCase(MyTestCase):
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = 'response'
 
-                init_token({"serial": "SPASS01", "type": "spass"},
-                           User("cornelius", self.realm1))
                 g = FakeFlaskG()
-                builder = EnvironBuilder(method='POST',
-                                         data={'serial': "SPASS01"},
-                                         headers={})
-
-                env = builder.get_environ()
-                env["REMOTE_ADDR"] = "10.0.0.1"
-                g.client_ip = env["REMOTE_ADDR"]
-                req = Request(env)
-                req.all_data = {"serial": "SPASS01"}
-                req.User = User("cornelius", self.realm1)
+                g.logged_in_user = {"username": "cornelius", "realm": self.realm1}
 
                 t_handler = WebHookHandler()
                 options = {"g": g,
-                           "request": req,
                            "handler_def": {
                                "options": {"URL":
                                                'http://test.com',

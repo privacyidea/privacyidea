@@ -807,9 +807,11 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
-.. note:: This does not work in combination with the enrollment policy :ref:`policy_verify_enrollment`, since
-   the usage of 2step already ensures, that the user has successfully scanned the QR code.
+.. note:: This does not work in combination with the enrollment
+    policy :ref:`policy_verify_enrollment`, since the usage of 2step already
+    ensures, that the user has successfully scanned the QR code.
 
+.. _admin_policy_hashlib:
 .. _hotp-hashlib:
 .. _totp-hashlib:
 
@@ -824,6 +826,7 @@ Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
 
 New in 3.2
 
+.. _admin_policy_otplen:
 .. _hotp-otplen:
 .. _totp-otplen:
 

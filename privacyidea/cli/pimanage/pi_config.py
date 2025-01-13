@@ -333,13 +333,13 @@ def resolver_create_internal(ctx, name):
 
     # Now we create the database table
     from sqlalchemy import create_engine
-    from sqlalchemy import Table, MetaData, Column
+    from sqlalchemy import Table, MetaData, Column, Identity
     from sqlalchemy import Integer, String
     engine = create_engine(sqluri)
     metadata = MetaData()
     Table('users_%s' % name,
           metadata,
-          Column('id', Integer, primary_key=True),
+          Column('id', Integer, Identity(), primary_key=True),
           Column('username', String(40), unique=True),
           Column('email', String(80)),
           Column('password', String(255)),
