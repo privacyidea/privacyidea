@@ -1183,8 +1183,8 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     # Check for unsupported token type
     token_types = get_token_types()
     if token_type.lower() not in token_types:
-        log.error('type {0!r} not found in tokentypes: {1!r}'.format(token_type, token_types))
-        raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(token_type), id=1610)
+        log.error(f"type {token_type} not found in tokentypes: {token_types}")
+        raise TokenAdminError(_(f"init token failed: unknown token type {token_type}"), id=1610)
 
     serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
     check_serial_valid(serial)
@@ -1204,12 +1204,10 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
         # Make sure the type is not changed between the initialization and the update
         old_type = db_token.tokentype
         if old_type.lower() != token_type.lower():
-            msg = ('token %r already exist with type %r. '
-                   'Can not initialize token with new type %r' % (serial,
-                                                                  old_type,
-                                                                  token_type))
+            msg = (f"Token {serial} already exists with type {old_type}. "
+                   f"Can not initialize token with new type {token_type}")
             log.error(msg)
-            raise TokenAdminError(_("initToken failed: {0!s}").format(msg))
+            raise TokenAdminError(_(f"initToken failed: {msg}"))
 
     # If there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
@@ -2487,12 +2485,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             if next_pin:
                 reply_dict["next_pin_change"] = next_pin
                 reply_dict["pin_change"] = valid_token_list[0].is_pin_change()
-            next_passw = valid_token_list[0].get_tokeninfo(
-                "next_password_change")
+            next_passw = valid_token_list[0].get_tokeninfo("next_password_change")
             if next_passw:
                 reply_dict["next_password_change"] = next_passw
-                reply_dict["password_change"] = valid_token_list[
-                    0].is_pin_change(password=True)
+                reply_dict["password_change"] = valid_token_list[0].is_pin_change(password=True)
         reply_dict["message"] = ", ".join(message_list)
 
     elif challenge_response_token_list:

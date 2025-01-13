@@ -299,25 +299,24 @@ def init():
     param = request.all_data
 
     user = request.User
-    token_object = init_token(param, user)
+    token = init_token(param, user)
 
-    if token_object:
+    if token:
         g.audit_object.log({"success": True})
 
         # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
-        if (token_object.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
-                and token_object.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+        if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
+                and token.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
             param["registered_credential_ids"] = get_credential_ids_for_user(user)
 
-        # The token was created successfully, so we add token specific
-        # init details like the Google URL to the response
+        # The token was created successfully, so we add token specific init details like the Google URL to the response
         try:
-            init_details = token_object.get_init_detail(param, user)
+            init_details = token.get_init_detail(param, user)
             response_details.update(init_details)
         except ParameterError as e:
             if e.id is ERROR.PARAMETER_USER_MISSING:
-                remove_token(serial=token_object.get_serial())
+                remove_token(serial=token.get_serial())
             raise e
 
         # Check if a container_serial is set and assign the token to the container
@@ -328,26 +327,25 @@ def init():
                 container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
-                log.info(f"User {user.login} is not allowed to add token {token_object.get_serial()} to container "
+                log.info(f"User {user.login} is not allowed to add token {token.get_serial()} to container "
                          f"{container_serial}.")
             if container_add_token_right:
                 # The enrollment will not be blocked if there is problem adding the new token to a container
                 # there will just be a warning in the log
                 try:
                     logged_in_user_role = g.logged_in_user.get("role")
-                    add_token_to_container(container_serial, token_object.get_serial(), user, logged_in_user_role)
+                    add_token_to_container(container_serial, token.get_serial(), user, logged_in_user_role)
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
-                    g.audit_object.log({"container_serial": container_serial,
-                                        "container_type": container.type})
+                    g.audit_object.log({"container_serial": container_serial, "container_type": container.type})
                 except ResourceNotFoundError:
                     log.warning(f"Container with serial {container_serial} not found while enrolling token "
-                                f"{token_object.get_serial()}.")
+                                f"{token.get_serial()}.")
 
-    g.audit_object.log({'user': user.login,
-                        'realm': user.realm,
-                        'serial': token_object.token.serial,
-                        'token_type': token_object.token.tokentype})
+    g.audit_object.log({"user": user.login,
+                        "realm": user.realm,
+                        "serial": token.token.serial,
+                        "token_type": token.token.tokentype})
 
     return send_result(True, details=response_details)
 

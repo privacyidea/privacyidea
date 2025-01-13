@@ -70,6 +70,7 @@ import logging
 import threading
 
 from flask import (Blueprint, request, g, current_app)
+from flask_babel import gettext
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
@@ -88,7 +89,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            check_base_action, pushtoken_validate, fido2_auth,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
-                                           increase_failcounter_on_challenge, get_first_policy_value)
+                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll)
 from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
@@ -98,7 +99,6 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib import _
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
@@ -118,8 +118,8 @@ from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.framework import get_app_config_value
 from ..lib.fido2.policyaction import FIDO2PolicyAction
+from ..lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -429,14 +429,27 @@ def check():
                     "message": "No user found for the token with the given credential ID!"})
             user = token.user
 
-        r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
+        # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
+        # This does behave correctly but is obviously not a good solution in the long run
+        attestation_object: str = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+        if attestation_object:
+            request.all_data.update({"type": "passkey"})
+            fido2_enroll(request, None)
+            try:
+                _ = token.update(request.all_data)
+                r = 1
+            except Exception as ex:
+                log.error(f"Error updating token: {ex}")
+                r = 0
+        else:
+            r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
         result = r > 0
         success = result
         if r > 0:
             # If the authentication was successful, return the username of the token owner
             # TODO what is returned could be configurable, attribute mapping
             details = {"username": token.user.login,
-                       "message": _("Found matching challenge"),
+                       "message": gettext("Found matching challenge"),
                        "serial": token.get_serial()}
     # End Passkey
     else:
@@ -444,7 +457,7 @@ def check():
             if user:
                 # Check if the given token belongs to the user
                 if not get_tokens(user=user, serial=serial, count=True):
-                    raise ParameterError('Given serial does not belong to given user!')
+                    raise ParameterError("Given serial does not belong to given user!")
             if not otp_only:
                 success, details = check_serial_pass(serial, password, options=options)
             else:
@@ -456,8 +469,7 @@ def check():
             success, details = check_user_pass(user, password, options=options)
             result = success
             if request.path.endswith("samlcheck"):
-                result = {"auth": success,
-                          "attributes": {}}
+                result = {"auth": success, "attributes": {}}
                 if return_saml_attributes():
                     if success or return_saml_attributes_on_fail():
                         # privacyIDEA's own attribute map

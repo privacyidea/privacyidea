@@ -23,7 +23,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 import privacyidea.lib.token
 from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import remove_token
+from privacyidea.lib.token import remove_token, init_token
 from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
 from privacyidea.lib.user import User
@@ -493,3 +493,116 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             self.assertIn("code", error)
             self.assertEqual(905, error["code"])
         remove_token(serial)
+
+    def test_09_enroll_via_multichallenge(self):
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        action = "enroll_via_multichallenge=PASSKEY, enroll_via_multichallenge_text=enrollVia multichallenge test text"
+        set_policy("enroll_passkey", scope=SCOPE.AUTH, action=action)
+
+        # Using the spass token should result in a challenge to enroll a passkey
+        with (self.app.test_request_context('/validate/check', method='POST',
+                                            data={"user": self.user.login, "pass": "1"}),
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+            get_nonce.return_value = self.registration_challenge
+            res = self.app.full_dispatch_request()
+            # Authentication is not successful, instead it is a challenge
+            self.assertIn("result", res.json)
+            result = res.json["result"]
+            self.assertIn("status", result)
+            self.assertTrue(result["status"])
+            self.assertIn("value", result)
+            self.assertFalse(result["value"])
+            self.assertIn("authentication", result)
+            self.assertEqual("CHALLENGE", result["authentication"])
+            # Detail
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("multi_challenge", detail)
+            self.assertIn("client_mode", detail)
+            self.assertEqual("webauthn", detail["client_mode"])
+            self.assertIn("message", detail)
+            self.assertTrue(detail["message"])
+            self.assertIn("serial", detail)
+            passkey_serial = detail["serial"]
+            self.assertTrue(passkey_serial)
+            self.assertIn("type", detail)
+            self.assertEqual("passkey", detail["type"])
+            # Multi challenge
+            multi_challenge = detail["multi_challenge"]
+            self.assertEqual(1, len(multi_challenge))
+            challenge = multi_challenge[0]
+            self.assertIn("transaction_id", challenge)
+            transaction_id = challenge["transaction_id"]
+            self.assertTrue(transaction_id)
+            self.assertIn("serial", challenge)
+            self.assertTrue(challenge["serial"])
+            # Passkey registration
+            self.assertIn("passkey_registration", challenge)
+            passkey_registration = challenge["passkey_registration"]
+            self.assertIn("rp", passkey_registration)
+            rp = passkey_registration["rp"]
+            self.assertIn("name", rp)
+            self.assertEqual(self.rp_id, rp["name"])
+            self.assertIn("id", rp)
+            self.assertEqual(self.rp_id, rp["id"])
+            self.assertIn("user", passkey_registration)
+            user = passkey_registration["user"]
+            self.assertIn("id", user)
+            self.assertIn("name", user)
+            self.assertEqual(self.user.login, user["name"])
+            self.assertIn("displayName", user)
+            self.assertEqual(self.user.login, user["displayName"])
+            self.assertIn("challenge", passkey_registration)
+            self.assertEqual(self.registration_challenge, passkey_registration["challenge"])
+            self.assertIn("pubKeyCredParams", passkey_registration)
+            self.assertEqual(3, len(passkey_registration["pubKeyCredParams"]))
+            for param in passkey_registration["pubKeyCredParams"]:
+                self.assertIn("type", param)
+                self.assertEqual("public-key", param["type"])
+                self.assertIn("alg", param)
+                self.assertIn(param["alg"], [-7, -37, -257])
+            self.assertIn("timeout", passkey_registration)
+            self.assertIn("excludeCredentials", passkey_registration)
+            self.assertEqual(0, len(passkey_registration["excludeCredentials"]))
+            self.assertIn("authenticatorSelection", passkey_registration)
+            authenticator_selection = passkey_registration["authenticatorSelection"]
+            self.assertIn("residentKey", authenticator_selection)
+            self.assertEqual("required", authenticator_selection["residentKey"])
+            self.assertIn("requireResidentKey", authenticator_selection)
+            self.assertTrue(authenticator_selection["requireResidentKey"])
+            self.assertIn("userVerification", authenticator_selection)
+            self.assertEqual("preferred", authenticator_selection["userVerification"])
+            self.assertIn("attestation", passkey_registration)
+            self.assertEqual("none", passkey_registration["attestation"])
+
+        # Answer the challenge
+        data = {
+            "attestationObject": self.registration_attestation,
+            "clientDataJSON": self.registration_client_data,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
+            "authenticatorAttachment": self.authenticator_attachment,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            "transaction_id": transaction_id,
+            "type": "passkey",
+            "user": self.user.login,
+            "realm": self.user.realm,
+            "serial": passkey_serial
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+            #response looks like this {'detail': {'message': 'Found matching challenge', 'serial': 'PIPK00008E1B', 'threadid': 133541956595840, 'username': 'hans'}, 'id': 2, 'jsonrpc': '2.0', 'result': {'authentication': 'ACCEPT', 'status': True, 'value': True}, 'time': 1736768141.2746646, 'version': 'privacyIDEA 3.10.dev1', 'versionnumber': '3.10.dev1', 'signature': 'rsa_sha256_pss:'}
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("message", detail)
+            self.assertTrue(detail["message"])
+            self.assertIn("username", detail)
+            self.assertEqual(self.user.login, detail["username"])
+            self.assertIn("serial", detail)
+            self.assertEqual(passkey_serial, detail["serial"])
+            self.assertEqual("ACCEPT", res.json["result"]["authentication"])
+
+
+        remove_token(spass_token.get_serial())
+        remove_token(passkey_serial)

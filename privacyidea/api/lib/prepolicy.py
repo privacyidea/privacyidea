@@ -2135,7 +2135,7 @@ def fido2_enroll(request, action):
                            else None)
     if passkey_attestation:
         request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
-
+    request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     return True
 
 

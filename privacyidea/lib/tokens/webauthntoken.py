@@ -824,19 +824,17 @@ class WebAuthnTokenClass(TokenClass):
             except ParameterError:
                 raise ValueError("The ORIGIN HTTP header must be included when enrolling a new WebAuthn token.")
 
-            challengeobject_list = [
-                challengeobject
-                for challengeobject in get_challenges(serial=serial,
-                                                      transaction_id=transaction_id)
-                if challengeobject.is_valid()
+            challenges = [
+                challenge
+                for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
+                if challenge.is_valid()
             ]
 
             # Since we are still enrolling the token, there should be exactly one challenge.
-            if not len(challengeobject_list):
-                raise EnrollmentError(
-                    "The enrollment challenge does not exist or has timed out for {0!s}".format(serial))
-            challengeobject = challengeobject_list[0]
-            challenge = binascii.unhexlify(challengeobject.challenge)
+            if not len(challenges):
+                raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
+            challenge = challenges[0]
+            challenge_nonce = binascii.unhexlify(challenge.challenge)
 
             # This does the heavy lifting.
             #
@@ -854,7 +852,7 @@ class WebAuthnTokenClass(TokenClass):
                             if registration_client_extensions
                             else None
                     },
-                    challenge=webauthn_b64_encode(challenge),
+                    challenge=webauthn_b64_encode(challenge_nonce),
                     attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
                     trust_anchor_dir=get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR),
                     uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
@@ -864,21 +862,16 @@ class WebAuthnTokenClass(TokenClass):
                     token.get_serial() != self.get_serial()
                 ])
             except Exception as e:
-                log.warning('Enrollment of {0!s} token failed: '
-                            '{1!s}!'.format(self.get_class_type(), e))
-                raise EnrollmentError("Could not enroll {0!s} token!".format(self.get_class_type()))
+                log.warning(f"Enrollment of {self.get_class_type()} token failed: {e}!")
+                raise EnrollmentError(f"Could not enroll {self.get_class_type()} token!")
 
             self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
             self.set_otp_count(webauthn_credential.sign_count)
             self.add_tokeninfo(FIDO2TokenInfo.PUB_KEY,
                                hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)))
-            self.add_tokeninfo(FIDO2TokenInfo.ORIGIN,
-                               webauthn_credential.origin)
-            self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_LEVEL,
-                               webauthn_credential.attestation_level)
-
-            self.add_tokeninfo(FIDO2TokenInfo.AAGUID,
-                               hexlify_and_unicode(webauthn_credential.aaguid))
+            self.add_tokeninfo(FIDO2TokenInfo.ORIGIN, webauthn_credential.origin)
+            self.add_tokeninfo(FIDO2TokenInfo.ATTESTATION_LEVEL, webauthn_credential.attestation_level)
+            self.add_tokeninfo(FIDO2TokenInfo.AAGUID, hexlify_and_unicode(webauthn_credential.aaguid))
 
             # Add attestation info.
             if webauthn_credential.attestation_cert:
@@ -900,8 +893,8 @@ class WebAuthnTokenClass(TokenClass):
 
             # Delete all challenges. We are still in enrollment, so there
             # *should* be only one, but it can't hurt to be thorough here.
-            for challengeobject in challengeobject_list:
-                challengeobject.delete()
+            for challenge in challenges:
+                challenge.delete()
             self.challenge_janitor()
             # Reset clientwait rollout_state
             self.token.rollout_state = ""
@@ -969,23 +962,13 @@ class WebAuthnTokenClass(TokenClass):
                 user_id=self.token.serial,
                 user_name=user.login,
                 user_display_name=str(user),
-                timeout=getParam(params,
-                                 FIDO2PolicyAction.TIMEOUT,
-                                 required),
-                attestation=getParam(params,
-                                     FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM,
-                                     required),
-                user_verification=getParam(params,
-                                           FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                                           required),
-                public_key_credential_algorithms=getParam(params,
-                                                          FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                timeout=getParam(params, FIDO2PolicyAction.TIMEOUT, required),
+                attestation=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM, required),
+                user_verification=getParam(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, required),
+                public_key_credential_algorithms=getParam(params, FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                           required),
-                authenticator_attachment=getParam(params,
-                                                  FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT,
-                                                  optional),
-                authenticator_selection_list=getParam(params,
-                                                      FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+                authenticator_attachment=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT, optional),
+                authenticator_selection_list=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                                                       optional),
                 credential_ids=credential_ids
             ).registration_dict

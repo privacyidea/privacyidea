@@ -666,21 +666,19 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             log.debug("Do the 2nd step of the enrollment.")
             try:
-                token_obj = get_one_token(serial=serial,
-                                          tokentype="push",
-                                          rollout_state=ROLLOUTSTATE.CLIENTWAIT)
-                token_obj.update(request_data)
+                token = get_one_token(serial=serial, tokentype="push", rollout_state=ROLLOUTSTATE.CLIENTWAIT)
+                token.update(request_data)
                 # in case of validate/check enrollment
-                chals = get_challenges(serial=serial)
-                if chals and chals[0].is_valid() and chals[0].get_session() == CHALLENGE_SESSION.ENROLLMENT:
-                    chals[0].set_otp_status(True)
-                    chals[0].save()
+                challenges = get_challenges(serial=serial)
+                if (challenges and challenges[0].is_valid()
+                        and challenges[0].get_session() == CHALLENGE_SESSION.ENROLLMENT):
+                    challenges[0].set_otp_status(True)
+                    challenges[0].save()
             except ResourceNotFoundError:
-                raise ResourceNotFoundError("No token with this serial number "
-                                            "in the rollout state 'clientwait'.")
+                raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
             init_detail_dict = request_data
 
-            details = token_obj.get_init_detail(init_detail_dict)
+            details = token.get_init_detail(init_detail_dict)
             result = True
         elif "signature" in request_data and "new_fb_token" not in request_data:
             log.debug("Handling the authentication response from the smartphone.")
@@ -688,11 +686,8 @@ class PushTokenClass(TokenClass):
             decline = is_true(getParam(request_data, "decline", default=False))
             presence_answer = getParam(request_data, "presence_answer", optional=True)
 
-            # Get the token_obj for the given serial:
-            token_obj = get_one_token(serial=serial, tokentype="push")
-            pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-            # Do the 2nd step of the authentication
-            # Find valid challenges
+            token = get_one_token(serial=serial, tokentype="push")
+            public_key = _build_verify_object(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             challenges = get_challenges(serial=serial)
 
             if challenges:
@@ -705,7 +700,7 @@ class PushTokenClass(TokenClass):
                     if presence_answer:
                         sign_data += f"|{presence_answer}"
                     try:
-                        pubkey_obj.verify(b32decode(signature),
+                        public_key.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
@@ -733,9 +728,9 @@ class PushTokenClass(TokenClass):
             cls._check_timestamp_in_range(timestamp, UPDATE_FB_TOKEN_WINDOW)
             try:
                 tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
-                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+                public_key = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
                 sign_data = "{new_fb_token}|{serial}|{timestamp}".format(**request_data)
-                pubkey_obj.verify(b32decode(signature),
+                public_key.verify(b32decode(signature),
                                   sign_data.encode("utf8"),
                                   padding.PKCS1v15(),
                                   hashes.SHA256())
