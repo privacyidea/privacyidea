@@ -316,9 +316,9 @@ class TokenClass(object):
                     # The token is assigned, but the username does not resolve
                     orphaned = True
             except Exception:
-                # If any other resolving error occurs, we also assume the
+                # If any other resolving error occurs, we do not assume the
                 # token to be orphaned
-                orphaned = True
+                orphaned = False
         return orphaned
 
     def get_user_displayname(self):
