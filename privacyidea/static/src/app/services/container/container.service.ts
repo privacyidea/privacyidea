@@ -1,16 +1,16 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable, throwError} from 'rxjs';
+import {forkJoin, Observable, of, switchMap, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {LocalService} from '../local/local.service';
 import {Sort} from '@angular/material/sort';
 import {TableUtilsService} from '../table-utils/table-utils.service';
+import {TokenService} from '../token/token.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContainerService {
-  private containerBaseUrl = 'http://127.0.0.1:5000/container/';
   apiFilter = [
     'container_serial',
     'type',
@@ -19,10 +19,12 @@ export class ContainerService {
   advancedApiFilter = [
     'token_serial'
   ];
+  private containerBaseUrl = 'http://127.0.0.1:5000/container/';
 
   constructor(private http: HttpClient,
               private localService: LocalService,
-              private tableUtilsService: TableUtilsService) {
+              private tableUtilsService: TableUtilsService,
+              private tokenService: TokenService) {
   }
 
   getContainerData(page?: number, pageSize?: number, sort?: Sort, filterValue?: string): Observable<any> {
@@ -176,5 +178,43 @@ export class ContainerService {
     return this.http.post(`${this.containerBaseUrl}${container_serial}/remove`, {
       serial: token_serial
     }, {headers})
+  }
+
+  toggleAll(container_serial: string, action: string): Observable<any> {
+    return this.getContainerDetails(container_serial).pipe(
+      map(data => {
+        if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+          console.warn('toggleActivateAll() -> no valid tokens array found in data:', data);
+          return [];
+        }
+        if (action === 'activate') {
+          return data.result.value.containers[0].tokens.filter((token: any) => !token.active);
+        } else if (action === 'deactivate') {
+          return data.result.value.containers[0].tokens.filter((token: any) => token.active);
+        } else {
+          return data.result.value.containers[0].tokens.map((token: any) => token.serial);
+        }
+      }),
+
+      switchMap(tokensForAction => {
+        if (tokensForAction.length === 0) {
+          console.warn('toggleActivateAll() -> No tokens for action. Returning []');
+          return of([]);
+        }
+        if (action === 'activate' || action === 'deactivate') {
+          return forkJoin(
+            tokensForAction.map((token: { serial: string; active: boolean }) =>
+              this.tokenService.toggleActive(token.serial, token.active)
+            )
+          );
+        } else if (action === 'remove') {
+          const headers = this.localService.getHeaders();
+          return this.http.post(`${this.containerBaseUrl}${container_serial}/removeall`, {
+            serial: tokensForAction.join(','),
+          }, {headers});
+        }
+        throw new Error(`Unsupported action: ${action}`);
+      }),
+    );
   }
 }

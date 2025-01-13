@@ -29,9 +29,30 @@
         <mat-list-item>
           <button (click)="toggleActive()" [ngClass]="{'card-button-delete':
           states().includes('active'),
-          'card-button-activate': !states().includes('active')}" color="alert" mat-flat-button>
+          'card-button-activate': !states().includes('active')}" mat-flat-button>
             <mat-icon>{{ states().includes('active') ? 'auto_delete' : 'play_circle' }}</mat-icon>
             {{ states().includes('active') ? 'Deactivate' : 'Activate' }}
+          </button>
+        </mat-list-item>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <mat-list-item>
+          <button (click)="toggleAll('activate')" class="card-button-activate" mat-flat-button>
+            <mat-icon>playlist_play</mat-icon>
+            {{ 'Activate all Token' }}
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button (click)="toggleAll('deactivate')" class="card-button-delete" mat-flat-button>
+            <mat-icon>playlist_remove</mat-icon>
+            {{ 'Deactivate all Token' }}
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button (click)="toggleAll('remove')" class="card-button-delete" mat-flat-button>
+            <mat-icon>delete_sweep</mat-icon>
+            {{ 'Remove all Token' }}
           </button>
         </mat-list-item>
       }

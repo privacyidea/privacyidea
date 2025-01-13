@@ -25,7 +25,7 @@ import {ContainerService} from '../../../../services/container/container.service
 })
 export class ContainerTabComponent {
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>
+  @Input() container_serial!: WritableSignal<string>
   @Input() states!: WritableSignal<string[]>
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
 
@@ -33,14 +33,25 @@ export class ContainerTabComponent {
   }
 
   toggleActive(): void {
-    this.containerService.toggleActive(this.serial(), this.states()).pipe(
-      switchMap(() => this.containerService.getContainerDetails(this.serial()))
+    this.containerService.toggleActive(this.container_serial(), this.states()).pipe(
+      switchMap(() => this.containerService.getContainerDetails(this.container_serial()))
     ).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
         console.error('Failed to toggle active', error);
+      }
+    });
+  }
+
+  toggleAll(action: string) {
+    this.containerService.toggleAll(this.container_serial(), action).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to activate all', error);
       }
     });
   }

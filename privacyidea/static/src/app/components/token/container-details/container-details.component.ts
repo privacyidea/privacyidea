@@ -328,6 +328,9 @@ export class ContainerDetailsComponent {
 
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
+    if (this.showOnlyTokenNotInContainer()) {
+      this.filterValue = this.filterValue + ' container_serial:';
+    }
     this.pageIndex = 0;
     this.fetchTokenData()
   }
