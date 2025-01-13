@@ -1,5 +1,6 @@
 <mat-card [ngClass]="{'card-margin-pad':
-!overflowService.isOverflowing('.token-layout', 1880)}" appearance="outlined">
+!overflowService.isOverflowing('.token-layout',
+    containerIsSelected() ? 1580 : 1880)}" appearance="outlined">
   <mat-card-content>
     <mat-tab-group
       (selectedTabChange)="onTabChange($event)"
@@ -26,8 +27,9 @@
           <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [states]="states" [refreshContainerDetails]="refreshContainerDetails"
-                             [container_serial]="serial" [containerIsSelected]="containerIsSelected">
+          <app-container-tab [containerIsSelected]="containerIsSelected" [container_serial]="serial"
+                             [refreshContainerDetails]="refreshContainerDetails"
+                             [states]="states">
           </app-container-tab>
         </ng-template>
       </mat-tab>

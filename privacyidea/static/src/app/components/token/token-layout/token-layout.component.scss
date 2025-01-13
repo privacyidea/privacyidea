@@ -5,6 +5,7 @@ $margin-bottom-main: 6rem;
 
 .token-layout {
   display: flex;
+  min-height: 88vh;
 }
 
 .token-drawer {
@@ -31,7 +32,6 @@ main {
 }
 
 .mat-drawer-content {
-  display: flex;
   background: var(--background);
 }
 
@@ -41,12 +41,16 @@ main {
   align-items: center;
 }
 
+.drawer-button-div {
+  display: flex;
+  margin-top: 18rem;
+  height: 100%;
+}
+
 .drawer-content-div {
   display: flex;
-  align-items: center;
   flex-direction: row;
   gap: 20px;
-  overflow: scroll;
 }
 
 .margin-right-1 {

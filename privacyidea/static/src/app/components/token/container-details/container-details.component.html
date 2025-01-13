@@ -4,7 +4,8 @@
       <h3>Details for Container: </h3>
       <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
     </div>
-    <div class="details-flex-layout">
+    <div [ngClass]="[
+        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']" class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
                class="details-table border-bottom-none" mat-table>
@@ -157,12 +158,19 @@
                                       [refreshDetails]="refreshContainerDetails"
                                       [serial]="serial"></app-container-details-info>
         </div>
+        @if (overflowService.isOverflowing('.token-layout', 1310)) {
+          <br/>
+          <mat-divider></mat-divider>
+          <br/>
+        }
       </div>
-      <div class="flex-column">
+      <div [ngClass]="[
+        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-2']"
+            class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
             <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer">
-             <span> Only display tokens not in a container </span>
+              <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br/>
                 <span> Note: Adding a token removes it from</span>
@@ -171,11 +179,11 @@
               }
             </mat-checkbox>
           </section>
-        <mat-paginator (page)="onPageChanged($event)" [hidePageSize]="true"
-                       [length]="this.length" [pageIndex]="pageIndex"
-                       [pageSize]="pageSize"
-                       [pageSizeOptions]="this.pageSizeOptions" aria-label="Select page">
-        </mat-paginator>
+          <mat-paginator (page)="onPageChanged($event)" [hidePageSize]="true"
+                         [length]="this.length" [pageIndex]="pageIndex"
+                         [pageSizeOptions]="this.pageSizeOptions"
+                         [pageSize]="pageSize" aria-label="Select page">
+          </mat-paginator>
         </div>
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>
@@ -197,9 +205,10 @@
             }
           </mat-autocomplete>
         </mat-form-field>
-        <mat-divider class="margin-left-2"></mat-divider>
+        <mat-divider></mat-divider>
         <app-container-details-token-table [dataSource]="containerTokenData"
-                                           [refreshContainerDetails]="refreshContainerDetails" [serial]="serial">
+                                           [refreshContainerDetails]="refreshContainerDetails"
+                                           [serial]="serial">
         </app-container-details-token-table>
       </div>
     </div>
