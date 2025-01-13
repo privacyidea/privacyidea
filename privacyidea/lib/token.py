@@ -2890,7 +2890,7 @@ def get_fido2_token_by_transaction_id(transaction_id: str):
     if not token:
         log.info(f"Token with serial {challenge.serial} not found.")
         return None
-    if not token.tokentype in ["webauthn", "passkey"]:
+    if token.tokentype not in ["webauthn", "passkey"]:
         log.info(f"Token with serial {challenge.serial} is not a FIDO2 token, but {token.serial}.")
         return None
     return create_tokenclass_object(token)
