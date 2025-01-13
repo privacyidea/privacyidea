@@ -3736,6 +3736,8 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
+            # This works since we don't have the "replace" option set, otherwise this
+            # would lead to a json decode error since the data is not a valid JSON string
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
@@ -3899,43 +3901,31 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_error(self, mock_post):
+    def test_08_replace_function_broken_json(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = 'response'
 
-                init_token({"serial": "SPASS01", "type": "spass"},
-                           User("cornelius", self.realm1))
                 g = FakeFlaskG()
-                builder = EnvironBuilder(method='POST',
-                                         data={'serial': "SPASS01"},
-                                         headers={})
-
-                env = builder.get_environ()
-                env["REMOTE_ADDR"] = "10.0.0.1"
-                g.client_ip = env["REMOTE_ADDR"]
-                req = Request(env)
-                req.all_data = {"serial": "SPASS01"}
-                req.User = User("cornelius", self.realm1)
+                g.logged_in_user = {"username": "cornelius", "realm": self.realm1}
 
                 t_handler = WebHookHandler()
                 options = {"g": g,
-                           "request": req,
                            "handler_def": {
-                               "options": {"URL": 'https://test.com',
+                               "options": {"URL": 'https://test.example',
                                            "content_type": CONTENT_TYPE.JSON,
                                            "replace": True,
-                                           "data": '{"{token_serial}": "{token_owner} {unknown_tag}"}'
+                                           "data": 'invalid json string'
                                            }
                            }
                            }
                 res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
-                                         " Please check the webhooks data option.")
+                mock_log.assert_any_call("Unable to parse JSON string 'invalid json string': "
+                                         "Expecting value: line 1 column 1 (char 0)")
                 text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                    'https://test.com', '{"{token_serial}": "{token_owner} {unknown_tag}"}')
+                    'https://test.example', 'invalid json string')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
@@ -3967,7 +3957,7 @@ class WebhookTestCase(MyTestCase):
                                "options": {"URL": 'https://test.com',
                                            "content_type": CONTENT_TYPE.JSON,
                                            "replace": True,
-                                           "data": 'The token serial is {token_seril}'
+                                           "data": '{"text": "The token serial is {token_seril}"}'
                                            }
                            }
                            }
@@ -3975,7 +3965,7 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
                                          " Please check the webhooks data option.")
-                text = ('A webhook is called at \'https://test.com\' with data: '
-                        '{"text": "The token serial is {token_seril}"}')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'https://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
