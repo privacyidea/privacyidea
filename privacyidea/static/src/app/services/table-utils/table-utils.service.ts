@@ -195,7 +195,7 @@ export class TableUtilsService {
     return 'table-scrollable-container';
   }
 
-  getDisplayTextForKey(key: string, value: any, revoked: boolean): string {
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
     if (value === '') {
       return '';
     }
@@ -220,8 +220,21 @@ export class TableUtilsService {
   getSpanClassForState(state: string) {
     if (state === 'active') {
       return 'highlight-true';
-    } else {
+    } else if (state === 'disabled') {
       return 'highlight-false';
+    } else {
+      return '';
+    }
+  }
+
+  getDisplayTextForState(state: string) {
+    if (state === 'active') {
+      return 'active';
+    } else if (state === 'disabled') {
+      return 'deactivated';
+    } else {
+      return state;
     }
   }
 }
+

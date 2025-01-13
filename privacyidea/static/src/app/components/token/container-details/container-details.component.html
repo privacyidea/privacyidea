@@ -22,7 +22,8 @@
                 @case ("states") {
                   @for (state of element.value; track state; let idx = $index) {
                     <span class="font-14"
-                          [ngClass]="[tableUtilsService.getSpanClassForState(state)]"> {{ state }}
+                          [ngClass]="[tableUtilsService.getSpanClassForState(state)]">
+                      {{ tableUtilsService.getDisplayTextForState(state) }}
                     </span>
                   }
                 }
@@ -169,7 +170,8 @@
             class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
-            <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer">
+            <mat-checkbox [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}"
+                          [(ngModel)]="showOnlyTokenNotInContainer">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br/>
@@ -208,7 +210,7 @@
         <mat-divider></mat-divider>
         <app-container-details-token-table [dataSource]="containerTokenData"
                                            [refreshContainerDetails]="refreshContainerDetails"
-                                           [serial]="serial">
+                                           [container_serial]="serial">
         </app-container-details-token-table>
       </div>
     </div>

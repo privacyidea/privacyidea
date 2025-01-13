@@ -15,6 +15,7 @@ import {TableUtilsService} from '../../../services/table-utils/table-utils.servi
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
   {key: 'type', label: 'Type'},
+  {key: 'states', label: 'Status'},
   {key: 'description', label: 'Description'},
   {key: 'users', label: 'User'},
   {key: 'user_realm', label: 'Realm'},

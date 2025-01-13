@@ -11,14 +11,14 @@ import {ContainerService} from '../../../../services/container/container.service
 @Component({
   selector: 'app-container-tab',
   standalone: true,
-    imports: [
-        MatIcon,
-        MatList,
-        MatListItem,
-        MatButton,
-        NgClass,
-        MatDivider
-    ],
+  imports: [
+    MatIcon,
+    MatList,
+    MatListItem,
+    MatButton,
+    NgClass,
+    MatDivider
+  ],
   templateUrl: './container-tab.component.html',
   styleUrl: './container-tab.component.scss',
   animations: [tabToggleState]
@@ -54,5 +54,24 @@ export class ContainerTabComponent {
         console.error('Failed to activate all', error);
       }
     });
+  }
+
+  deleteContainer() {
+    this.containerService.deleteContainer(this.container_serial()).subscribe({
+      next: () => {
+        this.containerIsSelected.set(false);
+      },
+      error: error => {
+        console.error('Failed to delete container', error);
+      }
+    });
+  }
+
+  lostContainer() {
+    // TODO: Missing API endpoint
+  }
+
+  damagedContainer() {
+    // TODO: Missing API endpoint
   }
 }

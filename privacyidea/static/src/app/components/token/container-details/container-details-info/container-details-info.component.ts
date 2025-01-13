@@ -85,8 +85,8 @@ export class ContainerDetailsInfoComponent {
   }
 
   deleteInfo(key: string): void {
+    // TODO Missing API endpoint
     /*
-    TODO
     this.containerService.deleteInfo(this.serial(), key).pipe(
       switchMap(() => {
         const info = this.detailData()

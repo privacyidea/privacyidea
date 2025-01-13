@@ -81,7 +81,13 @@
                 <a attr.aria-label="{{ column.label }} Link" href="#">
                   {{ element[column.key] }}
                 </a>
-              } @else {
+              } @else if (column.key === 'states') {
+                <span
+                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
+                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                </span>
+              }
+              @else {
                 {{ element[column.key] }}
               }
             </div>

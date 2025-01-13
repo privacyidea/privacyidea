@@ -27,11 +27,32 @@
         <mat-divider/>
         <br/>
         <mat-list-item>
+          <button (click)="lostContainer()" class="card-button" mat-flat-button>
+            <mat-icon>remove_red_eye</mat-icon>
+            {{ 'Lost Container' }}
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button (click)="damagedContainer()" class="card-button" mat-flat-button>
+            <mat-icon>broken_image</mat-icon>
+            {{ 'Damaged Container' }}
+          </button>
+        </mat-list-item>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <mat-list-item>
           <button (click)="toggleActive()" [ngClass]="{'card-button-delete':
           states().includes('active'),
           'card-button-activate': !states().includes('active')}" mat-flat-button>
             <mat-icon>{{ states().includes('active') ? 'auto_delete' : 'play_circle' }}</mat-icon>
             {{ states().includes('active') ? 'Deactivate' : 'Activate' }}
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button (click)="deleteContainer()" class="card-button-delete" mat-flat-button>
+            <mat-icon>delete_outlined</mat-icon>
+            {{ 'Delete' }}
           </button>
         </mat-list-item>
         <br/>

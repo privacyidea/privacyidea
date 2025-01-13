@@ -60,7 +60,7 @@ export class ContainerDetailsTokenTableComponent {
   filterValue = '';
   @Input() dataSource!: WritableSignal<any>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>;
+  @Input() container_serial!: WritableSignal<string>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -87,7 +87,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   tokenSelected(serial: string) {
-    this.serial.set(serial);
+    this.container_serial.set(serial);
     this.tokenIsSelected.set(true)
     // TODO fix
   }

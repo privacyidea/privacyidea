@@ -116,7 +116,7 @@
                     <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
                           element.value, maxfail)]">
                       {{
-                        tableUtilsService.getDisplayTextForKey(element.keyMap.key, element.value,
+                        tableUtilsService.getDisplayTextForKeyAndRevoked(element.keyMap.key, element.value,
                           revoked())
                       }}
                     </span>

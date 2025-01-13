@@ -217,4 +217,9 @@ export class ContainerService {
       }),
     );
   }
+
+  deleteContainer(serial: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.delete(`${this.containerBaseUrl}${serial}`, {headers})
+  }
 }

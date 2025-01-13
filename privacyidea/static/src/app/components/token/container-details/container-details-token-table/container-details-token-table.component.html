@@ -50,7 +50,7 @@
       </th>
       <td *matCellDef="let element" aria-label="Remove Button Cell" mat-cell>
         <div class="flex just-center">
-          <button (click)="removeTokenFromContainer(this.serial(), element.serial)" mat-icon-button>
+          <button (click)="removeTokenFromContainer(this.container_serial(), element.serial)" mat-icon-button>
             <mat-icon>delete_outlined</mat-icon>
           </button>
         </div>
