@@ -135,21 +135,21 @@ pi_config() {
 	log_pi_config "=================================="
 	log_pi_config "Resolvers"
 	log_pi_config "---------"
-	call_pi_manage resolver list -v >> "$pi_config"
+	call_pi_manage config resolver list -v >> "$pi_config"
 	log_pi_config "Realms"
 	log_pi_config "------"
-	call_pi_manage realm list >> "$pi_config"
+	call_pi_manage config realm list >> "$pi_config"
 	log_pi_config "Events"
 	log_pi_config "------"
-	call_pi_manage event e_export >> "$pi_config"
+	call_pi_manage config export -t event -f json >> "$pi_config"
 	log_pi_config "Policies"
 	log_pi_config "--------"
-	call_pi_manage policy p_export >> "$pi_config"
+	call_pi_manage config export -t policy -f json >> "$pi_config"
 }
 
 server_config() {
 	# Extract configurations for smtp, privacyIDEA and RADIUS server
-	server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
+	server_config=$(call_pi_manage config export -t smtpserver -t privacyideaserver -t radiusserver -f json)
 
 	log_pi_config
 	log_pi_config "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
@@ -208,9 +208,9 @@ apache_log() {
 			log "============================"
 			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
 			log
-			log "SECTION: httpd SSL_error_log"
+			log "SECTION: httpd SSL_access_log"
 			log "============================"
-			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+			tail -100 /var/log/httpd/ssl_access_log  >> "$tempfile"
 		fi
 		if [ -f /etc/httpd/conf/httpd.conf ] && [ -f /etc/httpd/conf.d/privacyidea.conf ]; then
 			log

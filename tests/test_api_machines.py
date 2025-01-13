@@ -237,7 +237,6 @@ class APIMachinesTestCase(MyApiTestCase):
 
     def test_04_set_options_by_mtid(self):
         serial = "S1"
-        mtid = 0
         # current number of attached applications.
         token_obj = get_tokens(serial=serial)[0]
         num_applications = len(token_obj.token.machine_list)
@@ -581,7 +580,7 @@ class APIMachinesTestCase(MyApiTestCase):
                              "93235fc7d1d444d0ec014ea9eafcc44fc65b73eb")
 
     def test_12_auth_items_offline(self):
-        #create HOTP token for offline usage
+        # Create HOTP token for offline usage
         self.setUp_user_realms()
         token_obj = init_token({"serial": self.serial4, "type": "hotp",
                                 "otpkey": OTPKEY,
@@ -610,13 +609,13 @@ class APIMachinesTestCase(MyApiTestCase):
             response = offline_auth_item.get("response")
             self.assertEqual(len(response), 17)
             self.assertEqual(token_obj.token.count, 17)
-            self.assertTrue(passlib.hash.\
+            self.assertTrue(passlib.hash.
                             pbkdf2_sha512.verify("755224",
                                                  response.get('0')))
 
-        self.assertEqual(token_obj.check_otp('187581'), -1) # count = 16
+        self.assertEqual(token_obj.check_otp('187581'), -1)  # count = 16
         with self.app.test_request_context(
-                '/validate/check?user=cornelius&pass=test447589', # count = 17
+                '/validate/check?user=cornelius&pass=test447589',  # count = 17
                 environ_base={'REMOTE_ADDR': '192.168.0.1'},
                 method='GET'):
             res = self.app.full_dispatch_request()
@@ -630,15 +629,15 @@ class APIMachinesTestCase(MyApiTestCase):
             # check, if we got 17 otp values
             response = offline_auth_item.get("response")
             self.assertEqual(len(response), 17)
-            self.assertEqual(token_obj.token.count, 35) # 17 + 17 + 1, because we consumed 447589
+            self.assertEqual(token_obj.token.count, 35)  # 17 + 17 + 1, because we consumed 447589
             self.assertTrue(passlib.hash.
-                            pbkdf2_sha512.verify("test903435", # count = 18
+                            pbkdf2_sha512.verify("test903435",  # count = 18
                                                  response.get('18')))
             self.assertTrue(passlib.hash.
-                            pbkdf2_sha512.verify("test749439", # count = 34
+                            pbkdf2_sha512.verify("test749439",  # count = 34
                                                  response.get('34')))
-        self.assertEqual(token_obj.check_otp('747439'), -1) # count = 34
-        self.assertEqual(token_obj.check_otp('037211'), 35) # count = 35
+        self.assertEqual(token_obj.check_otp('747439'), -1)  # count = 34
+        self.assertEqual(token_obj.check_otp('037211'), 35)  # count = 35
 
     def test_20_detach_ssh_key_any_token(self):
         # we could also attach an SSH key to "any machine".
@@ -765,3 +764,46 @@ class APIMachinesTestCase(MyApiTestCase):
         token_obj = get_tokens(serial=serial)[0]
         self.assertEqual(len(token_obj.token.machine_list), 0)
         remove_token(serial)
+
+    def test_35_delete_offline_token(self):
+        # Delete an offline token with machine token options (Issue #4136)
+        serial = "hotp01"
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial})
+        # Mark this token as "offline"
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"machineid": 0,
+                                                 "serial": serial,
+                                                 "application": "offline",
+                                                 "rounds": 25,
+                                                 "count": 15,
+                                                 "resolver": ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+            self.assertGreaterEqual(result["value"], 1, result)
+
+        # Check if the options were set.
+        with self.app.test_request_context('/machine/token', method="GET",
+                                           query_string={"serial": serial},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertEqual("offline", result["value"][0]["application"], result)
+            self.assertEqual("15", result["value"][0]["options"]["count"], result)
+            self.assertEqual("25", result["value"][0]["options"]["rounds"], result)
+
+        # Delete the token
+        with self.app.test_request_context(f"/token/{serial}", method="DELETE",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+            self.assertEqual(1, result["value"], result)
+
+        # Check that the token was deleted
+        self.assertFalse(get_tokens(serial=serial))

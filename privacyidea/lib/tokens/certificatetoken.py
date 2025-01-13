@@ -33,6 +33,8 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 
+from cryptography.hazmat.primitives import serialization
+
 from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_string
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.log import log_with
@@ -440,7 +442,14 @@ class CertificateTokenClass(TokenClass):
         if request:
             if not spkac:
                 # We only do the whole attestation checking in case we have no SPKAC
+                request = request.replace("\n", "")
+                if not request.startswith("-----BEGIN CERTIFICATE REQUEST-----"):
+                    request = "-----BEGIN CERTIFICATE REQUEST-----" + request
+                if not request.endswith("-----END CERTIFICATE REQUEST-----"):
+                    request = request + "-----END CERTIFICATE REQUEST-----"
                 request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
+                # Restore the request string with newlines
+                request = request_csr.public_bytes(encoding=serialization.Encoding.PEM).decode('utf-8')
                 if not request_csr.is_signature_valid:
                     raise privacyIDEAError("request has invalid signature.")
                 # If a request is sent, we can have an attestation certificate
@@ -466,6 +475,7 @@ class CertificateTokenClass(TokenClass):
                         log.warning("Failed to verify certificate chain of attestation certificate.")
                         if verify_attestation:
                             raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
+
 
             # During the initialization process, we need to create the certificate
             request_id, x509object = cacon.sign_request(request,
