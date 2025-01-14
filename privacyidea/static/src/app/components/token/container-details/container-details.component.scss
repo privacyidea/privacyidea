@@ -77,7 +77,7 @@ h3 {
 }
 
 ::ng-deep {
-  #mat-autocomplete-0 .mat-mdc-option .mdc-list-item__primary-text {
+  div.mat-mdc-autocomplete-panel .mat-mdc-option .mdc-list-item__primary-text {
     height: 28px;
     display: flex;
     align-items: center;
@@ -85,7 +85,7 @@ h3 {
     padding: 10px;
   }
 
-  #mat-autocomplete-0 {
+  .cdk-overlay-container div.mat-mdc-autocomplete-panel {
     max-height: 516px;
   }
 }
