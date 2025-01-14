@@ -17,8 +17,9 @@ import {TokenService} from '../../../../services/token/token.service';
 import {TableUtilsService} from '../../../../services/table-utils/table-utils.service';
 import {NgClass} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
-import {MatIconButton} from '@angular/material/button';
+import {MatButton, MatIconButton} from '@angular/material/button';
 import {ContainerService} from '../../../../services/container/container.service';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -46,6 +47,7 @@ const columnsKeyMap = [
     MatSortModule,
     MatIcon,
     MatIconButton,
+    MatButton,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss'
@@ -68,9 +70,10 @@ export class ContainerDetailsTokenTableComponent {
 
   constructor(private router: Router,
               private authService: AuthService,
+              private containerService: ContainerService,
               protected tokenService: TokenService,
               protected tableUtilsService: TableUtilsService,
-              private containerService: ContainerService) {
+              protected overflowService: OverflowService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
     }
@@ -116,6 +119,17 @@ export class ContainerDetailsTokenTableComponent {
       },
       error: error => {
         console.error('Failed to toggle active', error);
+      }
+    });
+  }
+
+  toggleAll(action: string) {
+    this.containerService.toggleAll(this.container_serial(), action).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to activate all', error);
       }
     });
   }

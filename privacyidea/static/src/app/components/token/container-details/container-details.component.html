@@ -5,7 +5,8 @@
       <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
     </div>
     <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']" class="details-flex-layout">
+        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
+         class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
                class="details-table border-bottom-none" mat-table>
@@ -166,7 +167,7 @@
         }
       </div>
       <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-2']"
+        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
             class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
@@ -195,7 +196,7 @@
                  placeholder="Example query: 'type: hotp serial: 123'">
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenOptions(); track option) {
-              <mat-option (click)="addTokenToContainer(option)">
+              <mat-option class="token-option" (click)="addTokenToContainer(option)">
                 <span class="token-option-span"> {{ option['serial'] }} </span>
                 <span class="token-option-span"> {{ option['tokentype'] }} </span>
                 <span class="token-option-span" [ngClass]="option['active'] ?
@@ -207,7 +208,7 @@
             }
           </mat-autocomplete>
         </mat-form-field>
-        <mat-divider></mat-divider>
+        <mat-divider class="width-36"></mat-divider>
         <app-container-details-token-table [dataSource]="containerTokenData"
                                            [refreshContainerDetails]="refreshContainerDetails"
                                            [container_serial]="serial">

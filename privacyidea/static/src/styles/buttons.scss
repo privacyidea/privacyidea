@@ -85,7 +85,6 @@ $header-bg: white;
 }
 
 .card-button-delete {
-  margin-right: 5px;
   @include button-base($button-height, $button-width, $button-border-radius, var(--background-red), var(--box-shadow-red));
 
   &.activ,

@@ -45,17 +45,6 @@ export class ContainerTabComponent {
     });
   }
 
-  toggleAll(action: string) {
-    this.containerService.toggleAll(this.container_serial(), action).subscribe({
-      next: () => {
-        this.refreshContainerDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to activate all', error);
-      }
-    });
-  }
-
   deleteContainer() {
     this.containerService.deleteContainer(this.container_serial()).subscribe({
       next: () => {

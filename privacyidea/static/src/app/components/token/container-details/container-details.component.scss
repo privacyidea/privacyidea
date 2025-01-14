@@ -49,6 +49,11 @@ h3 {
 
 .add-token {
   margin-bottom: 1rem;
+  width: 36rem;
+}
+
+.token-option {
+  border: 1px solid #dedcdf;
 }
 
 .token-option-span {
@@ -67,10 +72,20 @@ h3 {
   padding-top: 10px;
 }
 
+.width-36 {
+  width: 36rem;
+}
+
 ::ng-deep {
-  .mat-mdc-option .mdc-list-item__primary-text {
+  #mat-autocomplete-0 .mat-mdc-option .mdc-list-item__primary-text {
     height: 28px;
     display: flex;
     align-items: center;
+    border-left: 2px solid #dedcdf;
+    padding: 10px;
+  }
+
+  #mat-autocomplete-0 {
+    max-height: 516px;
   }
 }

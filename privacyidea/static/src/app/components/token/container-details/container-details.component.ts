@@ -149,8 +149,8 @@ export class ContainerDetailsComponent {
   userRealm: string = '';
   length = 0;
   pageIndex = 0;
-  pageSize = 5;
-  pageSizeOptions = [5, 10, 15];
+  pageSize = 10;
+  pageSizeOptions = [10];
   filterValue = '';
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

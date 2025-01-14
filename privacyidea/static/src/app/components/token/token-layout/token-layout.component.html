@@ -1,6 +1,6 @@
 <div aria-label="Token Layout" class="token-layout">
   @if (!overflowService.isOverflowing('.token-layout',
-    containerIsSelected() ? 1580 : 1880)) {
+    1880)) {
     <app-token-card class="margin-right-1"
                     [active]="tokenIsActive" [states]="states"
                     [containerIsSelected]="containerIsSelected"
@@ -14,7 +14,7 @@
   }
   <mat-drawer-container>
     @if (overflowService.isOverflowing('.token-layout',
-      containerIsSelected() ? 1580 : 1880)) {
+      1880)) {
       <mat-drawer #drawer [mode]="'over'" class="token-drawer">
         <app-token-card
           [states]="states" [active]="tokenIsActive"
@@ -31,7 +31,7 @@
     <mat-drawer-content>
       <div class="drawer-content-div">
         @if (overflowService.isOverflowing('.token-layout',
-          containerIsSelected() ? 1580 : 1880)) {
+          1880)) {
           <div class="drawer-button-div">
             <button mat-icon-button (click)="drawer.toggle()" class="drawer-button">
               <mat-icon>keyboard_arrow_right
