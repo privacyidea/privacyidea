@@ -1,43 +1,44 @@
-from flask import Request
-from werkzeug.test import EnvironBuilder
+import json
+import time
+from base64 import b32decode, b32encode
 from datetime import datetime, timedelta
-from pytz import utc
+from threading import Timer
 
-from .base import MyTestCase, FakeFlaskG
+import mock
+import responses
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from flask import Request
+from google.oauth2 import service_account
+from pytz import utc
+from werkzeug.test import EnvironBuilder
+
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
-from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
+                                    LOGINMODE, PolicyClass)
+from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
+from privacyidea.lib.token import get_tokens, remove_token, init_token
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
-from privacyidea.lib.token import get_tokens, remove_token, init_token
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.crypto import geturandom
-from privacyidea.models import Token, Challenge
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
-                                    LOGINMODE, PolicyClass)
+from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
-from privacyidea.lib.error import ConfigAdminError
-from base64 import b32decode, b32encode
-import json
-import responses
-import mock
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from google.oauth2 import service_account
-from threading import Timer
-import time
+from privacyidea.models import Token, Challenge
+from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -74,7 +75,6 @@ def _check_firebase_params(request):
 
 
 class PushTokenTestCase(MyTestCase):
-
     serial1 = "PUSH00001"
 
     server_private_key = rsa.generate_private_key(public_exponent=65537,
@@ -574,7 +574,6 @@ class PushTokenTestCase(MyTestCase):
         delete_policy('push_config')
         remove_token(serial=serial)
 
-
     def _mark_challenge_as_accepted(self):
         # We simply mark all challenges as successfully answered!
         with self.app.test_request_context():
@@ -613,7 +612,6 @@ class PushTokenTestCase(MyTestCase):
                                           '/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
-
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -692,7 +690,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue(res.json['result']['status'])
             self.assertFalse(res.json['result']['value'])
 
-        # Correct signature, wrong challenge
+        # Correct signature for the wrong challenge should result in failure
         wrong_challenge = b32encode_and_unicode(geturandom())
         wrong_sign_data = "{}|{}".format(wrong_challenge, tokenobj.token.serial)
         wrong_signature = b32encode_and_unicode(
@@ -704,17 +702,6 @@ class PushTokenTestCase(MyTestCase):
                                            data={"serial": tokenobj.token.serial,
                                                  "nonce": wrong_challenge,
                                                  "signature": wrong_signature}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.json['result']['status'])
-            self.assertFalse(res.json['result']['value'])
-
-        # Correct signature, empty nonce
-        with self.app.test_request_context('/ttype/push',
-                                           method='POST',
-                                           data={"serial": tokenobj.token.serial,
-                                                 "nonce": "",
-                                                 "signature": signature}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'])
@@ -986,34 +973,46 @@ class PushTokenTestCase(MyTestCase):
 
     @responses.activate
     def test_06b_api_auth_presence(self):
+        """
+        Test that the require-presence option works with multiple push token triggered and also with a different
+        token type triggered as well.
+        """
         self.setUp_user_realms()
-        # create FireBase Service and policies
+        # Create Firebase Service and policies
         set_smsgateway(self.firebase_config_name,
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
-        # create push token
-        tokenobj = self._create_push_token()
+                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
 
-        # set PIN
-        tokenobj.set_pin("pushpin")
-        tokenobj.add_user(User("cornelius", self.realm1))
+        user = User("cornelius", self.realm1)
 
-        # Set a loginmode policy
-        set_policy("webui", scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
-        # Set a policy to require presence
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
-        presence_answer = None
-        challenge = None
+        # Create push token
+        push_token1 = self._create_push_token()
+        push_token2 = self._create_push_token()
+        totp_token = init_token({"type": "totp", "genkey": 1})
+        tokens = [push_token1, push_token2, totp_token]
+        serials = [token.get_serial() for token in tokens]
+
+        # Set the same PINs, so that both get triggered
+        push_token1.set_pin("pushpin")
+        push_token1.add_user(user)
+        push_token2.set_pin("pushpin")
+        push_token2.add_user(user)
+        totp_token.set_pin("pushpin")
+        totp_token.add_user(user)
+
+        # Set policies
+        set_policy("webui", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        set_policy("totp_challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=totp")
+
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
-                        '.from_service_account_file') as mySA:
-            # alternative: side_effect instead of return_value
-            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+                        '.from_service_account_file') as fb_service_account:
+            # Alternative: side_effect instead of return_value
+            fb_service_account.from_json_keyfile_name.return_value = _create_credential_mock()
 
-            # add responses, to simulate the communication to firebase
+            # Add the responses to simulate the communication with firebase
             responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
@@ -1022,36 +1021,42 @@ class PushTokenTestCase(MyTestCase):
                                                method='POST',
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
-                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     # This will be overwritten by pushtoken_disable_wait
                                                      PUSH_ACTION.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
-                        # Get the challenge from the database
+                response_json = res.json
+                self.assertTrue(response_json.get("result").get("value"))
+                self.assertTrue(response_json.get("result").get("status"))
+                self.assertTrue(response_json.get("detail").get("serial") in serials)
+                self.assertIn("transaction_id", response_json.get("detail"))
 
-                jsonresp = res.json
-                self.assertTrue(jsonresp.get("result").get("value"))
-                self.assertTrue(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
-                self.assertIn("transaction_id", jsonresp.get("detail"))
-                transaction_id = jsonresp.get("detail").get("transaction_id")
-                challengeobject_list = get_challenges(serial=tokenobj.token.serial,
-                                                      transaction_id=transaction_id)
-                chal = challengeobject_list[0] # TODO: Why is challenge a string?
-                challenge = chal.challenge
-                presence_answer = chal.get_data().split(',').pop() # The correct answer is always appended to the available options
+                # Three challenges should be triggered, both push challenges with the same message!
+                multi_challenge = response_json.get("detail").get("multi_challenge")
+                self.assertEqual(len(multi_challenge), 3)
+                push_challenges = [c for c in multi_challenge if c.get("type") == "push"]
+                self.assertEqual(len(push_challenges), 2)
+                self.assertEqual(push_challenges[0].get("message"), push_challenges[1].get("message"))
+
+                # Get the challenge from the database
+                transaction_id = response_json.get("detail").get("transaction_id")
+                challenge_messages = [m.strip() for m in response_json.get("detail").get("message").split(",")]
+                challenges = get_challenges(serial=push_token1.token.serial, transaction_id=transaction_id)
+                challenge = challenges[0]
+                # The correct answer is always appended to the available options
+                presence_answer = challenge.get_data().split(',').pop()
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
-                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
+                self.assertTrue(challenge_text in challenge_messages)
 
-        self.assertTrue(presence_answer != None)
+        self.assertTrue(presence_answer is not None)
         self.assertTrue(presence_answer in AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
-        # This is what the smartphone answers.
-        # create the signature:
-        sign_data = f"{challenge}|{tokenobj.token.serial}|{presence_answer}"
+
+        # This is the smartphone answer:
+        # Create the signature
+        sign_data = f"{challenge.challenge}|{push_token1.token.serial}|{presence_answer}"
         signature = b32encode_and_unicode(
-            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256()))
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256()))
 
         # We still cannot log in
         with self.app.test_request_context('/auth',
@@ -1067,7 +1072,7 @@ class PushTokenTestCase(MyTestCase):
         # Answer the challenge
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
-                                           data={"serial": tokenobj.token.serial,
+                                           data={"serial": push_token1.token.serial,
                                                  "nonce": challenge,
                                                  "signature": signature,
                                                  "presence_answer": presence_answer}):
@@ -1087,43 +1092,42 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
 
-        remove_token(tokenobj.get_serial())
+        remove_token(push_token1.get_serial())
+        remove_token(push_token2.get_serial())
+        remove_token(totp_token.get_serial())
         delete_policy("webui")
         delete_policy("push_require_presence")
+        delete_policy("totp_challenge_response")
 
     @responses.activate
     def test_06c_api_auth_presence_numeric(self):
         self.setUp_user_realms()
-        # create FireBase Service and policies
+        # Create Firebase Service and policies
         set_smsgateway(self.firebase_config_name,
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
         set_policy("push_numeric", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=NUMERIC".format(PUSH_ACTION.PRESENCE_OPTIONS))
-        # create push token
-        tokenobj = self._create_push_token()
-        serial = tokenobj.get_serial()
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=NUMERIC")
+        # Create push token
+        token_object = self._create_push_token()
 
-        # set PIN
-        tokenobj.set_pin("pushpin")
-        tokenobj.add_user(User("cornelius", self.realm1))
+        # Set PIN
+        token_object.set_pin("pushpin")
+        token_object.add_user(User("cornelius", self.realm1))
 
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
-        presence_answer = None
-        challenge = None
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
-                        '.from_service_account_file') as mySA:
-            # alternative: side_effect instead of return_value
-            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+                        '.from_service_account_file') as fb_service_account:
+            # Alternative: side_effect instead of return_value
+            fb_service_account.from_json_keyfile_name.return_value = _create_credential_mock()
 
-            # add responses, to simulate the communication to firebase
+            # Add the responses to simulate the communication with firebase
             responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
@@ -1132,36 +1136,34 @@ class PushTokenTestCase(MyTestCase):
                                                method='POST',
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
-                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     # This will be overwritten by pushtoken_disable_wait
                                                      PUSH_ACTION.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
                 # Get the challenge from the database
 
-                jsonresp = res.json
-                self.assertTrue(jsonresp.get("result").get("value"))
-                self.assertTrue(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
-                self.assertIn("transaction_id", jsonresp.get("detail"))
-                transaction_id = jsonresp.get("detail").get("transaction_id")
-                challengeobject_list = get_challenges(serial=tokenobj.token.serial,
-                                                      transaction_id=transaction_id)
-                chal = challengeobject_list[0]  # TODO: Why is challenge a string?
-                challenge = chal.challenge
-                presence_answer = chal.get_data().split(',').pop()  # The correct answer is always appended to the available options
+                response_json = res.json
+                self.assertTrue(response_json.get("result").get("value"))
+                self.assertTrue(response_json.get("result").get("status"))
+                self.assertEqual(response_json.get("detail").get("serial"), token_object.token.serial)
+                self.assertIn("transaction_id", response_json.get("detail"))
+                transaction_id = response_json.get("detail").get("transaction_id")
+                challenges = get_challenges(serial=token_object.token.serial, transaction_id=transaction_id)
+                challenge_object = challenges[0]
+                # The correct answer is always appended to the available options
+                presence_answer = challenge_object.get_data().split(',').pop()
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
-                self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
+                self.assertEqual(response_json.get("detail").get("message"), challenge_text)
 
-        self.assertTrue(presence_answer != None)
+        self.assertTrue(presence_answer is not None)
         self.assertTrue(presence_answer in AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
-        # This is what the smartphone answers.
-        # create the signature:
-        sign_data = f"{challenge}|{tokenobj.token.serial}|{presence_answer}"
+
+        # This is the smartphone answer:
+        # Create the signature
+        sign_data = f"{challenge_object.challenge}|{token_object.token.serial}|{presence_answer}"
         signature = b32encode_and_unicode(
-            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256()))
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256()))
 
         # We still cannot log in
         with self.app.test_request_context('/auth',
@@ -1177,8 +1179,8 @@ class PushTokenTestCase(MyTestCase):
         # Answer the challenge
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
-                                           data={"serial": tokenobj.token.serial,
-                                                 "nonce": challenge,
+                                           data={"serial": token_object.token.serial,
+                                                 "nonce": challenge_object,
                                                  "signature": signature,
                                                  "presence_answer": presence_answer}):
             res = self.app.full_dispatch_request()
@@ -1197,7 +1199,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
 
-        remove_token(tokenobj.get_serial())
+        remove_token(token_object.get_serial())
         delete_policy("webui")
         delete_policy("push_require_presence")
         delete_policy("push_numeric")
@@ -1215,9 +1217,9 @@ class PushTokenTestCase(MyTestCase):
                    action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
                                                self.firebase_config_name))
         set_policy("push_custom", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=CUSTOM".format(PUSH_ACTION.PRESENCE_OPTIONS))
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=CUSTOM")
         set_policy("push_custom_options", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}".format(PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS))
+                   action=f"{PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}")
         # create push token
         tokenobj = self._create_push_token()
         serial = tokenobj.get_serial()
@@ -1264,7 +1266,8 @@ class PushTokenTestCase(MyTestCase):
                                                       transaction_id=transaction_id)
                 chal = challengeobject_list[0]  # TODO: Why is challenge a string?
                 challenge = chal.challenge
-                presence_answer = chal.get_data().split(',').pop()  # The correct answer is always appended to the available options
+                presence_answer = chal.get_data().split(
+                    ',').pop()  # The correct answer is always appended to the available options
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
                 self.assertEqual(jsonresp.get("detail").get("message"), challenge_text)
 
@@ -1540,7 +1543,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig)}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1562,7 +1565,7 @@ class PushTokenTestCase(MyTestCase):
 
         # now check that we receive the challenge when polling
         # since we mock the time we can use the same request data
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1584,7 +1587,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1596,7 +1599,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy('push_poll', SCOPE.AUTH,
                    action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
                                                PushAllowPolling.DENY))
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1609,7 +1612,7 @@ class PushTokenTestCase(MyTestCase):
                    action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
                                                PushAllowPolling.TOKEN))
         # If no tokeninfo is set, allow polling
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1619,7 +1622,7 @@ class PushTokenTestCase(MyTestCase):
 
         # now set the tokeninfo POLLING_ALLOWED to 'False'
         tok.add_tokeninfo(POLLING_ALLOWED, 'False')
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1629,7 +1632,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Explicitly allow polling for this token
         tok.add_tokeninfo(POLLING_ALLOWED, 'True')
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1643,7 +1646,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy('push_poll', SCOPE.AUTH,
                    action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
                                                PushAllowPolling.ALLOW))
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1653,7 +1656,7 @@ class PushTokenTestCase(MyTestCase):
 
         # this should also work if there is no ALLOW_POLLING policy
         delete_policy('push_poll')
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1668,7 +1671,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(b'no signature check')}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1683,7 +1686,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig_fail)}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1700,7 +1703,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig_fail2)}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1728,7 +1731,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig)}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1742,7 +1745,7 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig)}
         # poll for challenges
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+        with mock.patch('privacyidea.models.datetime') as mock_dt1, \
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)

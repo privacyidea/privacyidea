@@ -762,7 +762,6 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         # Container has no token
         # Check if the condition matches
-        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
@@ -787,7 +786,69 @@ class BaseEventHandlerTestCase(MyTestCase):
         delete_container_by_serial(container_serial)
         remove_token(token_serial)
 
-    def test_17_check_container_realm(self):
+    def test_17_user_token_number(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        init_token({"serial": "pw01", "type": "pw", "otppin": "test", "otpkey": "secret"}, user=user)
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+    def test_18_compare_condition_no_int(self):
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        event_handler = BaseEventHandler()
+        # If the condition is not an integer, the error when converting is caught and false is returned
+        r = event_handler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: ">notaninteger"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+    def test_19_check_container_realm(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         # Init container
@@ -822,7 +883,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Clean up
         container.delete()
 
-    def test_18_check_container_resolver(self):
+    def test_20_check_container_resolver(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         # Init container
@@ -3611,10 +3672,13 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to \'https://test.com\' with the text: \'This is a test\''
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'https://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
+            # This works since we don't have the "replace" option set, otherwise this
+            # would lead to a json decode error since the data is not a valid JSON string
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
@@ -3625,7 +3689,8 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to \'https://test.com\' with the text: \'This is a test\''
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'https://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3650,7 +3715,9 @@ class WebhookTestCase(MyTestCase):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": "You can replace placeholder like {logged_in_user}"
+                "description": "You can use the following placeholders: {logged_in_user}, {realm}, {surname}, "
+                               "{token_owner}, {user_realm}, {token_serial}. "
+                               "However, tag availability is depending on the endpoint."
             },
             "data": {
                 "type": "str",
@@ -3720,7 +3787,35 @@ class WebhookTestCase(MyTestCase):
         self.assertFalse(res)
 
     @patch('requests.post')
-    def test_06_replace_function(self, mock_post):
+    def test_06_replace_function_json(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            data = '{"{realm}": {"{realm}": {"{realm}": "This is {logged_in_user} from realm {realm}"}}}'
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL": 'https://test.com',
+                                       "content_type": CONTENT_TYPE.JSON,
+                                       "replace": True,
+                                       "data": data
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                'https://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_07_replace_function_urlencoded(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
@@ -3741,54 +3836,42 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
                 'https://test.com', 'This is hans from realm realm1')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_07_replace_function_error(self, mock_post):
+    def test_08_replace_function_broken_json(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = 'response'
 
-                init_token({"serial": "SPASS01", "type": "spass"},
-                           User("cornelius", self.realm1))
                 g = FakeFlaskG()
-                builder = EnvironBuilder(method='POST',
-                                         data={'serial': "SPASS01"},
-                                         headers={})
-
-                env = builder.get_environ()
-                env["REMOTE_ADDR"] = "10.0.0.1"
-                g.client_ip = env["REMOTE_ADDR"]
-                req = Request(env)
-                req.all_data = {"serial": "SPASS01"}
-                req.User = User("cornelius", self.realm1)
+                g.logged_in_user = {"username": "cornelius", "realm": self.realm1}
 
                 t_handler = WebHookHandler()
                 options = {"g": g,
-                           "request": req,
                            "handler_def": {
-                               "options": {"URL": 'https://test.com',
+                               "options": {"URL": 'https://test.example',
                                            "content_type": CONTENT_TYPE.JSON,
                                            "replace": True,
-                                           "data": '{token_serial} {token_owner} {unknown_tag}'
+                                           "data": 'invalid json string'
                                            }
                            }
                            }
                 res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
-                                         " Please check the webhooks data option.")
-                text = ('A webhook is send to \'https://test.com\' with the text: '
-                        '\'{token_serial} {token_owner} {unknown_tag}\'')
+                mock_log.assert_any_call("Unable to parse JSON string 'invalid json string': "
+                                         "Expecting value: line 1 column 1 (char 0)")
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'https://test.example', 'invalid json string')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_typo(self, mock_post):
+    def test_09_replace_function_typo(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3815,7 +3898,7 @@ class WebhookTestCase(MyTestCase):
                                "options": {"URL": 'https://test.com',
                                            "content_type": CONTENT_TYPE.JSON,
                                            "replace": True,
-                                           "data": 'The token serial is {token_seril}'
+                                           "data": '{"text": "The token serial is {token_seril}"}'
                                            }
                            }
                            }
@@ -3823,7 +3906,7 @@ class WebhookTestCase(MyTestCase):
                 self.assertTrue(res)
                 mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
                                          " Please check the webhooks data option.")
-                text = ('A webhook is send to \'https://test.com\' with the text: '
-                        '\'The token serial is {token_seril}\'')
+                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
+                    'https://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)

@@ -137,10 +137,10 @@ myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
 
 myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout", "$stateParams", "AuthFactory",
     "UserFactory", "$state", "ConfigFactory", "instanceUrl", "$http", "hotkeys", "gettextCatalog", "inform",
-    "U2fFactory", "webAuthnToken", "versioningSuffixProvider",
+    "U2fFactory", "webAuthnToken", "versioningSuffixProvider", "$location",
     function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams, AuthFactory, UserFactory, $state,
                                    ConfigFactory, instanceUrl, $http, hotkeys, gettextCatalog, inform, U2fFactory,
-                                   webAuthnToken, versioningSuffixProvider) {
+                                   webAuthnToken, versioningSuffixProvider, $location) {
 
         hotkeys.bindTo($scope).add({
             combo: 'alt+e',
@@ -482,7 +482,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
                 $scope.register_fido($scope.enrolledToken.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
             }
-            if ($scope.enrolledToken.rollout_state === "clientwait") {
+            if ($scope.enrolledToken.rollout_state === "clientwait" && !$scope.form["2stepinit"]) {
                 $scope.pollTokenInfo();
             }
             $('html,body').scrollTop(0);
@@ -500,6 +500,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
             if ($scope.containerSerial !== "createnew" && $scope.containerSerial !== "none") {
                 $scope.form.container_serial = $scope.containerSerial;
+            } else {
+                // Do not send the container_serial if it has no value
+                delete $scope.form.container_serial;
             }
 
             TokenFactory.enroll($scope.newUser,
@@ -514,7 +517,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function (data) {
                 $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
                 // Poll the data after 2.5 seconds again
-                if ($scope.enrolledToken.rollout_state === "clientwait") {
+                if ($scope.enrolledToken.rollout_state === "clientwait" && $location.path().indexOf("/token/enroll") > -1) {
                     $timeout($scope.pollTokenInfo, 2500);
                 }
             })
@@ -535,7 +538,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 "otpkey": $scope.clientpart.replace(/ /g, ""),
                 "otpkeyformat": "base32check",
                 "serial": $scope.enrolledToken.serial,
-                "type": $scope.form.type
+                "type": $scope.form.type,
+                // Send the rollover parameter as well to avoid a possible PIN check
+                "rollover": $scope.form.rollover
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 $scope.clientpart = "";

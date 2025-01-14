@@ -89,6 +89,7 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = [f"{x}" for x in string.ascii_uppercase]
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
 
+
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
     REGISTRATION_URL = "push_registration_url"
@@ -197,6 +198,7 @@ def _get_presence_options(options):
         available_presence_options = custom_presence_options.split(
             ":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
     return available_presence_options
+
 
 def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
                            presence_options=None):
@@ -682,25 +684,24 @@ class PushTokenClass(TokenClass):
 
             details = token_obj.get_init_detail(init_detail_dict)
             result = True
-        elif all(k in request_data for k in ("nonce", "signature")):
+        elif "signature" in request_data and "new_fb_token" not in request_data:
             log.debug("Handling the authentication response from the smartphone.")
-            challenge = getParam(request_data, "nonce")
             signature = getParam(request_data, "signature")
             decline = is_true(getParam(request_data, "decline", default=False))
             presence_answer = getParam(request_data, "presence_answer", optional=True)
 
-            # get the token_obj for the given serial:
+            # Get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
             pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             # Do the 2nd step of the authentication
             # Find valid challenges
-            challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+            challenges = get_challenges(serial=serial)
 
-            if challengeobject_list:
+            if challenges:
                 # There are valid challenges, so we check this signature
-                for chal in challengeobject_list:
-                    # verify the signature of the nonce
-                    sign_data = f"{challenge}|{serial}"
+                for challenge in challenges:
+                    # Re-construct the signature data and then verify the signature
+                    sign_data = f"{challenge.challenge}|{serial}"
                     if decline:
                         sign_data += "|decline"
                     if presence_answer:
@@ -711,26 +712,26 @@ class PushTokenClass(TokenClass):
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
                         # The signature was valid
-                        log.debug(f"Found matching challenge {chal}.")
+                        log.debug(f"Found matching challenge {challenge}.")
                         result = True
                         if decline:
-                            chal.set_session(CHALLENGE_SESSION.DECLINED)
+                            challenge.set_session(CHALLENGE_SESSION.DECLINED)
                         else:
                             # Verify the presence_answer. The correct choice is stored as last entry
                             # in the data separated by a comma.
-                            if presence_answer and presence_answer != chal.get_data().split(",").pop():
+                            if presence_answer and presence_answer != challenge.get_data().split(",").pop():
                                 result = False
                                 # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
                             else:
-                                chal.set_otp_status(True)
-                        chal.save()
+                                challenge.set_otp_status(True)
+                        challenge.save()
                     except InvalidSignature as _e:
                         pass
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             log.debug("Updating the firebase token of the smartphone.")
             timestamp = getParam(request_data, 'timestamp', optional=False)
             signature = getParam(request_data, 'signature', optional=False)
-            # first check if the timestamp is in the required span
+            # First check if the timestamp is in the required span
             cls._check_timestamp_in_range(timestamp, UPDATE_FB_TOKEN_WINDOW)
             try:
                 tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
@@ -745,11 +746,10 @@ class PushTokenClass(TokenClass):
                 result = True
             except (ResourceNotFoundError, ParameterError, TypeError,
                     InvalidSignature, ConfigAdminError, BinasciiError) as e:
-                # to avoid disclosing information we always fail with an invalid
-                # signature error even if the token with the serial could not be found
+                # To avoid disclosing information, we always fail with an invalid
+                # signature error, even if the token with the serial could not be found
                 log.debug(f'{traceback.format_exc()}')
-                log.info('The following error occurred during the signature '
-                         f'check: "{e}"')
+                log.info(f'The following error occurred during the signature check: "{e}"')
                 raise privacyIDEAError('Could not verify signature!')
         else:
             raise ParameterError("Missing parameters!")
@@ -867,8 +867,7 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              nonce=<the actual challenge>
-              signature=<signature over {nonce}|{serial}>
+              signature=<signature over {challenge}|{serial}>
 
         - The smartphone can also decline the authentication request, by sending
           a response to the server:
@@ -879,9 +878,8 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              nonce=<the actual challenge>
               decline=1
-              signature=<signature over {nonce}|{serial}|decline
+              signature=<signature over {challenge}|{serial}|decline
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
@@ -976,8 +974,7 @@ class PushTokenClass(TokenClass):
         data = None
         current_presence_options = None
         if is_true(require_presence):
-            # The challenge having data indicates, that this a require_presence.
-            if transactionid is None:
+            if not options["push_triggered"]:
                 # Create a new challenge data
                 current_presence_options = []
 
@@ -994,9 +991,10 @@ class PushTokenClass(TokenClass):
                 # The data contains all selected options and the correct option at the end.
                 data = ",".join(current_presence_options + [correct_option])
             else:
-                # If the user has more than one token and more than one challenge is created, we need to ensure, that
-                # all challenge data is the same.
-                data = get_challenges(transaction_id=transactionid)[0].data
+                # If the user has more than one token and more than one challenge is created, we need to ensure
+                # that the challenge data for all push token is the same.
+                challenges = get_challenges(transaction_id=transactionid)
+                data = next(c.data for c in challenges if c.serial.startswith("PIPU") and c.data) or ""
                 current_presence_options = data.split(",")[:-1]  # The correct option is the last one, so we remove it
         # Initially we assume there is no error from Firebase
         res = True
@@ -1057,10 +1055,9 @@ class PushTokenClass(TokenClass):
         reply_dict = {"attributes": {"hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}}
 
         if data:
-            # If the message contains {} we replace it with the data
-            # otherwise we add a new text
+            # If the message contains {} we replace it with the data otherwise we add a new text
             if "{}" in message:
-                message = message.format(data.split(",").pop()) # The correct presence option is the last one
+                message = message.format(data.split(",").pop())  # The correct presence option is the last one
             else:
                 message += f" Please press: {data.split(',').pop()}"  # The correct presence option is the last one
         return True, message, transactionid, reply_dict

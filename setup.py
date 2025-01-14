@@ -4,7 +4,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.10"
+VERSION = "3.10.2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -157,7 +157,6 @@ setup(
                  " Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
                  'Programming Language :: Python :: 3.10',
                  'Programming Language :: Python :: 3.11',

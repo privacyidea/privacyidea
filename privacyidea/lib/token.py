@@ -285,23 +285,23 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     if active is not None:
         # Filter active or inactive tokens
         if active is True:
-            sql_query = sql_query.where(Token.active.is_(True))
+            sql_query = sql_query.where(Token.active == True)
         else:
-            sql_query = sql_query.where(Token.active.is_(False))
+            sql_query = sql_query.where(Token.active == False)
 
     if revoked is not None:
         # Filter revoked or not revoked tokens
         if revoked is True:
-            sql_query = sql_query.where(Token.revoked.is_(True))
+            sql_query = sql_query.where(Token.revoked == True)
         else:
-            sql_query = sql_query.where(Token.revoked.is_(False))
+            sql_query = sql_query.where(Token.revoked == False)
 
     if locked is not None:
         # Filter revoked or not revoked tokens
         if locked is True:
-            sql_query = sql_query.where(Token.locked.is_(True))
+            sql_query = sql_query.where(Token.locked == True)
         else:
-            sql_query = sql_query.where(Token.locked.is_(False))
+            sql_query = sql_query.where(Token.locked == False)
 
     if maxfail is not None:
         # Filter tokens, that reached maxfail
@@ -310,7 +310,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         else:
             sql_query = sql_query.filter(Token.maxfail > Token.failcount)
 
-    if rollout_state is not None:
+    if rollout_state is not None and rollout_state.strip("*"):
         # Filter for tokens with the given rollout state
         if "*" in rollout_state:
             # match with "like"
@@ -1201,10 +1201,9 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None,
-               tokenkind=None):
+def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
-    create a new token or update an existing token
+    Create a new token or update an existing token with the specified parameters.
 
     :param param: initialization parameters like
 
@@ -2311,6 +2310,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     :return: None
     """
     options = options or {}
+    options["push_triggered"] = False
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
@@ -2318,7 +2318,10 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
-                transactionid=transaction_id, options=options)
+                    transactionid=transaction_id, options=options)
+            # We need to pass the info if a push token has been triggered, so that require presence can re-use the
+            # challenge instead of creating a new one with a different answer
+            options["push_triggered"] = token_obj.get_type() == "push" if not options["push_triggered"] else True
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
@@ -2333,15 +2336,11 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 next_pin = token_obj.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
-                    challenge_info["pin_change"] = \
-                        token_obj.is_pin_change()
-                next_passw = token_obj.get_tokeninfo(
-                    "next_password_change")
+                    challenge_info["pin_change"] = token_obj.is_pin_change()
+                next_passw = token_obj.get_tokeninfo("next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
-                    challenge_info["password_change"] = \
-                        token_obj.is_pin_change(
-                            password=True)
+                    challenge_info["password_change"] = token_obj.is_pin_change(password=True)
                 # FIXME: This is deprecated and should be remove one day
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
