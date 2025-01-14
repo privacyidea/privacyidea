@@ -2,7 +2,7 @@
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container: </h3>
-      <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
+      <h3 style="color: var(--blue-base)"> {{ container_serial() }} </h3>
     </div>
     <div [ngClass]="[
         overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
@@ -153,12 +153,13 @@
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
         <div class="details-flex-layout">
-          <app-container-details-info [detailData]="containerDetailData" [infoData]="infoData"
+          <app-container-details-info [container_serial]="container_serial"
+                                      [detailData]="containerDetailData"
+                                      [infoData]="infoData"
                                       [isAnyEditingOrRevoked]="isAnyEditing"
                                       [isEditingInfo]="isEditingInfo"
                                       [isEditingUser]="isEditingUser"
-                                      [refreshDetails]="refreshContainerDetails"
-                                      [serial]="serial"></app-container-details-info>
+                                      [refreshDetails]="refreshContainerDetails"></app-container-details-info>
         </div>
         @if (overflowService.isOverflowing('.token-layout', 1310)) {
           <br/>
@@ -168,11 +169,11 @@
       </div>
       <div [ngClass]="[
         overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
-            class="flex-column">
+           class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
-            <mat-checkbox [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}"
-                          [(ngModel)]="showOnlyTokenNotInContainer">
+            <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer"
+                          [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br/>
@@ -209,9 +210,14 @@
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table [dataSource]="containerTokenData"
+        <app-container-details-token-table [containerIsSelected]="containerIsSelected"
+                                           [container_serial]="container_serial"
+                                           [dataSource]="containerTokenData"
                                            [refreshContainerDetails]="refreshContainerDetails"
-                                           [container_serial]="serial">
+                                           [selectedTabIndex]="selectedTabIndex"
+                                           [tokenIsSelected]="tokenIsSelected"
+                                           [token_serial]="token_serial"
+                                           [isProgrammaticChange]="isProgrammaticChange">
         </app-container-details-token-table>
       </div>
     </div>

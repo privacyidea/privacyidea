@@ -56,7 +56,7 @@ export class TokenTableComponent {
     })));
   showAdvancedFilter = signal(false);
   @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>;
+  @Input() token_serial!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -147,7 +147,7 @@ export class TokenTableComponent {
   }
 
   tokenSelected(serial: string) {
-    this.serial.set(serial);
+    this.token_serial.set(serial);
     this.tokenIsSelected.set(true)
   }
 

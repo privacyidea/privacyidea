@@ -97,10 +97,15 @@ interface TokenOption {
   styleUrl: './container-details.component.scss'
 })
 export class ContainerDetailsComponent {
-  @Input() serial!: WritableSignal<string>;
+  @Input() container_serial!: WritableSignal<string>;
+  @Input() token_serial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() selectedUsername = signal<string>('');
+  @Input() selectedTabIndex!: WritableSignal<number>;
+  @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
   filteredUserOptions = signal<string[]>([]);
@@ -158,7 +163,6 @@ export class ContainerDetailsComponent {
   @ViewChild('tokenAutoTrigger', {read: MatAutocompleteTrigger})
   tokenAutoTrigger!: MatAutocompleteTrigger;
 
-
   constructor(protected overflowService: OverflowService,
               protected containerService: ContainerService,
               protected tableUtilsService: TableUtilsService,
@@ -202,7 +206,7 @@ export class ContainerDetailsComponent {
 
   showContainerDetail() {
     return forkJoin([
-      this.containerService.getContainerDetails(this.serial()),
+      this.containerService.getContainerDetails(this.container_serial()),
       this.realmService.getRealms(),
       this.tokenService.getTokenData(this.paginator.pageIndex, this.paginator.pageSize, undefined,
         this.tokenToAddFilter().trim() + ' container_serial:'),
@@ -291,7 +295,7 @@ export class ContainerDetailsComponent {
   }
 
   saveUser() {
-    this.containerService.assignUser(this.serial(), this.selectedUsername(), this.userRealm).subscribe({
+    this.containerService.assignUser(this.container_serial(), this.selectedUsername(), this.userRealm).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },
@@ -302,7 +306,7 @@ export class ContainerDetailsComponent {
   }
 
   unassignUser() {
-    this.containerService.unassignUser(this.serial(), this.userData().find(
+    this.containerService.unassignUser(this.container_serial(), this.userData().find(
         detail => detail.keyMap.key === 'user_name')?.value,
       this.userData().find(detail => detail.keyMap.key === 'user_realm')?.value
     ).subscribe({
@@ -336,7 +340,7 @@ export class ContainerDetailsComponent {
   }
 
   addTokenToContainer(option: TokenOption) {
-    this.containerService.addTokenToContainer(this.serial(), option['serial']).pipe(
+    this.containerService.addTokenToContainer(this.container_serial(), option['serial']).pipe(
       switchMap(() => this.showContainerDetail())
     ).subscribe({
       next: () => {
@@ -399,7 +403,7 @@ export class ContainerDetailsComponent {
   }
 
   private saveRealms() {
-    this.containerService.setContainerRealm(this.serial(), this.selectedRealms()).pipe(
+    this.containerService.setContainerRealm(this.container_serial(), this.selectedRealms()).pipe(
       switchMap(() => this.showContainerDetail())
     ).subscribe({
       next: () => {
@@ -413,7 +417,7 @@ export class ContainerDetailsComponent {
 
   private saveDescription() {
     const description = this.containerDetailData().find(detail => detail.keyMap.key === 'description')?.value;
-    this.containerService.setContainerDescription(this.serial(), description).pipe(
+    this.containerService.setContainerDescription(this.container_serial(), description).pipe(
       switchMap(() => this.showContainerDetail())
     ).subscribe({
       next: () => {

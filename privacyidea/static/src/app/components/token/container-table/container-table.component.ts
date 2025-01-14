@@ -33,7 +33,6 @@ const columnsKeyMap = [
   styleUrl: './container-table.component.scss'
 })
 export class ContainerTableComponent {
-  protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
@@ -43,6 +42,8 @@ export class ContainerTableComponent {
   apiFilter = this.containerService.apiFilter;
   advancedApiFilter = this.containerService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
+  @Input() container_serial!: WritableSignal<string>;
   dataSource = signal(new MatTableDataSource(
     Array.from({length: this.pageSize}, () => {
       const emptyRow: any = {};
@@ -52,8 +53,8 @@ export class ContainerTableComponent {
       return emptyRow;
     })));
   showAdvancedFilter = signal(false);
-  @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>;
+  protected readonly columnsKeyMap = columnsKeyMap;
+
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
 
@@ -123,7 +124,7 @@ export class ContainerTableComponent {
   }
 
   containerSelected(serial: string) {
-    this.serial.set(serial);
+    this.container_serial.set(serial);
     this.containerIsSelected.set(true)
   }
 }

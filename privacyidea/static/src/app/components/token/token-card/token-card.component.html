@@ -3,7 +3,7 @@
     1880)}" appearance="outlined">
   <mat-card-content>
     <mat-tab-group
-      (selectedTabChange)="onTabChange($event)"
+      (selectedTabChange)="onTabChange()"
       [(selectedIndex)]="selectedTabIndex"
       animationDuration="400ms"
       fitInkBarToContent
@@ -17,7 +17,7 @@
         </ng-template>
         <ng-template matTabContent>
           <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
-                         [revoked]="revoked" [serial]="serial"
+                         [revoked]="revoked" [serial]="token_serial"
                          [tokenIsSelected]="tokenIsSelected"></app-token-tab>
         </ng-template>
       </mat-tab>
@@ -27,7 +27,7 @@
           <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [containerIsSelected]="containerIsSelected" [container_serial]="serial"
+          <app-container-tab [containerIsSelected]="containerIsSelected" [container_serial]="token_serial"
                              [refreshContainerDetails]="refreshContainerDetails"
                              [states]="states">
           </app-container-tab>

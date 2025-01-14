@@ -19,7 +19,7 @@ describe('ContainerDetailsComponent', () => {
 
     fixture = TestBed.createComponent(ContainerDetailsComponent);
     component = fixture.componentInstance;
-    component.serial = signal('Mock serial');
+    component.container_serial = signal('Mock serial');
     fixture.detectChanges();
   });
 

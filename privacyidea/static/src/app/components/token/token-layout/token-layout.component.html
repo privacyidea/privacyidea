@@ -8,8 +8,9 @@
                     [refreshContainerDetails]="refreshContainerDetails"
                     [revoked]="revoked"
                     [selectedTabIndex]="selectedTabIndex"
-                    [serial]="serial"
-                    [tokenIsSelected]="tokenIsSelected">
+                    [token_serial]="token_serial"
+                    [tokenIsSelected]="tokenIsSelected"
+                    [isProgrammaticChange]="isProgrammaticChange">
     </app-token-card>
   }
   <mat-drawer-container>
@@ -23,7 +24,7 @@
           [refreshContainerDetails]="refreshContainerDetails"
           [revoked]="revoked"
           [selectedTabIndex]="selectedTabIndex"
-          [serial]="serial"
+          [token_serial]="token_serial"
           [tokenIsSelected]="tokenIsSelected">
         </app-token-card>
       </mat-drawer>
@@ -41,35 +42,42 @@
         }
         <main>
           <div class="main-margin">
-            @let tabIndex = selectedTabIndex();
-            @if (tabIndex === 0) {
-              @let tokenSelected = tokenIsSelected();
-              @if (tokenSelected) {
+            @if (selectedTabIndex() === 0) {
+              @if (tokenIsSelected()) {
                 <app-token-details
                   #tokenDetailsComponent
-                  [serial]="serial"
+                  [token_serial]="token_serial"
                   [active]="tokenIsActive"
                   [revoked]="revoked"
-                  [refreshTokenDetails]="refreshTokenDetails">
+                  [refreshTokenDetails]="refreshTokenDetails"
+                  [container_serial]="container_serial"
+                  [tokenIsSelected]="tokenIsSelected"
+                  [containerIsSelected]="containerIsSelected"
+                  [isProgrammaticChange]="isProgrammaticChange"
+                  [selectedTabIndex]="selectedTabIndex">
                 </app-token-details>
               } @else {
                 <app-token-table
-                  [serial]="serial"
+                  [token_serial]="token_serial"
                   [tokenIsSelected]="tokenIsSelected">
                 </app-token-table>
               }
-            } @else if (tabIndex === 1) {
-              @let containerSelected = containerIsSelected();
-              @if (containerSelected) {
+            } @else if (selectedTabIndex() === 1) {
+              @if (containerIsSelected()) {
                 <app-container-details
                   #containerDetailsComponent
-                  [serial]="serial"
+                  [container_serial]="container_serial"
+                  [token_serial]="token_serial"
+                  [tokenIsSelected]="tokenIsSelected"
+                  [containerIsSelected]="containerIsSelected"
                   [states]="states"
+                  [isProgrammaticChange]="isProgrammaticChange"
+                  [selectedTabIndex]="selectedTabIndex"
                   [refreshContainerDetails]="refreshContainerDetails">
                 </app-container-details>
               } @else {
                 <app-container-table
-                  [serial]="serial"
+                  [container_serial]="container_serial"
                   [containerIsSelected]="containerIsSelected">
                 </app-container-table>
               }

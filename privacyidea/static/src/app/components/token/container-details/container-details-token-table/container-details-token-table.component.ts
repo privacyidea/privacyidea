@@ -62,8 +62,12 @@ export class ContainerDetailsTokenTableComponent {
   filterValue = '';
   @Input() dataSource!: WritableSignal<any>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() container_serial!: WritableSignal<string>;
+  @Input() token_serial!: WritableSignal<string>;
+  @Input() selectedTabIndex!: WritableSignal<number>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -89,10 +93,12 @@ export class ContainerDetailsTokenTableComponent {
     this.dataSource().filter = this.filterValue.trim().toLowerCase();
   }
 
-  tokenSelected(serial: string) {
-    this.container_serial.set(serial);
-    this.tokenIsSelected.set(true)
-    // TODO fix
+  tokenSelected(token_serial: string) {
+    this.token_serial.set(token_serial);
+    this.containerIsSelected.set(false);
+    this.isProgrammaticChange.set(true);
+    this.selectedTabIndex.set(0);
+    this.tokenIsSelected.set(true);
   }
 
   removeTokenFromContainer(container_serial: string, token_serial: string) {

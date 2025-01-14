@@ -8,7 +8,7 @@ import {ContainerDetailsComponent} from '../container-details/container-details.
 import {MatDrawer, MatDrawerContainer, MatSidenavModule} from '@angular/material/sidenav';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
-import { OverflowService } from '../../../services/overflow/overflow.service';
+import {OverflowService} from '../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-grid',
@@ -33,12 +33,14 @@ export class TokenLayoutComponent {
   selectedTabIndex = signal(0);
   tokenIsSelected = signal(false);
   containerIsSelected = signal(false);
-  serial = signal('');
+  token_serial = signal('');
+  container_serial = signal('');
   tokenIsActive = signal(true);
   revoked = signal(true);
   refreshTokenDetails = signal(false);
   refreshContainerDetails = signal(false);
   states = signal<string[]>([]);
+  isProgrammaticChange = signal(false);
 
   @ViewChild('tokenDetailsComponent') tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent') containerDetailsComponent!: ContainerDetailsComponent;

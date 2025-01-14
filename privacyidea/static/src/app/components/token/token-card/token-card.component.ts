@@ -1,6 +1,6 @@
 import {Component, Input, WritableSignal} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatTabChangeEvent, MatTabsModule} from '@angular/material/tabs';
+import {MatTabsModule} from '@angular/material/tabs';
 import {MatIcon} from '@angular/material/icon';
 import {TokenTabComponent} from './token-tab/token-tab.component';
 import {ContainerTabComponent} from './container-tab/container-tab.component';
@@ -25,18 +25,23 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
 export class TokenCardComponent {
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>;
+  @Input() token_serial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() selectedTabIndex!: WritableSignal<number>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
 
   constructor(protected overflowService: OverflowService) {}
 
-  onTabChange(event: MatTabChangeEvent): void {
-    this.selectedTabIndex.set(event.index);
+  onTabChange(): void {
+    if (this.isProgrammaticChange) {
+      this.isProgrammaticChange.set(false);
+      return;
+    }
+
     this.tokenIsSelected.set(false);
     this.containerIsSelected.set(false);
   }

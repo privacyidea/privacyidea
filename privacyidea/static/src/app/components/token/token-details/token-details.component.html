@@ -2,7 +2,7 @@
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
-      <h3 style="color: var(--blue-base)"> {{ serial() }} </h3>
+      <h3 style="color: var(--blue-base)"> {{ token_serial() }} </h3>
     </div>
     <div [ngClass]="[
        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
@@ -34,7 +34,10 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <a attr.aria-label="{{ element.keyMap.label }} Link"
+                       (click)="containerSelected(element.value)">
+                      {{ element.value }}
+                    </a>
                   }
                 }
                 @case ("realms") {
@@ -173,7 +176,7 @@
                                 [realmOptions]="realmOptions"
                                 [refreshTokenDetails]="refreshTokenDetails"
                                 [repeatPinValue]="repeatPinValue"
-                                [serial]="serial"
+                                [serial]="token_serial"
                                 [setPinValue]="setPinValue"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
@@ -185,9 +188,9 @@
                                   [isEditingInfo]="isEditingInfo"
                                   [isEditingUser]="isEditingUser"
                                   [refreshDetails]="refreshTokenDetails"
-                                  [serial]="serial"></app-token-details-info>
+                                  [serial]="token_serial"></app-token-details-info>
           <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
-                                     [serial]="serial"></app-token-details-actions>
+                                     [serial]="token_serial"></app-token-details-actions>
         </div>
       </div>
     </div>
