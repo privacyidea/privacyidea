@@ -31,7 +31,7 @@ from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
-                                    ecc_key_pair_to_b64url_str, generate_keypair_ecc, encrypt_ecc)
+                                    generate_keypair_ecc, encrypt_ecc)
 from privacyidea.lib.error import (ContainerInvalidChallenge, ContainerNotRegistered, ResourceNotFoundError,
                                    ParameterError)
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_tokens, get_serial_by_otp_list
@@ -41,9 +41,10 @@ from privacyidea.models import Challenge
 log = logging.getLogger(__name__)
 
 
-def create_container_registration_url(nonce, time_stamp, server_url, container_serial, key_algorithm,
-                                      hash_algorithm, extra_data={}, passphrase="", issuer="privacyIDEA", ttl=10,
-                                      ssl_verify=True):
+def create_container_registration_url(nonce: str, time_stamp: str, server_url: str, container_serial: str,
+                                      key_algorithm: str, hash_algorithm: str, extra_data: dict = None,
+                                      passphrase: str = "", issuer: str = "privacyIDEA", ttl: int = 10,
+                                      ssl_verify: bool = True):
     """
     Create a URL for binding a container to a physical container.
 
@@ -64,6 +65,7 @@ def create_container_registration_url(nonce, time_stamp, server_url, container_s
     url_time_stamp = quote(time_stamp.encode("utf-8"))
     url_label = quote(container_serial.encode("utf-8"))
     url_issuer = quote(issuer.encode("utf-8"))
+    extra_data = extra_data or {}
     url_extra_data = _construct_extra_parameters(extra_data)
     url_passphrase = quote(passphrase.encode("utf-8"))
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
@@ -128,7 +130,8 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return _("A smartphone that uses an authenticator app.")
 
-    def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool, params: dict = None):
+    def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool,
+                          params: dict = None):
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
@@ -155,7 +158,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "container_url": {
                         "description": "URL for privacyIDEA Container Registration",
                         "value": <url>,
-                        "img": <qr code of url>
+                        "img": <qr code of the url>
                     },
                     "nonce": "ajhbdsuiuojno49877n4no3u09on38r98n",
                     "time_stamp": "2020-08-25T14:00:00.000000+00:00",
@@ -236,8 +239,9 @@ class SmartphoneContainer(TokenContainerClass):
     def finalize_registration(self, params: dict):
         """
         Finalize the registration of a container.
-        Validates whether the smartphone is authorized to register. If successful, the server generates a key pair.
-        Raises a ContainerInvalidSignature error if the signature is no valid.
+        Validates whether the smartphone is authorized to register. If successful, the registration state is set as
+        registered and the client public key is stored in the container info.
+        Raises a ContainerInvalidSignature error if the signature is not valid.
 
         :param params: The parameters from the smartphone for the registration as dictionary like:
 
@@ -251,15 +255,12 @@ class SmartphoneContainer(TokenContainerClass):
                 "device_model": <Model of the smartphone, str> (optional),
             }
 
-        :return: The public key of the server in a dictionary like
-            ::
-
-                {"public_key": <pub key base 64 url encoded>}.
+        :return: A dictionary with the success status like {"success": True}
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
-        pub_key_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
+        keys_container = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
         scope = getParam(params, "scope", optional=False)
         device_brand = getParam(params, "device_brand", optional=True)
         device_model = getParam(params, "device_model", optional=True)
@@ -270,23 +271,15 @@ class SmartphoneContainer(TokenContainerClass):
             device += f" {device_model}"
 
         # Verifies challenge
-        valid = self.validate_challenge(signature, pub_key_container, scope=scope, device_brand=device_brand,
+        valid = self.validate_challenge(signature, keys_container.public_key, scope=scope, device_brand=device_brand,
                                         device_model=device_model)
         if not valid:
             raise ContainerInvalidChallenge('Could not verify signature!')
 
-        # Generate private + public key for the server
-        container_info = self.get_container_info_dict()
-        key_algorithm = container_info.get("key_algorithm", "secp384r1")
-        public_key_server, private_key_server = generate_keypair_ecc(key_algorithm)
-        public_key_server_str, private_key_server_str = ecc_key_pair_to_b64url_str(public_key_server,
-                                                                                   private_key_server)
-
         # Update container info
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         self.add_container_info("public_key_container", pub_key_container_str)
-        self.add_container_info("public_key_server", public_key_server_str)
-        self.add_container_info("private_key_server", encryptPassword(private_key_server_str))
+
         if device != "":
             self.add_container_info("device", device)
         else:
@@ -294,6 +287,7 @@ class SmartphoneContainer(TokenContainerClass):
             self.delete_container_info("device")
 
         # The rollover is completed with the first synchronization
+        container_info = self.get_container_info_dict()
         registration_state = container_info.get("registration_state", "")
         if registration_state != "rollover":
             self.add_container_info("registration_state", "registered")
@@ -302,9 +296,7 @@ class SmartphoneContainer(TokenContainerClass):
         if params.get("client_policies", {}).get("container_initial_token_transfer"):
             self.add_container_info("initial_synchronized", False)
 
-        res = {"public_server_key": public_key_server_str}
-
-        return res
+        return {"success": True}
 
     def terminate_registration(self):
         """
@@ -314,8 +306,6 @@ class SmartphoneContainer(TokenContainerClass):
         """
         # Delete registration / synchronization info
         self.delete_container_info("public_key_container")
-        self.delete_container_info("public_key_server")
-        self.delete_container_info("private_key_server")
         self.delete_container_info("device")
         self.delete_container_info("server_url")
         self.delete_container_info("registration_state")
@@ -362,7 +352,7 @@ class SmartphoneContainer(TokenContainerClass):
                "enc_key_algorithm": enc_key_algorithm}
         return res
 
-    def check_challenge_response(self, params):
+    def check_challenge_response(self, params: dict):
         """
         Checks if the response to a challenge is valid.
 
@@ -394,10 +384,10 @@ class SmartphoneContainer(TokenContainerClass):
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
         except KeyError:
             raise ContainerNotRegistered("The container is not registered or was unregistered!")
-        pub_key_sig_container, _ = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
+        sig_keys_container = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
 
         # Validate challenge
-        valid_challenge = self.validate_challenge(signature, pub_key_sig_container, scope=scope,
+        valid_challenge = self.validate_challenge(signature, sig_keys_container.public_key, scope=scope,
                                                   key=pub_key_encr_container_str,
                                                   container=container_client_str,
                                                   device_brand=device_brand,
@@ -432,8 +422,8 @@ class SmartphoneContainer(TokenContainerClass):
         # Generate encryption key pair for the server
         container_info = self.get_container_info_dict()
         enc_key_algorithm = container_info.get(SmartphoneOptions.ENCRYPT_KEY_ALGORITHM)
-        public_key_encr_server, private_key_encr_server = generate_keypair_ecc(enc_key_algorithm)
-        public_key_encr_server_str = base64.urlsafe_b64encode(public_key_encr_server.public_bytes_raw()).decode('utf-8')
+        encr_server = generate_keypair_ecc(enc_key_algorithm)
+        public_key_encr_server_str = base64.urlsafe_b64encode(encr_server.public_key.public_bytes_raw()).decode('utf-8')
 
         # Get encryption algorithm and mode
         container_info = self.get_container_info_dict()
@@ -441,10 +431,11 @@ class SmartphoneContainer(TokenContainerClass):
         encrypt_mode = container_info.get(SmartphoneOptions.ENCRYPT_MODE)
 
         # encrypt container dict
-        session_key = private_key_encr_server.exchange(pub_key_encr_container)
+        session_key = encr_server.private_key.exchange(pub_key_encr_container)
         container_dict_bytes = json.dumps(container_dict).encode('utf-8')
-        container_dict_encrypted, encryption_params = encrypt_ecc(container_dict_bytes, session_key, encrypt_algorithm,
-                                                                  encrypt_mode)
+        encryption_params = encrypt_ecc(container_dict_bytes, session_key, encrypt_algorithm, encrypt_mode)
+        container_dict_encrypted = encryption_params["cipher"]
+        del encryption_params["cipher"]
 
         res = {"encryption_algorithm": encrypt_algorithm,
                "encryption_params": encryption_params,
@@ -452,8 +443,7 @@ class SmartphoneContainer(TokenContainerClass):
                "public_server_key": public_key_encr_server_str}
         return res
 
-    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False,
-                                      hide_token_info: list = None):
+    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False):
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -461,18 +451,17 @@ class SmartphoneContainer(TokenContainerClass):
         The server than tries to find the serial for the otp values. If multiple serials are found, it will not be
         included in the returned dictionary, since the token can not be uniquely identified.
         The returned dictionary contains information about the container itself and the tokens that needs to be added
-        or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated the serial and
-        further information is provided.
+        or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated at least the
+        serial and the tokentype are provided.
 
         :param initial_transfer_allowed: If True, all tokens from the client are added to the container
-        :param hide_token_info: List of token info keys to be excluded from the token dict.
         :param container_client: The container from the client as dictionary.
         An example container dictionary from the client:
             ::
 
                 {
-                    "container": {"states": ["active"]},
-                    "tokens": [{"serial": "TOTP001", "type": "totp", "active: True},
+                    "container": {"type": "smartphone", "serial": "SMPH001"},
+                    "tokens": [{"serial": "TOTP001", "type": "totp"},
                                 {"otp": ["1234", "9876"], "type": "hotp"}]
                 }
 
@@ -481,14 +470,14 @@ class SmartphoneContainer(TokenContainerClass):
             ::
 
                 {
-                    "container": {"states": ["active"], ...},
+                    "container": {"type": "smartphone", "serial": "SMPH001"},
                     "tokens": {"add": ["enroll_url1", "enroll_url2"],
-                               "update": [{"serial": "TOTP001", "active": True, ...},
-                                          {"serial": "HOTP001", "active": False, "otp": ["1234", "9876"],
-                                           "tokentype": "hotp", ...}]}
+                               "update": [{"serial": "TOTP001", "tokentype": "totp"},
+                                          {"serial": "HOTP001", "otp": ["1234", "9876"],
+                                           "tokentype": "hotp", "counter": 2}]}
                 }
         """
-        container_dict = {"container": self.get_as_dict(include_tokens=False, public_info=True)}
+        container_dict = {"container": {"type": self.type, "serial": self.serial}}
         server_token_serials = [token.get_serial() for token in self.get_tokens()]
 
         # Get serials for client tokens without serial
@@ -544,21 +533,13 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Get info for same serials: token details
         update_dict = []
-        black_list_token_info = ["private_key_server", "private_key_server.type"]
-        if hide_token_info:
-            black_list_token_info.extend(hide_token_info)
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
-            token_dict = token.get_as_dict()
+            token_dict_all = token.get_as_dict()
+            token_dict = {"serial": token_dict_all["serial"], "tokentype": token_dict_all["tokentype"]}
             # rename count to counter for the client
-            if "count" in token_dict:
-                token_dict["counter"] = token_dict["count"]
-                del token_dict["count"]
-
-            # remove sensible token infos
-            for key in black_list_token_info:
-                if key in token_dict["info"]:
-                    del token_dict["info"][key]
+            if "count" in token_dict_all:
+                token_dict["counter"] = token_dict_all["count"]
 
             # add otp values to allow the client identifying the token if he has no serial yet
             otp = serial_otp_map.get(serial)

@@ -225,23 +225,24 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
-        ret, db_containers = create_pagination(page, pagesize, sql_query)
+        ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        db_containers = sql_query.all()
+        ret["containers"] = sql_query.all()
 
-    container_list = [create_container_from_db_object(db_container) for db_container in db_containers]
+    container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
     ret["containers"] = container_list
 
     return ret
 
 
-def create_pagination(page, pagesize, sql_query):
+def create_pagination(page, pagesize, sql_query, object_list_key):
     """
         Creates the pagination of a sql query.
 
         :param page: The number of the page to view. Starts with 1
         :param pagesize: The number of objects that shall be shown on one page
         :param sql_query: The sql query to paginate
+        :param object_list_key: The key used in the return dictionary for the list of objects
         :return: A dictionary with pagination information and a list of database objects
     """
     ret = {}
@@ -264,7 +265,8 @@ def create_pagination(page, pagesize, sql_query):
     ret["next"] = nxt
     ret["current"] = page
     ret["count"] = pagination.total
-    return ret, db_objects
+    ret[object_list_key] = db_objects
+    return ret
 
 
 def find_container_for_token(serial):
@@ -350,8 +352,8 @@ def init_container(params):
 
         To assign a user to the container, the user and realm are required.
 
-    :return: Dictionary containing the serial of the created container and a list of init details for tokens from the
-        template if used such as
+    :return: Dictionary containing the serial of the created container and a list of init details for tokens if the
+        container is created from a template
 
         ::
 
@@ -944,7 +946,7 @@ def create_endpoint_url(base_url: str, endpoint: str):
 def finalize_registration(container_serial: str, params: dict):
     """
     Finalize the registration of a container if the challenge response is valid.
-    If the container is in the registration_state `rollover`, it also finalizes the container rollover.
+    If the container is in the registration_state `rollover`, it finalizes the container rollover.
 
     :param container_serial: The serial of the container
     :param params: The parameters for the registration as dictionary
@@ -1188,13 +1190,12 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
 
     # paginate if requested
     if page > 0 or pagesize > 0:
-        ret, db_templates = create_pagination(page, pagesize, sql_query)
+        ret = create_pagination(page, pagesize, sql_query, "templates")
     else:
-        ret = {}
-        db_templates = sql_query.all()
+        ret = {"templates": sql_query.all()}
 
     # create class objects from db objects
-    template_obj_list = [create_container_template_from_db_object(template) for template in db_templates]
+    template_obj_list = [create_container_template_from_db_object(template) for template in ret["templates"]]
 
     # convert to dict
     template_list = []

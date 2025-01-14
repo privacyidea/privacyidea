@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial)
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc
+from privacyidea.lib.crypto import generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc, decrypt_ecc, KeyPair
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, remove_token_from_container)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
@@ -2331,15 +2331,17 @@ class APIContainerSynchronization(APIContainerTest):
 
         if private_key_smph:
             public_key_smph = private_key_smph.public_key()
+            smph_keys = KeyPair(private_key=private_key_smph, public_key=public_key_smph)
         else:
-            public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
-        pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+            smph_keys = generate_keypair_ecc("secp384r1")
+        smph_keys_str = ecc_key_pair_to_b64url_str(public_key=smph_keys.public_key)
 
-        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
+        sign_res = sign_ecc(message.encode("utf-8"), smph_keys.private_key, "sha256")
 
-        params.update({"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str})
+        params.update(
+            {"signature": base64.b64encode(sign_res["signature"]), "public_client_key": smph_keys_str.public_key})
 
-        return params, private_key_smph
+        return params, smph_keys.private_key
 
     @classmethod
     def mock_smartphone_register_terminate(cls, params, serial, private_key_sig_smph, scope):
@@ -2347,9 +2349,9 @@ class APIContainerSynchronization(APIContainerTest):
         time_stamp = params["time_stamp"]
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}"
-        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
+        sign_res = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature)}
+        params = {"signature": base64.b64encode(sign_res["signature"])}
         return params
 
     def register_smartphone_success(self, smartphone_serial=None):
@@ -2420,7 +2422,6 @@ class APIContainerSynchronization(APIContainerTest):
                                              None, 'POST')
 
         # Check if the response contains the expected values
-        self.assertIn("public_server_key", result["result"]["value"])
         self.assertIn("policies", result["result"]["value"])
 
         delete_policy("policy")
@@ -2433,7 +2434,6 @@ class APIContainerSynchronization(APIContainerTest):
         _, _, finalize_result = self.register_smartphone_success()
 
         # Check if the response contains the expected values
-        self.assertIn("public_server_key", finalize_result["result"]["value"])
         self.assertIn("policies", finalize_result["result"]["value"])
         policies = finalize_result["result"]["value"]["policies"]
         self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
@@ -2484,9 +2484,6 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/finalize',
                                              params,
                                              None, 'POST')
-
-        # Check if the response contains the expected values
-        self.assertIn("public_server_key", result["result"]["value"])
 
         delete_policy("policy")
         delete_policy("another_policy")
@@ -2647,7 +2644,6 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("nonce", result_entries)
         self.assertIn("time_stamp", result_entries)
         self.assertIn("enc_key_algorithm", result_entries)
-        self.assertIn("server_url", result_entries)
 
         # check challenge
         challenge_list = get_challenges(serial=smartphone_serial)
@@ -2992,18 +2988,18 @@ class APIContainerSynchronization(APIContainerTest):
         nonce = params["nonce"]
         time_stamp = params["time_stamp"]
 
-        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
-        pub_key_enc_smph_str = base64.urlsafe_b64encode(public_key_enc_smph.public_bytes_raw()).decode('utf-8')
+        encr_smph = generate_keypair_ecc("x25519")
+        pub_key_enc_smph_str = base64.urlsafe_b64encode(encr_smph.public_key.public_bytes_raw()).decode('utf-8')
 
         if not container_dict:
             container_dict = json.dumps({"serial": serial, "type": "smartphone"})
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}|{container_dict}"
-        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
+        sign_res = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str,
+        params = {"signature": base64.b64encode(sign_res["signature"]), "public_enc_key_client": pub_key_enc_smph_str,
                   "container_dict_client": container_dict}
-        return params, private_enc_key_smph
+        return params, encr_smph.private_key
 
     def test_24_synchronize_success(self):
         # client rollover and deletable tokens are implicitly set to False
@@ -3114,8 +3110,8 @@ class APIContainerSynchronization(APIContainerTest):
         params, private_enc_key_smph = self.mock_smartphone_sync(result["result"]["value"], smartphone_serial,
                                                                  priv_key_smph, scope)
         # man in the middle fetches client request and inserts its own public encryption key
-        public_key_enc_evil, _ = generate_keypair_ecc("x25519")
-        params["public_enc_key_client"] = base64.urlsafe_b64encode(public_key_enc_evil.public_bytes_raw()).decode(
+        enc_evil = generate_keypair_ecc("x25519")
+        params["public_enc_key_client"] = base64.urlsafe_b64encode(enc_evil.public_key.public_bytes_raw()).decode(
             'utf-8')
 
         # man in the middle sends modified request to the server
@@ -3493,9 +3489,6 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/finalize',
                                              params,
                                              None, 'POST')
-
-        # Check if the response contains the expected values
-        self.assertIn("public_server_key", result["result"]["value"])
 
         delete_policy("register_policy")
 
@@ -3911,7 +3904,6 @@ class APIContainerSynchronization(APIContainerTest):
                                              params,
                                              None, 'POST')
         # Check if the response contains the expected values
-        self.assertIn("public_server_key", result["result"]["value"])
         self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
 
         # Challenge for Sync
@@ -4033,7 +4025,6 @@ class APIContainerSynchronization(APIContainerTest):
                                              params,
                                              None, 'POST')
         # Check if the response contains the expected values
-        self.assertIn("public_server_key", result["result"]["value"])
         self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
 
         container_client = {"serial": smartphone_serial, "type": "smartphone",

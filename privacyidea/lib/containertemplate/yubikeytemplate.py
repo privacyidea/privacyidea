@@ -32,8 +32,9 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
         template_option_values.update(_custom_option_values)
         return template_option_values
 
-    def get_type_specific_options(self):
-        return [x for x in self.template_option_values.keys()
+    @classmethod
+    def get_type_specific_options(cls):
+        return [x for x in cls.template_option_values.keys()
                 if x not in ContainerTemplateBase.template_option_values.keys()]
 
     @classmethod

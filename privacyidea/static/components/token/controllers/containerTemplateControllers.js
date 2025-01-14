@@ -83,7 +83,8 @@ myApp.controller("containerTemplateController", ['$scope', '$http', '$q', 'Conta
 
 myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
     'ConfigFactory', 'TokenFactory', '$location', '$state',
-    function containerTemplateListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $location, $state) {
+    function containerTemplateListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
+                                             TokenFactory, $location, $state) {
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -118,7 +119,6 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
     'ConfigFactory', 'TokenFactory', '$location', '$state', 'ContainerUtils',
     function containerTemplateCreateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
                                                TokenFactory, $location, $state, ContainerUtils) {
-        $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {};
         $scope.containerClassOptions = {};
 
@@ -196,7 +196,6 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
     'ConfigFactory', 'TokenFactory', '$location', '$state', '$stateParams', 'ContainerUtils',
     function containerTemplateEditController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
                                              TokenFactory, $location, $state, $stateParams, ContainerUtils) {
-        $scope.loggedInUser = AuthFactory.getUser();
         $scope.containerClassOptions = {};
         $scope.template = {};
 

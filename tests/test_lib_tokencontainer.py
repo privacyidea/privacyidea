@@ -27,7 +27,7 @@ from privacyidea.lib.containertemplate.containertemplatebase import ContainerTem
 from privacyidea.lib.containertemplate.smartphonetemplate import SmartphoneContainerTemplate
 from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTemplate
 from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc,
-                                    decryptPassword)
+                                    decryptPassword, KeyPair)
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered)
 from privacyidea.lib.token import init_token, remove_token
@@ -931,17 +931,18 @@ class TokenContainerSynchronization(MyTestCase):
             message += f"|{passphrase}"
 
         if private_key_smph:
-            public_key_smph = private_key_smph.public_key()
+            key_pair_smph = KeyPair(private_key=private_key_smph)
+            key_pair_smph.public_key = private_key_smph.public_key()
         else:
-            public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
-        pub_key_smph_str, _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+            key_pair_smph = generate_keypair_ecc("secp384r1")
+        key_pair_str = ecc_key_pair_to_b64url_str(public_key=key_pair_smph.public_key)
 
-        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_smph, "sha256")
+        sign_res = sign_ecc(message.encode("utf-8"), key_pair_smph.private_key, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_client_key": pub_key_smph_str,
+        params = {"signature": base64.b64encode(sign_res["signature"]), "public_client_key": key_pair_str.public_key,
                   "device_brand": device_brand, "device_model": device_model, "scope": scope}
 
-        return params, private_key_smph
+        return params, key_pair_smph.private_key
 
     def test_01_register_smartphone_finalize_invalid_challenge(self):
         scope = "https://pi.net/container/register/finalize"
@@ -955,7 +956,7 @@ class TokenContainerSynchronization(MyTestCase):
         time_stamp = datetime.now(timezone.utc)
         params, _ = self.mock_smartphone_register_params(nonce, time_stamp,
                                                          scope, smartphone_serial, device_brand, device_model)
-        # Try finalize registration with invalid params
+        # Try to finalize registration with invalid params
         self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Valid prepare
@@ -976,8 +977,8 @@ class TokenContainerSynchronization(MyTestCase):
         params, _ = self.mock_smartphone_register_params(init_results["nonce"], init_results["time_stamp"],
                                                          scope, smartphone_serial, device_brand, device_model)
         params.update({"scope": scope})
-        public_key_smph, private_key_smph = generate_keypair_ecc("secp384r1")
-        params["public_key"], _ = ecc_key_pair_to_b64url_str(public_key=public_key_smph)
+        smph_keys = generate_keypair_ecc("secp384r1")
+        params["public_key"] = ecc_key_pair_to_b64url_str(public_key=smph_keys.public_key).public_key
         # Try finalize registration
         self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
@@ -1023,17 +1024,13 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
-        self.assertIn("public_server_key", res.keys())
 
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
         self.assertIn("public_key_container", container_info_keys)
-        self.assertIn("public_key_server", container_info_keys)
-        self.assertIn("private_key_server", container_info_keys)
         self.assertEqual(f"{device_brand} {device_model}", container_info["device"])
         self.assertEqual("registered", container_info["registration_state"])
-        self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
 
         return smartphone_serial, priv_sig_key_smph
 
@@ -1055,8 +1052,6 @@ class TokenContainerSynchronization(MyTestCase):
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
         self.assertNotIn("public_key_container", container_info_keys)
-        self.assertNotIn("public_key_server", container_info_keys)
-        self.assertNotIn("private_key_server", container_info_keys)
         self.assertNotIn("device", container_info_keys)
         self.assertNotIn("registration_state", container_info_keys)
         self.assertNotIn("server_url", container_info_keys)
@@ -1087,14 +1082,11 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize registration
         res = smartphone.finalize_registration(params)
-        self.assertIn("public_server_key", res.keys())
 
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
         self.assertIn("public_key_container", container_info_keys)
-        self.assertIn("public_key_server", container_info_keys)
-        self.assertIn("private_key_server", container_info_keys)
 
     def test_06_create_container_challenge(self):
         container_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -1131,19 +1123,19 @@ class TokenContainerSynchronization(MyTestCase):
         nonce = params["nonce"]
         time_stamp = params["time_stamp"]
 
-        public_key_enc_smph, private_enc_key_smph = generate_keypair_ecc("x25519")
-        pub_key_enc_smph_str = base64.urlsafe_b64encode(public_key_enc_smph.public_bytes_raw()).decode('utf-8')
+        enc_keys = generate_keypair_ecc("x25519")
+        pub_key_enc_smph_str = base64.urlsafe_b64encode(enc_keys.public_key.public_bytes_raw()).decode('utf-8')
 
         message = f"{nonce}|{time_stamp}|{serial}|{scope}|{pub_key_enc_smph_str}"
         if client_container:
             message += f"|{json.dumps(client_container)}"
-        signature, hash_algorithm = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
+        sign_res = sign_ecc(message.encode("utf-8"), private_key_sig_smph, "sha256")
 
-        params = {"signature": base64.b64encode(signature), "public_enc_key_client": pub_key_enc_smph_str,
+        params = {"signature": base64.b64encode(sign_res["signature"]), "public_enc_key_client": pub_key_enc_smph_str,
                   "scope": scope}
         if client_container:
             params.update({"container_dict_client": json.dumps(client_container)})
-        return params, private_enc_key_smph
+        return params, enc_keys.private_key
 
     def test_08_challenge_sync_smartphone_success(self):
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -1284,7 +1276,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # check entries
         container_details = container_dict["container"]
-        self.assertIn("active", container_details["states"])
+        self.assertIn(smartphone.serial, container_details["serial"])
         # tokens
         token_details = container_dict["tokens"]
         add_tokens = token_details["add"]
@@ -1293,14 +1285,12 @@ class TokenContainerSynchronization(MyTestCase):
         update_tokens = token_details["update"]
         self.assertEqual(1, len(update_tokens))
         self.assertEqual(totp_token.get_serial(), update_tokens[0]["serial"])
-        self.assertTrue(update_tokens[0]["active"])
 
         # Encrypt container dict
         res = smartphone.encrypt_dict(container_dict, smph_params)
         self.assertIn("encryption_algorithm", res.keys())
         self.assertIn("encryption_params", res.keys())
         self.assertIn("container_dict_server", res.keys())
-        self.assertIn("public_server_key", res.keys())
 
     def test_14_synchronize_without_registration(self):
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -1311,8 +1301,8 @@ class TokenContainerSynchronization(MyTestCase):
         init_result = smartphone.create_challenge(scope)
 
         # Mock smartphone
-        _, priv_sig_key_smph = generate_keypair_ecc("secp384r1")
-        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, priv_sig_key_smph, scope)
+        smph_keys = generate_keypair_ecc("secp384r1")
+        smph_params, _ = self.mock_smartphone_sync(init_result, smartphone_serial, smph_keys.private_key, scope)
 
         # Finalize sync
         smph_params.update({'scope': scope})
@@ -1362,17 +1352,13 @@ class TokenContainerSynchronization(MyTestCase):
         synced_container_details = smartphone.synchronize_container_details(client_container)
 
         # check container details
-        self.assertEqual("lost", synced_container_details["container"]["states"][0])
+        self.assertEqual(smartphone.serial, synced_container_details["container"]["serial"])
         # check tokens
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(0, len(add_tokens))
         updated_tokens = synced_container_details["tokens"]["update"]
         for token in updated_tokens:
             self.assertIn(token["serial"], [hotp_token.get_serial(), totp_token.get_serial()])
-            if token["serial"] == hotp_token.get_serial():
-                self.assertTrue(token["active"])
-            elif token["serial"] == totp_token.get_serial():
-                self.assertFalse(token["active"])
 
         # Pass empty client container
         synced_container_details = smartphone.synchronize_container_details({})
@@ -1443,17 +1429,13 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize registration
         res = finalize_registration(smartphone_serial, params)
-        self.assertIn("public_server_key", res.keys())
 
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
         self.assertIn("public_key_container", container_info_keys)
-        self.assertIn("public_key_server", container_info_keys)
-        self.assertIn("private_key_server", container_info_keys)
         self.assertEqual(f"{device_brand} {device_model}", container_info["device"])
         self.assertEqual("rollover", container_info["registration_state"])
-        self.assertNotEqual(container_info["public_key_container"], container_info["public_key_server"])
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
 
@@ -1508,7 +1490,6 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Finalize registration
         res = finalize_registration(smartphone_serial, params)
-        self.assertIn("public_server_key", res.keys())
 
         # Check token details
         # new tokens are rolled over: enrollment settings need to be the same and not reset to defaults

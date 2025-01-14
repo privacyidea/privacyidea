@@ -459,7 +459,7 @@ def check():
                 if container:
                     container.update_last_authentication()
             except Exception as e:
-                log.info(f"Could not find container for token {serial}: {e}")
+                log.debug(f"Could not find container for token {serial}: {e}")
 
     serials = ",".join(serial_list)
     r = send_result(result, rid=2, details=details)

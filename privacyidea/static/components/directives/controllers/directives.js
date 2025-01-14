@@ -691,8 +691,7 @@ myApp.directive("registerContainer", ["instanceUrl", "versioningSuffixProvider",
     }]);
 
 myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixProvider", "ConfigFactory", "AuthFactory",
-    "ContainerFactory",
-    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory, ContainerFactory) {
+    function (instanceUrl, versioningSuffixProvider, ConfigFactory, AuthFactory) {
         return {
             scope: {
                 formInit: "=",
@@ -701,6 +700,8 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 functionObj: "=",
                 markAddRemove: "=",
                 showDefaultSelection: "=",
+                edit: "=",
+                hideButtons: "=",
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.containertemplate.details.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {

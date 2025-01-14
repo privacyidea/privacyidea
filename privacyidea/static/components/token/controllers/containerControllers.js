@@ -23,7 +23,7 @@ myApp.service('ContainerUtils', function () {
 
     let helperCreateDisplayList = function (stringList, capitalize) {
         // Creates a comma separated list as a single string out of a list of string objects.
-        // Each string is capitalized.
+        // Each string is capitalized if capitalize is True.
 
         let displayList = "";
         angular.forEach(stringList, function (element) {
@@ -43,6 +43,11 @@ myApp.service('ContainerUtils', function () {
     };
 
     this.setAllowedTokenTypes = function (containerType, tokensForContainerTypes, allTokenTypes) {
+        // Returns a dictionary containing the allowed token types for the selected container type in different formats:
+        // displayPhrase: single string to display the allowed token types list
+        // list: list of token types
+        // displaySelection: dictionary with token type as key and display string as value (for the drop-down selection)
+        // default: default token type for the selection
         let allowedTokenTypes = {};
         allowedTokenTypes.displayPhrase = tokensForContainerTypes[containerType].token_types_display;
         allowedTokenTypes.list = tokensForContainerTypes[containerType].token_types;
@@ -50,7 +55,7 @@ myApp.service('ContainerUtils', function () {
         angular.forEach(allowedTokenTypes.list, function (tokenType) {
             let displayString = allTokenTypes[tokenType];
             if (displayString) {
-                allowedTokenTypes.displaySelection [tokenType] = displayString;
+                allowedTokenTypes.displaySelection[tokenType] = displayString;
             }
         });
 
@@ -67,6 +72,8 @@ myApp.service('ContainerUtils', function () {
     };
 
     this.containerTemplateDiffCallback = function (data) {
+        // Converts the output of the container template comparison API output to a format that can be displayed
+        // for each container a single string of missing and additional tokens is created
         let diff_list = data.result.value;
         let templateContainerDiff = diff_list;
 
@@ -247,7 +254,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
         $scope.selectTemplate = function (defaultSelection) {
             // Sets all template options according to the selected template
-            // optionally first select the default template
+            // optionally first selects the default template if defaultSelection is true
             if (defaultSelection) {
                 // select default template if one exists or no template otherwise
                 $scope.form.template = $scope.defaultTemplates[$scope.form.containerType];
@@ -334,7 +341,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         }
                         if (initData.webAuthnRegisterRequest) {
                             $scope.click_wait = true;
-                            // $scope.register_fido(initData.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
                         }
                     });
                 }
@@ -739,7 +745,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
         $scope.disableCountdown = function () {
-            // Recursively call this function every second until the countdown is over
+            // Recursively call this function every 250 ms until the countdown is over
             if ($scope.showDisableAllTokens >= -0.25) {
                 $timeout(function () {
                     $scope.showDisableAllTokens -= 0.25;

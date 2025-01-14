@@ -746,18 +746,11 @@ def create_challenge(container_serial: str):
     if registration_state != "registered" and registration_state != "rollover":
         raise ContainerNotRegistered(f"Container is not registered.")
 
-    # Get server url for the second step
-    server_url = container_info.get("server_url")
-    if server_url is None:
-        log.debug("Server url is not set in the container info.")
-        server_url = " "
-
     # validity time for the challenge in minutes
     challenge_ttl = int(container_info.get("challenge_ttl", "2"))
 
     # Create challenge
     res = container.create_challenge(scope, challenge_ttl)
-    res.update({'server_url': server_url})
 
     # Audit log
     g.audit_object.log({"success": True})
@@ -801,11 +794,11 @@ def synchronize(container_serial: str):
         ::
 
             {
-                "container":   {"serial": "SMPH001", "states": ["active"], ...},
-                "tokens": {"add": [<enroll information token1>, <enroll information token2>, ...],
-                           "update": [{"serial": "TOTP001", "active": True},
-                                      {"serial": "HOTP001", "active": False,
-                                       "otp": ["1234", "9876"], "tokentype": "hotp"}]},
+                "container": {"type": "smartphone", "serial": "SMPH001"},
+                    "tokens": {"add": ["enroll_url1", "enroll_url2"],
+                               "update": [{"serial": "TOTP001", "tokentype": "totp"},
+                                          {"serial": "HOTP001", "otp": ["1234", "9876"],
+                                           "tokentype": "hotp", "counter": 2}]}
                 "policies": {"container_client_rollover": True,
                              "container_initial_token_transfer": False,
                              "client_token_deletable": False,
@@ -1081,7 +1074,7 @@ def delete_template(template_name):
 @log_with(log)
 def compare_template_with_containers(template_name):
     """
-    Compares a template with it's created containers.
+    Compares a template with its created containers.
     Only containers the user is allowed to manage are included in the comparison.
 
     If a container serial is provided, only this container will be compared to the template.

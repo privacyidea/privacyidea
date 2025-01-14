@@ -61,6 +61,9 @@ class TokenContainerClass:
     def get_class_options(cls, only_selectable=False):
         """
         Returns the options for the container class.
+
+        :param only_selectable: If True, only options with more than one value are returned.
+        :return: Dictionary in the format {key: [values]}
         """
         if only_selectable:
             class_options = {key: values for key, values in cls.options.items() if len(values) > 1}
@@ -466,7 +469,7 @@ class TokenContainerClass:
 
     def get_container_info_dict(self):
         """
-        Return the tokencontainerinfo from the DB
+        Return the tokencontainerinfo from the DB as dictionary
 
         :return: dictionary of tokencontainerinfo objects
         """
@@ -556,7 +559,7 @@ class TokenContainerClass:
         """
         raise privacyIDEAError("Registration is not implemented for this container type.")
 
-    def check_challenge_response(self, params):
+    def check_challenge_response(self, params: dict):
         """
         Checks if the response to a challenge is valid.
         """
@@ -573,7 +576,7 @@ class TokenContainerClass:
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
-            * checks if the challenge is for the right scope
+            * Checks if the challenge is for the right scope
             * Verifies the signature
         Implicitly verifies the passphrase by adding it to the signature message. The passphrase needs to be defined in
         the challenge data. Otherwise, no passphrase is used.
@@ -589,7 +592,9 @@ class TokenContainerClass:
         :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
-        valid_challenge = False
+        container_info = self.get_container_info_dict()
+        hash_algorithm = container_info.get("hash_algorithm", "SHA256")
+        verify_res = {"valid": False, "hash_algorithm": hash_algorithm}
 
         # Checks all challenges of the container, at least one must be valid
         for challenge in challenge_list:
@@ -618,9 +623,6 @@ class TokenContainerClass:
                 if container:
                     message += f"|{container}"
 
-                container_info = self.get_container_info_dict()
-                hash_algorithm = container_info.get("hash_algorithm", "SHA256")
-
                 # log to find reason for invalid signature
                 log.debug(
                     f"Challenge data: nonce={nonce}, timestamp={times_stamp}, serial={self.serial}, scope={scope}")
@@ -630,10 +632,10 @@ class TokenContainerClass:
 
                 # Check signature
                 try:
-                    valid_challenge, hash_algorithm = verify_ecc(message.encode("utf-8"), signature, public_key,
-                                                                 hash_algorithm)
+                    verify_res = verify_ecc(message.encode("utf-8"), signature, public_key, hash_algorithm)
                 except InvalidSignature:
                     # It is not the right challenge
+                    log.debug(f"Used hash algorithm to verify: {verify_res['hash_algorithm']}")
                     continue
 
                 # Valid challenge: delete it
@@ -643,7 +645,7 @@ class TokenContainerClass:
                 # Delete expired challenge
                 challenge.delete()
 
-        return valid_challenge
+        return verify_res["valid"]
 
     def get_as_dict(self, include_tokens: bool = True, public_info: bool = True, additional_hide_info: list = None):
         """
@@ -687,8 +689,7 @@ class TokenContainerClass:
         if public_info or additional_hide_info:
             black_key_list = []
             if public_info:
-                black_key_list = ["private_key_server", "public_key_server", "public_key_container",
-                                  "rollover_server_url", "rollover_challenge_ttl"]
+                black_key_list = ["public_key_container", "rollover_server_url", "rollover_challenge_ttl"]
             if additional_hide_info:
                 black_key_list.extend(additional_hide_info)
             info = self.get_container_info()

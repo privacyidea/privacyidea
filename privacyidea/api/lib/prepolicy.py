@@ -1469,10 +1469,12 @@ def check_user_params(request=None, action=None):
 
 def check_container_register_rollover(request=None, action=None):
     """
-    Checks if a container rollover is requested. If so, the policy is checked.
+    Checks if the user is allowed to register or rollover the container.
+    Checks for the container_rollover action if the parameter 'rollover' is set in the request to True. Checks for the
+    container_register action otherwise.
 
-    :param request: The request that is intercepted during the API call
-    :return: True if rollover is allowed or not requested, otherwise raises an Exception
+    :param request: The request object
+    :return: True if the action is allowed, otherwise raises an Exception
     """
     params = request.all_data
     container_rollover = getParam(params, "rollover", optional)

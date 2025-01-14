@@ -911,7 +911,7 @@ def compare_generic_condition(cond, key_method, warning):
         raise Exception("Condition not parsable.")
 
 
-def compare_time(cond, time_value):
+def compare_time(cond, time_value: datetime):
     """
     Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
 
