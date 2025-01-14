@@ -315,7 +315,7 @@ def init():
                          f"{container_serial}.")
             if container_add_token_right:
                 try:
-                    add_token_to_container(container_serial, tokenobject.get_serial())
+                    add_token_to_container(container_serial, token_object.get_serial())
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
                     g.audit_object.log({"container_serial": container_serial,
