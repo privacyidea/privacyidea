@@ -33,6 +33,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
              function-obj="functionObject"
              mark-add-remove="true"
              show-default-selection="true"
+             edit="checkRight('container_template_create')"
+             hide-buttons="hide_buttons"
         ></div>
     </div>
 
@@ -134,9 +136,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </div>
 
-    <div class="form-group text-center">
+    <div class="form-group text-center" ng-hide="!checkRight('container_template_create') && hide_buttons">
         <button class="btn btn-capitalize btn-primary"
-                ng-click="saveTemplate()">
+                ng-click="saveTemplate()"
+                ng-disabled="!checkRight('container_template_create')">
             <span class="glyphicon glyphicon-floppy-disk"></span>
             <translate>Save</translate>
         </button>

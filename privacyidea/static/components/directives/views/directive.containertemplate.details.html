@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 <div ng-show="showDefaultSelection">
     <input type="checkbox"
            ng-model="selection.default"
+           ng-disabled="!edit"
            id="defaultTemplate">
     <label for="defaultTemplate" translate>Set as default template</label>
 </div>
@@ -47,13 +48,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </button>
                 <button class="btn btn-capitalize btn-warning btn-transparent"
                         ng-click="removeToken($index)"
-                        ng-hide="token.state === 'remove'">
+                        ng-hide="token.state === 'remove' || (!edit && hideButtons)"
+                        ng-disabled="!edit">
                     <span class="glyphicon glyphicon-remove"></span>
                     <translate>Remove Token</translate>
                 </button>
                 <button class="btn btn-capitalize btn-primary btn-transparent"
                         ng-click="reAddToken($index)"
-                        ng-show="token.state === 'remove'">
+                        ng-show="token.state === 'remove' && !(!edit && hideButtons)"
+                        ng-disabled="!edit">
                     <span class="glyphicon glyphicon-plus"></span>
                     <translate>Add Token</translate>
                 </button>
@@ -62,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <ng-include src="instanceUrl + '/static/components/token/views/token.enroll.'
                                          + token.type + '.html' + fileVersionSuffix">
                 </ng-include>
-                <input type="checkbox" ng-model="token.user" id="checkboxAssignUserFromContainer">
+                <input type="checkbox" ng-model="token.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
                 <label for="checkboxAssignUserFromContainer" translate>
                     Assign the token to the container owner.</label>
             </div>
@@ -70,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </tr>
 </table>
 
-<div>
+<div ng-show="edit">
     <span translate>
         Select a token type to add:
     </span>

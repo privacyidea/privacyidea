@@ -53,12 +53,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <tbody>
             <tr ng-repeat="template in templatedata.templates">
                 <td>
-                    <a ng-show="checkRight('container_template_create')"
-                       ng-click="editTemplate(template.name)">{{ template.name }}
+                    <a ng-click="editTemplate(template.name)">{{ template.name }}
                     </a>
-                    <span ng-hide="checkRight('container_template_create')">
-                            {{ template.name }}
-                        </span>
                 </td>
                 <td>
                     {{ template.container_type }}
