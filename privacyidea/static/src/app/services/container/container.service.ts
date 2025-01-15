@@ -119,7 +119,7 @@ export class ContainerService {
     }, {headers})
   }
 
-  toggleActive(serial: string, states: string[]): Observable<any> {
+  toggleActive(container_serial: string, states: string[]): Observable<any> {
     const headers = this.localService.getHeaders();
     const new_states = states.map(state => {
       if (state === 'active') {
@@ -130,7 +130,8 @@ export class ContainerService {
         return state
       }
     }).join(',');
-    return this.http.post(`${this.containerBaseUrl}${serial}/states`, {states: new_states}, {headers})
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/states`,
+      {states: new_states}, {headers})
   }
 
   unassignUser(serial: string, username: string, userRealm: string) {

@@ -123,8 +123,8 @@ export class ContainerTableComponent {
     this.dataSource.set(new MatTableDataSource(processedData));
   }
 
-  containerSelected(serial: string) {
-    this.container_serial.set(serial);
+  containerSelected(container_serial: string) {
+    this.container_serial.set(container_serial);
     this.containerIsSelected.set(true)
   }
 }

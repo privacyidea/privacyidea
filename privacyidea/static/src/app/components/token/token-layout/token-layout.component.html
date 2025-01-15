@@ -9,6 +9,7 @@
                     [revoked]="revoked"
                     [selectedTabIndex]="selectedTabIndex"
                     [token_serial]="token_serial"
+                    [container_serial]="container_serial"
                     [tokenIsSelected]="tokenIsSelected"
                     [isProgrammaticChange]="isProgrammaticChange">
     </app-token-card>
@@ -25,7 +26,9 @@
           [revoked]="revoked"
           [selectedTabIndex]="selectedTabIndex"
           [token_serial]="token_serial"
-          [tokenIsSelected]="tokenIsSelected">
+          [container_serial]="container_serial"
+          [tokenIsSelected]="tokenIsSelected"
+          [isProgrammaticChange]="isProgrammaticChange">
         </app-token-card>
       </mat-drawer>
     }
