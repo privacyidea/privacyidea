@@ -75,17 +75,15 @@ h3 {
 .width-36 {
   width: 36rem;
 }
-
-::ng-deep {
-  div.mat-mdc-autocomplete-panel .mat-mdc-option .mdc-list-item__primary-text {
-    height: 28px;
-    display: flex;
-    align-items: center;
-    border-left: 2px solid #dedcdf;
-    padding: 10px;
-  }
-
-  .cdk-overlay-container div.mat-mdc-autocomplete-panel {
-    max-height: 516px;
-  }
+::ng-deep div.mat-mdc-autocomplete-panel .mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  border-left: 2px solid #dedcdf;
+  padding: 10px;
 }
+
+.cdk-overlay-container div.mat-mdc-autocomplete-panel {
+  max-height: 516px;
+}
+
