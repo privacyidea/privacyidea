@@ -812,7 +812,7 @@ def multichallenge_enroll_via_validate(request, response):
         if user.login and user.realm:
             enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
                                          user_object=user).action_values(unique=True, write_to_audit_log=False)
-            # check if we have a multi enroll policy
+            # Check if we have a policy to enroll a token and which type
             if enroll_policies:
                 tokentype = list(enroll_policies)[0]
                 tokentype = tokentype.lower()

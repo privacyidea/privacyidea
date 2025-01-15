@@ -227,10 +227,10 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
         machine_tokens = list_token_machines(serial)
         # Delete MachineTokenOptions
         for machine_token in machine_tokens:
-            if (machine_token.get("application") == application and (
-                    (not machine_id or machine_id == machine_token.get("machine_id") and
-                     (not hostname or hostname == machine_token.get("hostname")) and
-                     (not resolver_name or resolver_name == machine_token.get("resolver"))))):
+            if (machine_token.get("application") == application
+                    and ((not machine_id or machine_id == machine_token.get("machine_id")
+                          and (not hostname or hostname == machine_token.get("hostname"))
+                          and (not resolver_name or resolver_name == machine_token.get("resolver"))))):
                 delete_mt = True
                 for key, value in filter_params.items():
                     # Check if the machine token contains the correct filter values

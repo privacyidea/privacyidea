@@ -23,7 +23,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 import privacyidea.lib.token
 from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import remove_token, init_token
+from privacyidea.lib.token import remove_token, init_token, get_tokens
 from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
 from privacyidea.lib.user import User
@@ -137,6 +137,8 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             self.assertEqual(res.status_code, 200)
             data = res.json
             self.assertIn("detail", data)
+            self.assertIn("serial", data["detail"])
+            serial_2 = data["detail"]["serial"]
             self.assertIn("passkey_registration", data["detail"])
             passkey_registration = data["detail"]["passkey_registration"]
             # PubKeyCredParams: Only ecdsa should be allowed
@@ -152,6 +154,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         delete_policy("attestation")
         delete_policy("user_verification")
         remove_token(serial)
+        remove_token(serial_2)
 
     def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
         with (self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}),
@@ -458,7 +461,6 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
             self.assertIn("code", result["error"])
             self.assertEqual(905, result["error"]["code"])
 
-
         # Refill with machine name works
         data = {"serial": serial, "refilltoken": refill_token, "pass": ""}
         with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data,
@@ -522,13 +524,13 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
-            # Authentication is not successful, instead it is a challenge
+            # Authentication is not successful, instead, it is a challenge
             self.assertIn("result", res.json)
             result = res.json["result"]
             self.assertIn("status", result)
             self.assertTrue(result["status"])
             self.assertIn("value", result)
-            self.assertFalse(result["value"])
+            self.assertFalse(result["value"], res.json)
             self.assertIn("authentication", result)
             self.assertEqual("CHALLENGE", result["authentication"])
             # Detail
@@ -609,7 +611,6 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
-            # response looks like this {'detail': {'message': 'Found matching challenge', 'serial': 'PIPK00008E1B', 'threadid': 133541956595840, 'username': 'hans'}, 'id': 2, 'jsonrpc': '2.0', 'result': {'authentication': 'ACCEPT', 'status': True, 'value': True}, 'time': 1736768141.2746646, 'version': 'privacyIDEA 3.10.dev1', 'versionnumber': '3.10.dev1', 'signature': 'rsa_sha256_pss:'}
             self.assertIn("detail", res.json)
             detail = res.json["detail"]
             self.assertIn("message", detail)
@@ -622,3 +623,4 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
 
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)
+        delete_policy("enroll_passkey")
