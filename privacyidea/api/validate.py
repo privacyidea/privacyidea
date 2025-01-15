@@ -167,15 +167,18 @@ def before_request():
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
     """
-    This endpoint allows to fetch new offline OTP values for a token,
-    that is already offline.
-    According to the definition it will send the missing OTP values, so that
-    the client will have as much otp values as defined.
+    For HOTP token, this endpoint will return the amount of offline OTP values so that the client has the defined count,
+    which is why the last pass is required.
+    For WebAuthn/Passkey, this endpoint will return nothing specific.
+    Every response contains the serial and a new refilltoken.
+    Returns an error in case the token has been unmarked for offline use or if the refilltoken is incorrect.
 
     :param serial: The serial number of the token, that should be refilled.
     :param refilltoken: The authorization token, that allows refilling.
-    :param pass: the last password (maybe password+OTP) entered by the user
-    :return:
+    :param pass: The last password (or password+OTP) entered by the user.
+                 For WebAuthn/Passkey, the value should be empty ("").
+    :return: Hashed OTP values (HOTP) or nothing (WebAuthn/Passkey). Returns an error in case the token has been
+     unmarked for offline use or if the refilltoken is incorrect (out of sync).
     """
     serial = getParam(request.all_data, "serial", required)
     refilltoken_request = getParam(request.all_data, "refilltoken", required)

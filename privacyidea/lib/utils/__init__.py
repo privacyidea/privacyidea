@@ -24,25 +24,25 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
-import os
 
-import logging
-from importlib import import_module
-import binascii
 import base64
-import sqlalchemy
-import string
+import binascii
+import hashlib
+import logging
 import re
-from datetime import timedelta, datetime
+import string
+import threading
+import traceback
 from datetime import time as dt_time
+from datetime import timedelta, datetime
+from importlib import import_module
+
+import sqlalchemy
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-import hashlib
-import traceback
-import threading
 
-from webauthn.helpers import bytes_to_base64url
+from privacyidea.lib.framework import get_app_config_value
 
 try:
     from importlib import metadata
@@ -1555,24 +1555,32 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent:str):
+def get_computer_name_from_user_agent(user_agent: str):
     """
     Searches for entries in the user agent that could identify the machine.
     Example: ComputerName/Laptop-3324231
+    The following keys are by default searched for in the user agent:
+    ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    The list can be extended with custom keys in pi.cfg with the entry OFFLINE_MACHINE_KEYS = ["CustomKey1", ...]
     :param user_agent: The user agent string
     :type user_agent: str or None
     :return: The computer name or a generated computer name if no matching key was found in the user agent
     :rtype: str or None
     """
-    # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
-    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
     if not user_agent:
         log.warning("No user agent provided to extract computer name from.")
         return None
+    # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
+    # Do not convert to set as the order of the keys should be preserved and iteration should be deterministic
+    keys: list = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    config_keys: list = get_app_config_value("OFFLINE_MACHINE_KEYS", [])
+    keys.extend([key for key in config_keys if key not in keys])
+    log.debug(f"Keys to search for machine name in user agent: {keys}")
     for key in keys:
         if key in user_agent:
             try:
                 return user_agent.split(key + "/")[1].split(" ")[0]
             except Exception as ex:
-                log.info(f"Could not extract computer name from user agent: {ex} with key {key}")
+                # This exception is likely to happen, because words/parts like "Mac" are common
+                log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
     return None

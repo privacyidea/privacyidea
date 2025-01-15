@@ -1,7 +1,8 @@
 """
 This tests the package lib.utils
 """
-from .base import MyTestCase
+from privacyidea.config import TestingConfig
+from .base import MyTestCase, OverrideConfigTestCase
 
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
@@ -547,7 +548,7 @@ class UtilsTestCase(MyTestCase):
                          "mysql://knöbel:***@localhost/pi")
         self.assertEqual(censor_connect_string(
             "oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
-                         "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
+            "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
@@ -695,7 +696,6 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, decode_base32check, client_component)
 
     def test_23_get_client_ip(self):
-
         class RequestMock():
             blueprint = None
             remote_addr = None
@@ -912,7 +912,6 @@ class UtilsTestCase(MyTestCase):
                            "realm": "Dodge City"})
 
     def test_34_compare_generic_condition(self):
-
         def mock_attribute(key):
             attr = {"a": "10",
                     "b": "100",
@@ -1061,7 +1060,12 @@ class UtilsTestCase(MyTestCase):
             res = get_plugin_info_from_useragent(val[0])
             self.assertEqual(res, val[1:], res)
 
-    def test_38_get_computer_name(self):
+
+class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        OFFLINE_MACHINE_KEYS = ["Hostname", "myMachineIdentifier", "otherMachineIdentifier"]
+
+    def test_01_get_computer_name(self):
         data = {
             "privacyidea-cp/1.1.1 Windows/Laptop-1": "Laptop-1",
             "privacyidea-cp/1.1.1 ComputerName/Laptop-2": "Laptop-2",
@@ -1070,7 +1074,11 @@ class UtilsTestCase(MyTestCase):
             "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
             "": None,
             None: None,
-            "privacyidea-mac/3.3.3": None
+            "privacyidea-mac/3.3.3": None,
+            "privacyidea-mac/3.3.3 myMachineIdentifier/Toaster": "Toaster",
+            # This is also "Toaster" because the order of the keys is fixed, therefore "myMachineIdentifier" is checked
+            # first and found
+            "otherMachineIdentifier/Dishwasher myMachineIdentifier/Toaster": "Toaster"
         }
 
         for k, v in data.items():

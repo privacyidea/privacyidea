@@ -156,21 +156,12 @@ class MachineApplication(MachineApplicationBase):
         return otps
 
     @staticmethod
-    def get_authentication_item(token_type,
-                                serial,
-                                challenge=None,
-                                options=None,
-                                filter_param=None,
-                                user_agent=None):
+    def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None, user_agent=None):
         """
         :param token_type: the type of the token. At the moment
                            we support HOTP and WebAuthn/Passkey tokens.
-                           Supporting time based tokens (TOTP) is difficult, since we would have to
-                           return a looooong list of OTP values.
-                           Supporting "yubikey" token (AES) would be
-                           possible, too.
         :param serial:     the serial number of the token.
-        :param challenge:  This can contain the password (otp pin + otp value)
+        :param challenge:  this can contain the password (otp pin + otp value)
                            so that we can put the OTP PIN into the hashed response.
         :type challenge: basestring
         :param options: options

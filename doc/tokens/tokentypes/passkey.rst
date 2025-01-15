@@ -1,4 +1,4 @@
-.. _passkey.rst
+.. _passkey:
 
 Passkey
 -------
@@ -14,3 +14,5 @@ such as phishing, credential stuffing, and other remote attacks.
 
 This is a variation of the WebAuthn token, which is also a FIDO2 token supported by privacyIDEA.
 Therefore, it inherits the configuration of the Webauthn token, which is described here: :ref:`webauthn_otp_token`.
+
+Passkeys are eligible for offline use as specified here :ref:`application_offline`.
