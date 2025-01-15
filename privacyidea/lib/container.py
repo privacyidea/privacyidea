@@ -25,7 +25,9 @@ import os
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
+from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
@@ -983,7 +985,7 @@ def finalize_registration(container_serial: str, params: dict):
     return res
 
 
-def finalize_container_rollover(container: TokenContainer):
+def finalize_container_rollover(container: TokenContainerClass):
     """
     Finalize the rollover of a container. For each token in the container a rollover is performed.
     All previous challenges are deleted.
@@ -1009,7 +1011,7 @@ def finalize_container_rollover(container: TokenContainer):
     delete_challenges(container.serial)
 
 
-def init_container_rollover(container: TokenContainer, server_url: str, challenge_ttl: int, registration_ttl: int,
+def init_container_rollover(container: TokenContainerClass, server_url: str, challenge_ttl: int, registration_ttl: int,
                             ssl_verify: str, params: dict):
     """
     Initializes the rollover of a container.
@@ -1043,7 +1045,7 @@ def init_container_rollover(container: TokenContainer, server_url: str, challeng
     return res
 
 
-def unregister(container: TokenContainer):
+def unregister(container: TokenContainerClass):
     """
     Unregister a container from the synchronization and deletes all challenges for the container.
 
@@ -1279,7 +1281,7 @@ def compare_template_dicts(template_a: dict, template_b: dict):
     return equal
 
 
-def compare_template_with_container(template: TokenContainerTemplate, container: TokenContainer):
+def compare_template_with_container(template: ContainerTemplateBase, container: TokenContainerClass):
     """
     Compares the template with the container. It is only evaluated if the token types are equal.
 

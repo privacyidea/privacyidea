@@ -32,7 +32,8 @@ from privacyidea.lib.config import get_token_types
 from privacyidea.lib.crypto import verify_ecc, decryptPassword
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, privacyIDEAError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import create_tokenclass_object
+from privacyidea.lib.token import create_tokenclass_object, get_tokens, get_serial_by_otp_list, \
+    get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -524,16 +525,13 @@ class TokenContainerClass:
         """
         Set the template the container is based on.
         """
-        success = False
         db_template = TokenContainerTemplate.query.filter_by(name=template_name).first()
         if db_template:
             if db_template.container_type == self.type:
                 self._db_container.template = db_template
                 self._db_container.save()
-                success = True
             else:
                 log.info(f"Template {template_name} is not compatible with container type {self.type}.")
-        return success
 
     def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params):
         """
@@ -760,3 +758,111 @@ class TokenContainerClass:
         It is not supported by all container classes. Classes not supporting the encryption raise a privacyIDEA error.
         """
         raise privacyIDEAError("Encryption is not implemented for this container type.")
+
+    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False):
+        """
+        Compares the container from the client with the server and returns the differences.
+        The container dictionary from the client contains information about the container itself and the tokens.
+        For each token the type and serial shall be provided. If no serial is available, two otp values can be provided.
+        The server than tries to find the serial for the otp values. If multiple serials are found, it will not be
+        included in the returned dictionary, since the token can not be uniquely identified.
+        The returned dictionary contains information about the container itself and the tokens that needs to be added
+        or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated at least the
+        serial and the tokentype are provided.
+
+        :param initial_transfer_allowed: If True, all tokens from the client are added to the container
+        :param container_client: The container from the client as dictionary.
+        An example container dictionary from the client:
+            ::
+
+                {
+                    "container": {"type": "smartphone", "serial": "SMPH001"},
+                    "tokens": [{"serial": "TOTP001", "type": "totp"},
+                                {"otp": ["1234", "9876"], "type": "hotp"}]
+                }
+
+        :return: container dictionary
+        An example of a returned container dictionary:
+            ::
+
+                {
+                    "container": {"type": "smartphone", "serial": "SMPH001"},
+                    "tokens": {"add": ["enroll_url1", "enroll_url2"],
+                               "update": [{"serial": "TOTP001", "tokentype": "totp"},
+                                          {"serial": "HOTP001", "otp": ["1234", "9876"],
+                                           "tokentype": "hotp", "counter": 2}]}
+                }
+        """
+        container_dict = {"container": {"type": self.type, "serial": self.serial}}
+        server_token_serials = [token.get_serial() for token in self.get_tokens()]
+
+        # Get serials for client tokens without serial
+        client_tokens = container_client.get("tokens", [])
+        serial_otp_map = {}
+        for token in client_tokens:
+            dict_keys = token.keys()
+            # Get serial from otp if required
+            if "serial" not in dict_keys and "otp" in dict_keys:
+                token_type = token.get("tokentype")
+                token_list = get_tokens(tokentype=token_type)
+                serial_list = get_serial_by_otp_list(token_list, otp_list=token["otp"])
+                if len(serial_list) == 1:
+                    serial = serial_list[0]
+                    token["serial"] = serial
+                    serial_otp_map[serial] = token["otp"]
+                elif len(serial_list) > 1:
+                    log.debug(f"Multiple serials found for otp {token['otp']}. Ignoring this token.")
+                # shall we ignore otp values where multiple serials are found?
+
+        # map client and server tokens
+        client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
+
+        container_info = self.get_container_info_dict()
+        registration_state = container_info.get("registration_state", "")
+        if registration_state == "rollover":
+            # rollover all tokens: generate new enroll info for all tokens
+            missing_serials = server_token_serials
+            same_serials = []
+        else:
+            missing_serials = list(set(server_token_serials).difference(set(client_serials)))
+            same_serials = list(set(server_token_serials).intersection(set(client_serials)))
+
+        # Initial synchronization after registration or rollover
+        if initial_transfer_allowed and container_info.get("initial_synchronized") == "False":
+            self.add_container_info("initial_synchronized", "True")
+            server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
+            for serial in server_missing_tokens:
+                # Try to add the missing token to the container on the server
+                try:
+                    token = get_tokens_from_serial_or_user(serial, None)[0]
+                except ResourceNotFoundError:
+                    log.info(f"Token {serial} from client does not exist on the server.")
+                    continue
+
+                try:
+                    self.add_token(token)
+                except ParameterError as e:
+                    log.info(f"Client token {serial} could not be added to the container: {e}")
+                    continue
+                # add token to the same_serials list to update the token details
+                same_serials.append(serial)
+
+        # Get info for same serials: token details
+        update_dict = []
+        for serial in same_serials:
+            token = get_tokens_from_serial_or_user(serial, None)[0]
+            token_dict_all = token.get_as_dict()
+            token_dict = {"serial": token_dict_all["serial"], "tokentype": token_dict_all["tokentype"]}
+            # rename count to counter for the client
+            if "count" in token_dict_all:
+                token_dict["counter"] = token_dict_all["count"]
+
+            # add otp values to allow the client identifying the token if he has no serial yet
+            otp = serial_otp_map.get(serial)
+            if otp:
+                token_dict["otp"] = otp
+            update_dict.append(token_dict)
+
+        container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
+
+        return container_dict

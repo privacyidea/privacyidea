@@ -1017,9 +1017,6 @@ def create_template_with_name(container_type, template_name):
     if not isinstance(template_options, dict):
         raise ParameterError("'template_options' must be a dictionary!")
 
-    if container_type.lower() not in ["generic", "yubikey", "smartphone"]:
-        raise ParameterError("Invalid container type")
-
     # check if name already exists
     existing_templates = get_templates_by_query(template_name)["templates"]
 

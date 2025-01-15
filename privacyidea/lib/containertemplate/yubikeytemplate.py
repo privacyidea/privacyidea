@@ -27,15 +27,11 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
 
     @classmethod
     def get_template_class_options(cls):
-        _custom_option_values = YubikeyContainer.get_class_options()
-        template_option_values = ContainerTemplateBase.template_option_values.copy()
-        template_option_values.update(_custom_option_values)
-        return template_option_values
+        custom_option_values = YubikeyContainer.get_class_options()
 
-    @classmethod
-    def get_type_specific_options(cls):
-        return [x for x in cls.template_option_values.keys()
-                if x not in ContainerTemplateBase.template_option_values.keys()]
+        template_option_values = ContainerTemplateBase.get_template_class_options()
+        custom_option_values.update(template_option_values)
+        return custom_option_values
 
     @classmethod
     def get_class_type(cls):

@@ -61,10 +61,6 @@ class ContainerTemplateBase:
     def get_template_option_keys(cls):
         return cls.template_option_values.keys()
 
-    @classmethod
-    def get_type_specific_options(cls):
-        return []
-
     @property
     def template_options(self):
         return self._db_template.options

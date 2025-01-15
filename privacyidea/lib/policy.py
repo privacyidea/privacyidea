@@ -3304,21 +3304,6 @@ class Match(object):
                    sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check,
                    additional_realms=additional_realms)
 
-    def get_policy_realms(self):
-        """
-        Return a list of realms that are specified in the conditions of the matched policies.
-        Return None, if at least one policy has no realm condition, this is a wildcard that all realms are allowed.
-        """
-        allowed_realms = []
-        policies = self.policies()
-        for pol in policies:
-            if not pol.get("realm"):
-                # if there is no realm set in a policy, then this is a wildcard!
-                allowed_realms = None
-                break
-            else:
-                allowed_realms.extend(pol.get("realm"))
-        return allowed_realms
 
 def get_allowed_custom_attributes(g, user_obj):
     """

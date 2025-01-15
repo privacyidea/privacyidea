@@ -19,20 +19,10 @@
 #
 import logging
 
-from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.lib import _
 from privacyidea.lib.containerclass import TokenContainerClass
 
 log = logging.getLogger(__name__)
-
-
-def verify_auth_token(params):
-    """
-    Verify the authentication token.
-    """
-    auth_token = params.get("auth_token")
-    verify_auth_token(auth_token, ["user", "admin"])
-    return True
 
 
 class YubikeyContainer(TokenContainerClass):
