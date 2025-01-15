@@ -51,7 +51,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from collections import OrderedDict
 
-from .test_lib_tokencontainer import TokenContainerSynchronization
+from .test_lib_tokencontainer import MockSmartphone
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -1920,12 +1920,14 @@ class ContainerEventTestCase(MyTestCase):
         init_result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True",
                                                    params={})
         smartphone.add_container_info("server_url", server_url)
-        params, priv_key_smph = TokenContainerSynchronization.mock_smartphone_register_params(init_result["nonce"],
-                                                                                              init_result["time_stamp"],
-                                                                                              scope,
-                                                                                              smartphone.serial)
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_result["nonce"],
+                                             init_result["time_stamp"],
+                                             scope,
+                                             smartphone.serial)
+
         smartphone.finalize_registration(params)
-        return priv_key_smph
+        return mock_smph
 
     def setup_request(self, container_serial=None):
         g = FakeFlaskG()

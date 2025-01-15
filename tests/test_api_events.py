@@ -9,9 +9,8 @@ from .base import MyApiTestCase, FakeFlaskG
 from . import smtpmock
 import mock
 from privacyidea.lib.config import set_privacyidea_config
-from .test_api_container import APIContainerSynchronization
 from .test_lib_events import ContainerEventTestCase
-from .test_lib_tokencontainer import TokenContainerSynchronization
+from .test_lib_tokencontainer import MockSmartphone
 
 # TODO: this should be imported from lib.event when available
 HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
@@ -964,10 +963,10 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         # Finalize rollover success
         scope = f"https://pi.net/container/register/finalize"
-        params, _ = APIContainerSynchronization.mock_smartphone_register_params(init_result["nonce"],
-                                                                                init_result["time_stamp"],
-                                                                                scope,
-                                                                                container.serial)
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"],
+                                             scope, container.serial)
+
         self.request_assert_success(f'container/register/finalize',
                                     params,
                                     self.at, 'POST')
@@ -1169,21 +1168,16 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         # Prepare rollover
         # Register container
-        priv_key_smph = ContainerEventTestCase.register_smartphone(container)
+        mock_smph = ContainerEventTestCase.register_smartphone(container)
         set_policy("policy", scope=SCOPE.CONTAINER,
                    action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
         # Create Challenge for rollover
         scope = f"https://pi.net/container/{container.serial}/rollover"
         challenge_data = container.create_challenge(scope)
         # Mock smartphone
-        device_brand = "LG"
-        device_model = "ABC123"
-        params, priv_sig_key_smph = TokenContainerSynchronization.mock_smartphone_register_params(
-            challenge_data["nonce"],
-            challenge_data["time_stamp"],
-            scope, container.serial,
-            device_brand, device_model,
-            private_key_smph=priv_key_smph)
+        params = mock_smph.register_finalize(challenge_data["nonce"],
+                                             challenge_data["time_stamp"],
+                                             scope)
 
         with mock.patch("logging.Logger.warning") as mock_log:
             self.request_assert_success(f'/container/{container.serial}/rollover',
