@@ -107,7 +107,7 @@
                   <input matInput
                          [(ngModel)]="selectedUsername"
                          [matAutocomplete]="userAuto">
-                  <mat-autocomplete #userAuto="matAutocomplete">
+                  <mat-autocomplete #userAuto="matAutocomplete" class="user-selection-autocomplete">
                     @for (option of filteredUserOptions(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }
@@ -213,11 +213,11 @@
         <app-container-details-token-table [containerIsSelected]="containerIsSelected"
                                            [container_serial]="container_serial"
                                            [dataSource]="containerTokenData"
+                                           [isProgrammaticChange]="isProgrammaticChange"
                                            [refreshContainerDetails]="refreshContainerDetails"
                                            [selectedTabIndex]="selectedTabIndex"
                                            [tokenIsSelected]="tokenIsSelected"
-                                           [token_serial]="token_serial"
-                                           [isProgrammaticChange]="isProgrammaticChange">
+                                           [token_serial]="token_serial">
         </app-container-details-token-table>
       </div>
     </div>
