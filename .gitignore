@@ -15,6 +15,7 @@ DEBUILD/
 doc/_build/
 .idea/
 *.log
+privacyidea.log.*
 *.old
 *.orig
 tests/testdata/ca2
