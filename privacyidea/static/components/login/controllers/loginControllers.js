@@ -182,11 +182,6 @@ angular.module("privacyideaApp")
                     $scope.lock_screen();
                 }
             });
-            /*
-             $rootScope.$on('Keepalive', function() {
-                $scope.logoutWarning = false;
-            });
-            */
 
             // helper function
             $scope.isChecked = function (val) {
@@ -649,11 +644,6 @@ angular.module("privacyideaApp")
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
             };
-
-            $scope.login.username = "admin";
-            $scope.login.password = "admin";
-            $scope.authenticate();
-
         }]);
 
 angular.module("privacyideaApp")
