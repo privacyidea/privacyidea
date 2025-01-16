@@ -59,7 +59,7 @@ describe('AuthGuard', () => {
     expect(canActivateResult).toBeFalse();
     expect(canActivateChildResult).toBeFalse();
     expect(authServiceSpy.isAuthenticatedUser).toHaveBeenCalledTimes(2);
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
 
     // Ensure that the router navigation promise is handled properly
     routerSpy.navigate.calls.mostRecent().returnValue.then(() => {

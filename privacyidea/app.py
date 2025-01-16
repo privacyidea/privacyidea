@@ -36,6 +36,7 @@ import sqlalchemy as sa
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
+from privacyidea.api.healthcheck import healthz_blueprint
 from privacyidea.api.lib.utils import send_html
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -130,6 +131,7 @@ def create_app(config_name="development",
               "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
+    app.config['APP_READY'] = False
 
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
@@ -192,6 +194,7 @@ def create_app(config_name="development",
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
     app.register_blueprint(container_blueprint, url_prefix='/container')
+    app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
 
     # Set up Plug-Ins
     db.init_app(app)
@@ -199,14 +202,7 @@ def create_app(config_name="development",
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
-    babel = Babel()
-    babel.init_app(app)
-
-    @babel.localeselector
-    def get_locale():
-        return get_accepted_language(request)
-
-    app.response_class = PiResponseClass
+    Babel(app, locale_selector=get_accepted_language)
 
     # Setup logging
     log_read_func = {
@@ -301,5 +297,6 @@ def create_app(config_name="development",
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
+    app.config['APP_READY'] = True
 
     return app
