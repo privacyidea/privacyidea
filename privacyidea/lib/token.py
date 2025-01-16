@@ -88,6 +88,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError, AuthError)
+from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
 from privacyidea.lib.fido2.util import get_fido2_nonce
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
@@ -2907,10 +2908,10 @@ def get_fido2_token_by_credential_id(credential_id: str):
     :return: The token object or None
     """
     h = hashlib.sha256(base64url_to_bytes(credential_id))
-    cred_id_hash = h.hexdigest()
+    credential_id_hash = h.hexdigest()
     try:
         token_id = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                    .filter(TokenInfo.Value == cred_id_hash).first().token_id)
+                    .filter(TokenInfo.Value == credential_id_hash).first().token_id)
         token = Token.query.filter(Token.id == token_id).first()
         return create_tokenclass_object(token)
     except Exception as ex:
@@ -2972,7 +2973,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         "signature": get_required_one_of(params, ["signature", "signaturedata"]),
         "userHandle": get_optional_one_of(params, ["userHandle", "userhandle"]),
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
-        "user_verification": get_optional(params, "webauthn_user_verification_requirement", "preferred")
+        "user_verification": get_optional(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
     }
     # These parameters are required for compatibility with the old WebAuthnToken class
     if token.type == "webauthn":
@@ -2984,7 +2985,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
 def get_credential_ids_for_user(user: User) -> list:
     """
     Get a list of credential ids of passkey or webauthn token for a user.
-    Can be used to avoid double registration of an authenticator
+    Can be used to avoid double registration of an authenticator.
 
     :param user: The user object
     :return: A list of credential ids

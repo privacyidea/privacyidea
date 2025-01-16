@@ -128,13 +128,13 @@ class PasskeyTokenClass(TokenClass):
         First step of enrollment: Returns the registration data for the passkey token.
         Also creates a challenge in the database which has to be verified in the second step.
         The following parameters are required in params:
-        - "webauthn_relying_party_id" (WEBAUTHNACTION.RELYING_PARTY_ID)
-        - "webauthn_relying_party_name" (WEBAUTHNACTION.RELYING_PARTY_NAME)
+        - "webauthn_relying_party_id" (FIDO2PolicyAction.RELYING_PARTY_ID)
+        - "webauthn_relying_party_name" (FIDO2PolicyAction.RELYING_PARTY_NAME)
 
         The following parameters are optional in params to customize the registration:
         - "registered_credential_ids": A list of credential IDs that are already registered with the user.
-        - WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
-        - WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
+        - FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
+        - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PasskeyAction.AttestationConveyancePreference (default: NONE)
         """
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
@@ -220,8 +220,9 @@ class PasskeyTokenClass(TokenClass):
 
     def update(self, param, reset_failcount=True):
         """
-        Second step of enrollment: Verify the registration data from the authenticator with challenge from the database.
-        If the registration is successful, the token is set to enrolled and metadata is written to the token info.
+        Second step of enrollment: Verify the registration data from the authenticator with the challenge from the
+        database. If the registration is successful, the token is set to enrolled and metadata is written to the token
+        info.
         To complete the registration, the following parameters are required in param:
         - attestationObject
         - clientDataJSON
@@ -230,7 +231,7 @@ class PasskeyTokenClass(TokenClass):
         - authenticatorAttachment
         - transaction_id
         - HTTP_ORIGIN
-        - WEBAUTHNACTION.RELYING_PARTY_ID ("webauthn_relying_party_id")
+        - FIDO2PolicyAction.RELYING_PARTY_ID ("webauthn_relying_party_id")
         """
         response_detail = {"details": {"serial": self.token.serial}}
 
@@ -245,24 +246,24 @@ class PasskeyTokenClass(TokenClass):
 
         elif attestation and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Finalize the registration by verifying the registration data from the authenticator
-            cred_id = get_required(param, "credential_id")
-            cred_id_raw = get_required(param, "rawId")
+            credential_id = get_required(param, "credential_id")
+            credential_id_raw = get_required(param, "rawId")
             authenticator_attachment = get_required(param, "authenticatorAttachment")
             transaction_id = get_required(param, "transaction_id")
             expected_rp_id = get_required(param, FIDO2PolicyAction.RELYING_PARTY_ID)
             expected_origin = get_required(param, "HTTP_ORIGIN")
 
             serial = self.token.serial
-            challenge_list = [challenge for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
-                              if challenge.is_valid()]
+            challenges = [challenge for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
+                          if challenge.is_valid()]
 
-            if not len(challenge_list):
+            if not len(challenges):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
             try:
                 registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
-                        "id": cred_id,
-                        "rawId": cred_id_raw,
+                        "id": credential_id,
+                        "rawId": credential_id_raw,
                         "response": {
                             "attestationObject": attestation,
                             "clientDataJSON": client_data
@@ -270,7 +271,7 @@ class PasskeyTokenClass(TokenClass):
                         "type": "public-key",
                         "authenticatorAttachment": authenticator_attachment,
                     },
-                    expected_challenge=challenge_list[0].challenge.encode("utf-8"),
+                    expected_challenge=challenges[0].challenge.encode("utf-8"),
                     expected_origin=expected_origin,
                     expected_rp_id=expected_rp_id,
                 )
@@ -299,14 +300,17 @@ class PasskeyTokenClass(TokenClass):
             # If the attestation object contains a x5c certificate, save it in the token info
             # and set the description to the CN if it is not already set
             if registration_verification.attestation_object:
-                att_obj: AttestationObject = parse_attestation_object(registration_verification.attestation_object)
-                if att_obj.att_stmt and att_obj.att_stmt.x5c:
-                    att_cert: Certificate = cryptography.x509.load_der_x509_certificate(att_obj.att_stmt.x5c[0])
-                    pem: str = (att_cert.public_bytes(serialization.Encoding.PEM)
-                                .decode("utf-8").replace("\n", ""))
-                    token_info["attestation_certificate"] = pem
+                attestation_object: AttestationObject = parse_attestation_object(
+                    registration_verification.attestation_object)
+                if attestation_object.att_stmt and attestation_object.att_stmt.x5c:
+                    attestation_certificate: Certificate = cryptography.x509.load_der_x509_certificate(
+                        attestation_object.att_stmt.x5c[0])
+                    certificate_pem: str = (attestation_certificate.public_bytes(serialization.Encoding.PEM)
+                                            .decode("utf-8").replace("\n", ""))
+                    token_info["attestation_certificate"] = certificate_pem
                     if not self.token.description:
-                        attributes: list[NameAttribute] = att_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+                        attributes: list[NameAttribute] = attestation_certificate.subject.get_attributes_for_oid(
+                            NameOID.COMMON_NAME)
                         if attributes:
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
@@ -387,7 +391,7 @@ class PasskeyTokenClass(TokenClass):
 
     def create_challenge(self, transactionid=None, options=None):
         """
-        Requires the key "webauthn_relying_party_id" (WEBAUTHNACTION.RELYING_PARTY_ID) in the option dict.
+        Requires the key "webauthn_relying_party_id" (FIDO2PolicyAction.RELYING_PARTY_ID) in the option dict.
         Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
         the credential_id that returned with the response to this challenge.
         The returned dict has the format:
@@ -400,13 +404,13 @@ class PasskeyTokenClass(TokenClass):
         The challenge nonce is encoded in base64url.
         """
         rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
-        uv = get_optional(options, "user_verification", "preferred")
+        user_verification = get_optional(options, "user_verification", "preferred")
         challenge = fido2.util.get_fido2_nonce()
         transaction_id = transactionid or get_rand_digit_str(20)
         message = PasskeyTokenClass.get_default_challenge_text_auth()
         db_challenge = Challenge(self.get_serial(), transaction_id=transaction_id, challenge=challenge)
         db_challenge.save()
-        challenge_details = {"challenge": challenge, "rpId": rp_id, "userVerification": uv}
+        challenge_details = {"challenge": challenge, "rpId": rp_id, "userVerification": user_verification}
         # TODO this vvv is horrible
         return True, message, transaction_id, challenge_details
 
