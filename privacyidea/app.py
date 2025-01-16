@@ -86,7 +86,6 @@ class PiResponseClass(Response):
     To avoid caching problems with the json property in the Response class,
     the property is overwritten using a non-caching approach.
     """
-
     @property
     def json(self):
         """This will contain the parsed JSON data if the mimetype indicates
@@ -284,8 +283,7 @@ def create_app(config_name="development",
             app.config["PI_NODE_UUID"] = str(pi_uuid)
             log.debug(f"Current UUID: '{pi_uuid}'")
 
-        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME",
-                                                                   "localnode")
+        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
 
         insp = sa.inspect(db.get_engine())
         if insp.has_table(NodeName.__tablename__):
