@@ -1,4 +1,4 @@
-class FIDO2TokenInfo(object):
+class FIDO2TokenInfo:
     PUB_KEY = "pubKey"
     ORIGIN = "origin"
     AAGUID = "aaguid"
