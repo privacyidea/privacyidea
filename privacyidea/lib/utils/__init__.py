@@ -364,9 +364,8 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except (TypeError, binascii.Error, OverflowError):
-        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
-        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
+    except (TypeError, binascii.Error):
+        # b32decode throws a binascii.Error when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -571,7 +570,7 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(IPNetwork(proxynet) for proxynet in p_list)
+                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
             else:
                 # No mapping client, so we take the whole network
                 proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))
@@ -1346,6 +1345,9 @@ def create_tag_dict(logged_in_user=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
+                    googleurl_img=None,
+                    pushurl_value=None,
+                    pushurl_img=None,
                     client_ip=None,
                     pin=None,
                     challenge=None,
@@ -1365,6 +1367,9 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param tokendescription: The description of the token
     :param googleurl_value: The URL for the QR code during token enrollemnt
+    :param googleurl_img: The image data blob of the QR-code during token enrollment
+    :param pushurl_value: The URL for the Push-Token enrollment
+    :param pushurl_img: The image data blob of the Push-Token enrollment QR-code
     :param client_ip: The IP of the client
     :param pin: The PIN of a token
     :param challenge: The challenge data
@@ -1390,6 +1395,9 @@ def create_tag_dict(logged_in_user=None,
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
                 googleurl_value=googleurl_value,
+                googleurl_img=googleurl_img,
+                pushurl_value=pushurl_value,
+                pushurl_img=pushurl_img,
                 time=time,
                 date=date,
                 client_ip=client_ip,
@@ -1493,44 +1501,6 @@ def parse_string_to_dict(s, split_char=":"):
     values = [[x for x in y.split()] for y in packed_list[1::2]]
     d = {a: b for a, b in zip(keys, values)}
     return d
-
-
-def replace_function_event_handler(text, token_serial=None, tokenowner=None, logged_in_user=None):
-    if logged_in_user is not None:
-        login = logged_in_user.login
-        realm = logged_in_user.realm
-    else:
-        login = ""
-        realm = ""
-
-    if tokenowner is not None:
-        surname = tokenowner.info.get("surname")
-        givenname = tokenowner.info.get("givenname")
-        userrealm = tokenowner.realm
-    else:
-        surname = ""
-        givenname = ""
-        userrealm = ""
-
-    if token_serial is not None:
-        token_serial = token_serial
-    else:
-        token_serial = ""  # nosec B105 # Reset serial
-
-    try:
-        attributes = {
-            "logged_in_user": login,
-            "realm": realm,
-            "surname": surname,
-            "token_owner": givenname,
-            "user_realm": userrealm,
-            "token_serial": token_serial
-        }
-        new_text = text.format(**attributes)
-        return new_text
-    except(ValueError, KeyError) as err:
-        log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
-        return text
 
 
 def convert_imagefile_to_dataimage(imagepath):

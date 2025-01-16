@@ -33,14 +33,13 @@ jobs:
     name: 'Run tests with Python'
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
-    # we need to fix the ubuntu version until we drop Python 2.7 and 3.6
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       # don't cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
-        # current supported Python versions (and 2.7 and 3.6 for legacy support)
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        # current supported Python versions
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v3
@@ -75,8 +74,8 @@ jobs:
         pip freeze
         python -b -m pytest -v --cov=privacyidea --cov-report=xml tests/
       env:
-        # silence some deprecation warnings
-        PYTHONWARNINGS: "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning,ignore:Please use assertRegex instead:DeprecationWarning"
+        # Output DeprecationWarnings only once
+        PYTHONWARNINGS: "once::DeprecationWarning"
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' }}

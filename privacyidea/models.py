@@ -292,9 +292,8 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenOwner) \
             .filter(TokenOwner.token_id == self.id) \
             .delete()
-        db.session.query(MachineToken) \
-            .filter(MachineToken.token_id == self.id) \
-            .delete()
+        for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
+            mt.delete()
         db.session.query(Challenge) \
             .filter(Challenge.serial == self.serial) \
             .delete()
@@ -384,9 +383,7 @@ class Token(MethodsMixin, db.Model):
         """
         # delete old TokenRealms
         if not add:
-            db.session.query(TokenRealm) \
-                .filter(TokenRealm.token_id == self.id) \
-                .delete()
+            db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
@@ -3603,5 +3600,4 @@ class TokenContainerRealm(MethodsMixin, db.Model):
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"), primary_key=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
 
-    __table_args__ = (db.UniqueConstraint('container_id', 'realm_id'),
-                      {'mysql_row_format': 'DYNAMIC'})
+    __table_args__ = ({'mysql_row_format': 'DYNAMIC'})

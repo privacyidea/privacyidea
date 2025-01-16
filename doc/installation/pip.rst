@@ -9,7 +9,7 @@ You can install privacyidea usually on any Linux distribution in a python
 virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
-privacyIDEA currently runs with Python 3.6 to 3.10. Other
+privacyIDEA currently runs with Python 3.9 to 3.12. Other
 versions either do not work or are not tested.
 
 You first need to install a package for creating a python `virtual environment
@@ -90,15 +90,16 @@ An encryption key for encrypting the secrets in the database and a key for
 signing the :ref:`audit` log is also needed (the following commands should be
 executed inside the virtual environment)::
 
-    pi-manage create_enckey  # encryption key for the database
-    pi-manage create_audit_keys  # key for verification of audit log entries
+    pi-manage setup create_enckey  # encryption key for the database
+    pi-manage setup create_audit_keys  # key for verification of audit log entries
 
 To create the database tables execute::
 
-    pi-manage create_tables
+    pi-manage setup create_tables
 
 Stamping the database to the current database schema version is important for
-the update process later::
+the update process later. Since version 3.10 the database is stamped to the head
+version automatically. For older versions use::
 
     pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/
 
@@ -109,6 +110,10 @@ After creating a local administrative user with::
 the development server can be started with::
 
     pi-manage run
+
+.. versionchanged:: 3.10
+    To start the development server with an earlier version use ``runserver``. The
+    command is still available but deprecated.
 
 .. warning::
     The development server should not be used for a productive environment.

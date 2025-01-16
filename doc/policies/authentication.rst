@@ -334,7 +334,7 @@ be used during authentication. The list is separated by whitespaces like
 .. _policy_change_pin_via_validate:
 
 force_challenge_response
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: force_challenge_response
 
@@ -459,7 +459,7 @@ You need to specify a list of FQDNs without the https scheme like:
 For more information on configuring U2F see :ref:`u2f_token`.
 
 
-.. [#pythonre] https://docs.python.org/2/library/re.html
+.. [#pythonre] https://docs.python.org/3/library/re.html
 
 .. _reset_all_user_tokens:
 
@@ -523,12 +523,12 @@ dependent on the clients IP address and the user agent.
    attempts to log in with the same expired credentials again. In all other cases,
    expired entries need to be deleted from this table manually by running::
 
-      pi-manage authcache cleanup --minutes MIN
+      pi-manage config authcache cleanup --minutes MIN
 
    which deletes all cache entries whose last authentication has occurred at least
    ``MIN`` minutes ago. As an example::
 
-      pi-manage authcache cleanup --minutes 300
+      pi-manage config authcache cleanup --minutes 300
 
    will delete all authentication cache entries whose last authentication happened more
    than 5 hours ago.

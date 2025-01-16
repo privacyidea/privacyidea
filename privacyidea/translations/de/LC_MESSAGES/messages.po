@@ -5,13 +5,14 @@
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
 # Nils Behlen <nils.behlen@netknights.it>, 2024.
+# samir-at-netknights <samir.nasher_taher@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2024-09-03 02:47+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2024-11-22 15:00+0000\n"
+"Last-Translator: samir-at-netknights <samir.nasher_taher@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -19,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.9-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -1010,8 +1011,8 @@ msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
 msgstr ""
-"Wenn einem Benutzer kein Token zugewiesen ist, werden sein Passwort gegen "
-"die hier eingestellte RADIUS-Server-Konfiguration geprüft."
+"Wenn einem Benutzer kein Token zugewiesen ist, wird sein Passwort gegen die "
+"hier eingestellte RADIUS-Server-Konfiguration geprüft."
 
 #: lib/policy.py:2476
 msgid ""

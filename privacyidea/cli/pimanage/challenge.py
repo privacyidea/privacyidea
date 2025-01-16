@@ -42,9 +42,6 @@ def cleanup_challenge(chunksize, age, dryrun=False):
     """
     Delete all expired challenges from the challenge table
     """
-    if chunksize is not None:
-        chunksize = int(chunksize)
-
     if age:
         # Delete challenges created earlier than age minutes ago
         now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)

@@ -1,6 +1,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2024-06-25 Raphael Topel <raphael.topel@esh.essen.de>
+#             Change AUTHTYPE.SASL_KERBEROS behaviour if upn is present in userinfo values for multidomain support
 #  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add censored password functionality
 #  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -205,7 +207,7 @@ def ignore_sizelimit_exception(conn, generator):
             last_entry = next(generator)
             yield last_entry
         except StopIteration:
-            # If the generator is exceed, we stop
+            # If the generator is exceeded, we stop
             break
         except LDAPOperationResult as e:
             # If the size limit has been reached, we stop. All other exceptions are re-raised.
@@ -342,9 +344,13 @@ class IdResolver (UserIdResolver):
             if not have_gssapi:
                 log.warning('gssapi module not available. Kerberos authentication not possible')
                 return False
-            # we need to check credentials with kerberos differently since we
+            # We need to check credentials with kerberos differently since we
             # can not use bind for every user
-            name = gssapi.Name(self.getUserInfo(uid).get('username'))
+            upn = self.getUserInfo(uid).get('upn')
+            if upn is not None and upn != "None" and upn != "":
+                name = gssapi.Name(upn.upper())
+            else:
+                name = gssapi.Name(self.getUserInfo(uid).get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
             except gssapi.exceptions.GSSError as e:

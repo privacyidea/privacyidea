@@ -64,24 +64,26 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
 import logging
+from dataclasses import replace
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.container import get_container_realms
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
-from flask import g, current_app
+from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
+from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
-from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters, get_pushtoken_add_config
+from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
+                                              check_token_action_allowed, check_container_action_allowed,
+                                              UserAttributes)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -667,12 +669,13 @@ def twostep_enrollment_activation(request=None, action=None):
     user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
-    token_exists = False
+    rollover = getParam(request.all_data, "rollover", optional=True)
+    token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
-            token_type = tokensobject_list[0].token.tokentype
-            token_exists = True
+            token = tokensobject_list[0]
+            token_type = token.get_tokentype()
     token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
@@ -688,8 +691,9 @@ def twostep_enrollment_activation(request=None, action=None):
             # The user is allowed to pass 2stepinit=1
             pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1 (if the token does not exist yet)
-            if not token_exists:
+            # We force 2stepinit to be 1 if the token does not exist yet or
+            # if a token rollover is triggered and the token is not in 'clientwait' state
+            if not token or (token.rollout_state != ROLLOUTSTATE.CLIENTWAIT and rollover):
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
@@ -716,8 +720,6 @@ def twostep_enrollment_parameters(request=None, action=None):
 
     This policy function is used to decorate the ``/token/init`` endpoint.
     """
-    policy_object = g.policy_object
-    user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
     if serial:
@@ -785,17 +787,16 @@ def check_max_token_user(request=None, action=None):
         /token/init  (with a realm and user)
         /token/assign
 
-    :param req:
+    :param request:
     :param action:
     :return: True otherwise raises an Exception
     """
-    ERROR = "The number of tokens for this user is limited!"
-    ERROR_TYPE = "The number of tokens of type {0!s} for this user is limited!"
-    ERROR_ACTIVE = "The number of active tokens for this user is limited!"
-    ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
+    error_msg = "The number of tokens for this user is limited!"
+    error_msg_type = "The number of tokens of type {0!s} for this user is limited!"
+    error_msg_active_limit = "The number of active tokens for this user is limited!"
+    error_msg_type_limit = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
     serial = getParam(params, "serial")
-    tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
     if user_object.is_empty() and serial:
         try:
@@ -829,7 +830,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_TYPE.format(tokentype))
+                    raise PolicyError(error_msg_type.format(tokentype))
 
         # check maximum tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
@@ -846,7 +847,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR)
+                    raise PolicyError(error_msg)
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
@@ -864,7 +865,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_ACTIVE_TYPE.format(tokentype))
+                    raise PolicyError(error_msg_type_limit.format(tokentype))
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
@@ -882,7 +883,7 @@ def check_max_token_user(request=None, action=None):
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
                     g.audit_object.add_policy(limit_list.get(str(max_value)))
-                    raise PolicyError(ERROR_ACTIVE)
+                    raise PolicyError(error_msg_active_limit)
 
     return True
 
@@ -898,8 +899,8 @@ def check_max_token_realm(request=None, action=None):
         /token/assign
         /token/tokenrealms
 
-    :param req: The request that is intercepted during the API call
-    :type req: Request Object
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
     :param action: An optional Action
     :type action: basestring
     :return: True otherwise raises an Exception
@@ -1271,76 +1272,159 @@ def check_base_action(request=None, action=None, anonymous=False):
     return True
 
 
-def check_container_action(request=None, action=None):
+def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
-    is used for api calls that perform actions on container. If a token serial is passed, it also checks the policy
-    for the token realm.
+    is used for api calls that perform actions on a single token.
 
-    :param request:
-    :param action:
+    If a serial is passed in the request and the logged-in user is an admin, the user attributes (username, realm,
+    resolver) are determined from the token. Otherwise, they are determined from the request parameters.
+    If no user attributes are available, they are set to empty strings "". Therefore, only policies that do not specify
+    the respective parameter in the conditions are matched. Only for the action 'assign' the user attributes are set to
+    None if they cannot be determined from the token. Therefore, all policies are matched regardless of the user
+    condition. This allows helpdesk admins to assign their users to tokens without any owner. Note that the token
+    realms are still considered.
+
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the token realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True otherwise raises an Exception
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    serial = params.get("serial")
+
+    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
+    if not action_allowed:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_token_list_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER.
+    It expects a serial list of tokens in the request. The action is verified for each token in the list.
+    It does not throw an exception if the action is not allowed for a token, but removes the token from the list
+    and writes it to the log. Additionally, a list of the not authorized serials is added to the request with the
+    key 'not_authorized_serials'.
+
+    Additionally, for admins, the token realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the token realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+
+    serial_list = params.get("serial")
+    serial_list = serial_list.replace(" ", "").split(",") if serial_list else []
+    new_serial_list = []
+    not_authorized_serials = []
+    for serial in serial_list:
+        action_allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        if action_allowed:
+            new_serial_list.append(serial)
+        else:
+            not_authorized_serials.append(serial)
+            log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
+                     f"It is removed from the token list and will not further processed in the request.")
+    request.all_data["serial"] = ",".join(new_serial_list)
+    request.all_data["not_authorized_serials"] = not_authorized_serials
+    return True
+
+
+def check_container_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    is used for api calls that perform actions on container.
+
+    If a container_serial is passed in the request and the logged-in user is an admin, the user attributes (username,
+    realm, resolver) are determined from the container. Otherwise, they are determined from the request parameters.
+    If no user attributes are available, they are set to empty strings "". Therefore, only policies that do not specify
+    the respective parameter in the conditions are matched. Only for the action 'assign' the user attributes are set to
+    None if they cannot be determined from the container. Therefore, all policies are matched regardless of the user
+    condition. This allows helpdesk admins to assign their users to containers without any owner.
+    Note that the container realms are still considered.
+
+    For admins additionally the container realms are determined and passed as additional_realms to the policy match.
+    That means all policies either matching the user attribute triplet or at least one out of the container realms are
+    considered.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True if the action is allowed, otherwise raises an Exception
+    """
+    params = request.all_data
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+
+    container_serial = params.get("container_serial")
+    action_allowed = check_container_action_allowed(g, action, container_serial, user_attributes)
+
+    if not action_allowed:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_user_params(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
+    verifies if the logged-in user is allowed to set the passed user attributes.
+    With the role USER, the user is only allowed to set its own attributes. For the role ADMIN, policy matching is
+    done with the user attributes from the parameters in the request.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
     :return: True if action is allowed, otherwise raises an Exception
     """
-    ERROR = {"user": "User actions are defined, but the action %s is not "
-                     "allowed!" % action,
-             "admin": "Admin actions are defined, but the action %s is not "
-                      "allowed!" % action}
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
-    realm = params.get("realm")
-    resolver = resolver or params.get("resolver")
+    param_user = params.get("user")
+    param_realm = params.get("realm")
+    param_resolver = params.get("resolver") or resolver
 
-    # Check action for (container) realm
-    match = Match.generic(g, scope=role,
-                          action=action,
-                          user=username,
-                          resolver=resolver,
-                          realm=realm,
-                          adminrealm=adminrealm,
-                          adminuser=adminuser)
-    action_allowed = match.allowed()
-
-    # Get allowed realms
-    allowed_realms = []
-    policies = match.policies()
-    for pol in policies:
-        if not pol.get("realm"):
-            # if there is no realm set in a policy, then this is a wildcard!
-            allowed_realms = None
-            break
+    if role == "user":
+        if param_user and param_user != username:
+            action_allowed = False
+        elif param_realm and param_realm != realm:
+            action_allowed = False
+        elif param_resolver and param_resolver != resolver:
+            action_allowed = False
         else:
-            allowed_realms.extend(pol.get("realm"))
-    request.pi_allowed_realms = allowed_realms
-
-    # get the realm by the container serial
-    # This is a workaround to check all container and token realms since Match.generic() does only support one realm.
-    # TODO: Refactor Match.generic() to support multiple realms
-    if params.get("container_serial"):
-        container_realms = get_container_realms(params.get("container_serial"))
-
-        # Check if at least one container realm is allowed
-        if action_allowed and allowed_realms and container_realms:
-            matching_realms = list(set(container_realms).intersection(allowed_realms))
-            action_allowed = len(matching_realms) > 0
-
-        # get the realm by the token serial:
-        token_realms = None
-        if params.get("serial"):
-            serial = params.get("serial")
-            if serial.isalnum():
-                # single serial, no list
-                token_realms = get_realms_of_token(params.get("serial"), only_first_realm=False)
-
-            # Check if at least one token realm is allowed
-            if action_allowed and allowed_realms and token_realms:
-                matching_realms = list(set(token_realms).intersection(allowed_realms))
-                action_allowed = len(matching_realms) > 0
+            action_allowed = True
+    elif role == "admin":
+        # Check action for new parameters
+        if param_user or param_realm or param_resolver:
+            action_allowed = Match.generic(g,
+                                           scope=role,
+                                           action=action,
+                                           user=param_user,
+                                           resolver=param_resolver,
+                                           realm=param_realm,
+                                           adminrealm=adminrealm,
+                                           adminuser=adminuser).allowed()
+        else:
+            action_allowed = True
 
     if not action_allowed:
-        raise PolicyError(ERROR.get(role))
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
 
 
@@ -1435,7 +1519,7 @@ def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
     It checks, if a policy scope=auth, action=apikeyrequired is set.
-    If so, the validate request will only performed, if a JWT token is passed
+    If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
     """
     user_object = request.User
@@ -1739,19 +1823,16 @@ def webauthntoken_request(request, action):
     :rtype:
     """
 
-    webauthn = False
     scope = None
 
     # Check if this is an enrollment request for a WebAuthn token.
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        webauthn = True
         scope = SCOPE.ENROLL
 
-    # Check if a WebAuthn token is being authorized.
+    # Check if a WebAuthn token is being used for authentication.
     if is_webauthn_assertion_response(request.all_data):
-        webauthn = True
-        scope = SCOPE.AUTHZ
+        scope = SCOPE.AUTH
 
     # Check if this is an auth request (as opposed to an enrollment), and it
     # is not a WebAuthn authorization, and the request is either for
@@ -1769,13 +1850,12 @@ def webauthntoken_request(request, action):
             and not is_webauthn_assertion_response(request.all_data) \
             and ('serial' not in request.all_data
                  or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
-        webauthn = True
         scope = SCOPE.AUTH
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
-    if webauthn:
+    if scope:
         actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
-
+        actions.update(WebAuthnTokenClass.get_class_info('policy').get(SCOPE.AUTHZ))
         if WEBAUTHNACTION.TIMEOUT in actions:
             timeout_policies = Match \
                 .user(g,
@@ -1810,7 +1890,7 @@ def webauthntoken_request(request, action):
         if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
             allowed_aaguids_pols = Match \
                 .user(g,
-                      scope=scope,
+                      scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
                       action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,

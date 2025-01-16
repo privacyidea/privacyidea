@@ -87,8 +87,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         gen_token_serials = [self.hotp_serial_gen, self.totp_serial_gen, self.spass_serial_gen]
 
         # Add tokens to generic container
-        res = add_multiple_tokens_to_container(self.generic_serial, gen_token_serials, user=User(), user_role="admin",
-                                               allowed_realms=None)
+        res = add_multiple_tokens_to_container(self.generic_serial, gen_token_serials, user=User(), user_role="admin")
         self.assertTrue(res)
         # Check tokens
         container = find_container_by_serial(self.generic_serial)
@@ -144,7 +143,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         hotp_token = init_token({"type": "hotp", "genkey": "1"})
         res = add_multiple_tokens_to_container(self.smartphone_serial,
                                                [spass_token.get_serial(), hotp_token.get_serial()],
-                                               user_role="admin", allowed_realms=None)
+                                               user_role="admin")
         self.assertFalse(res[spass_token.get_serial()])
         self.assertTrue(res[hotp_token.get_serial()])
 
@@ -156,7 +155,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Add multiple tokens with non-existing token to container
         token = init_token({"type": "hotp", "genkey": "1"})
         result = add_multiple_tokens_to_container(self.smartphone_serial, ["non_existing_token", token.get_serial()],
-                                                  user=User(), user_role="admin", allowed_realms=None)
+                                                  user=User(), user_role="admin")
         self.assertFalse(result["non_existing_token"])
         self.assertTrue(result[token.get_serial()])
 
@@ -167,14 +166,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Add multiple tokens with one token that is already in the container
         result = add_multiple_tokens_to_container(self.smartphone_serial,
                                                   [self.totp_serial_smph, self.hotp_serial_yubi],
-                                                  user=User(), user_role="admin", allowed_realms=None)
+                                                  user=User(), user_role="admin")
         self.assertTrue(result[self.totp_serial_smph])
         self.assertTrue(result[self.hotp_serial_yubi])
 
     def test_09_remove_multiple_tokens_from_container_success(self):
         generic_token_serials = [self.totp_serial_gen, self.spass_serial_gen]
-        result = remove_multiple_tokens_from_container(self.generic_serial, generic_token_serials, User(), "admin",
-                                                       allowed_realms=None)
+        result = remove_multiple_tokens_from_container(self.generic_serial, generic_token_serials, User(), "admin")
         self.assertTrue(result[self.totp_serial_gen])
         self.assertTrue(result[self.spass_serial_gen])
         # Check tokens of container
@@ -210,26 +208,25 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_12_remove_multiple_tokens_from_container_fails(self):
         # Remove non-existing tokens from container
         result = remove_multiple_tokens_from_container(self.generic_serial, ["non_existing_token", "random"],
-                                                       user_role="admin", allowed_realms=None)
+                                                       user_role="admin")
         self.assertFalse(result["non_existing_token"])
         self.assertFalse(result["random"])
 
         # Remove token that is not in the container
         result = remove_multiple_tokens_from_container(self.generic_serial,
                                                        [self.hotp_serial_yubi, self.totp_serial_smph],
-                                                       user_role="admin", allowed_realms=None)
+                                                       user_role="admin")
         self.assertFalse(result[self.hotp_serial_yubi])
         self.assertFalse(result[self.totp_serial_smph])
 
         # Pass empty token serial list
-        result = remove_multiple_tokens_from_container(self.generic_serial, [], User(), "admin",
-                                                       allowed_realms=None)
+        result = remove_multiple_tokens_from_container(self.generic_serial, [], User(), "admin")
         self.assertEqual(0, len(result))
 
         # Pass non-existing container serial
         self.assertRaises(ResourceNotFoundError, remove_multiple_tokens_from_container,
                           container_serial="non_existing_container",
-                          token_serials=[self.hotp_serial_gen], user=User(), user_role="admin", allowed_realms=None)
+                          token_serials=[self.hotp_serial_gen], user=User(), user_role="admin")
 
     def test_13_delete_token_remove_from_container(self):
         result = remove_token(self.totp_serial_smph)

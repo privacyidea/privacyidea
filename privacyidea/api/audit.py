@@ -24,7 +24,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the audit REST API that can be used to search the audit log.
+"""This is the audit REST API that can be used to search the audit log.
 It only provides the method
 
   GET /audit
@@ -91,7 +91,7 @@ def search_audit():
     """
     audit_dict = search(current_app.config, request.all_data)
     g.audit_object.log({'success': True})
-    
+
     return send_result(audit_dict)
 
 

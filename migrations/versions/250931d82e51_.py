@@ -24,6 +24,7 @@ def upgrade():
         print("Can not add columns 'authentication', 'user_agent', 'user_agent_version' to "
               "table 'pidea_audit'. Probably already exist.")
         print(exx)
+        raise
 
 
 def downgrade():

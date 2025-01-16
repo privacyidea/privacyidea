@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-09-03 02:47+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2024-11-22 13:04+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.9-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -859,7 +859,7 @@ msgstr "Details zu Container {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.html:33
 msgid "Containers"
-msgstr "Containers"
+msgstr "Container"
 
 #: privacyidea/static/components/user/views/user.details.html:335
 msgid "Containers for user {{ username }}"
@@ -4447,7 +4447,7 @@ msgid ""
 "span>\n"
 "    ."
 msgstr ""
-"Der Token ist aktuell in dem  Container\n"
+"Der Token ist aktuell in dem Container\n"
 "    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})\""
 " ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"

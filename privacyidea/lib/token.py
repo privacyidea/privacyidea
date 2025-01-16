@@ -81,9 +81,9 @@ from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode,
                                    check_serial_valid, create_tag_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
-from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
-                                TokenContainerToken)
+from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
+                                TokenInfo, TokenOwner, TokenTokengroup,
+                                Tokengroup, TokenContainer, TokenContainerToken)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -284,23 +284,23 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     if active is not None:
         # Filter active or inactive tokens
         if active is True:
-            sql_query = sql_query.where(Token.active.is_(True))
+            sql_query = sql_query.where(Token.active == True)
         else:
-            sql_query = sql_query.where(Token.active.is_(False))
+            sql_query = sql_query.where(Token.active == False)
 
     if revoked is not None:
         # Filter revoked or not revoked tokens
         if revoked is True:
-            sql_query = sql_query.where(Token.revoked.is_(True))
+            sql_query = sql_query.where(Token.revoked == True)
         else:
-            sql_query = sql_query.where(Token.revoked.is_(False))
+            sql_query = sql_query.where(Token.revoked == False)
 
     if locked is not None:
         # Filter revoked or not revoked tokens
         if locked is True:
-            sql_query = sql_query.where(Token.locked.is_(True))
+            sql_query = sql_query.where(Token.locked == True)
         else:
-            sql_query = sql_query.where(Token.locked.is_(False))
+            sql_query = sql_query.where(Token.locked == False)
 
     if maxfail is not None:
         # Filter tokens, that reached maxfail
@@ -309,7 +309,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         else:
             sql_query = sql_query.filter(Token.maxfail > Token.failcount)
 
-    if rollout_state is not None:
+    if rollout_state is not None and rollout_state.strip("*"):
         # Filter for tokens with the given rollout state
         if "*" in rollout_state:
             # match with "like"
@@ -617,6 +617,10 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     :type allowed_realms: list
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
+    :param description: Take the description of the token into the query
+    :type description: str
+    :param hidden_tokeninfo: List of token-info keys to remove from the results
+    :type hidden_tokeninfo: list
     :param container_serial: The serial number of a container
     :type container_serial: basestring
     :return: dict with tokens, prev, next and count
@@ -649,8 +653,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     else:
         sql_query = sql_query.order_by(sortby.asc())
 
-    pagination = sql_query.paginate(page, per_page=psize,
-                                    error_out=False)
+    pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
     tokens = pagination.items
     prev = None
     if pagination.has_prev:
@@ -710,6 +713,7 @@ def get_one_token(*args, silent_fail=False, **kwargs):
 
     :param silent_fail: Instead of raising an exception we return None silently
     :returns: Token object
+    :rtype: privacyidea.lib.tokenclass.TokenClass
     """
     result = get_tokens(*args, **kwargs)
     if not result:
@@ -1155,10 +1159,9 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None,
-               tokenkind=None):
+def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
-    create a new token or update an existing token
+    Create a new token or update an existing token with the specified parameters.
 
     :param param: initialization parameters like
 
@@ -1302,7 +1305,7 @@ def remove_token(serial=None, user=None):
 
 
 @log_with(log)
-def set_realms(serial, realms=None, add=False):
+def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
     """
     Set all realms of a token. This sets the realms new. I.e. it does not add
     realms. So realms that are not contained in the list will not be assigned
@@ -1318,6 +1321,7 @@ def set_realms(serial, realms=None, add=False):
     :type realms: list
     :param add: if the realms should be added and not replaced
     :type add: bool
+    :param allowed_realms: A list of realms, that the admin is allowed to manage
     """
     realms = realms or []
     corrected_realms = []
@@ -1328,7 +1332,23 @@ def set_realms(serial, realms=None, add=False):
             corrected_realms.append(realm)
 
     tokenobject = get_one_token(serial=serial)
-    tokenobject.set_realms(corrected_realms, add=add)
+
+    # Check if admin is allowed to set the realms
+    old_realms = tokenobject.get_realms()
+
+    matching_realms = corrected_realms
+    if allowed_realms:
+        matching_realms = list(set(corrected_realms).intersection(allowed_realms))
+        excluded_realms = list(set(corrected_realms) - set(matching_realms))
+        if len(excluded_realms) > 0:
+            log.info(f"User is not allowed to set realms {excluded_realms} for token {serial}.")
+
+        # Check if admin is allowed to remove the old realms
+        not_allowed_realms = set(old_realms) - set(allowed_realms)
+        # Add realms that are not allowed to be removed to the set list
+        matching_realms = list(set(matching_realms).union(not_allowed_realms))
+
+    tokenobject.set_realms(matching_realms, add=add)
     tokenobject.save()
 
 
@@ -2248,6 +2268,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     :return: None
     """
     options = options or {}
+    options["push_triggered"] = False
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
@@ -2256,6 +2277,9 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
+            # We need to pass the info if a push token has been triggered, so that require presence can re-use the
+            # challenge instead of creating a new one with a different answer
+            options["push_triggered"] = token_obj.get_type() == "push" if not options["push_triggered"] else True
             # Add the reply to the response
             message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj)
             message_list.append(message)
@@ -2270,15 +2294,11 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 next_pin = token_obj.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
-                    challenge_info["pin_change"] = \
-                        token_obj.is_pin_change()
-                next_passw = token_obj.get_tokeninfo(
-                    "next_password_change")
+                    challenge_info["pin_change"] = token_obj.is_pin_change()
+                next_passw = token_obj.get_tokeninfo("next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
-                    challenge_info["password_change"] = \
-                        token_obj.is_pin_change(
-                            password=True)
+                    challenge_info["password_change"] = token_obj.is_pin_change(password=True)
                 # FIXME: This is deprecated and should be remove one day
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
@@ -2846,7 +2866,7 @@ def challenge_text_replace(message, user, token_obj):
     if tokentype == "sms":
         if is_true(token_obj.get_tokeninfo("dynamic_phone")):
             phone = token_obj.user.get_user_phone("mobile")
-            if type(phone) == list and phone:
+            if isinstance(phone, list) and phone:
                 # if there is a non-empty list, we use the first entry
                 phone = phone[0]
         else:
@@ -2857,7 +2877,7 @@ def challenge_text_replace(message, user, token_obj):
     if tokentype == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
             email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
-            if type(email) == list and email:
+            if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
                 email = email[0]
         else:

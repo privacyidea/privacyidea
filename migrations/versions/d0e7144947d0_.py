@@ -19,7 +19,7 @@ def upgrade():
     try:
         op.add_column('resolverrealm', sa.Column('node_uuid', sa.Unicode(length=36), nullable=True))
     except (OperationalError, ProgrammingError) as exx:
-        if "already exists" in str(exx.orig).lower():
+        if any(x in str(exx.orig).lower() for x in ["already exists", "duplicate column name"]):
             print("Ok, column 'node_uuid' already exists.")
         else:
             raise
@@ -39,21 +39,23 @@ def upgrade():
                 if fk_name:
                     op.drop_constraint(fk_name, 'resolverrealm', type_='foreignkey')
         # drop the unique constraint
-        op.drop_constraint('rrix_2', 'resolverrealm', type_='unique')
-        if migration_context.dialect.name in ['mysql', 'mariadb']:
-            # we have to re-create the foreign key constraints
-            for ref_table in ['resolver', 'realm']:
-                op.create_foreign_key(None, 'resolverrealm', ref_table, [f'{ref_table}_id'], ['id'])
-        # and re-create the unique constraint
-        op.create_unique_constraint('rrix_2', 'resolverrealm', ['resolver_id', 'realm_id', 'node_uuid'])
+        # for SQLAlchemy we need a batch operation
+        with op.batch_alter_table('resolverrealm') as batch_op:
+            batch_op.drop_constraint('rrix_2', type_='unique')
+            if migration_context.dialect.name in ['mysql', 'mariadb']:
+                # we have to re-create the foreign key constraints
+                for ref_table in ['resolver', 'realm']:
+                    batch_op.create_foreign_key(None, ref_table, [f'{ref_table}_id'], ['id'])
+            # and re-create the unique constraint
+            batch_op.create_unique_constraint('rrix_2', ['resolver_id', 'realm_id', 'node_uuid'])
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower():
             print("Ok, constraint already exists.")
             print(exx)
         else:
             raise
-    except Exception as _e:
-        print("Could not change constraint 'rrix_2' on table 'resolverrealm'")
+    except Exception as exx:
+        print(f"Could not change constraint 'rrix_2' on table 'resolverrealm': {exx}")
         raise
 
 
