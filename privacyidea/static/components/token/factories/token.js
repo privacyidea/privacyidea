@@ -367,5 +367,15 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                deleteTokenInfo: function (serial, key, callback) {
+                    $http.delete(tokenUrl + "/info/" + serial + "/" + key,
+                        {
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                        }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                }
             };
         }]);

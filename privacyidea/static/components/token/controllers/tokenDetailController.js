@@ -98,7 +98,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         if (window.PublicKeyCredential) {
             const available = PublicKeyCredential.isConditionalMediationAvailable()
                 .then((available) => {
-                    console.log("isConditionalMediationAvailable: " + available);
+                    //console.log("isConditionalMediationAvailable: " + available);
                     if (available) {
                         mediation = "conditional";
                     }
@@ -112,7 +112,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                     if (["required", "preferred", "discouraged"].includes(data.user_verification)) {
                         userVerification = data.user_verification;
                     }
-                    console.log(data);
+                    //console.log(data);
                     navigator.credentials.get({
                         publicKey: {
                             challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
@@ -120,7 +120,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                             userVerification: userVerification,
                         },
                     }).then(credential => {
-                        console.log(credential);
+                        //console.log(credential);
                         let params = {
                             transaction_id: data.transaction_id,
                             credential_id: credential.id,
@@ -133,7 +133,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                         $http.post(validateUrl + "/check", params, {}
                         ).then(function (response) {
                             let data = response.data;
-                            console.log(data);
+                            //console.log(data);
                             if (data.result.value) {
                                 $scope.loggedinUsername = data.detail.username;
                             } else {
@@ -150,6 +150,21 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             ;
         };
         // End Passkey test button
+
+        // Tokeninfo operations (for refilltoken)
+        $scope.askDeleteInfo = false;
+        $scope.deleteTokenInfo = function (key) {
+            TokenFactory.deleteTokenInfo($scope.tokenSerial, key, function (data) {
+                $scope.askDeleteInfo = false;
+                $scope.get();
+            });
+        };
+        $scope.copyTokeninfoClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                inform.add(gettextCatalog.getString("Refilltoken copied to clipboard!"),
+                    {type: "info", ttl: 3000})
+            });
+        }
 
         $scope.tokenSerial = $stateParams.tokenSerial;
         // This is the parent object

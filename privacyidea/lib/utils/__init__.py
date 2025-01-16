@@ -1582,5 +1582,6 @@ def get_computer_name_from_user_agent(user_agent: str):
                 return user_agent.split(key + "/")[1].split(" ")[0]
             except Exception as ex:
                 # This exception is likely to happen, because words/parts like "Mac" are common
-                log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
+                #log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
+                pass
     return None

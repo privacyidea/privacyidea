@@ -434,7 +434,7 @@ def check():
             if not token.user:
                 return send_result(False, rid=2, details={
                     "message": "No user found for the token with the given credential ID!"})
-            user = token.user
+        user = token.user
 
         # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
         # This does behave correctly but is obviously not a good solution in the long run
@@ -492,10 +492,8 @@ def check():
                         # Additional attributes
                         for k, v in user_info.items():
                             result["attributes"][k] = v
-    # TODO can this be here and not at the start
-    g.audit_object.log({"user": user.login,
-                        "resolver": user.resolver,
-                        "realm": user.realm})
+    # At this point there will be a user, even for FIDO2 credentials
+    g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 
     if "multi_challenge" in details:
         serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
