@@ -6,7 +6,7 @@ import {LocalService} from '../local/local.service';
   providedIn: 'root'
 })
 export class UserService {
-  private baseUrl = 'http://127.0.0.1:5000/user/';
+  private baseUrl = '/user/';
 
   constructor(private http: HttpClient, private localService: LocalService) {
   }

@@ -9,7 +9,7 @@ import {TableUtilsService} from '../table-utils/table-utils.service';
   providedIn: 'root'
 })
 export class TokenService {
-  private tokenBaseUrl = 'http://127.0.0.1:5000/token/';
+  private tokenBaseUrl = '/token/';
   apiFilter = [
     'serial',
     'type',
@@ -187,7 +187,7 @@ export class TokenService {
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http.get(`http://127.0.0.1:5000/tokengroup`, {headers})
+    return this.http.get(`/tokengroup`, {headers})
   }
 
   lostToken(serial: string) {

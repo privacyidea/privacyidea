@@ -19,7 +19,7 @@ export class ContainerService {
   advancedApiFilter = [
     'token_serial'
   ];
-  private containerBaseUrl = 'http://127.0.0.1:5000/container/';
+  private containerBaseUrl = '/container/';
 
   constructor(private http: HttpClient,
               private localService: LocalService,
