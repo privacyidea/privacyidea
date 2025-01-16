@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, request, Response, render_template
+from flask import Flask, Response, render_template
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -74,7 +74,6 @@ from privacyidea.config import config
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
 
-
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
@@ -87,6 +86,7 @@ class PiResponseClass(Response):
     To avoid caching problems with the json property in the Response class,
     the property is overwritten using a non-caching approach.
     """
+
     @property
     def json(self):
         """This will contain the parsed JSON data if the mimetype indicates
@@ -284,7 +284,8 @@ def create_app(config_name="development",
             app.config["PI_NODE_UUID"] = str(pi_uuid)
             log.debug(f"Current UUID: '{pi_uuid}'")
 
-        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME",
+                                                                   "localnode")
 
         insp = sa.inspect(db.get_engine())
         if insp.has_table(NodeName.__tablename__):
