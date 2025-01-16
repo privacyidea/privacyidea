@@ -664,6 +664,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.assertNotIn(container_serial_no_user, containers)
 
         delete_policy("policy")
+        template = get_template_obj(template_name)
+        template.delete()
 
     def test_33_user_compare_template_container_denied(self):
         template_name = self.test_26_user_container_template_create_allowed()
@@ -671,6 +673,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
         delete_policy("policy")
+
+        template = get_template_obj(template_name)
+        template.delete()
 
     def test_34_create_container_with_template(self):
         # user is allowed to create container and enroll HOTP tokens, but not TOTP tokens
@@ -1643,13 +1648,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         add_token_to_container(container_serial, token_2.get_serial())
         result = self.request_assert_success('/container/', {"container_serial": container_serial}, self.at, 'GET')
         tokens = result["result"]["value"]["containers"][0]["tokens"]
+        tokens_dict = {token["serial"]: token for token in tokens}
         # first token: all information
-        self.assertEqual(token_1.get_serial(), tokens[0]["serial"])
-        self.assertEqual("hotp", tokens[0]["tokentype"])
+        self.assertEqual(token_1.get_serial(), tokens_dict[token_1.get_serial()]["serial"])
+        self.assertEqual("hotp", tokens_dict[token_1.get_serial()]["tokentype"])
         # second token: only serial
-        self.assertEqual(token_2.get_serial(), tokens[1]["serial"])
-        self.assertEqual(1, len(tokens[1].keys()))
-        self.assertNotIn("tokentype", tokens[1].keys())
+        self.assertEqual(token_2.get_serial(), tokens_dict[token_2.get_serial()]["serial"])
+        self.assertEqual(1, len(tokens_dict[token_2.get_serial()].keys()))
+        self.assertNotIn("tokentype", tokens_dict[token_2.get_serial()].keys())
 
         delete_policy("policy")
         delete_policy("policy2")
@@ -1766,6 +1772,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.assertNotIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
         delete_policy("policy")
+
+        get_template_obj("test").delete()
 
     def test_28_helpdesk_create_container_with_template(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1

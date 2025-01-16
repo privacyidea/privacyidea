@@ -832,6 +832,9 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(self.resolvername1, container_dict["users"][0]["user_resolver"])
         self.assertListEqual([hotp.get_serial(), totp.get_serial()], container_dict["tokens"])
 
+        template = get_template_obj("test")
+        template.delete()
+
     def test_35_get_as_dict_no_tokens_no_user(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2140,6 +2143,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         token_result = result["tokens"]
         self.assertEqual(["totp"], token_result["missing"])
         self.assertEqual(['spass', 'spass'], token_result["additional"])
+
+        template.delete()
 
     def test_22_get_template_options_as_dict(self):
         # create template

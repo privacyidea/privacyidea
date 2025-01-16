@@ -3418,7 +3418,7 @@ class TokenContainer(MethodsMixin, db.Model):
     info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
                                 cascade="all, delete-orphan")
     realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
-    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id'))
+    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id', name="tokencontainertemplate_id"))
     template = db.relationship('TokenContainerTemplate', back_populates='containers')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):

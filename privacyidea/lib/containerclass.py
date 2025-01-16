@@ -132,7 +132,10 @@ class TokenContainerClass:
         """
         Updates the timestamp of the last seen field in the database.
         """
-        self._db_container.last_seen = datetime.now(timezone.utc)
+        # SQLite does not support timezone aware timestamps, hence all time stamps are stored in utc time.
+        # The timezone information must be removed, because some databases would change the time stamp to local time
+        # (e.g. postgresql)
+        self._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
         self._db_container.save()
 
     def reset_last_authentication(self):
@@ -158,7 +161,10 @@ class TokenContainerClass:
         """
         Updates the timestamp of the last updated field in the database.
         """
-        self._db_container.last_updated = datetime.now(timezone.utc)
+        # SQLite does not support timezone aware timestamps, hence all time stamps are stored in utc time.
+        # The timezone information must be removed, because some databases would change the time stamp to local time
+        # (e.g. postgresql)
+        self._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
         self._db_container.save()
 
     def reset_last_synchronization(self):
