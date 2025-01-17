@@ -297,8 +297,10 @@ def get_auth_token():
         elif user.realm in superuser_realms:
             role = ROLE.ADMIN
             admin_auth = True
+            g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
         else:
             user_auth = True
+            g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
 
     # Check if the remote user is allowed
     elif (request.remote_user == username) and is_remote_user_allowed(request) != REMOTE_USER.DISABLE:

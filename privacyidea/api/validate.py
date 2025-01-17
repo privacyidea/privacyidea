@@ -743,7 +743,7 @@ def poll_transaction(transaction_id=None):
 def initialize():
     """
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
-    @param type: The type of the token, for which a challenge should be created.
+    :jsonparam type: The type of the token, for which a challenge should be created.
     """
     token_type = get_optional(request.all_data, "type")
     details = {}
@@ -766,6 +766,6 @@ def initialize():
 
     else:
         raise ParameterError("Unsupported token type for authentication initialization!")
-
+    g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response
