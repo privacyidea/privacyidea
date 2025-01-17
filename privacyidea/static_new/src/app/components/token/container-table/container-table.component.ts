@@ -53,10 +53,9 @@ export class ContainerTableComponent {
       return emptyRow;
     })));
   showAdvancedFilter = signal(false);
-  protected readonly columnsKeyMap = columnsKeyMap;
-
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
+  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -72,19 +71,6 @@ export class ContainerTableComponent {
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
-  }
-
-  private fetchContainerData() {
-    this.containerService.getContainerData(
-      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-      next: response => {
-        this.length = response.result.value.count;
-        this.processDataSource(response.result.value.containers);
-      },
-      error: error => {
-        console.error('Failed to get container data', error);
-      }
-    });
   }
 
   handlePageEvent(event: PageEvent) {
@@ -114,6 +100,35 @@ export class ContainerTableComponent {
     inputElement.focus();
   }
 
+  handleStateClick(element: any) {
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => {
+        this.fetchContainerData();
+      },
+      error: error => {
+        console.error('Failed to toggle active', error);
+      }
+    });
+  }
+
+  containerSelected(container_serial: string) {
+    this.container_serial.set(container_serial);
+    this.containerIsSelected.set(true)
+  }
+
+  private fetchContainerData() {
+    this.containerService.getContainerData(
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.processDataSource(response.result.value.containers);
+      },
+      error: error => {
+        console.error('Failed to get container data', error);
+      }
+    });
+  }
+
   private processDataSource(data: any[]) {
     const processedData = data.map((item) => ({
       ...item,
@@ -121,10 +136,5 @@ export class ContainerTableComponent {
       user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
     this.dataSource.set(new MatTableDataSource(processedData));
-  }
-
-  containerSelected(container_serial: string) {
-    this.container_serial.set(container_serial);
-    this.containerIsSelected.set(true)
   }
 }

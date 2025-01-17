@@ -219,9 +219,9 @@ export class TableUtilsService {
 
   getSpanClassForState(state: string) {
     if (state === 'active') {
-      return 'highlight-true';
+      return 'highlight-true-clickable';
     } else if (state === 'disabled') {
-      return 'highlight-false';
+      return 'highlight-false-clickable';
     } else {
       return '';
     }

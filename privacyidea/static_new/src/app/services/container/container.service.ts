@@ -121,7 +121,7 @@ export class ContainerService {
 
   toggleActive(container_serial: string, states: string[]): Observable<any> {
     const headers = this.localService.getHeaders();
-    const new_states = states.map(state => {
+    let new_states = states.map(state => {
       if (state === 'active') {
         return 'disabled'
       } else if (state === 'disabled') {
@@ -130,6 +130,9 @@ export class ContainerService {
         return state
       }
     }).join(',');
+    if (!(states.includes('active') || states.includes('disabled'))) {
+      new_states = states.concat('active').join(',');
+    }
     return this.http.post(`${this.containerBaseUrl}${container_serial}/states`,
       {states: new_states}, {headers})
   }

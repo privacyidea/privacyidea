@@ -192,9 +192,11 @@ export class ContainerDetailsComponent {
     effect(() => {
       if (this.showOnlyTokenNotInContainer()) {
         this.filterValue = this.filterValue + ' container_serial:';
+        this.pageIndex = 0;
         this.fetchTokenData();
       } else {
         this.filterValue = this.filterValue.replace('container_serial:', '');
+        this.pageIndex = 0;
         this.fetchTokenData();
       }
     });

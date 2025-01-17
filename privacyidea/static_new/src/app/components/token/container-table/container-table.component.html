@@ -82,7 +82,7 @@
                   {{ element[column.key] }}
                 </a>
               } @else if (column.key === 'states') {
-                <span
+                <span (click)="handleStateClick(element)"
                   [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
                   {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
