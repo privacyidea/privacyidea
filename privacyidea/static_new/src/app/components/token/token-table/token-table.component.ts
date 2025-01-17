@@ -55,9 +55,9 @@ export class TokenTableComponent {
     })));
   showAdvancedFilter = signal(false);
   @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() token_serial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @Input() selectedTabIndex!: WritableSignal<number>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -144,8 +144,8 @@ export class TokenTableComponent {
     });
   }
 
-  tokenSelected(token_serial: string) {
-    this.token_serial.set(token_serial);
+  tokenSelected(tokenSerial: string) {
+    this.tokenSerial.set(tokenSerial);
     this.tokenIsSelected.set(true)
   }
 
@@ -157,8 +157,8 @@ export class TokenTableComponent {
     }
   }
 
-  containerSelected(container_serial: string) {
-    this.container_serial.set(container_serial);
+  containerSelected(containerSerial: string) {
+    this.containerSerial.set(containerSerial);
     this.tokenIsSelected.set(false);
     this.isProgrammaticChange.set(true);
     this.selectedTabIndex.set(1);

@@ -2,7 +2,7 @@
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container: </h3>
-      <h3 style="color: var(--blue-base)"> {{ container_serial() }} </h3>
+      <h3 style="color: var(--blue-base)"> {{ containerSerial() }} </h3>
     </div>
     <div [ngClass]="[
         overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
@@ -153,7 +153,7 @@
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
         <div class="details-flex-layout">
-          <app-container-details-info [container_serial]="container_serial"
+          <app-container-details-info [containerSerial]="containerSerial"
                                       [detailData]="containerDetailData"
                                       [infoData]="infoData"
                                       [isAnyEditingOrRevoked]="isAnyEditing"
@@ -211,13 +211,13 @@
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
         <app-container-details-token-table [containerIsSelected]="containerIsSelected"
-                                           [container_serial]="container_serial"
+                                           [containerSerial]="containerSerial"
                                            [dataSource]="containerTokenData"
                                            [isProgrammaticChange]="isProgrammaticChange"
                                            [refreshContainerDetails]="refreshContainerDetails"
                                            [selectedTabIndex]="selectedTabIndex"
                                            [tokenIsSelected]="tokenIsSelected"
-                                           [token_serial]="token_serial">
+                                           [tokenSerial]="tokenSerial">
         </app-container-details-token-table>
       </div>
     </div>

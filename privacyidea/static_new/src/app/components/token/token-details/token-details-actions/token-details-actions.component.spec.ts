@@ -37,7 +37,7 @@ describe('TokenDetailsActionsComponent', () => {
 
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
-    component.token_serial = signal('Mock serial');
+    component.tokenSerial = signal('Mock serial');
     component.refreshTokenDetails = signal(false);
     tokenService = TestBed.inject(TokenService);
     validateService = TestBed.inject(ValidateService);

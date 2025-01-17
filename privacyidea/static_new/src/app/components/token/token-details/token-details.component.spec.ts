@@ -105,7 +105,7 @@ describe('TokenDetailsComponent', () => {
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
-    component.token_serial = signal('Mock serial');
+    component.tokenSerial = signal('Mock serial');
     component.active = signal(false);
     component.revoked = signal(false);
     component.containerOptions = signal(['container1', 'container2', 'admin-container']);

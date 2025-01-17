@@ -14,7 +14,7 @@ describe('LostTokenComponent', () => {
       imports: [LostTokenComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
         {provide: MAT_DIALOG_DATA, useValue: {
-            token_serial: () => 'mockSerialValue',
+            tokenSerial: () => 'mockSerialValue',
             isLost: () => false,
             tokenIsSelected: () => false
           }},

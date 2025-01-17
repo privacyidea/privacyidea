@@ -33,15 +33,15 @@ export class TokenService {
               private tableUtilsService: TableUtilsService) {
   }
 
-  toggleActive(token_serial: string, active: boolean): Observable<any> {
+  toggleActive(tokenSerial: string, active: boolean): Observable<any> {
     const headers = this.localService.getHeaders();
     const action = active ? 'disable' : 'enable';
-    return this.http.post(`${this.tokenBaseUrl}${action}`, {"serial": token_serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}${action}`, {"serial": tokenSerial}, {headers})
   }
 
-  resetFailCount(token_serial: string): Observable<any> {
+  resetFailCount(tokenSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    return this.http.post(this.tokenBaseUrl + 'reset', {"serial": token_serial}, {headers})
+    return this.http.post(this.tokenBaseUrl + 'reset', {"serial": tokenSerial}, {headers})
   }
 
   getTokenData(page: number, pageSize: number, sort?: Sort, filterValue?: string): Observable<any> {
@@ -81,23 +81,23 @@ export class TokenService {
     return this.http.get<any>(this.tokenBaseUrl, {headers, params})
   }
 
-  getTokenDetails(token_serial: string): Observable<any> {
+  getTokenDetails(tokenSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('serial', token_serial);
+    let params = new HttpParams().set('serial', tokenSerial);
     return this.http.get(this.tokenBaseUrl, {headers, params})
   }
 
-  setTokenDetail(token_serial: string, key: string, value: any): Observable<any> {
+  setTokenDetail(tokenSerial: string, key: string, value: any): Observable<any> {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     if (key === 'maxfail') {
-      return this.http.post(set_url, {serial: token_serial, ["max_failcount"]: value}, {headers});
+      return this.http.post(set_url, {serial: tokenSerial, ["max_failcount"]: value}, {headers});
     } else {
-      return this.http.post(set_url, {serial: token_serial, [key]: value}, {headers});
+      return this.http.post(set_url, {serial: tokenSerial, [key]: value}, {headers});
     }
   }
 
-  setTokenInfos(token_serial: string, infos: any): Observable<any> {
+  setTokenInfos(tokenSerial: string, infos: any): Observable<any> {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
@@ -106,9 +106,9 @@ export class TokenService {
         const infoValue = infos[infoKey];
         if (infoKey === "count_auth_max" || infoKey === "count_auth_success_max" || infoKey === "hashlib"
           || infoKey === "validity_period_start" || infoKey === "validity_period_end") {
-          return this.http.post(set_url, {serial: token_serial, [infoKey]: infoValue}, {headers})
+          return this.http.post(set_url, {serial: tokenSerial, [infoKey]: infoValue}, {headers})
         } else {
-          return this.http.post(`${info_url}/${token_serial}/${infoKey}`, {["value"]: infoValue}, {headers})
+          return this.http.post(`${info_url}/${tokenSerial}/${infoKey}`, {["value"]: infoValue}, {headers})
         }
       }
     );
@@ -116,71 +116,71 @@ export class TokenService {
   }
 
 
-  deleteToken(token_serial: string) {
+  deleteToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + token_serial, {headers})
+    return this.http.delete(this.tokenBaseUrl + tokenSerial, {headers})
   }
 
-  revokeToken(token_serial: string) {
+  revokeToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}revoke`, {'serial': token_serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}revoke`, {'serial': tokenSerial}, {headers})
   }
 
-  deleteInfo(token_serial: string, infoKey: string) {
+  deleteInfo(tokenSerial: string, infoKey: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.tokenBaseUrl}info/` + token_serial + "/" + infoKey, {headers})
+    return this.http.delete(`${this.tokenBaseUrl}info/` + tokenSerial + "/" + infoKey, {headers})
   }
 
-  unassignUser(token_serial: string) {
+  unassignUser(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}unassign`, {serial: token_serial}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}unassign`, {serial: tokenSerial}, {headers})
   }
 
-  assignUser(token_serial: string, username: string | null, realm: string, pin: string) {
+  assignUser(tokenSerial: string, username: string | null, realm: string, pin: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}assign`, {
-      serial: token_serial,
+      serial: tokenSerial,
       user: username,
       realm: realm,
       pin: pin,
     }, {headers})
   }
 
-  setPin(token_serial: string, userPin: string) {
+  setPin(tokenSerial: string, userPin: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}setpin`, {
-      serial: token_serial,
+      serial: tokenSerial,
       otppin: userPin
     }, {headers})
   }
 
-  setRandomPin(token_serial: string) {
+  setRandomPin(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}setrandompin`, {
-      serial: token_serial
+      serial: tokenSerial
     }, {headers})
   }
 
-  resyncOTPToken(token_serial: string, fristOTPValue: string, secondOTPValue: string) {
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}resync`, {
-      serial: token_serial,
+      serial: tokenSerial,
       otp1: fristOTPValue,
       otp2: secondOTPValue
     }, {headers})
   }
 
-  setTokenRealm(token_serial: string, value: string[] | null) {
+  setTokenRealm(tokenSerial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}realm/` + token_serial, {
+    return this.http.post(`${this.tokenBaseUrl}realm/` + tokenSerial, {
       realms: value
     }, {headers})
   }
 
-  setTokengroup(token_serial: string, value: any) {
+  setTokengroup(tokenSerial: string, value: any) {
     const headers = this.localService.getHeaders();
     const valueArray = Array.isArray(value) ? value : Object.values(value);
-    return this.http.post(`${this.tokenBaseUrl}group/` + token_serial, {
+    return this.http.post(`${this.tokenBaseUrl}group/` + tokenSerial, {
       groups: valueArray
     }, {headers});
   }
@@ -190,8 +190,8 @@ export class TokenService {
     return this.http.get(`/tokengroup`, {headers})
   }
 
-  lostToken(token_serial: string) {
+  lostToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}lost/` + token_serial, {}, {headers})
+    return this.http.post(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, {headers})
   }
 }

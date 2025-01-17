@@ -63,8 +63,8 @@ export class ContainerDetailsTokenTableComponent {
   @Input() dataSource!: WritableSignal<any>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
-  @Input() token_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() selectedTabIndex!: WritableSignal<number>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
@@ -93,16 +93,16 @@ export class ContainerDetailsTokenTableComponent {
     this.dataSource().filter = this.filterValue.trim().toLowerCase();
   }
 
-  tokenSelected(token_serial: string) {
-    this.token_serial.set(token_serial);
+  tokenSelected(tokenSerial: string) {
+    this.tokenSerial.set(tokenSerial);
     this.containerIsSelected.set(false);
     this.isProgrammaticChange.set(true);
     this.selectedTabIndex.set(0);
     this.tokenIsSelected.set(true);
   }
 
-  removeTokenFromContainer(container_serial: string, token_serial: string) {
-    this.containerService.removeTokenFromContainer(container_serial, token_serial).subscribe({
+  removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
+    this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },
@@ -130,7 +130,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   toggleAll(action: string) {
-    this.containerService.toggleAll(this.container_serial(), action).subscribe({
+    this.containerService.toggleAll(this.containerSerial(), action).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },

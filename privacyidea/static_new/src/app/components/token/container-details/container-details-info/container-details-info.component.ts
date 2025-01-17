@@ -35,7 +35,7 @@ import {ContainerService} from '../../../../services/container/container.service
   styleUrl: './container-details-info.component.scss'
 })
 export class ContainerDetailsInfoComponent {
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() infoData!: WritableSignal<{
     value: any;
     keyMap: { label: string; key: string };
@@ -73,7 +73,7 @@ export class ContainerDetailsInfoComponent {
     if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
       infos[this.newInfo().key] = this.newInfo().value;
     }
-    const requests = this.containerService.setContainerInfos(this.container_serial(), infos);
+    const requests = this.containerService.setContainerInfos(this.containerSerial(), infos);
     forkJoin(requests).subscribe({
       next: () => {
         this.refreshDetails.set(true);

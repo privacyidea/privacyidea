@@ -25,8 +25,8 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
 export class TokenCardComponent {
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() token_serial!: WritableSignal<string>;
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() states!: WritableSignal<string[]>;

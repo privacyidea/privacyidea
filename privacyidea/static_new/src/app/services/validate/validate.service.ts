@@ -11,10 +11,10 @@ export class ValidateService {
   constructor(private http: HttpClient, private localService: LocalService) {
   }
 
-  testToken(token_serial: string, otpOrPinToTest: string, otponly?: string): any {
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): any {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.baseUrl}check`, {
-      "serial": token_serial,
+      "serial": tokenSerial,
       "pass": otpOrPinToTest,
       "otponly": otponly
     }, {headers})

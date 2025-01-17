@@ -8,8 +8,8 @@
                     [refreshContainerDetails]="refreshContainerDetails"
                     [revoked]="revoked"
                     [selectedTabIndex]="selectedTabIndex"
-                    [token_serial]="token_serial"
-                    [container_serial]="container_serial"
+                    [tokenSerial]="tokenSerial"
+                    [containerSerial]="containerSerial"
                     [tokenIsSelected]="tokenIsSelected"
                     [isProgrammaticChange]="isProgrammaticChange">
     </app-token-card>
@@ -25,8 +25,8 @@
           [refreshContainerDetails]="refreshContainerDetails"
           [revoked]="revoked"
           [selectedTabIndex]="selectedTabIndex"
-          [token_serial]="token_serial"
-          [container_serial]="container_serial"
+          [tokenSerial]="tokenSerial"
+          [containerSerial]="containerSerial"
           [tokenIsSelected]="tokenIsSelected"
           [isProgrammaticChange]="isProgrammaticChange">
         </app-token-card>
@@ -49,11 +49,11 @@
               @if (tokenIsSelected()) {
                 <app-token-details
                   #tokenDetailsComponent
-                  [token_serial]="token_serial"
+                  [tokenSerial]="tokenSerial"
                   [active]="tokenIsActive"
                   [revoked]="revoked"
                   [refreshTokenDetails]="refreshTokenDetails"
-                  [container_serial]="container_serial"
+                  [containerSerial]="containerSerial"
                   [tokenIsSelected]="tokenIsSelected"
                   [containerIsSelected]="containerIsSelected"
                   [isProgrammaticChange]="isProgrammaticChange"
@@ -61,9 +61,9 @@
                 </app-token-details>
               } @else {
                 <app-token-table
-                  [token_serial]="token_serial"
+                  [tokenSerial]="tokenSerial"
                   [tokenIsSelected]="tokenIsSelected"
-                  [container_serial]="container_serial"
+                  [containerSerial]="containerSerial"
                   [containerIsSelected]="containerIsSelected"
                   [isProgrammaticChange]="isProgrammaticChange"
                   [selectedTabIndex]="selectedTabIndex"
@@ -74,8 +74,8 @@
               @if (containerIsSelected()) {
                 <app-container-details
                   #containerDetailsComponent
-                  [container_serial]="container_serial"
-                  [token_serial]="token_serial"
+                  [containerSerial]="containerSerial"
+                  [tokenSerial]="tokenSerial"
                   [tokenIsSelected]="tokenIsSelected"
                   [containerIsSelected]="containerIsSelected"
                   [states]="states"
@@ -85,7 +85,7 @@
                 </app-container-details>
               } @else {
                 <app-container-table
-                  [container_serial]="container_serial"
+                  [containerSerial]="containerSerial"
                   [containerIsSelected]="containerIsSelected">
                 </app-container-table>
               }

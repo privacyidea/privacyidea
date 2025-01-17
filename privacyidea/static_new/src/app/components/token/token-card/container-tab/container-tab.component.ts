@@ -25,7 +25,7 @@ import {ContainerService} from '../../../../services/container/container.service
 })
 export class ContainerTabComponent {
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>
+  @Input() containerSerial!: WritableSignal<string>
   @Input() states!: WritableSignal<string[]>
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
 
@@ -33,8 +33,8 @@ export class ContainerTabComponent {
   }
 
   toggleActive(): void {
-    this.containerService.toggleActive(this.container_serial(), this.states()).pipe(
-      switchMap(() => this.containerService.getContainerDetails(this.container_serial()))
+    this.containerService.toggleActive(this.containerSerial(), this.states()).pipe(
+      switchMap(() => this.containerService.getContainerDetails(this.containerSerial()))
     ).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
@@ -46,7 +46,7 @@ export class ContainerTabComponent {
   }
 
   deleteContainer() {
-    this.containerService.deleteContainer(this.container_serial()).subscribe({
+    this.containerService.deleteContainer(this.containerSerial()).subscribe({
       next: () => {
         this.containerIsSelected.set(false);
       },

@@ -33,8 +33,8 @@ export class TokenLayoutComponent {
   selectedTabIndex = signal(0);
   tokenIsSelected = signal(false);
   containerIsSelected = signal(false);
-  token_serial = signal('');
-  container_serial = signal('');
+  tokenSerial = signal('');
+  containerSerial = signal('');
   tokenIsActive = signal(true);
   revoked = signal(true);
   refreshTokenDetails = signal(false);

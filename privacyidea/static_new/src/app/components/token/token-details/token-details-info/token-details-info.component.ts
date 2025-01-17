@@ -37,7 +37,7 @@ import {OverflowService} from '../../../../services/overflow/overflow.service';
   styleUrl: './token-details-info.component.scss'
 })
 export class TokenDetailsInfoComponent {
-  @Input() token_serial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() infoData!: WritableSignal<{
     value: any;
     keyMap: { label: string; key: string };
@@ -74,7 +74,7 @@ export class TokenDetailsInfoComponent {
     if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
       infos[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService.setTokenInfos(this.token_serial(), infos).subscribe({
+    this.tokenService.setTokenInfos(this.tokenSerial(), infos).subscribe({
       next: () => {
         this.refreshDetails.set(true);
       },
@@ -85,7 +85,7 @@ export class TokenDetailsInfoComponent {
   }
 
   deleteInfo(key: string): void {
-    this.tokenService.deleteInfo(this.token_serial(), key).pipe(
+    this.tokenService.deleteInfo(this.tokenSerial(), key).pipe(
       switchMap(() => {
         const info = this.detailData()
           .find(detail => detail.keyMap.key === 'info');

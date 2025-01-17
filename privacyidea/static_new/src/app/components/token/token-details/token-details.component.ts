@@ -81,11 +81,11 @@ export const infoDetailsKeyMap = [
   styleUrl: './token-details.component.scss'
 })
 export class TokenDetailsComponent {
-  @Input() token_serial!: WritableSignal<string>
+  @Input() tokenSerial!: WritableSignal<string>
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
@@ -168,7 +168,7 @@ export class TokenDetailsComponent {
 
   showTokenDetail(): Observable<void> {
     return forkJoin([
-      this.tokenService.getTokenDetails(this.token_serial()),
+      this.tokenService.getTokenDetails(this.tokenSerial()),
       this.realmService.getRealms(),
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms]) => {
@@ -211,7 +211,7 @@ export class TokenDetailsComponent {
   }
 
   resetFailCount(): void {
-    this.tokenService.resetFailCount(this.token_serial()).pipe(
+    this.tokenService.resetFailCount(this.tokenSerial()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -312,7 +312,7 @@ export class TokenDetailsComponent {
   }
 
   saveDetail(key: string, value: string): void {
-    this.tokenService.setTokenDetail(this.token_serial(), key, value).pipe(
+    this.tokenService.setTokenDetail(this.tokenSerial(), key, value).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -325,7 +325,7 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    this.containerService.assignContainer(this.token_serial(), this.selectedContainer()).pipe(
+    this.containerService.assignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -335,7 +335,7 @@ export class TokenDetailsComponent {
   }
 
   deleteContainer() {
-    this.containerService.unassignContainer(this.token_serial(), this.selectedContainer()).pipe(
+    this.containerService.unassignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -345,7 +345,7 @@ export class TokenDetailsComponent {
   }
 
   private saveRealms() {
-    this.tokenService.setTokenRealm(this.token_serial(), this.selectedRealms()).pipe(
+    this.tokenService.setTokenRealm(this.tokenSerial(), this.selectedRealms()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -358,7 +358,7 @@ export class TokenDetailsComponent {
   }
 
   private saveTokengroup(value: any) {
-    this.tokenService.setTokengroup(this.token_serial(), value).pipe(
+    this.tokenService.setTokengroup(this.tokenSerial(), value).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -389,8 +389,8 @@ export class TokenDetailsComponent {
       key === "sync_window";
   }
 
-  containerSelected(container_serial: string){
-    this.container_serial.set(container_serial);
+  containerSelected(containerSerial: string){
+    this.containerSerial.set(containerSerial);
     this.tokenIsSelected.set(false);
     this.isProgrammaticChange.set(true);
     this.selectedTabIndex.set(1);

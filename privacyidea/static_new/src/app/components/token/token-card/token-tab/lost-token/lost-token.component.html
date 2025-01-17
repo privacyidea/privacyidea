@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Token {{ data.token_serial() }} is lost?</h2>
+<h2 mat-dialog-title>Token {{ data.tokenSerial() }} is lost?</h2>
 <mat-dialog-content>
   <p>
     If the token is lost, you can enroll a temporary password based token and give the password to
@@ -10,7 +10,7 @@
     password.
   </p>
   <p>
-    The old token {{ data.token_serial() }} will be disabled and can be deleted or enabled later.
+    The old token {{ data.tokenSerial() }} will be disabled and can be deleted or enabled later.
   </p>
   @if (!data.isLost()) {
     <div class="dialog-div">

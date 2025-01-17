@@ -2,7 +2,7 @@
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
-      <h3 style="color: var(--blue-base)"> {{ token_serial() }} </h3>
+      <h3 style="color: var(--blue-base)"> {{ tokenSerial() }} </h3>
     </div>
     <div [ngClass]="[
        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
@@ -176,7 +176,7 @@
                                 [realmOptions]="realmOptions"
                                 [refreshTokenDetails]="refreshTokenDetails"
                                 [repeatPinValue]="repeatPinValue"
-                                [token_serial]="token_serial"
+                                [tokenSerial]="tokenSerial"
                                 [setPinValue]="setPinValue"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
@@ -188,9 +188,9 @@
                                   [isEditingInfo]="isEditingInfo"
                                   [isEditingUser]="isEditingUser"
                                   [refreshDetails]="refreshTokenDetails"
-                                  [token_serial]="token_serial"></app-token-details-info>
+                                  [tokenSerial]="tokenSerial"></app-token-details-info>
           <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
-                                     [token_serial]="token_serial"></app-token-details-actions>
+                                     [tokenSerial]="tokenSerial"></app-token-details-actions>
         </div>
       </div>
     </div>

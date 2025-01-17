@@ -49,7 +49,7 @@ export class TokenDetailsUserComponent {
     isEditing: WritableSignal<boolean>
   }[]>([]);
   @Input() selectedUsername = signal<string>('');
-  @Input() token_serial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
@@ -86,7 +86,7 @@ export class TokenDetailsUserComponent {
   }
 
   unassignUser() {
-    this.tokenService.unassignUser(this.token_serial()).subscribe({
+    this.tokenService.unassignUser(this.tokenSerial()).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },
@@ -101,7 +101,7 @@ export class TokenDetailsUserComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.setPin(this.token_serial(), this.setPinValue()).subscribe({
+    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
       error: error => {
         console.error('Failed to set pin', error);
       }
@@ -109,7 +109,7 @@ export class TokenDetailsUserComponent {
   }
 
   setRandomPin() {
-    this.tokenService.setRandomPin(this.token_serial()).subscribe({
+    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
       error: error => {
         console.error('Failed to set random pin', error);
       }
@@ -133,7 +133,7 @@ export class TokenDetailsUserComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.assignUser(this.token_serial(),
+    this.tokenService.assignUser(this.tokenSerial(),
       this.selectedUsername(),
       this.selectedUserRealm(),
       this.setPinValue()).subscribe({

@@ -24,7 +24,7 @@ import {OverflowService} from '../../../../services/overflow/overflow.service';
 })
 export class TokenDetailsActionsComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() token_serial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
@@ -36,7 +36,7 @@ export class TokenDetailsActionsComponent {
   }
 
   resyncOTPToken() {
-    this.tokenService.resyncOTPToken(this.token_serial(), this.fristOTPValue, this.secondOTPValue).subscribe({
+    this.tokenService.resyncOTPToken(this.tokenSerial(), this.fristOTPValue, this.secondOTPValue).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },
@@ -47,7 +47,7 @@ export class TokenDetailsActionsComponent {
   }
 
   testToken() {
-    this.validateService.testToken(this.token_serial(), this.otpOrPinToTest).subscribe({
+    this.validateService.testToken(this.tokenSerial(), this.otpOrPinToTest).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },
@@ -58,7 +58,7 @@ export class TokenDetailsActionsComponent {
   }
 
   verifyOTPValue() {
-    this.validateService.testToken(this.token_serial(), this.otpOrPinToTest, "1").subscribe({
+    this.validateService.testToken(this.tokenSerial(), this.otpOrPinToTest, "1").subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },

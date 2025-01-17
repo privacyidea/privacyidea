@@ -43,7 +43,7 @@ export class ContainerTableComponent {
   advancedApiFilter = this.containerService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(new MatTableDataSource(
     Array.from({length: this.pageSize}, () => {
       const emptyRow: any = {};
@@ -111,8 +111,8 @@ export class ContainerTableComponent {
     });
   }
 
-  containerSelected(container_serial: string) {
-    this.container_serial.set(container_serial);
+  containerSelected(containerSerial: string) {
+    this.containerSerial.set(containerSerial);
     this.containerIsSelected.set(true)
   }
 

@@ -72,10 +72,10 @@ export class ContainerService {
     );
   }
 
-  assignContainer(token_serial: string, container_serial: string | null) {
+  assignContainer(tokenSerial: string, containerSerial: string | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/add`, {
-      serial: token_serial
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/add`, {
+      serial: tokenSerial
     }, {headers}).pipe(
       map(response => response),
       catchError(error => {
@@ -85,10 +85,10 @@ export class ContainerService {
     );
   }
 
-  unassignContainer(token_serial: string, container_serial: string | null) {
+  unassignContainer(tokenSerial: string, containerSerial: string | null) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/remove`, {
-      serial: token_serial
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/remove`, {
+      serial: tokenSerial
     }, {headers}).pipe(
       map(response => response),
       catchError(error => {
@@ -98,28 +98,28 @@ export class ContainerService {
     )
   }
 
-  getContainerDetails(container_serial: string): Observable<any> {
+  getContainerDetails(containerSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('container_serial', container_serial);
+    let params = new HttpParams().set('container_serial', containerSerial);
     return this.http.get(this.containerBaseUrl, {headers, params})
   }
 
-  setContainerRealm(container_serial: string, value: string[] | null) {
+  setContainerRealm(containerSerial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
     let valueString = value ? value.join(',') : '';
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/realms`, {
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/realms`, {
       realms: valueString
     }, {headers})
   }
 
-  setContainerDescription(container_serial: string, value: any) {
+  setContainerDescription(containerSerial: string, value: any) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/description`, {
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/description`, {
       description: value
     }, {headers})
   }
 
-  toggleActive(container_serial: string, states: string[]): Observable<any> {
+  toggleActive(containerSerial: string, states: string[]): Observable<any> {
     const headers = this.localService.getHeaders();
     let new_states = states.map(state => {
       if (state === 'active') {
@@ -133,29 +133,29 @@ export class ContainerService {
     if (!(states.includes('active') || states.includes('disabled'))) {
       new_states = states.concat('active').join(',');
     }
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/states`,
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/states`,
       {states: new_states}, {headers})
   }
 
-  unassignUser(container_serial: string, username: string, userRealm: string) {
+  unassignUser(containerSerial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/unassign`, {
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/unassign`, {
       user: username,
       realm: userRealm
     }, {headers})
   }
 
-  assignUser(container_serial: string, username: string, userRealm: string) {
+  assignUser(containerSerial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/assign`, {
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/assign`, {
       user: username,
       realm: userRealm
     }, {headers})
   }
 
-  setContainerInfos(container_serial: string, infos: any) {
+  setContainerInfos(containerSerial: string, infos: any) {
     const headers = this.localService.getHeaders();
-    const info_url = `${this.containerBaseUrl}${container_serial}/info`;
+    const info_url = `${this.containerBaseUrl}${containerSerial}/info`;
     return Object.keys(infos).map(info => {
         const infoKey = info;
         const infoValue = infos[infoKey];
@@ -164,28 +164,28 @@ export class ContainerService {
     );
   }
 
-  deleteInfo(container_serial: string, key: string) {
+  deleteInfo(containerSerial: string, key: string) {
     const headers = this.localService.getHeaders();
     //TODO: API is missing the delete endpoint
     return;
   }
 
-  addTokenToContainer(container_serial: string, token_serial: string) {
+  addTokenToContainer(containerSerial: string, tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/add`, {
-      serial: token_serial
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/add`, {
+      serial: tokenSerial
     }, {headers})
   }
 
-  removeTokenFromContainer(container_serial: string, token_serial: string) {
+  removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${container_serial}/remove`, {
-      serial: token_serial
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/remove`, {
+      serial: tokenSerial
     }, {headers})
   }
 
-  toggleAll(container_serial: string, action: string): Observable<any> {
-    return this.getContainerDetails(container_serial).pipe(
+  toggleAll(containerSerial: string, action: string): Observable<any> {
+    return this.getContainerDetails(containerSerial).pipe(
       map(data => {
         if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
           console.warn('toggleActivateAll() -> no valid tokens array found in data:', data);
@@ -213,7 +213,7 @@ export class ContainerService {
           );
         } else if (action === 'remove') {
           const headers = this.localService.getHeaders();
-          return this.http.post(`${this.containerBaseUrl}${container_serial}/removeall`, {
+          return this.http.post(`${this.containerBaseUrl}${containerSerial}/removeall`, {
             serial: tokensForAction.join(','),
           }, {headers});
         }
@@ -222,8 +222,8 @@ export class ContainerService {
     );
   }
 
-  deleteContainer(container_serial: string) {
+  deleteContainer(containerSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${container_serial}`, {headers})
+    return this.http.delete(`${this.containerBaseUrl}${containerSerial}`, {headers})
   }
 }
