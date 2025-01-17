@@ -80,14 +80,14 @@ $header-bg: white;
   @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
 }
 
-.card-button-activ {
+.card-button-active {
   @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-delete {
   @include button-base($button-height, $button-width, $button-border-radius, var(--background-red), var(--box-shadow-red));
 
-  &.activ,
+  &.active,
   &:hover {
     background: var(--background-red-inset);
     box-shadow: var(--box-shadow-red-inset);
@@ -99,7 +99,7 @@ $header-bg: white;
   color: white;
   @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
 
-  &.activ,
+  &.active,
   &:hover {
     background: var(--background-green-inset);
     box-shadow: var(--box-shadow-green-inset);

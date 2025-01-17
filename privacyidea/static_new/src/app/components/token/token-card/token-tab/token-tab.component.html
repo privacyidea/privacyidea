@@ -1,7 +1,8 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="tokenIsSelected.set(false)" [ngClass]="{'card-button-activ': !tokenIsSelected(),
+      <button (click)="tokenIsSelected.set(false)" [ngClass]="{'card-button-active':
+      !tokenIsSelected(),
     'card-button': tokenIsSelected()}" mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
@@ -53,7 +54,7 @@
         </mat-list-item>
       } @else {
         <mat-list-item>
-          <button [ngClass]="{'card-button-activ': tokenIsSelected(),
+          <button [ngClass]="{'card-button-active': tokenIsSelected(),
           'card-button': !tokenIsSelected()}" mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
