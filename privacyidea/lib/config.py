@@ -369,8 +369,7 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
         is given a string/bool is returned.
     """
     config_object = get_config_object()
-    return config_object.get_config(key=key, default=default, role=role,
-                                    return_bool=return_bool)
+    return config_object.get_config(key=key, default=default, role=role, return_bool=return_bool)
 
 
 # @cache.cached(key_prefix="resolver")

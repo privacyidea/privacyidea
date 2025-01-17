@@ -21,22 +21,19 @@ from unittest.mock import patch
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 import privacyidea.lib.token
+from privacyidea.config import TestingConfig, Config
 from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token, init_token, get_tokens
 from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
 from privacyidea.lib.user import User
-from tests.base import MyApiTestCase
+from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkeytestbase import PasskeyTestBase
 
 
-class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
-    """
-    Passkey uses challenges that are not bound to a user.
-    A successful authentication with a passkey should return the username.
-    Passkeys can be used with cross-device sign-in, similar to how push token work
-    """
+class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
         PasskeyTestBase.setUp(self)
@@ -49,6 +46,10 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         set_policy("passkey_rp_name", scope=SCOPE.ENROLL,
                    action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
         self.pk_headers = {'ORIGIN': self.expected_origin, 'Authorization': self.at}
+        # Delete all token
+        tokens = get_tokens(user=self.user)
+        for t in tokens:
+            remove_token(t.get_serial())
 
     def tearDown(self):
         delete_policy("passkey_rp_id")
@@ -62,7 +63,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertIn("detail", res.json)
             detail = res.json["detail"]
             self.assertIn("passkey_registration", detail)
@@ -94,7 +95,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         }
         with self.app.test_request_context('/token/init', method='POST', data=data, headers=self.pk_headers):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
     def _enroll_static_passkey(self) -> str:
@@ -108,12 +109,50 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         self._token_init_step_two(transaction_id, serial)
         return serial
 
+    def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
+        with (self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}),
+              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+            get_nonce.return_value = mock_nonce
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("passkey", detail)
+            passkey = detail["passkey"]
+            self.assertIn("challenge", passkey)
+            self.assertEqual(mock_nonce, passkey["challenge"])
+            self.assertIn("message", passkey)
+            self.assertIn("transaction_id", passkey)
+            self.assertIn("rpId", passkey)
+            self.assertEqual(self.rp_id, passkey["rpId"])
+        return passkey
+
     def _assert_result_value_true(self, response_json):
         self.assertIn("result", response_json)
         self.assertIn("status", response_json["result"])
         self.assertTrue(response_json["result"]["status"])
         self.assertIn("value", response_json["result"])
         self.assertTrue(response_json["result"]["value"])
+
+    def _verify_auth_fail_with_error(self, res, error_code: int):
+        self.assertEqual(401, res.status_code)
+        self.assertIn("result", res.json)
+        self.assertIn("status", res.json["result"])
+        self.assertFalse(res.json["result"]["status"])
+        self.assertIn("error", res.json["result"])
+        error = res.json["result"]["error"]
+        self.assertIn("message", error)
+        self.assertTrue(error["message"])
+        self.assertIn("code", error)
+        self.assertEqual(error_code, error["code"])
+
+
+class PasskeyAPITest(PasskeyAPITestBase):
+    """
+    Passkey uses challenges that are not bound to a user.
+    A successful authentication with a passkey should return the username.
+    Passkeys can be used with cross-device sign-in, similar to how push token work
+    """
 
     def test01_token_init_with_policies(self):
         # Test if setting the policies alters the registration data correctly
@@ -134,7 +173,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             data = res.json
             self.assertIn("detail", data)
             self.assertIn("serial", data["detail"])
@@ -156,24 +195,6 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         remove_token(serial)
         remove_token(serial_2)
 
-    def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
-        with (self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
-            get_nonce.return_value = mock_nonce
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
-            self.assertIn("detail", res.json)
-            detail = res.json["detail"]
-            self.assertIn("passkey", detail)
-            passkey = detail["passkey"]
-            self.assertIn("challenge", passkey)
-            self.assertEqual(mock_nonce, passkey["challenge"])
-            self.assertIn("message", passkey)
-            self.assertIn("transaction_id", passkey)
-            self.assertIn("rpId", passkey)
-            self.assertEqual(self.rp_id, passkey["rpId"])
-        return passkey
-
     def test_02_authenticate_no_uv(self):
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -189,7 +210,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
             self.assertNotIn("auth_items", res.json)
         remove_token(serial)
@@ -212,7 +233,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertIn("result", res.json)
             self.assertIn("status", res.json["result"])
             self.assertTrue(res.json["result"]["status"])
@@ -240,7 +261,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
         remove_token(serial)
@@ -256,7 +277,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertIn("detail", res.json)
             detail = res.json["detail"]
             self.assertIn("multi_challenge", detail)
@@ -297,7 +318,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
             self.assertIn("result", res.json)
             self.assertIn("authentication", res.json["result"])
@@ -321,7 +342,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             detail = res.json["detail"]
             transaction_id = detail["multi_challenge"][0]["transaction_id"]
         # Change the token serial
@@ -334,7 +355,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         with self.app.test_request_context('/validate/check', method='POST', data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401)
+            self.assertEqual(401, res.status_code)
             result = res.json["result"]
             self.assertIn("error", result)
             error = result["error"]
@@ -355,7 +376,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
               patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertIn("detail", res.json)
             detail = res.json["detail"]
             self.assertIn("multi_challenge", detail)
@@ -416,7 +437,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            data=data,
                                            headers=headers):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
             self.assertIn("detail", res.json)
             self.assertIn("auth_items", res.json)
@@ -489,7 +510,7 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
                                            method='DELETE',
                                            headers=self.pk_headers):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertIn("result", res.json)
             self.assertIn("status", res.json["result"])
             self.assertTrue(res.json["result"]["status"])
@@ -624,3 +645,93 @@ class PasskeyAPITest(MyApiTestCase, PasskeyTestBase):
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)
         delete_policy("enroll_passkey")
+
+    def test_10_auth_success(self):
+        """
+        To use a passkey with /auth, the challenge is initiated via /validate/initialize and
+        then answered via /validate/check.
+        UserVerification is always required for /auth.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            self.assertTrue(res.json["result"]["status"])
+            self.assertIn("value", res.json["result"])
+            # Value contains the user data (rights etc.)
+            value = res.json["result"]["value"]
+            self.assertIn("realm", value)
+            self.assertEqual(self.user.realm, value["realm"])
+            self.assertIn("log_level", value)
+            self.assertIn("menus", value)
+            self.assertIn("rights", value)
+            self.assertTrue(len(value["rights"]) > 0)
+            self.assertIn("role", value)
+            self.assertEqual("user", value["role"])
+            self.assertIn("token", value)
+            self.assertTrue(value["token"])
+        remove_token(serial)
+
+    def test_11_auth_fail_uv(self):
+        """
+        Test an authentication with a wrong response and without user verification.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        data = self.authentication_response_no_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+        remove_token(serial)
+
+    def test_12_auth_fail_signature(self):
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        # Change the signature
+        data["signature"] = "wrong_signature"
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+        remove_token(serial)
+
+
+class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
+    """
+    Test if the feature switch for passkey usage with /auth works.
+    Successful use has been tested before in PasskeyAPITest.
+    """
+
+    class Config(TestingConfig):
+        WEBUI_PASSKEY_LOGIN_ENABLED = False
+
+    def test_01_webui_passkey_disabled(self):
+        self.assertFalse(get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True))
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self._verify_auth_fail_with_error(res, 4307)
+        remove_token(serial)

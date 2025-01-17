@@ -218,7 +218,69 @@ angular.module("privacyideaApp")
                 $scope.unlocking = false;
                 $scope.authenticate();
             };
-
+            // PASSKEY LOGIN
+            $scope.bytesToBase64 = function (bytes) {
+                const binString = Array.from(bytes, (byte) =>
+                    String.fromCodePoint(byte),).join("");
+                return btoa(binString);
+            };
+            let mediation = "silent";
+            if (window.PublicKeyCredential) {
+                const available = PublicKeyCredential.isConditionalMediationAvailable()
+                    .then((available) => {
+                        //console.log("isConditionalMediationAvailable: " + available);
+                        if (available) {
+                            mediation = "conditional";
+                        }
+                    });
+            }
+            $scope.passkeyRequestPassword = false;
+            $scope.passkeyLogin = function () {
+                $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
+                        let data = response.data.detail.passkey;
+                        let userVerification = "required";
+                        /** TODO for the webui, userVerification is always required so that is a 2FA
+                        if (["required", "preferred", "discouraged"].includes(data.user_verification)) {
+                            userVerification = data.user_verification;
+                        } */
+                        //console.log(data);
+                        navigator.credentials.get({
+                            publicKey: {
+                                challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
+                                rpId: data.rpId,
+                                userVerification: userVerification,
+                            },
+                        }).then(credential => {
+                            //console.log(credential);
+                            let params = {
+                                transaction_id: data.transaction_id,
+                                credential_id: credential.id,
+                                authenticatorData: $scope.bytesToBase64(
+                                    new Uint8Array(credential.response.authenticatorData)),
+                                clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+                                signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
+                                userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
+                            };
+                            $http.post(authUrl, params, {}).then(function (response) {
+                                let data = response.data;
+                                //console.log(data);
+                                if (data.result.value) {
+                                    $scope.do_login_stuff(response.data);
+                                    //$scope.login.username = data.detail.username;
+                                    //$scope.passkeyRequestPassword = true;
+                                } else {
+                                    console.log("Passkey login failed! Response did not contain a username.");
+                                }
+                            }, function (error) {
+                                AuthFactory.authError(error.data)
+                            });
+                        }, function (error) {
+                            AuthFactory.authError(error.data)
+                        });
+                    }
+                );
+            };
+            // END PASSKEY LOGIN
             $scope.authenticate = function () {
                 $scope.polling = false;
                 $scope.image = false;
