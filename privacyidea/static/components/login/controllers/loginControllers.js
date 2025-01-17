@@ -224,25 +224,11 @@ angular.module("privacyideaApp")
                     String.fromCodePoint(byte),).join("");
                 return btoa(binString);
             };
-            let mediation = "silent";
-            if (window.PublicKeyCredential) {
-                const available = PublicKeyCredential.isConditionalMediationAvailable()
-                    .then((available) => {
-                        //console.log("isConditionalMediationAvailable: " + available);
-                        if (available) {
-                            mediation = "conditional";
-                        }
-                    });
-            }
-            $scope.passkeyRequestPassword = false;
             $scope.passkeyLogin = function () {
                 $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
                         let data = response.data.detail.passkey;
+                        // TODO for the webui, userVerification is always required so that is a 2FA
                         let userVerification = "required";
-                        /** TODO for the webui, userVerification is always required so that is a 2FA
-                        if (["required", "preferred", "discouraged"].includes(data.user_verification)) {
-                            userVerification = data.user_verification;
-                        } */
                         //console.log(data);
                         navigator.credentials.get({
                             publicKey: {
