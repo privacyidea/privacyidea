@@ -236,5 +236,46 @@ export class TableUtilsService {
       return state;
     }
   }
+
+  public toggleActiveInFilter(currentValue: string): string {
+    const activeRegex = /active:\s*(\S+)/i;
+    const match = currentValue.match(activeRegex);
+
+    if (!match) {
+      return (currentValue.trim() + ' active: true').trim();
+    } else {
+      const existingValue = match[1].toLowerCase();
+
+      if (existingValue === 'true') {
+        return currentValue.replace(activeRegex, 'active: false');
+      } else if (existingValue === 'false') {
+        const removed = currentValue.replace(activeRegex, '').trim();
+        return removed.replace(/\s{2,}/g, ' ');
+      } else {
+        return currentValue.replace(activeRegex, 'active: true');
+      }
+    }
+  }
+
+  public getFilterIconName(keyword: string, currentValue: string): string {
+    if (keyword === 'active') {
+      const activeMatch = currentValue.match(/active:\s*(\S+)/i);
+      if (!activeMatch) {
+        return 'add_circle';
+      }
+
+      const activeValue = activeMatch[1].toLowerCase();
+      if (activeValue === 'true') {
+        return 'change_circle';
+      } else if (activeValue === 'false') {
+        return 'remove_circle';
+      } else {
+        return 'add_circle';
+      }
+    } else {
+      const isSelected = this.isFilterSelected(keyword, currentValue);
+      return isSelected ? 'remove_circle' : 'add_circle';
+    }
+  }
 }
 

@@ -102,6 +102,13 @@ export class TokenTableComponent {
   }
 
   toggleKeywordInFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
+    if (filterKeyword === 'active') {
+      inputElement.value = this.tableUtilsService.toggleActiveInFilter(inputElement.value);
+      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      inputElement.focus();
+      return;
+    }
+
     if (filterKeyword === 'infokey & infovalue') {
       inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infokey');
       this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
