@@ -38,7 +38,7 @@ export class TokenCardComponent {
   constructor(protected overflowService: OverflowService) {}
 
   onTabChange(): void {
-    if (this.isProgrammaticChange) {
+    if (this.isProgrammaticChange()) {
       this.isProgrammaticChange.set(false);
       return;
     }
