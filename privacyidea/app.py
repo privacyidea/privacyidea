@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, jsonify, request
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -134,9 +134,13 @@ def create_app(config_name="development",
 
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
-    def fall_back(path):
-        main_js, polyfills_js = get_build_filenames()
-        return send_html(render_template("index.html", main_js=main_js, polyfills_js=polyfills_js))
+    def fallback(error):
+        if request.path.startswith("/ui/"):
+            main_js, polyfills_js = get_build_filenames()
+            return send_html(
+                render_template(
+                    "index.html", main_js=main_js, polyfills_js=polyfills_js))
+        return jsonify(error="Not found"), 404
 
     if config_name:
         app.config.from_object(config[config_name])
