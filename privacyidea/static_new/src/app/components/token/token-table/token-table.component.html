@@ -77,7 +77,13 @@
                    (click)="tokenSelected(element.serial)">
                   {{ element[column.key] }}
                 </a>
-              } @else if (tableUtilsService.isLink(column.key)) {
+              } @else if (column.key === 'container_serial') {
+                <a attr.aria-label="{{ column.label }} Link"
+                   (click)="containerSelected(element.container_serial)">
+                  {{ element[column.key] }}
+                </a>
+              }
+              @else if (tableUtilsService.isLink(column.key)) {
                 <a attr.aria-label="{{ column.label }} Link" href="#">
                   {{ element[column.key] }}
                 </a>

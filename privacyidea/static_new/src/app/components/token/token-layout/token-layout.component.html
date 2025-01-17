@@ -62,7 +62,12 @@
               } @else {
                 <app-token-table
                   [token_serial]="token_serial"
-                  [tokenIsSelected]="tokenIsSelected">
+                  [tokenIsSelected]="tokenIsSelected"
+                  [container_serial]="container_serial"
+                  [containerIsSelected]="containerIsSelected"
+                  [isProgrammaticChange]="isProgrammaticChange"
+                  [selectedTabIndex]="selectedTabIndex"
+                >
                 </app-token-table>
               }
             } @else if (selectedTabIndex() === 1) {

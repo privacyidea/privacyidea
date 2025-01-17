@@ -36,7 +36,6 @@ const columnsKeyMap = [
   styleUrl: './token-table.component.scss'
 })
 export class TokenTableComponent {
-  protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
@@ -57,8 +56,13 @@ export class TokenTableComponent {
   showAdvancedFilter = signal(false);
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() token_serial!: WritableSignal<string>;
+  @Input() containerIsSelected!: WritableSignal<boolean>;
+  @Input() container_serial!: WritableSignal<string>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  @Input() selectedTabIndex!: WritableSignal<number>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
               private authService: AuthService,
@@ -74,19 +78,6 @@ export class TokenTableComponent {
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
-  }
-
-  private fetchTokenData() {
-    this.tokenService.getTokenData(
-      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-      next: response => {
-        this.length = response.result.value.count;
-        this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
-      },
-      error: error => {
-        console.error('Failed to get token data', error);
-      }
-    });
   }
 
   handlePageEvent(event: PageEvent) {
@@ -146,8 +137,8 @@ export class TokenTableComponent {
     });
   }
 
-  tokenSelected(serial: string) {
-    this.token_serial.set(serial);
+  tokenSelected(token_serial: string) {
+    this.token_serial.set(token_serial);
     this.tokenIsSelected.set(true)
   }
 
@@ -157,5 +148,26 @@ export class TokenTableComponent {
     } else if (columnKey === 'failcount') {
       this.resetFailCount(element);
     }
+  }
+
+  containerSelected(container_serial: string) {
+    this.container_serial.set(container_serial);
+    this.tokenIsSelected.set(false);
+    this.isProgrammaticChange.set(true);
+    this.selectedTabIndex.set(1);
+    this.containerIsSelected.set(true);
+  }
+
+  private fetchTokenData() {
+    this.tokenService.getTokenData(
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
+      next: response => {
+        this.length = response.result.value.count;
+        this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
+      },
+      error: error => {
+        console.error('Failed to get token data', error);
+      }
+    });
   }
 }

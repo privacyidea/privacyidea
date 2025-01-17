@@ -58,9 +58,9 @@ export class LostTokenComponent {
     });
   }
 
-  tokenSelected(serial: string) {
+  tokenSelected(token_serial: string) {
     this.dialogRef.close();
-    this.data.token_serial.set(serial);
+    this.data.token_serial.set(token_serial);
     this.data.tokenIsSelected.set(true)
   }
 }
