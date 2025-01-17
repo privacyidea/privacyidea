@@ -1,4 +1,4 @@
-import {Component, Input, WritableSignal} from '@angular/core';
+import {Component, Input, signal, WritableSignal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatButton} from '@angular/material/button';
@@ -31,6 +31,7 @@ export class TokenTabComponent {
   @Input() active!: WritableSignal<boolean>
   @Input() revoked!: WritableSignal<boolean>
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  isLost = signal(false);
 
   constructor(private tokenService: TokenService,
               private dialog: MatDialog) {
@@ -75,8 +76,12 @@ export class TokenTabComponent {
 
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
-      disableClose: true,
-      data: { serial: this.serial }
+      data: {
+        serial: this.serial,
+        isLost: this.isLost,
+        token_serial: this.serial,
+        tokenIsSelected: this.tokenIsSelected
+      }
     });
   }
 }

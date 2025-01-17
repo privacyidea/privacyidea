@@ -192,6 +192,6 @@ export class TokenService {
 
   lostToken(serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}lost/` + serial, {headers});
+    return this.http.post(`${this.tokenBaseUrl}lost/` + serial, {}, {headers})
   }
 }

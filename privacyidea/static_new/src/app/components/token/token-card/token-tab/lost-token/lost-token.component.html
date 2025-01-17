@@ -12,11 +12,28 @@
   <p>
     The old token {{ data.serial() }} will be disabled and can be deleted or enabled later.
   </p>
-  <div class="dialog-div">
-    <button class="card-button" (click)="lostToken()" mat-flat-button>
-      <mat-icon style="margin-top: -3px;">question_mark</mat-icon>
-      Mark token as lost
-    </button>
-    <button mat-button mat-dialog-close>Close</button>
-  </div>
+  @if (!data.isLost()) {
+    <div class="dialog-div">
+      <button class="card-button" (click)="lostToken()" mat-flat-button>
+        <mat-icon class="question-icon">question_mark</mat-icon>
+        Mark token as lost
+      </button>
+      <button mat-button mat-dialog-close>Close</button>
+    </div>
+  } @else {
+    <mat-card appearance="outlined" class="lost-card">
+      <mat-card-content class="lost-card-content">Token was marked as lost successfully.
+      </mat-card-content>
+    </mat-card>
+    <p> The serial of the new token is  <a (click)="tokenSelected(response.result.value.serial)">
+        {{ response.result.value.serial }}
+      </a> <br/>
+      The password that needs to be combined with the OTP PIN: </p>
+    <p class="lost-password"> {{ response.result.value.password }} </p>
+    <p style="font-weight: bold"> The password can not be shown again later! </p>
+    <p> The token is valid till {{ response.result.value.end_date }} </p>
+    <div class="dialog-div">
+      <button mat-button mat-dialog-close>Close</button>
+    </div>
+  }
 </mat-dialog-content>

@@ -11,6 +11,28 @@
   color: var(--blue-base);
 }
 
+.lost-card {
+  background: var(--green-light);
+  color: white;
+  font-weight: bold;
+}
+
+.lost-card-content {
+  justify-content: center;
+  display: flex;
+}
+
+.lost-password {
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.question-icon {
+  margin-top: -3px;
+}
+
 ::ng-deep .mat-mdc-dialog-surface {
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow-hover);
