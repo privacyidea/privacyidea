@@ -49,7 +49,7 @@ export class TokenDetailsUserComponent {
     isEditing: WritableSignal<boolean>
   }[]>([]);
   @Input() selectedUsername = signal<string>('');
-  @Input() serial!: WritableSignal<string>;
+  @Input() token_serial!: WritableSignal<string>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
@@ -85,13 +85,8 @@ export class TokenDetailsUserComponent {
     });
   }
 
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
-  }
-
   unassignUser() {
-    this.tokenService.unassignUser(this.serial()).subscribe({
+    this.tokenService.unassignUser(this.token_serial()).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },
@@ -106,7 +101,7 @@ export class TokenDetailsUserComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.setPin(this.serial(), this.setPinValue()).subscribe({
+    this.tokenService.setPin(this.token_serial(), this.setPinValue()).subscribe({
       error: error => {
         console.error('Failed to set pin', error);
       }
@@ -114,7 +109,7 @@ export class TokenDetailsUserComponent {
   }
 
   setRandomPin() {
-    this.tokenService.setRandomPin(this.serial()).subscribe({
+    this.tokenService.setRandomPin(this.token_serial()).subscribe({
       error: error => {
         console.error('Failed to set random pin', error);
       }
@@ -138,7 +133,10 @@ export class TokenDetailsUserComponent {
       console.error('PINs do not match');
       return;
     }
-    this.tokenService.assignUser(this.serial(), this.selectedUsername(), this.selectedUserRealm(), this.setPinValue()).subscribe({
+    this.tokenService.assignUser(this.token_serial(),
+      this.selectedUsername(),
+      this.selectedUserRealm(),
+      this.setPinValue()).subscribe({
       next: () => {
         this.setPinValue.set('');
         this.repeatPinValue.set('');
@@ -150,6 +148,11 @@ export class TokenDetailsUserComponent {
         console.error('Failed to assign user', error);
       }
     });
+  }
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
   private getDefaultRealm() {

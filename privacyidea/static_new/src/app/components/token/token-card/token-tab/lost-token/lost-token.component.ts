@@ -30,7 +30,6 @@ export class LostTokenComponent {
 
   constructor(protected tokenService: TokenService,
               @Inject(MAT_DIALOG_DATA) public data: {
-                serial: WritableSignal<string>,
                 isLost: WritableSignal<boolean>,
                 token_serial: WritableSignal<string>,
                 tokenIsSelected: WritableSignal<boolean>
@@ -46,11 +45,11 @@ export class LostTokenComponent {
   }
 
   lostToken(): void {
-    this.tokenService.lostToken(this.data.serial()).subscribe({
+    this.tokenService.lostToken(this.data.token_serial()).subscribe({
       next: (response) => {
         this.data.isLost.set(true);
         this.response = response;
-        console.log('Token marked as lost: ', this.data.serial());
+        console.log('Token marked as lost: ', this.data.token_serial());
       },
       error: error => {
         console.error('Failed to mark token as lost.', error);

@@ -27,7 +27,7 @@ import {LostTokenComponent} from './lost-token/lost-token.component';
 })
 export class TokenTabComponent {
   @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>
+  @Input() token_serial!: WritableSignal<string>
   @Input() active!: WritableSignal<boolean>
   @Input() revoked!: WritableSignal<boolean>
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
@@ -38,8 +38,8 @@ export class TokenTabComponent {
   }
 
   toggleActive(): void {
-    this.tokenService.toggleActive(this.serial(), this.active()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.serial()))
+    this.tokenService.toggleActive(this.token_serial(), this.active()).pipe(
+      switchMap(() => this.tokenService.getTokenDetails(this.token_serial()))
     ).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
@@ -51,8 +51,8 @@ export class TokenTabComponent {
   }
 
   revokeToken(): void {
-    this.tokenService.revokeToken(this.serial()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.serial()))
+    this.tokenService.revokeToken(this.token_serial()).pipe(
+      switchMap(() => this.tokenService.getTokenDetails(this.token_serial()))
     ).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
@@ -64,7 +64,7 @@ export class TokenTabComponent {
   }
 
   deleteToken(): void {
-    this.tokenService.deleteToken(this.serial()).subscribe({
+    this.tokenService.deleteToken(this.token_serial()).subscribe({
       next: () => {
         this.tokenIsSelected.set(false);
       },
@@ -77,9 +77,8 @@ export class TokenTabComponent {
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
       data: {
-        serial: this.serial,
         isLost: this.isLost,
-        token_serial: this.serial,
+        token_serial: this.token_serial,
         tokenIsSelected: this.tokenIsSelected
       }
     });

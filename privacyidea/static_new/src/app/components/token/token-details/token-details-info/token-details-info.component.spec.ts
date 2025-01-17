@@ -37,7 +37,7 @@ describe('TokenDetailsInfoComponent', () => {
     fixture = TestBed.createComponent(TokenDetailsInfoComponent);
     tokenService = TestBed.inject(TokenService);
     component = fixture.componentInstance;
-    component.serial = signal('Mock serial');
+    component.token_serial = signal('Mock serial');
     component.isEditingInfo = signal(false);
     component.isEditingUser = signal(false);
     component.isAnyEditingOrRevoked = computed(() => {

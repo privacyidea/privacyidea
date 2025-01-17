@@ -98,23 +98,23 @@ export class ContainerService {
     )
   }
 
-  getContainerDetails(serial: string): Observable<any> {
+  getContainerDetails(container_serial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('container_serial', serial);
+    let params = new HttpParams().set('container_serial', container_serial);
     return this.http.get(this.containerBaseUrl, {headers, params})
   }
 
-  setContainerRealm(serial: string, value: string[] | null) {
+  setContainerRealm(container_serial: string, value: string[] | null) {
     const headers = this.localService.getHeaders();
     let valueString = value ? value.join(',') : '';
-    return this.http.post(`${this.containerBaseUrl}${serial}/realms`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/realms`, {
       realms: valueString
     }, {headers})
   }
 
-  setContainerDescription(serial: string, value: any) {
+  setContainerDescription(container_serial: string, value: any) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${serial}/description`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/description`, {
       description: value
     }, {headers})
   }
@@ -137,25 +137,25 @@ export class ContainerService {
       {states: new_states}, {headers})
   }
 
-  unassignUser(serial: string, username: string, userRealm: string) {
+  unassignUser(container_serial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${serial}/unassign`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/unassign`, {
       user: username,
       realm: userRealm
     }, {headers})
   }
 
-  assignUser(serial: string, username: string, userRealm: string) {
+  assignUser(container_serial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${serial}/assign`, {
+    return this.http.post(`${this.containerBaseUrl}${container_serial}/assign`, {
       user: username,
       realm: userRealm
     }, {headers})
   }
 
-  setContainerInfos(serial: string, infos: any) {
+  setContainerInfos(container_serial: string, infos: any) {
     const headers = this.localService.getHeaders();
-    const info_url = `${this.containerBaseUrl}${serial}/info`;
+    const info_url = `${this.containerBaseUrl}${container_serial}/info`;
     return Object.keys(infos).map(info => {
         const infoKey = info;
         const infoValue = infos[infoKey];
@@ -164,16 +164,16 @@ export class ContainerService {
     );
   }
 
-  deleteInfo(serial: string, key: string) {
+  deleteInfo(container_serial: string, key: string) {
     const headers = this.localService.getHeaders();
     //TODO: API is missing the delete endpoint
     return;
   }
 
-  addTokenToContainer(container_serial: string, serial: string) {
+  addTokenToContainer(container_serial: string, token_serial: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.containerBaseUrl}${container_serial}/add`, {
-      serial: serial
+      serial: token_serial
     }, {headers})
   }
 
@@ -222,8 +222,8 @@ export class ContainerService {
     );
   }
 
-  deleteContainer(serial: string) {
+  deleteContainer(container_serial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${serial}`, {headers})
+    return this.http.delete(`${this.containerBaseUrl}${container_serial}`, {headers})
   }
 }
