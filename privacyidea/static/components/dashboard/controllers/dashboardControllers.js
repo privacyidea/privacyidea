@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * Adaptions:
+ * 2025-01-19 Guenther Schreiner, <guenther.schreiner@smile.de>
  */
 
 
@@ -32,7 +34,7 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
     $scope.subscriptions = {};
-    $scope.authentications = {"success": 0, "fail": 0};
+    $scope.authentications = {"success24h": 0, "fail24h": 0, "success1h": 0, "fail1h": 0, "success10m": 0, "fail10m": 0};
 
     $scope.get_total_token_number = function () {
         // We call getTokens with pagesize=0, so that we do
@@ -112,14 +114,30 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
      };
 
 $scope.getAuthentication = function () {
-  $scope.authentications = {"success": 0, "fail": 0};
+  $scope.authentications = {"success24h": 0, "fail24h": 0, "success1h": 0, "fail1h": 0, "success10m": 0, "fail10m": 0};
   AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "1"},
       function (data) {
-          $scope.authentications.success = data.result.value.count;
+          $scope.authentications.success24h = data.result.value.count;
+      });
+  AuditFactory.get({"timelimit": "60m", "action": "*validate*", "success": "1"},
+      function (data) {
+          $scope.authentications.success1h = data.result.value.count;
+      });
+  AuditFactory.get({"timelimit": "10m", "action": "*validate*", "success": "1"},
+      function (data) {
+          $scope.authentications.success10m = data.result.value.count;
+      });
+  AuditFactory.get({"timelimit": "60m", "action": "*validate*", "success": "0"},
+      function (data) {
+          $scope.authentications.fail1h = data.result.value.count;
+      });
+  AuditFactory.get({"timelimit": "10m", "action": "*validate*", "success": "0"},
+      function (data) {
+          $scope.authentications.fail10m = data.result.value.count;
       });
   AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
       function (data) {
-          $scope.authentications.fail = data.result.value.count;
+          $scope.authentications.fail24h = data.result.value.count;
           $scope.authentications.users = {}; // Declare the users object as a dictionary
           $scope.authentications.serials = Array();
           angular.forEach(data.result.value.auditdata, function(auditentry){

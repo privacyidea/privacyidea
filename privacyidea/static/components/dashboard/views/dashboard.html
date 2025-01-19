@@ -1,4 +1,4 @@
-<div class="well">
+<div class="well" ng-controller="dashboardController">
 
     <div class="row">  <!-- upper row -->
        <div class="col-lg-4">
@@ -49,12 +49,16 @@
                      <table class="table">
                          <tbody>
                             <tr>
+                                <td>...</td>
+                                <td>10min /  60min / 24h</td>
+                            </tr>
+                            <tr>
                                 <td translate>success</td>
-                                <td>{{ authentications.success }}</td>
+                                <td>{{ authentications.success10m }} / {{ authentications.success1h }} / {{ authentications.success24h }}</td>
                             </tr>
                             <tr>
                                 <td translate>failed</td>
-                                <td>{{ authentications.fail }}</td>
+                                <td>{{ authentications.fail10m }} / {{ authentications.fail1h }} / {{ authentications.fail24h }}</td>
                             </tr>
                             <tr>
                                 <td translate>failed users / tokens</td>
