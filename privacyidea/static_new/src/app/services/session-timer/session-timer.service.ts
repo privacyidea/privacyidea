@@ -12,7 +12,7 @@ export class SessionTimerService {
   private intervalId: any;
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
-  private readonly sessionTimeout = 35_000;
+  private readonly sessionTimeout = 3599_000;
   remainingTime = computed(() =>
     this.sessionTimeout - (this.currentTime() - this.startTime())
   );
