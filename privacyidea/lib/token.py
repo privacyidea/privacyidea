@@ -1428,7 +1428,7 @@ def unassign_token(serial, user=None):
             log.error('update token DB failed')
             raise TokenAdminError(_(f"Token unassign failed for {serial!r}/{user!r}: {e!r}"), id=1105)
 
-        log.debug(f"successfully unassigned token with serial {token!r}")
+        log.debug(f"successfully unassigned token with serial {token.get_serial()!r}")
     # TODO: test with more than 1 token
     return len(tokens)
 
@@ -2924,12 +2924,14 @@ def create_fido2_challenge(rp_id: str) -> dict:
     Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
     the credential_id that returned with the response to this challenge.
     The returned dict has the format:
-    {
-        "transaction_id": "12345678901234567890",
-        "challenge": <32 random bytes base64url encoded>,
-        "rpId": "example.com",
-        "message": "Please authenticate with your Passkey!"
-    }
+        ::
+
+            {
+                "transaction_id": "12345678901234567890",
+                "challenge": <32 random bytes base64url encoded>,
+                "rpId": "example.com",
+                "message": "Please authenticate with your Passkey!"
+            }
     The challenge nonce is encoded in base64url.
     """
     challenge = fido2.util.get_fido2_nonce()

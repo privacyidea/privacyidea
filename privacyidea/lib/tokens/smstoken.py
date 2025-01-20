@@ -58,8 +58,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import Match, SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)

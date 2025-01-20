@@ -1615,8 +1615,7 @@ class TokenClass(object):
 
         # get the challenges for this transaction ID
         if transaction_id is not None:
-            challenges = get_challenges(serial=self.token.serial,
-                                                  transaction_id=transaction_id)
+            challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
             for challenge in challenges:
                 if challenge.is_valid():
