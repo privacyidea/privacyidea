@@ -172,7 +172,6 @@ sphinx==8.0.2
     #   pallets-sphinx-themes
     #   privacyIDEA (setup.py)
     #   sphinxcontrib-httpdomain
-    #   sphinxcontrib-plantuml
     #   sphinxcontrib-spelling
 sphinxcontrib-applehelp==2.0.0
     # via sphinx
@@ -184,8 +183,6 @@ sphinxcontrib-httpdomain==1.8.1
     # via privacyIDEA (setup.py)
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
-sphinxcontrib-plantuml==0.30
-    # via privacyIDEA (setup.py)
 sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
