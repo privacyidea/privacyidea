@@ -11,6 +11,7 @@ import { ContainerService } from '../../../../services/container/container.servi
 import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -53,17 +54,20 @@ export class ContainerTableComponent {
       return emptyRow;
     })));
   showAdvancedFilter = signal(false);
-  protected readonly columnsKeyMap = columnsKeyMap;
-
   @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
   @ViewChild(MatSort) sort: MatSort | null = null;
+  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
     private authService: AuthService,
     private containerService: ContainerService,
+    private notificationService: NotificationService,
     protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
+      this.router.navigate(['']).then(r => {
+        console.warn('Redirected to login page.', r);
+        this.notificationService.openSnackBar('Redirected to login page.');
+      });
     } else {
       this.fetchContainerData();
     }
@@ -72,19 +76,6 @@ export class ContainerTableComponent {
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
-  }
-
-  private fetchContainerData() {
-    this.containerService.getContainerData(
-      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-        next: response => {
-          this.length = response.result.value.count;
-          this.processDataSource(response.result.value.containers);
-        },
-        error: error => {
-          console.error('Failed to get container data', error);
-        }
-      });
   }
 
   handlePageEvent(event: PageEvent) {
@@ -112,6 +103,32 @@ export class ContainerTableComponent {
     inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
     this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
     inputElement.focus();
+  }
+
+  handleStateClick(element: any) {
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => {
+        this.fetchContainerData();
+      },
+      error: error => {
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
+      }
+    });
+  }
+
+  private fetchContainerData() {
+    this.containerService.getContainerData(
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
+        next: response => {
+          this.length = response.result.value.count;
+          this.processDataSource(response.result.value.containers);
+        },
+        error: error => {
+          console.error('Failed to get container data.', error);
+          this.notificationService.openSnackBar('Failed to get container data.')
+        }
+      });
   }
 
   private processDataSource(data: any[]) {

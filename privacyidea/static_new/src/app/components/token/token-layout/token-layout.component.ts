@@ -5,10 +5,11 @@ import { ContainerTableComponent } from './container-table/container-table.compo
 import { TokenDetailsComponent } from '../token-details/token-details.component';
 import { ContainerDetailsComponent } from '../container-details/container-details.component';
 import { MatDrawer, MatDrawerContainer, MatSidenavModule } from '@angular/material/sidenav';
-import { MatIconButton } from '@angular/material/button';
+import { MatFabButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { TokenCardComponent } from '../token-card/token-card.component';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-grid',
@@ -24,7 +25,7 @@ import { TokenCardComponent } from '../token-card/token-card.component';
     MatDrawer,
     MatSidenavModule,
     MatIcon,
-    MatIconButton
+    MatFabButton
   ],
   templateUrl: './token-layout.component.html',
   styleUrl: './token-layout.component.scss'
@@ -44,7 +45,8 @@ export class TokenLayoutComponent {
   @ViewChild('containerDetailsComponent') containerDetailsComponent!: ContainerDetailsComponent;
   @ViewChild('drawer') drawer!: MatDrawer;
 
-  constructor(protected overflowService: OverflowService) {
+  constructor(protected overflowService: OverflowService,
+    private notificationService: NotificationService) {
     effect(() => {
       if (this.refreshTokenDetails()) {
         this.onRefreshTokenDetails();
@@ -64,11 +66,13 @@ export class TokenLayoutComponent {
           this.refreshTokenDetails.set(false);
         },
         error: (error) => {
-          console.error('Error refreshing token details:', error);
+          console.error('Error refreshing token details.', error);
+          this.notificationService.openSnackBar('Error refreshing token details.')
         }
       });
     } else {
-      console.warn('TokenDetailsComponent is not yet initialized');
+      console.warn('TokenDetailsComponent is not yet initialized.');
+      this.notificationService.openSnackBar('TokenDetailsComponent is not yet initialized.')
     }
   }
 
@@ -79,11 +83,13 @@ export class TokenLayoutComponent {
           this.refreshContainerDetails.set(false);
         },
         error: (error) => {
-          console.error('Error refreshing token details:', error);
+          console.error('Error refreshing token details.', error);
+          this.notificationService.openSnackBar('Error refreshing token details.')
         }
       });
     } else {
-      console.warn('ContainerDetailsComponent is not yet initialized');
+      console.warn('ContainerDetailsComponent is not yet initialized.');
+      this.notificationService.openSnackBar('ContainerDetailsComponent is not yet initialized.')
     }
   }
 

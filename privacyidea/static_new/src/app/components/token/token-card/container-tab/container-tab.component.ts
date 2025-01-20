@@ -8,6 +8,7 @@ import { MatDivider } from "@angular/material/divider";
 import { switchMap } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-container-tab',
@@ -35,6 +36,7 @@ export class ContainerTabComponent {
   constructor(
     private containerService: ContainerService,
     private versioningService: VersionService,
+    private notificationService: NotificationService,
   ) { }
 
   ngOnInit(): void {
@@ -49,7 +51,8 @@ export class ContainerTabComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
       }
     });
   }
@@ -60,7 +63,8 @@ export class ContainerTabComponent {
         this.containerSerial.set('');
       },
       error: error => {
-        console.error('Failed to delete container', error);
+        console.error('Failed to delete container.', error);
+        this.notificationService.openSnackBar('Failed to delete container.')
       }
     });
   }

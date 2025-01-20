@@ -11,6 +11,7 @@ import { TokenService } from '../../../../services/token/token.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -36,7 +37,6 @@ const columnsKeyMap = [
   styleUrl: './token-table.component.scss'
 })
 export class TokenTableComponent {
-  protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map(column => column.key);
   length = 0;
   pageSize = 10;
@@ -59,13 +59,18 @@ export class TokenTableComponent {
   @Input() selectedPage!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
     private authService: AuthService,
     protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService) {
+    protected tableUtilsService: TableUtilsService,
+    private notificationService: NotificationService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
+      this.router.navigate(['']).then(r => {
+        console.warn('Redirected to login page.', r);
+        this.notificationService.openSnackBar('Redirected to login page.');
+      });
     } else {
       this.fetchTokenData();
     }
@@ -74,19 +79,6 @@ export class TokenTableComponent {
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
-  }
-
-  private fetchTokenData() {
-    this.tokenService.getTokenData(
-      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-        next: response => {
-          this.length = response.result.value.count;
-          this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
-        },
-        error: error => {
-          console.error('Failed to get token data', error);
-        }
-      });
   }
 
   handlePageEvent(event: PageEvent) {
@@ -111,6 +103,13 @@ export class TokenTableComponent {
   }
 
   toggleKeywordInFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
+    if (filterKeyword === 'active') {
+      inputElement.value = this.tableUtilsService.toggleActiveInFilter(inputElement.value);
+      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      inputElement.focus();
+      return;
+    }
+
     if (filterKeyword === 'infokey & infovalue') {
       inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infokey');
       this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
@@ -130,7 +129,8 @@ export class TokenTableComponent {
         this.fetchTokenData();
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.');
       }
     });
   }
@@ -141,15 +141,12 @@ export class TokenTableComponent {
         this.fetchTokenData();
       },
       error: error => {
-        console.error('Failed to reset fail counter', error);
+        console.error('Failed to reset fail counter.', error);
+        this.notificationService.openSnackBar('Failed to reset fail counter.');
       }
     });
   }
 
-  tokenSelected(serial: string) {
-    this.tokenSerial.set(serial);
-    this.selectedPage.set('token_details');
-  }
 
   handleColumnClick(columnKey: string, element: any): void {
     if (columnKey === 'active') {
@@ -157,5 +154,29 @@ export class TokenTableComponent {
     } else if (columnKey === 'failcount') {
       this.resetFailCount(element);
     }
+  }
+
+  tokenSelected(serial: string) {
+    this.tokenSerial.set(serial);
+    this.selectedPage.set('token_details');
+  }
+
+  containerSelected(containerSerial: string) {
+    this.tokenSerial.set(containerSerial);
+    this.selectedPage.set('container_details');
+  }
+
+  private fetchTokenData() {
+    this.tokenService.getTokenData(
+      this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
+        next: response => {
+          this.length = response.result.value.count;
+          this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
+        },
+        error: error => {
+          console.error('Failed to get token data.', error);
+          this.notificationService.openSnackBar('Failed to get token data.');
+        }
+      });
   }
 }

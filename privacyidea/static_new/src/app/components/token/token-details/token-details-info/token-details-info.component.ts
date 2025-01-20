@@ -12,6 +12,7 @@ import { Observable, switchMap } from 'rxjs';
 import { EditButtonsComponent } from '../edit-buttons/edit-buttons.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -55,9 +56,11 @@ export class TokenDetailsInfoComponent {
   newInfo = signal({ key: '', value: '' });
   protected readonly Object = Object;
 
-  constructor(private tokenService: TokenService,
-    protected overflowService: OverflowService) {
-  }
+  constructor(
+    private tokenService: TokenService,
+    private notificationService: NotificationService,
+    protected overflowService: OverflowService,
+  ) { }
 
   toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
     this.isEditingInfo.set(!this.isEditingInfo());
@@ -79,7 +82,8 @@ export class TokenDetailsInfoComponent {
         this.refreshDetails.set(true);
       },
       error: error => {
-        console.error('Failed to save token infos', error);
+        console.error('Failed to save token infos.', error);
+        this.notificationService.openSnackBar('Failed to save token infos.')
       }
     });
   }
@@ -102,7 +106,8 @@ export class TokenDetailsInfoComponent {
         this.refreshDetails.set(true);
       },
       error: error => {
-        console.error('Failed to delete info', error);
+        console.error('Failed to delete info.', error);
+        this.notificationService.openSnackBar('Failed to delete info.')
       }
     });
   }

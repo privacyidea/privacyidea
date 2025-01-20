@@ -6,6 +6,7 @@ import { AppComponent } from '../../../../app.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('TokenDetailsUserComponent', () => {
   let component: TokenDetailsUserComponent;
@@ -14,14 +15,14 @@ describe('TokenDetailsUserComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsUserComponent, AppComponent],
+      imports: [TokenDetailsUserComponent, AppComponent, BrowserAnimationsModule],
       providers: [TokenService, provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     tokenService = TestBed.inject(TokenService);
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
-    component.serial = signal('Mock serial');
+    component.tokenSerial = signal('Mock serial');
     component.isEditingUser = signal(false);
     component.setPinValue = signal('');
     component.setPinValue = signal('');

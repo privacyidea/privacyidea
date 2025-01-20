@@ -37,7 +37,7 @@ describe('TokenDetailsInfoComponent', () => {
     fixture = TestBed.createComponent(TokenDetailsInfoComponent);
     tokenService = TestBed.inject(TokenService);
     component = fixture.componentInstance;
-    component.serial = signal('Mock serial');
+    component.tokenSerial = signal('Mock serial');
     component.isEditingInfo = signal(false);
     component.isEditingUser = signal(false);
     component.isAnyEditingOrRevoked = computed(() => {
@@ -130,10 +130,11 @@ describe('TokenDetailsInfoComponent', () => {
   });
 
   it('should handle error when deleting info fails', () => {
-    spyOn(tokenService, 'deleteInfo').and.returnValue(throwError(() => new Error('Deletion failed')));
+    spyOn(tokenService, 'deleteInfo').and.returnValue(throwError(() => new Error('Deletion' +
+      ' failed.')));
     spyOn(console, 'error');
     component.deleteInfo('infoKey');
-    expect(console.error).toHaveBeenCalledWith('Failed to delete info', jasmine.any(Error));
+    expect(console.error).toHaveBeenCalledWith('Failed to delete info.', jasmine.any(Error));
   });
 
 });

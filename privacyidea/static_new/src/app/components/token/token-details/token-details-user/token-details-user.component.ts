@@ -14,6 +14,7 @@ import { EditButtonsComponent } from '../edit-buttons/edit-buttons.component';
 import { UserService } from '../../../../services/user/user.service';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-user',
@@ -64,6 +65,7 @@ export class TokenDetailsUserComponent {
   constructor(private tokenService: TokenService,
     private realmService: RealmService,
     private userService: UserService,
+    private notificationService: NotificationService,
     protected overflowService: OverflowService) {
     effect(() => {
       if (this.selectedUserRealm()) {
@@ -72,7 +74,8 @@ export class TokenDetailsUserComponent {
             this.userOptions.set(users.result.value.map((user: any) => user.username));
           },
           error: error => {
-            console.error('Failed to get users', error);
+            console.error('Failed to get users.', error);
+            this.notificationService.openSnackBar('Failed to get users.')
           }
         });
       }
@@ -85,30 +88,28 @@ export class TokenDetailsUserComponent {
     });
   }
 
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
-  }
-
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
       },
       error: error => {
-        console.error('Failed to unassign user', error);
+        console.error('Failed to unassign user.', error);
+        this.notificationService.openSnackBar('Failed to unassign user.')
       }
     });
   }
 
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error('PINs do not match');
+      console.error('PINs do not match.');
+      this.notificationService.openSnackBar('PINs do not match.')
       return;
     }
     this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
       error: error => {
-        console.error('Failed to set pin', error);
+        console.error('Failed to set PIN.', error);
+        this.notificationService.openSnackBar('Failed to set PIN.')
       }
     });
   }
@@ -116,7 +117,8 @@ export class TokenDetailsUserComponent {
   setRandomPin() {
     this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
       error: error => {
-        console.error('Failed to set random pin', error);
+        console.error('Failed to set random PIN.', error);
+        this.notificationService.openSnackBar('Failed to set random PIN.')
       }
     });
   }
@@ -135,21 +137,31 @@ export class TokenDetailsUserComponent {
 
   saveUser() {
     if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error('PINs do not match');
+      console.error('PINs do not match.');
+      this.notificationService.openSnackBar('PINs do not match.')
       return;
     }
-    this.tokenService.assignUser(this.tokenSerial(), this.selectedUsername(), this.selectedUserRealm(), this.setPinValue()).subscribe({
-      next: () => {
-        this.setPinValue.set('');
-        this.repeatPinValue.set('');
-        this.selectedUsername.set('');
-        this.selectedUserRealm.set('');
-        this.refreshTokenDetails.set(true)
-      },
-      error: error => {
-        console.error('Failed to assign user', error);
-      }
-    });
+    this.tokenService.assignUser(this.tokenSerial(),
+      this.selectedUsername(),
+      this.selectedUserRealm(),
+      this.setPinValue()).subscribe({
+        next: () => {
+          this.setPinValue.set('');
+          this.repeatPinValue.set('');
+          this.selectedUsername.set('');
+          this.selectedUserRealm.set('');
+          this.refreshTokenDetails.set(true)
+        },
+        error: error => {
+          console.error('Failed to assign user.', error);
+          this.notificationService.openSnackBar('Failed to assign user.')
+        }
+      });
+  }
+
+  private _filterUserOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.userOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
   private getDefaultRealm() {
@@ -158,7 +170,8 @@ export class TokenDetailsUserComponent {
         this.selectedUserRealm.set(Object.keys(realm.result.value)[0]);
       },
       error: error => {
-        console.error('Failed to get default realm', error);
+        console.error('Failed to get default realm.', error);
+        this.notificationService.openSnackBar('Failed to get default realm.')
       }
     });
   }

@@ -3,7 +3,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {LostTokenComponent} from './lost-token.component';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {MAT_DIALOG_DATA} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 describe('LostTokenComponent', () => {
   let component: LostTokenComponent;
@@ -14,7 +14,12 @@ describe('LostTokenComponent', () => {
       imports: [LostTokenComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
         {provide: MAT_DIALOG_DATA, useValue: {
-            serial: () => 'mockSerialValue'
+            tokenSerial: () => 'mockSerialValue',
+            isLost: () => false,
+            tokenIsSelected: () => false
+          }},
+        {provide: MatDialogRef, useValue: {
+            afterClosed: () => ({subscribe: () => {}}),
           }}]
     })
       .compileComponents();

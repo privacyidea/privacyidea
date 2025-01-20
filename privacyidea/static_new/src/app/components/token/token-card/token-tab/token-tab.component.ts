@@ -1,4 +1,4 @@
-import { Component, Input, WritableSignal } from '@angular/core';
+import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
@@ -10,6 +10,7 @@ import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -32,6 +33,7 @@ export class TokenTabComponent {
   @Input() active!: WritableSignal<boolean>
   @Input() revoked!: WritableSignal<boolean>
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  isLost = signal(false);
 
   version!: string;
 
@@ -39,6 +41,7 @@ export class TokenTabComponent {
     private tokenService: TokenService,
     private dialog: MatDialog,
     private versioningService: VersionService,
+    private notificationService: NotificationService,
   ) { }
 
   ngOnInit(): void {
@@ -53,7 +56,8 @@ export class TokenTabComponent {
         this.refreshTokenDetails.set(true);
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
       }
     });
   }
@@ -66,7 +70,8 @@ export class TokenTabComponent {
         this.refreshTokenDetails.set(true);
       },
       error: error => {
-        console.error('Failed to revoke token', error);
+        console.error('Failed to revoke token.', error);
+        this.notificationService.openSnackBar('Failed to revoke token.')
       }
     });
   }
@@ -77,15 +82,19 @@ export class TokenTabComponent {
         this.tokenSerial.set('');
       },
       error: error => {
-        console.error('Failed to delete token', error);
+        console.error('Failed to delete token.', error);
+        this.notificationService.openSnackBar('Failed to delete token.')
       }
     });
   }
 
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
-      disableClose: true,
-      data: { serial: this.tokenSerial }
+      data: {
+        isLost: this.isLost,
+        tokenSerial: this.tokenSerial,
+        tokenIsSelected: this.tokenIsSelected
+      }
     });
   }
 

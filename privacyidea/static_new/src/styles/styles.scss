@@ -150,3 +150,9 @@ html, body {
 .margin-left-1 {
   margin-left: 1rem;
 }
+
+::ng-deep {
+  .cdk-overlay-pane {
+    margin-bottom: 60px !important;
+  }
+}

@@ -23,6 +23,7 @@ import {
 import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -141,6 +142,7 @@ export class TokenDetailsComponent {
   constructor(private tokenService: TokenService,
     private containerService: ContainerService,
     private realmService: RealmService,
+    private notificationService: NotificationService,
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService) {
     effect(() => {
@@ -201,7 +203,8 @@ export class TokenDetailsComponent {
         });
       }),
       catchError(error => {
-        console.error('Failed to get token details', error);
+        console.error('Failed to get token details.', error);
+        this.notificationService.openSnackBar('Failed to get token details.')
         throw error;
       })
     );
@@ -212,7 +215,8 @@ export class TokenDetailsComponent {
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
-        console.error('Failed to reset fail counter', error);
+        console.error('Failed to reset fail counter.', error);
+        this.notificationService.openSnackBar('Failed to reset fail counter.')
       }
     });
   }
@@ -252,7 +256,8 @@ export class TokenDetailsComponent {
           this.selectedContainer.set(this.selectedContainer());
         },
         error: error => {
-          console.error('Failed to get containers', error);
+          console.error('Failed to get containers.', error);
+          this.notificationService.openSnackBar('Failed to get containers.')
         }
       });
     }
@@ -270,7 +275,8 @@ export class TokenDetailsComponent {
           this.selectedTokengroup.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
         },
         error: error => {
-          console.error('Failed to get tokengroups', error);
+          console.error('Failed to get tokengroups.', error);
+          this.notificationService.openSnackBar('Failed to get tokengroups.')
         }
       });
     }
@@ -316,7 +322,8 @@ export class TokenDetailsComponent {
         this.showTokenDetail();
       },
       error: error => {
-        console.error('Failed to save token detail', error);
+        console.error('Failed to save token detail.', error);
+        this.notificationService.openSnackBar('Failed to save token detail.')
       }
     });
   }
@@ -326,7 +333,8 @@ export class TokenDetailsComponent {
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
-        console.error('Failed to assign container', error);
+        console.error('Failed to assign container.', error);
+        this.notificationService.openSnackBar('Failed to assign container.')
       }
     });
   }
@@ -336,7 +344,8 @@ export class TokenDetailsComponent {
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
-        console.error('Failed to unassign container', error);
+        console.error('Failed to unassign container.', error);
+        this.notificationService.openSnackBar('Failed to unassign container.')
       }
     });
   }
@@ -349,7 +358,8 @@ export class TokenDetailsComponent {
         this.showTokenDetail();
       },
       error: error => {
-        console.error('Failed to save token realms', error);
+        console.error('Failed to save token realms.', error);
+        this.notificationService.openSnackBar('Failed to save token realms.')
       }
     });
   }
@@ -362,7 +372,8 @@ export class TokenDetailsComponent {
         this.showTokenDetail();
       },
       error: error => {
-        console.error('Failed to set token group', error);
+        console.error('Failed to set token group.', error);
+        this.notificationService.openSnackBar('Failed to set token group.')
       }
     });
   }
