@@ -9,6 +9,7 @@ import {TokenService} from '../../../../services/token/token.service';
 import {tabToggleState} from '../../../../../styles/animations/animations';
 import {MatDialog} from '@angular/material/dialog';
 import {LostTokenComponent} from './lost-token/lost-token.component';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -34,7 +35,8 @@ export class TokenTabComponent {
   isLost = signal(false);
 
   constructor(private tokenService: TokenService,
-              private dialog: MatDialog) {
+              private dialog: MatDialog,
+              private notificationService: NotificationService) {
   }
 
   toggleActive(): void {
@@ -45,7 +47,8 @@ export class TokenTabComponent {
         this.refreshTokenDetails.set(true);
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
       }
     });
   }
@@ -58,7 +61,8 @@ export class TokenTabComponent {
         this.refreshTokenDetails.set(true);
       },
       error: error => {
-        console.error('Failed to revoke token', error);
+        console.error('Failed to revoke token.', error);
+        this.notificationService.openSnackBar('Failed to revoke token.')
       }
     });
   }
@@ -69,7 +73,8 @@ export class TokenTabComponent {
         this.tokenIsSelected.set(false);
       },
       error: error => {
-        console.error('Failed to delete token', error);
+        console.error('Failed to delete token.', error);
+        this.notificationService.openSnackBar('Failed to delete token.')
       }
     });
   }

@@ -10,6 +10,7 @@ import {MatButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {TokenService} from '../../../../../services/token/token.service';
 import {MatCard, MatCardContent} from '@angular/material/card';
+import {NotificationService} from '../../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-lost-token',
@@ -29,6 +30,7 @@ export class LostTokenComponent {
   response: any;
 
   constructor(protected tokenService: TokenService,
+              private notificationService: NotificationService,
               @Inject(MAT_DIALOG_DATA) public data: {
                 isLost: WritableSignal<boolean>,
                 tokenSerial: WritableSignal<string>,
@@ -49,10 +51,11 @@ export class LostTokenComponent {
       next: (response) => {
         this.data.isLost.set(true);
         this.response = response;
-        console.log('Token marked as lost: ', this.data.tokenSerial());
+        this.notificationService.openSnackBar('Token marked as lost: ' + this.data.tokenSerial());
       },
       error: error => {
         console.error('Failed to mark token as lost.', error);
+        this.notificationService.openSnackBar('Failed to mark token as lost.')
       }
     });
   }

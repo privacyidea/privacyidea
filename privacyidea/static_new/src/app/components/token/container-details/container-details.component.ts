@@ -43,6 +43,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {TokenService} from '../../../services/token/token.service';
 import {MatDivider} from '@angular/material/divider';
 import {MatCheckbox} from '@angular/material/checkbox';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 export const containerDetailsKeyMap = [
   {key: 'type', label: 'Type'},
@@ -168,7 +169,8 @@ export class ContainerDetailsComponent {
               protected tableUtilsService: TableUtilsService,
               protected realmService: RealmService,
               protected userService: UserService,
-              protected tokenService: TokenService) {
+              protected tokenService: TokenService,
+              private notificationService: NotificationService) {
 
     effect(() => {
       const value = this.selectedUsername();
@@ -183,7 +185,8 @@ export class ContainerDetailsComponent {
             this.userOptions.set(users.result.value.map((user: any) => user.username));
           },
           error: error => {
-            console.error('Failed to get users', error);
+            console.error('Failed to get users.', error);
+            this.notificationService.openSnackBar('Failed to get users.')
           }
         });
       }
@@ -255,7 +258,8 @@ export class ContainerDetailsComponent {
         });
       }),
       catchError(error => {
-        console.error('Failed to get container details', error);
+        console.error('Failed to get container details.', error);
+        this.notificationService.openSnackBar('Failed to get container details.')
         throw error;
       })
     );
@@ -302,7 +306,8 @@ export class ContainerDetailsComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to assign user', error);
+        console.error('Failed to assign user.', error);
+        this.notificationService.openSnackBar('Failed to assign user.')
       }
     });
   }
@@ -316,7 +321,8 @@ export class ContainerDetailsComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to unassign user', error);
+        console.error('Failed to unassign user.', error);
+        this.notificationService.openSnackBar('Failed to unassign user.')
       }
     });
   }
@@ -349,7 +355,8 @@ export class ContainerDetailsComponent {
         this.showContainerDetail();
       },
       error: error => {
-        console.error('Failed to add token to container', error);
+        console.error('Failed to add token to container.', error);
+        this.notificationService.openSnackBar('FFailed to add token to container.')
       }
     });
   }
@@ -361,7 +368,8 @@ export class ContainerDetailsComponent {
         this.length = response.result.value.count;
       },
       error: error => {
-        console.error('Failed to get token data', error);
+        console.error('Failed to get token data.', error);
+        this.notificationService.openSnackBar('Failed to get token data.')
       }
     });
   }
@@ -412,7 +420,8 @@ export class ContainerDetailsComponent {
         this.showContainerDetail();
       },
       error: error => {
-        console.error('Failed to save token realms', error);
+        console.error('Failed to save token realms.', error);
+        this.notificationService.openSnackBar('Failed to save token realms.')
       }
     });
   }
@@ -426,7 +435,8 @@ export class ContainerDetailsComponent {
         this.showContainerDetail();
       },
       error: error => {
-        console.error('Failed to save token description', error);
+        console.error('Failed to save token description.', error);
+        this.notificationService.openSnackBar('Failed to save token description.')
       }
     });
   }

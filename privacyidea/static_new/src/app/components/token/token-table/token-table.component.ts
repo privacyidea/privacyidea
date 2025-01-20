@@ -11,6 +11,7 @@ import {TokenService} from '../../../services/token/token.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -67,9 +68,13 @@ export class TokenTableComponent {
   constructor(private router: Router,
               private authService: AuthService,
               protected tokenService: TokenService,
-              protected tableUtilsService: TableUtilsService) {
+              protected tableUtilsService: TableUtilsService,
+              private notificationService: NotificationService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
+      this.router.navigate(['']).then(r => {
+        console.warn('Redirected to login page.', r);
+        this.notificationService.openSnackBar('Redirected to login page.');
+      });
     } else {
       this.fetchTokenData();
     }
@@ -128,7 +133,8 @@ export class TokenTableComponent {
         this.fetchTokenData();
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.');
       }
     });
   }
@@ -139,7 +145,8 @@ export class TokenTableComponent {
         this.fetchTokenData();
       },
       error: error => {
-        console.error('Failed to reset fail counter', error);
+        console.error('Failed to reset fail counter.', error);
+        this.notificationService.openSnackBar('Failed to reset fail counter.');
       }
     });
   }
@@ -173,7 +180,8 @@ export class TokenTableComponent {
         this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
       },
       error: error => {
-        console.error('Failed to get token data', error);
+        console.error('Failed to get token data.', error);
+        this.notificationService.openSnackBar('Failed to get token data.');
       }
     });
   }

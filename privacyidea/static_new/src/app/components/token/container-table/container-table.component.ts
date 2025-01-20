@@ -11,6 +11,7 @@ import {ContainerService} from '../../../services/container/container.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -60,9 +61,13 @@ export class ContainerTableComponent {
   constructor(private router: Router,
               private authService: AuthService,
               private containerService: ContainerService,
+              private notificationService: NotificationService,
               protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
+      this.router.navigate(['']).then(r => {
+        console.warn('Redirected to login page.', r);
+        this.notificationService.openSnackBar('Redirected to login page.');
+      });
     } else {
       this.fetchContainerData();
     }
@@ -106,7 +111,8 @@ export class ContainerTableComponent {
         this.fetchContainerData();
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
       }
     });
   }
@@ -124,7 +130,8 @@ export class ContainerTableComponent {
         this.processDataSource(response.result.value.containers);
       },
       error: error => {
-        console.error('Failed to get container data', error);
+        console.error('Failed to get container data.', error);
+        this.notificationService.openSnackBar('Failed to get container data.')
       }
     });
   }

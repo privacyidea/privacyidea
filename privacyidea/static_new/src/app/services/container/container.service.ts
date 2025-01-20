@@ -6,6 +6,7 @@ import {LocalService} from '../local/local.service';
 import {Sort} from '@angular/material/sort';
 import {TableUtilsService} from '../table-utils/table-utils.service';
 import {TokenService} from '../token/token.service';
+import {NotificationService} from '../notification/notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +25,8 @@ export class ContainerService {
   constructor(private http: HttpClient,
               private localService: LocalService,
               private tableUtilsService: TableUtilsService,
-              private tokenService: TokenService) {
+              private tokenService: TokenService,
+              private notificationService: NotificationService) {
   }
 
   getContainerData(page?: number, pageSize?: number, sort?: Sort, filterValue?: string): Observable<any> {
@@ -66,7 +68,8 @@ export class ContainerService {
     return this.http.get<any>(this.containerBaseUrl, {headers, params}).pipe(
       map(response => response),
       catchError(error => {
-        console.error('Failed to get container data', error);
+        console.error('Failed to get container data.', error);
+        this.notificationService.openSnackBar('Failed to get container data.')
         return throwError(error);
       })
     );
@@ -79,7 +82,8 @@ export class ContainerService {
     }, {headers}).pipe(
       map(response => response),
       catchError(error => {
-        console.error('Failed to assign container', error);
+        console.error('Failed to assign container.', error);
+        this.notificationService.openSnackBar('Failed to assign container.')
         return throwError(error);
       })
     );
@@ -92,7 +96,8 @@ export class ContainerService {
     }, {headers}).pipe(
       map(response => response),
       catchError(error => {
-        console.error('Failed to unassign container', error);
+        console.error('Failed to unassign container.', error);
+        this.notificationService.openSnackBar('Failed to unassign container.')
         return throwError(error);
       })
     )
@@ -188,7 +193,8 @@ export class ContainerService {
     return this.getContainerDetails(containerSerial).pipe(
       map(data => {
         if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
-          console.warn('toggleActivateAll() -> no valid tokens array found in data:', data);
+          console.error('No valid tokens array found in data.', data);
+          this.notificationService.openSnackBar('No valid tokens array found in data.')
           return [];
         }
         if (action === 'activate') {
@@ -202,7 +208,8 @@ export class ContainerService {
 
       switchMap(tokensForAction => {
         if (tokensForAction.length === 0) {
-          console.warn('toggleActivateAll() -> No tokens for action. Returning []');
+          console.error('No tokens for action. Returning []');
+          this.notificationService.openSnackBar('No tokens for action.')
           return of([]);
         }
         if (action === 'activate' || action === 'deactivate') {

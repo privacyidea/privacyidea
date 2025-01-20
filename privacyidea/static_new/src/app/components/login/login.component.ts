@@ -9,6 +9,7 @@ import {MatFabButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
 import {FooterComponent} from '../layout/footer/footer.component';
 import {LocalService} from '../../services/local/local.service';
+import {NotificationService} from '../../services/notification/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -22,7 +23,14 @@ export class LoginComponent {
   password = signal<string>('');
   private bearerTokenKey = 'bearer_token';
 
-  constructor(private authService: AuthService, private router: Router, private localStore: LocalService) {
+  constructor(private authService: AuthService,
+              private router: Router,
+              private localStore: LocalService,
+              private notificationService: NotificationService) {
+    if (this.authService.isAuthenticatedUser()) {
+      console.warn('User is already logged in.');
+      this.notificationService.openSnackBar('User is already logged in.');
+    }
   }
 
   onSubmit() {
@@ -35,11 +43,15 @@ export class LoginComponent {
           && this.authService.isAuthenticatedUser()) {
           this.localStore.saveData(this.bearerTokenKey, response.result.value.token);
           this.router.navigate(['token']);
+          this.notificationService.openSnackBar('Login successful.')
         } else {
-          console.warn('Login failed. Challenge response required.');
+          console.error('Login failed. Challenge response required.');
+          this.notificationService.openSnackBar('Login failed. Challenge response required.')
+
         }
       }, error: (error: any) => {
         console.error('Login failed', error);
+        this.notificationService.openSnackBar('Login failed.')
       }
     });
   }

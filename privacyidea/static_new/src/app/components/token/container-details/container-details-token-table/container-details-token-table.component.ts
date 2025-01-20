@@ -20,6 +20,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {ContainerService} from '../../../../services/container/container.service';
 import {OverflowService} from '../../../../services/overflow/overflow.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -75,11 +76,15 @@ export class ContainerDetailsTokenTableComponent {
   constructor(private router: Router,
               private authService: AuthService,
               private containerService: ContainerService,
+              private notificationService: NotificationService,
               protected tokenService: TokenService,
               protected tableUtilsService: TableUtilsService,
               protected overflowService: OverflowService) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
+      this.router.navigate(['']).then(r => {
+        console.warn('Redirected to login page.', r);
+        this.notificationService.openSnackBar('Redirected to login page.');
+      });
     }
   }
 
@@ -107,7 +112,8 @@ export class ContainerDetailsTokenTableComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to remove token from container', error);
+        console.error('Failed to remove token from container.', error);
+        this.notificationService.openSnackBar('Failed to remove token from container.');
       }
     });
   }
@@ -124,7 +130,8 @@ export class ContainerDetailsTokenTableComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.');
       }
     });
   }
@@ -135,7 +142,8 @@ export class ContainerDetailsTokenTableComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to activate all', error);
+        console.error('Failed to activate all.', error);
+        this.notificationService.openSnackBar('Failed to activate all.');
       }
     });
   }

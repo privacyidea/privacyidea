@@ -7,6 +7,7 @@ import {tabToggleState} from '../../../../../styles/animations/animations';
 import {MatDivider} from "@angular/material/divider";
 import {switchMap} from 'rxjs';
 import {ContainerService} from '../../../../services/container/container.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-container-tab',
@@ -29,7 +30,8 @@ export class ContainerTabComponent {
   @Input() states!: WritableSignal<string[]>
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
 
-  constructor(private containerService: ContainerService,) {
+  constructor(private containerService: ContainerService,
+              private notificationService: NotificationService) {
   }
 
   toggleActive(): void {
@@ -40,7 +42,8 @@ export class ContainerTabComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to toggle active', error);
+        console.error('Failed to toggle active.', error);
+        this.notificationService.openSnackBar('Failed to toggle active.')
       }
     });
   }
@@ -51,7 +54,8 @@ export class ContainerTabComponent {
         this.containerIsSelected.set(false);
       },
       error: error => {
-        console.error('Failed to delete container', error);
+        console.error('Failed to delete container.', error);
+        this.notificationService.openSnackBar('Failed to delete container.')
       }
     });
   }

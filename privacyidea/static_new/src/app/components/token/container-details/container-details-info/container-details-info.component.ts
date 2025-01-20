@@ -11,6 +11,7 @@ import {forkJoin} from 'rxjs';
 import {OverflowService} from '../../../../services/overflow/overflow.service';
 import {EditButtonsComponent} from '../../token-details/edit-buttons/edit-buttons.component';
 import {ContainerService} from '../../../../services/container/container.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-container-details-info',
@@ -54,6 +55,7 @@ export class ContainerDetailsInfoComponent {
   protected readonly Object = Object;
 
   constructor(private containerService: ContainerService,
+              private notificationService: NotificationService,
               protected overflowService: OverflowService) {
   }
 
@@ -79,7 +81,8 @@ export class ContainerDetailsInfoComponent {
         this.refreshDetails.set(true);
       },
       error: error => {
-        console.error('Failed to save container infos', error);
+        console.error('Failed to save container infos.', error);
+        this.notificationService.openSnackBar('Failed to save container infos.')
       }
     });
   }
@@ -104,7 +107,8 @@ export class ContainerDetailsInfoComponent {
         this.refreshDetails.set(true);
       },
       error: error => {
-        console.error('Failed to delete info', error);
+        console.error('Failed to delete info.', error);
+        this.notificationService.openSnackbar('Failed to delete info.')
       }
     });
     */
