@@ -1,14 +1,14 @@
-import {Component, effect, signal, ViewChild} from '@angular/core';
-import {TokenTableComponent} from '../token-table/token-table.component';
-import {CommonModule} from '@angular/common';
-import {TokenCardComponent} from '../token-card/token-card.component';
-import {ContainerTableComponent} from '../container-table/container-table.component';
-import {TokenDetailsComponent} from '../token-details/token-details.component';
-import {ContainerDetailsComponent} from '../container-details/container-details.component';
-import {MatDrawer, MatDrawerContainer, MatSidenavModule} from '@angular/material/sidenav';
-import {MatIconButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {OverflowService} from '../../../services/overflow/overflow.service';
+import { Component, effect, signal, ViewChild } from '@angular/core';
+import { TokenTableComponent } from './token-table/token-table.component';
+import { CommonModule } from '@angular/common';
+import { ContainerTableComponent } from './container-table/container-table.component';
+import { TokenDetailsComponent } from '../token-details/token-details.component';
+import { ContainerDetailsComponent } from '../container-details/container-details.component';
+import { MatDrawer, MatDrawerContainer, MatSidenavModule } from '@angular/material/sidenav';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { OverflowService } from '../../../services/overflow/overflow.service';
+import { TokenCardComponent } from '../token-card/token-card.component';
 
 @Component({
   selector: 'app-token-grid',
@@ -30,11 +30,9 @@ import {OverflowService} from '../../../services/overflow/overflow.service';
   styleUrl: './token-layout.component.scss'
 })
 export class TokenLayoutComponent {
-  selectedTabIndex = signal(0);
-  tokenIsSelected = signal(false);
-  containerIsSelected = signal(false);
-  token_serial = signal('');
-  container_serial = signal('');
+  selectedPage = signal('token_overview');
+  tokenSerial = signal('');
+  containerSerial = signal('');
   tokenIsActive = signal(true);
   revoked = signal(true);
   refreshTokenDetails = signal(false);
@@ -87,5 +85,13 @@ export class TokenLayoutComponent {
     } else {
       console.warn('ContainerDetailsComponent is not yet initialized');
     }
+  }
+
+  tokenIsSelected(): boolean {
+    return this.tokenSerial() !== '';
+  }
+
+  containerIsSelected(): boolean {
+    return this.containerSerial() !== '';
   }
 }

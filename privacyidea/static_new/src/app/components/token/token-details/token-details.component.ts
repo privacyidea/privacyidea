@@ -1,54 +1,54 @@
-import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
-import {MatCell, MatColumnDef, MatRow, MatTable, MatTableModule,} from '@angular/material/table';
-import {MatIconButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {MatListItem} from '@angular/material/list';
-import {TokenService} from '../../../services/token/token.service';
-import {ContainerService} from '../../../services/container/container.service';
-import {NgClass} from '@angular/common';
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MatInput} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatSelectModule} from '@angular/material/select';
-import {forkJoin, Observable, single, switchMap} from 'rxjs';
-import {RealmService} from '../../../services/realm/realm.service';
-import {catchError} from 'rxjs/operators';
-import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
-import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
-import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
-import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
+import { Component, computed, effect, Input, signal, WritableSignal } from '@angular/core';
+import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule, } from '@angular/material/table';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatListItem } from '@angular/material/list';
+import { TokenService } from '../../../services/token/token.service';
+import { ContainerService } from '../../../services/container/container.service';
+import { NgClass } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInput } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { forkJoin, Observable, single, switchMap } from 'rxjs';
+import { RealmService } from '../../../services/realm/realm.service';
+import { catchError } from 'rxjs/operators';
+import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
 import {
   TokenDetailsActionsComponent
 } from './token-details-actions/token-details-actions.component';
-import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
-import {OverflowService} from '../../../services/overflow/overflow.service';
-import {MatDivider} from '@angular/material/divider';
+import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
+import { OverflowService } from '../../../services/overflow/overflow.service';
+import { MatDivider } from '@angular/material/divider';
 
 export const tokenDetailsKeyMap = [
-  {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Status'},
-  {key: 'maxfail', label: 'Max Count'},
-  {key: 'failcount', label: 'Fail Count'},
-  {key: 'rollout_state', label: 'Rollout State'},
-  {key: 'otplen', label: 'OTP Length'},
-  {key: 'count_window', label: 'Count Window'},
-  {key: 'sync_window', label: 'Sync Window'},
-  {key: 'count', label: 'Count'},
-  {key: 'description', label: 'Description'},
-  {key: 'realms', label: 'Token Realms'},
-  {key: 'tokengroup', label: 'Token Groups'},
-  {key: 'container_serial', label: 'Container Serial'},
+  { key: 'tokentype', label: 'Type' },
+  { key: 'active', label: 'Status' },
+  { key: 'maxfail', label: 'Max Count' },
+  { key: 'failcount', label: 'Fail Count' },
+  { key: 'rollout_state', label: 'Rollout State' },
+  { key: 'otplen', label: 'OTP Length' },
+  { key: 'count_window', label: 'Count Window' },
+  { key: 'sync_window', label: 'Sync Window' },
+  { key: 'count', label: 'Count' },
+  { key: 'description', label: 'Description' },
+  { key: 'realms', label: 'Token Realms' },
+  { key: 'tokengroup', label: 'Token Groups' },
+  { key: 'container_serial', label: 'Container Serial' },
 ];
 
 export const userDetailsKeyMap = [
-  {key: 'user_realm', label: 'User Realm'},
-  {key: 'username', label: 'User'},
-  {key: 'resolver', label: 'Resolver'},
-  {key: 'user_id', label: 'User ID'},
+  { key: 'user_realm', label: 'User Realm' },
+  { key: 'username', label: 'User' },
+  { key: 'resolver', label: 'Resolver' },
+  { key: 'user_id', label: 'User ID' },
 ];
 
 export const infoDetailsKeyMap = [
-  {key: 'info', label: 'Information'},
+  { key: 'info', label: 'Information' },
 ];
 
 @Component({
@@ -81,15 +81,12 @@ export const infoDetailsKeyMap = [
   styleUrl: './token-details.component.scss'
 })
 export class TokenDetailsComponent {
-  @Input() token_serial!: WritableSignal<string>
+  @Input() tokenSerial!: WritableSignal<string>
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedTabIndex!: WritableSignal<number>;
+  @Input() selectedPage!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   setPinValue = signal('');
@@ -142,10 +139,10 @@ export class TokenDetailsComponent {
   maxfail: number = 0;
 
   constructor(private tokenService: TokenService,
-              private containerService: ContainerService,
-              private realmService: RealmService,
-              protected overflowService: OverflowService,
-              protected tableUtilsService: TableUtilsService) {
+    private containerService: ContainerService,
+    private realmService: RealmService,
+    protected overflowService: OverflowService,
+    protected tableUtilsService: TableUtilsService) {
     effect(() => {
       this.showTokenDetail().subscribe();
     });
@@ -168,7 +165,7 @@ export class TokenDetailsComponent {
 
   showTokenDetail(): Observable<void> {
     return forkJoin([
-      this.tokenService.getTokenDetails(this.token_serial()),
+      this.tokenService.getTokenDetails(this.tokenSerial()),
       this.realmService.getRealms(),
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms]) => {
@@ -176,7 +173,7 @@ export class TokenDetailsComponent {
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer.set(tokenDetails.container_serial);
+        this.selectedContainer.set(tokenDetails.containerSerial);
         this.tokenDetailData.set(tokenDetailsKeyMap.map(detail => ({
           keyMap: detail,
           value: tokenDetails[detail.key],
@@ -211,7 +208,7 @@ export class TokenDetailsComponent {
   }
 
   resetFailCount(): void {
-    this.tokenService.resetFailCount(this.token_serial()).pipe(
+    this.tokenService.resetFailCount(this.tokenSerial()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -228,7 +225,7 @@ export class TokenDetailsComponent {
     }
 
     switch (type) {
-      case 'container_serial':
+      case 'containerSerial':
         this.handleContainerSerial(action);
         break;
       case 'tokengroup':
@@ -296,7 +293,7 @@ export class TokenDetailsComponent {
 
   private handleCancelAction(type: string): void {
     switch (type) {
-      case 'container_serial':
+      case 'containerSerial':
         this.selectedContainer.set('');
         break;
       case 'tokengroup':
@@ -312,7 +309,7 @@ export class TokenDetailsComponent {
   }
 
   saveDetail(key: string, value: string): void {
-    this.tokenService.setTokenDetail(this.token_serial(), key, value).pipe(
+    this.tokenService.setTokenDetail(this.tokenSerial(), key, value).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -325,7 +322,7 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    this.containerService.assignContainer(this.token_serial(), this.selectedContainer()).pipe(
+    this.containerService.assignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -335,7 +332,7 @@ export class TokenDetailsComponent {
   }
 
   deleteContainer() {
-    this.containerService.unassignContainer(this.token_serial(), this.selectedContainer()).pipe(
+    this.containerService.unassignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       error: error => {
@@ -345,7 +342,7 @@ export class TokenDetailsComponent {
   }
 
   private saveRealms() {
-    this.tokenService.setTokenRealm(this.token_serial(), this.selectedRealms()).pipe(
+    this.tokenService.setTokenRealm(this.tokenSerial(), this.selectedRealms()).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -358,7 +355,7 @@ export class TokenDetailsComponent {
   }
 
   private saveTokengroup(value: any) {
-    this.tokenService.setTokengroup(this.token_serial(), value).pipe(
+    this.tokenService.setTokengroup(this.tokenSerial(), value).pipe(
       switchMap(() => this.showTokenDetail())
     ).subscribe({
       next: () => {
@@ -378,7 +375,7 @@ export class TokenDetailsComponent {
       || key === "info"
       || key === "realms"
       || key === "tokengroup"
-      || key === "container_serial";
+      || key === "containerSerial";
   }
 
   protected readonly single = single;
@@ -389,11 +386,8 @@ export class TokenDetailsComponent {
       key === "sync_window";
   }
 
-  containerSelected(container_serial: string){
-    this.container_serial.set(container_serial);
-    this.tokenIsSelected.set(false);
-    this.isProgrammaticChange.set(true);
-    this.selectedTabIndex.set(1);
-    this.containerIsSelected.set(true);
+  containerSelected(containerSerial: string) {
+    this.selectedPage.set('container_details');
+    this.containerSerial.set(containerSerial);
   }
 }

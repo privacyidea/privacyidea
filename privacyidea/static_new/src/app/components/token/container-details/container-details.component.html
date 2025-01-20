@@ -2,222 +2,192 @@
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container: </h3>
-      <h3 style="color: var(--blue-base)"> {{ container_serial() }} </h3>
+      <h3 style="color: var(--blue-base)"> {{ containerSerial() }} </h3>
     </div>
     <div [ngClass]="[
         overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
-         class="details-flex-layout">
+      class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()" aria-label="Container Detail Data Table"
-               class="details-table border-bottom-none" mat-table>
+          class="details-table border-bottom-none" mat-table>
           <ng-container matColumnDef="key">
             <td *matCellDef="let element" class="details-key-row" mat-cell>
               {{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element"
-                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
-                class="fix-width-20-padr-0" mat-cell>
+            <td *matCellDef="let element" [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              class="fix-width-20-padr-0" mat-cell>
               @switch (element.keyMap.key) {
-                @case ("states") {
-                  @for (state of element.value; track state; let idx = $index) {
-                    <span class="font-14"
-                          [ngClass]="[tableUtilsService.getSpanClassForState(state)]">
-                      {{ tableUtilsService.getDisplayTextForState(state) }}
-                    </span>
-                  }
-                }
-                @case ("realms") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="width-18">
-                      <mat-label>Select Realms</mat-label>
-                      <mat-select [(ngModel)]="selectedRealms" multiple>
-                        @for (option of realmOptions(); track option; ) {
-                          @if (option === userRealm) {
-                            <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
+              @case ("states") {
+              @for (state of element.value; track state; let idx = $index) {
+              <span class="font-14" [ngClass]="[tableUtilsService.getSpanClassForState(state)]">
+                {{ tableUtilsService.getDisplayTextForState(state) }}
+              </span>
+              }
+              }
+              @case ("realms") {
+              @if (element.isEditing()) {
+              <mat-form-field class="width-18">
+                <mat-label>Select Realms</mat-label>
+                <mat-select [(ngModel)]="selectedRealms" multiple>
+                  @for (option of realmOptions(); track option; ) {
+                  @if (option === userRealm) {
+                  <mat-option value="{{ option }}" disabled>{{ option }}</mat-option>
                   } @else {
-                    <div class="details-scrollable-container"
-                         [ngClass]="{'details-list': element.value.length > 2}">
-                      @for (realm of element.value; track realm; let idx = $index) {
-                        <mat-list-item class="height-auto">
-                          <span class="font-14">• {{ realm }}</span>
-                        </mat-list-item>
-                      }
-                    </div>
+                  <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
-                }
-                @case ("description") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="width-18 description">
-                    <textarea matInput rows="4"
-                              [(ngModel)]="element.value"></textarea>
-                    </mat-form-field>
-                  } @else {
-                    <div class="details-description-div">
-                    <span class="details-table-item details-scrollable-container scroll-margin-pad">
-                      {{ element.value }}
-                    </span>
-                    </div>
                   }
+                </mat-select>
+              </mat-form-field>
+              } @else {
+              <div class="details-scrollable-container" [ngClass]="{'details-list': element.value.length > 2}">
+                @for (realm of element.value; track realm; let idx = $index) {
+                <mat-list-item class="height-auto">
+                  <span class="font-14">• {{ realm }}</span>
+                </mat-list-item>
                 }
-                @default {
-                  <span>{{ element.value }}</span>
-                }
+              </div>
+              }
+              }
+              @case ("description") {
+              @if (element.isEditing()) {
+              <mat-form-field class="width-18 description">
+                <textarea matInput rows="4" [(ngModel)]="element.value"></textarea>
+              </mat-form-field>
+              } @else {
+              <div class="details-description-div">
+                <span class="details-table-item details-scrollable-container scroll-margin-pad">
+                  {{ element.value }}
+                </span>
+              </div>
+              }
+              }
+              @default {
+              <span>{{ element.value }}</span>
+              }
               }
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
             <td *matCellDef="let element" class="edit-column-cell" mat-cell>
               @if (isEditableElement(element.keyMap.key)) {
-                <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                  [shouldHideEdit]="isAnyEditing"
-                                  [isEditingUser]="isEditingUser"
-                                  [isEditingInfo]="isEditingInfo"
-                                  [element]="element">
-                </app-edit-buttons>
+              <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)" [shouldHideEdit]="isAnyEditing"
+                [isEditingUser]="isEditingUser" [isEditingInfo]="isEditingInfo" [element]="element">
+              </app-edit-buttons>
               }
             </td>
           </ng-container>
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" class="height-52" mat-row>
           </tr>
         </table>
-        <table [dataSource]="userData()" aria-label="User Detail Data Table"
-               class="details-table"
-               mat-table>
+        <table [dataSource]="userData()" aria-label="User Detail Data Table" class="details-table" mat-table>
           <ng-container matColumnDef="key">
-            <td *matCellDef="let element" class="details-key-row"
-                mat-cell>{{ element.keyMap.label }}
+            <td *matCellDef="let element" class="details-key-row" mat-cell>{{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element" class="user-editable-row height-52 fix-width-20-padr-0"
-                mat-cell>
+            <td *matCellDef="let element" class="user-editable-row height-52 fix-width-20-padr-0" mat-cell>
               @if (isEditingUser()
               && element.keyMap.key === "user_name"
               && selectedUserRealm() !== '') {
-                <mat-form-field class="width-18">
-                  <mat-label>Select User</mat-label>
-                  <input matInput
-                         [(ngModel)]="selectedUsername"
-                         [matAutocomplete]="userAuto">
-                  <mat-autocomplete #userAuto="matAutocomplete" class="user-selection-autocomplete">
-                    @for (option of filteredUserOptions(); track option) {
-                      <mat-option [value]="option">{{ option }}</mat-option>
-                    }
-                  </mat-autocomplete>
-                </mat-form-field>
+              <mat-form-field class="width-18">
+                <mat-label>Select User</mat-label>
+                <input matInput [(ngModel)]="selectedUsername" [matAutocomplete]="userAuto">
+                <mat-autocomplete #userAuto="matAutocomplete" class="user-selection-autocomplete">
+                  @for (option of filteredUserOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
               } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
-                <mat-form-field class="width-18">
-                  <mat-label>Select Realm of User</mat-label>
-                  <mat-select [(ngModel)]="selectedUserRealm">
-                    @for (option of realmOptions(); track option; ) {
-                      <mat-option value="{{ option }}">{{ option }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
+              <mat-form-field class="width-18">
+                <mat-label>Select Realm of User</mat-label>
+                <mat-select [(ngModel)]="selectedUserRealm">
+                  @for (option of realmOptions(); track option; ) {
+                  <mat-option value="{{ option }}">{{ option }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
               } @else if (element.keyMap.key === "user_name" || element.keyMap.key === "user_realm") {
-                <a href="#">{{ element.value }}</a>
+              <a href="#">{{ element.value }}</a>
               } @else {
-                {{ element.value }}
+              {{ element.value }}
               }
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
             <td *matCellDef="let element" class="edit-column-cell" mat-cell>
               @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
-                @if (element.value) {
-                  <div class="edit-button-container">
-                    <button mat-icon-button class="yellow"
-                            (click)="unassignUser()">
-                      <mat-icon>person_remove</mat-icon>
-                    </button>
-                  </div>
-                } @else {
-                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                    [shouldHideEdit]="isAnyEditing"
-                                    [isEditingUser]="isEditingUser"
-                                    [isEditingInfo]="isEditingInfo"
-                                    [element]="element">
-                  </app-edit-buttons>
-                }
+              @if (element.value) {
+              <div class="edit-button-container">
+                <button mat-icon-button class="yellow" (click)="unassignUser()">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
+              } @else {
+              <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)" [shouldHideEdit]="isAnyEditing"
+                [isEditingUser]="isEditingUser" [isEditingInfo]="isEditingInfo" [element]="element">
+              </app-edit-buttons>
+              }
               }
             </td>
           </ng-container>
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
         <div class="details-flex-layout">
-          <app-container-details-info [container_serial]="container_serial"
-                                      [detailData]="containerDetailData"
-                                      [infoData]="infoData"
-                                      [isAnyEditingOrRevoked]="isAnyEditing"
-                                      [isEditingInfo]="isEditingInfo"
-                                      [isEditingUser]="isEditingUser"
-                                      [refreshDetails]="refreshContainerDetails"></app-container-details-info>
+          <app-container-details-info [containerSerial]="containerSerial" [detailData]="containerDetailData"
+            [infoData]="infoData" [isAnyEditingOrRevoked]="isAnyEditing" [isEditingInfo]="isEditingInfo"
+            [isEditingUser]="isEditingUser" [refreshDetails]="refreshContainerDetails"></app-container-details-info>
         </div>
         @if (overflowService.isOverflowing('.token-layout', 1310)) {
-          <br/>
-          <mat-divider></mat-divider>
-          <br/>
+        <br />
+        <mat-divider></mat-divider>
+        <br />
         }
       </div>
       <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
-           class="flex-column">
+        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']" class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
             <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer"
-                          [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}">
+              [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
-                <br/>
-                <span> Note: Adding a token removes it from</span>
-                <br/>
-                <span style="margin-left: 39px;"> its previous container. </span>
+              <br />
+              <span> Note: Adding a token removes it from</span>
+              <br />
+              <span style="margin-left: 39px;"> its previous container. </span>
               }
             </mat-checkbox>
           </section>
-          <mat-paginator (page)="onPageChanged($event)" [hidePageSize]="true"
-                         [length]="this.length" [pageIndex]="pageIndex"
-                         [pageSizeOptions]="this.pageSizeOptions"
-                         [pageSize]="pageSize" aria-label="Select page">
+          <mat-paginator (page)="onPageChanged($event)" [hidePageSize]="true" [length]="this.length"
+            [pageIndex]="pageIndex" [pageSizeOptions]="this.pageSizeOptions" [pageSize]="pageSize"
+            aria-label="Select page">
           </mat-paginator>
         </div>
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>
-          <input #tokenAutoTrigger="matAutocompleteTrigger" #tokenFilterInput
-                 (keyup)="handleFilterInput($event)"
-                 [matAutocomplete]="tokenAuto" matInput
-                 placeholder="Example query: 'type: hotp serial: 123'">
+          <input #tokenAutoTrigger="matAutocompleteTrigger" #tokenFilterInput (keyup)="handleFilterInput($event)"
+            [matAutocomplete]="tokenAuto" matInput placeholder="Example query: 'type: hotp serial: 123'">
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenOptions(); track option) {
-              <mat-option class="token-option" (click)="addTokenToContainer(option)">
-                <span class="token-option-span"> {{ option['serial'] }} </span>
-                <span class="token-option-span"> {{ option['tokentype'] }} </span>
-                <span class="token-option-span" [ngClass]="option['active'] ?
+            <mat-option class="token-option" (click)="addTokenToContainer(option)">
+              <span class="token-option-span"> {{ option['serial'] }} </span>
+              <span class="token-option-span"> {{ option['tokentype'] }} </span>
+              <span class="token-option-span" [ngClass]="option['active'] ?
                 'highlight-true' : 'highlight-false'">
-                  {{ option['active'] ? 'active' : 'deactivated' }} </span>
-                <span class="token-option-span"> {{ option['username'] }} </span>
-                <mat-icon>add</mat-icon>
-              </mat-option>
+                {{ option['active'] ? 'active' : 'deactivated' }} </span>
+              <span class="token-option-span"> {{ option['username'] }} </span>
+              <mat-icon>add</mat-icon>
+            </mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table [containerIsSelected]="containerIsSelected"
-                                           [container_serial]="container_serial"
-                                           [dataSource]="containerTokenData"
-                                           [isProgrammaticChange]="isProgrammaticChange"
-                                           [refreshContainerDetails]="refreshContainerDetails"
-                                           [selectedTabIndex]="selectedTabIndex"
-                                           [tokenIsSelected]="tokenIsSelected"
-                                           [token_serial]="token_serial">
+        <app-container-details-token-table [containerSerial]="containerSerial" [dataSource]="containerTokenData"
+          [refreshContainerDetails]="refreshContainerDetails" [tokenSerial]="tokenSerial"
+          [containerSerial]="containerSerial">
         </app-container-details-token-table>
       </div>
     </div>

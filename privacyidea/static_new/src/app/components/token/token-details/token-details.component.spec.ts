@@ -1,13 +1,13 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {TokenDetailsComponent} from './token-details.component';
-import {provideHttpClient} from '@angular/common/http';
-import {signal} from '@angular/core';
-import {TokenService} from '../../../services/token/token.service';
-import {ContainerService} from '../../../services/container/container.service';
-import {ValidateService} from '../../../services/validate/validate.service';
-import {of, throwError} from 'rxjs';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TokenDetailsComponent } from './token-details.component';
+import { provideHttpClient } from '@angular/common/http';
+import { signal } from '@angular/core';
+import { TokenService } from '../../../services/token/token.service';
+import { ContainerService } from '../../../services/container/container.service';
+import { ValidateService } from '../../../services/validate/validate.service';
+import { of, throwError } from 'rxjs';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 class MockTokenService {
   getTokenDetails() {
@@ -28,7 +28,7 @@ class MockTokenService {
   }
 
   getRealms() {
-    return of({result: {value: ['realm1', 'realm2']}});
+    return of({ result: { value: ['realm1', 'realm2'] } });
   }
 
   resetFailCount() {
@@ -64,7 +64,7 @@ class MockContainerService {
   getContainerData() {
     return of({
       result: {
-        value: {containers: [{serial: 'container1'}, {serial: 'container2'}]},
+        value: { containers: [{ serial: 'container1' }, { serial: 'container2' }] },
       },
     });
   }
@@ -97,9 +97,9 @@ describe('TokenDetailsComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: TokenService, useClass: MockTokenService},
-        {provide: ContainerService, useClass: MockContainerService},
-        {provide: ValidateService, useClass: MockValidateService},
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ValidateService, useClass: MockValidateService },
       ],
     }).compileComponents();
 
@@ -111,13 +111,13 @@ describe('TokenDetailsComponent', () => {
     component.containerOptions = signal(['container1', 'container2', 'admin-container']);
     component.tokengroupOptions = signal(['group1', 'group2']);
     component.infoData = signal([{
-      keyMap: {key: 'info', label: 'Info'},
-      value: {key1: 'value1', key2: 'value2'},
+      keyMap: { key: 'info', label: 'Info' },
+      value: { key1: 'value1', key2: 'value2' },
       isEditing: signal(false)
     }]);
     component.realmOptions = signal(['realm1', 'realm2']);
     component.tokenDetailData = signal([{
-      keyMap: {key: 'container_serial', label: 'Container'},
+      keyMap: { key: 'container_serial', label: 'Container' },
       value: 'container1',
       isEditing: signal(false)
     }]);
@@ -159,7 +159,7 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should handle empty data gracefully', () => {
-    spyOn(tokenService, 'getTokenDetails').and.returnValue(of({result: {value: {tokens: []}}}));
+    spyOn(tokenService, 'getTokenDetails').and.returnValue(of({ result: { value: { tokens: [] } } }));
     component.showTokenDetail().subscribe({
       next: () => {
         expect(component.tokenDetailData().length).toBe(0);

@@ -1,16 +1,16 @@
-import {Component, Input, signal, Signal, WritableSignal} from '@angular/core';
-import {MatCell, MatColumnDef, MatRow, MatTableModule} from '@angular/material/table';
-import {MatList, MatListItem} from '@angular/material/list';
-import {MatFormField, MatLabel} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {FormsModule} from '@angular/forms';
-import {MatIconButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {MatDivider} from '@angular/material/divider';
-import {forkJoin} from 'rxjs';
-import {OverflowService} from '../../../../services/overflow/overflow.service';
-import {EditButtonsComponent} from '../../token-details/edit-buttons/edit-buttons.component';
-import {ContainerService} from '../../../../services/container/container.service';
+import { Component, Input, signal, Signal, WritableSignal } from '@angular/core';
+import { MatCell, MatColumnDef, MatRow, MatTableModule } from '@angular/material/table';
+import { MatList, MatListItem } from '@angular/material/list';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatDivider } from '@angular/material/divider';
+import { forkJoin } from 'rxjs';
+import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { EditButtonsComponent } from '../../token-details/edit-buttons/edit-buttons.component';
+import { ContainerService } from '../../../../services/container/container.service';
 
 @Component({
   selector: 'app-container-details-info',
@@ -35,7 +35,7 @@ import {ContainerService} from '../../../../services/container/container.service
   styleUrl: './container-details-info.component.scss'
 })
 export class ContainerDetailsInfoComponent {
-  @Input() container_serial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() infoData!: WritableSignal<{
     value: any;
     keyMap: { label: string; key: string };
@@ -50,22 +50,22 @@ export class ContainerDetailsInfoComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() refreshDetails!: WritableSignal<boolean>;
-  newInfo = signal({key: '', value: ''});
+  newInfo = signal({ key: '', value: '' });
   protected readonly Object = Object;
 
   constructor(private containerService: ContainerService,
-              protected overflowService: OverflowService) {
+    protected overflowService: OverflowService) {
   }
 
   toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
     this.isEditingInfo.set(!this.isEditingInfo());
     if (action === 'cancel') {
-      this.newInfo.set({key: '', value: ''});
+      this.newInfo.set({ key: '', value: '' });
     }
     if (action === 'save') {
       this.saveInfo(element.value);
     }
-    this.newInfo.set({key: '', value: ''});
+    this.newInfo.set({ key: '', value: '' });
   }
 
 
@@ -73,7 +73,7 @@ export class ContainerDetailsInfoComponent {
     if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
       infos[this.newInfo().key] = this.newInfo().value;
     }
-    const requests = this.containerService.setContainerInfos(this.container_serial(), infos);
+    const requests = this.containerService.setContainerInfos(this.containerSerial(), infos);
     forkJoin(requests).subscribe({
       next: () => {
         this.refreshDetails.set(true);

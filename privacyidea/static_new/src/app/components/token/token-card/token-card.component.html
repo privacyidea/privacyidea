@@ -2,35 +2,26 @@
 !overflowService.isOverflowing('.token-layout',
     1880)}" appearance="outlined">
   <mat-card-content>
-    <mat-tab-group
-      (selectedTabChange)="onTabChange()"
-      [(selectedIndex)]="selectedTabIndex"
-      animationDuration="400ms"
-      fitInkBarToContent
-      mat-align-tabs="center"
-      mat-stretch-tabs="false"
-    >
+    <mat-tab-group (selectedTabChange)="onTabChange()" [(selectedIndex)]="selectedTabIndex" animationDuration="400ms"
+      fitInkBarToContent mat-align-tabs="center" mat-stretch-tabs="false">
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">shield</mat-icon>
-          <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 0 }">Token</h4>
+          <mat-icon [ngClass]="{ 'tab-active': tokenTabActive()}">shield</mat-icon>
+          <h4 [ngClass]="{ 'tab-active': tokenTabActive()}">Token</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
-                         [revoked]="revoked" [serial]="token_serial"
-                         [tokenIsSelected]="tokenIsSelected"></app-token-tab>
+          <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails" [revoked]="revoked"
+            [tokenSerial]="tokenSerial" [selectedPage]="selectedPage"></app-token-tab>
         </ng-template>
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">folder</mat-icon>
-          <h4 [ngClass]="{ 'tab-active': selectedTabIndex() === 1 }">Container</h4>
+          <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder</mat-icon>
+          <h4 [ngClass]="{ 'tab-active': containerTabActive() }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [containerIsSelected]="containerIsSelected"
-                             [container_serial]="container_serial"
-                             [refreshContainerDetails]="refreshContainerDetails"
-                             [states]="states">
+          <app-container-tab [containerSerial]="containerSerial" [refreshContainerDetails]="refreshContainerDetails"
+            [states]="states" [selectedPage]="selectedPage">
           </app-container-tab>
         </ng-template>
       </mat-tab>

@@ -1,89 +1,71 @@
 <div aria-label="Token Layout" class="token-layout">
   @if (!overflowService.isOverflowing('.token-layout',
-    1880)) {
-    <app-token-card class="margin-right-1"
-                    [active]="tokenIsActive" [states]="states"
-                    [containerIsSelected]="containerIsSelected"
-                    [refreshTokenDetails]="refreshTokenDetails"
-                    [refreshContainerDetails]="refreshContainerDetails"
-                    [revoked]="revoked"
-                    [selectedTabIndex]="selectedTabIndex"
-                    [token_serial]="token_serial"
-                    [container_serial]="container_serial"
-                    [tokenIsSelected]="tokenIsSelected"
-                    [isProgrammaticChange]="isProgrammaticChange">
-    </app-token-card>
+  1880)) {
+  <app-token-card class="margin-right-1" [active]="tokenIsActive" [states]="states"
+    [refreshTokenDetails]="refreshTokenDetails" [refreshContainerDetails]="refreshContainerDetails" [revoked]="revoked"
+    [tokenSerial]="tokenSerial" [containerSerial]="containerSerial" [isProgrammaticChange]="isProgrammaticChange"
+    [selectedPage]="selectedPage">
+  </app-token-card>
   }
   <mat-drawer-container>
     @if (overflowService.isOverflowing('.token-layout',
-      1880)) {
-      <mat-drawer #drawer [mode]="'over'" class="token-drawer">
-        <app-token-card
-          [states]="states" [active]="tokenIsActive"
-          [containerIsSelected]="containerIsSelected"
-          [refreshTokenDetails]="refreshTokenDetails"
-          [refreshContainerDetails]="refreshContainerDetails"
-          [revoked]="revoked"
-          [selectedTabIndex]="selectedTabIndex"
-          [token_serial]="token_serial"
-          [container_serial]="container_serial"
-          [tokenIsSelected]="tokenIsSelected"
-          [isProgrammaticChange]="isProgrammaticChange">
-        </app-token-card>
-      </mat-drawer>
+    1880)) {
+    <mat-drawer #drawer [mode]="'over'" class="token-drawer">
+      <app-token-card class="margin-right-1" [active]="tokenIsActive" [states]="states"
+        [refreshTokenDetails]="refreshTokenDetails" [refreshContainerDetails]="refreshContainerDetails"
+        [revoked]="revoked" [tokenSerial]="tokenSerial" [containerSerial]="containerSerial"
+        [isProgrammaticChange]="isProgrammaticChange" [selectedPage]="selectedPage">
+      </app-token-card>
+    </mat-drawer>
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
         @if (overflowService.isOverflowing('.token-layout',
-          1880)) {
-          <div class="drawer-button-div">
-            <button mat-icon-button (click)="drawer.toggle()" class="drawer-button">
-              <mat-icon>keyboard_arrow_right
-              </mat-icon>
-            </button>
-          </div>
+        1880)) {
+        <div class="drawer-button-div">
+          <button mat-icon-button (click)="drawer.toggle()" class="drawer-button">
+            <mat-icon>keyboard_arrow_right
+            </mat-icon>
+          </button>
+        </div>
         }
         <main>
           <div class="main-margin">
-            @if (selectedTabIndex() === 0) {
-              @if (tokenIsSelected()) {
-                <app-token-details
-                  #tokenDetailsComponent
-                  [token_serial]="token_serial"
-                  [active]="tokenIsActive"
-                  [revoked]="revoked"
-                  [refreshTokenDetails]="refreshTokenDetails"
-                  [container_serial]="container_serial"
-                  [tokenIsSelected]="tokenIsSelected"
-                  [containerIsSelected]="containerIsSelected"
-                  [isProgrammaticChange]="isProgrammaticChange"
-                  [selectedTabIndex]="selectedTabIndex">
-                </app-token-details>
-              } @else {
-                <app-token-table
-                  [token_serial]="token_serial"
-                  [tokenIsSelected]="tokenIsSelected">
-                </app-token-table>
-              }
+            @switch (selectedPage()) {
+            @case ( "token_overview") {
+            <app-token-table [tokenSerial]="tokenSerial" [selectedPage]="selectedPage">
+            </app-token-table>
+            }
+            @case ( "token_details") {
+            <app-token-details #tokenDetailsComponent [tokenSerial]="tokenSerial" [active]="tokenIsActive"
+              [revoked]="revoked" [refreshTokenDetails]="refreshTokenDetails" [containerSerial]="containerSerial"
+              [selectedPage]="selectedPage">
+            </app-token-details>
+            }
+            @case ( "container_overview") {
+            <app-container-table [containerSerial]="containerSerial" [selectedPage]="selectedPage" />
+            }
+            @case ( "container_details") {
+            <app-container-details #containerDetailsComponent [containerSerial]="containerSerial"
+              [tokenSerial]="tokenSerial" [states]="states" [refreshContainerDetails]="refreshContainerDetails"
+              [selectedPage]="selectedPage">
+
+            </app-container-details>
+            }
+            <!-- }
+            @if (selectedPage() === 0) {
+            @if (tokenIsSelected()) {
+
+            } @else {
+
+            }
             } @else if (selectedTabIndex() === 1) {
-              @if (containerIsSelected()) {
-                <app-container-details
-                  #containerDetailsComponent
-                  [container_serial]="container_serial"
-                  [token_serial]="token_serial"
-                  [tokenIsSelected]="tokenIsSelected"
-                  [containerIsSelected]="containerIsSelected"
-                  [states]="states"
-                  [isProgrammaticChange]="isProgrammaticChange"
-                  [selectedTabIndex]="selectedTabIndex"
-                  [refreshContainerDetails]="refreshContainerDetails">
-                </app-container-details>
-              } @else {
-                <app-container-table
-                  [container_serial]="container_serial"
-                  [containerIsSelected]="containerIsSelected">
-                </app-container-table>
-              }
+            @if (containerIsSelected()) {
+
+            } @else {
+            <app-container-table [containerSerial]="containerSerial" [containerIsSelected]="containerIsSelected">
+            </app-container-table>
+            } -->
             }
           </div>
         </main>

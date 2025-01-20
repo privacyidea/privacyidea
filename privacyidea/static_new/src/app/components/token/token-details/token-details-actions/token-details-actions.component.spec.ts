@@ -1,12 +1,12 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {TokenDetailsActionsComponent} from './token-details-actions.component';
-import {TokenService} from '../../../../services/token/token.service';
-import {ValidateService} from '../../../../services/validate/validate.service';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {of} from 'rxjs';
-import {signal} from '@angular/core';
+import { TokenDetailsActionsComponent } from './token-details-actions.component';
+import { TokenService } from '../../../../services/token/token.service';
+import { ValidateService } from '../../../../services/validate/validate.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { of } from 'rxjs';
+import { signal } from '@angular/core';
 
 class MockTokenService {
   resyncOTPToken() {
@@ -31,7 +31,7 @@ describe('TokenDetailsActionsComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: TokenService, useClass: MockTokenService}
+        { provide: TokenService, useClass: MockTokenService }
       ],
     }).compileComponents();
 

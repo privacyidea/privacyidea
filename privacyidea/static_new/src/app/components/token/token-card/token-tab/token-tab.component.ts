@@ -1,14 +1,15 @@
-import {Component, Input, WritableSignal} from '@angular/core';
-import {MatIcon} from '@angular/material/icon';
-import {MatList, MatListItem} from '@angular/material/list';
-import {MatButton} from '@angular/material/button';
-import {MatDivider} from '@angular/material/divider';
-import {NgClass} from '@angular/common';
-import {switchMap} from 'rxjs';
-import {TokenService} from '../../../../services/token/token.service';
-import {tabToggleState} from '../../../../../styles/animations/animations';
-import {MatDialog} from '@angular/material/dialog';
-import {LostTokenComponent} from './lost-token/lost-token.component';
+import { Component, Input, WritableSignal } from '@angular/core';
+import { MatIcon } from '@angular/material/icon';
+import { MatList, MatListItem } from '@angular/material/list';
+import { MatButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { NgClass } from '@angular/common';
+import { switchMap } from 'rxjs';
+import { TokenService } from '../../../../services/token/token.service';
+import { tabToggleState } from '../../../../../styles/animations/animations';
+import { MatDialog } from '@angular/material/dialog';
+import { LostTokenComponent } from './lost-token/lost-token.component';
+import { VersionService } from '../../../../services/version/version.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -26,19 +27,27 @@ import {LostTokenComponent} from './lost-token/lost-token.component';
   animations: [tabToggleState]
 })
 export class TokenTabComponent {
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() serial!: WritableSignal<string>
+  @Input() selectedPage!: WritableSignal<string>
+  @Input() tokenSerial!: WritableSignal<string>
   @Input() active!: WritableSignal<boolean>
   @Input() revoked!: WritableSignal<boolean>
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
 
-  constructor(private tokenService: TokenService,
-              private dialog: MatDialog) {
+  version!: string;
+
+  constructor(
+    private tokenService: TokenService,
+    private dialog: MatDialog,
+    private versioningService: VersionService,
+  ) { }
+
+  ngOnInit(): void {
+    this.version = this.versioningService.getVersion();
   }
 
   toggleActive(): void {
-    this.tokenService.toggleActive(this.serial(), this.active()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.serial()))
+    this.tokenService.toggleActive(this.tokenSerial(), this.active()).pipe(
+      switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
     ).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
@@ -50,8 +59,8 @@ export class TokenTabComponent {
   }
 
   revokeToken(): void {
-    this.tokenService.revokeToken(this.serial()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.serial()))
+    this.tokenService.revokeToken(this.tokenSerial()).pipe(
+      switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
     ).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
@@ -63,9 +72,9 @@ export class TokenTabComponent {
   }
 
   deleteToken(): void {
-    this.tokenService.deleteToken(this.serial()).subscribe({
+    this.tokenService.deleteToken(this.tokenSerial()).subscribe({
       next: () => {
-        this.tokenIsSelected.set(false);
+        this.tokenSerial.set('');
       },
       error: error => {
         console.error('Failed to delete token', error);
@@ -76,7 +85,27 @@ export class TokenTabComponent {
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
       disableClose: true,
-      data: { serial: this.serial }
+      data: { serial: this.tokenSerial }
     });
   }
+
+  openTheDocs() {
+    window.open(`https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#tokens`, '_blank');
+  }
+
+  tokenIsSelected(): boolean {
+    return this.tokenSerial() !== '';
+  }
+
+  containerIsSelected(): boolean {
+    return this.tokenSerial() !== '';
+  }
+
+  onClickTokenTab = () => this.onClickOverview();
+
+  onClickOverview() {
+    this.selectedPage.set('token_overview');
+    this.tokenSerial.set('');
+  }
+
 }

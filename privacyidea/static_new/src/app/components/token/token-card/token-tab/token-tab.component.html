@@ -1,7 +1,7 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="tokenIsSelected.set(false)" [ngClass]="{'card-button-activ': !tokenIsSelected(),
+      <button (click)="onClickTokenTab()" [ngClass]="{'card-button-activ': !tokenIsSelected(),
     'card-button': tokenIsSelected()}" mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
@@ -9,95 +9,93 @@
     </mat-list-item>
     <div [@toggleState]="tokenIsSelected()">
       @if (!tokenIsSelected()) {
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>add_moderator</mat-icon>
-            Enrollment
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>file_upload</mat-icon>
-            Import
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>cached</mat-icon>
-            Show Challenges
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>now_widgets</mat-icon>
-            Applications
-          </button>
-        </mat-list-item>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>help_outline</mat-icon>
-            Identify Serial Number
-          </button>
-        </mat-list-item>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>info_outline</mat-icon>
-            Help
-          </button>
-        </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>add_moderator</mat-icon>
+          Enrollment
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>file_upload</mat-icon>
+          Import
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>cached</mat-icon>
+          Show Challenges
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>now_widgets</mat-icon>
+          Applications
+        </button>
+      </mat-list-item>
+      <br />
+      <mat-divider />
+      <br />
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>help_outline</mat-icon>
+          Get Serial Number
+        </button>
+      </mat-list-item>
+      <br />
+      <mat-divider />
+      <br />
+      <mat-list-item>
+        <button class="card-button" (click)="openTheDocs()" mat-flat-button>
+          <mat-icon>info_outline</mat-icon>
+          Help
+        </button>
+      </mat-list-item>
       } @else {
-        <mat-list-item>
-          <button [ngClass]="{'card-button-activ': tokenIsSelected(),
-          'card-button': !tokenIsSelected()}" mat-flat-button>
-            <mat-icon>health_and_safety</mat-icon>
-            Token Details
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button>
-            <mat-icon>manage_search</mat-icon>
-            Show in Audit Log
-          </button>
-        </mat-list-item>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <mat-list-item>
-          <button class="card-button" mat-flat-button (click)="openLostTokenDialog()">
-            <mat-icon>remove_red_eye</mat-icon>
-            Lost Token
-          </button>
-        </mat-list-item>
-        <br/>
-        <mat-divider/>
-        <br/>
-        <mat-list-item>
-          <button (click)="toggleActive()" [disabled]="revoked()" [ngClass]="{'card-button-delete': active(),
+      <mat-list-item>
+        <button [ngClass]="{'card-button-activ': selectedPage() === 'token_details',
+          'card-button': selectedPage() !== 'token_details'}" mat-flat-button>
+          <mat-icon>health_and_safety</mat-icon>
+          Token Details
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button class="card-button" mat-flat-button>
+          <mat-icon>manage_search</mat-icon>
+          Show in Audit Log
+        </button>
+      </mat-list-item>
+      <br />
+      <mat-divider />
+      <br />
+      <mat-list-item>
+        <button class="card-button" mat-flat-button (click)="openLostTokenDialog()">
+          <mat-icon>remove_red_eye</mat-icon>
+          Lost Token
+        </button>
+      </mat-list-item>
+      <br />
+      <mat-divider />
+      <br />
+      <mat-list-item>
+        <button (click)="toggleActive()" [disabled]="revoked()" [ngClass]="{'card-button-delete': active(),
           'card-button-activate': !active()}" color="alert" mat-flat-button>
-            <mat-icon>{{ active() ? 'auto_delete' : 'play_circle' }}</mat-icon>
-            {{ active() ? 'Deactivate' : 'Activate' }}
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
-            <mat-icon>delete_outlined</mat-icon>
-            Delete
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete"
-                  color="alert"
-                  mat-flat-button>
-            <mat-icon>delete_forever</mat-icon>
-            Revoke
-          </button>
-        </mat-list-item>
+          <mat-icon>{{ active() ? 'auto_delete' : 'play_circle' }}</mat-icon>
+          {{ active() ? 'Deactivate' : 'Activate' }}
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button (click)="deleteToken()" class="card-button-delete" color="alert" mat-flat-button>
+          <mat-icon>delete_outlined</mat-icon>
+          Delete
+        </button>
+      </mat-list-item>
+      <mat-list-item>
+        <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete" color="alert" mat-flat-button>
+          <mat-icon>delete_forever</mat-icon>
+          Revoke
+        </button>
+      </mat-list-item>
       }
     </div>
   </mat-list>

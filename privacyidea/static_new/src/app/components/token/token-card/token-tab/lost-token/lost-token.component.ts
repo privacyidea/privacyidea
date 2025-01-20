@@ -1,13 +1,13 @@
-import {Component, Inject, WritableSignal} from '@angular/core';
+import { Component, Inject, WritableSignal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
   MatDialogContent,
   MatDialogTitle
 } from '@angular/material/dialog';
-import {MatButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {TokenService} from '../../../../../services/token/token.service';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { TokenService } from '../../../../../services/token/token.service';
 
 @Component({
   selector: 'app-lost-token',
@@ -23,7 +23,7 @@ import {TokenService} from '../../../../../services/token/token.service';
 })
 export class LostTokenComponent {
   constructor(protected tokenService: TokenService,
-              @Inject(MAT_DIALOG_DATA) public data: { serial: WritableSignal<string> }) {
+    @Inject(MAT_DIALOG_DATA) public data: { serial: WritableSignal<string> }) {
   }
 
   lostToken(): void {

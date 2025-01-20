@@ -1,4 +1,4 @@
-import {Component, Input, ViewChild, WritableSignal} from '@angular/core';
+import { Component, Input, ViewChild, WritableSignal } from '@angular/core';
 import {
   MatCell,
   MatHeaderCell,
@@ -7,25 +7,25 @@ import {
   MatTable,
   MatTableModule
 } from '@angular/material/table';
-import {MatFormField, MatLabel} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {MatPaginator} from '@angular/material/paginator';
-import {MatSort, MatSortHeader, MatSortModule} from '@angular/material/sort';
-import {Router} from '@angular/router';
-import {AuthService} from '../../../../services/auth/auth.service';
-import {TokenService} from '../../../../services/token/token.service';
-import {TableUtilsService} from '../../../../services/table-utils/table-utils.service';
-import {NgClass} from '@angular/common';
-import {MatIcon} from '@angular/material/icon';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {ContainerService} from '../../../../services/container/container.service';
-import {OverflowService} from '../../../../services/overflow/overflow.service';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../../services/auth/auth.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { NgClass } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { ContainerService } from '../../../../services/container/container.service';
+import { OverflowService } from '../../../../services/overflow/overflow.service';
 
 const columnsKeyMap = [
-  {key: 'serial', label: 'Serial'},
-  {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Active'},
-  {key: 'username', label: 'User'},
+  { key: 'serial', label: 'Serial' },
+  { key: 'tokentype', label: 'Type' },
+  { key: 'active', label: 'Active' },
+  { key: 'username', label: 'User' },
 ];
 
 @Component({
@@ -63,9 +63,8 @@ export class ContainerDetailsTokenTableComponent {
   @Input() dataSource!: WritableSignal<any>;
   @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() container_serial!: WritableSignal<string>;
-  @Input() token_serial!: WritableSignal<string>;
-  @Input() selectedTabIndex!: WritableSignal<number>;
+  @Input() containerSerial!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -73,11 +72,11 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
-              private authService: AuthService,
-              private containerService: ContainerService,
-              protected tokenService: TokenService,
-              protected tableUtilsService: TableUtilsService,
-              protected overflowService: OverflowService) {
+    private authService: AuthService,
+    private containerService: ContainerService,
+    protected tokenService: TokenService,
+    protected tableUtilsService: TableUtilsService,
+    protected overflowService: OverflowService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => console.warn('Redirected to login page', r));
     }
@@ -93,16 +92,15 @@ export class ContainerDetailsTokenTableComponent {
     this.dataSource().filter = this.filterValue.trim().toLowerCase();
   }
 
-  tokenSelected(token_serial: string) {
-    this.token_serial.set(token_serial);
+  tokenSelected(tokenSerial: string) {
+    this.tokenSerial.set(tokenSerial);
     this.containerIsSelected.set(false);
     this.isProgrammaticChange.set(true);
-    this.selectedTabIndex.set(0);
     this.tokenIsSelected.set(true);
   }
 
-  removeTokenFromContainer(container_serial: string, token_serial: string) {
-    this.containerService.removeTokenFromContainer(container_serial, token_serial).subscribe({
+  removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
+    this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },
@@ -130,7 +128,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   toggleAll(action: string) {
-    this.containerService.toggleAll(this.container_serial(), action).subscribe({
+    this.containerService.toggleAll(this.containerSerial(), action).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
       },

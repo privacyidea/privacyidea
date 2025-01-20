@@ -1,10 +1,10 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {ContainerDetailsComponent} from './container-details.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {signal} from '@angular/core';
+import { ContainerDetailsComponent } from './container-details.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { signal } from '@angular/core';
 
 describe('ContainerDetailsComponent', () => {
   let component: ContainerDetailsComponent;
@@ -19,7 +19,7 @@ describe('ContainerDetailsComponent', () => {
 
     fixture = TestBed.createComponent(ContainerDetailsComponent);
     component = fixture.componentInstance;
-    component.container_serial = signal('Mock serial');
+    component.containerSerial = signal('Mock serial');
     fixture.detectChanges();
   });
 
