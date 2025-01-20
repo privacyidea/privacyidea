@@ -148,12 +148,12 @@ describe('TokenDetailsComponent', () => {
 
   it('should handle errors when loading token details fails', () => {
     spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      throwError(() => new Error('Error fetching token details'))
+      throwError(() => new Error('Error fetching token details.'))
     );
     spyOn(console, 'error');
     component.showTokenDetail().subscribe({
       error: () => {
-        expect(console.error).toHaveBeenCalledWith('Failed to get token details', jasmine.any(Error));
+        expect(console.error).toHaveBeenCalledWith('Failed to get token details.', jasmine.any(Error));
       },
     });
   });

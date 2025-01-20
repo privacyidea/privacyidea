@@ -5,14 +5,15 @@ $margin-bottom-main: 6rem;
 
 .token-layout {
   display: flex;
-  min-height: 88vh;
+  min-height: 100%;
 }
 
 .token-drawer {
   height: fit-content;
-  margin-top: 2rem;
   box-shadow: var(--box-shadow-hover);
   border-radius: var(--border-radius);
+  position: fixed;
+  margin-top: 5.8rem;
 }
 
 main {
@@ -20,6 +21,10 @@ main {
 }
 
 .main-margin {
+  margin: $gap-2rem $gap-2rem $margin-bottom-main 4.75rem;
+}
+
+.main-margin-overflow {
   margin: $gap-2rem $gap-2rem $margin-bottom-main 0;
 }
 
@@ -39,12 +44,18 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
+  background: white;
+  height: 48px;
+  width: 48px;
+  box-shadow: var(--box-shadow);
 }
 
 .drawer-button-div {
   display: flex;
-  margin-top: 18rem;
+  margin-top: 17.8rem;
+  margin-left: var(--global-padding);
   height: 100%;
+  position: fixed;
 }
 
 .drawer-content-div {
@@ -55,4 +66,10 @@ main {
 
 .margin-right-1 {
   margin-right: 1rem;
+}
+
+::ng-deep {
+  .mat-drawer-backdrop {
+    opacity: 0.5;
+  }
 }

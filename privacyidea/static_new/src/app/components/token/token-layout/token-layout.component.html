@@ -34,17 +34,17 @@
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isOverflowing('.token-layout',
-          1880)) {
+        @if (overflowService.isOverflowing('.token-layout', 1880)) {
           <div class="drawer-button-div">
-            <button mat-icon-button (click)="drawer.toggle()" class="drawer-button">
+            <button mat-fab (click)="drawer.toggle()" class="drawer-button">
               <mat-icon>keyboard_arrow_right
               </mat-icon>
             </button>
           </div>
         }
         <main>
-          <div class="main-margin">
+          <div [ngClass]="[(overflowService.isOverflowing('.token-layout',1880))
+          ? 'main-margin' : 'main-margin-overflow']">
             @if (selectedTabIndex() === 0) {
               @if (tokenIsSelected()) {
                 <app-token-details
