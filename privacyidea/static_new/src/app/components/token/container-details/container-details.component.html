@@ -136,15 +136,10 @@
           <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];" mat-row></tr>
         </table>
         <div class="details-flex-layout">
-          <<<<<<< HEAD <app-container-details-info [containerSerial]="containerSerial"
-            [detailData]="containerDetailData" [infoData]="infoData" [isAnyEditingOrRevoked]="isAnyEditing"
-            [isEditingInfo]="isEditingInfo" [isEditingUser]="isEditingUser" [refreshDetails]="refreshContainerDetails">
-            </app-container-details-info>
-            =======
-            <app-container-details-info [containerSerial]="containerSerial" [detailData]="containerDetailData"
-              [infoData]="infoData" [isAnyEditingOrRevoked]="isAnyEditing" [isEditingInfo]="isEditingInfo"
-              [isEditingUser]="isEditingUser" [refreshDetails]="refreshContainerDetails"></app-container-details-info>
-            >>>>>>> webui-upgrade
+          <app-container-details-info [containerSerial]="containerSerial" [detailData]="containerDetailData"
+            [infoData]="infoData" [isAnyEditingOrRevoked]="isAnyEditing" [isEditingInfo]="isEditingInfo"
+            [isEditingUser]="isEditingUser" [refreshDetails]="refreshContainerDetails">
+          </app-container-details-info>
         </div>
         @if (overflowService.isOverflowing('.token-layout', 1310)) {
         <br />
