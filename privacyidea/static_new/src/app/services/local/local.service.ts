@@ -9,6 +9,7 @@ import {HttpHeaders} from '@angular/common/http';
 export class LocalService {
 
   key = environment.secretAESKey;
+  bearerTokenKey = 'bearer_token';
 
   constructor() {
   }

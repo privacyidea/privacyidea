@@ -1,6 +1,7 @@
 <div class="header-container">
   <div class="brand">
-    <img alt="logo" class="logo" height="1856" ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
+    <img alt="logo" class="logo" height="1856"
+         ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
          width="1857"/>
   </div>
 
@@ -24,6 +25,12 @@
       <mat-icon>grid_view</mat-icon>
       <h4>Components</h4></a>
   </nav>
+
+  <div class="session-timer">
+    @if (sessionTimerService.remainingTime() < 31000) {
+      {{ sessionTimerService.remainingTime() | date:'mm:ss' }}
+    }
+  </div>
 
   <button (click)="refreshPage()" class="refresh-btn" mat-fab>
     <mat-icon>refresh</mat-icon>

@@ -10,6 +10,7 @@ import {NgOptimizedImage} from '@angular/common';
 import {FooterComponent} from '../layout/footer/footer.component';
 import {LocalService} from '../../services/local/local.service';
 import {NotificationService} from '../../services/notification/notification.service';
+import {SessionTimerService} from '../../services/session-timer/session-timer.service';
 
 @Component({
   selector: 'app-login',
@@ -21,12 +22,12 @@ import {NotificationService} from '../../services/notification/notification.serv
 export class LoginComponent {
   username = signal<string>('');
   password = signal<string>('');
-  private bearerTokenKey = 'bearer_token';
 
   constructor(private authService: AuthService,
               private router: Router,
-              private localStore: LocalService,
-              private notificationService: NotificationService) {
+              private localService: LocalService,
+              private notificationService: NotificationService,
+              private sessionTimerService: SessionTimerService) {
     if (this.authService.isAuthenticatedUser()) {
       console.warn('User is already logged in.');
       this.notificationService.openSnackBar('User is already logged in.');
@@ -41,7 +42,9 @@ export class LoginComponent {
       next: (response: any) => {
         if (response.result && response.result.value && response.result.value.token
           && this.authService.isAuthenticatedUser()) {
-          this.localStore.saveData(this.bearerTokenKey, response.result.value.token);
+          this.localService.saveData(this.localService.bearerTokenKey, response.result.value.token);
+          this.sessionTimerService.startRefreshingRemainingTime();
+          this.sessionTimerService.startTimer();
           this.router.navigate(['token']);
           this.notificationService.openSnackBar('Login successful.')
         } else {
@@ -57,7 +60,8 @@ export class LoginComponent {
   }
 
   logout(): void {
-    this.localStore.removeData(this.bearerTokenKey);
+    this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
+    this.router.navigate(['login']);
   }
 }
