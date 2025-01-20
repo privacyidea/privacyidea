@@ -4,7 +4,8 @@ WebUI Policies
 --------------
 
 WebUI policies define the behaviour of the WebUI.
-After activating WebUI policies, the UI must be reloaded once for the change to take effect
+After activating WebUI policies, the UI must be reloaded once for the change to
+take effect.
 
 .. index:: WebUI Login, WebUI Policy, Login Policy, login mode
 .. _policy_login_mode:
@@ -21,23 +22,22 @@ authenticate with the password of their userstore, being an LDAP service or
 an SQL database.
 
 If this action is set to *login_mode=privacyIDEA*, the users and
-administrators need to
-authenticate against privacyIDEA when logging into the WebUI.
-I.e. they can not login with their domain password anymore
-but need to authenticate with one of their tokens.
+administrators need to authenticate against privacyIDEA when logging into the WebUI.
+Meaning they can not login with their domain password anymore but need to
+authenticate with one of their tokens.
 
 If set to *login_mode=disable* the users and administrators of the specified
 realms can not login to the UI anymore.
 
-.. warning:: If you set this action and the user deletes or disables
-   all his tokens, he will not be able to login anymore.
+.. warning:: If you set this to `privacyIDEA` and the user deletes or disables
+   all of their tokens, they will not be able to login anymore.
 
 .. note:: Administrators defined in the database using the pi-manage
    command can still login with their normal passwords.
 
-.. note:: A sensible way to use this, is to combine this action in
+.. note:: A sensible way to use this is to combine this action in
    a policy with the ``client`` parameter: requiring the users to
-   login to the Web UI remotely from the internet with
+   login to the WebUI remotely from the internet with
    OTP but still login from within the LAN with the domain password.
 
 .. note:: Another sensible way to use this policy is to *disable* the login to
@@ -52,11 +52,11 @@ remote_user
 
 type: ``string``
 
-This policy defines, if the login to the privacyIDEA using the web servers
+allowed values: ``disable``, ``allowed``, ``force``
+
+This policy defines if the login to privacyIDEA using the web servers
 integrated authentication (like basic authentication or digest
 authentication) should be allowed.
-
-Possible values are ``disable``, ``allowed`` and ``force``.
 
 If set to "allowed" a user can choose to use the REMOTE_USER or login with
 credentials. If set to "force", the user can not switch to login with credentials but
@@ -74,7 +74,7 @@ can only login with the REMOTE_USER from the browser.
    other. I.e. you can disable *login_mode* and allow *remote_user*.
 
 You can use this policy to enable Single-Sign-On and integration into Kerberos
-or Active Directory. Add the following template into you apache configuration
+or Active Directory. Add the following template into your apache configuration
 in /etc/apache2/sites-available/privacyidea.conf::
 
         <Directory />
@@ -95,7 +95,7 @@ in /etc/apache2/sites-available/privacyidea.conf::
                 <RequireAny>
                     # Either we need a URL with no authentication or we need a valid user
                     <RequireAny>
-                        # Any of these URL do NOT need a basic authentication
+                        # These URLs do NOT need a basic authentication
                         Require expr %{REQUEST_URI} =~ m#^/validate#
                         Require expr %{REQUEST_URI} =~ m#^/ttype#
                     </RequireAny>
@@ -109,7 +109,7 @@ in /etc/apache2/sites-available/privacyidea.conf::
 logout_time
 ~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 Set the timeout, after which a user in the WebUI will be logged out.
 The default timeout is 120 seconds.
@@ -121,7 +121,9 @@ Being a policy this time can be set based on clients, realms and users.
 timeout_action
 ~~~~~~~~~~~~~~
 
-type: ``str``
+type: ``string``
+
+allowed values: ``lockscreen``, ``logout``, or empty
 
 The action taken when a user is idle beyond the ``logout_time`` limit. Defaults to `lockscreen`.
 
@@ -130,7 +132,7 @@ The action taken when a user is idle beyond the ``logout_time`` limit. Defaults 
 audit_page_size
 ~~~~~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 By default 10 entries are displayed on one page in the audit view.
 On big screens you might want to display more entries. Thus you can define in
@@ -141,7 +143,7 @@ this policy how many audit entries should be displayed.
 token_page_size
 ~~~~~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 By default 15 tokens are displayed on one page in the token view.
 On big screens you might want to display more tokens. Thus you can define in
@@ -153,7 +155,7 @@ policy how many tokens should be displayed.
 user_page_size
 ~~~~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 By default 15 users are displayed on one page in the user view.
 On big screens you might want to display more users. Thus you can define in
@@ -184,9 +186,8 @@ default_tokentype
 
 type: ``string``
 
-You can define which is the default tokentype when enrolling a new token in
-the Web UI. This is the token, which will be selected, when entering the
-enrollment dialog.
+Defines the default tokentype when enrolling a new token in the WebUI. This
+tokentype will be selected when entering the enrollment dialog.
 
 .. index:: Wizard, Token wizard
 .. _policy_token_wizard:
@@ -197,13 +198,13 @@ tokenwizard
 type: ``bool``
 
 If this policy is set and the user has no token, then the user will only see
-an easy token wizard to enroll his first token. If the user has enrolled his
-first token and he logs in to the web UI, he will see the normal view.
+an easy token wizard to enroll their first token. If the user has enrolled their
+first token and they log in to the web UI, they will see the normal view.
 
 The user will enroll a token defined in :ref:`policy_default_tokentype`.
 
-Other sensible policies to combine are in :ref:`user_policies` the OTP
-length, the TOTP timestep and the HASH-lib.
+Other sensible policies to combine can be found in the :ref:`user_policies`:
+the OTP length, the TOTP timestep and the HASH-lib.
 
 You can add a prologue and epilog to the enrollment wizard in the greeting
 and after the token is enrolled and e.g. the QR code is displayed.
@@ -231,7 +232,7 @@ tokenwizard_2nd_token
 
 type: ``bool``
 
-The tokenwizard will be displayed in the token menu, even if the user already has a token.
+The tokenwizard will be displayed in the token menu even if the user already has a token.
 
 .. index:: Realm-box, Realm dropdown
 
@@ -261,10 +262,10 @@ The searching in the user list is performed as live search. Each time a key
 is pressed, the new substring is searched in the user store.
 
 Sometimes this can be too time consuming. You can use this policy to change
-the behaviour that the administrator needs to press *enter* to trigger the
+the behaviour so that the administrator needs to press *enter* to trigger the
 search.
 
-(Since privacyIDEA 2.17)
+.. versionadded:: 2.17
 
 user_details
 ~~~~~~~~~~~~
@@ -282,7 +283,7 @@ custom_baseline
 type: ``string``
 
 The administrator can replace the file ``templates/baseline.html`` with another template.
-This way he can change the links to e.g. internal documentation or ticketing systems.
+This way they can change the links to e.g. internal documentation or ticketing systems.
 The new file could be called ``mytemplates/mybase.html``.
 
 This will only work with a valid subscription of privacyIDEA Enterprise Edition.
@@ -292,7 +293,7 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
-(Since privacyIDEA 2.21)
+.. versionadded:: 2.21
 
 .. index:: Customize menu
 .. _webui_custom_menu:
@@ -303,7 +304,7 @@ custom_menu
 type: ``string``
 
 The administrator can replace the file ``templates/menu.html`` with another template.
-This way he can change the links to e.g. internal documentation or ticketing systems.
+This way they can change the links to e.g. internal documentation or ticketing systems.
 The new file could be called ``mytemplates/mymenu.html``.
 
 This will only work with a valid subscription of privacyIDEA Enterprise Edition.
@@ -313,17 +314,17 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
-(Since privacyIDEA 2.21)
+.. versionadded:: 2.21
 
 hide_buttons
 ~~~~~~~~~~~~
 
 type: ``bool``
 
-Buttons for actions that a user is not allowed to perform, are hidden instead of
+Buttons for actions that a user is not allowed to perform are hidden instead of
 being disabled.
 
-(Since privacyIDEA 3.0)
+.. versionadded:: 3.0
 
 deletion_confirmation
 ~~~~~~~~~~~~~~~~~~~~~
@@ -334,21 +335,21 @@ To avoid careless deletion of important configurations, this policy can be
 activated. After activation, an additional confirmation for the deletion is
 requested for policies, events, mresolvers, resolvers and periodic-tasks.
 
-(Since privacyIDEA 3.9)
+.. versionadded:: 3.9
 
 token_rollover
 ~~~~~~~~~~~~~~
 
 type: ``string``
 
-This is a whitespace separated list of tokentypes, for which a rollover button is
+A whitespace separated list of tokentypes, for which a rollover button is
 displayed in the token details. This button will generate a
 new token secret for the displayed token.
 
 This e.g. enables a user to transfer a softtoken to a new device while keeping the
 token number restricted to 1.
 
-(Since privacyIDEA 3.6)
+.. versionadded:: 3.6
 
 login_text
 ~~~~~~~~~~
@@ -359,7 +360,7 @@ This way the text "Please sign in" on the login dialog can be changed. Since the
 also depend on the IP address of the client, you can also choose different login texts depending
 on from where a user tries to log in.
 
-(Since privacyIDEA 3.0)
+.. versionadded:: 3.0
 
 show_android_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -367,10 +368,10 @@ show_android_privacyidea_authenticator
 type: ``bool``
 
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
-will contain a QR code, that leads the user to the Google Play Store where he can
+will contain a QR code that leads the user to the Google Play Store where they can
 directly install the privacyIDEA Authenticator App for Android devices.
 
-(Since privacyIDEA 3.3)
+.. versionadded:: 3.3
 
 show_ios_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -378,10 +379,10 @@ show_ios_privacyidea_authenticator
 type: ``bool``
 
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
-will contain a QR code, that leads the user to the Apple App Store where he can
-directly install the privacyIDEA Authenticator App for iOS devices.
+will contain a QR code that leads the user to the Apple App Store where they
+can directly install the privacyIDEA Authenticator App for iOS devices.
 
-(Since privacyIDEA 3.3)
+.. versionadded:: 3.3
 
 show_custom_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -389,20 +390,20 @@ show_custom_authenticator
 type: ``string``
 
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
-will contain a QR code, that leads the user to the given URL.
+will contain a QR code that leads the user to the given URL.
 
-The idea is, that an organization running privacyIDEA can create its own URL,
-where the user is taken to, e.g.
+An organization running privacyIDEA can create its own URL, which could be used
+to:
 
-* Show information about the used Authenticator apps...
+* Show information about the used Authenticator apps.
 * Do a device identification and automatically redirect the user to Google Play Store
-  or Apple App Store. Thus only need the user to show *one* QR code...
-* If an organization has it's own customized app or chooses to use another app, lead
+  or Apple App Store, therefore only needing *one* QR code.
+* If an organization has its own customized app or chooses to use another app, lead
   the user to another App in the Google Play Store or Apple App Store.
 
 Other scenarios are possible.
 
-(Since privacyIDEA 3.3)
+.. versionadded:: 3.3
 
 show_node
 ~~~~~~~~~
@@ -415,7 +416,7 @@ corner next to the logo.
 This is useful, if you have a lot of different privacyIDEA nodes in a redundant setup or if you have
 test instances and productive instances. This way you can easily distinguish the different instances.
 
-(Since privacyIDEA 3.5)
+.. versionadded:: 3.5
 
 show_seed
 ~~~~~~~~~
@@ -434,7 +435,7 @@ with the value of the given user attribute.
 
 For more details of this token type see :ref:`indexedsecret_token`.
 
-(Since privacyIDEA 3.3)
+.. versionadded:: 3.3
 
 .. index:: admin dashboard, dashboard
 
@@ -450,14 +451,14 @@ It is displayed as a starting page in the WebUI and contains information about
 token numbers, authentication requests, recent administrative changes, policies,
 event handlers and subscriptions.
 
-(Since privacyIDEA 3.4)
+.. versionadded:: 3.4
 
 dialog_no_token
 ~~~~~~~~~~~~~~~
 
 type: ``bool``
 
-When activated, a welcome dialog will be displayed if a user, who has no token assigned, logs in to the Web UI.
+When activated, a welcome dialog will be displayed if a user, who has no token assigned, logs in to the WebUI.
 The dialog is contained in the template ``dialog.no.token.html``.
 
 hide_welcome_info
@@ -470,7 +471,7 @@ If this is checked, the administrator will not see the default welcome dialog an
 privacy_statement_link
 ~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``str``
+type: ``string``
 
 With this policy you may specify a custom privacy statement link which is displayed
 in the WebUI baseline.

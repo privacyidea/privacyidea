@@ -69,7 +69,7 @@ Each policy can contain the following attributes:
   A policy can contain several actions.
   Actions can be of type `boolean`, `string` or `integer`.
   Boolean actions are enabled by just adding this action - like
-  ``scope=user:action=disable``, which allows the user to disable his own
+  ``scope=user:action=disable``, which allows the user to disable their own
   tokens.
   `string` and `integer` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
@@ -81,7 +81,7 @@ Each policy can contain the following attributes:
 
   If this field is left blank, this policy is valid for all users.
 
-  .. note:: Starting with version 3.10 you can chooses if the username and the
+  .. note:: Starting with version 3.10 you can choose if the username and the
     adminname has to match case-sensitive or not.
 
 .. _check_all_resolvers:
@@ -94,7 +94,7 @@ Each policy can contain the following attributes:
 
   .. note:: Starting with version 2.17 you can use the parameter
      ``check_all_resolvers``. This is *Check all possible resolvers*
-     *of a user to match the resolver in this policy* in the Web UI.
+     *of a user to match the resolver in this policy* in the WebUI.
 
      Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
      in the realm *realm1*, where *resolver1* is the resolver with the
@@ -117,17 +117,15 @@ Each policy can contain the following attributes:
 
 **client**
 
-  This is the requesting client, for which this action is valid.
-  I.e. you can define different policies if the user access is
-  allowed to manage his tokens from different IP addresses like the internal
-  network or remotely via the firewall.
+  This is the requesting client for which this action is valid.
+  You can use this to define policies in which the user is allowed to manage
+  their tokens depending on their IP addresses (like the internal network or
+  remotely via the firewall).
 
   You can enter several IP addresses or subnets divided by comma. Exclude item
   by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
 **privacyIDEA Node**
-
-  (added in privacyIDEA 3.4)
 
   If you have a redundant setup requests can hit different dedicated nodes of
   your privacyIDEA cluster. If you want a policy to only be valid for certain
@@ -138,9 +136,9 @@ Each policy can contain the following attributes:
 
   The nodes are configured in pi.cfg. See :ref:`cfgfile`.
 
-**time**
+.. versionadded:: 3.4
 
-  (added in privacyIDEA 2.12)
+**time**
 
   In the time field of a policy you can define a list of time ranges. A time
   range can consist of day of weeks (*dow*) and of times in 24h format.
@@ -157,12 +155,12 @@ Each policy can contain the following attributes:
   to define certain policies to be active throughout working hours.
 
   .. note:: If the time of a policy does not match, the policy is not found.
-     Thus you can get effects you did not plan. So think at least *twice* before
+     This can lead to unintended side effects. Carefully consider this before
      using time restricted policies.
 
-**priority**
+.. versionadded:: 2.12
 
-  (added in privacyIDEA 2.23)
+**priority**
 
   The priority field of policies contains a positive number and defaults to 1.
   In case of policy conflicts, policies with a lower priority number take precedence.
@@ -179,12 +177,11 @@ Each policy can contain the following attributes:
   Policy conflicts can still occur if multiple policies with the same priority
   specify different values for the same action.
 
+.. versionadded:: 2.23
 
 **additional conditions**
 
-  (added in privacyIDEA 3.1)
-
-  Using conditions, you can specify more advanced rules that determine whether
+  Using conditions you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
   Conditions are described in
@@ -193,3 +190,5 @@ Each policy can contain the following attributes:
     :maxdepth: 1
 
     conditions
+
+.. versionadded:: 3.1
