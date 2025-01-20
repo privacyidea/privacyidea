@@ -233,4 +233,11 @@ export class ContainerService {
     const headers = this.localService.getHeaders();
     return this.http.delete(`${this.containerBaseUrl}${containerSerial}`, {headers})
   }
+
+  deleteAllTokens(containerSerial: string, serial_list: string) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.containerBaseUrl}${containerSerial}/removeall`, {
+      serial: serial_list
+    }, {headers})
+  }
 }

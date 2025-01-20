@@ -142,8 +142,21 @@ export class ContainerDetailsTokenTableComponent {
         this.refreshContainerDetails.set(true);
       },
       error: error => {
-        console.error('Failed to activate all.', error);
-        this.notificationService.openSnackBar('Failed to activate all.');
+        console.error('Failed to toggle all.', error);
+        this.notificationService.openSnackBar('Failed to toggle all.');
+      }
+    });
+  }
+
+  deleteAllTokens() {
+    const serial_list = this.dataSource().data.map((token: any) => token.serial).join(',');
+    this.containerService.deleteAllTokens(this.containerSerial(), serial_list).subscribe({
+      next: () => {
+        this.refreshContainerDetails.set(true);
+      },
+      error: error => {
+        console.error('Failed to delete all tokens.', error);
+        this.notificationService.openSnackBar('Failed to delete all tokens.');
       }
     });
   }
