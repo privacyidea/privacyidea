@@ -15,23 +15,16 @@ import { NotificationService } from '../../../../services/notification/notificat
 @Component({
   selector: 'app-token-tab',
   standalone: true,
-  imports: [
-    MatIcon,
-    MatList,
-    MatListItem,
-    MatButton,
-    MatDivider,
-    NgClass
-  ],
+  imports: [MatIcon, MatList, MatListItem, MatButton, MatDivider, NgClass],
   templateUrl: './token-tab.component.html',
   styleUrl: './token-tab.component.scss',
-  animations: [tabToggleState]
+  animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  @Input() selectedPage!: WritableSignal<string>
-  @Input() tokenSerial!: WritableSignal<string>
-  @Input() active!: WritableSignal<boolean>
-  @Input() revoked!: WritableSignal<boolean>
+  @Input() selectedPage!: WritableSignal<string>;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() active!: WritableSignal<boolean>;
+  @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   isLost = signal(false);
 
@@ -41,39 +34,45 @@ export class TokenTabComponent {
     private tokenService: TokenService,
     private dialog: MatDialog,
     private versioningService: VersionService,
-    private notificationService: NotificationService,
-  ) { }
+    private notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
   }
 
   toggleActive(): void {
-    this.tokenService.toggleActive(this.tokenSerial(), this.active()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
-    ).subscribe({
-      next: () => {
-        this.refreshTokenDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to toggle active.', error);
-        this.notificationService.openSnackBar('Failed to toggle active.')
-      }
-    });
+    this.tokenService
+      .toggleActive(this.tokenSerial(), this.active())
+      .pipe(
+        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
+      )
+      .subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to toggle active.', error);
+          this.notificationService.openSnackBar('Failed to toggle active.');
+        },
+      });
   }
 
   revokeToken(): void {
-    this.tokenService.revokeToken(this.tokenSerial()).pipe(
-      switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
-    ).subscribe({
-      next: () => {
-        this.refreshTokenDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to revoke token.', error);
-        this.notificationService.openSnackBar('Failed to revoke token.')
-      }
-    });
+    this.tokenService
+      .revokeToken(this.tokenSerial())
+      .pipe(
+        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
+      )
+      .subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to revoke token.', error);
+          this.notificationService.openSnackBar('Failed to revoke token.');
+        },
+      });
   }
 
   deleteToken(): void {
@@ -81,10 +80,10 @@ export class TokenTabComponent {
       next: () => {
         this.tokenSerial.set('');
       },
-      error: error => {
+      error: (error) => {
         console.error('Failed to delete token.', error);
-        this.notificationService.openSnackBar('Failed to delete token.')
-      }
+        this.notificationService.openSnackBar('Failed to delete token.');
+      },
     });
   }
 
@@ -93,13 +92,16 @@ export class TokenTabComponent {
       data: {
         isLost: this.isLost,
         tokenSerial: this.tokenSerial,
-        tokenIsSelected: this.tokenIsSelected
-      }
+        tokenIsSelected: this.tokenIsSelected,
+      },
     });
   }
 
   openTheDocs() {
-    window.open(`https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#tokens`, '_blank');
+    window.open(
+      `https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#tokens`,
+      '_blank'
+    );
   }
 
   tokenIsSelected(): boolean {
@@ -117,4 +119,7 @@ export class TokenTabComponent {
     this.tokenSerial.set('');
   }
 
+  onClickGetSerial() {
+    this.selectedPage.set('token_get_serial');
+  }
 }

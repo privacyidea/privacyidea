@@ -24,14 +24,13 @@ describe('TokenDetailsActionsComponent', () => {
   let tokenService: TokenService;
   let validateService: ValidateService;
 
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenDetailsActionsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
       ],
     }).compileComponents();
 
@@ -52,8 +51,11 @@ describe('TokenDetailsActionsComponent', () => {
     spyOn(validateService, 'testToken').and.callThrough();
     component.otpOrPinToTest = '1234';
     component.testToken();
-    component.verifyOTPValue()
-    expect(validateService.testToken).toHaveBeenCalledWith('Mock serial', '1234');
+    component.verifyOTPValue();
+    expect(validateService.testToken).toHaveBeenCalledWith(
+      'Mock serial',
+      '1234'
+    );
   });
 
   it('should resync OTP token', () => {
@@ -62,7 +64,11 @@ describe('TokenDetailsActionsComponent', () => {
 
     spyOn(tokenService, 'resyncOTPToken').and.callThrough();
     component.resyncOTPToken();
-    expect(tokenService.resyncOTPToken).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
+    expect(tokenService.resyncOTPToken).toHaveBeenCalledWith(
+      'Mock serial',
+      'otp1',
+      'otp2'
+    );
   });
 
   it('should resync OTP token on button click', () => {
@@ -71,7 +77,9 @@ describe('TokenDetailsActionsComponent', () => {
 
     const resyncSpy = spyOn(tokenService, 'resyncOTPToken').and.callThrough();
 
-    const resyncButton = fixture.nativeElement.querySelector('.actions-pin-input-button button');
+    const resyncButton = fixture.nativeElement.querySelector(
+      '.actions-pin-input-button button'
+    );
     resyncButton.click();
     expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
   });

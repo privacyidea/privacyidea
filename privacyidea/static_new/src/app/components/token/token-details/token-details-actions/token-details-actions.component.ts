@@ -18,10 +18,10 @@ import { NotificationService } from '../../../../services/notification/notificat
     MatFabButton,
     MatDivider,
     MatIconButton,
-    MatSuffix
+    MatSuffix,
   ],
   templateUrl: './token-details-actions.component.html',
-  styleUrl: './token-details-actions.component.scss'
+  styleUrl: './token-details-actions.component.scss',
 })
 export class TokenDetailsActionsComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
@@ -31,45 +31,56 @@ export class TokenDetailsActionsComponent {
   otpOrPinToTest: string = '';
   hide: boolean = true;
 
-  constructor(private tokenService: TokenService,
+  constructor(
+    private tokenService: TokenService,
     private validateService: ValidateService,
     private notificationService: NotificationService,
-    protected overflowService: OverflowService) {
-  }
+    protected overflowService: OverflowService
+  ) {}
 
   resyncOTPToken() {
-    this.tokenService.resyncOTPToken(this.tokenSerial(), this.fristOTPValue, this.secondOTPValue).subscribe({
-      next: () => {
-        this.refreshTokenDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to resync OTP token.', error);
-        this.notificationService.openSnackBar('Failed to resync OTP token.');
-      }
-    });
+    this.tokenService
+      .resyncOTPToken(
+        this.tokenSerial(),
+        this.fristOTPValue,
+        this.secondOTPValue
+      )
+      .subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to resync OTP token.', error);
+          this.notificationService.openSnackBar('Failed to resync OTP token.');
+        },
+      });
   }
 
   testToken() {
-    this.validateService.testToken(this.tokenSerial(), this.otpOrPinToTest).subscribe({
-      next: () => {
-        this.refreshTokenDetails.set(true);
-      },
-      error: (error: any) => {
-        console.error('Failed to test token.', error);
-        this.notificationService.openSnackBar('Failed to test token.');
-      }
-    });
+    this.validateService
+      .testToken(this.tokenSerial(), this.otpOrPinToTest)
+      .subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(true);
+        },
+        error: (error: any) => {
+          console.error('Failed to test token.', error);
+          this.notificationService.openSnackBar('Failed to test token.');
+        },
+      });
   }
 
   verifyOTPValue() {
-    this.validateService.testToken(this.tokenSerial(), this.otpOrPinToTest, "1").subscribe({
-      next: () => {
-        this.refreshTokenDetails.set(true);
-      },
-      error: (error: any) => {
-        console.error('Failed to verify OTP value.', error);
-        this.notificationService.openSnackBar('Failed to verify OTP value.');
-      }
-    });
+    this.validateService
+      .testToken(this.tokenSerial(), this.otpOrPinToTest, '1')
+      .subscribe({
+        next: () => {
+          this.refreshTokenDetails.set(true);
+        },
+        error: (error: any) => {
+          console.error('Failed to verify OTP value.', error);
+          this.notificationService.openSnackBar('Failed to verify OTP value.');
+        },
+      });
   }
 }

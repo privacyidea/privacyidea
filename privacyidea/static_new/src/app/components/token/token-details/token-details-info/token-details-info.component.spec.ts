@@ -31,7 +31,7 @@ describe('TokenDetailsInfoComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-      ]
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenDetailsInfoComponent);
@@ -41,20 +41,24 @@ describe('TokenDetailsInfoComponent', () => {
     component.isEditingInfo = signal(false);
     component.isEditingUser = signal(false);
     component.isAnyEditingOrRevoked = computed(() => {
-      return (component.isEditingInfo());
+      return component.isEditingInfo();
     });
     component.refreshDetails = signal(false);
     component.newInfo = signal({ key: '', value: '' });
-    component.infoData = signal([{
-      keyMap: { key: 'info', label: 'Info' },
-      value: { key1: 'value1', key2: 'value2' },
-      isEditing: signal(false),
-    }]);
-    component.detailData = signal([{
-      keyMap: { key: 'container_serial', label: 'Container' },
-      value: 'container1',
-      isEditing: signal(false)
-    }]);
+    component.infoData = signal([
+      {
+        keyMap: { key: 'info', label: 'Info' },
+        value: { key1: 'value1', key2: 'value2' },
+        isEditing: signal(false),
+      },
+    ]);
+    component.detailData = signal([
+      {
+        keyMap: { key: 'container_serial', label: 'Container' },
+        value: 'container1',
+        isEditing: signal(false),
+      },
+    ]);
     fixture.detectChanges();
   });
 
@@ -83,8 +87,12 @@ describe('TokenDetailsInfoComponent', () => {
       expect(item.querySelector('textarea.info-input')).toBeTruthy();
     });
 
-    const newKeyInput = fixture.nativeElement.querySelector('input[placeholder="Add new key"]');
-    const newValueTextarea = fixture.nativeElement.querySelector('textarea[placeholder="Add new info"]');
+    const newKeyInput = fixture.nativeElement.querySelector(
+      'input[placeholder="Add new key"]'
+    );
+    const newValueTextarea = fixture.nativeElement.querySelector(
+      'textarea[placeholder="Add new info"]'
+    );
 
     expect(newKeyInput).toBeTruthy();
     expect(newValueTextarea).toBeTruthy();
@@ -93,7 +101,10 @@ describe('TokenDetailsInfoComponent', () => {
   it('should set token infos', () => {
     spyOn(tokenService, 'setTokenInfos').and.callThrough();
     component.saveInfo({});
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith('Mock serial', jasmine.any(Object));
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith(
+      'Mock serial',
+      jasmine.any(Object)
+    );
   });
 
   it('should handle edit and save for information details', () => {
@@ -107,11 +118,14 @@ describe('TokenDetailsInfoComponent', () => {
     component.newInfo.set({ key: 'newKey', value: 'newValue' });
     fixture.detectChanges();
 
-    const editButtonsComponent = fixture.debugElement.query(By.css('app-edit-buttons'));
+    const editButtonsComponent = fixture.debugElement.query(
+      By.css('app-edit-buttons')
+    );
     expect(editButtonsComponent).toBeTruthy();
 
-    const saveButton = editButtonsComponent.nativeElement.querySelector('.edit-button-container' +
-      ' .black:nth-child(1)');
+    const saveButton = editButtonsComponent.nativeElement.querySelector(
+      '.edit-button-container' + ' .black:nth-child(1)'
+    );
     expect(saveButton).toBeTruthy();
 
     saveButton.click();
@@ -119,22 +133,30 @@ describe('TokenDetailsInfoComponent', () => {
 
     expect(component.saveInfo).toHaveBeenCalled();
 
-    const newInfo = component.infoData().find(info => info.keyMap.key === 'info')?.value;
+    const newInfo = component
+      .infoData()
+      .find((info) => info.keyMap.key === 'info')?.value;
     expect(newInfo).toEqual(jasmine.objectContaining({ newKey: 'newValue' }));
   });
 
   it('should delete info', () => {
     spyOn(tokenService, 'deleteInfo').and.callThrough();
     component.deleteInfo('infoKey');
-    expect(tokenService.deleteInfo).toHaveBeenCalledWith('Mock serial', 'infoKey');
+    expect(tokenService.deleteInfo).toHaveBeenCalledWith(
+      'Mock serial',
+      'infoKey'
+    );
   });
 
   it('should handle error when deleting info fails', () => {
-    spyOn(tokenService, 'deleteInfo').and.returnValue(throwError(() => new Error('Deletion' +
-      ' failed.')));
+    spyOn(tokenService, 'deleteInfo').and.returnValue(
+      throwError(() => new Error('Deletion' + ' failed.'))
+    );
     spyOn(console, 'error');
     component.deleteInfo('infoKey');
-    expect(console.error).toHaveBeenCalledWith('Failed to delete info.', jasmine.any(Error));
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to delete info.',
+      jasmine.any(Error)
+    );
   });
-
 });

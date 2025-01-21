@@ -15,8 +15,16 @@ describe('TokenDetailsUserComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsUserComponent, AppComponent, BrowserAnimationsModule],
-      providers: [TokenService, provideHttpClient(), provideHttpClientTesting()],
+      imports: [
+        TokenDetailsUserComponent,
+        AppComponent,
+        BrowserAnimationsModule,
+      ],
+      providers: [
+        TokenService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     tokenService = TestBed.inject(TokenService);
@@ -44,7 +52,12 @@ describe('TokenDetailsUserComponent', () => {
 
     spyOn(tokenService, 'assignUser').and.callThrough();
     component.saveUser();
-    expect(tokenService.assignUser).toHaveBeenCalledWith('Mock serial', 'testUser', 'testRealm', '1234');
+    expect(tokenService.assignUser).toHaveBeenCalledWith(
+      'Mock serial',
+      'testUser',
+      'testRealm',
+      '1234'
+    );
   });
 
   it('should not assign user if PINs do not match', () => {

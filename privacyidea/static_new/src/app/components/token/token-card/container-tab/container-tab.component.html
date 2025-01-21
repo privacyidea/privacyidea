@@ -1,7 +1,7 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="onClickContainerTab()" [ngClass]="{'card-button-activ': !containerIsSelected(),
+      <button (click)="onClickContainerTab()" [ngClass]="{'card-button-active': !containerIsSelected(),
     'card-button': containerIsSelected()}" mat-flat-button>
         <mat-icon class="mdi--folder-search" />
         Overview
@@ -26,7 +26,7 @@
       </mat-list-item>
       } @else {
       <mat-list-item>
-        <button [ngClass]="{'card-button-activ': containerIsSelected(),
+        <button [ngClass]="{'card-button-active': containerIsSelected(),
           'card-button': !containerIsSelected()}" mat-flat-button>
           <mat-icon>health_and_safety</mat-icon>
           Container Details

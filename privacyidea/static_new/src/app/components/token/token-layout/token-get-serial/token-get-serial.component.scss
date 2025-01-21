@@ -1,0 +1,10 @@
+@import "../../../../../styles/styles.scss";
+
+.token-get-serial {
+  @include table-container-styles;
+  margin-left: 1rem;
+  overflow: auto;
+}
+mat-form-field {
+  width: 100%;
+}

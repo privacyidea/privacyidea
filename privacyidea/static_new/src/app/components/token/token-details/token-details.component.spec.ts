@@ -64,7 +64,9 @@ class MockContainerService {
   getContainerData() {
     return of({
       result: {
-        value: { containers: [{ serial: 'container1' }, { serial: 'container2' }] },
+        value: {
+          containers: [{ serial: 'container1' }, { serial: 'container2' }],
+        },
       },
     });
   }
@@ -108,19 +110,27 @@ describe('TokenDetailsComponent', () => {
     component.tokenSerial = signal('Mock serial');
     component.active = signal(false);
     component.revoked = signal(false);
-    component.containerOptions = signal(['container1', 'container2', 'admin-container']);
+    component.containerOptions = signal([
+      'container1',
+      'container2',
+      'admin-container',
+    ]);
     component.tokengroupOptions = signal(['group1', 'group2']);
-    component.infoData = signal([{
-      keyMap: { key: 'info', label: 'Info' },
-      value: { key1: 'value1', key2: 'value2' },
-      isEditing: signal(false)
-    }]);
+    component.infoData = signal([
+      {
+        keyMap: { key: 'info', label: 'Info' },
+        value: { key1: 'value1', key2: 'value2' },
+        isEditing: signal(false),
+      },
+    ]);
     component.realmOptions = signal(['realm1', 'realm2']);
-    component.tokenDetailData = signal([{
-      keyMap: { key: 'container_serial', label: 'Container' },
-      value: 'container1',
-      isEditing: signal(false)
-    }]);
+    component.tokenDetailData = signal([
+      {
+        keyMap: { key: 'container_serial', label: 'Container' },
+        value: 'container1',
+        isEditing: signal(false),
+      },
+    ]);
     tokenService = TestBed.inject(TokenService);
     containerService = TestBed.inject(ContainerService);
     validateService = TestBed.inject(ValidateService);
@@ -153,13 +163,18 @@ describe('TokenDetailsComponent', () => {
     spyOn(console, 'error');
     component.showTokenDetail().subscribe({
       error: () => {
-        expect(console.error).toHaveBeenCalledWith('Failed to get token details.', jasmine.any(Error));
+        expect(console.error).toHaveBeenCalledWith(
+          'Failed to get token details.',
+          jasmine.any(Error)
+        );
       },
     });
   });
 
   it('should handle empty data gracefully', () => {
-    spyOn(tokenService, 'getTokenDetails').and.returnValue(of({ result: { value: { tokens: [] } } }));
+    spyOn(tokenService, 'getTokenDetails').and.returnValue(
+      of({ result: { value: { tokens: [] } } })
+    );
     component.showTokenDetail().subscribe({
       next: () => {
         expect(component.tokenDetailData().length).toBe(0);
@@ -168,15 +183,20 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should display token details correctly', () => {
-    const detailHeader = fixture.nativeElement.querySelector('.details-header h3:last-child');
+    const detailHeader = fixture.nativeElement.querySelector(
+      '.details-header h3:last-child'
+    );
     expect(detailHeader.textContent).toContain('Mock serial');
   });
-
 
   it('should save token detail', () => {
     spyOn(tokenService, 'setTokenDetail').and.callThrough();
     component.saveDetail('key', 'value');
-    expect(tokenService.setTokenDetail).toHaveBeenCalledWith('Mock serial', 'key', 'value');
+    expect(tokenService.setTokenDetail).toHaveBeenCalledWith(
+      'Mock serial',
+      'key',
+      'value'
+    );
   });
 
   it('should reset fail count', () => {
@@ -197,14 +217,20 @@ describe('TokenDetailsComponent', () => {
     component.selectedContainer = signal('container1');
     spyOn(containerService, 'assignContainer').and.callThrough();
     component.saveContainer();
-    expect(containerService.assignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
+    expect(containerService.assignContainer).toHaveBeenCalledWith(
+      'Mock serial',
+      'container1'
+    );
   });
 
   it('should unassign container', () => {
     component.selectedContainer = signal('container1');
     spyOn(containerService, 'unassignContainer').and.callThrough();
     component.deleteContainer();
-    expect(containerService.unassignContainer).toHaveBeenCalledWith('Mock serial', 'container1');
+    expect(containerService.unassignContainer).toHaveBeenCalledWith(
+      'Mock serial',
+      'container1'
+    );
   });
 
   it('should filter container options correctly', () => {
@@ -212,4 +238,3 @@ describe('TokenDetailsComponent', () => {
     expect(result).toEqual(['admin-container']);
   });
 });
-

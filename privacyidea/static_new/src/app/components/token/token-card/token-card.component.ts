@@ -1,4 +1,11 @@
-import { Component, effect, Input, signal, Signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  effect,
+  Input,
+  signal,
+  Signal,
+  WritableSignal,
+} from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIcon } from '@angular/material/icon';
@@ -20,7 +27,7 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
     NgClass,
   ],
   templateUrl: './token-card.component.html',
-  styleUrls: ['./token-card.component.scss']
+  styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
   @Input() selectedPage!: WritableSignal<string>;
@@ -34,7 +41,19 @@ export class TokenCardComponent {
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   selectedTabIndex = signal(0);
 
-  constructor(protected overflowService: OverflowService) { }
+  constructor(protected overflowService: OverflowService) {
+    effect(() => {
+      if (this.selectedPage() === '') {
+        this.selectedPage.set('token_overview');
+      }
+      if (this.selectedPage().startsWith('token')) {
+        this.selectedTabIndex.set(0);
+      }
+      if (this.selectedPage().startsWith('container')) {
+        this.selectedTabIndex.set(1);
+      }
+    });
+  }
 
   onTabChange(): void {
     if (this.isProgrammaticChange()) {
@@ -71,54 +90,3 @@ export class TokenCardComponent {
     return this.tokenSerial() !== '';
   }
 }
-
-
-// import { Component, Input, WritableSignal } from '@angular/core';
-// import { MatCard, MatCardContent } from '@angular/material/card';
-// import { MatTabsModule } from '@angular/material/tabs';
-// import { MatIcon } from '@angular/material/icon';
-// import { TokenTabComponent } from './token-tab/token-tab.component';
-// import { ContainerTabComponent } from './container-tab/container-tab.component';
-// import { NgClass } from '@angular/common';
-// import { OverflowService } from '../../../services/overflow/overflow.service';
-
-// @Component({
-//   selector: 'app-token-card',
-//   standalone: true,
-//   imports: [
-//     MatCardContent,
-//     MatTabsModule,
-//     MatCard,
-//     MatIcon,
-//     TokenTabComponent,
-//     ContainerTabComponent,
-//     NgClass,
-//   ],
-//   templateUrl: './token-card.component.html',
-//   styleUrls: ['./token-card.component.scss']
-// })
-// export class TokenCardComponent {
-//   @Input() tokenIsSelected!: WritableSignal<boolean>;
-//   @Input() containerIsSelected!: WritableSignal<boolean>;
-//   @Input() tokenSerial!: WritableSignal<string>;
-//   @Input() containerSerial!: WritableSignal<string>;
-//   @Input() active!: WritableSignal<boolean>;
-//   @Input() revoked!: WritableSignal<boolean>;
-//   @Input() states!: WritableSignal<string[]>;
-//   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-//   @Input() refreshContainerDetails!: WritableSignal<boolean>;
-//   @Input() selectedTabIndex!: WritableSignal<number>;
-//   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-
-//   constructor(protected overflowService: OverflowService) { }
-
-//   onTabChange(): void {
-//     if (this.isProgrammaticChange()) {
-//       this.isProgrammaticChange.set(false);
-//       return;
-//     }
-
-//     this.tokenIsSelected.set(false);
-//     this.containerIsSelected.set(false);
-//   }
-// }
