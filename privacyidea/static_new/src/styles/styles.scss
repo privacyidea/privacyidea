@@ -95,16 +95,40 @@ html, body {
   --mat-sys-primary: var(--blue-base);
 }
 
-.yellow {
-  color: var(--yellow-base);
-}
-
 .red {
   color: var(--red-base);
 }
 
+.red-light {
+  color: var(--red-light);
+}
+
+.red-light-active {
+  color: var(--red-light-active);
+}
+
 .green {
   color: var(--green-base);
+}
+
+.green-light {
+  color: var(--green-light);
+}
+
+.green-light-active {
+  color: var(--green-light-active);
+}
+
+.yellow {
+  color: var(--yellow-base);
+}
+
+.yellow-light {
+  color: var(--yellow-light);
+}
+
+.yellow-light-active {
+  color: var(--yellow-light-active);
 }
 
 .black {

@@ -1,5 +1,5 @@
 import {Component} from '@angular/core';
-import {DatePipe, NgOptimizedImage} from '@angular/common';
+import {DatePipe, NgClass, NgOptimizedImage} from '@angular/common';
 import {MatFabAnchor, MatFabButton} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {RouterLink} from '@angular/router';
@@ -14,7 +14,8 @@ import {SessionTimerService} from '../../../services/session-timer/session-timer
     MatFabAnchor,
     MatIconModule,
     RouterLink,
-    DatePipe
+    DatePipe,
+    NgClass
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'

@@ -1,4 +1,4 @@
-import {computed, Injectable, signal} from '@angular/core';
+import {computed, effect, Injectable, signal} from '@angular/core';
 import {Router} from '@angular/router';
 import {NotificationService} from '../notification/notification.service';
 import {LocalService} from '../local/local.service';
@@ -12,17 +12,19 @@ export class SessionTimerService {
   private intervalId: any;
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
-  private readonly sessionTimeout = 3599_000;
-  remainingTime = computed(() =>
-    this.sessionTimeout - (this.currentTime() - this.startTime())
-  );
+  private readonly sessionTimeout = 3570_000;
+  remainingTime = computed(() => this.sessionTimeout - (this.currentTime() - this.startTime()));
 
-  constructor(
-    private router: Router,
-    private notificationService: NotificationService,
-    private localService: LocalService,
-    private authService: AuthService
-  ) {}
+  constructor(private router: Router,
+              private notificationService: NotificationService,
+              private localService: LocalService,
+              private authService: AuthService) {
+    effect(() => {
+      if (this.remainingTime() > 29_000 && this.remainingTime() < 30_000) {
+        this.notificationService.openSnackBar('Session will expire in 30 seconds.');
+      }
+    });
+  }
 
   startTimer() {
     this.resetTimer();
@@ -38,18 +40,18 @@ export class SessionTimerService {
     }
   }
 
+  startRefreshingRemainingTime() {
+    this.intervalId = setInterval(() => {
+      this.currentTime.set(Date.now());
+    }, 1000);
+  }
+
   private handleSessionTimeout() {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
     this.notificationService.openSnackBar('Session expired. Redirecting to login page.');
     this.router.navigate(['login']);
     this.clearRefreshInterval();
-  }
-
-  startRefreshingRemainingTime() {
-    this.intervalId = setInterval(() => {
-      this.currentTime.set(Date.now());
-    }, 1000);
   }
 
   private clearRefreshInterval() {
