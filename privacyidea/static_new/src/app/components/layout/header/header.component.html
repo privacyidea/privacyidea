@@ -1,6 +1,7 @@
 <div class="header-container">
   <div class="brand">
-    <img alt="logo" class="logo" height="1856" ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
+    <img alt="logo" class="logo" height="1856"
+         ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
          width="1857"/>
   </div>
 
@@ -24,6 +25,19 @@
       <mat-icon>grid_view</mat-icon>
       <h4>Components</h4></a>
   </nav>
+
+  <div [ngClass]="[(sessionTimerService.remainingTime() < 31000) ? 'red-light' :
+                    sessionTimerService.remainingTime() < 60000 ? 'yellow-light' : 'green']"
+       class="session-timer">
+    @if (sessionTimerService.remainingTime() < 60000) {
+      {{ sessionTimerService.remainingTime() | date:'mm:ss' }}
+    } @else if (sessionTimerService.remainingTime() >= 60000
+    && sessionTimerService.remainingTime() < 600000) {
+      {{ sessionTimerService.remainingTime() | date:'m' }}min
+    } @else {
+      {{ sessionTimerService.remainingTime() | date:'mm' }}min
+    }
+  </div>
 
   <button (click)="refreshPage()" class="refresh-btn" mat-fab>
     <mat-icon>refresh</mat-icon>
