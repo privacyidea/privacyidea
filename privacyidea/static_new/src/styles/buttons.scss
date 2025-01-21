@@ -119,11 +119,16 @@ $header-bg: white;
   font-size: $detail-icon-font-size;
 }
 
-.delete-buttons {
+.delete-buttons-container {
   display: flex;
   flex-direction: column;
   gap: $gap-small;
   padding: 0 $padding-horizontal;
+}
+
+.dialog-button-delete {
+  color: var(--red-base);
+  background-color: white;
 }
 
 .cancel-button {

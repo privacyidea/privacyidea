@@ -21,6 +21,10 @@ import {MatButton, MatIconButton} from '@angular/material/button';
 import {ContainerService} from '../../../../services/container/container.service';
 import {OverflowService} from '../../../../services/overflow/overflow.service';
 import {NotificationService} from '../../../../services/notification/notification.service';
+import {MatDialog} from '@angular/material/dialog';
+import {
+  ConfirmationDialogComponent
+} from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
 
 const columnsKeyMap = [
   {key: 'serial', label: 'Serial'},
@@ -79,7 +83,8 @@ export class ContainerDetailsTokenTableComponent {
               private notificationService: NotificationService,
               protected tokenService: TokenService,
               protected tableUtilsService: TableUtilsService,
-              protected overflowService: OverflowService) {
+              protected overflowService: OverflowService,
+              private dialog: MatDialog) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => {
         console.warn('Redirected to login page.', r);
@@ -150,13 +155,23 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteAllTokens() {
     const serial_list = this.dataSource().data.map((token: any) => token.serial).join(',');
-    this.containerService.deleteAllTokens(this.containerSerial(), serial_list).subscribe({
-      next: () => {
-        this.refreshContainerDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to delete all tokens.', error);
-        this.notificationService.openSnackBar('Failed to delete all tokens.');
+    this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        serial_list: serial_list.split(',')
+      }
+    }).afterClosed().subscribe({
+      next: result => {
+        if (result) {
+          this.containerService.deleteAllTokens(this.containerSerial(), serial_list).subscribe({
+            next: () => {
+              this.refreshContainerDetails.set(true);
+            },
+            error: error => {
+              console.error('Failed to delete all tokens.', error);
+              this.notificationService.openSnackBar('Failed to delete all tokens.');
+            }
+          });
+        }
       }
     });
   }
