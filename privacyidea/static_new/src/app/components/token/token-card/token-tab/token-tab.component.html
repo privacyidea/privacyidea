@@ -8,7 +8,7 @@
       </button>
     </mat-list-item>
     <div [@toggleState]="tokenIsSelected()">
-      @if (!tokenIsSelected()) {
+      @if (selectedContent() !== 'token_details') {
         <mat-list-item>
           <button (click)="onClickEnrollment()" [ngClass]="[selectedContent() ===
       'token_enrollment' ? 'card-button-active':  'card-button']" mat-flat-button>

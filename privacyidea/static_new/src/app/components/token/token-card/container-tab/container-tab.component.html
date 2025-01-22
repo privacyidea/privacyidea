@@ -8,7 +8,7 @@
       </button>
     </mat-list-item>
     <div [@toggleState]="containerIsSelected()">
-      @if (!containerIsSelected()) {
+      @if (selectedContent() !== 'container_details') {
         <mat-list-item>
           <button class="card-button" mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
