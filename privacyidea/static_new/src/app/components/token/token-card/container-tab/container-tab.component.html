@@ -1,8 +1,7 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="containerIsSelected.set(false)" [ngClass]="{'card-button-active':
-      !containerIsSelected(),
+      <button (click)="onClickContainerTab()" [ngClass]="{'card-button-active': !containerIsSelected(),
     'card-button': containerIsSelected()}" mat-flat-button>
         <mat-icon class="mdi--folder-search"/>
         Overview
@@ -14,6 +13,15 @@
           <button class="card-button" mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
             Create
+          </button>
+        </mat-list-item>
+        <br/>
+        <mat-divider/>
+        <br/>
+        <mat-list-item>
+          <button class="card-button" (click)="openTheDocs()" mat-flat-button>
+            <mat-icon>info_outline</mat-icon>
+            Help
           </button>
         </mat-list-item>
       } @else {

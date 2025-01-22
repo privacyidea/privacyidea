@@ -1,5 +1,5 @@
-import {Component, Input, signal, Signal, WritableSignal} from '@angular/core';
-import {MatCell, MatColumnDef, MatRow, MatTableModule} from '@angular/material/table';
+import {Component, Input, signal, Signal, WritableSignal,} from '@angular/core';
+import {MatCell, MatColumnDef, MatRow, MatTableModule,} from '@angular/material/table';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
@@ -33,20 +33,24 @@ import {NotificationService} from '../../../../services/notification/notificatio
     EditButtonsComponent,
   ],
   templateUrl: './container-details-info.component.html',
-  styleUrl: './container-details-info.component.scss'
+  styleUrl: './container-details-info.component.scss',
 })
 export class ContainerDetailsInfoComponent {
   @Input() containerSerial!: WritableSignal<string>;
-  @Input() infoData!: WritableSignal<{
-    value: any;
-    keyMap: { label: string; key: string };
-    isEditing: WritableSignal<boolean>
-  }[]>;
-  @Input() detailData!: WritableSignal<{
-    keyMap: { key: string; label: string };
-    value: any;
-    isEditing: WritableSignal<boolean>
-  }[]>;
+  @Input() infoData!: WritableSignal<
+    {
+      value: any;
+      keyMap: { label: string; key: string };
+      isEditing: WritableSignal<boolean>;
+    }[]
+  >;
+  @Input() detailData!: WritableSignal<
+    {
+      keyMap: { key: string; label: string };
+      value: any;
+      isEditing: WritableSignal<boolean>;
+    }[]
+  >;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
@@ -54,12 +58,18 @@ export class ContainerDetailsInfoComponent {
   newInfo = signal({key: '', value: ''});
   protected readonly Object = Object;
 
-  constructor(private containerService: ContainerService,
-              private notificationService: NotificationService,
-              protected overflowService: OverflowService) {
+  constructor(
+    private containerService: ContainerService,
+    private notificationService: NotificationService,
+    protected overflowService: OverflowService
+  ) {
   }
 
-  toggleInfoEditMode(element: any, type: string = '', action: string = ''): void {
+  toggleInfoEditMode(
+    element: any,
+    type: string = '',
+    action: string = ''
+  ): void {
     this.isEditingInfo.set(!this.isEditingInfo());
     if (action === 'cancel') {
       this.newInfo.set({key: '', value: ''});
@@ -70,20 +80,27 @@ export class ContainerDetailsInfoComponent {
     this.newInfo.set({key: '', value: ''});
   }
 
-
   saveInfo(infos: any): void {
-    if (this.newInfo().key.trim() !== '' && this.newInfo().value.trim() !== '') {
+    if (
+      this.newInfo().key.trim() !== '' &&
+      this.newInfo().value.trim() !== ''
+    ) {
       infos[this.newInfo().key] = this.newInfo().value;
     }
-    const requests = this.containerService.setContainerInfos(this.containerSerial(), infos);
+    const requests = this.containerService.setContainerInfos(
+      this.containerSerial(),
+      infos
+    );
     forkJoin(requests).subscribe({
       next: () => {
         this.refreshDetails.set(true);
       },
-      error: error => {
+      error: (error) => {
         console.error('Failed to save container infos.', error);
-        this.notificationService.openSnackBar('Failed to save container infos.')
-      }
+        this.notificationService.openSnackBar(
+          'Failed to save container infos.'
+        );
+      },
     });
   }
 

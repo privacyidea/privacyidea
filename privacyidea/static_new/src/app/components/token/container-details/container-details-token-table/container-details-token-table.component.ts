@@ -5,7 +5,7 @@ import {
   MatHeaderRow,
   MatRow,
   MatTable,
-  MatTableModule
+  MatTableModule,
 } from '@angular/material/table';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
@@ -55,38 +55,38 @@ const columnsKeyMap = [
     MatButton,
   ],
   templateUrl: './container-details-token-table.component.html',
-  styleUrl: './container-details-token-table.component.scss'
+  styleUrl: './container-details-token-table.component.scss',
 })
 export class ContainerDetailsTokenTableComponent {
   displayedColumns: string[] = [
-    ...columnsKeyMap.map(column => column.key),
-    'remove'
+    ...columnsKeyMap.map((column) => column.key),
+    'remove',
   ];
   pageSize = 10;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
   @Input() dataSource!: WritableSignal<any>;
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
-  @Input() selectedTabIndex!: WritableSignal<number>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  @Input() selectedPage!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
 
-  constructor(private router: Router,
-              private authService: AuthService,
-              private containerService: ContainerService,
-              private notificationService: NotificationService,
-              protected tokenService: TokenService,
-              protected tableUtilsService: TableUtilsService,
-              protected overflowService: OverflowService,
-              private dialog: MatDialog) {
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private containerService: ContainerService,
+    private notificationService: NotificationService,
+    protected tokenService: TokenService,
+    protected tableUtilsService: TableUtilsService,
+    protected overflowService: OverflowService,
+    private dialog: MatDialog
+  ) {
     if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then(r => {
+      this.router.navigate(['']).then((r) => {
         console.warn('Redirected to login page.', r);
         this.notificationService.openSnackBar('Redirected to login page.');
       });
@@ -105,22 +105,24 @@ export class ContainerDetailsTokenTableComponent {
 
   tokenSelected(tokenSerial: string) {
     this.tokenSerial.set(tokenSerial);
-    this.containerIsSelected.set(false);
     this.isProgrammaticChange.set(true);
-    this.selectedTabIndex.set(0);
-    this.tokenIsSelected.set(true);
+    this.selectedPage.set('token_details')
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
-    this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
-      next: () => {
-        this.refreshContainerDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to remove token from container.', error);
-        this.notificationService.openSnackBar('Failed to remove token from container.');
-      }
-    });
+    this.containerService
+      .removeTokenFromContainer(containerSerial, tokenSerial)
+      .subscribe({
+        next: () => {
+          this.refreshContainerDetails.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to remove token from container.', error);
+          this.notificationService.openSnackBar(
+            'Failed to remove token from container.'
+          );
+        },
+      });
   }
 
   handleColumnClick(columnKey: string, element: any) {
@@ -134,10 +136,10 @@ export class ContainerDetailsTokenTableComponent {
       next: () => {
         this.refreshContainerDetails.set(true);
       },
-      error: error => {
+      error: (error) => {
         console.error('Failed to toggle active.', error);
         this.notificationService.openSnackBar('Failed to toggle active.');
-      }
+      },
     });
   }
 
@@ -146,33 +148,42 @@ export class ContainerDetailsTokenTableComponent {
       next: () => {
         this.refreshContainerDetails.set(true);
       },
-      error: error => {
+      error: (error) => {
         console.error('Failed to toggle all.', error);
         this.notificationService.openSnackBar('Failed to toggle all.');
-      }
+      },
     });
   }
 
   deleteAllTokens() {
-    const serial_list = this.dataSource().data.map((token: any) => token.serial).join(',');
-    this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        serial_list: serial_list.split(',')
-      }
-    }).afterClosed().subscribe({
-      next: result => {
-        if (result) {
-          this.containerService.deleteAllTokens(this.containerSerial(), serial_list).subscribe({
-            next: () => {
-              this.refreshContainerDetails.set(true);
-            },
-            error: error => {
-              console.error('Failed to delete all tokens.', error);
-              this.notificationService.openSnackBar('Failed to delete all tokens.');
-            }
-          });
-        }
-      }
-    });
+    const serial_list = this.dataSource()
+      .data.map((token: any) => token.serial)
+      .join(',');
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: serial_list.split(','),
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.containerService
+              .deleteAllTokens(this.containerSerial(), serial_list)
+              .subscribe({
+                next: () => {
+                  this.refreshContainerDetails.set(true);
+                },
+                error: (error) => {
+                  console.error('Failed to delete all tokens.', error);
+                  this.notificationService.openSnackBar(
+                    'Failed to delete all tokens.'
+                  );
+                },
+              });
+          }
+        },
+      });
   }
 }

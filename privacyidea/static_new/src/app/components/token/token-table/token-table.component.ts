@@ -55,12 +55,10 @@ export class TokenTableComponent {
       return emptyRow;
     })));
   showAdvancedFilter = signal(false);
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
   @Input() tokenSerial!: WritableSignal<string>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedTabIndex!: WritableSignal<number>;
+  @Input() selectedPage!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -109,7 +107,7 @@ export class TokenTableComponent {
   toggleKeywordInFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     if (filterKeyword === 'active') {
       inputElement.value = this.tableUtilsService.toggleActiveInFilter(inputElement.value);
-      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
       inputElement.focus();
       return;
     }
@@ -151,10 +149,6 @@ export class TokenTableComponent {
     });
   }
 
-  tokenSelected(tokenSerial: string) {
-    this.tokenSerial.set(tokenSerial);
-    this.tokenIsSelected.set(true)
-  }
 
   handleColumnClick(columnKey: string, element: any): void {
     if (columnKey === 'active') {
@@ -164,12 +158,16 @@ export class TokenTableComponent {
     }
   }
 
-  containerSelected(containerSerial: string) {
-    this.containerSerial.set(containerSerial);
-    this.tokenIsSelected.set(false);
+  tokenSelected(serial: string) {
     this.isProgrammaticChange.set(true);
-    this.selectedTabIndex.set(1);
-    this.containerIsSelected.set(true);
+    this.tokenSerial.set(serial);
+    this.selectedPage.set('token_details');
+  }
+
+  containerSelected(containerSerial: string) {
+    this.isProgrammaticChange.set(true);
+    this.containerSerial.set(containerSerial);
+    this.selectedPage.set('container_details');
   }
 
   private fetchTokenData() {

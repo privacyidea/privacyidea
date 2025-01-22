@@ -7,6 +7,7 @@ import {tabToggleState} from '../../../../../styles/animations/animations';
 import {MatDivider} from "@angular/material/divider";
 import {switchMap} from 'rxjs';
 import {ContainerService} from '../../../../services/container/container.service';
+import {VersionService} from '../../../../services/version/version.service';
 import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
@@ -25,13 +26,22 @@ import {NotificationService} from '../../../../services/notification/notificatio
   animations: [tabToggleState]
 })
 export class ContainerTabComponent {
-  @Input() containerIsSelected!: WritableSignal<boolean>;
-  @Input() containerSerial!: WritableSignal<string>
-  @Input() states!: WritableSignal<string[]>
+  @Input() selectedPage!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
+  @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
 
-  constructor(private containerService: ContainerService,
-              private notificationService: NotificationService) {
+  version!: string;
+
+  constructor(
+    private containerService: ContainerService,
+    private versioningService: VersionService,
+    private notificationService: NotificationService,
+  ) {
+  }
+
+  ngOnInit(): void {
+    this.version = this.versioningService.getVersion();
   }
 
   toggleActive(): void {
@@ -51,7 +61,7 @@ export class ContainerTabComponent {
   deleteContainer() {
     this.containerService.deleteContainer(this.containerSerial()).subscribe({
       next: () => {
-        this.containerIsSelected.set(false);
+        this.containerSerial.set('');
       },
       error: error => {
         console.error('Failed to delete container.', error);
@@ -66,5 +76,20 @@ export class ContainerTabComponent {
 
   damagedContainer() {
     // TODO: Missing API endpoint
+  }
+
+  openTheDocs() {
+    window.open(`https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#containers`, '_blank');
+  }
+
+  containerIsSelected(): boolean {
+    return this.containerSerial() !== '';
+  }
+
+  onClickContainerTab = () => this.onClickOverview();
+
+  onClickOverview() {
+    this.selectedPage.set('container_overview');
+    this.containerSerial.set('');
   }
 }

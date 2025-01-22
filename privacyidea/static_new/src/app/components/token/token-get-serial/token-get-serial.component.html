@@ -1,0 +1,55 @@
+<div aria-label="Token Get Serial" class="token-get-serial">
+  <div class="token-get-serial-container">
+    <div class="token-get-serial-header">
+      <h2>Get Serial Number</h2>
+    </div>
+    <p class="help-block" translate>
+      By entering an OTP value you can get the serial number of the token. You
+      can also enter additional optional parameters, to narrow down the search
+      for the token. So you can only search within certain token types or in
+      assigned or unassigned tokens.
+    </p>
+    <div class="token-get-serial-content"></div>
+    <h3>OTP Value</h3>
+    <mat-form-field>
+      <input
+        (keyup.enter)="getSerial()"
+        matInput
+        placeholder="enter some OTP value"
+        required
+      />
+    </mat-form-field>
+    <h3>Token Type</h3>
+    <mat-form-field>
+      <mat-select (keyup.enter)="getSerial()" appearance="outline" matInput>
+        @for (type of tokenTypes; track type[0]) {
+          <mat-option [value]="type[0]">{{ type[1] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <h3>Assignment State</h3>
+    <mat-form-field>
+      <mat-select (keyup.enter)="getSerial()" appearance="outline" matInput>
+        @for (assi of assignmentStates; track assi[0]) {
+          <mat-option [value]="assi[0]">{{ assi[1] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <h3>Serial Substring</h3>
+    <mat-form-field>
+      <input
+        (keyup.enter)="getSerial()"
+        matInput
+        placeholder="an optional serial substring"
+      />
+    </mat-form-field>
+    <h3>Count Window</h3>
+    <mat-form-field>
+      <input
+        (keyup.enter)="getSerial()"
+        matInput
+        placeholder="The number of lookahead OTP values. Default = 10"
+      />
+    </mat-form-field>
+  </div>
+</div>

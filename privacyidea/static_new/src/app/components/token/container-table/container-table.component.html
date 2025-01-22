@@ -83,11 +83,10 @@
                 </a>
               } @else if (column.key === 'states') {
                 <span (click)="handleStateClick(element)"
-                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
+                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
                   {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
-              }
-              @else {
+              } @else {
                 {{ element[column.key] }}
               }
             </div>

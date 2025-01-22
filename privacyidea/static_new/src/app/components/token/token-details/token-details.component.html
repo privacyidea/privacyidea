@@ -17,15 +17,13 @@
           </ng-container>
           <ng-container matColumnDef="value">
             <td *matCellDef="let element"
-                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
-                mat-cell>
+                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)" mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18 container-form-field">
                       <mat-label>Select Container</mat-label>
-                      <input matInput
-                             [(ngModel)]="selectedContainer"
+                      <input matInput [(ngModel)]="selectedContainer"
                              [matAutocomplete]="containerAuto">
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of filteredContainerOptions(); track option) {
@@ -93,14 +91,14 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18 description">
-                    <textarea matInput rows="4" [maxlength]="80"
-                              [(ngModel)]="element.value"></textarea>
+                      <textarea matInput rows="4" [maxlength]="80"
+                                [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                    <span class="details-table-item">
-                      {{ element.value }}
-                    </span>
+                <span class="details-table-item">
+                  {{ element.value }}
+                </span>
                     </div>
                   }
                 }
@@ -111,18 +109,17 @@
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18">
-                    <textarea matInput rows="1"
-                              [(ngModel)]="element.value"></textarea>
+                      <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                    <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
+                <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
                           element.value, maxfail)]">
-                      {{
-                        tableUtilsService.getDisplayTextForKeyAndRevoked(element.keyMap.key, element.value,
-                          revoked())
-                      }}
-                    </span>
+                  {{
+                    tableUtilsService.getDisplayTextForKeyAndRevoked(element.keyMap.key, element.value,
+                      revoked())
+                  }}
+                </span>
                     </div>
                   }
                 }
@@ -130,8 +127,7 @@
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
-            <td *matCellDef="let element" class="edit-column-cell"
-                mat-cell>
+            <td *matCellDef="let element" class="edit-column-cell" mat-cell>
               <div class="ali-center">
                 @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
@@ -144,16 +140,14 @@
                 } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
                 element.value) {
                   <div class="edit-button-container">
-                    <button mat-icon-button class="red"
-                            (click)="deleteContainer()">
+                    <button mat-icon-button class="red" (click)="deleteContainer()">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
                   <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
                                     [shouldHideEdit]="isAnyEditingOrRevoked"
-                                    [isEditingUser]="isEditingUser"
-                                    [isEditingInfo]="isEditingInfo"
+                                    [isEditingUser]="isEditingUser" [isEditingInfo]="isEditingInfo"
                                     [element]="element">
                   </app-edit-buttons>
                 }
@@ -172,17 +166,13 @@
       <div class="details-flex-layout flex-column">
         <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                 [isEditingInfo]="isEditingInfo"
-                                [isEditingUser]="isEditingUser"
-                                [realmOptions]="realmOptions"
+                                [isEditingUser]="isEditingUser" [realmOptions]="realmOptions"
                                 [refreshTokenDetails]="refreshTokenDetails"
-                                [repeatPinValue]="repeatPinValue"
+                                [repeatPinValue]="repeatPinValue" [setPinValue]="setPinValue"
                                 [tokenSerial]="tokenSerial"
-                                [setPinValue]="setPinValue"
-                                [userData]="userData"
-                                class="flex"></app-token-details-user>
+                                [userData]="userData" class="flex"></app-token-details-user>
         <div [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
-        ? 'flex-column ali-center' : 'flex-row']"
-             class="details-flex-layout">
+        ? 'flex-column ali-center' : 'flex-row']" class="details-flex-layout">
           <app-token-details-info [detailData]="tokenDetailData" [infoData]="infoData"
                                   [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                   [isEditingInfo]="isEditingInfo"

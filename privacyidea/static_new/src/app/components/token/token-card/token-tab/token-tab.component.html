@@ -1,8 +1,7 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="tokenIsSelected.set(false)" [ngClass]="{'card-button-active':
-      !tokenIsSelected(),
+      <button (click)="onClickTokenTab()" [ngClass]="{'card-button-active': !tokenIsSelected(),
     'card-button': tokenIsSelected()}" mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
@@ -38,24 +37,24 @@
         <mat-divider/>
         <br/>
         <mat-list-item>
-          <button class="card-button" mat-flat-button>
+          <button class="card-button" mat-flat-button (click)="onClickGetSerial()">
             <mat-icon>help_outline</mat-icon>
-            Identify Serial Number
+            Get Serial Number
           </button>
         </mat-list-item>
         <br/>
         <mat-divider/>
         <br/>
         <mat-list-item>
-          <button class="card-button" mat-flat-button>
+          <button class="card-button" (click)="openTheDocs()" mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help
           </button>
         </mat-list-item>
       } @else {
         <mat-list-item>
-          <button [ngClass]="{'card-button-active': tokenIsSelected(),
-          'card-button': !tokenIsSelected()}" mat-flat-button>
+          <button [ngClass]="{'card-button-active': selectedPage() === 'token_details',
+          'card-button': selectedPage() !== 'token_details'}" mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
           </button>
@@ -93,8 +92,7 @@
         </mat-list-item>
         <mat-list-item>
           <button (click)="revokeToken()" [disabled]="revoked()" class="card-button-delete"
-                  color="alert"
-                  mat-flat-button>
+                  color="alert" mat-flat-button>
             <mat-icon>delete_forever</mat-icon>
             Revoke
           </button>

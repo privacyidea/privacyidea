@@ -3,8 +3,8 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {TokenTabComponent} from './token-tab.component';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {signal} from '@angular/core';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {signal} from '@angular/core';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -19,7 +19,10 @@ describe('TokenTabComponent', () => {
 
     fixture = TestBed.createComponent(TokenTabComponent);
     component = fixture.componentInstance;
-    component.tokenIsSelected = signal(false);
+    component.tokenSerial = signal('Mock serial');
+    component.selectedPage = signal('token_overview');
+    component.revoked = signal(false);
+    component.active = signal(true);
     fixture.detectChanges();
   });
 

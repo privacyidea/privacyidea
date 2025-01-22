@@ -1,37 +1,67 @@
-<div aria-label="Container Details Token Table" class="container-details-token-table-container">
+<div
+  aria-label="Container Details Token Table"
+  class="container-details-token-table-container"
+>
   <div class="flex-column">
     <h3 class="margin-left-1">Token in Container</h3>
-    <mat-form-field class="container-details-token-table-filter" subscriptSizing="dynamic">
+    <mat-form-field
+      class="container-details-token-table-filter"
+      subscriptSizing="dynamic"
+    >
       <mat-label>Filter</mat-label>
-      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
-             matInput placeholder="Filter across all columns.">
+      <input
+        #input
+        (keyup)="handleFilterInput($event)"
+        aria-label="Filter Input"
+        matInput
+        placeholder="Filter across all columns."
+      />
     </mat-form-field>
     <mat-paginator
       [pageSizeOptions]="pageSizeOptions"
-      [pageSize]="pageSize" aria-label="Select page of tokens"
-      showFirstLastButtons>
+      [pageSize]="pageSize"
+      aria-label="Select page of tokens"
+      showFirstLastButtons
+    >
     </mat-paginator>
   </div>
   <div
-    [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
-    ? 'flex-column' : 'flex-row']">
-    <table [dataSource]="dataSource()"
-           aria-label="Token of Container Data Table" class="container-details-token-table"
-           mat-table
-           matSort>
+    [ngClass]="[
+      overflowService.isOverflowing('.token-layout', 1580)
+        ? 'flex-column'
+        : 'flex-row'
+    ]"
+  >
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Token of Container Data Table"
+      class="container-details-token-table"
+      mat-table
+      matSort
+    >
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
-          <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell
-              mat-sort-header>
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
+            mat-sort-header
+          >
             {{ column.label }}
           </th>
-          <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell
-              [ngClass]="{'width-18': column.key === 'description'}">
+          <td
+            *matCellDef="let element"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell
+            [ngClass]="{ 'width-18': column.key === 'description' }"
+          >
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @if (column.key === 'serial') {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     (click)="tokenSelected(element.serial)">
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    (click)="tokenSelected(element.serial)"
+                  >
                     {{ element[column.key] }}
                   </a>
                 } @else if (tableUtilsService.isLink(column.key)) {
@@ -39,8 +69,12 @@
                     {{ element[column.key] }}
                   </a>
                 } @else {
-                  <span (click)="handleColumnClick(column.key, element)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                  <span
+                    (click)="handleColumnClick(column.key, element)"
+                    [ngClass]="
+                  tableUtilsService.getClassForColumn(column.key, element)
+                "
+                  >
                 {{ tableUtilsService.getDisplayText(column.key, element) }}
               </span>
                 }
@@ -50,43 +84,79 @@
         </ng-container>
       }
       <ng-container matColumnDef="remove">
-        <th *matHeaderCellDef aria-label="Remove Column Header" mat-header-cell>
-        </th>
+        <th
+          *matHeaderCellDef
+          aria-label="Remove Column Header"
+          mat-header-cell
+        ></th>
         <td *matCellDef="let element" aria-label="Remove Button Cell" mat-cell>
           <div class="flex just-center">
-            <button (click)="removeTokenFromContainer(this.containerSerial(), element.serial)"
-                    mat-icon-button>
+            <button
+              (click)="
+                removeTokenFromContainer(this.containerSerial(), element.serial)
+              "
+              mat-icon-button
+            >
               <mat-icon>delete_outlined</mat-icon>
             </button>
           </div>
         </td>
       </ng-container>
-      <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
-      <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        aria-label="Header Row"
+        mat-header-row
+      ></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        aria-label="Data Row"
+        mat-row
+      ></tr>
       <tr *matNoDataRow aria-label="No Data Row">
         <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell">
           No data matching the filter.
         </td>
       </tr>
     </table>
-    <div [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
-    ? 'container-details-action-column' : 'container-details-action-row']">
-        <button (click)="toggleAll('activate')" class="card-button-activate" mat-flat-button>
-          <mat-icon>playlist_play</mat-icon>
-          {{ 'Activate all Token' }}
-        </button>
-        <button (click)="toggleAll('deactivate')" class="card-button-delete" mat-flat-button>
-          <mat-icon>playlist_remove</mat-icon>
-          {{ 'Deactivate all Token' }}
-        </button>
-        <button (click)="toggleAll('remove')" class="card-button-delete" mat-flat-button>
-          <mat-icon>delete_sweep</mat-icon>
-          {{ 'Remove all Token' }}
-        </button>
-        <button (click)="deleteAllTokens()" class="card-button-delete" mat-flat-button>
-          <mat-icon>delete_forever</mat-icon>
-          {{ 'Delete all Token' }}
-        </button>
+    <div
+      [ngClass]="[
+        overflowService.isOverflowing('.token-layout', 1580)
+          ? 'container-details-action-column'
+          : 'container-details-action-row'
+      ]"
+    >
+      <button
+        (click)="toggleAll('activate')"
+        class="card-button-activate"
+        mat-flat-button
+      >
+        <mat-icon>playlist_play</mat-icon>
+        {{ "Activate all Token" }}
+      </button>
+      <button
+        (click)="toggleAll('deactivate')"
+        class="card-button-delete"
+        mat-flat-button
+      >
+        <mat-icon>playlist_remove</mat-icon>
+        {{ "Deactivate all Token" }}
+      </button>
+      <button
+        (click)="toggleAll('remove')"
+        class="card-button-delete"
+        mat-flat-button
+      >
+        <mat-icon>delete_sweep</mat-icon>
+        {{ "Remove all Token" }}
+      </button>
+      <button
+        (click)="deleteAllTokens()"
+        class="card-button-delete"
+        mat-flat-button
+      >
+        <mat-icon>delete_forever</mat-icon>
+        {{ "Delete all Token" }}
+      </button>
     </div>
   </div>
 </div>

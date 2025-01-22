@@ -1,4 +1,4 @@
-import {Component, computed, effect, Input, signal, WritableSignal} from '@angular/core';
+import {Component, computed, effect, Input, signal, WritableSignal,} from '@angular/core';
 import {MatCell, MatColumnDef, MatRow, MatTable, MatTableModule,} from '@angular/material/table';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
@@ -15,7 +15,7 @@ import {RealmService} from '../../../services/realm/realm.service';
 import {catchError} from 'rxjs/operators';
 import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
 import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
-import {MatAutocomplete, MatAutocompleteTrigger} from "@angular/material/autocomplete";
+import {MatAutocomplete, MatAutocompleteTrigger,} from '@angular/material/autocomplete';
 import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
 import {
   TokenDetailsActionsComponent
@@ -48,9 +48,7 @@ export const userDetailsKeyMap = [
   {key: 'user_id', label: 'User ID'},
 ];
 
-export const infoDetailsKeyMap = [
-  {key: 'info', label: 'Information'},
-];
+export const infoDetailsKeyMap = [{key: 'info', label: 'Information'}];
 
 @Component({
   selector: 'app-token-details',
@@ -76,59 +74,69 @@ export const infoDetailsKeyMap = [
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    MatDivider
+    MatDivider,
   ],
   templateUrl: './token-details.component.html',
-  styleUrl: './token-details.component.scss'
+  styleUrl: './token-details.component.scss',
 })
 export class TokenDetailsComponent {
-  @Input() tokenSerial!: WritableSignal<string>
+  @Input() tokenSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  @Input() selectedPage!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedTabIndex!: WritableSignal<number>;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   setPinValue = signal('');
   repeatPinValue = signal('');
   filteredContainerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
-  tokenDetailData = signal<{
-    value: any;
-    keyMap: { label: string; key: string },
-    isEditing: WritableSignal<boolean>
-  }[]>(tokenDetailsKeyMap.map(detail => ({
-    keyMap: detail,
-    value: '',
-    isEditing: signal(false)
-  })));
-  infoData = signal<{
-    value: any;
-    keyMap: { label: string; key: string },
-    isEditing: WritableSignal<boolean>
-  }[]>(infoDetailsKeyMap.map(detail => ({
-    keyMap: detail,
-    value: '',
-    isEditing: signal(false)
-  })));
-  userData = signal<{
-    value: any;
-    keyMap: { label: string; key: string },
-    isEditing: WritableSignal<boolean>
-  }[]>(userDetailsKeyMap.map(detail => ({
-    keyMap: detail,
-    value: '',
-    isEditing: signal(false)
-  })));
+  tokenDetailData = signal<
+    {
+      value: any;
+      keyMap: { label: string; key: string };
+      isEditing: WritableSignal<boolean>;
+    }[]
+  >(
+    tokenDetailsKeyMap.map((detail) => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false),
+    }))
+  );
+  infoData = signal<
+    {
+      value: any;
+      keyMap: { label: string; key: string };
+      isEditing: WritableSignal<boolean>;
+    }[]
+  >(
+    infoDetailsKeyMap.map((detail) => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false),
+    }))
+  );
+  userData = signal<
+    {
+      value: any;
+      keyMap: { label: string; key: string };
+      isEditing: WritableSignal<boolean>;
+    }[]
+  >(
+    userDetailsKeyMap.map((detail) => ({
+      keyMap: detail,
+      value: '',
+      isEditing: signal(false),
+    }))
+  );
   isAnyEditingOrRevoked = computed(() => {
     const detailData = this.tokenDetailData();
 
     return (
-      detailData.some(element => element.isEditing()) ||
+      detailData.some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
       this.revoked()
@@ -141,13 +149,16 @@ export class TokenDetailsComponent {
   selectedTokengroup = signal<string[]>([]);
   userRealm: string = '';
   maxfail: number = 0;
+  protected readonly single = single;
 
-  constructor(private tokenService: TokenService,
-              private containerService: ContainerService,
-              private realmService: RealmService,
-              private notificationService: NotificationService,
-              protected overflowService: OverflowService,
-              protected tableUtilsService: TableUtilsService) {
+  constructor(
+    private tokenService: TokenService,
+    private containerService: ContainerService,
+    private realmService: RealmService,
+    private notificationService: NotificationService,
+    protected overflowService: OverflowService,
+    protected tableUtilsService: TableUtilsService
+  ) {
     effect(() => {
       this.showTokenDetail().subscribe();
     });
@@ -157,11 +168,6 @@ export class TokenDetailsComponent {
       const filteredOptions = this._filterContainerOptions(value || '');
       this.filteredContainerOptions.set(filteredOptions);
     });
-  }
-
-  private _filterContainerOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.containerOptions().filter(option => option.toLowerCase().includes(filterValue));
   }
 
   isObject(value: any): boolean {
@@ -178,50 +184,66 @@ export class TokenDetailsComponent {
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer.set(tokenDetails.container_serial);
-        this.tokenDetailData.set(tokenDetailsKeyMap.map(detail => ({
-          keyMap: detail,
-          value: tokenDetails[detail.key],
-          isEditing: signal(false)
-        })).filter(detail => detail.value !== undefined));
-        this.userData.set(userDetailsKeyMap.map(detail => ({
-          keyMap: detail,
-          value: tokenDetails[detail.key],
-          isEditing: signal(false)
-        })).filter(detail => detail.value !== undefined));
+        this.selectedContainer.set(tokenDetails.containerSerial);
+        this.tokenDetailData.set(
+          tokenDetailsKeyMap
+            .map((detail) => ({
+              keyMap: detail,
+              value: tokenDetails[detail.key],
+              isEditing: signal(false),
+            }))
+            .filter((detail) => detail.value !== undefined)
+        );
+        this.userData.set(
+          userDetailsKeyMap
+            .map((detail) => ({
+              keyMap: detail,
+              value: tokenDetails[detail.key],
+              isEditing: signal(false),
+            }))
+            .filter((detail) => detail.value !== undefined)
+        );
 
-        this.infoData.set(infoDetailsKeyMap.map(detail => ({
-          keyMap: detail,
-          value: tokenDetails[detail.key],
-          isEditing: signal(false)
-        })).filter(detail => detail.value !== undefined));
+        this.infoData.set(
+          infoDetailsKeyMap
+            .map((detail) => ({
+              keyMap: detail,
+              value: tokenDetails[detail.key],
+              isEditing: signal(false),
+            }))
+            .filter((detail) => detail.value !== undefined)
+        );
 
         this.realmOptions.set(Object.keys(realms.result.value));
         this.selectedRealms.set(tokenDetails.realms);
         this.userRealm = this.userData().find(
-          detail => detail.keyMap.key === 'user_realm')?.value;
-        return new Observable<void>(observer => {
+          (detail) => detail.keyMap.key === 'user_realm'
+        )?.value;
+        return new Observable<void>((observer) => {
           observer.next();
           observer.complete();
         });
       }),
-      catchError(error => {
+      catchError((error) => {
         console.error('Failed to get token details.', error);
-        this.notificationService.openSnackBar('Failed to get token details.')
+        this.notificationService.openSnackBar('Failed to get token details.');
         throw error;
       })
     );
   }
 
   resetFailCount(): void {
-    this.tokenService.resetFailCount(this.tokenSerial()).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      error: error => {
-        console.error('Failed to reset fail counter.', error);
-        this.notificationService.openSnackBar('Failed to reset fail counter.')
-      }
-    });
+    this.tokenService
+      .resetFailCount(this.tokenSerial())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        error: (error) => {
+          console.error('Failed to reset fail counter.', error);
+          this.notificationService.openSnackBar(
+            'Failed to reset fail counter.'
+          );
+        },
+      });
   }
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
@@ -232,7 +254,7 @@ export class TokenDetailsComponent {
     }
 
     switch (type) {
-      case 'container_serial':
+      case 'containerSerial':
         this.handleContainerSerial(action);
         break;
       case 'tokengroup':
@@ -249,19 +271,94 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
+  saveDetail(key: string, value: string): void {
+    this.tokenService
+      .setTokenDetail(this.tokenSerial(), key, value)
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        next: () => {
+          this.showTokenDetail();
+        },
+        error: (error) => {
+          console.error('Failed to save token detail.', error);
+          this.notificationService.openSnackBar('Failed to save token detail.');
+        },
+      });
+  }
+
+  saveContainer() {
+    this.containerService
+      .assignContainer(this.tokenSerial(), this.selectedContainer())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        error: (error) => {
+          console.error('Failed to assign container.', error);
+          this.notificationService.openSnackBar('Failed to assign container.');
+        },
+      });
+  }
+
+  deleteContainer() {
+    this.containerService
+      .unassignContainer(this.tokenSerial(), this.selectedContainer())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        error: (error) => {
+          console.error('Failed to unassign container.', error);
+          this.notificationService.openSnackBar(
+            'Failed to unassign container.'
+          );
+        },
+      });
+  }
+
+  isEditableElement(key: any) {
+    return (
+      key === 'maxfail' ||
+      key === 'count_window' ||
+      key === 'sync_window' ||
+      key === 'description' ||
+      key === 'info' ||
+      key === 'realms' ||
+      key === 'tokengroup' ||
+      key === 'containerSerial'
+    );
+  }
+
+  isNumberElement(key: any) {
+    return key === 'maxfail' || key === 'count_window' || key === 'sync_window';
+  }
+
+  containerSelected(containerSerial: string) {
+    this.isProgrammaticChange.set(true);
+    this.selectedPage.set('container_details');
+    this.containerSerial.set(containerSerial);
+  }
+
+  private _filterContainerOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filterValue)
+    );
+  }
+
   private handleContainerSerial(action: string): void {
     if (this.containerOptions().length === 0) {
       this.containerService.getContainerData().subscribe({
         next: (containers: any) => {
-          this.containerOptions.set(Object.values(containers.result.value.containers as {
-            serial: string
-          }[]).map(container => container.serial));
+          this.containerOptions.set(
+            Object.values(
+              containers.result.value.containers as {
+                serial: string;
+              }[]
+            ).map((container) => container.serial)
+          );
           this.selectedContainer.set(this.selectedContainer());
         },
-        error: error => {
+        error: (error) => {
           console.error('Failed to get containers.', error);
-          this.notificationService.openSnackBar('Failed to get containers.')
-        }
+          this.notificationService.openSnackBar('Failed to get containers.');
+        },
       });
     }
     if (action === 'save') {
@@ -275,12 +372,16 @@ export class TokenDetailsComponent {
       this.tokenService.getTokengroups().subscribe({
         next: (tokengroups: any) => {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
-          this.selectedTokengroup.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+          this.selectedTokengroup.set(
+            this.tokenDetailData().find(
+              (detail) => detail.keyMap.key === 'tokengroup'
+            )?.value
+          );
         },
-        error: error => {
+        error: (error) => {
           console.error('Failed to get tokengroups.', error);
-          this.notificationService.openSnackBar('Failed to get tokengroups.')
-        }
+          this.notificationService.openSnackBar('Failed to get tokengroups.');
+        },
       });
     }
     if (action === 'save') {
@@ -302,14 +403,22 @@ export class TokenDetailsComponent {
 
   private handleCancelAction(type: string): void {
     switch (type) {
-      case 'container_serial':
+      case 'containerSerial':
         this.selectedContainer.set('');
         break;
       case 'tokengroup':
-        this.selectedTokengroup.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'tokengroup')?.value);
+        this.selectedTokengroup.set(
+          this.tokenDetailData().find(
+            (detail) => detail.keyMap.key === 'tokengroup'
+          )?.value
+        );
         break;
       case 'realms':
-        this.selectedRealms.set(this.tokenDetailData().find(detail => detail.keyMap.key === 'realms')?.value);
+        this.selectedRealms.set(
+          this.tokenDetailData().find(
+            (detail) => detail.keyMap.key === 'realms'
+          )?.value
+        );
         break;
       default:
         this.showTokenDetail().subscribe();
@@ -317,94 +426,33 @@ export class TokenDetailsComponent {
     }
   }
 
-  saveDetail(key: string, value: string): void {
-    this.tokenService.setTokenDetail(this.tokenSerial(), key, value).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      next: () => {
-        this.showTokenDetail();
-      },
-      error: error => {
-        console.error('Failed to save token detail.', error);
-        this.notificationService.openSnackBar('Failed to save token detail.')
-      }
-    });
-  }
-
-  saveContainer() {
-    this.containerService.assignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      error: error => {
-        console.error('Failed to assign container.', error);
-        this.notificationService.openSnackBar('Failed to assign container.')
-      }
-    });
-  }
-
-  deleteContainer() {
-    this.containerService.unassignContainer(this.tokenSerial(), this.selectedContainer()).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      error: error => {
-        console.error('Failed to unassign container.', error);
-        this.notificationService.openSnackBar('Failed to unassign container.')
-      }
-    });
-  }
-
   private saveRealms() {
-    this.tokenService.setTokenRealm(this.tokenSerial(), this.selectedRealms()).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      next: () => {
-        this.showTokenDetail();
-      },
-      error: error => {
-        console.error('Failed to save token realms.', error);
-        this.notificationService.openSnackBar('Failed to save token realms.')
-      }
-    });
+    this.tokenService
+      .setTokenRealm(this.tokenSerial(), this.selectedRealms())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        next: () => {
+          this.showTokenDetail();
+        },
+        error: (error) => {
+          console.error('Failed to save token realms.', error);
+          this.notificationService.openSnackBar('Failed to save token realms.');
+        },
+      });
   }
 
   private saveTokengroup(value: any) {
-    this.tokenService.setTokengroup(this.tokenSerial(), value).pipe(
-      switchMap(() => this.showTokenDetail())
-    ).subscribe({
-      next: () => {
-        this.showTokenDetail();
-      },
-      error: error => {
-        console.error('Failed to set token group.', error);
-        this.notificationService.openSnackBar('Failed to set token group.')
-      }
-    });
-  }
-
-  isEditableElement(key: any) {
-    return key === "maxfail"
-      || key === "count_window"
-      || key === "sync_window"
-      || key === "description"
-      || key === "info"
-      || key === "realms"
-      || key === "tokengroup"
-      || key === "container_serial";
-  }
-
-  protected readonly single = single;
-
-  isNumberElement(key: any) {
-    return key === "maxfail" ||
-      key === "count_window" ||
-      key === "sync_window";
-  }
-
-  containerSelected(containerSerial: string){
-    this.containerSerial.set(containerSerial);
-    this.tokenIsSelected.set(false);
-    this.isProgrammaticChange.set(true);
-    this.selectedTabIndex.set(1);
-    this.containerIsSelected.set(true);
+    this.tokenService
+      .setTokengroup(this.tokenSerial(), value)
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        next: () => {
+          this.showTokenDetail();
+        },
+        error: (error) => {
+          console.error('Failed to set token group.', error);
+          this.notificationService.openSnackBar('Failed to set token group.');
+        },
+      });
   }
 }

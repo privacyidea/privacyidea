@@ -43,7 +43,7 @@ export class ContainerTableComponent {
   apiFilter = this.containerService.apiFilter;
   advancedApiFilter = this.containerService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
+  @Input() selectedPage!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(new MatTableDataSource(
     Array.from({length: this.pageSize}, () => {
@@ -117,9 +117,13 @@ export class ContainerTableComponent {
     });
   }
 
+  containerIsSelected(): boolean {
+    return this.containerSerial() !== '';
+  }
+
   containerSelected(containerSerial: string) {
     this.containerSerial.set(containerSerial);
-    this.containerIsSelected.set(true)
+    this.selectedPage.set('container_details');
   }
 
   private fetchContainerData() {
