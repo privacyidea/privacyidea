@@ -159,7 +159,6 @@ export class TokenTableComponent {
   }
 
   tokenSelected(serial: string) {
-    this.isProgrammaticChange.set(true);
     this.tokenSerial.set(serial);
     this.selectedContent.set('token_details');
   }

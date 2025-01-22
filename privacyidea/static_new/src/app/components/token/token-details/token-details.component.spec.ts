@@ -18,7 +18,7 @@ class MockTokenService {
             {
               active: true,
               revoked: false,
-              container_serial: 'mock_serial',
+              container_serial: 'Mock serial',
               realms: ['realm1', 'realm2'],
             },
           ],
@@ -237,4 +237,17 @@ describe('TokenDetailsComponent', () => {
     const result = component['_filterContainerOptions']('admin');
     expect(result).toEqual(['admin-container']);
   });
+
+  it('should navigate to container details when containerSelected is called', () => {
+    component.isProgrammaticChange = signal(false);
+    component.selectedContent = signal('');
+    component.containerSerial = signal('');
+
+    component.containerSelected('testSerial');
+
+    expect(component.isProgrammaticChange()).toBeTrue();
+    expect(component.selectedContent()).toBe('container_details');
+    expect(component.containerSerial()).toBe('testSerial');
+  });
+
 });

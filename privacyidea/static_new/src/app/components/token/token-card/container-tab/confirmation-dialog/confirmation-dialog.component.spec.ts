@@ -13,7 +13,7 @@ describe('ConfirmationDialogComponent', () => {
       providers: [
         {
           provide: MAT_DIALOG_DATA, useValue: {
-            serial_list: ['mockSerialValue'],
+            serial_list: ['Mock serial'],
           }
         }]
     }).compileComponents();
