@@ -58,7 +58,7 @@ export class TokenTableComponent {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -161,13 +161,13 @@ export class TokenTableComponent {
   tokenSelected(serial: string) {
     this.isProgrammaticChange.set(true);
     this.tokenSerial.set(serial);
-    this.selectedPage.set('token_details');
+    this.selectedContent.set('token_details');
   }
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticChange.set(true);
     this.containerSerial.set(containerSerial);
-    this.selectedPage.set('container_details');
+    this.selectedContent.set('container_details');
   }
 
   private fetchTokenData() {

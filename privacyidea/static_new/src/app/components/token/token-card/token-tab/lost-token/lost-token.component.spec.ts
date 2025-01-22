@@ -13,14 +13,20 @@ describe('LostTokenComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LostTokenComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
-        {provide: MAT_DIALOG_DATA, useValue: {
+        {
+          provide: MAT_DIALOG_DATA, useValue: {
             tokenSerial: () => 'mockSerialValue',
             isLost: () => false,
-            tokenIsSelected: () => false
-          }},
-        {provide: MatDialogRef, useValue: {
-            afterClosed: () => ({subscribe: () => {}}),
-          }}]
+          }
+        },
+        {
+          provide: MatDialogRef, useValue: {
+            afterClosed: () => ({
+              subscribe: () => {
+              }
+            }),
+          }
+        }]
     })
       .compileComponents();
 

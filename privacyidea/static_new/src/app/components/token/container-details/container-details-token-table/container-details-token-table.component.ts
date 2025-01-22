@@ -70,7 +70,7 @@ export class ContainerDetailsTokenTableComponent {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -104,9 +104,9 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   tokenSelected(tokenSerial: string) {
-    this.tokenSerial.set(tokenSerial);
     this.isProgrammaticChange.set(true);
-    this.selectedPage.set('token_details')
+    this.tokenSerial.set(tokenSerial);
+    this.selectedContent.set('token_details')
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

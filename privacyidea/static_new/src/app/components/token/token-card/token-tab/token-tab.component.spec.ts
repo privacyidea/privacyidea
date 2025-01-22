@@ -20,7 +20,7 @@ describe('TokenTabComponent', () => {
     fixture = TestBed.createComponent(TokenTabComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
-    component.selectedPage = signal('token_overview');
+    component.selectedContent = signal('token_overview');
     component.revoked = signal(false);
     component.active = signal(true);
     fixture.detectChanges();

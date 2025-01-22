@@ -84,7 +84,7 @@ export class TokenDetailsComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   isEditingUser = signal(false);
@@ -331,7 +331,7 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticChange.set(true);
-    this.selectedPage.set('container_details');
+    this.selectedContent.set('container_details');
     this.containerSerial.set(containerSerial);
   }
 

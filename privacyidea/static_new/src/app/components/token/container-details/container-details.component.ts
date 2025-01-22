@@ -98,7 +98,7 @@ interface TokenOption {
   styleUrl: './container-details.component.scss',
 })
 export class ContainerDetailsComponent {
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
@@ -205,15 +205,12 @@ export class ContainerDetailsComponent {
     });
 
     effect(() => {
+      this.filterValue = this.filterValue.replace(/container_serial:\S*/g, '');
       if (this.showOnlyTokenNotInContainer()) {
         this.filterValue = this.filterValue + ' container_serial:';
-        this.pageIndex = 0;
-        this.fetchTokenData();
-      } else {
-        this.filterValue = this.filterValue.replace('container_serial:', '');
-        this.pageIndex = 0;
-        this.fetchTokenData();
       }
+      this.pageIndex = 0;
+      this.fetchTokenData();
     });
   }
 
@@ -229,7 +226,7 @@ export class ContainerDetailsComponent {
         this.paginator.pageIndex,
         this.paginator.pageSize,
         undefined,
-        this.tokenToAddFilter().trim() + ' containerSerial:'
+        this.tokenToAddFilter().trim() + ' container_serial:'
       ),
     ]).pipe(
       switchMap(([containerDetailsResponse, realms, tokens]) => {
@@ -384,7 +381,7 @@ export class ContainerDetailsComponent {
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
     if (this.showOnlyTokenNotInContainer()) {
-      this.filterValue = this.filterValue + ' containerSerial:';
+      this.filterValue = this.filterValue + ' container_serial:';
     }
     this.pageIndex = 0;
     this.fetchTokenData();
@@ -401,7 +398,7 @@ export class ContainerDetailsComponent {
         error: (error) => {
           console.error('Failed to add token to container.', error);
           this.notificationService.openSnackBar(
-            'FFailed to add token to container.'
+            'Failed to add token to container.'
           );
         },
       });

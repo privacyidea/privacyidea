@@ -10,7 +10,7 @@
       [tokenSerial]="tokenSerial"
       [containerSerial]="containerSerial"
       [isProgrammaticChange]="isProgrammaticChange"
-      [selectedPage]="selectedPage"
+      [selectedContent]="selectedContent"
     >
     </app-token-card>
   }
@@ -26,7 +26,7 @@
           [tokenSerial]="tokenSerial"
           [containerSerial]="containerSerial"
           [isProgrammaticChange]="isProgrammaticChange"
-          [selectedPage]="selectedPage"
+          [selectedContent]="selectedContent"
         >
         </app-token-card>
       </mat-drawer>
@@ -43,15 +43,18 @@
         <main>
           <div [ngClass]="[(overflowService.isOverflowing('.token-layout',1880))
           ? 'main-margin' : 'main-margin-overflow']">
-            @switch (selectedPage()) {
+            @switch (selectedContent()) {
               @case ("token_overview") {
                 <app-token-table
                   [isProgrammaticChange]="isProgrammaticChange"
                   [tokenSerial]="tokenSerial"
                   [containerSerial]="containerSerial"
-                  [selectedPage]="selectedPage"
+                  [selectedContent]="selectedContent"
                 >
                 </app-token-table>
+              }
+              @case ("token_enrollment") {
+                <span>blub</span>
               }
               @case ("token_details") {
                 <app-token-details
@@ -61,7 +64,7 @@
                   [revoked]="revoked"
                   [refreshTokenDetails]="refreshTokenDetails"
                   [containerSerial]="containerSerial"
-                  [selectedPage]="selectedPage"
+                  [selectedContent]="selectedContent"
                   [isProgrammaticChange]="isProgrammaticChange"
                 >
                 </app-token-details>
@@ -72,7 +75,7 @@
               @case ("container_overview") {
                 <app-container-table
                   [containerSerial]="containerSerial"
-                  [selectedPage]="selectedPage"
+                  [selectedContent]="selectedContent"
                 />
               }
               @case ("container_details") {
@@ -82,7 +85,7 @@
                   [tokenSerial]="tokenSerial"
                   [states]="states"
                   [refreshContainerDetails]="refreshContainerDetails"
-                  [selectedPage]="selectedPage"
+                  [selectedContent]="selectedContent"
                   [isProgrammaticChange]="isProgrammaticChange"
                 >
                 </app-container-details>

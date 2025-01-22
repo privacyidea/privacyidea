@@ -19,8 +19,9 @@ describe('ContainerTabComponent', () => {
 
     fixture = TestBed.createComponent(ContainerTabComponent);
     component = fixture.componentInstance;
-    component.containerIsSelected = signal(false);
-
+    component.selectedContent = signal("container_overview")
+    component.containerSerial = signal("Mock serial")
+    component.states = signal(["active"])
     fixture.detectChanges();
   });
 
