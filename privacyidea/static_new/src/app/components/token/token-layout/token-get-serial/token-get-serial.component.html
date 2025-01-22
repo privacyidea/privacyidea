@@ -14,7 +14,11 @@
     <mat-form-field>
       <input
         matInput
+        [(ngModel)]="otpValue"
+        id="otpValue"
+        name="otpValue"
         required
+        type="number"
         placeholder="enter some OTP value"
         (keyup.enter)="getSerial()"
       />
@@ -52,4 +56,16 @@
       />
     </mat-form-field>
   </div>
+  @if(currentStep === 'count') {
+  <div class="token-get-serial-footer">
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="getSerial()"
+      [disabled]="!otpValue"
+    >
+      Get Serial
+    </button>
+  </div>
+  }
 </div>

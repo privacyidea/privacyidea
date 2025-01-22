@@ -1,4 +1,4 @@
-import { Component, Input, Signal, WritableSignal } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -6,10 +6,13 @@ import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { TokenService } from '../../../../services/token/token.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
+import { HttpParams } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-token-get-serial',
   imports: [
+    FormsModule,
     MatCard,
     MatCardContent,
     MatFormField,
@@ -22,11 +25,21 @@ import { NotificationService } from '../../../../services/notification/notificat
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
-  otpValue: string = '';
-  tokenType: string = '';
-  assignmentState: string = '';
-  serialSubstring: string = '';
-  countWindow: string = '';
+  @Input() otpValue = '';
+  @Input() tokenType = '';
+  @Input() assignmentState = '';
+  @Input() serialSubstring = '';
+  @Input() countWindow = '';
+
+  // possible steps: init, count, searching, found
+  currentStep: string = 'init';
+  foundSerial: string = '';
+  count: string = '';
+
+  constructor(
+    private tokenService: TokenService,
+    private notificationService: NotificationService
+  ) {}
 
   tokenTypes: Map<string, string> = new Map([
     ['totp', 'TOTP: Time-based One Time Passwords'],
@@ -54,18 +67,56 @@ export class TokenGetSerial {
   ]);
 
   getSerial(): void {
-    console.log(
-      'Getting serial based on values: [ otpValue: ' +
-        this.otpValue +
-        ', tokenType: ' +
-        this.tokenType +
-        ', assignmentState: ' +
-        this.assignmentState +
-        ', serialSubstring: ' +
-        this.serialSubstring +
-        ', countWindow: ' +
-        this.countWindow +
-        ' ]'
+    if (this.otpValue === '') {
+      this.notificationService.errorSnackBar('Please enter an OTP value.');
+      return;
+    }
+    var params = new Map<string, string>();
+
+    if (this.assignmentState === 'assigned') {
+      params.set('assigned', '1');
+    }
+    if (this.assignmentState === 'unassigned') {
+      params.set('unassigned', '1');
+    }
+
+    switch (this.currentStep) {
+      case 'init':
+      case 'found':
+        this.initGetSerial(params);
+        break;
+      case 'count':
+        this.countGetSerial(params);
+        break;
+      case 'searching':
+        break;
+    }
+  }
+
+  initGetSerial(params: Map<string, string>): void {
+    params.delete('count');
+    this.tokenService.getSerial(
+      this.otpValue,
+      new HttpParams({ fromObject: Object.fromEntries(params) }),
+      this.getSerialCallback.bind(this)
     );
+  }
+
+  countGetSerial(params: Map<string, string>): void {
+    params.set('count', '1');
+    this.tokenService.getSerial(
+      this.otpValue,
+      new HttpParams({ fromObject: Object.fromEntries(params) }),
+      this.getSerialCallback.bind(this)
+    );
+  }
+
+  getSerialCallback(data: any): void {
+    this.foundSerial = data.result.value.serial;
+    this.count = data.result.value['count'];
+    if (this.currentStep === 'searching') {
+      this.currentStep = 'found';
+    }
+    console.log(data);
   }
 }

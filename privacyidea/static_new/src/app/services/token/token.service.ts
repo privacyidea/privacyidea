@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { forkJoin, Observable } from 'rxjs';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
@@ -277,7 +277,16 @@ export class TokenService {
     );
   }
 
-  getTokenTypes() {
-    return this.http.get('/token/types');
+  getSerial(
+    otp: string,
+    params: HttpParams,
+    callback = function (data: any) {}
+  ) {
+    this.http
+      .get(this.tokenBaseUrl + '/getserial/' + otp, {
+        headers: this.localService.getHeaders(),
+        params: params,
+      })
+      .forEach((response) => callback(response));
   }
 }
