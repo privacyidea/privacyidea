@@ -1,13 +1,13 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { TokenDetailsInfoComponent } from './token-details-info.component';
-import { TokenService } from '../../../../services/token/token.service';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of, throwError } from 'rxjs';
-import { computed, signal } from '@angular/core';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { By } from '@angular/platform-browser';
+import {TokenDetailsInfoComponent} from './token-details-info.component';
+import {TokenService} from '../../../../services/token/token.service';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
+import {of, throwError} from 'rxjs';
+import {computed, signal} from '@angular/core';
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {By} from '@angular/platform-browser';
 
 class MockTokenService {
   setTokenInfos() {
@@ -30,7 +30,7 @@ describe('TokenDetailsInfoComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService },
+        {provide: TokenService, useClass: MockTokenService},
       ],
     }).compileComponents();
 
@@ -44,17 +44,17 @@ describe('TokenDetailsInfoComponent', () => {
       return component.isEditingInfo();
     });
     component.refreshDetails = signal(false);
-    component.newInfo = signal({ key: '', value: '' });
+    component.newInfo = signal({key: '', value: ''});
     component.infoData = signal([
       {
-        keyMap: { key: 'info', label: 'Info' },
-        value: { key1: 'value1', key2: 'value2' },
+        keyMap: {key: 'info', label: 'Info'},
+        value: {key1: 'value1', key2: 'value2'},
         isEditing: signal(false),
       },
     ]);
     component.detailData = signal([
       {
-        keyMap: { key: 'container_serial', label: 'Container' },
+        keyMap: {key: 'container_serial', label: 'Container'},
         value: 'container1',
         isEditing: signal(false),
       },
@@ -115,7 +115,7 @@ describe('TokenDetailsInfoComponent', () => {
     fixture.detectChanges();
     expect(component.isAnyEditingOrRevoked()).toBeTruthy();
 
-    component.newInfo.set({ key: 'newKey', value: 'newValue' });
+    component.newInfo.set({key: 'newKey', value: 'newValue'});
     fixture.detectChanges();
 
     const editButtonsComponent = fixture.debugElement.query(
@@ -136,7 +136,7 @@ describe('TokenDetailsInfoComponent', () => {
     const newInfo = component
       .infoData()
       .find((info) => info.keyMap.key === 'info')?.value;
-    expect(newInfo).toEqual(jasmine.objectContaining({ newKey: 'newValue' }));
+    expect(newInfo).toEqual(jasmine.objectContaining({newKey: 'newValue'}));
   });
 
   it('should delete info', () => {

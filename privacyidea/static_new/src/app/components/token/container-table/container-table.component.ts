@@ -1,26 +1,26 @@
-import { Component, Input, signal, ViewChild, WritableSignal } from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { AuthService } from '../../../../services/auth/auth.service';
-import { Router } from '@angular/router';
-import { NgClass } from '@angular/common';
-import { ContainerService } from '../../../../services/container/container.service';
-import { MatIcon } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
+import {Component, Input, signal, ViewChild, WritableSignal} from '@angular/core';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatTableDataSource, MatTableModule} from '@angular/material/table';
+import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
+import {MatInputModule} from '@angular/material/input';
+import {MatSort, MatSortModule} from '@angular/material/sort';
+import {AuthService} from '../../../services/auth/auth.service';
+import {Router} from '@angular/router';
+import {NgClass} from '@angular/common';
+import {ContainerService} from '../../../services/container/container.service';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 const columnsKeyMap = [
-  { key: 'serial', label: 'Serial' },
-  { key: 'type', label: 'Type' },
-  { key: 'states', label: 'Status' },
-  { key: 'description', label: 'Description' },
-  { key: 'users', label: 'User' },
-  { key: 'user_realm', label: 'Realm' },
-  { key: 'realms', label: 'Container Realms' },
+  {key: 'serial', label: 'Serial'},
+  {key: 'type', label: 'Type'},
+  {key: 'states', label: 'Status'},
+  {key: 'description', label: 'Description'},
+  {key: 'users', label: 'User'},
+  {key: 'user_realm', label: 'Realm'},
+  {key: 'realms', label: 'Container Realms'},
 ];
 
 @Component({
@@ -46,7 +46,7 @@ export class ContainerTableComponent {
   @Input() selectedPage!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(new MatTableDataSource(
-    Array.from({ length: this.pageSize }, () => {
+    Array.from({length: this.pageSize}, () => {
       const emptyRow: any = {};
       columnsKeyMap.forEach(column => {
         emptyRow[column.key] = '';
@@ -59,10 +59,10 @@ export class ContainerTableComponent {
   protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
-    private authService: AuthService,
-    private containerService: ContainerService,
-    private notificationService: NotificationService,
-    protected tableUtilsService: TableUtilsService) {
+              private authService: AuthService,
+              private containerService: ContainerService,
+              private notificationService: NotificationService,
+              protected tableUtilsService: TableUtilsService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => {
         console.warn('Redirected to login page.', r);
@@ -101,7 +101,7 @@ export class ContainerTableComponent {
 
   toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
     inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), keyword);
-    this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+    this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
     inputElement.focus();
   }
 
@@ -117,18 +117,27 @@ export class ContainerTableComponent {
     });
   }
 
+  containerIsSelected(): boolean {
+    return this.containerSerial() !== '';
+  }
+
+  containerSelected(containerSerial: string) {
+    this.containerSerial.set(containerSerial);
+    this.selectedPage.set('container_details');
+  }
+
   private fetchContainerData() {
     this.containerService.getContainerData(
       this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-        next: response => {
-          this.length = response.result.value.count;
-          this.processDataSource(response.result.value.containers);
-        },
-        error: error => {
-          console.error('Failed to get container data.', error);
-          this.notificationService.openSnackBar('Failed to get container data.')
-        }
-      });
+      next: response => {
+        this.length = response.result.value.count;
+        this.processDataSource(response.result.value.containers);
+      },
+      error: error => {
+        console.error('Failed to get container data.', error);
+        this.notificationService.openSnackBar('Failed to get container data.')
+      }
+    });
   }
 
   private processDataSource(data: any[]) {
@@ -138,14 +147,5 @@ export class ContainerTableComponent {
       user_realm: item.users && item.users.length > 0 ? item.users[0]["user_realm"] : '',
     }));
     this.dataSource.set(new MatTableDataSource(processedData));
-  }
-
-  containerIsSelected(): boolean {
-    return this.containerSerial() !== '';
-  }
-
-  containerSelected(containerSerial: string) {
-    this.containerSerial.set(containerSerial);
-    this.selectedPage.set('container_details');
   }
 }

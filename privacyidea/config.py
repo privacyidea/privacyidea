@@ -120,12 +120,20 @@ class AltUIConfig(TestingConfig):
 
 
 class ProductionConfig(Config):
-    DEBUG = True
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
-    PI_LOGLEVEL = logging.DEBUG
-    PI_TRANSLATION_WARNING = "[Missing]"
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
+    # This is used to encrypt the auth_token
+    SECRET_KEY = os.environ.get('SECRET_KEY') or _random_password(24)
+    # This is used to encrypt the admin passwords
+    PI_PEPPER = "Never know..."
+    # This is used to encrypt the token data and token passwords
+    PI_ENCFILE = os.path.join(basedir, "enckey")
+    # This is used to sign the audit log
+    PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "private.pem")
+    PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
+    PI_LOGLEVEL = logging.INFO
+    SUPERUSER_REALM = ['superuser']
 
 
 class HerokuConfig(Config):

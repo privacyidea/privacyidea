@@ -4,10 +4,10 @@ import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 import { HttpParams } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { TokenService } from '../../../services/token/token.service';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -16,7 +16,6 @@ import { FormsModule } from '@angular/forms';
     MatCard,
     MatCardContent,
     MatFormField,
-    MatLabel,
     MatInput,
     MatSelect,
     MatOption,

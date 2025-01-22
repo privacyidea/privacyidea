@@ -1,25 +1,22 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import {ContainerDetailsComponent} from './container-details.component';
+import {TokenComponent} from './token.component';
 import {provideHttpClient} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {signal} from '@angular/core';
 
-describe('ContainerDetailsComponent', () => {
-  let component: ContainerDetailsComponent;
-  let fixture: ComponentFixture<ContainerDetailsComponent>;
+describe('TokenGridComponent', () => {
+  let component: TokenComponent;
+  let fixture: ComponentFixture<TokenComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerDetailsComponent, BrowserAnimationsModule],
+      imports: [TokenComponent, BrowserAnimationsModule],
       providers: [provideHttpClient(), provideHttpClientTesting()],
-    })
-      .compileComponents();
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerDetailsComponent);
+    fixture = TestBed.createComponent(TokenComponent);
     component = fixture.componentInstance;
-    component.containerSerial = signal('Mock serial');
     fixture.detectChanges();
   });
 

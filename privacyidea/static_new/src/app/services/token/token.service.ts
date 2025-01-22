@@ -9,7 +9,6 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
   providedIn: 'root',
 })
 export class TokenService {
-  private tokenBaseUrl = '/token/';
   apiFilter = [
     'serial',
     'type',
@@ -20,8 +19,8 @@ export class TokenService {
     'tokenrealm',
     'container_serial',
   ];
-
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
+  private tokenBaseUrl = '/token/';
 
   constructor(
     private http: HttpClient,

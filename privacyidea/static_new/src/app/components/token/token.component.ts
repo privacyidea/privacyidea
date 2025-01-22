@@ -1,20 +1,16 @@
-import { Component, effect, signal, ViewChild } from '@angular/core';
-import { TokenTableComponent } from './token-table/token-table.component';
-import { CommonModule } from '@angular/common';
-import { ContainerTableComponent } from './container-table/container-table.component';
-import { TokenDetailsComponent } from '../token-details/token-details.component';
-import { ContainerDetailsComponent } from '../container-details/container-details.component';
-import {
-  MatDrawer,
-  MatDrawerContainer,
-  MatSidenavModule,
-} from '@angular/material/sidenav';
-import { MatFabButton, MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { OverflowService } from '../../../services/overflow/overflow.service';
-import { TokenCardComponent } from '../token-card/token-card.component';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
+import {Component, effect, signal, ViewChild} from '@angular/core';
+import {TokenTableComponent} from './token-table/token-table.component';
+import {CommonModule} from '@angular/common';
+import {ContainerTableComponent} from './container-table/container-table.component';
+import {TokenDetailsComponent} from './token-details/token-details.component';
+import {ContainerDetailsComponent} from './container-details/container-details.component';
+import {MatDrawer, MatDrawerContainer, MatSidenavModule,} from '@angular/material/sidenav';
+import {MatFabButton} from '@angular/material/button';
+import {MatIcon} from '@angular/material/icon';
+import {OverflowService} from '../../services/overflow/overflow.service';
+import {TokenCardComponent} from './token-card/token-card.component';
+import {NotificationService} from '../../services/notification/notification.service';
+import {TokenGetSerial} from './token-get-serial/token-get-serial.component';
 
 @Component({
   selector: 'app-token-grid',
@@ -33,10 +29,10 @@ import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
     MatIcon,
     MatFabButton,
   ],
-  templateUrl: './token-layout.component.html',
-  styleUrl: './token-layout.component.scss',
+  templateUrl: './token.component.html',
+  styleUrl: './token.component.scss',
 })
-export class TokenLayoutComponent {
+export class TokenComponent {
   selectedPage = signal('token_overview');
   tokenSerial = signal('');
   containerSerial = signal('');

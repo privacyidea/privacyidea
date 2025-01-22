@@ -1,13 +1,13 @@
-import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenService } from '../../../../services/token/token.service';
-import { ValidateService } from '../../../../services/validate/validate.service';
-import { FormsModule } from '@angular/forms';
-import { MatIcon } from '@angular/material/icon';
-import { MatFabButton, MatIconButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
-import { MatSuffix } from '@angular/material/form-field';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
+import {Component, Input, WritableSignal} from '@angular/core';
+import {TokenService} from '../../../../services/token/token.service';
+import {ValidateService} from '../../../../services/validate/validate.service';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton, MatIconButton} from '@angular/material/button';
+import {MatDivider} from '@angular/material/divider';
+import {MatSuffix} from '@angular/material/form-field';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -36,7 +36,8 @@ export class TokenDetailsActionsComponent {
     private validateService: ValidateService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService
-  ) {}
+  ) {
+  }
 
   resyncOTPToken() {
     this.tokenService

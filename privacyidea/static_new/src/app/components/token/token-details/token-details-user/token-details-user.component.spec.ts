@@ -1,12 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { TokenDetailsUserComponent } from './token-details-user.component';
-import { TokenService } from '../../../../services/token/token.service';
-import { AppComponent } from '../../../../app.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {TokenDetailsUserComponent} from './token-details-user.component';
+import {TokenService} from '../../../../services/token/token.service';
+import {AppComponent} from '../../../../app.component';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
+import {signal} from '@angular/core';
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 
 describe('TokenDetailsUserComponent', () => {
   let component: TokenDetailsUserComponent;

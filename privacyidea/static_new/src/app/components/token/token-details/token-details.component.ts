@@ -1,68 +1,54 @@
+import {Component, computed, effect, Input, signal, WritableSignal,} from '@angular/core';
+import {MatCell, MatColumnDef, MatRow, MatTable, MatTableModule,} from '@angular/material/table';
+import {MatIconButton} from '@angular/material/button';
+import {MatIcon} from '@angular/material/icon';
+import {MatListItem} from '@angular/material/list';
+import {TokenService} from '../../../services/token/token.service';
+import {ContainerService} from '../../../services/container/container.service';
+import {NgClass} from '@angular/common';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {MatInput} from '@angular/material/input';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatSelectModule} from '@angular/material/select';
+import {forkJoin, Observable, single, switchMap} from 'rxjs';
+import {RealmService} from '../../../services/realm/realm.service';
+import {catchError} from 'rxjs/operators';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
+import {MatAutocomplete, MatAutocompleteTrigger,} from '@angular/material/autocomplete';
+import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
 import {
-  Component,
-  computed,
-  effect,
-  Input,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import {
-  MatCell,
-  MatColumnDef,
-  MatRow,
-  MatTable,
-  MatTableModule,
-} from '@angular/material/table';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatListItem } from '@angular/material/list';
-import { TokenService } from '../../../services/token/token.service';
-import { ContainerService } from '../../../services/container/container.service';
-import { NgClass } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatInput } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { forkJoin, Observable, single, switchMap } from 'rxjs';
-import { RealmService } from '../../../services/realm/realm.service';
-import { catchError } from 'rxjs/operators';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
-import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
-import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
-import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
-import { OverflowService } from '../../../services/overflow/overflow.service';
-import { MatDivider } from '@angular/material/divider';
-import { NotificationService } from '../../../services/notification/notification.service';
+  TokenDetailsActionsComponent
+} from './token-details-actions/token-details-actions.component';
+import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
+import {OverflowService} from '../../../services/overflow/overflow.service';
+import {MatDivider} from '@angular/material/divider';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 export const tokenDetailsKeyMap = [
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Status' },
-  { key: 'maxfail', label: 'Max Count' },
-  { key: 'failcount', label: 'Fail Count' },
-  { key: 'rollout_state', label: 'Rollout State' },
-  { key: 'otplen', label: 'OTP Length' },
-  { key: 'count_window', label: 'Count Window' },
-  { key: 'sync_window', label: 'Sync Window' },
-  { key: 'count', label: 'Count' },
-  { key: 'description', label: 'Description' },
-  { key: 'realms', label: 'Token Realms' },
-  { key: 'tokengroup', label: 'Token Groups' },
-  { key: 'container_serial', label: 'Container Serial' },
+  {key: 'tokentype', label: 'Type'},
+  {key: 'active', label: 'Status'},
+  {key: 'maxfail', label: 'Max Count'},
+  {key: 'failcount', label: 'Fail Count'},
+  {key: 'rollout_state', label: 'Rollout State'},
+  {key: 'otplen', label: 'OTP Length'},
+  {key: 'count_window', label: 'Count Window'},
+  {key: 'sync_window', label: 'Sync Window'},
+  {key: 'count', label: 'Count'},
+  {key: 'description', label: 'Description'},
+  {key: 'realms', label: 'Token Realms'},
+  {key: 'tokengroup', label: 'Token Groups'},
+  {key: 'container_serial', label: 'Container Serial'},
 ];
 
 export const userDetailsKeyMap = [
-  { key: 'user_realm', label: 'User Realm' },
-  { key: 'username', label: 'User' },
-  { key: 'resolver', label: 'Resolver' },
-  { key: 'user_id', label: 'User ID' },
+  {key: 'user_realm', label: 'User Realm'},
+  {key: 'username', label: 'User'},
+  {key: 'resolver', label: 'Resolver'},
+  {key: 'user_id', label: 'User ID'},
 ];
 
-export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
+export const infoDetailsKeyMap = [{key: 'info', label: 'Information'}];
 
 @Component({
   selector: 'app-token-details',
@@ -100,6 +86,7 @@ export class TokenDetailsComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() selectedPage!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   setPinValue = signal('');
@@ -162,6 +149,7 @@ export class TokenDetailsComponent {
   selectedTokengroup = signal<string[]>([]);
   userRealm: string = '';
   maxfail: number = 0;
+  protected readonly single = single;
 
   constructor(
     private tokenService: TokenService,
@@ -180,13 +168,6 @@ export class TokenDetailsComponent {
       const filteredOptions = this._filterContainerOptions(value || '');
       this.filteredContainerOptions.set(filteredOptions);
     });
-  }
-
-  private _filterContainerOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue)
-    );
   }
 
   isObject(value: any): boolean {
@@ -290,6 +271,77 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
+  saveDetail(key: string, value: string): void {
+    this.tokenService
+      .setTokenDetail(this.tokenSerial(), key, value)
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        next: () => {
+          this.showTokenDetail();
+        },
+        error: (error) => {
+          console.error('Failed to save token detail.', error);
+          this.notificationService.openSnackBar('Failed to save token detail.');
+        },
+      });
+  }
+
+  saveContainer() {
+    this.containerService
+      .assignContainer(this.tokenSerial(), this.selectedContainer())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        error: (error) => {
+          console.error('Failed to assign container.', error);
+          this.notificationService.openSnackBar('Failed to assign container.');
+        },
+      });
+  }
+
+  deleteContainer() {
+    this.containerService
+      .unassignContainer(this.tokenSerial(), this.selectedContainer())
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe({
+        error: (error) => {
+          console.error('Failed to unassign container.', error);
+          this.notificationService.openSnackBar(
+            'Failed to unassign container.'
+          );
+        },
+      });
+  }
+
+  isEditableElement(key: any) {
+    return (
+      key === 'maxfail' ||
+      key === 'count_window' ||
+      key === 'sync_window' ||
+      key === 'description' ||
+      key === 'info' ||
+      key === 'realms' ||
+      key === 'tokengroup' ||
+      key === 'containerSerial'
+    );
+  }
+
+  isNumberElement(key: any) {
+    return key === 'maxfail' || key === 'count_window' || key === 'sync_window';
+  }
+
+  containerSelected(containerSerial: string) {
+    this.isProgrammaticChange.set(true);
+    this.selectedPage.set('container_details');
+    this.containerSerial.set(containerSerial);
+  }
+
+  private _filterContainerOptions(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filterValue)
+    );
+  }
+
   private handleContainerSerial(action: string): void {
     if (this.containerOptions().length === 0) {
       this.containerService.getContainerData().subscribe({
@@ -374,47 +426,6 @@ export class TokenDetailsComponent {
     }
   }
 
-  saveDetail(key: string, value: string): void {
-    this.tokenService
-      .setTokenDetail(this.tokenSerial(), key, value)
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        next: () => {
-          this.showTokenDetail();
-        },
-        error: (error) => {
-          console.error('Failed to save token detail.', error);
-          this.notificationService.openSnackBar('Failed to save token detail.');
-        },
-      });
-  }
-
-  saveContainer() {
-    this.containerService
-      .assignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        error: (error) => {
-          console.error('Failed to assign container.', error);
-          this.notificationService.openSnackBar('Failed to assign container.');
-        },
-      });
-  }
-
-  deleteContainer() {
-    this.containerService
-      .unassignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        error: (error) => {
-          console.error('Failed to unassign container.', error);
-          this.notificationService.openSnackBar(
-            'Failed to unassign container.'
-          );
-        },
-      });
-  }
-
   private saveRealms() {
     this.tokenService
       .setTokenRealm(this.tokenSerial(), this.selectedRealms())
@@ -443,29 +454,5 @@ export class TokenDetailsComponent {
           this.notificationService.openSnackBar('Failed to set token group.');
         },
       });
-  }
-
-  isEditableElement(key: any) {
-    return (
-      key === 'maxfail' ||
-      key === 'count_window' ||
-      key === 'sync_window' ||
-      key === 'description' ||
-      key === 'info' ||
-      key === 'realms' ||
-      key === 'tokengroup' ||
-      key === 'containerSerial'
-    );
-  }
-
-  protected readonly single = single;
-
-  isNumberElement(key: any) {
-    return key === 'maxfail' || key === 'count_window' || key === 'sync_window';
-  }
-
-  containerSelected(containerSerial: string) {
-    this.selectedPage.set('container_details');
-    this.containerSerial.set(containerSerial);
   }
 }

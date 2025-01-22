@@ -1,4 +1,4 @@
-import { Component, effect, Inject, WritableSignal } from '@angular/core';
+import {Component, effect, Inject, WritableSignal} from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
@@ -6,11 +6,11 @@ import {
   MatDialogRef,
   MatDialogTitle
 } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../../../services/token/token.service';
-import { MatCard, MatCardContent } from '@angular/material/card';
-import { NotificationService } from '../../../../../services/notification/notification.service';
+import {MatButton} from '@angular/material/button';
+import {MatIcon} from '@angular/material/icon';
+import {TokenService} from '../../../../../services/token/token.service';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {NotificationService} from '../../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-lost-token',
@@ -30,13 +30,13 @@ export class LostTokenComponent {
   response: any;
 
   constructor(protected tokenService: TokenService,
-    private notificationService: NotificationService,
-    @Inject(MAT_DIALOG_DATA) public data: {
-      isLost: WritableSignal<boolean>,
-      tokenSerial: WritableSignal<string>,
-      tokenIsSelected: WritableSignal<boolean>
-    },
-    private dialogRef: MatDialogRef<LostTokenComponent>) {
+              private notificationService: NotificationService,
+              @Inject(MAT_DIALOG_DATA) public data: {
+                isLost: WritableSignal<boolean>,
+                tokenSerial: WritableSignal<string>,
+                tokenIsSelected: WritableSignal<boolean>
+              },
+              private dialogRef: MatDialogRef<LostTokenComponent>) {
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
     });

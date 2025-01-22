@@ -20,6 +20,10 @@ describe('TokenCardComponent', () => {
     fixture = TestBed.createComponent(TokenCardComponent);
     component = fixture.componentInstance;
     component.selectedTabIndex = signal(0);
+    component.selectedPage = signal('token_overview');
+    component.tokenSerial = signal('Mock serial');
+    component.revoked = signal(false);
+    component.active = signal(true);
     fixture.detectChanges();
   });
 

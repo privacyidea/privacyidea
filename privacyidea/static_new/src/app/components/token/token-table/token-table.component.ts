@@ -1,29 +1,29 @@
-import { Component, Input, signal, ViewChild, WritableSignal } from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { AuthService } from '../../../../services/auth/auth.service';
-import { Router } from '@angular/router';
-import { NgClass } from '@angular/common';
-import { TokenService } from '../../../../services/token/token.service';
-import { MatIcon } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
+import {Component, Input, signal, ViewChild, WritableSignal} from '@angular/core';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatTableDataSource, MatTableModule} from '@angular/material/table';
+import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
+import {MatInputModule} from '@angular/material/input';
+import {MatSort, MatSortModule} from '@angular/material/sort';
+import {AuthService} from '../../../services/auth/auth.service';
+import {Router} from '@angular/router';
+import {NgClass} from '@angular/common';
+import {TokenService} from '../../../services/token/token.service';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
+import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
+import {NotificationService} from '../../../services/notification/notification.service';
 
 const columnsKeyMap = [
-  { key: 'serial', label: 'Serial' },
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Active' },
-  { key: 'description', label: 'Description' },
-  { key: 'failcount', label: 'Fail Counter' },
-  { key: 'rollout_state', label: 'Rollout State' },
-  { key: 'username', label: 'User' },
-  { key: 'user_realm', label: 'User Realm' },
-  { key: 'realms', label: 'Token Realm' },
-  { key: 'container_serial', label: 'Container' },
+  {key: 'serial', label: 'Serial'},
+  {key: 'tokentype', label: 'Type'},
+  {key: 'active', label: 'Active'},
+  {key: 'description', label: 'Description'},
+  {key: 'failcount', label: 'Fail Counter'},
+  {key: 'rollout_state', label: 'Rollout State'},
+  {key: 'username', label: 'User'},
+  {key: 'user_realm', label: 'User Realm'},
+  {key: 'realms', label: 'Token Realm'},
+  {key: 'container_serial', label: 'Container'},
 ];
 
 @Component({
@@ -47,7 +47,7 @@ export class TokenTableComponent {
   advancedApiFilter = this.tokenService.advancedApiFilter;
   sortby_sortdir: { active: string; direction: "asc" | "desc" | "" } | undefined;
   dataSource = signal(new MatTableDataSource(
-    Array.from({ length: this.pageSize }, () => {
+    Array.from({length: this.pageSize}, () => {
       const emptyRow: any = {};
       columnsKeyMap.forEach(column => {
         emptyRow[column.key] = '';
@@ -56,16 +56,18 @@ export class TokenTableComponent {
     })));
   showAdvancedFilter = signal(false);
   @Input() tokenSerial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @Input() selectedPage!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,
-    private authService: AuthService,
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    private notificationService: NotificationService) {
+              private authService: AuthService,
+              protected tokenService: TokenService,
+              protected tableUtilsService: TableUtilsService,
+              private notificationService: NotificationService) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then(r => {
         console.warn('Redirected to login page.', r);
@@ -105,20 +107,20 @@ export class TokenTableComponent {
   toggleKeywordInFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     if (filterKeyword === 'active') {
       inputElement.value = this.tableUtilsService.toggleActiveInFilter(inputElement.value);
-      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
       inputElement.focus();
       return;
     }
 
     if (filterKeyword === 'infokey & infovalue') {
       inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infokey');
-      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
       inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), 'infovalue');
-      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
       inputElement.focus();
     } else {
       inputElement.value = this.tableUtilsService.toggleKeywordInFilter(inputElement.value.trim(), filterKeyword);
-      this.handleFilterInput({ target: inputElement } as unknown as KeyboardEvent);
+      this.handleFilterInput({target: inputElement} as unknown as KeyboardEvent);
       inputElement.focus();
     }
   }
@@ -157,26 +159,28 @@ export class TokenTableComponent {
   }
 
   tokenSelected(serial: string) {
+    this.isProgrammaticChange.set(true);
     this.tokenSerial.set(serial);
     this.selectedPage.set('token_details');
   }
 
   containerSelected(containerSerial: string) {
-    this.tokenSerial.set(containerSerial);
+    this.isProgrammaticChange.set(true);
+    this.containerSerial.set(containerSerial);
     this.selectedPage.set('container_details');
   }
 
   private fetchTokenData() {
     this.tokenService.getTokenData(
       this.pageIndex + 1, this.pageSize, this.sortby_sortdir, this.filterValue).subscribe({
-        next: response => {
-          this.length = response.result.value.count;
-          this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
-        },
-        error: error => {
-          console.error('Failed to get token data.', error);
-          this.notificationService.openSnackBar('Failed to get token data.');
-        }
-      });
+      next: response => {
+        this.length = response.result.value.count;
+        this.dataSource.set(new MatTableDataSource(response.result.value.tokens));
+      },
+      error: error => {
+        console.error('Failed to get token data.', error);
+        this.notificationService.openSnackBar('Failed to get token data.');
+      }
+    });
   }
 }

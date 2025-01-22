@@ -1,14 +1,14 @@
-import { Component, Input, WritableSignal } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
-import { tabToggleState } from '../../../../../styles/animations/animations';
-import { MatDivider } from "@angular/material/divider";
-import { switchMap } from 'rxjs';
-import { ContainerService } from '../../../../services/container/container.service';
-import { VersionService } from '../../../../services/version/version.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
+import {Component, Input, WritableSignal} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatList, MatListItem} from '@angular/material/list';
+import {MatButton} from '@angular/material/button';
+import {NgClass} from '@angular/common';
+import {tabToggleState} from '../../../../../styles/animations/animations';
+import {MatDivider} from "@angular/material/divider";
+import {switchMap} from 'rxjs';
+import {ContainerService} from '../../../../services/container/container.service';
+import {VersionService} from '../../../../services/version/version.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-container-tab',
@@ -37,7 +37,8 @@ export class ContainerTabComponent {
     private containerService: ContainerService,
     private versioningService: VersionService,
     private notificationService: NotificationService,
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

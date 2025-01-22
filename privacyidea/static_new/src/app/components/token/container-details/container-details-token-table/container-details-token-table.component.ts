@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild, WritableSignal } from '@angular/core';
+import {Component, Input, ViewChild, WritableSignal} from '@angular/core';
 import {
   MatCell,
   MatHeaderCell,
@@ -7,28 +7,30 @@ import {
   MatTable,
   MatTableModule,
 } from '@angular/material/table';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../../services/auth/auth.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { NgClass } from '@angular/common';
-import { MatIcon } from '@angular/material/icon';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { ContainerService } from '../../../../services/container/container.service';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { MatDialog } from '@angular/material/dialog';
-import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatPaginator} from '@angular/material/paginator';
+import {MatSort, MatSortHeader, MatSortModule} from '@angular/material/sort';
+import {Router} from '@angular/router';
+import {AuthService} from '../../../../services/auth/auth.service';
+import {TokenService} from '../../../../services/token/token.service';
+import {TableUtilsService} from '../../../../services/table-utils/table-utils.service';
+import {NgClass} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatButton, MatIconButton} from '@angular/material/button';
+import {ContainerService} from '../../../../services/container/container.service';
+import {OverflowService} from '../../../../services/overflow/overflow.service';
+import {NotificationService} from '../../../../services/notification/notification.service';
+import {MatDialog} from '@angular/material/dialog';
+import {
+  ConfirmationDialogComponent
+} from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
 
 const columnsKeyMap = [
-  { key: 'serial', label: 'Serial' },
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Active' },
-  { key: 'username', label: 'User' },
+  {key: 'serial', label: 'Serial'},
+  {key: 'tokentype', label: 'Type'},
+  {key: 'active', label: 'Active'},
+  {key: 'username', label: 'User'},
 ];
 
 @Component({
@@ -64,12 +66,11 @@ export class ContainerDetailsTokenTableComponent {
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
   @Input() dataSource!: WritableSignal<any>;
-  @Input() tokenIsSelected!: WritableSignal<boolean>;
-  @Input() containerIsSelected!: WritableSignal<boolean>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  @Input() selectedPage!: WritableSignal<string>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -104,9 +105,8 @@ export class ContainerDetailsTokenTableComponent {
 
   tokenSelected(tokenSerial: string) {
     this.tokenSerial.set(tokenSerial);
-    this.containerIsSelected.set(false);
     this.isProgrammaticChange.set(true);
-    this.tokenIsSelected.set(true);
+    this.selectedPage.set('token_details')
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

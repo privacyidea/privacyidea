@@ -1,11 +1,11 @@
-@import "../../../../../styles/styles.scss";
+@import "../../../../styles/styles";
 
 .container-table-container {
   @include table-container-styles;
   @include base-table-structure(
-    ".container-table",
-    ".container-table-filter",
-    ".table-scrollable-container"
+      ".container-table",
+      ".container-table-filter",
+      ".table-scrollable-container"
   );
   margin-left: 1rem;
   overflow: auto;

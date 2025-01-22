@@ -2,16 +2,18 @@
 !overflowService.isOverflowing('.token-layout',
     1880)}" appearance="outlined">
   <mat-card-content>
-    <mat-tab-group (selectedTabChange)="onTabChange()" [(selectedIndex)]="selectedTabIndex" animationDuration="400ms"
-      fitInkBarToContent mat-align-tabs="center" mat-stretch-tabs="false">
+    <mat-tab-group (selectedTabChange)="onTabChange()" [(selectedIndex)]="selectedTabIndex"
+                   animationDuration="400ms"
+                   fitInkBarToContent mat-align-tabs="center" mat-stretch-tabs="false">
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon [ngClass]="{ 'tab-active': tokenTabActive()}">shield</mat-icon>
           <h4 [ngClass]="{ 'tab-active': tokenTabActive()}">Token</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails" [revoked]="revoked"
-            [tokenSerial]="tokenSerial" [selectedPage]="selectedPage"></app-token-tab>
+          <app-token-tab [active]="active" [refreshTokenDetails]="refreshTokenDetails"
+                         [revoked]="revoked"
+                         [selectedPage]="selectedPage" [tokenSerial]="tokenSerial"></app-token-tab>
         </ng-template>
       </mat-tab>
       <mat-tab>
@@ -20,8 +22,9 @@
           <h4 [ngClass]="{ 'tab-active': containerTabActive() }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [containerSerial]="containerSerial" [refreshContainerDetails]="refreshContainerDetails"
-            [states]="states" [selectedPage]="selectedPage">
+          <app-container-tab [containerSerial]="containerSerial"
+                             [refreshContainerDetails]="refreshContainerDetails"
+                             [selectedPage]="selectedPage" [states]="states">
           </app-container-tab>
         </ng-template>
       </mat-tab>
