@@ -1,0 +1,11 @@
+<button
+  [ngClass]="isEnabled ? 'confirm-button' : 'disabled-button'"
+  aria-label="Confirm Button"
+  (click)="onClick.emit()"
+  [disabled]="!isEnabled"
+  extended
+  mat-fab
+  type="confirm-button"
+>
+  {{ text }}
+</button>

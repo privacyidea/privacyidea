@@ -1,0 +1,12 @@
+<button
+  [ngClass]="isEnabled ? 'abort-button' : 'disabled-button'"
+  aria-label="Abort Button"
+  (click)="onClick.emit()"
+  [disabled]="!isEnabled"
+  extended
+  mat-fab
+  type="abort-button"
+  translate
+>
+  Abort
+</button>

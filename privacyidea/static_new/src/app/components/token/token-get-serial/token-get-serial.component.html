@@ -10,7 +10,7 @@
       assigned or unassigned tokens.
     </p>
     <div class="token-get-serial-content"></div>
-    <h3>OTP Value</h3>
+    <h3 translate>OTP Value (required)</h3>
     <mat-form-field>
       <input
         matInput
@@ -18,54 +18,112 @@
         id="otpValue"
         name="otpValue"
         type="number"
-        (keyup.enter)="getSerial()"
+        (keyup.enter)="onPressEnter()"
         placeholder="enter some OTP value"
         required
       />
     </mat-form-field>
-    <h3>Token Type</h3>
+    <h3 translate>Token Type</h3>
     <mat-form-field>
-      <mat-select (keyup.enter)="getSerial()" appearance="outline" matInput>
+      <mat-select
+        [(ngModel)]="tokenType"
+        (keyup.enter)="onPressEnter()"
+        appearance="outline"
+        matInput
+      >
         @for (type of tokenTypes; track type[0]) {
         <mat-option [value]="type[0]">{{ type[1] }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
-    <h3>Assignment State</h3>
+    <h3 translate>Assignment State</h3>
     <mat-form-field>
-      <mat-select (keyup.enter)="getSerial()" appearance="outline" matInput>
+      <mat-select
+        [(ngModel)]="assignmentState"
+        (keyup.enter)="onPressEnter()"
+        appearance="outline"
+        matInput
+      >
         @for (assi of assignmentStates; track assi[0]) {
-        <mat-option [value]="assi[0]">{{ assi[1] }}</mat-option>
+        <mat-option [value]="assi[0]" translate>{{ assi[1] }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
-    <h3>Serial Substring</h3>
+    <h3 translate>Serial Substring</h3>
     <mat-form-field>
       <input
-        (keyup.enter)="getSerial()"
         matInput
+        [(ngModel)]="serialSubstring"
+        (keyup.enter)="onPressEnter()"
+        id="serialSubstring"
+        name="serialSubstring"
         placeholder="an optional serial substring"
       />
     </mat-form-field>
-    <h3>Count Window</h3>
+    <h3 translate>Count Window</h3>
     <mat-form-field>
       <input
-        (keyup.enter)="getSerial()"
         matInput
+        [(ngModel)]="countWindow"
+        id="countWindow"
+        name="countWindow"
+        type="number"
+        (keyup.enter)="onPressEnter()"
         placeholder="The number of lookahead OTP values. Default = 10"
       />
     </mat-form-field>
   </div>
-  @if(currentStep === 'count') {
+  @switch (currentStep) { @case ('counting') {
   <div class="token-get-serial-footer">
-    <button
-      mat-raised-button
-      color="primary"
-      (click)="getSerial()"
-      [disabled]="!otpValue"
+    @if (countIsLarge()) {
+    <span translate>
+      Your search would include {{ count }} tokens. This can take a lot of time
+      and could even timeout. Do you want to run the search? You might also
+      cancel this and narrow down the search!</span
     >
-      Get Serial
-    </button>
+    <br />
+    <confirm-button (onClick)="onPressEnter()" [text]="'Run Search'" />
+    <abort-button (onClick)="reset()" />
+    } @else {
+    <mat-progress-bar mode="indeterminate" translate>
+      Counting tokens...
+    </mat-progress-bar>
+    }
   </div>
-  }
+  } @case ('searching') {
+  <div class="token-get-serial-footer">
+    <mat-progress-bar mode="indeterminate" translate>
+      Searching token...
+    </mat-progress-bar>
+  </div>
+  } @case ('found') {
+  <div class="token-get-serial-footer">
+    @if (foundSerial) {
+    <div class="alert alert-success">
+      <span translate>
+        The Serial number for the OTP value {{ otpValue() }} is
+        <a ui-sref="token.details({tokenSerial:serial})">{{ foundSerial }}</a
+        >.
+      </span>
+    </div>
+    } @else {
+    <div class="alert alert-warning">
+      <span translate>
+        No Serial number could be found for OTP value {{ otpValue() }}.
+      </span>
+    </div>
+    }
+    <br />
+    <confirm-button (onClick)="reset()" [text]="' OK '" />
+  </div>
+
+  } @default {
+  <div class="token-get-serial-footer">
+    <confirm-button
+      [isEnabled]="otpValue() !== ''"
+      (onClick)="onPressEnter()"
+      [text]="'Run Search'"
+    />
+  </div>
+  }}
 </div>

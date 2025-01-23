@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, effect, Input, signal } from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -8,6 +8,12 @@ import { HttpParams } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TokenService } from '../../../services/token/token.service';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { CommonModule } from '@angular/common';
+import { MatFabButton } from '@angular/material/button';
+import { Observable } from 'rxjs';
+import { ConfirmButton } from '../../universals/confirm-button/confirm-button.component';
+import { AbortButton } from '../../universals/abort-button/abort-button.component';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -15,20 +21,25 @@ import { NotificationService } from '../../../services/notification/notification
     FormsModule,
     MatCard,
     MatCardContent,
+    MatProgressBarModule,
     MatFormField,
     MatInput,
     MatSelect,
     MatOption,
+    MatFabButton,
+    CommonModule,
+    ConfirmButton,
+    AbortButton,
   ],
   templateUrl: './token-get-serial.component.html',
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
-  @Input() otpValue = '';
-  @Input() tokenType = '';
-  @Input() assignmentState = '';
-  @Input() serialSubstring = '';
-  @Input() countWindow = '';
+  otpValue = signal<string>('');
+  tokenType = signal<string>('');
+  assignmentState = signal<string>('');
+  serialSubstring = signal<string>('');
+  countWindow = signal<string>('');
 
   // possible steps: init, count, searching, found
   currentStep: string = 'init';
@@ -38,9 +49,20 @@ export class TokenGetSerial {
   constructor(
     private tokenService: TokenService,
     private notificationService: NotificationService
-  ) {}
+  ) {
+    effect(() => {
+      // Triggered when any of the following signals change
+      this.otpValue();
+      this.assignmentState();
+      this.tokenType();
+      this.serialSubstring();
+
+      this.reset();
+    });
+  }
 
   tokenTypes: Map<string, string> = new Map([
+    ['', ''],
     ['totp', 'TOTP: Time-based One Time Passwords'],
     ['hotp', 'HOTP: Counter-based One Time Passwords'],
     ['spass', 'SPass: Simple Pass token. Static passwords'],
@@ -60,62 +82,112 @@ export class TokenGetSerial {
   ]);
 
   assignmentStates: Map<string, string> = new Map([
+    ['', ''],
     ['assigned', 'The token is assigned to a user'],
     ['unassigned', 'The token is not assigned to a user'],
     ["don't care", 'It does not matter, if the token is assigned or not'],
   ]);
 
-  getSerial(): void {
-    if (this.otpValue === '') {
+  onPressEnter(): void {
+    if (this.otpValue() === '') {
       this.notificationService.errorSnackBar('Please enter an OTP value.');
       return;
-    }
-    var params = new Map<string, string>();
-
-    if (this.assignmentState === 'assigned') {
-      params.set('assigned', '1');
-    }
-    if (this.assignmentState === 'unassigned') {
-      params.set('unassigned', '1');
     }
 
     switch (this.currentStep) {
       case 'init':
       case 'found':
-        this.initGetSerial(params);
+        this.countTokens();
         break;
-      case 'count':
-        this.countGetSerial(params);
+      case 'counting':
+        this.findSerial();
         break;
       case 'searching':
         break;
     }
   }
 
-  initGetSerial(params: Map<string, string>): void {
-    params.delete('count');
-    this.tokenService.getSerial(
-      this.otpValue,
-      new HttpParams({ fromObject: Object.fromEntries(params) }),
-      this.getSerialCallback.bind(this)
-    );
-  }
+  // Build the HttpParams object based on the current state of the component
+  getParams(): HttpParams {
+    var params = new HttpParams();
 
-  countGetSerial(params: Map<string, string>): void {
-    params.set('count', '1');
-    this.tokenService.getSerial(
-      this.otpValue,
-      new HttpParams({ fromObject: Object.fromEntries(params) }),
-      this.getSerialCallback.bind(this)
-    );
-  }
-
-  getSerialCallback(data: any): void {
-    this.foundSerial = data.result.value.serial;
-    this.count = data.result.value['count'];
-    if (this.currentStep === 'searching') {
-      this.currentStep = 'found';
+    if (this.assignmentState() === 'assigned') {
+      params = params.set('assigned', '1');
     }
-    console.log(data);
+    if (this.assignmentState() === 'unassigned') {
+      params = params.set('unassigned', '1');
+    }
+    if (this.tokenType() !== '') {
+      params = params.set('type', this.tokenType());
+    }
+    if (this.serialSubstring() !== '') {
+      params = params.set('serial', this.serialSubstring());
+    }
+    if (this.countWindow() !== '') {
+      params = params.set('window', this.countWindow());
+    }
+    return params;
+  }
+
+  // Can be used in the init and found state. Counts the tokens that match the current user input.
+  countTokens(): void {
+    if (this.currentStep !== 'init') {
+      this.notificationService.errorSnackBar('Invalid action.');
+      return;
+    }
+    var params = this.getParams();
+    params = params.set('count', '1');
+    this.currentStep = 'counting';
+    this.fetchSerial(params).subscribe({
+      next: (response) => {
+        this.count = response.result.value['count'];
+        if (!this.countIsLarge()) {
+          this.findSerial();
+        }
+      },
+    });
+  }
+
+  // Can be used in the counting state. Finds the serial of the token that matches the current user input.
+  findSerial(): void {
+    if (this.currentStep !== 'counting') {
+      this.notificationService.errorSnackBar('Invalid action.');
+      return;
+    }
+    var params = this.getParams();
+    params = params.delete('count');
+    console.log(params);
+    this.currentStep = 'searching';
+    this.fetchSerial(params).subscribe({
+      next: (response) => {
+        this.foundSerial = response.result.value.serial;
+        this.currentStep = 'found';
+        console.log(response);
+      },
+    });
+  }
+
+  // Communicates with the backend to fetch the serial of the token that matches the current user input.
+  fetchSerial(params: HttpParams): Observable<any> {
+    var observable = this.tokenService.getSerial(this.otpValue(), params);
+    observable.subscribe({
+      error: (error) => {
+        console.error('Failed to get serial.', error);
+        this.notificationService.errorSnackBar('Failed to get serial.');
+      },
+    });
+    return observable;
+  }
+
+  // Resets the component to its initial state but keeps the user input.
+  reset(): void {
+    this.currentStep = 'init';
+    this.foundSerial = '';
+    this.count = '';
+  }
+
+  // Returns true if the count is relatively large.
+  countIsLarge(): boolean {
+    return parseInt(this.count) > 99;
   }
 }

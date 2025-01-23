@@ -1,0 +1,18 @@
+@import "../../../../styles/styles";
+
+.abort-button {
+  text-decoration: none;
+  color: white;
+  padding: 8px;
+  margin: 8px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: var(--background-yellow);
+
+  &:hover {
+    box-shadow: none;
+    background: var(--background-yellow-inset);
+    color: white;
+    transform: translateY(2px);
+  }
+}

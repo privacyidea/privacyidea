@@ -276,16 +276,10 @@ export class TokenService {
     );
   }
 
-  getSerial(
-    otp: string,
-    params: HttpParams,
-    callback = function (data: any) {}
-  ) {
-    this.http
-      .get(this.tokenBaseUrl + '/getserial/' + otp, {
-        headers: this.localService.getHeaders(),
-        params: params,
-      })
-      .forEach((response) => callback(response));
+  getSerial(otp: string, params: HttpParams): Observable<any> {
+    return this.http.get(`${this.tokenBaseUrl}getserial/${otp}`, {
+      headers: this.localService.getHeaders(),
+      params: params,
+    });
   }
 }

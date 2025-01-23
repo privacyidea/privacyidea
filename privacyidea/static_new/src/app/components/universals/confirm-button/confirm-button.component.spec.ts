@@ -1,19 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { TokenGetSerial } from './token-get-serial.component';
-import { HttpClient, HttpHandler } from '@angular/common/http';
+import { ConfirmButton } from './confirm-button.component';
 
-describe('TokenGetSerial', () => {
-  let component: TokenGetSerial;
-  let fixture: ComponentFixture<TokenGetSerial>;
+describe('ConfirmButton', () => {
+  let component: ConfirmButton;
+  let fixture: ComponentFixture<ConfirmButton>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenGetSerial, BrowserAnimationsModule],
-      providers: [HttpClient, HttpHandler],
+      imports: [ConfirmButton, BrowserAnimationsModule],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenGetSerial);
+    fixture = TestBed.createComponent(ConfirmButton);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
