@@ -1,0 +1,20 @@
+@startuml
+  alt with pin
+
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
+
+  else without pin
+
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
+
+  end
+
+  privacyIDEA -> "SMS Gateway": OTP
+
+  ...User enters OTP from SMS...
+
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
+@enduml
