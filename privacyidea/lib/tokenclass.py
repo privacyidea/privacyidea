@@ -359,7 +359,7 @@ class TokenClass(object):
         return self.init_details
 
     @log_with(log)
-    def get_init_details(self, params=None, user=None):
+    def get_init_details(self):
         """
         return the status of the token rollout
 

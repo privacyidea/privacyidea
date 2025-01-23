@@ -36,6 +36,7 @@ import traceback
 from datetime import time as dt_time
 from datetime import timedelta, datetime
 from importlib import import_module
+from typing import Union
 
 import sqlalchemy
 from dateutil.parser import parse as parse_date_string
@@ -1555,7 +1556,7 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent: str):
+def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
     """
     Searches for entries in the user agent that could identify the machine.
     Example: ComputerName/Laptop-3324231

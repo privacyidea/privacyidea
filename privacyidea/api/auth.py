@@ -56,7 +56,7 @@ from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exist)
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                                    verify_fido2_challenge)

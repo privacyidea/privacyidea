@@ -6437,7 +6437,6 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         res = self._validate_check(headers, transaction_id)
         self.assertEqual(200, res.status_code)
         data = res.json
-        print(res.json)
         detail = data.get("detail")
         result = data.get("result")
         self.assertTrue(result.get("status"))

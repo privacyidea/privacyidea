@@ -61,54 +61,56 @@ optional = True
 required = False
 
 
-def _check_allowed_param(ret, key, default, allow_empty, allowed_values):
-    if not allow_empty and ret == "":
-        raise ParameterError(f"Parameter {key} must not be empty", id=905)
-    if allowed_values and ret not in allowed_values:
-        ret = default
-    return ret
-
-
-def _get_param(param, key, default=None):
+def _get_param(dictionary, key, default=None):
+    """
+    Get the parameter from the dictionary. If the parameter is not present, return the default value or None.
+    """
     ret = None
-    if param and key in param:
-        ret = param[key]
+    if dictionary and key in dictionary:
+        ret = dictionary[key]
     elif default:
         ret = default
     return ret
 
 
-def get_required(param, key, default=None, allow_empty=False, allowed_values=None):
-    ret = _get_param(param, key, default)
+def get_required(dictionary, key):
+    """
+    Get the required parameter from the dictionary. If the parameter is not present, raise a ParameterError.
+    """
+    ret = _get_param(dictionary, key, None)
     if ret is None:
         raise ParameterError(f"Missing parameter: {key}", id=905)
-    return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+    return ret
 
 
-def get_required_one_of(param, keys, default=None, allow_empty=False, allowed_values=None):
+def get_required_one_of(param, keys):
     """
     Get the first parameter from the list of keys that is present in the param dictionary.
     If none of the keys is present, raise a ParameterError.
     """
     for key in keys:
-        ret = _get_param(param, key, default)
+        ret = _get_param(param, key, None)
         if ret is not None:
-            return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+            return ret
     raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
 
 
-def get_optional(param, key, default=None, allow_empty=True, allowed_values=None):
-    ret = _get_param(param, key, default)
-    if not allow_empty and ret == "":
-        raise ParameterError(f"Parameter {key} must not be empty", id=905)
-    return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+def get_optional(param, key, default=None):
+    """
+    Get the optional parameter from the dictionary. If the parameter is not present, return the default value or None.
+    """
+    return _get_param(param, key, default)
 
 
-def get_optional_one_of(param, keys, default=None, allow_empty=True, allowed_values=None):
+def get_optional_one_of(param, keys, default=None):
+    """
+    Get the first parameter from the list of keys that is present in the param dictionary.
+    If none of the keys is present, return the default value or None.
+    """
     for key in keys:
         ret = _get_param(param, key, default)
         if ret is not None:
-            return _check_allowed_param(ret, key, default, allow_empty, allowed_values)
+            return ret
     return default
 
 

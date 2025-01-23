@@ -22,15 +22,14 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 import privacyidea.lib.token
 from privacyidea.config import TestingConfig, Config
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token, init_token, get_tokens
-from privacyidea.lib.tokens.passkeytoken import PasskeyAction
 from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase, OverrideConfigTestCase
-from tests.passkeytestbase import PasskeyTestBase
+from tests.passkey_base import PasskeyTestBase
 
 
 class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):

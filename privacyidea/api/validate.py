@@ -118,7 +118,7 @@ from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.policyaction import FIDO2PolicyAction
+from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
@@ -459,39 +459,38 @@ def check():
                        "message": gettext("Found matching challenge"),
                        "serial": token.get_serial()}
     # End Passkey
-    else:
-        if serial:
-            if user:
-                # Check if the given token belongs to the user
-                if not get_tokens(user=user, serial=serial, count=True):
-                    raise ParameterError("Given serial does not belong to given user!")
-            if not otp_only:
-                success, details = check_serial_pass(serial, password, options=options)
-            else:
-                success, details = check_otp(serial, password)
-            result = success
-
+    elif serial:
+        if user:
+            # Check if the given token belongs to the user
+            if not get_tokens(user=user, serial=serial, count=True):
+                raise ParameterError("Given serial does not belong to given user!")
+        if not otp_only:
+            success, details = check_serial_pass(serial, password, options=options)
         else:
-            options["token_type"] = token_type
-            success, details = check_user_pass(user, password, options=options)
-            result = success
-            if request.path.endswith("samlcheck"):
-                result = {"auth": success, "attributes": {}}
-                if return_saml_attributes():
-                    if success or return_saml_attributes_on_fail():
-                        # privacyIDEA's own attribute map
-                        user_info = user.info
-                        result["attributes"] = {"username": user_info.get("username"),
-                                                "realm": user.realm,
-                                                "resolver": user.resolver,
-                                                "email": user_info.get("email"),
-                                                "surname": user_info.get("surname"),
-                                                "givenname": user_info.get("givenname"),
-                                                "mobile": user_info.get("mobile"),
-                                                "phone": user_info.get("phone")}
-                        # Additional attributes
-                        for k, v in user_info.items():
-                            result["attributes"][k] = v
+            success, details = check_otp(serial, password)
+        result = success
+
+    else:
+        options["token_type"] = token_type
+        success, details = check_user_pass(user, password, options=options)
+        result = success
+        if request.path.endswith("samlcheck"):
+            result = {"auth": success, "attributes": {}}
+            if return_saml_attributes():
+                if success or return_saml_attributes_on_fail():
+                    # privacyIDEA's own attribute map
+                    user_info = user.info
+                    result["attributes"] = {"username": user_info.get("username"),
+                                            "realm": user.realm,
+                                            "resolver": user.resolver,
+                                            "email": user_info.get("email"),
+                                            "surname": user_info.get("surname"),
+                                            "givenname": user_info.get("givenname"),
+                                            "mobile": user_info.get("mobile"),
+                                            "phone": user_info.get("phone")}
+                    # Additional attributes
+                    for k, v in user_info.items():
+                        result["attributes"][k] = v
     # At this point there will be a user, even for FIDO2 credentials
     g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 

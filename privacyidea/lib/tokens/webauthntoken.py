@@ -33,8 +33,8 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
-from privacyidea.lib.fido2.tokeninfo import FIDO2TokenInfo
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.token import get_tokens
@@ -46,7 +46,7 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode
                                              WebAuthnAssertionResponse, AuthenticationRejectedException,
                                              USER_VERIFICATION_LEVEL)
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, is_true
+from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -1116,11 +1116,11 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        dataimage = ""  # convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
+        data_image = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": dataimage},
-                      "image": dataimage}
+                                     "img": data_image},
+                      "image": data_image}
 
         return True, message, db_challenge.transaction_id, reply_dict
 

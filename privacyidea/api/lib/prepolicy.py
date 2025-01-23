@@ -72,7 +72,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminErro
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass, PasskeyAction
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
@@ -110,7 +110,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL,
                                                   is_webauthn_assertion_response)
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -1981,8 +1981,11 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope,
-                           allowed_values=None, user_object=None) -> str:
+def get_first_policy_value(policy_action: str, default: str, scope, allowed_values=None, user_object=None) -> str:
+    """
+    Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
+    return the default value. If allowed_values is provided, check if the policy value is in the allowed values.
+    """
     policies = (Match.user(g, scope=scope, action=policy_action, user_object=user_object)
                 .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
     policy_value = list(policies)[0] if policies else default

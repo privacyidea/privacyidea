@@ -252,16 +252,14 @@ angular.module("privacyideaApp")
                                 //console.log(data);
                                 if (data.result.value) {
                                     $scope.do_login_stuff(response.data);
-                                    //$scope.login.username = data.detail.username;
-                                    //$scope.passkeyRequestPassword = true;
                                 } else {
-                                    console.log("Passkey login failed! Response did not contain a username.");
+                                    AuthFactory.authError(response.data);
                                 }
                             }, function (error) {
-                                AuthFactory.authError(error.data)
+                                AuthFactory.authError(error.data);
                             });
                         }, function (error) {
-                            AuthFactory.authError(error.data)
+                            AuthFactory.authError(error.data);
                         });
                     }
                 );

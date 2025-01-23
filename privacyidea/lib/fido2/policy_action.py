@@ -11,3 +11,7 @@ class FIDO2PolicyAction:
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
     AVOID_DOUBLE_REGISTRATION = 'webauthn_avoid_double_registration'
+
+
+class PasskeyAction:
+    AttestationConveyancePreference = "passkey_attestation_conveyance_preference"

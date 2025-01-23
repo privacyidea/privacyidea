@@ -88,7 +88,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError, AuthError)
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.util import get_fido2_nonce
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with

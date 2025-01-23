@@ -75,8 +75,8 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.fido2.tokeninfo import FIDO2TokenInfo
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.token import init_token, check_user_pass, remove_token
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.challenge import get_challenges

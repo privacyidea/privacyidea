@@ -41,23 +41,19 @@ from privacyidea.api.lib.utils import get_optional, get_required, get_required_o
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import geturandom, get_rand_digit_str
+from privacyidea.lib.crypto import get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
 from privacyidea.lib import fido2
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
-from privacyidea.lib.fido2.tokeninfo import FIDO2TokenInfo
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
-
-
-class PasskeyAction:
-    AttestationConveyancePreference = "passkey_attestation_conveyance_preference"
 
 
 class PasskeyTokenClass(TokenClass):
@@ -91,6 +87,8 @@ class PasskeyTokenClass(TokenClass):
     @log_with(log)
     def get_class_info(key=None, ret='all'):
         """
+        Returns a dict with information about the passkey token class and related policy options.
+        The parameter ret can be used to specify the "section" of the information that should be returned.
         """
         res = {
             "type": "passkey",
@@ -210,10 +208,12 @@ class PasskeyTokenClass(TokenClass):
             response_detail["passkey_registration"] = json.loads(options_json)
             response_detail["transaction_id"] = challenge.transaction_id
 
-            # Add RP ID and name to the token info
-            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, registration_options.rp.id)
-            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME, registration_options.rp.name)
-            self.add_tokeninfo("fido2_user_id", bytes_to_base64url(fido2_user_id))
+            # Add RP ID, Name and user_id to the token info
+            self.add_tokeninfo_dict({
+                FIDO2TokenInfo.RELYING_PARTY_ID: rp_id,
+                FIDO2TokenInfo.RELYING_PARTY_NAME: rp_name,
+                "fido2_user_id": bytes_to_base64url(fido2_user_id)
+            })
         else:
             response_detail = {}
         return response_detail
@@ -387,7 +387,7 @@ class PasskeyTokenClass(TokenClass):
 
     @classmethod
     def get_default_challenge_text_register(cls) -> str:
-        return str(lazy_gettext("Please confirm the registration your passkey!"))
+        return str(lazy_gettext("Please confirm the registration with your passkey!"))
 
     def create_challenge(self, transactionid=None, options=None):
         """

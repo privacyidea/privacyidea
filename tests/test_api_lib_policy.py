@@ -20,7 +20,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
-from privacyidea.lib.fido2.policyaction import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
