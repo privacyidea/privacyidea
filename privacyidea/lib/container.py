@@ -417,7 +417,7 @@ def init_container(params):
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
-    are read from the policies for each token. The tokens owner and the enroll information are set to the request
+    is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
     tokens.
 
