@@ -1,7 +1,6 @@
 import { Component, effect, Input, signal } from '@angular/core';
-import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatOption } from '@angular/material/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormField } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { HttpParams } from '@angular/common/http';
@@ -10,7 +9,6 @@ import { TokenService } from '../../../services/token/token.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
-import { MatFabButton } from '@angular/material/button';
 import { Observable } from 'rxjs';
 import { ConfirmButton } from '../../universals/confirm-button/confirm-button.component';
 import { AbortButton } from '../../universals/abort-button/abort-button.component';
@@ -19,14 +17,11 @@ import { AbortButton } from '../../universals/abort-button/abort-button.componen
   selector: 'app-token-get-serial',
   imports: [
     FormsModule,
-    MatCard,
-    MatCardContent,
     MatProgressBarModule,
     MatFormField,
     MatInput,
     MatSelect,
     MatOption,
-    MatFabButton,
     CommonModule,
     ConfirmButton,
     AbortButton,
@@ -140,7 +135,7 @@ export class TokenGetSerial {
     this.currentStep = 'counting';
     this.fetchSerial(params).subscribe({
       next: (response) => {
-        this.count = response.result.value['count'];
+        this.count = response.result.value.count;
         if (!this.countIsLarge()) {
           this.findSerial();
         }
@@ -156,13 +151,11 @@ export class TokenGetSerial {
     }
     var params = this.getParams();
     params = params.delete('count');
-    console.log(params);
     this.currentStep = 'searching';
     this.fetchSerial(params).subscribe({
       next: (response) => {
         this.foundSerial = response.result.value.serial;
         this.currentStep = 'found';
-        console.log(response);
       },
     });
   }
