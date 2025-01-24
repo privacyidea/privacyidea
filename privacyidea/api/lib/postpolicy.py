@@ -234,15 +234,16 @@ def check_tokentype(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    tokentype = response.json.get("detail", {}).get("type")
-    user_object = request.User
+    token_type = response.json.get("detail", {}).get("type")
+    if not hasattr(request, "User"):
+        raise PolicyError("No user object in request, unable to perform check_tokentype!")
+    user = request.User
     allowed_token_types = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENTYPE,
-                                     user_object=user_object).action_values(unique=False)
-    if tokentype and allowed_token_types and tokentype not in allowed_token_types:
+                                     user_object=user).action_values(unique=False)
+    if token_type and allowed_token_types and token_type not in allowed_token_types:
         # If we have tokentype policies, but the tokentype is not allowed, we raise an exception
         g.audit_object.log({"success": False,
-                            'action_detail': "Tokentype {0!r} not allowed for "
-                                             "authentication".format(tokentype)})
+                            "action_detail": f"Tokentype {token_type!r} not allowed for authentication"})
         raise PolicyError("Tokentype not allowed for authentication!")
     return response
 

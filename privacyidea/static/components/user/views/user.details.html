@@ -213,13 +213,11 @@
                             <span class="glyphicon glyphicon-trash"></span>
                             <span translate>Delete</span>
                         </button>
-                        <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
                         <button class="btn btn-danger"
                                 ng-click="deleteToken(token.serial, false)"
                                 ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
                                 ng-disabled="!checkRight('delete')">
-                            <span class="glyphicon glyphicon-trash"></span>
-                            <span translate>Delete</span>
+                            <span translate>Delete Token</span>
                         </button>
                         <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
                                 ng-show="showDialog[token.serial]">

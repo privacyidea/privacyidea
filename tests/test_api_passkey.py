@@ -59,7 +59,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                                             method='POST',
                                             data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
                                             headers=self.pk_headers),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -110,7 +110,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
     def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
         with (self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = mock_nonce
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -169,7 +169,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                             method='POST',
                                             data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
                                             headers=self.pk_headers),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -273,7 +273,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         serial = self._enroll_static_passkey()
         with (self.app.test_request_context('/validate/check', method='POST',
                                             data={"user": self.user.login, "pass": ""}),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -338,7 +338,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         serial = self._enroll_static_passkey()
         with (self.app.test_request_context('/validate/check', method='POST',
                                             data={"user": self.user.login, "pass": ""}),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -372,7 +372,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         serial = self._enroll_static_passkey()
         with (self.app.test_request_context('/validate/triggerchallenge', method='POST',
                                             data={"user": self.user.login}, headers=self.pk_headers),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.authentication_challenge_no_uv
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
@@ -541,7 +541,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # Using the spass token should result in a challenge to enroll a passkey
         with (self.app.test_request_context('/validate/check', method='POST',
                                             data={"user": self.user.login, "pass": "1"}),
-              patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce):
+              patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce):
             get_nonce.return_value = self.registration_challenge
             res = self.app.full_dispatch_request()
             # Authentication is not successful, instead, it is a challenge
@@ -683,6 +683,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         Test an authentication with a wrong response and without user verification.
         """
+        set_policy("user_verification", scope=SCOPE.AUTH,
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         data = self.authentication_response_no_uv
@@ -693,6 +695,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
+        delete_policy("user_verification")
         remove_token(serial)
 
     def test_12_auth_fail_signature(self):
@@ -710,6 +713,29 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._verify_auth_fail_with_error(res, 4031)
         remove_token(serial)
 
+    def test_13_uv_in_challenge_data(self):
+        """
+        The user_verification requirement is set in the challenge data. When a challenge is triggered, the value of the
+        policy at that moment is stored in the challenge data and used for the authentication.
+        If the policy value was changed in the meantime, the authentication will still work because the value from the
+        challenge data is used and not read from the policy.
+        """
+        # Trigger a challenge with no uv requirement, then change it to required and answer the challenge
+        # That should still work
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        set_policy("user_verification", scope=SCOPE.AUTH,
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+        remove_token(serial)
+        delete_policy("user_verification")
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

@@ -58,8 +58,8 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exist)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.token import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
-                                   verify_fido2_challenge)
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
@@ -228,17 +228,16 @@ def get_auth_token():
     passkey_login_success = False
     if not passkey_login_enabled and credential_id:
         log.debug("WebUI passkey login disabled in pi.cfg!")
-        raise AuthError(_(f"Authentication with passkey is not allowed."), id=ERROR.AUTHENTICATE_ILLEGAL_METHOD)
+        raise AuthError(_(f"Authentication with passkey disabled."), id=ERROR.AUTHENTICATE_ILLEGAL_METHOD)
     if credential_id and passkey_login_enabled:
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            log.info(f"No token found for the given transaction id {transaction_id}.")
-            return send_result(False, rid=2, details={
-                "message": "No token found for the given credential ID or transaction ID!"})
+            raise AuthError(_(f"Authentication failure. The passkey is not registered."),
+                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.user:
-            return send_result(False, rid=2, details={
-                "message": "No user found for the token with the given credential ID!"})
+            raise AuthError(_("Authentication failure. Token has no user."),
+                            id=ERROR.AUTHENTICATE_MISSING_USERNAME)
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
         passkey_login_success = verify_fido2_challenge(transaction_id, token, request.all_data) > 0

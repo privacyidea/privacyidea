@@ -107,9 +107,9 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token, create_fido2_challenge,
-                                   get_fido2_token_by_credential_id, verify_fido2_challenge,
-                                   get_fido2_token_by_transaction_id)
+                                   check_otp, create_challenges_from_tokens, get_one_token)
+from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
+from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.user import get_user_from_param, log_used_user, User
@@ -747,18 +747,13 @@ def initialize():
     token_type = get_optional(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID,
-                                       default="",
-                                       scope=SCOPE.ENROLL)
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
         if not rp_id:
             raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
 
-        challenge = create_fido2_challenge(rp_id)
-        challenge["user_verification"] = get_first_policy_value(
-            policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-            default="preferred",
-            scope=SCOPE.AUTH
-        )
+        user_verification = get_first_policy_value(policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                                                   default="preferred", scope=SCOPE.AUTH)
+        challenge = create_fido2_challenge(rp_id, user_verification=user_verification)
         if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
         details["passkey"] = challenge

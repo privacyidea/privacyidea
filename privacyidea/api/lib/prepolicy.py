@@ -65,6 +65,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 
 import logging
 from dataclasses import replace
+from typing import Union
 
 from OpenSSL import crypto
 from privacyidea.lib import _
@@ -1981,12 +1982,13 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope, allowed_values=None, user_object=None) -> str:
+def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+                           allowed_values: Union[list, None] = None) -> str:
     """
     Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
     return the default value. If allowed_values is provided, check if the policy value is in the allowed values.
     """
-    policies = (Match.user(g, scope=scope, action=policy_action, user_object=user_object)
+    policies = (Match.user(g, scope=scope, action=policy_action, user_object=user)
                 .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
     policy_value = list(policies)[0] if policies else default
     if allowed_values and policy_value not in allowed_values:
@@ -2085,24 +2087,15 @@ def fido2_enroll(request, action):
 
     authenticator_attestation_level = get_first_policy_value(
         policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL,
-        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-        scope=SCOPE.ENROLL,
-        allowed_values=ATTESTATION_LEVELS
-    )
+        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL, scope=SCOPE.ENROLL, allowed_values=ATTESTATION_LEVELS)
 
     authenticator_attestation_form = get_first_policy_value(
-        policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM,
-        default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-        scope=SCOPE.ENROLL,
-        allowed_values=ATTESTATION_FORMS
-    )
+        policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM, default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+        scope=SCOPE.ENROLL, allowed_values=ATTESTATION_FORMS)
 
     user_verification_requirement = get_first_policy_value(
-        policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-        default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        scope=SCOPE.ENROLL,
-        allowed_values=USER_VERIFICATION_LEVELS
-    )
+        policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        scope=SCOPE.ENROLL, allowed_values=USER_VERIFICATION_LEVELS)
 
     avoid_double_registration_policy = Match.user(g,
                                                   scope=SCOPE.ENROLL,

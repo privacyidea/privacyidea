@@ -28,8 +28,9 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.policy import SCOPE, ACTION
-from privacyidea.lib.token import (init_token, remove_token, get_credential_ids_for_user, unassign_token,
-                                   create_fido2_challenge, verify_fido2_challenge)
+from privacyidea.lib.token import (init_token, remove_token, unassign_token)
+from privacyidea.lib.fido2.util import get_credential_ids_for_user
+from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction

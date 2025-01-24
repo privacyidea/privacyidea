@@ -60,7 +60,6 @@ This is the middleware/glue between the HTTP API and the database
 """
 
 import datetime
-import hashlib
 import logging
 import os
 import string
@@ -72,24 +71,19 @@ from sqlalchemy import (and_, func)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
-from webauthn import base64url_to_bytes
 
-from privacyidea.api.lib.utils import get_required, get_optional, get_required_one_of, get_optional_one_of
-from privacyidea.lib import _, fido2
+from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.crypto import get_rand_digit_str
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError, AuthError)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.fido2.util import get_fido2_nonce
+                                   privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -104,10 +98,9 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.user import get_username
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
@@ -2876,125 +2869,3 @@ def challenge_text_replace(message, user, token_obj):
 
     message = message.format_map(defaultdict(str, tags))
     return message
-
-
-def get_fido2_token_by_transaction_id(transaction_id: str):
-    """
-    Find a fido2 token (WebAuthn or Passkey) by the transaction_id of the challenge.
-    If the challenge or the token is not found, or the token is not a FIDO2 token, None is returned.
-
-    :param transaction_id: The transaction_id of the challenge
-    :return: The token object or None
-    """
-    challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
-    if not challenge:
-        log.info(f"Challenge with transaction_id {transaction_id} not found.")
-        return None
-    token = Token.query.filter(Token.serial == challenge.serial).first()
-    if not token:
-        log.info(f"Token with serial {challenge.serial} not found.")
-        return None
-    if token.tokentype not in ["webauthn", "passkey"]:
-        log.info(f"Token with serial {challenge.serial} is not a FIDO2 token, but {token.serial}.")
-        return None
-    return create_tokenclass_object(token)
-
-
-def get_fido2_token_by_credential_id(credential_id: str):
-    """
-    Find a fido2 token (WebAuthn or Passkey) by the credential_id.
-
-    :param credential_id: The credential_id as returned by an authenticator
-    :return: The token object or None
-    """
-    h = hashlib.sha256(base64url_to_bytes(credential_id))
-    credential_id_hash = h.hexdigest()
-    try:
-        token_id = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                    .filter(TokenInfo.Value == credential_id_hash).first().token_id)
-        token = Token.query.filter(Token.id == token_id).first()
-        return create_tokenclass_object(token)
-    except Exception as ex:
-        log.warning(f"Failed to find credential with id: {credential_id}. {ex}")
-        return None
-
-
-def create_fido2_challenge(rp_id: str) -> dict:
-    """
-    Returns a fido2 challenge that is not bound to a user/credential. The user has to be resolved by
-    the credential_id that returned with the response to this challenge.
-    The returned dict has the format:
-        ::
-
-            {
-                "transaction_id": "12345678901234567890",
-                "challenge": <32 random bytes base64url encoded>,
-                "rpId": "example.com",
-                "message": "Please authenticate with your Passkey!"
-            }
-    The challenge nonce is encoded in base64url.
-    """
-    challenge = fido2.util.get_fido2_nonce()
-    transaction_id = get_rand_digit_str(20)
-    message = PasskeyTokenClass.get_default_challenge_text_auth()
-
-    db_challenge = Challenge("", transaction_id=transaction_id, challenge=challenge)
-    db_challenge.save()
-    return {
-        "transaction_id": transaction_id,
-        "challenge": challenge,
-        "message": message,
-        "rpId": rp_id
-    }
-
-
-def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> int:
-    """
-    Verify the response for a fido2 challenge with the given token.
-    Params is required to have the keys:
-    - authenticatorData or authenticatordata
-    - clientDataJSON or clientdata
-    - signature or signaturedata
-    - userHandle or userhandle
-    - HTTP_ORIGIN
-    """
-    db_challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
-    if not db_challenge:
-        raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
-    # If the challenge has been triggered via /validate/check, it is supposed to be answered by a designated token.
-    # Challenges triggered via /validate/initialize are not bound to a token.
-    # Check if the challenge contains a serial and if so, if it matches the token
-    if db_challenge.serial and db_challenge.serial != token.get_serial():
-        log.error(f"Challenge with transaction_id {transaction_id} is not meant for token {token.get_serial()}.")
-        raise AuthError(f"The challenge {transaction_id} is not meant for the token {token.get_serial()}.")
-
-    options = {
-        "challenge": db_challenge.challenge,
-        "authenticatorData": get_required_one_of(params, ["authenticatorData", "authenticatordata"]),
-        "clientDataJSON": get_required_one_of(params, ["clientDataJSON", "clientdata"]),
-        "signature": get_required_one_of(params, ["signature", "signaturedata"]),
-        "userHandle": get_optional_one_of(params, ["userHandle", "userhandle"]),
-        "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
-        "user_verification": get_optional(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
-    }
-    # These parameters are required for compatibility with the old WebAuthnToken class
-    if token.type == "webauthn":
-        options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
-        options.update({"user": token.user})
-    return token.check_otp(None, options=options)
-
-
-def get_credential_ids_for_user(user: User) -> list:
-    """
-    Get a list of credential ids of passkey or webauthn token for a user.
-    Can be used to avoid double registration of an authenticator.
-
-    :param user: The user object
-    :return: A list of credential ids
-    """
-    credential_ids = []
-    for token in get_tokens(user=user, token_type_list=["passkey"]):
-        if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
-            cred_id = token.token.get_otpkey().getKey().decode("utf-8")
-            credential_ids.append(cred_id)
-    return credential_ids
