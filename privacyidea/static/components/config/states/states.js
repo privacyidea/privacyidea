@@ -97,6 +97,15 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/ldap/:resolvername",
                     templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "SqlResolverController"
+                }).state('config.resolvers.addtokenresolver', {
+                    url: "/token",
+                    templateUrl: configpath + "config.resolvers.token.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "TokenResolverController"
+                })
+                .state('config.resolvers.edittokenresolver', {
+                    url: "/token/:resolvername",
+                    templateUrl: configpath + "config.resolvers.token.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "TokenResolverController"
                 })
                 .state('config.caconnectors', {
                     url: "/caconnectors",
