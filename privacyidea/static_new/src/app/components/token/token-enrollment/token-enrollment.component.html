@@ -97,8 +97,7 @@
 
         <mat-form-field class="zone-picker">
           <mat-label>Timezone Offset</mat-label>
-          <mat-select (selectionChange)="onTimezoneChange($event)"
-                      [(ngModel)]="selectedTimezoneOffset">
+          <mat-select [(ngModel)]="selectedTimezoneOffset">
             @for (option of timezoneOptions; track option) {
               <mat-option [value]="option.value">{{ option.label }}</mat-option>
             }

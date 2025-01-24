@@ -161,10 +161,6 @@ export class TokenEnrollmentComponent {
     });
   }
 
-  onTimezoneChange(event: any): void {
-    const offset = event.value;
-  }
-
   getRealmOptions() {
     this.realmService.getRealms().subscribe({
       next: (realms: any) => {
