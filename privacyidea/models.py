@@ -1727,7 +1727,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority,
              "description": self.get_policy_description()}
-        action_list = [x.replace(r'\,', ',').strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
+        action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
         action_dict = {}
         for a in action_list:
             if len(a) > 1:

@@ -969,6 +969,8 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
+        message = message.replace(r'\,', ',')
+
         # Determine, if we require presence
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,

@@ -2448,7 +2448,8 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Use an alternative challenge text for telling the '
                           'user to enter an OTP value. You can also use '
                           'tags for automated replacement. Check out the '
-                          'documentation for more details.')
+                          'documentation for more details. Note: If you use '
+                          'a comma in the massage, you need to escape it with a backslash.')
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',
