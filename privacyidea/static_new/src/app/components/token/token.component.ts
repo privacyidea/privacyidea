@@ -33,7 +33,7 @@ import {TokenGetSerial} from './token-get-serial/token-get-serial.component';
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
-  selectedPage = signal('token_overview');
+  selectedContent = signal('token_overview');
   tokenSerial = signal('');
   containerSerial = signal('');
   tokenIsActive = signal(true);
@@ -106,13 +106,5 @@ export class TokenComponent {
         'ContainerDetailsComponent is not yet initialized.'
       );
     }
-  }
-
-  tokenIsSelected(): boolean {
-    return this.tokenSerial() !== '';
-  }
-
-  containerIsSelected(): boolean {
-    return this.containerSerial() !== '';
   }
 }

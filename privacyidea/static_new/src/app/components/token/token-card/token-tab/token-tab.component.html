@@ -1,16 +1,17 @@
 <div class="tab-list">
   <mat-list>
     <mat-list-item>
-      <button (click)="onClickTokenTab()" [ngClass]="{'card-button-active': !tokenIsSelected(),
-    'card-button': tokenIsSelected()}" mat-flat-button>
+      <button (click)="onClickOverview()" [ngClass]="[selectedContent() ===
+      'token_overview' ? 'card-button-active':  'card-button']" mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
       </button>
     </mat-list-item>
     <div [@toggleState]="tokenIsSelected()">
-      @if (!tokenIsSelected()) {
+      @if (selectedContent() !== 'token_details') {
         <mat-list-item>
-          <button class="card-button" mat-flat-button>
+          <button (click)="onClickEnrollment()" [ngClass]="[selectedContent() ===
+      'token_enrollment' ? 'card-button-active':  'card-button']" mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
             Enrollment
           </button>
@@ -37,7 +38,9 @@
         <mat-divider/>
         <br/>
         <mat-list-item>
-          <button class="card-button" mat-flat-button (click)="onClickGetSerial()">
+          <button [ngClass]="[selectedContent() ===
+      'token_get_serial' ? 'card-button-active':  'card-button']" mat-flat-button
+                  (click)="onClickGetSerial()">
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>
@@ -53,8 +56,8 @@
         </mat-list-item>
       } @else {
         <mat-list-item>
-          <button [ngClass]="{'card-button-active': selectedPage() === 'token_details',
-          'card-button': selectedPage() !== 'token_details'}" mat-flat-button>
+          <button [ngClass]="[selectedContent() ===
+      'token_details' ? 'card-button-active':  'card-button']" mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
           </button>

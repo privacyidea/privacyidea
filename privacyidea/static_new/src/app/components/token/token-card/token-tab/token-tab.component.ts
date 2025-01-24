@@ -1,4 +1,4 @@
-import {Component, Input, signal, WritableSignal} from '@angular/core';
+import {Component, computed, Input, signal, WritableSignal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatButton} from '@angular/material/button';
@@ -21,13 +21,13 @@ import {NotificationService} from '../../../../services/notification/notificatio
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
-
   version!: string;
 
   constructor(
@@ -93,7 +93,6 @@ export class TokenTabComponent {
       data: {
         isLost: this.isLost,
         tokenSerial: this.tokenSerial,
-        tokenIsSelected: this.tokenIsSelected,
       },
     });
   }
@@ -105,22 +104,18 @@ export class TokenTabComponent {
     );
   }
 
-  tokenIsSelected(): boolean {
-    return this.tokenSerial() !== '';
-  }
-
-  containerIsSelected(): boolean {
-    return this.tokenSerial() !== '';
-  }
-
-  onClickTokenTab = () => this.onClickOverview();
-
   onClickOverview() {
-    this.selectedPage.set('token_overview');
+    this.selectedContent.set('token_overview');
+    this.tokenSerial.set('');
+  }
+
+  onClickEnrollment() {
+    this.selectedContent.set('token_enrollment');
     this.tokenSerial.set('');
   }
 
   onClickGetSerial() {
-    this.selectedPage.set('token_get_serial');
+    this.selectedContent.set('token_get_serial');
+    this.tokenSerial.set('');
   }
 }

@@ -34,7 +34,6 @@ export class LostTokenComponent {
               @Inject(MAT_DIALOG_DATA) public data: {
                 isLost: WritableSignal<boolean>,
                 tokenSerial: WritableSignal<string>,
-                tokenIsSelected: WritableSignal<boolean>
               },
               private dialogRef: MatDialogRef<LostTokenComponent>) {
     effect(() => {
@@ -63,6 +62,5 @@ export class LostTokenComponent {
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
     this.data.tokenSerial.set(tokenSerial);
-    this.data.tokenIsSelected.set(true)
   }
 }

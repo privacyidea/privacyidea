@@ -23,7 +23,7 @@ import {OverflowService} from '../../../services/overflow/overflow.service';
   styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
@@ -36,13 +36,13 @@ export class TokenCardComponent {
 
   constructor(protected overflowService: OverflowService) {
     effect(() => {
-      if (this.selectedPage() === '') {
-        this.selectedPage.set('token_overview');
+      if (this.selectedContent() === '') {
+        this.selectedContent.set('token_overview');
       }
-      if (this.selectedPage().startsWith('token')) {
+      if (this.selectedContent().startsWith('token')) {
         this.selectedTabIndex.set(0);
       }
-      if (this.selectedPage().startsWith('container')) {
+      if (this.selectedContent().startsWith('container')) {
         this.selectedTabIndex.set(1);
       }
     });
@@ -53,27 +53,25 @@ export class TokenCardComponent {
       this.isProgrammaticChange.set(false);
       return;
     }
-    this.containerSerial.set('');
-    this.tokenSerial.set('');
+
     switch (this.selectedTabIndex()) {
       case 0:
-        this.selectedPage.set('token_overview');
+        this.selectedContent.set('token_overview');
         break;
       case 1:
-        this.selectedPage.set('container_overview');
+        this.selectedContent.set('container_overview');
         break;
     }
+
+    this.containerSerial.set('');
+    this.tokenSerial.set('');
   }
 
   tokenTabActive(): boolean {
-    return this.selectedPage().startsWith('token');
+    return this.selectedContent().startsWith('token');
   }
 
   containerTabActive(): boolean {
-    return this.selectedPage().startsWith('container');
-  }
-
-  tokenIsSelected(): boolean {
-    return this.tokenSerial() !== '';
+    return this.selectedContent().startsWith('container');
   }
 }

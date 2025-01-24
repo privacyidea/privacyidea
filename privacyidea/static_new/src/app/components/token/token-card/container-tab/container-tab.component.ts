@@ -1,4 +1,4 @@
-import {Component, Input, WritableSignal} from '@angular/core';
+import {Component, computed, Input, WritableSignal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatButton} from '@angular/material/button';
@@ -26,11 +26,11 @@ import {NotificationService} from '../../../../services/notification/notificatio
   animations: [tabToggleState]
 })
 export class ContainerTabComponent {
-  @Input() selectedPage!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
-
+  containerIsSelected = computed(() => this.containerSerial() !== '');
   version!: string;
 
   constructor(
@@ -82,14 +82,10 @@ export class ContainerTabComponent {
     window.open(`https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#containers`, '_blank');
   }
 
-  containerIsSelected(): boolean {
-    return this.containerSerial() !== '';
-  }
-
   onClickContainerTab = () => this.onClickOverview();
 
   onClickOverview() {
-    this.selectedPage.set('container_overview');
+    this.selectedContent.set('container_overview');
     this.containerSerial.set('');
   }
 }
