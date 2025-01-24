@@ -76,7 +76,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
             FIDO2PolicyAction.RELYING_PARTY_NAME: self.rp_id
         })
-        with patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce:
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
             init_detail = token.get_init_detail(param)
         self.assertIn("serial", init_detail)
@@ -96,7 +96,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         return self.RegistrationRequest(token, init_detail, registration_response)
 
     def _initialize_authentication(self) -> dict:
-        with patch('privacyidea.lib.fido2.util.get_fido2_nonce') as get_nonce:
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             challenge = create_fido2_challenge(self.rp_id)
             self.assertEqual(challenge["challenge"], self.authentication_challenge_no_uv)
