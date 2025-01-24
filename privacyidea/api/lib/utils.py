@@ -76,6 +76,8 @@ def _get_param(dictionary, key, default=None):
 def get_required(dictionary, key):
     """
     Get the required parameter from the dictionary. If the parameter is not present, raise a ParameterError.
+    If the parameter is present, but empty, the empty value will be returned.
+    This just checks for None.
     """
     ret = _get_param(dictionary, key, None)
     if ret is None:

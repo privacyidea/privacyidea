@@ -1179,13 +1179,11 @@ class WebAuthnTokenClass(TokenClass):
             uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
 
             challenge = binascii.unhexlify(get_required(options, "challenge"))
+            http_origin = get_required(options, "HTTP_ORIGIN")
+            if not http_origin:
+                raise AuthenticationRejectedException('HTTP Origin header missing.')
 
             try:
-                try:
-                    http_origin = get_required(options, "HTTP_ORIGIN")
-                except ParameterError:
-                    raise AuthenticationRejectedException('HTTP Origin header missing.')
-
                 # This does the heavy lifting.
                 #
                 # All data is parsed and verified. If any errors occur, an exception

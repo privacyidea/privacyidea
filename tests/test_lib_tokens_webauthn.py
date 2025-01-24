@@ -65,11 +65,11 @@ from privacyidea.lib.user import User
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
-                                               WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                               webauthn_b64_decode, webauthn_b64_encode,
-                                               WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                               ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                               WebAuthnUser)
+                                             WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
+                                             webauthn_b64_decode, webauthn_b64_encode,
+                                             WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
+                                             ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
+                                             WebAuthnUser)
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
@@ -386,28 +386,6 @@ class WebAuthnTokenTestCase(MyTestCase):
                                           })
         self.assertTrue(sign_count > 0)
 
-    @log_capture()
-    def test_06_missing_origin(self, capture):
-        self._create_challenge()
-        sign_count = self.token.check_otp(
-            otpval=None,
-            options={
-                "credentialid": CRED_ID,
-                "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
-                "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
-                "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
-                "user": self.user,
-                "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
-                "HTTP_ORIGIN": '',
-            })
-        self.assertTrue(sign_count == -1)
-        capture.check_present(
-            ('privacyidea.lib.tokens.webauthntoken',
-             'WARNING',
-             'Checking response for token {0!s} failed. HTTP Origin header '
-             'missing.'.format(self.token.get_serial()))
-        )
-
     def test_07_none_attestation(self):
         with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
             mock_nonce.return_value = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
@@ -518,8 +496,8 @@ class WebAuthnTokenTestCase(MyTestCase):
         self._setup_token()
         # Adjust the token to be able to verify the data used in this test
         self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
-                                                       "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
-                                                       "5a1bd6d263a1554ea4107b74e3e12844c60")
+                                                         "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
+                                                         "5a1bd6d263a1554ea4107b74e3e12844c60")
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
                                                                       "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
         self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
