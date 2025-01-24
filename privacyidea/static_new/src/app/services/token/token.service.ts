@@ -183,7 +183,7 @@ export class TokenService {
 
   assignUser(
     tokenSerial: string,
-    username: string | null,
+    username: string,
     realm: string,
     pin: string
   ) {
@@ -240,7 +240,7 @@ export class TokenService {
     );
   }
 
-  setTokenRealm(tokenSerial: string, value: string[] | null) {
+  setTokenRealm(tokenSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.tokenBaseUrl}realm/` + tokenSerial,

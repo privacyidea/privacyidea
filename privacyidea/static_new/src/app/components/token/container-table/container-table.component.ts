@@ -54,8 +54,8 @@ export class ContainerTableComponent {
       return emptyRow;
     })));
   showAdvancedFilter = signal(false);
-  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
-  @ViewChild(MatSort) sort: MatSort | null = null;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(private router: Router,

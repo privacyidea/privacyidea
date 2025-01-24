@@ -1,0 +1,79 @@
+@import "../../../../styles/styles";
+
+.token-enrollment-container {
+  @include table-container-styles;
+  margin-left: 1rem;
+  overflow: auto;
+  width: 785px;
+}
+
+.select-token-type {
+  width: 100%;
+}
+
+.token-type-option {
+  border: 1px solid #dedcdf;
+  background: #EFEDF0;
+  border-radius: var(--border-radius);
+  margin: 0 2px 2px;
+}
+
+.token-type-hint {
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.assign-user-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: end;
+}
+
+.user-pin-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.h4-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.enroll-input-form {
+  width: 33%;
+  height: 76.5px;
+}
+
+.date-picker {
+  width: 40%;
+  margin: 0 0 1rem 1rem;
+}
+
+.time-picker {
+  width: 20%;
+  margin: 0 0 1rem 1rem;
+}
+
+.zone-picker {
+  width: 30%;
+  margin: 0 0 1rem 2rem;
+}
+
+.expension-panel {
+  box-shadow: var(--box-shadow) !important;
+}
+
+h5 {
+  margin: 0 0 0 1rem;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    column-count: 3;
+    max-height: unset;
+    column-gap: 0;
+    background: #dedcdf;
+  }
+}

@@ -1,0 +1,59 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4>Token configuration:</h4>
+
+
+  <mat-checkbox [(ngModel)]="generateOnServer" class="server-checkbox">
+    Generate OTP key on the server
+    @if (generateOnServer()) {
+      <span class="dot">.</span>
+      <span>
+      <br/>
+      The server will create the OTP key and a QR Code will be displayed to you to be
+      scanned.
+    </span>
+    }
+  </mat-checkbox>
+
+  <div class="otp-inputs-container">
+    @if (!generateOnServer()) {
+      <mat-form-field class="otp-input-form">
+        <mat-label>OTP Key</mat-label>
+        <input matInput [(ngModel)]="otpKey" placeholder="Enter OTP key"/>
+      </mat-form-field>
+    } @else {
+      <span class="otp-input-form"></span>
+    }
+
+    <mat-form-field class="otp-input-form">
+      <mat-label>OTP length</mat-label>
+      <mat-select [(ngModel)]="otpLength">
+        <mat-option value="{{6}}">6</mat-option>
+        <mat-option value="{{8}}">8</mat-option>
+      </mat-select>
+      @if (generateOnServer()) {
+        <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="otp-input-form">
+      <mat-label>Hash algorithm</mat-label>
+      <mat-select [(ngModel)]="hashAlgorithm">
+        <mat-option value="sha1">sha1</mat-option>
+        <mat-option value="sha256">sha256</mat-option>
+        <mat-option value="sha512">sha512</mat-option>
+      </mat-select>
+      @if (generateOnServer()) {
+        <mat-hint>Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
+      }
+    </mat-form-field>
+  </div>
+
+  <mat-form-field class="description-form">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description" [maxlength]="80"
+              matInput placeholder="Enter description" rows="3"></textarea>
+  </mat-form-field>
+</div>

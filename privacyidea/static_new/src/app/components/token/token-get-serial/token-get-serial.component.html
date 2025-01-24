@@ -22,8 +22,8 @@
     <h3>Token Type</h3>
     <mat-form-field>
       <mat-select (keyup.enter)="getSerial()" appearance="outline" matInput>
-        @for (type of tokenTypes; track type[0]) {
-          <mat-option [value]="type[0]">{{ type[1] }}</mat-option>
+        @for (type of tokenTypes; track type) {
+          <mat-option [value]="type['key']">{{ type['info'] }}</mat-option>
         }
       </mat-select>
     </mat-form-field>

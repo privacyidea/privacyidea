@@ -54,6 +54,9 @@ h3 {
 
 .token-option {
   border: 1px solid #dedcdf;
+  background: #EFEDF0;
+  margin: 0 1px;
+  border-radius: var(--border-radius);
 }
 
 .token-option-span {
@@ -78,6 +81,7 @@ h3 {
 
 ::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
   max-height: 516px;
+  background: #dedcdf;
 
   &.user-selection-autocomplete {
     max-height: 256px;

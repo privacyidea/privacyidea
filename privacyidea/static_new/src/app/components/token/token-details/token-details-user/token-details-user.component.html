@@ -15,7 +15,7 @@
           mat-cell>
         @if (isEditingUser() && element.keyMap.key === "username" && selectedUserRealm() !== '') {
           <mat-form-field>
-            <mat-label>Select User</mat-label>
+            <mat-label>Enter User</mat-label>
             <input matInput
                    [(ngModel)]="selectedUsername"
                    [matAutocomplete]="userAuto">

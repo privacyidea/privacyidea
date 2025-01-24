@@ -14,13 +14,13 @@
               @if (isEditingInfo()) {
                 <div class="flex-row">
                   <mat-list-item class="height-auto">
-                    <div>
+                    <div class="flex-row">
                       <mat-form-field>
                         <mat-label>{{ key }}</mat-label>
                         <textarea matInput class="info-input" rows="1"
                                   [(ngModel)]="element.value[key]"></textarea>
                       </mat-form-field>
-                      <button mat-icon-button
+                      <button mat-icon-button class="delete-info-button"
                               (click)="deleteInfo(key)">
                         <mat-icon>delete_outlined</mat-icon>
                       </button>

@@ -26,8 +26,8 @@
       <h4>Components</h4></a>
   </nav>
 
-  <div [ngClass]="[(sessionTimerService.remainingTime() < 31000) ? 'red-light' :
-                    sessionTimerService.remainingTime() < 60000 ? 'yellow-light' : 'green']"
+  <div [ngClass]="[(sessionTimerService.remainingTime() < 31000) ? 'red-light bold' :
+                    sessionTimerService.remainingTime() < 60000 ? 'yellow-light' : 'shadow']"
        class="session-timer">
     @if (sessionTimerService.remainingTime() < 60000) {
       {{ sessionTimerService.remainingTime() | date:'mm:ss' }}

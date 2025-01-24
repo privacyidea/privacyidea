@@ -108,6 +108,7 @@ describe('TokenDetailsComponent', () => {
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
+    component.selectedContainer = signal('');
     component.active = signal(false);
     component.revoked = signal(false);
     component.containerOptions = signal([
@@ -151,6 +152,11 @@ describe('TokenDetailsComponent', () => {
     component.showTokenDetail().subscribe(() => {
       expect(tokenService.getTokenDetails).toHaveBeenCalledWith('Mock serial');
       expect(component.tokenDetailData().length).toBeGreaterThan(0);
+      expect(component.infoData().length).toBeGreaterThan(0);
+      expect(component.tokengroupOptions().length).toBeGreaterThan(0);
+      expect(component.containerOptions().length).toBeGreaterThan(0);
+      expect(component.realmOptions().length).toBeGreaterThan(0);
+      expect(component.selectedContainer()).toBe('Mock serial');
       expect(component.realmOptions().length).toBeGreaterThan(0);
       expect(component.active()).toBeTrue();
     });

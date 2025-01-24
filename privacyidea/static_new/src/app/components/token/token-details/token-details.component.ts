@@ -184,7 +184,7 @@ export class TokenDetailsComponent {
         this.active.set(tokenDetails.active);
         this.revoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer.set(tokenDetails.containerSerial);
+        this.selectedContainer.set(tokenDetails.container_serial);
         this.tokenDetailData.set(
           tokenDetailsKeyMap
             .map((detail) => ({
@@ -254,7 +254,7 @@ export class TokenDetailsComponent {
     }
 
     switch (type) {
-      case 'containerSerial':
+      case 'container_serial':
         this.handleContainerSerial(action);
         break;
       case 'tokengroup':
@@ -321,7 +321,7 @@ export class TokenDetailsComponent {
       key === 'info' ||
       key === 'realms' ||
       key === 'tokengroup' ||
-      key === 'containerSerial'
+      key === 'container_serial'
     );
   }
 
@@ -403,7 +403,7 @@ export class TokenDetailsComponent {
 
   private handleCancelAction(type: string): void {
     switch (type) {
-      case 'containerSerial':
+      case 'container_serial':
         this.selectedContainer.set('');
         break;
       case 'tokengroup':

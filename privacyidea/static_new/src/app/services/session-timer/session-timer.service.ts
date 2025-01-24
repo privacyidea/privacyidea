@@ -20,7 +20,7 @@ export class SessionTimerService {
               private localService: LocalService,
               private authService: AuthService) {
     effect(() => {
-      if (this.remainingTime() > 29_000 && this.remainingTime() < 30_000) {
+      if (this.remainingTime() > 30_000 && this.remainingTime() < 31_000) {
         this.notificationService.openSnackBar('Session will expire in 30 seconds.');
       }
     });

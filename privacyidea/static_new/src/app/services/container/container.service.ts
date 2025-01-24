@@ -75,7 +75,7 @@ export class ContainerService {
     );
   }
 
-  assignContainer(tokenSerial: string, containerSerial: string | null) {
+  assignContainer(tokenSerial: string, containerSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.containerBaseUrl}${containerSerial}/add`, {
       serial: tokenSerial
@@ -89,7 +89,7 @@ export class ContainerService {
     );
   }
 
-  unassignContainer(tokenSerial: string, containerSerial: string | null) {
+  unassignContainer(tokenSerial: string, containerSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(`${this.containerBaseUrl}${containerSerial}/remove`, {
       serial: tokenSerial
@@ -109,7 +109,7 @@ export class ContainerService {
     return this.http.get(this.containerBaseUrl, {headers, params})
   }
 
-  setContainerRealm(containerSerial: string, value: string[] | null) {
+  setContainerRealm(containerSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
     let valueString = value ? value.join(',') : '';
     return this.http.post(`${this.containerBaseUrl}${containerSerial}/realms`, {

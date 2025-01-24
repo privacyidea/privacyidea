@@ -56,7 +56,8 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18 description">
-                      <textarea matInput rows="4" [(ngModel)]="element.value"></textarea>
+                      <textarea matInput rows="4" [(ngModel)]="element.value"
+                                placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
@@ -100,7 +101,7 @@
               && element.keyMap.key === "user_name"
               && selectedUserRealm() !== '') {
                 <mat-form-field class="width-18">
-                  <mat-label>Select User</mat-label>
+                  <mat-label>Enter User</mat-label>
                   <input matInput [(ngModel)]="selectedUsername" [matAutocomplete]="userAuto">
                   <mat-autocomplete #userAuto="matAutocomplete" class="user-selection-autocomplete">
                     @for (option of filteredUserOptions(); track option) {

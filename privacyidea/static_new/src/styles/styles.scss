@@ -96,6 +96,14 @@ html, body {
   --mat-sys-primary: var(--blue-base);
 }
 
+.shadow {
+  color: var(--shadow);
+}
+
+.bold {
+  font-weight: bold;
+}
+
 .red {
   color: var(--red-base);
 }
@@ -177,7 +185,12 @@ html, body {
 }
 
 ::ng-deep {
-  .cdk-overlay-pane {
-    margin-bottom: 60px !important;
+  .mdc-snackbar {
+    margin-bottom: 76px !important;
+  }
+
+  .mat-mdc-icon-button {
+    display: flex;
+    align-items: center;
   }
 }
