@@ -6381,7 +6381,6 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             headers.update({"User-Agent": self.user_agents[i]})
             transaction_id = self._trigger_and_modify_challenge(headers)
             res = self._validate_check(headers, transaction_id)
-
             self.assertEqual(200, res.status_code)
             data = res.json
             detail = data.get("detail")
@@ -6416,7 +6415,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             # Set the sign count back to be able to use the same data for authentication again
             token = get_one_token(serial=self.serial)
             if not token:
-                self.fail("No token found for serial {0!s}".format(self.serial))
+                self.fail(f"No token found for serial {self.serial}")
             token.set_otp_count(0)
 
         # Check that the refilltokens are NOT the same

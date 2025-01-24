@@ -24,8 +24,8 @@ import logging
 
 from cryptography import x509
 
-from privacyidea.api.lib.utils import (getParam, attestation_certificate_allowed, get_required_one_of,
-                                       get_optional_one_of, get_optional)
+from privacyidea.api.lib.utils import (attestation_certificate_allowed, get_required_one_of,
+                                       get_optional_one_of, get_optional, get_required)
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
@@ -654,9 +654,9 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
                         'type': 'str',
-                        'desc': _("Which algorithm are available to use for creating public key "
-                                  "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
-                                  "[{1!s}])".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                        'desc': _(f"Which algorithm are available to use for creating public key "
+                                  f"credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
+                                  f"[{1!s}])".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
                                                     ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER))),
                         'group': WebAuthnGroup.WEBAUTHN,
                         'multiple': True,
@@ -740,7 +740,7 @@ class WebAuthnTokenClass(TokenClass):
         """
 
         if key not in WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys():
-            raise ValueError('key must be one of {0!s}'.format(', '.join(WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys())))
+            raise ValueError(f"key must be one of {', '.join(WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys())}")
         return WEBAUTHN_TOKEN_SPECIFIC_SETTINGS[key]
 
     @log_with(log)
@@ -748,7 +748,7 @@ class WebAuthnTokenClass(TokenClass):
         """
         Create a new WebAuthn Token object from a database object
 
-        :param db_token:  instance of the orm db object
+        :param db_token: instance of the orm db object
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
@@ -756,8 +756,8 @@ class WebAuthnTokenClass(TokenClass):
         self.hKeyRequired = False
 
     def _get_message(self, options):
-        challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), optional)
-        return challengetext.format(self.token.description) if challengetext else ''
+        challengetext = get_optional(options, f"{self.get_class_type()}_{ACTION.CHALLENGETEXT!s}")
+        return challengetext.format(self.token.description) if challengetext else ""
 
     def _get_webauthn_user(self, user):
         return WebAuthnUser(
@@ -801,28 +801,24 @@ class WebAuthnTokenClass(TokenClass):
 
         TokenClass.update(self, param)
 
-        transaction_id = getParam(param, "transaction_id", optional)
-        reg_data = getParam(param, "regdata", optional)
-        client_data = getParam(param, "clientdata", optional)
+        transaction_id = get_optional(param, "transaction_id")
+        reg_data = get_optional(param, "regdata")
+        client_data = get_optional(param, "clientdata")
         automatic_description = DEFAULT_DESCRIPTION
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
             # Set the description in the first enrollment step
             if "description" in param:
-                self.set_description(getParam(param, "description", default=""))
+                self.set_description(get_optional(param, "description", default=""))
         elif reg_data and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+            attestation_level = get_required(param, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL)
+            rp_id = get_required(param, FIDO2PolicyAction.RELYING_PARTY_ID)
+            http_origin = get_required(param, "HTTP_ORIGIN")
+
             serial = self.token.serial
-            registration_client_extensions = getParam(param, "registrationclientextensions", optional)
-
-            rp_id = getParam(param, FIDO2PolicyAction.RELYING_PARTY_ID, required)
-            uv_req = getParam(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, optional)
-            attestation_level = getParam(param, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL, required)
-
-            try:
-                http_origin = getParam(param, "HTTP_ORIGIN", required, allow_empty=False)
-            except ParameterError:
-                raise ValueError("The ORIGIN HTTP header must be included when enrolling a new WebAuthn token.")
+            registration_client_extensions = get_optional(param, "registrationclientextensions")
+            uv_req = get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
 
             challenges = [
                 challenge
@@ -889,7 +885,7 @@ class WebAuthnTokenClass(TokenClass):
             # If no description has already been set, set the automatic description or the
             # description given in the 2nd request
             if not self.token.description:
-                self.set_description(getParam(param, "description", default=automatic_description))
+                self.set_description(get_optional(param, "description", default=automatic_description))
 
             # Delete all challenges. We are still in enrollment, so there
             # *should* be only one, but it can't hurt to be thorough here.
@@ -921,55 +917,55 @@ class WebAuthnTokenClass(TokenClass):
         """
         # get_init_details runs after "update" method. So in the first step clientwait has already been set
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
-            response_detail = TokenClass.get_init_detail(self, params, user)
-
             if not params:
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
                 raise ParameterError("User must be provided for WebAuthn enrollment!",
                                      id=ERROR.PARAMETER_USER_MISSING)
 
+            user_verification = get_required(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+            timeout = get_required(params, FIDO2PolicyAction.TIMEOUT)
+            attestation = get_required(params, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM)
+            rp_id = get_required(params, FIDO2PolicyAction.RELYING_PARTY_ID)
+            rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
+
+            response_detail = TokenClass.get_init_detail(self, params, user)
+
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
-
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
-                                  transaction_id=getParam(params, 'transaction_id', optional),
+                                  transaction_id=get_optional(params, "transaction_id"),
                                   challenge=hexlify_and_unicode(nonce),
-                                  data=None,
-                                  session=getParam(params, 'session', optional),
+                                  data=f"user_verification={user_verification}",
+                                  session=get_optional(params, "session"),
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
             credential_ids = []
-            if is_true(getParam(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION, optional)):
+            if is_true(get_optional(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION)):
                 # Get the other webauthn tokens of the user
-                webauthn_toks = get_tokens(tokentype=self.type, user=self.user)
+                webauthn_tokens = get_tokens(tokentype=self.type, user=self.user)
                 # add their credential ids
-                for tok in webauthn_toks:
-                    if tok.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
-                        credential_id = tok.decrypt_otpkey()
+                for token in webauthn_tokens:
+                    if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+                        credential_id = token.decrypt_otpkey()
                         credential_ids.append(credential_id)
 
             public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
-                rp_name=getParam(params,
-                                 FIDO2PolicyAction.RELYING_PARTY_NAME,
-                                 required),
-                rp_id=getParam(params,
-                               FIDO2PolicyAction.RELYING_PARTY_ID,
-                               required),
+                rp_name=rp_name,
+                rp_id=rp_id,
                 user_id=self.token.serial,
                 user_name=user.login,
                 user_display_name=str(user),
-                timeout=getParam(params, FIDO2PolicyAction.TIMEOUT, required),
-                attestation=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM, required),
-                user_verification=getParam(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, required),
-                public_key_credential_algorithms=getParam(params, FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                          required),
-                authenticator_attachment=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT, optional),
-                authenticator_selection_list=getParam(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                                                      optional),
+                timeout=timeout,
+                attestation=attestation,
+                user_verification=user_verification,
+                public_key_credential_algorithms=get_required(params,
+                                                              FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+                authenticator_attachment=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT),
+                authenticator_selection_list=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
                 credential_ids=credential_ids
             ).registration_dict
 
@@ -1067,7 +1063,7 @@ class WebAuthnTokenClass(TokenClass):
             raise ValueError("Creating a WebAuthn challenge requires options to be provided")
 
         try:
-            user = self._get_webauthn_user(getParam(options, "user", required))
+            user = self._get_webauthn_user(get_required(options, "user"))
         except ParameterError:
             raise ValueError("When creating a WebAuthn challenge, options must contain user")
 
@@ -1093,27 +1089,23 @@ class WebAuthnTokenClass(TokenClass):
         else:
             nonce = binascii.unhexlify(challenge)
 
+        user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+
         # Create the challenge in the database
         db_challenge = Challenge(serial=self.token.serial,
                                  transaction_id=transactionid,
                                  challenge=challenge,
-                                 data=None,
-                                 session=getParam(options, "session", optional),
+                                 data=f"user_verification={user_verification}",
+                                 session=get_optional(options, "session"),
                                  validitytime=self._get_challenge_validity_time())
         db_challenge.save()
 
         public_key_credential_request_options = WebAuthnAssertionOptions(
             challenge=webauthn_b64_encode(nonce),
             webauthn_user=user,
-            transports=getParam(options,
-                                FIDO2PolicyAction.ALLOWED_TRANSPORTS,
-                                required),
-            user_verification_requirement=getParam(options,
-                                                   FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                                                   required),
-            timeout=getParam(options,
-                             FIDO2PolicyAction.TIMEOUT,
-                             required)
+            transports=get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS),
+            user_verification_requirement=user_verification,
+            timeout=get_required(options, FIDO2PolicyAction.TIMEOUT)
         ).assertion_dict
 
         data_image = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
@@ -1156,13 +1148,13 @@ class WebAuthnTokenClass(TokenClass):
 
             # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
             # policy exception.
-            allowed_aaguids = getParam(options, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, optional)
+            allowed_aaguids = get_optional(options, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)
             if allowed_aaguids and self.get_tokeninfo(FIDO2TokenInfo.AAGUID) not in allowed_aaguids:
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
-                    "restriction {1!s}".format(self.token.serial, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
+                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate due to policy "
+                    f"restriction {FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}"
+                )
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
 
             # Check if the attestation certificate is
             # authorized. If not, we can raise a policy exception.
@@ -1172,25 +1164,25 @@ class WebAuthnTokenClass(TokenClass):
                         "attestation_serial": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SERIAL),
                         "attestation_subject": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT)
                     },
-                    getParam(options, FIDO2PolicyAction.REQ, optional)):
+                    get_optional(options, FIDO2PolicyAction.REQ)):
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate "
-                    "due to policy restriction {1!s}".format(self.token.serial, FIDO2PolicyAction.REQ))
-                raise PolicyError("The WebAuthn token is not allowed to "
-                                  "authenticate due to a policy restriction.")
+                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate "
+                    f"due to policy restriction {FIDO2PolicyAction.REQ}"
+                )
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
 
             try:
-                user = self._get_webauthn_user(getParam(options, "user", required))
+                user = self._get_webauthn_user(get_required(options, "user"))
             except ParameterError:
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
-            uv_req = getParam(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, optional)
+            uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
 
-            challenge = binascii.unhexlify(getParam(options, "challenge", required))
+            challenge = binascii.unhexlify(get_required(options, "challenge"))
 
             try:
                 try:
-                    http_origin = getParam(options, "HTTP_ORIGIN", required, allow_empty=False)
+                    http_origin = get_required(options, "HTTP_ORIGIN")
                 except ParameterError:
                     raise AuthenticationRejectedException('HTTP Origin header missing.')
 
@@ -1217,7 +1209,7 @@ class WebAuthnTokenClass(TokenClass):
                     uv_required=uv_req
                 ).verify())
             except AuthenticationRejectedException as e:
-                log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))
+                log.warning(f"Checking response for token {self.token.serial} failed. {e}")
                 return -1
 
             return self.get_otp_count()
