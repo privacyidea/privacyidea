@@ -1306,6 +1306,7 @@ class PushTokenTestCase(MyTestCase):
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
         set_policy("text", scope=SCOPE.AUTH, action="challenge_text=the answer is {presence_answer}")
+
         self.setUp_user_realms()
         token = self._create_push_token()
         token.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY)
@@ -1329,6 +1330,10 @@ class PushTokenTestCase(MyTestCase):
             presence_answer = challenge.get_data().split(",").pop()
             challenge_text = f"the answer is {presence_answer}"
             self.assertEqual(challenge_text, res.json.get("detail").get("message"))
+        delete_policy("text")
+        delete_policy("push_require_presence")
+        delete_policy("webui")
+        remove_token(token.get_serial())
 
     def test_07_check_timestamp(self):
         timestamp_fmt = 'broken_timestamp_010203'
