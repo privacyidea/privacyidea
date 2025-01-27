@@ -36,7 +36,7 @@ export class TokenGetSerial {
   tokenType = signal<string>('');
   assignmentState = signal<string>('');
   serialSubstring = signal<string>('');
-  countWindow = signal<string>('');
+  countWindow = signal<number>(10);
   tokenTypes: { key: string; info: string }[] = [];
 
   currentStep: string = 'init';
@@ -101,6 +101,7 @@ export class TokenGetSerial {
 
   getParams(): HttpParams {
     let params = new HttpParams();
+    params = params.set('window', this.countWindow());
 
     if (this.assignmentState() === 'assigned') {
       params = params.set('assigned', '1');
@@ -114,9 +115,7 @@ export class TokenGetSerial {
     if (this.serialSubstring() !== '') {
       params = params.set('serial', this.serialSubstring());
     }
-    if (this.countWindow() !== '') {
-      params = params.set('window', this.countWindow());
-    }
+
     return params;
   }
 
