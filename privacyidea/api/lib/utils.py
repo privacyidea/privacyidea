@@ -80,7 +80,7 @@ def get_required(dictionary, key):
     This just checks for None.
     """
     ret = _get_param(dictionary, key, None)
-    if ret is None:
+    if not ret:
         raise ParameterError(f"Missing parameter: {key}", id=905)
     return ret
 
@@ -92,7 +92,7 @@ def get_required_one_of(param, keys):
     """
     for key in keys:
         ret = _get_param(param, key, None)
-        if ret is not None:
+        if ret:
             return ret
     raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
 
