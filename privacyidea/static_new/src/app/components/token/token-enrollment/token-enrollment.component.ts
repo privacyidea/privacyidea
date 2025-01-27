@@ -230,9 +230,8 @@ export class TokenEnrollmentComponent {
           )
           .subscribe({
             next: (response: any) => {
-              console.log('Token enrolled successfully.', response);
               this.notificationService.openSnackBar(
-                'Token enrolled successfully.',
+                'Token ' + response.detail.serial + ' enrolled successfully.',
               );
             },
             error: (error) => {
