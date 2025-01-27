@@ -771,6 +771,7 @@ tag.
     * {date} the current server date in the format YYYY-MM-DD.
     * {phone} the phone number from the challenge in case of sms token.
     * {email} email address from the challenge in case of email token.
+    * {presence_answer} only for push token and only if require_presence is enabled.
 
 .. _policy_indexedsecret:
 
