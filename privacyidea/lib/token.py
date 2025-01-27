@@ -2900,8 +2900,9 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
 
     # If the message is for a pushtoken and the presence_answer is set, but there is no tag for placing that answer,
     # Append the answer to the message
-    if tokentype == "push" and tags.get("presence_answer", None) and "{presence_answer}" not in message:
-        message += f" Please press: {tags["presence_answer"]}"
+    presence_answer = tags.get("presence_answer", None)
+    if presence_answer and tokentype == "push" and "{presence_answer}" not in message:
+        message += f" Please press: {presence_answer}"
 
     message = message.format_map(defaultdict(str, tags))
 
