@@ -1,54 +1,68 @@
-import {Component, computed, effect, Input, signal, WritableSignal,} from '@angular/core';
-import {MatCell, MatColumnDef, MatRow, MatTable, MatTableModule,} from '@angular/material/table';
-import {MatIconButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {MatListItem} from '@angular/material/list';
-import {TokenService} from '../../../services/token/token.service';
-import {ContainerService} from '../../../services/container/container.service';
-import {NgClass} from '@angular/common';
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MatInput} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatSelectModule} from '@angular/material/select';
-import {forkJoin, Observable, single, switchMap} from 'rxjs';
-import {RealmService} from '../../../services/realm/realm.service';
-import {catchError} from 'rxjs/operators';
-import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
-import {TokenDetailsUserComponent} from './token-details-user/token-details-user.component';
-import {MatAutocomplete, MatAutocompleteTrigger,} from '@angular/material/autocomplete';
-import {TokenDetailsInfoComponent} from './token-details-info/token-details-info.component';
 import {
-  TokenDetailsActionsComponent
-} from './token-details-actions/token-details-actions.component';
-import {EditButtonsComponent} from './edit-buttons/edit-buttons.component';
-import {OverflowService} from '../../../services/overflow/overflow.service';
-import {MatDivider} from '@angular/material/divider';
-import {NotificationService} from '../../../services/notification/notification.service';
+  Component,
+  computed,
+  effect,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import {
+  MatCell,
+  MatColumnDef,
+  MatRow,
+  MatTable,
+  MatTableModule,
+} from '@angular/material/table';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatListItem } from '@angular/material/list';
+import { TokenService } from '../../../services/token/token.service';
+import { ContainerService } from '../../../services/container/container.service';
+import { NgClass } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInput } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { forkJoin, Observable, single, switchMap } from 'rxjs';
+import { RealmService } from '../../../services/realm/realm.service';
+import { catchError } from 'rxjs/operators';
+import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
+import {
+  MatAutocomplete,
+  MatAutocompleteTrigger,
+} from '@angular/material/autocomplete';
+import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
+import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
+import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
+import { OverflowService } from '../../../services/overflow/overflow.service';
+import { MatDivider } from '@angular/material/divider';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 export const tokenDetailsKeyMap = [
-  {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Status'},
-  {key: 'maxfail', label: 'Max Count'},
-  {key: 'failcount', label: 'Fail Count'},
-  {key: 'rollout_state', label: 'Rollout State'},
-  {key: 'otplen', label: 'OTP Length'},
-  {key: 'count_window', label: 'Count Window'},
-  {key: 'sync_window', label: 'Sync Window'},
-  {key: 'count', label: 'Count'},
-  {key: 'description', label: 'Description'},
-  {key: 'realms', label: 'Token Realms'},
-  {key: 'tokengroup', label: 'Token Groups'},
-  {key: 'container_serial', label: 'Container Serial'},
+  { key: 'tokentype', label: 'Type' },
+  { key: 'active', label: 'Status' },
+  { key: 'maxfail', label: 'Max Count' },
+  { key: 'failcount', label: 'Fail Count' },
+  { key: 'rollout_state', label: 'Rollout State' },
+  { key: 'otplen', label: 'OTP Length' },
+  { key: 'count_window', label: 'Count Window' },
+  { key: 'sync_window', label: 'Sync Window' },
+  { key: 'count', label: 'Count' },
+  { key: 'description', label: 'Description' },
+  { key: 'realms', label: 'Token Realms' },
+  { key: 'tokengroup', label: 'Token Groups' },
+  { key: 'container_serial', label: 'Container Serial' },
 ];
 
 export const userDetailsKeyMap = [
-  {key: 'user_realm', label: 'User Realm'},
-  {key: 'username', label: 'User'},
-  {key: 'resolver', label: 'Resolver'},
-  {key: 'user_id', label: 'User ID'},
+  { key: 'user_realm', label: 'User Realm' },
+  { key: 'username', label: 'User' },
+  { key: 'resolver', label: 'Resolver' },
+  { key: 'user_id', label: 'User ID' },
 ];
 
-export const infoDetailsKeyMap = [{key: 'info', label: 'Information'}];
+export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
 
 @Component({
   selector: 'app-token-details',
@@ -104,7 +118,7 @@ export class TokenDetailsComponent {
       keyMap: detail,
       value: '',
       isEditing: signal(false),
-    }))
+    })),
   );
   infoData = signal<
     {
@@ -117,7 +131,7 @@ export class TokenDetailsComponent {
       keyMap: detail,
       value: '',
       isEditing: signal(false),
-    }))
+    })),
   );
   userData = signal<
     {
@@ -130,7 +144,7 @@ export class TokenDetailsComponent {
       keyMap: detail,
       value: '',
       isEditing: signal(false),
-    }))
+    })),
   );
   isAnyEditingOrRevoked = computed(() => {
     const detailData = this.tokenDetailData();
@@ -157,7 +171,7 @@ export class TokenDetailsComponent {
     private realmService: RealmService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
-    protected tableUtilsService: TableUtilsService
+    protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
       this.showTokenDetail().subscribe();
@@ -192,7 +206,7 @@ export class TokenDetailsComponent {
               value: tokenDetails[detail.key],
               isEditing: signal(false),
             }))
-            .filter((detail) => detail.value !== undefined)
+            .filter((detail) => detail.value !== undefined),
         );
         this.userData.set(
           userDetailsKeyMap
@@ -201,7 +215,7 @@ export class TokenDetailsComponent {
               value: tokenDetails[detail.key],
               isEditing: signal(false),
             }))
-            .filter((detail) => detail.value !== undefined)
+            .filter((detail) => detail.value !== undefined),
         );
 
         this.infoData.set(
@@ -211,13 +225,13 @@ export class TokenDetailsComponent {
               value: tokenDetails[detail.key],
               isEditing: signal(false),
             }))
-            .filter((detail) => detail.value !== undefined)
+            .filter((detail) => detail.value !== undefined),
         );
 
         this.realmOptions.set(Object.keys(realms.result.value));
         this.selectedRealms.set(tokenDetails.realms);
         this.userRealm = this.userData().find(
-          (detail) => detail.keyMap.key === 'user_realm'
+          (detail) => detail.keyMap.key === 'user_realm',
         )?.value;
         return new Observable<void>((observer) => {
           observer.next();
@@ -228,7 +242,7 @@ export class TokenDetailsComponent {
         console.error('Failed to get token details.', error);
         this.notificationService.openSnackBar('Failed to get token details.');
         throw error;
-      })
+      }),
     );
   }
 
@@ -240,7 +254,7 @@ export class TokenDetailsComponent {
         error: (error) => {
           console.error('Failed to reset fail counter.', error);
           this.notificationService.openSnackBar(
-            'Failed to reset fail counter.'
+            'Failed to reset fail counter.',
           );
         },
       });
@@ -306,7 +320,7 @@ export class TokenDetailsComponent {
         error: (error) => {
           console.error('Failed to unassign container.', error);
           this.notificationService.openSnackBar(
-            'Failed to unassign container.'
+            'Failed to unassign container.',
           );
         },
       });
@@ -338,7 +352,7 @@ export class TokenDetailsComponent {
   private _filterContainerOptions(value: string): string[] {
     const filterValue = value.toLowerCase();
     return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue)
+      option.toLowerCase().includes(filterValue),
     );
   }
 
@@ -350,8 +364,8 @@ export class TokenDetailsComponent {
             Object.values(
               containers.result.value.containers as {
                 serial: string;
-              }[]
-            ).map((container) => container.serial)
+              }[],
+            ).map((container) => container.serial),
           );
           this.selectedContainer.set(this.selectedContainer());
         },
@@ -374,8 +388,8 @@ export class TokenDetailsComponent {
           this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
           this.selectedTokengroup.set(
             this.tokenDetailData().find(
-              (detail) => detail.keyMap.key === 'tokengroup'
-            )?.value
+              (detail) => detail.keyMap.key === 'tokengroup',
+            )?.value,
           );
         },
         error: (error) => {
@@ -409,15 +423,15 @@ export class TokenDetailsComponent {
       case 'tokengroup':
         this.selectedTokengroup.set(
           this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === 'tokengroup'
-          )?.value
+            (detail) => detail.keyMap.key === 'tokengroup',
+          )?.value,
         );
         break;
       case 'realms':
         this.selectedRealms.set(
           this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === 'realms'
-          )?.value
+            (detail) => detail.keyMap.key === 'realms',
+          )?.value,
         );
         break;
       default:

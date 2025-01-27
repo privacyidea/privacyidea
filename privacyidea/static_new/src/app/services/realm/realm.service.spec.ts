@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
 import { RealmService } from './realm.service';
-import {AppComponent} from '../../app.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
+import { AppComponent } from '../../app.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('RealmService', () => {
   let service: RealmService;

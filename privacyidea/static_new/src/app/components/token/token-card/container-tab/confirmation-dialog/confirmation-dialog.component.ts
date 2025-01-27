@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -6,7 +6,7 @@ import {
   MatDialogContent,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import {MatButton} from '@angular/material/button';
+import { MatButton } from '@angular/material/button';
 
 @Component({
   selector: 'app-confirmation-dialog',
@@ -15,14 +15,16 @@ import {MatButton} from '@angular/material/button';
     MatDialogTitle,
     MatDialogActions,
     MatButton,
-    MatDialogClose
+    MatDialogClose,
   ],
   templateUrl: './confirmation-dialog.component.html',
-  styleUrl: './confirmation-dialog.component.scss'
+  styleUrl: './confirmation-dialog.component.scss',
 })
 export class ConfirmationDialogComponent {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {
-    serial_list: any,
-  }) {
-  }
+  constructor(
+    @Inject(MAT_DIALOG_DATA)
+    public data: {
+      serial_list: any;
+    },
+  ) {}
 }

@@ -1,15 +1,15 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {TokenTabComponent} from './token-tab.component';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {signal} from '@angular/core';
-import {TokenService} from '../../../../services/token/token.service';
-import {MatDialog} from '@angular/material/dialog';
-import {VersionService} from '../../../../services/version/version.service';
-import {NotificationService} from '../../../../services/notification/notification.service';
-import {of, throwError} from 'rxjs';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {By} from '@angular/platform-browser';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TokenTabComponent } from './token-tab.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { signal } from '@angular/core';
+import { TokenService } from '../../../../services/token/token.service';
+import { MatDialog } from '@angular/material/dialog';
+import { VersionService } from '../../../../services/version/version.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { of, throwError } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -24,32 +24,36 @@ describe('TokenTabComponent', () => {
       'toggleActive',
       'revokeToken',
       'deleteToken',
-      'getTokenDetails'
+      'getTokenDetails',
     ]);
     tokenServiceSpy.toggleActive.and.returnValue(of(null));
     tokenServiceSpy.revokeToken.and.returnValue(of(Object));
     tokenServiceSpy.deleteToken.and.returnValue(of(Object));
-    tokenServiceSpy.getTokenDetails.and.returnValue(of({
-      tokenSerial: 'Mock serial',
-      tokenIsSelected: true,
-    }));
+    tokenServiceSpy.getTokenDetails.and.returnValue(
+      of({
+        tokenSerial: 'Mock serial',
+        tokenIsSelected: true,
+      }),
+    );
 
     matDialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
 
     versionServiceSpy = jasmine.createSpyObj('VersionService', ['getVersion']);
     versionServiceSpy.getVersion.and.returnValue('1.0.0');
 
-    notificationSpy = jasmine.createSpyObj('NotificationService', ['openSnackBar']);
+    notificationSpy = jasmine.createSpyObj('NotificationService', [
+      'openSnackBar',
+    ]);
 
     await TestBed.configureTestingModule({
       imports: [TokenTabComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: TokenService, useValue: tokenServiceSpy},
-        {provide: MatDialog, useValue: matDialogSpy},
-        {provide: VersionService, useValue: versionServiceSpy},
-        {provide: NotificationService, useValue: notificationSpy},
+        { provide: TokenService, useValue: tokenServiceSpy },
+        { provide: MatDialog, useValue: matDialogSpy },
+        { provide: VersionService, useValue: versionServiceSpy },
+        { provide: NotificationService, useValue: notificationSpy },
       ],
     }).compileComponents();
 
@@ -100,18 +104,27 @@ describe('TokenTabComponent', () => {
 
       component.toggleActive();
 
-      expect(tokenServiceSpy.toggleActive).toHaveBeenCalledWith('Mock serial', true);
-      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith('Mock serial');
+      expect(tokenServiceSpy.toggleActive).toHaveBeenCalledWith(
+        'Mock serial',
+        true,
+      );
+      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith(
+        'Mock serial',
+      );
       expect(refreshSpy).toHaveBeenCalledWith(true);
       expect(notificationSpy.openSnackBar).not.toHaveBeenCalled();
     });
 
     it('opens a snackBar on error', () => {
-      tokenServiceSpy.toggleActive.and.returnValue(throwError(() => new Error('Toggle error')));
+      tokenServiceSpy.toggleActive.and.returnValue(
+        throwError(() => new Error('Toggle error')),
+      );
 
       component.toggleActive();
 
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith('Failed to toggle active.');
+      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
+        'Failed to toggle active.',
+      );
     });
   });
 
@@ -122,16 +135,22 @@ describe('TokenTabComponent', () => {
       component.revokeToken();
 
       expect(tokenServiceSpy.revokeToken).toHaveBeenCalledWith('Mock serial');
-      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith('Mock serial');
+      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith(
+        'Mock serial',
+      );
       expect(refreshSpy).toHaveBeenCalledWith(true);
     });
 
     it('opens a snackBar on error', () => {
-      tokenServiceSpy.revokeToken.and.returnValue(throwError(() => new Error('Revoke error')));
+      tokenServiceSpy.revokeToken.and.returnValue(
+        throwError(() => new Error('Revoke error')),
+      );
 
       component.revokeToken();
 
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith('Failed to revoke token.');
+      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
+        'Failed to revoke token.',
+      );
     });
   });
 
@@ -144,11 +163,15 @@ describe('TokenTabComponent', () => {
     });
 
     it('opens a snackBar on error', () => {
-      tokenServiceSpy.deleteToken.and.returnValue(throwError(() => new Error('Delete error')));
+      tokenServiceSpy.deleteToken.and.returnValue(
+        throwError(() => new Error('Delete error')),
+      );
 
       component.deleteToken();
 
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith('Failed to delete token.');
+      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
+        'Failed to delete token.',
+      );
     });
   });
 
@@ -177,7 +200,7 @@ describe('TokenTabComponent', () => {
 
       expect(openSpy).toHaveBeenCalledWith(
         jasmine.stringMatching(/readthedocs.*1.0.0.*tokens/),
-        '_blank'
+        '_blank',
       );
     });
   });
@@ -190,7 +213,7 @@ describe('TokenTabComponent', () => {
 
     it('should show the Token Details button as active', () => {
       const tokenDetailsBtn = fixture.debugElement.query(
-        By.css('button.card-button-active')
+        By.css('button.card-button-active'),
       )?.nativeElement;
 
       expect(tokenDetailsBtn).toBeTruthy();
@@ -207,7 +230,7 @@ describe('TokenTabComponent', () => {
 
     it('should show the Overview button as active', () => {
       const overviewBtn = fixture.debugElement.query(
-        By.css('button.card-button-active')
+        By.css('button.card-button-active'),
       )?.nativeElement;
 
       expect(overviewBtn).toBeTruthy();
@@ -215,10 +238,11 @@ describe('TokenTabComponent', () => {
       expect(overviewBtn.classList).toContain('card-button-active');
     });
 
-
     it('should not render the token_details block', () => {
       const tokenDetailsBtn = fixture.debugElement.query(
-        By.css('button.card-button-active mat-icon[textContent="health_and_safety"]')
+        By.css(
+          'button.card-button-active mat-icon[textContent="health_and_safety"]',
+        ),
       );
       expect(tokenDetailsBtn).toBeNull();
     });

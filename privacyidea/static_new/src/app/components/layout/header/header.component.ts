@@ -1,9 +1,9 @@
-import {Component} from '@angular/core';
-import {DatePipe, NgClass, NgOptimizedImage} from '@angular/common';
-import {MatFabAnchor, MatFabButton} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
-import {RouterLink} from '@angular/router';
-import {SessionTimerService} from '../../../services/session-timer/session-timer.service';
+import { Component } from '@angular/core';
+import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
+import { MatFabAnchor, MatFabButton } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
+import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
 
 @Component({
   selector: 'app-header',
@@ -15,14 +15,13 @@ import {SessionTimerService} from '../../../services/session-timer/session-timer
     MatIconModule,
     RouterLink,
     DatePipe,
-    NgClass
+    NgClass,
   ],
   templateUrl: './header.component.html',
-  styleUrl: './header.component.scss'
+  styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
-  constructor(protected sessionTimerService: SessionTimerService) {
-  }
+  constructor(protected sessionTimerService: SessionTimerService) {}
 
   refreshPage() {
     window.location.reload();

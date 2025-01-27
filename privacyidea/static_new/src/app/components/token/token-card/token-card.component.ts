@@ -1,11 +1,17 @@
-import {Component, effect, Input, signal, WritableSignal,} from '@angular/core';
-import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatTabsModule} from '@angular/material/tabs';
-import {MatIcon} from '@angular/material/icon';
-import {TokenTabComponent} from './token-tab/token-tab.component';
-import {ContainerTabComponent} from './container-tab/container-tab.component';
-import {NgClass} from '@angular/common';
-import {OverflowService} from '../../../services/overflow/overflow.service';
+import {
+  Component,
+  effect,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIcon } from '@angular/material/icon';
+import { TokenTabComponent } from './token-tab/token-tab.component';
+import { ContainerTabComponent } from './container-tab/container-tab.component';
+import { NgClass } from '@angular/common';
+import { OverflowService } from '../../../services/overflow/overflow.service';
 
 @Component({
   selector: 'app-token-card',

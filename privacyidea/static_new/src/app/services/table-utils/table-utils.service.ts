@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 
 interface FilterPair {
   label: string;
@@ -6,19 +6,22 @@ interface FilterPair {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TableUtilsService {
-  parseFilterString(filterValue: string, apiFilter: string[]): {
-    filterPairs: FilterPair[],
-    remainingFilterText: string
+  parseFilterString(
+    filterValue: string,
+    apiFilter: string[],
+  ): {
+    filterPairs: FilterPair[];
+    remainingFilterText: string;
   } {
     const lowerFilterValue = filterValue.trim();
-    const filterLabels = apiFilter.flatMap(column => {
+    const filterLabels = apiFilter.flatMap((column) => {
       if (column === 'infokey & infovalue') {
         return ['infokey:', 'infovalue:'];
       }
-      return column.toLowerCase() + ':'
+      return column.toLowerCase() + ':';
     });
     const filterValueSplit = lowerFilterValue.split(' ');
     const filterPairs: FilterPair[] = [];
@@ -44,7 +47,10 @@ export class TableUtilsService {
 
       if (matchingLabel) {
         if (currentLabel && currentValue) {
-          filterPairs.push({label: currentLabel.slice(0, -1), value: currentValue.trim()});
+          filterPairs.push({
+            label: currentLabel.slice(0, -1),
+            value: currentValue.trim(),
+          });
         }
         currentLabel = matchingLabel;
         currentValue = '';
@@ -60,17 +66,23 @@ export class TableUtilsService {
     if (currentLabel) {
       filterPairs.push({
         label: currentLabel.slice(0, -1),
-        value: currentValue.trim()
+        value: currentValue.trim(),
       });
     }
 
-    return {filterPairs, remainingFilterText: remainingFilterText.trim()};
+    return { filterPairs, remainingFilterText: remainingFilterText.trim() };
   }
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string {
-    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, 'i');
+    const keywordPattern = new RegExp(
+      `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
+      'i',
+    );
     if (keywordPattern.test(currentValue)) {
-      return currentValue.replace(keywordPattern, '').trim().replace(/\s{2,}/g, ' ');
+      return currentValue
+        .replace(keywordPattern, '')
+        .trim()
+        .replace(/\s{2,}/g, ' ');
     } else {
       if (currentValue.length > 0) {
         return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
@@ -91,12 +103,14 @@ export class TableUtilsService {
   }
 
   isLink(columnKey: string) {
-    return columnKey === 'username'
-      || columnKey === 'container_serial'
-      || columnKey === 'user_realm'
-      || columnKey === 'users'
-      || columnKey === 'user_realm'
-      || columnKey === 'realms';
+    return (
+      columnKey === 'username' ||
+      columnKey === 'container_serial' ||
+      columnKey === 'user_realm' ||
+      columnKey === 'users' ||
+      columnKey === 'user_realm' ||
+      columnKey === 'realms'
+    );
   }
 
   getClassForColumn(columnKey: string, element: any): string {
@@ -119,7 +133,10 @@ export class TableUtilsService {
       }
       if (element['failcount'] === 0) {
         return 'highlight-true';
-      } else if (element['failcount'] > 0 && element['failcount'] < element['maxfail']) {
+      } else if (
+        element['failcount'] > 0 &&
+        element['failcount'] < element['maxfail']
+      ) {
         return 'highlight-warning-clickable';
       } else {
         return 'highlight-false-clickable';
@@ -148,7 +165,7 @@ export class TableUtilsService {
 
   getSpanClassForKey(key: string, value: any, maxfail: any): string {
     if (key === 'description') {
-      return 'details-table-item details-description'
+      return 'details-table-item details-description';
     }
     if (key === 'active') {
       if (value === '') {
@@ -195,12 +212,16 @@ export class TableUtilsService {
     return 'table-scrollable-container';
   }
 
-  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
+  getDisplayTextForKeyAndRevoked(
+    key: string,
+    value: any,
+    revoked: boolean,
+  ): string {
     if (value === '') {
       return '';
     }
     if (key === 'active') {
-      return revoked ? 'revoked' : (value ? 'active' : 'deactivated');
+      return revoked ? 'revoked' : value ? 'active' : 'deactivated';
     }
     return value;
   }
@@ -278,4 +299,3 @@ export class TableUtilsService {
     }
   }
 }
-

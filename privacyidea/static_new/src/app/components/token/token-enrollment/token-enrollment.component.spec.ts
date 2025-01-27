@@ -1,9 +1,9 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {TokenEnrollmentComponent} from './token-enrollment.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import { TokenEnrollmentComponent } from './token-enrollment.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('TokenEnrollmentComponent', () => {
   let component: TokenEnrollmentComponent;
@@ -12,9 +12,8 @@ describe('TokenEnrollmentComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    })
-      .compileComponents();
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(TokenEnrollmentComponent);
     component = fixture.componentInstance;

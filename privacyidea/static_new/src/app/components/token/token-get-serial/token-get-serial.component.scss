@@ -4,8 +4,12 @@
   @include table-container-styles;
   margin-left: 1rem;
   overflow: auto;
+  width: 785px;
 }
 
-mat-form-field {
-  width: 100%;
+.token-get-serial-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
 }

@@ -1,9 +1,9 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {forkJoin, Observable} from 'rxjs';
-import {LocalService} from '../local/local.service';
-import {Sort} from '@angular/material/sort';
-import {TableUtilsService} from '../table-utils/table-utils.service';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { forkJoin, Observable } from 'rxjs';
+import { LocalService } from '../local/local.service';
+import { Sort } from '@angular/material/sort';
+import { TableUtilsService } from '../table-utils/table-utils.service';
 
 @Injectable({
   providedIn: 'root',
@@ -25,17 +25,16 @@ export class TokenService {
   constructor(
     private http: HttpClient,
     private localService: LocalService,
-    private tableUtilsService: TableUtilsService
-  ) {
-  }
+    private tableUtilsService: TableUtilsService,
+  ) {}
 
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {
     const headers = this.localService.getHeaders();
     const action = active ? 'disable' : 'enable';
     return this.http.post(
       `${this.tokenBaseUrl}${action}`,
-      {serial: tokenSerial},
-      {headers}
+      { serial: tokenSerial },
+      { headers },
     );
   }
 
@@ -43,8 +42,8 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     return this.http.post(
       this.tokenBaseUrl + 'reset',
-      {serial: tokenSerial},
-      {headers}
+      { serial: tokenSerial },
+      { headers },
     );
   }
 
@@ -52,7 +51,7 @@ export class TokenService {
     page: number,
     pageSize: number,
     sort?: Sort,
-    filterValue?: string
+    filterValue?: string,
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams()
@@ -65,9 +64,9 @@ export class TokenService {
 
     if (filterValue) {
       const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-      const {filterPairs, remainingFilterText} =
+      const { filterPairs, remainingFilterText } =
         this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
-      filterPairs.forEach(({label, value}) => {
+      filterPairs.forEach(({ label, value }) => {
         if (
           label === 'user' ||
           label === 'infokey' ||
@@ -89,33 +88,33 @@ export class TokenService {
       */
     }
 
-    return this.http.get<any>(this.tokenBaseUrl, {headers, params});
+    return this.http.get<any>(this.tokenBaseUrl, { headers, params });
   }
 
   getTokenDetails(tokenSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams().set('serial', tokenSerial);
-    return this.http.get(this.tokenBaseUrl, {headers, params});
+    return this.http.get(this.tokenBaseUrl, { headers, params });
   }
 
   setTokenDetail(
     tokenSerial: string,
     key: string,
-    value: any
+    value: any,
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     if (key === 'maxfail') {
       return this.http.post(
         set_url,
-        {serial: tokenSerial, ['max_failcount']: value},
-        {headers}
+        { serial: tokenSerial, ['max_failcount']: value },
+        { headers },
       );
     } else {
       return this.http.post(
         set_url,
-        {serial: tokenSerial, [key]: value},
-        {headers}
+        { serial: tokenSerial, [key]: value },
+        { headers },
       );
     }
   }
@@ -136,14 +135,14 @@ export class TokenService {
       ) {
         return this.http.post(
           set_url,
-          {serial: tokenSerial, [infoKey]: infoValue},
-          {headers}
+          { serial: tokenSerial, [infoKey]: infoValue },
+          { headers },
         );
       } else {
         return this.http.post(
           `${info_url}/${tokenSerial}/${infoKey}`,
-          {['value']: infoValue},
-          {headers}
+          { ['value']: infoValue },
+          { headers },
         );
       }
     });
@@ -152,15 +151,15 @@ export class TokenService {
 
   deleteToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + tokenSerial, {headers});
+    return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
   }
 
   revokeToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.tokenBaseUrl}revoke`,
-      {serial: tokenSerial},
-      {headers}
+      { serial: tokenSerial },
+      { headers },
     );
   }
 
@@ -168,7 +167,7 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     return this.http.delete(
       `${this.tokenBaseUrl}info/` + tokenSerial + '/' + infoKey,
-      {headers}
+      { headers },
     );
   }
 
@@ -176,8 +175,8 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.tokenBaseUrl}unassign`,
-      {serial: tokenSerial},
-      {headers}
+      { serial: tokenSerial },
+      { headers },
     );
   }
 
@@ -185,7 +184,7 @@ export class TokenService {
     tokenSerial: string,
     username: string,
     realm: string,
-    pin: string
+    pin: string,
   ) {
     const headers = this.localService.getHeaders();
     return this.http.post(
@@ -196,7 +195,7 @@ export class TokenService {
         realm: realm,
         pin: pin,
       },
-      {headers}
+      { headers },
     );
   }
 
@@ -208,7 +207,7 @@ export class TokenService {
         serial: tokenSerial,
         otppin: userPin,
       },
-      {headers}
+      { headers },
     );
   }
 
@@ -219,14 +218,14 @@ export class TokenService {
       {
         serial: tokenSerial,
       },
-      {headers}
+      { headers },
     );
   }
 
   resyncOTPToken(
     tokenSerial: string,
     fristOTPValue: string,
-    secondOTPValue: string
+    secondOTPValue: string,
   ) {
     const headers = this.localService.getHeaders();
     return this.http.post(
@@ -236,7 +235,7 @@ export class TokenService {
         otp1: fristOTPValue,
         otp2: secondOTPValue,
       },
-      {headers}
+      { headers },
     );
   }
 
@@ -247,7 +246,7 @@ export class TokenService {
       {
         realms: value,
       },
-      {headers}
+      { headers },
     );
   }
 
@@ -259,13 +258,13 @@ export class TokenService {
       {
         groups: valueArray,
       },
-      {headers}
+      { headers },
     );
   }
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http.get(`/tokengroup`, {headers});
+    return this.http.get(`/tokengroup`, { headers });
   }
 
   lostToken(tokenSerial: string) {
@@ -273,11 +272,15 @@ export class TokenService {
     return this.http.post(
       `${this.tokenBaseUrl}lost/` + tokenSerial,
       {},
-      {headers}
+      { headers },
     );
   }
 
-  getTokenTypes() {
-    return this.http.get('/token/types');
+  getSerial(otp: string, params: HttpParams): Observable<any> {
+    const headers = this.localService.getHeaders();
+    return this.http.get(`${this.tokenBaseUrl}getserial/${otp}`, {
+      params: params,
+      headers: headers,
+    });
   }
 }

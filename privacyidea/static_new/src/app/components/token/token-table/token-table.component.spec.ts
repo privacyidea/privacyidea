@@ -1,15 +1,15 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {TokenTableComponent} from './token-table.component';
-import {AuthService} from '../../../services/auth/auth.service';
-import {TokenService} from '../../../services/token/token.service';
-import {Router} from '@angular/router';
-import {NotificationService} from '../../../services/notification/notification.service';
-import {TableUtilsService} from '../../../services/table-utils/table-utils.service';
-import {of} from 'rxjs';
-import {signal} from '@angular/core';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TokenTableComponent } from './token-table.component';
+import { AuthService } from '../../../services/auth/auth.service';
+import { TokenService } from '../../../services/token/token.service';
+import { Router } from '@angular/router';
+import { NotificationService } from '../../../services/notification/notification.service';
+import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import { of } from 'rxjs';
+import { signal } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('TokenTableComponent', () => {
   let component: TokenTableComponent;
@@ -22,7 +22,9 @@ describe('TokenTableComponent', () => {
   let tableUtilsSpy: jasmine.SpyObj<TableUtilsService>;
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['isAuthenticatedUser']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', [
+      'isAuthenticatedUser',
+    ]);
     tokenServiceSpy = jasmine.createSpyObj('TokenService', [
       'apiFilter',
       'advancedApiFilter',
@@ -34,7 +36,9 @@ describe('TokenTableComponent', () => {
       'deleteToken',
     ]);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['openSnackBar']);
+    notificationServiceSpy = jasmine.createSpyObj('NotificationService', [
+      'openSnackBar',
+    ]);
     tableUtilsSpy = jasmine.createSpyObj('TableUtilsService', [
       'toggleKeywordInFilter',
       'parseFilterString',
@@ -43,7 +47,7 @@ describe('TokenTableComponent', () => {
       'isFilterSelected',
       'isLink',
       'getClassForColumn',
-      'getDisplayText'
+      'getDisplayText',
     ]);
 
     tokenServiceSpy.apiFilter = [
@@ -68,11 +72,17 @@ describe('TokenTableComponent', () => {
           value: {
             count: 1,
             tokens: [
-              {id: 1, serial: '12345', type: 'hotp', active: true, user: 'test-user'},
+              {
+                id: 1,
+                serial: '12345',
+                type: 'hotp',
+                active: true,
+                user: 'test-user',
+              },
             ],
           },
         },
-      })
+      }),
     );
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     routerSpy.navigate.and.returnValue(Promise.resolve(true));
@@ -82,11 +92,11 @@ describe('TokenTableComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: AuthService, useValue: authServiceSpy},
-        {provide: TokenService, useValue: tokenServiceSpy},
-        {provide: Router, useValue: routerSpy},
-        {provide: NotificationService, useValue: notificationServiceSpy},
-        {provide: TableUtilsService, useValue: tableUtilsSpy},
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: TokenService, useValue: tokenServiceSpy },
+        { provide: Router, useValue: routerSpy },
+        { provide: NotificationService, useValue: notificationServiceSpy },
+        { provide: TableUtilsService, useValue: tableUtilsSpy },
       ],
     }).compileComponents();
 

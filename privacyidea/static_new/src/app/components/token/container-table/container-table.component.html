@@ -1,15 +1,22 @@
-<div aria-label="Container Table" class="container-table-container">
+<div aria-label="Container Table"
+     class="container-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field class="container-table-filter" subscriptSizing="dynamic">
+    <mat-form-field class="container-table-filter"
+                    subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #input (keyup)="handleFilterInput($event)" aria-label="Filter Input"
-             matInput placeholder="Example query: 'type: generic user: admin'">
+      <input #input
+             (keyup)="handleFilterInput($event)"
+             aria-label="Filter Input"
+             matInput
+             placeholder="Example query: 'type: generic user: admin'">
     </mat-form-field>
-    <mat-paginator (page)="handlePageEvent($event)" [length]="length"
-                   [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions"
-                   [pageSize]="pageSize" aria-label="Select page of containers"
-                   showFirstLastButtons>
-    </mat-paginator>
+    <mat-paginator (page)="handlePageEvent($event)"
+                   [length]="length"
+                   [pageIndex]="pageIndex"
+                   [pageSizeOptions]="pageSizeOptions"
+                   [pageSize]="pageSize"
+                   aria-label="Select page of containers"
+                   showFirstLastButtons></mat-paginator>
   </div>
   <div class="filter-keyword-container">
     <div class="filter-keyword-title">
@@ -17,7 +24,9 @@
       Filter by:&nbsp;
     </div>
     @for (filterKeyword of apiFilter; track filterKeyword) {
-      <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
+      <button mat-fab
+              extended
+              (click)="toggleKeywordInFilter(filterKeyword , input)"
               class="keyword-button">
         <mat-icon class="keyword-button-icon"
                   [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
@@ -30,7 +39,8 @@
         {{ filterKeyword }}
       </button>
     }
-    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())" class="more-keyword-button"
+    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())"
+            class="more-keyword-button"
             extended
             mat-fab>
       <mat-icon class="keyword-button-icon">
@@ -39,7 +49,9 @@
     </button>
     @if (showAdvancedFilter()) {
       @for (filterKeyword of advancedApiFilter; track filterKeyword) {
-        <button mat-fab extended (click)="toggleKeywordInFilter(filterKeyword , input)"
+        <button mat-fab
+                extended
+                (click)="toggleKeywordInFilter(filterKeyword , input)"
                 class="keyword-button">
           <mat-icon class="keyword-button-icon"
                     [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword,
@@ -51,36 +63,39 @@
       }
     }
   </div>
-  <table (matSortChange)="handleSortEvent()" [dataSource]="dataSource()"
-         aria-label="Container Data Table" class="container-table" mat-table matSort>
+  <table (matSortChange)="handleSortEvent()"
+         [dataSource]="dataSource()"
+         aria-label="Container Data Table"
+         class="container-table"
+         mat-table
+         matSort>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
-        <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell
+        <th *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
             mat-sort-header>
           {{ column.label }}
         </th>
-        <td *matCellDef="let element" attr.aria-label="{{ column.label }} Cell" mat-cell
+        <td *matCellDef="let element"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell
             [ngClass]="{'width-18': column.key === 'description'}">
           <ng-container>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @if (column.key === 'realms') {
                 <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
-                    <a attr.aria-label="{{ column.label }} Link" href="#">
-                      {{ realm }}
-                    </a>
-                    <br style="margin-top: 3px"/>
+                    <a attr.aria-label="{{ column.label }} Link"
+                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
                   }
                 </div>
               } @else if (column.key === 'serial') {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="containerSelected(element.serial)">
-                  {{ element[column.key] }}
-                </a>
+                   (click)="containerSelected(element.serial)"> {{ element[column.key] }} </a>
               } @else if (tableUtilsService.isLink(column.key)) {
-                <a attr.aria-label="{{ column.label }} Link" href="#">
-                  {{ element[column.key] }}
-                </a>
+                <a attr.aria-label="{{ column.label }} Link"
+                   href="#"> {{ element[column.key] }} </a>
               } @else if (column.key === 'states') {
                 <span (click)="handleStateClick(element)"
                       [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
@@ -94,10 +109,16 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="displayedColumns" aria-label="Header Row" mat-header-row></tr>
-    <tr *matRowDef="let row; columns: displayedColumns;" aria-label="Data Row" mat-row></tr>
-    <tr *matNoDataRow aria-label="No Data Row">
-      <td [attr.colspan]="displayedColumns.length" aria-label="No Data Cell">
+    <tr *matHeaderRowDef="displayedColumns"
+        aria-label="Header Row"
+        mat-header-row></tr>
+    <tr *matRowDef="let row; columns: displayedColumns;"
+        aria-label="Data Row"
+        mat-row></tr>
+    <tr *matNoDataRow
+        aria-label="No Data Row">
+      <td [attr.colspan]="displayedColumns.length"
+          aria-label="No Data Cell">
         No data matching the filter.
       </td>
     </tr>

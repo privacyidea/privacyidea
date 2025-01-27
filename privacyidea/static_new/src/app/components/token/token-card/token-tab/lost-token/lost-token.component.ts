@@ -1,16 +1,16 @@
-import {Component, effect, Inject, WritableSignal} from '@angular/core';
+import { Component, effect, Inject, WritableSignal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle
+  MatDialogTitle,
 } from '@angular/material/dialog';
-import {MatButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {TokenService} from '../../../../../services/token/token.service';
-import {MatCard, MatCardContent} from '@angular/material/card';
-import {NotificationService} from '../../../../../services/notification/notification.service';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { TokenService } from '../../../../../services/token/token.service';
+import { MatCard, MatCardContent } from '@angular/material/card';
+import { NotificationService } from '../../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-lost-token',
@@ -21,21 +21,24 @@ import {NotificationService} from '../../../../../services/notification/notifica
     MatDialogClose,
     MatIcon,
     MatCard,
-    MatCardContent
+    MatCardContent,
   ],
   templateUrl: './lost-token.component.html',
-  styleUrl: './lost-token.component.scss'
+  styleUrl: './lost-token.component.scss',
 })
 export class LostTokenComponent {
   response: any;
 
-  constructor(protected tokenService: TokenService,
-              private notificationService: NotificationService,
-              @Inject(MAT_DIALOG_DATA) public data: {
-                isLost: WritableSignal<boolean>,
-                tokenSerial: WritableSignal<string>,
-              },
-              private dialogRef: MatDialogRef<LostTokenComponent>) {
+  constructor(
+    protected tokenService: TokenService,
+    private notificationService: NotificationService,
+    @Inject(MAT_DIALOG_DATA)
+    public data: {
+      isLost: WritableSignal<boolean>;
+      tokenSerial: WritableSignal<string>;
+    },
+    private dialogRef: MatDialogRef<LostTokenComponent>,
+  ) {
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
     });
@@ -50,12 +53,14 @@ export class LostTokenComponent {
       next: (response) => {
         this.data.isLost.set(true);
         this.response = response;
-        this.notificationService.openSnackBar('Token marked as lost: ' + this.data.tokenSerial());
+        this.notificationService.openSnackBar(
+          'Token marked as lost: ' + this.data.tokenSerial(),
+        );
       },
-      error: error => {
+      error: (error) => {
         console.error('Failed to mark token as lost.', error);
-        this.notificationService.openSnackBar('Failed to mark token as lost.')
-      }
+        this.notificationService.openSnackBar('Failed to mark token as lost.');
+      },
     });
   }
 

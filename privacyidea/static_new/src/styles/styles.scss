@@ -184,6 +184,22 @@ html, body {
   margin-left: 1rem;
 }
 
+.width-33 {
+  width: 33%;
+}
+
+.width-66 {
+  width: 66%;
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.gap-1 {
+  gap: 1rem;
+}
+
 ::ng-deep {
   .mdc-snackbar {
     margin-bottom: 76px !important;

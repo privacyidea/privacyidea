@@ -16,7 +16,15 @@ $shadow-white: var(--box-shadow-white);
 $header-bg: white;
 
 // Mixins for common button styles
-@mixin button-base($height, $width, $border-radius, $background, $box-shadow, $cursor: pointer) {
+@mixin button-base(
+  $height,
+  $width,
+  $border-radius,
+  $background,
+  $box-shadow,
+  $cursor: pointer
+) {
+  color: white;
   height: $height;
   width: $width;
   border: none;
@@ -70,22 +78,57 @@ $header-bg: white;
   }
 }
 
+.disabled-button {
+  color: var(--mdc-filled-button-disabled-label-text-color,
+    color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)) !important;
+}
 
 .card-button {
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue), var(--box-shadow-blue));
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue),
+      var(--box-shadow-blue)
+  );
+  @include button-hover(
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
 }
 
 .card-button-reset {
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-green),
+      var(--box-shadow-green)
+  );
 }
 
 .card-button-active {
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue-inset), var(--box-shadow-blue-inset));
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
 }
 
 .card-button-delete {
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-red), var(--box-shadow-red));
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-red),
+      var(--box-shadow-red)
+  );
 
   &.active,
   &:hover {
@@ -96,8 +139,14 @@ $header-bg: white;
 }
 
 .card-button-activate {
-  color: white;
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-green), var(--box-shadow-green));
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-green),
+      var(--box-shadow-green)
+  );
 
   &.active,
   &:hover {
@@ -108,9 +157,19 @@ $header-bg: white;
 }
 
 .detail-button {
+  min-width: 240px;
   color: white;
-  @include button-base($button-height, $button-width, $button-border-radius, var(--background-blue), var(--box-shadow-blue));
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue),
+      var(--box-shadow-blue)
+  );
+  @include button-hover(
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
 }
 
 .detail-button-icon {

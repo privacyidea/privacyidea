@@ -1,13 +1,13 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {TokenDetailsComponent} from './token-details.component';
-import {provideHttpClient} from '@angular/common/http';
-import {signal} from '@angular/core';
-import {TokenService} from '../../../services/token/token.service';
-import {ContainerService} from '../../../services/container/container.service';
-import {ValidateService} from '../../../services/validate/validate.service';
-import {of, throwError} from 'rxjs';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TokenDetailsComponent } from './token-details.component';
+import { provideHttpClient } from '@angular/common/http';
+import { signal } from '@angular/core';
+import { TokenService } from '../../../services/token/token.service';
+import { ContainerService } from '../../../services/container/container.service';
+import { ValidateService } from '../../../services/validate/validate.service';
+import { of, throwError } from 'rxjs';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 class MockTokenService {
   getTokenDetails() {
@@ -28,7 +28,7 @@ class MockTokenService {
   }
 
   getRealms() {
-    return of({result: {value: ['realm1', 'realm2']}});
+    return of({ result: { value: ['realm1', 'realm2'] } });
   }
 
   resetFailCount() {
@@ -65,7 +65,7 @@ class MockContainerService {
     return of({
       result: {
         value: {
-          containers: [{serial: 'container1'}, {serial: 'container2'}],
+          containers: [{ serial: 'container1' }, { serial: 'container2' }],
         },
       },
     });
@@ -99,9 +99,9 @@ describe('TokenDetailsComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: TokenService, useClass: MockTokenService},
-        {provide: ContainerService, useClass: MockContainerService},
-        {provide: ValidateService, useClass: MockValidateService},
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ValidateService, useClass: MockValidateService },
       ],
     }).compileComponents();
 
@@ -119,15 +119,15 @@ describe('TokenDetailsComponent', () => {
     component.tokengroupOptions = signal(['group1', 'group2']);
     component.infoData = signal([
       {
-        keyMap: {key: 'info', label: 'Info'},
-        value: {key1: 'value1', key2: 'value2'},
+        keyMap: { key: 'info', label: 'Info' },
+        value: { key1: 'value1', key2: 'value2' },
         isEditing: signal(false),
       },
     ]);
     component.realmOptions = signal(['realm1', 'realm2']);
     component.tokenDetailData = signal([
       {
-        keyMap: {key: 'container_serial', label: 'Container'},
+        keyMap: { key: 'container_serial', label: 'Container' },
         value: 'container1',
         isEditing: signal(false),
       },
@@ -164,14 +164,14 @@ describe('TokenDetailsComponent', () => {
 
   it('should handle errors when loading token details fails', () => {
     spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      throwError(() => new Error('Error fetching token details.'))
+      throwError(() => new Error('Error fetching token details.')),
     );
     spyOn(console, 'error');
     component.showTokenDetail().subscribe({
       error: () => {
         expect(console.error).toHaveBeenCalledWith(
           'Failed to get token details.',
-          jasmine.any(Error)
+          jasmine.any(Error),
         );
       },
     });
@@ -179,7 +179,7 @@ describe('TokenDetailsComponent', () => {
 
   it('should handle empty data gracefully', () => {
     spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      of({result: {value: {tokens: []}}})
+      of({ result: { value: { tokens: [] } } }),
     );
     component.showTokenDetail().subscribe({
       next: () => {
@@ -190,7 +190,7 @@ describe('TokenDetailsComponent', () => {
 
   it('should display token details correctly', () => {
     const detailHeader = fixture.nativeElement.querySelector(
-      '.details-header h3:last-child'
+      '.details-header h3:last-child',
     );
     expect(detailHeader.textContent).toContain('Mock serial');
   });
@@ -201,7 +201,7 @@ describe('TokenDetailsComponent', () => {
     expect(tokenService.setTokenDetail).toHaveBeenCalledWith(
       'Mock serial',
       'key',
-      'value'
+      'value',
     );
   });
 
@@ -225,7 +225,7 @@ describe('TokenDetailsComponent', () => {
     component.saveContainer();
     expect(containerService.assignContainer).toHaveBeenCalledWith(
       'Mock serial',
-      'container1'
+      'container1',
     );
   });
 
@@ -235,7 +235,7 @@ describe('TokenDetailsComponent', () => {
     component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith(
       'Mock serial',
-      'container1'
+      'container1',
     );
   });
 
@@ -255,5 +255,4 @@ describe('TokenDetailsComponent', () => {
     expect(component.selectedContent()).toBe('container_details');
     expect(component.containerSerial()).toBe('testSerial');
   });
-
 });

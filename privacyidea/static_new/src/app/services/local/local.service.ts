@@ -1,25 +1,23 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 import * as CryptoJS from 'crypto-js';
-import {environment} from '../../../environments/environment';
-import {HttpHeaders} from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { HttpHeaders } from '@angular/common/http';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LocalService {
-
   key = environment.secretAESKey;
   bearerTokenKey = 'bearer_token';
 
-  constructor() {
-  }
+  constructor() {}
 
   public saveData(key: string, value: string) {
     localStorage.setItem(key, this.encrypt(value));
   }
 
   public getData(key: string) {
-    let data = localStorage.getItem(key) || "";
+    let data = localStorage.getItem(key) || '';
     return this.decrypt(data);
   }
 
@@ -29,7 +27,7 @@ export class LocalService {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      'PI-Authorization': this.getData('bearer_token') || ''
+      'PI-Authorization': this.getData('bearer_token') || '',
     });
   }
 
@@ -38,6 +36,8 @@ export class LocalService {
   }
 
   private decrypt(txtToDecrypt: string) {
-    return CryptoJS.AES.decrypt(txtToDecrypt, this.key).toString(CryptoJS.enc.Utf8);
+    return CryptoJS.AES.decrypt(txtToDecrypt, this.key).toString(
+      CryptoJS.enc.Utf8,
+    );
   }
 }

@@ -1,16 +1,22 @@
-import {Component, computed, Input, signal, WritableSignal} from '@angular/core';
-import {MatIcon} from '@angular/material/icon';
-import {MatList, MatListItem} from '@angular/material/list';
-import {MatButton} from '@angular/material/button';
-import {MatDivider} from '@angular/material/divider';
-import {NgClass} from '@angular/common';
-import {switchMap} from 'rxjs';
-import {TokenService} from '../../../../services/token/token.service';
-import {tabToggleState} from '../../../../../styles/animations/animations';
-import {MatDialog} from '@angular/material/dialog';
-import {LostTokenComponent} from './lost-token/lost-token.component';
-import {VersionService} from '../../../../services/version/version.service';
-import {NotificationService} from '../../../../services/notification/notification.service';
+import {
+  Component,
+  computed,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { MatIcon } from '@angular/material/icon';
+import { MatList, MatListItem } from '@angular/material/list';
+import { MatButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { NgClass } from '@angular/common';
+import { switchMap } from 'rxjs';
+import { TokenService } from '../../../../services/token/token.service';
+import { tabToggleState } from '../../../../../styles/animations/animations';
+import { MatDialog } from '@angular/material/dialog';
+import { LostTokenComponent } from './lost-token/lost-token.component';
+import { VersionService } from '../../../../services/version/version.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -34,9 +40,8 @@ export class TokenTabComponent {
     private tokenService: TokenService,
     private dialog: MatDialog,
     private versioningService: VersionService,
-    private notificationService: NotificationService
-  ) {
-  }
+    private notificationService: NotificationService,
+  ) {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
@@ -46,7 +51,7 @@ export class TokenTabComponent {
     this.tokenService
       .toggleActive(this.tokenSerial(), this.active())
       .pipe(
-        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
+        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
       )
       .subscribe({
         next: () => {
@@ -63,7 +68,7 @@ export class TokenTabComponent {
     this.tokenService
       .revokeToken(this.tokenSerial())
       .pipe(
-        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
+        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
       )
       .subscribe({
         next: () => {
@@ -100,7 +105,7 @@ export class TokenTabComponent {
   openTheDocs() {
     window.open(
       `https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#tokens`,
-      '_blank'
+      '_blank',
     );
   }
 

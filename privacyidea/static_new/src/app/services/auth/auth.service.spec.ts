@@ -1,9 +1,9 @@
-import {TestBed} from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import {AuthService} from './auth.service';
-import {AppComponent} from '../../app.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
+import { AuthService } from './auth.service';
+import { AppComponent } from '../../app.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('AuthService', () => {
   let service: AuthService;

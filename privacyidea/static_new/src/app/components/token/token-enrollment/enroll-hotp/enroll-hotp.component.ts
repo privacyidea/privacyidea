@@ -1,9 +1,15 @@
-import {Component, Input, WritableSignal} from '@angular/core';
-import {MatCheckbox} from '@angular/material/checkbox';
-import {FormsModule} from '@angular/forms';
-import {TokenComponent} from '../../token.component';
-import {MatFormField, MatHint, MatLabel, MatOption, MatSelect} from '@angular/material/select';
-import {MatInput} from '@angular/material/input';
+import { Component, Input, WritableSignal } from '@angular/core';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
+import { TokenComponent } from '../../token.component';
+import {
+  MatFormField,
+  MatHint,
+  MatLabel,
+  MatOption,
+  MatSelect,
+} from '@angular/material/select';
+import { MatInput } from '@angular/material/input';
 
 @Component({
   selector: 'app-enroll-hotp',
@@ -15,14 +21,13 @@ import {MatInput} from '@angular/material/input';
     MatLabel,
     MatFormField,
     MatInput,
-    MatHint
+    MatHint,
   ],
   templateUrl: './enroll-hotp.component.html',
-  styleUrl: './enroll-hotp.component.scss'
+  styleUrl: './enroll-hotp.component.scss',
 })
 export class EnrollHotpComponent {
-  text = TokenComponent.tokenTypes.find(
-    (type) => type.key === 'hotp')?.text;
+  text = TokenComponent.tokenTypes.find((type) => type.key === 'hotp')?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;

@@ -1,4 +1,4 @@
-import {Component, Input, ViewChild, WritableSignal} from '@angular/core';
+import { Component, Input, ViewChild, WritableSignal } from '@angular/core';
 import {
   MatCell,
   MatHeaderCell,
@@ -7,30 +7,28 @@ import {
   MatTable,
   MatTableModule,
 } from '@angular/material/table';
-import {MatFormField, MatLabel} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {MatPaginator} from '@angular/material/paginator';
-import {MatSort, MatSortHeader, MatSortModule} from '@angular/material/sort';
-import {Router} from '@angular/router';
-import {AuthService} from '../../../../services/auth/auth.service';
-import {TokenService} from '../../../../services/token/token.service';
-import {TableUtilsService} from '../../../../services/table-utils/table-utils.service';
-import {NgClass} from '@angular/common';
-import {MatIcon} from '@angular/material/icon';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {ContainerService} from '../../../../services/container/container.service';
-import {OverflowService} from '../../../../services/overflow/overflow.service';
-import {NotificationService} from '../../../../services/notification/notification.service';
-import {MatDialog} from '@angular/material/dialog';
-import {
-  ConfirmationDialogComponent
-} from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../../services/auth/auth.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { NgClass } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { ContainerService } from '../../../../services/container/container.service';
+import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
 
 const columnsKeyMap = [
-  {key: 'serial', label: 'Serial'},
-  {key: 'tokentype', label: 'Type'},
-  {key: 'active', label: 'Active'},
-  {key: 'username', label: 'User'},
+  { key: 'serial', label: 'Serial' },
+  { key: 'tokentype', label: 'Type' },
+  { key: 'active', label: 'Active' },
+  { key: 'username', label: 'User' },
 ];
 
 @Component({
@@ -83,7 +81,7 @@ export class ContainerDetailsTokenTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected overflowService: OverflowService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then((r) => {
@@ -106,7 +104,7 @@ export class ContainerDetailsTokenTableComponent {
   tokenSelected(tokenSerial: string) {
     this.isProgrammaticChange.set(true);
     this.tokenSerial.set(tokenSerial);
-    this.selectedContent.set('token_details')
+    this.selectedContent.set('token_details');
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
@@ -119,7 +117,7 @@ export class ContainerDetailsTokenTableComponent {
         error: (error) => {
           console.error('Failed to remove token from container.', error);
           this.notificationService.openSnackBar(
-            'Failed to remove token from container.'
+            'Failed to remove token from container.',
           );
         },
       });
@@ -178,7 +176,7 @@ export class ContainerDetailsTokenTableComponent {
                 error: (error) => {
                   console.error('Failed to delete all tokens.', error);
                   this.notificationService.openSnackBar(
-                    'Failed to delete all tokens.'
+                    'Failed to delete all tokens.',
                   );
                 },
               });

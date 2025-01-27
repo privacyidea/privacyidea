@@ -1,10 +1,10 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {LayoutComponent} from './layout.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {ActivatedRoute} from '@angular/router';
-import {of} from 'rxjs';
+import { LayoutComponent } from './layout.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('GridLayoutComponent', () => {
   let component: LayoutComponent;
@@ -13,15 +13,19 @@ describe('GridLayoutComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [LayoutComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), [
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            // Mock the necessary parts of ActivatedRoute, like params, queryParams, etc.
-            params: of({id: '123'})
-          }
-        }
-      ]],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        [
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              // Mock the necessary parts of ActivatedRoute, like params, queryParams, etc.
+              params: of({ id: '123' }),
+            },
+          },
+        ],
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(LayoutComponent);
     component = fixture.componentInstance;

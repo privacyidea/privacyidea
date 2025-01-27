@@ -1,12 +1,12 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {TokenDetailsActionsComponent} from './token-details-actions.component';
-import {TokenService} from '../../../../services/token/token.service';
-import {ValidateService} from '../../../../services/validate/validate.service';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {of} from 'rxjs';
-import {signal} from '@angular/core';
+import { TokenDetailsActionsComponent } from './token-details-actions.component';
+import { TokenService } from '../../../../services/token/token.service';
+import { ValidateService } from '../../../../services/validate/validate.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { of } from 'rxjs';
+import { signal } from '@angular/core';
 
 class MockTokenService {
   resyncOTPToken() {
@@ -30,7 +30,7 @@ describe('TokenDetailsActionsComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {provide: TokenService, useClass: MockTokenService},
+        { provide: TokenService, useClass: MockTokenService },
       ],
     }).compileComponents();
 
@@ -54,7 +54,7 @@ describe('TokenDetailsActionsComponent', () => {
     component.verifyOTPValue();
     expect(validateService.testToken).toHaveBeenCalledWith(
       'Mock serial',
-      '1234'
+      '1234',
     );
   });
 
@@ -67,7 +67,7 @@ describe('TokenDetailsActionsComponent', () => {
     expect(tokenService.resyncOTPToken).toHaveBeenCalledWith(
       'Mock serial',
       'otp1',
-      'otp2'
+      'otp2',
     );
   });
 
@@ -78,7 +78,7 @@ describe('TokenDetailsActionsComponent', () => {
     const resyncSpy = spyOn(tokenService, 'resyncOTPToken').and.callThrough();
 
     const resyncButton = fixture.nativeElement.querySelector(
-      '.actions-pin-input-button button'
+      '.actions-pin-input-button button',
     );
     resyncButton.click();
     expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');

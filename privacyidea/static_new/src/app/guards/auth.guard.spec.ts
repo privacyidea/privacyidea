@@ -1,7 +1,7 @@
-import {TestBed} from '@angular/core/testing';
-import {Router} from '@angular/router';
-import {AuthGuard} from './auth.guard';
-import {AuthService} from '../services/auth/auth.service';
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { AuthGuard } from './auth.guard';
+import { AuthService } from '../services/auth/auth.service';
 
 describe('AuthGuard', () => {
   let guard: AuthGuard;
@@ -10,7 +10,9 @@ describe('AuthGuard', () => {
 
   beforeEach(() => {
     // Create spies for AuthService and Router
-    const authServiceMock = jasmine.createSpyObj('AuthService', ['isAuthenticatedUser']);
+    const authServiceMock = jasmine.createSpyObj('AuthService', [
+      'isAuthenticatedUser',
+    ]);
     const routerMock = jasmine.createSpyObj('Router', ['navigate']);
 
     // Make the router's navigate spy return a resolved promise
@@ -19,8 +21,8 @@ describe('AuthGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         AuthGuard,
-        {provide: AuthService, useValue: authServiceMock},
-        {provide: Router, useValue: routerMock},
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: Router, useValue: routerMock },
       ],
     });
 

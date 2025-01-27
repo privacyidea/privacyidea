@@ -5,12 +5,12 @@
   <h4>Token configuration:</h4>
 
 
-  <mat-checkbox [(ngModel)]="generateOnServer" class="server-checkbox">
+  <mat-checkbox [(ngModel)]="generateOnServer"
+                class="server-checkbox">
     Generate OTP key on the server
     @if (generateOnServer()) {
-      <span class="dot">.</span>
-      <span>
-      <br/>
+      <span class="dot">.</span><span>
+      <br />
       The server will create the OTP key and a QR Code will be displayed to you to be
       scanned.
     </span>
@@ -21,7 +21,9 @@
     @if (!generateOnServer()) {
       <mat-form-field class="otp-input-form">
         <mat-label>OTP Key</mat-label>
-        <input matInput [(ngModel)]="otpKey" placeholder="Enter OTP key"/>
+        <input matInput
+               [(ngModel)]="otpKey"
+               placeholder="Enter OTP key" />
       </mat-form-field>
     } @else {
       <span class="otp-input-form"></span>
@@ -53,7 +55,10 @@
 
   <mat-form-field class="description-form">
     <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description" [maxlength]="80"
-              matInput placeholder="Enter description" rows="3"></textarea>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
   </mat-form-field>
 </div>

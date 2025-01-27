@@ -2,7 +2,7 @@
 <mat-dialog-content>
   <p>
     Are you sure you want to delete all ({{ data.serial_list.length }}) token in this container?
-    <br/>
+    <br />
   </p>
   <ul>
     @for (serial of data.serial_list; track serial) {
@@ -12,7 +12,11 @@
 </mat-dialog-content>
 
 <mat-dialog-actions>
-  <button mat-button mat-dialog-close>Cancel</button>
-  <button [mat-dialog-close]="true" class="dialog-button-delete" mat-button>Delete
+  <button mat-button
+          mat-dialog-close>Cancel
+  </button>
+  <button [mat-dialog-close]="true"
+          class="dialog-button-delete"
+          mat-button>Delete
   </button>
 </mat-dialog-actions>

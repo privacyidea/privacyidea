@@ -1,9 +1,9 @@
-import {signal} from '@angular/core';
-import {TokenCardComponent} from './token-card.component';
-import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {provideHttpClient} from '@angular/common/http';
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
+import { signal } from '@angular/core';
+import { TokenCardComponent } from './token-card.component';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('TokenCardComponent', () => {
   let component: TokenCardComponent;

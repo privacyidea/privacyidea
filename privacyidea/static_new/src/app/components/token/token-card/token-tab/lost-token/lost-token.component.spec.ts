@@ -1,9 +1,9 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {LostTokenComponent} from './lost-token.component';
-import {provideHttpClient} from '@angular/common/http';
-import {provideHttpClientTesting} from '@angular/common/http/testing';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import { LostTokenComponent } from './lost-token.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 describe('LostTokenComponent', () => {
   let component: LostTokenComponent;
@@ -12,23 +12,26 @@ describe('LostTokenComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [LostTokenComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
-          provide: MAT_DIALOG_DATA, useValue: {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
             tokenSerial: () => 'Mock serial',
             isLost: () => false,
-          }
+          },
         },
         {
-          provide: MatDialogRef, useValue: {
+          provide: MatDialogRef,
+          useValue: {
             afterClosed: () => ({
-              subscribe: () => {
-              }
+              subscribe: () => {},
             }),
-          }
-        }]
-    })
-      .compileComponents();
+          },
+        },
+      ],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(LostTokenComponent);
     component = fixture.componentInstance;
