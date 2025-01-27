@@ -2641,9 +2641,9 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Challenge_text with tags
         set_policy("chalsms", SCOPE.AUTH, "sms_challenge_text=Hello {user}\, please enter "
-                                          "the otp sent to {phone}")
+                                          "the otp sent to {phone},  increase_failcounter_on_challenge")
         set_policy("chalemail", SCOPE.AUTH, "email_challenge_text=Hello {user}\, please enter "
-                                            "the otp sent to {email}")
+                                            "the otp sent to {email},  increase_failcounter_on_challenge")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -2656,6 +2656,17 @@ class ValidateAPITestCase(MyApiTestCase):
                           resp.get("detail").get("message"))
             self.assertIn("Hello Cornelius, please enter the otp sent to hallo@example.com",
                           resp.get("detail").get("message"))
+
+        with self.app.test_request_context('/policy/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'], res.json)
+            value = res.json['result']['value']
+            pol1 = value[2]
+            self.assertEqual(pol1.get("action").get("increase_failcounter_on_challenge"), True, pol1)
+            self.assertIn("Hello {user}\\, please enter", pol1.get("action").get("sms_challenge_text"), pol1)
 
         remove_token("CHAL1")
         remove_token("CHAL2")
