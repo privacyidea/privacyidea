@@ -283,4 +283,25 @@ export class TokenService {
       headers: headers,
     });
   }
+
+  enrollHotpToken(
+    generateOnServe: boolean,
+    otpLength: number,
+    otpKey: string,
+    hashAlgorithm: string,
+    description: string,
+  ) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(
+      `${this.tokenBaseUrl}init`,
+      {
+        otpkey: otpKey,
+        genkey: generateOnServe ? 1 : 0,
+        otplen: otpLength,
+        description: description,
+        hashlib: hashAlgorithm,
+      },
+      { headers },
+    );
+  }
 }

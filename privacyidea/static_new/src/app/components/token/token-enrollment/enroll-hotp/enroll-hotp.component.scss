@@ -3,6 +3,10 @@
 .token-type-paragraph {
   text-align: justify;
   padding: 1rem;
+
+  p {
+    margin-top: 1px;
+  }
 }
 
 .dot {

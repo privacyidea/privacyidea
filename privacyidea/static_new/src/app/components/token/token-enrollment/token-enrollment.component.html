@@ -16,6 +16,13 @@
       }
     </mat-hint>
   </mat-form-field>
+  <button (click)="enrollToken(generateOnServer(), otpLength(), otpKey(), hashAlgorithm(),
+          description())"
+          class="card-button enroll-button"
+          mat-flat-button>
+    <mat-icon>add</mat-icon>
+    Enroll {{ selectedType().key }} token
+  </button>
   @switch (selectedType().key) {
     @case ("hotp") {
       <app-enroll-hotp [generateOnServer]="generateOnServer"

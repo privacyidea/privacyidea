@@ -32,6 +32,9 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { TokenService } from '../../../services/token/token.service';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -97,6 +100,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatNativeDateModule,
     MatDatepickerModule,
     MatSuffix,
+    MatButton,
+    MatIcon,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -137,6 +142,7 @@ export class TokenEnrollmentComponent {
     private realmService: RealmService,
     private notificationService: NotificationService,
     private userService: UserService,
+    private tokenService: TokenService,
   ) {
     effect(() => {
       const value = this.selectedContainer();
@@ -203,6 +209,38 @@ export class TokenEnrollmentComponent {
         );
       },
     });
+  }
+
+  enrollToken(
+    generateOnServer: boolean,
+    otpLength: number,
+    otpKey: string,
+    hashAlgorithm: string,
+    description: string,
+  ) {
+    switch (this.selectedType().key) {
+      case 'hotp':
+        this.tokenService
+          .enrollHotpToken(
+            generateOnServer,
+            otpLength,
+            otpKey,
+            hashAlgorithm,
+            description,
+          )
+          .subscribe({
+            next: (response: any) => {
+              console.log('Token enrolled successfully.', response);
+              this.notificationService.openSnackBar(
+                'Token enrolled successfully.',
+              );
+            },
+            error: (error) => {
+              console.error('Failed to enroll token.', error);
+              this.notificationService.openSnackBar('Failed to enroll token.');
+            },
+          });
+    }
   }
 
   private _filterContainerOptions(value: string): string[] {

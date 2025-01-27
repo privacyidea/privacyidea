@@ -3,8 +3,6 @@
     <p>{{ text }}</p>
   </div>
   <h4>Token configuration:</h4>
-
-
   <mat-checkbox [(ngModel)]="generateOnServer"
                 class="server-checkbox">
     Generate OTP key on the server
@@ -16,7 +14,6 @@
     </span>
     }
   </mat-checkbox>
-
   <div class="otp-inputs-container">
     @if (!generateOnServer()) {
       <mat-form-field class="otp-input-form">
@@ -28,7 +25,6 @@
     } @else {
       <span class="otp-input-form"></span>
     }
-
     <mat-form-field class="otp-input-form">
       <mat-label>OTP length</mat-label>
       <mat-select [(ngModel)]="otpLength">
@@ -39,7 +35,6 @@
         <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       }
     </mat-form-field>
-
     <mat-form-field class="otp-input-form">
       <mat-label>Hash algorithm</mat-label>
       <mat-select [(ngModel)]="hashAlgorithm">
@@ -52,7 +47,6 @@
       }
     </mat-form-field>
   </div>
-
   <mat-form-field class="description-form">
     <mat-label>Description</mat-label>
     <textarea [(ngModel)]="description"
