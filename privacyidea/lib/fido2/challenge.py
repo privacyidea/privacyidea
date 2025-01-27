@@ -73,7 +73,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     - userHandle or userhandle
     - HTTP_ORIGIN
 
-    If the no challenge is found for the transaction_id, a ResourceNotFoundError is raised.
+    If no challenge is found for the transaction_id, a ResourceNotFoundError is raised.
     If the challenge has timed out, an AuthError is raised.
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
