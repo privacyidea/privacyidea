@@ -33,7 +33,8 @@
       <mat-select (keyup.enter)="onPressEnter()"
                   [(ngModel)]="tokenType"
                   appearance="outline"
-                  matInput>
+                  matInput
+                  placeholder="Select token type">
         @for (type of tokenTypes; track type) {
           <mat-option [value]="type['key']">{{ type['info'] }}</mat-option>
         }
@@ -44,7 +45,8 @@
       <mat-select (keyup.enter)="onPressEnter()"
                   [(ngModel)]="assignmentState"
                   appearance="outline"
-                  matInput>
+                  matInput
+                  placeholder="Specify assignment state">
         @for (assignment of assignmentStates; track assignment) {
           <mat-option [value]="assignment.key"
                       translate>{{ assignment.info }}
