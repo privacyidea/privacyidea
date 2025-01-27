@@ -3,7 +3,7 @@ import hashlib
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, Challenge
 
@@ -44,7 +44,7 @@ def get_fido2_token_by_transaction_id(transaction_id: str):
         log.info(f"Token with serial {challenge.serial} not found.")
         return None
     if token.tokentype not in ["webauthn", "passkey"]:
-        log.info(f"Token with serial {challenge.serial} is not a FIDO2 token, but {token.tokentype}.")
+        log.info(f"Token with serial {challenge.serial} is not a FIDO2 token, but {token.get_tokentype()}.")
         return None
     return create_tokenclass_object(token)
 
