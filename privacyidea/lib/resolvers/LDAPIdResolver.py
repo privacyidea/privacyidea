@@ -84,7 +84,7 @@ import datetime
 from privacyidea.lib import _
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import privacyIDEAError, ResolverError
 import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
@@ -380,7 +380,7 @@ class IdResolver (UserIdResolver):
             # Whatever happens. If we have an empty bind_user, we must break
             # since we must avoid anonymous binds!
             if not bind_user or len(bind_user) < 1:
-                raise Exception("No valid user. Empty bind_user.")
+                raise ResolverError("No valid user. Empty bind_user.")
             l = self.create_connection(authtype=self.authtype,
                                        server=self.serverpool,
                                        user=bind_user,
@@ -388,15 +388,14 @@ class IdResolver (UserIdResolver):
                                        receive_timeout=self.timeout,
                                        auto_referrals=not self.noreferrals,
                                        start_tls=self.start_tls)
-            r = l.bind()
-            log.debug("bind result: {0!r}".format(r))
-            if not r:
-                raise Exception("Wrong credentials")
-            log.debug("bind seems successful.")
+            if not l.bind():
+                log.info(f"Bind operation failed: {l.result.description} ({l.result.result})")
+                raise ResolverError(f"Bind failed with: {l.result.description} ({l.result.result})")
+            log.debug(f"LDAP bind operation took {self.l.usage.elapsed_time}")
             l.unbind()
             log.debug("unbind successful.")
         except Exception as e:
-            log.warning("failed to check password for {0!r}/{1!r}: {2!r}".format(uid, bind_user, e))
+            log.info(f"Failed to check password for {uid!r}/{bind_user!r}: {e}")
             log.debug(traceback.format_exc())
             return False
 
@@ -446,7 +445,6 @@ class IdResolver (UserIdResolver):
 
     @staticmethod
     def _get_uid(entry, uidtype):
-        uid = None
         if uidtype.lower() == "dn":
             uid = entry.get("dn")
         else:
@@ -477,7 +475,8 @@ class IdResolver (UserIdResolver):
     def _trim_user_id(self, userId):
         """
         If we search for the objectGUID we can not search for the normal
-        string representation but we need to search for the bytestring in AD.
+        string representation, but we need to search for the bytestring in AD.
+
         :param userId: The userId
         :return: the trimmed userId
         """
@@ -493,7 +492,6 @@ class IdResolver (UserIdResolver):
 
         :param userId: The userid of a user
         :type userId: string
-
         :return: The DN of the object.
         """
         dn = ""
@@ -501,27 +499,23 @@ class IdResolver (UserIdResolver):
             dn = userId
         else:
             # get the DN for the Object
-            self._bind()
-            search_userId = self._trim_user_id(userId)
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                    self.uidtype,
-                                                    search_userId)
-            self.l.search(search_base=self.basedn,
-                          search_scope=self.scope,
-                          search_filter=filter,
-                          attributes=list(self.userinfo.values()))
-            r = self.l.response
-            r = self._trim_result(r)
+            search_userid = self._trim_user_id(userId)
+            search_filter = f"(&{self.searchfilter}({self.uidtype}={search_userid}))"
+            r = self._search(search_base=self.basedn, search_filter=search_filter,
+                             attributes=list(self.userinfo.values()))
             if len(r) > 1:  # pragma: no cover
-                raise Exception("Found more than one object for uid {0!r}".format(userId))
+                raise ResolverError(f"Found more than one object for uid {userId!r}")
             elif len(r) == 1:
                 dn = r[0].get("dn")
             else:
-                log.info("The filter {0!r} returned no DN.".format(filter))
-
+                log.info("The filter {0!r} returned no DN.".format(search_filter))
         return dn
 
     def _bind(self):
+        """
+        Perform LDAP bind operation on a connection.
+        Create the connection if it doesn't exist yet
+        """
         if not self.i_am_bound:
             if not self.serverpool:
                 self.serverpool = self.get_serverpool_instance(self.get_info)
@@ -534,16 +528,32 @@ class IdResolver (UserIdResolver):
                                             self.noreferrals,
                                             start_tls=self.start_tls,
                                             keytabfile=self.keytabfile)
-            if not self.l.bind():
-                raise Exception("Wrong credentials")
+            try:
+                bound = self.l.bind()
+            except Exception as ex:
+                log.warning(f"Error performing bind operation: {ex}!")
+                raise ResolverError(f"Error performing bind operation: {ex}!")
+            if not bound:
+                raise ResolverError(f"Unable to perform bind operation: "
+                                    f"{self.l.result.description} ({self.l.result.result})!")
             self.i_am_bound = True
+
+    def _search(self, search_base, search_filter, attributes):
+        self._bind()
+        self.l.search(search_base=search_base,
+                      search_scope=self.scope,
+                      search_filter=search_filter,
+                      attributes=attributes)
+        r = self.l.response
+        r = self._trim_result(r)
+        log.debug(f"LDAP search operation took {self.l.usage.elapsed_time}")
+        return r
 
     @staticmethod
     def _get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
                          tls_ca_file=None, tls_options=None):
         """
         This method creates the Tls object to be used with ldap3.
-
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
             if not tls_version:
@@ -566,38 +576,31 @@ class IdResolver (UserIdResolver):
         return tls_context
 
     @cache
-    def getUserInfo(self, userId):
+    def getUserInfo(self, user_id):
         """
         This function returns all user info for a given userid/object.
 
-        :param userId: The userid of the object
-        :type userId: string
+        :param user_id: The userid of the object
+        :type user_id: string
         :return: A dictionary with the keys defined in self.userinfo
         :rtype: dict
         """
         ret = {}
-        self._bind()
 
         if self.uidtype.lower() == "dn":
             # encode utf8, so that also german umlauts work in the DN
-            self.l.search(search_base=userId,
-                          search_scope=self.scope,
-                          search_filter="(&" + self.searchfilter + ")",
-                          attributes=list(self.userinfo.values()))
+            search_filter = f"(&{self.searchfilter})"
+            search_base = user_id
         else:
-            search_userId = to_unicode(self._trim_user_id(userId))
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                    self.uidtype,
-                                                    search_userId)
-            self.l.search(search_base=self.basedn,
-                          search_scope=self.scope,
-                          search_filter=filter,
-                          attributes=list(self.userinfo.values()))
+            search_uid = to_unicode(self._trim_user_id(user_id))
+            search_filter = f"(&{self.searchfilter}({self.uidtype}={search_uid}))"
+            search_base = self.basedn
 
-        r = self.l.response
-        r = self._trim_result(r)
+        r = self._search(search_base=search_base, search_filter=search_filter,
+                         attributes=list(self.userinfo.values()))
+
         if len(r) > 1:  # pragma: no cover
-            raise Exception("Found more than one object for uid {0!r}".format(userId))
+            raise ResolverError(f"Found more than one object for uid {user_id!r}")
 
         for entry in r:
             attributes = entry.get("attributes")
@@ -624,7 +627,7 @@ class IdResolver (UserIdResolver):
                         else:
                             raise Exception("The LDAP returns an objectGUID, "
                                             "that is no string: {0!s}".format(type(ldap_v)))
-                    elif type(ldap_v) == list and map_k not in self.multivalueattributes:
+                    elif isinstance(ldap_v, list) and map_k not in self.multivalueattributes:
                         # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
                         if ldap_v:
@@ -658,7 +661,6 @@ class IdResolver (UserIdResolver):
         :rtype: str
         """
         userid = ""
-        self._bind()
         LoginName = to_unicode(LoginName)
         login_name = self._escape_loginname(LoginName)
 
@@ -689,7 +691,7 @@ class IdResolver (UserIdResolver):
                                                   search_login_name)
 
         log.debug("login name filter: {!r}".format(loginname_filter))
-        filter = "(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
+        search_filter = f"(&{self.searchfilter}({loginname_filter}))"
 
         # create search attributes
         attributes = list(self.userinfo.values())
@@ -697,16 +699,10 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
 
         log.debug("Searching user {0!r} in LDAP.".format(LoginName))
-        self.l.search(search_base=self.basedn,
-                      search_scope=self.scope,
-                      search_filter=filter,
-                      attributes=attributes)
-
-        r = self.l.response
-        r = self._trim_result(r)
+        r = self._search(search_base=self.basedn, search_filter=search_filter,
+                         attributes=attributes)
         if len(r) > 1:  # pragma: no cover
-            raise Exception("Found more than one object for Loginname {0!r}".format(
-                            LoginName))
+            raise ResolverError(f"Found more than one object for Login {LoginName!r}")
 
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
@@ -727,7 +723,7 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
 
         # do the filter depending on the searchDict
-        filter = "(&" + self.searchfilter
+        search_filter = "(&" + self.searchfilter
         for search_key in searchDict.keys():
             # convert to unicode
             searchDict[search_key] = to_unicode(searchDict[search_key])
@@ -735,21 +731,22 @@ class IdResolver (UserIdResolver):
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
                     comperator = "<="
-                filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
+                search_filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
                     self.userinfo[search_key], comperator,
                     get_ad_timestamp_now(), self.userinfo[search_key])
             else:
-                filter += "({0!s}={1!s})".format(self.userinfo[search_key],
+                search_filter += "({0!s}={1!s})".format(self.userinfo[search_key],
                                                  searchDict[search_key])
-        filter += ")"
+        search_filter += ")"
 
         g = self.l.extend.standard.paged_search(search_base=self.basedn,
-                                                search_filter=filter,
+                                                search_filter=search_filter,
                                                 search_scope=self.scope,
                                                 attributes=attributes,
                                                 paged_size=100,
                                                 size_limit=self.sizelimit,
                                                 generator=True)
+        log.debug(f"LDAP paged search operation took {self.l.usage.elapsed_time}")
         # returns a generator of dictionaries
         for entry in ignore_sizelimit_exception(self.l, g):
             # Simple fix for ignored sizelimit with Active Directory
@@ -1176,15 +1173,16 @@ class IdResolver (UserIdResolver):
             self._bind()
             params = self._attributes_to_ldap_attributes(attributes)
             self.l.add(dn, self.object_classes, params)
+            log.debug(f"LDAP add operation took {self.l.usage.elapsed_time}")
 
         except Exception as e:
-            log.error("Error accessing LDAP server: {0!r}".format(e))
+            log.warning("Error accessing LDAP server: {0!r}".format(e))
             log.debug("{0}".format(traceback.format_exc()))
             raise privacyIDEAError(e)
 
-        if self.l.result.get('result') != 0:
-            log.error("Error during adding of user {0!r}: "
-                      "{1!r}".format(dn, self.l.result.get('message')))
+        if self.l.result.result != 0:
+            log.warning(f"Error during adding of user {dn}: "
+                        f"{self.l.result.description} ({self.l.result.result})")
             raise privacyIDEAError(self.l.result.get('message'))
 
         return self.getUserId(attributes.get("username"))
@@ -1192,10 +1190,10 @@ class IdResolver (UserIdResolver):
     def delete_user(self, uid):
         """
         Delete a user from the LDAP Directory.
-
         The user is referenced by the user id.
+
         :param uid: The uid of the user object, that should be deleted.
-        :type uid: basestring
+        :type uid: str
         :return: Returns True in case of success
         :rtype: bool
         """
@@ -1204,8 +1202,9 @@ class IdResolver (UserIdResolver):
             self._bind()
 
             self.l.delete(self._getDN(uid))
-        except Exception as exx:
-            log.error("Error deleting user: {0!r}".format(exx))
+            log.debug(f"LDAP delete operation took {self.l.usage.elapsed_time}")
+        except Exception as ex:
+            log.warning(f"Failed to delete user with uid {uid}: {ex}")
             res = False
         return res
 
@@ -1282,6 +1281,7 @@ class IdResolver (UserIdResolver):
             mapped = self._create_ldap_modify_changes(attributes, uid)
             params = self._attributes_to_ldap_attributes(mapped)
             self.l.modify(self._getDN(uid), params)
+            log.debug(f"LDAP modify operation took {self.l.usage.elapsed_time}")
         except Exception as e:
             log.error("Error accessing LDAP server: {0!r}".format(e))
             log.debug("{0!s}".format(traceback.format_exc()))
@@ -1320,14 +1320,15 @@ class IdResolver (UserIdResolver):
         :param start_tls: Use startTLS for connection to server
         :type start_tls: bool
         :param keytabfile: Path to keytab file for service account
-        :type keytabfile: str
+        :type keytabfile: str or None
         :return:
         """
         conn_opts = {'auto_bind': auto_bind,
                      'client_strategy': client_strategy,
                      'check_names': check_names,
                      'receive_timeout': receive_timeout,
-                     'auto_referrals': auto_referrals}
+                     'auto_referrals': auto_referrals,
+                     'collect_usage': True}
 
         if not user:
             # without a user we can only use an anonymous binds

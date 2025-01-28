@@ -36,12 +36,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import datetime
 
 from passlib.hash import ldap_salted_sha1
 from ast import literal_eval
 import uuid
 from ldap3.utils.conv import escape_bytes
 import ldap3
+from mock import Mock
 import re
 import pyparsing
 
@@ -118,18 +120,24 @@ class Connection(object):
 
     def __init__(self, directory=None):
         if directory is None:
-                directory = []
+            directory = []
         import copy
         self.directory = copy.deepcopy(directory)
         self.bound = False
         self.start_tls_called = False
         self.extend = self.Extend(self)
+        self.usage = Mock(**{"elapsed_time": datetime.timedelta(microseconds=500)})
 
         self.operation = {
-                    "!" : self._search_not,
-                    "&" : self._search_and,
-                    "|" : self._search_or,
-            }
+                    "!": self._search_not,
+                    "&": self._search_and,
+                    "|": self._search_or}
+        self.result = {'dn': '',
+                       'referrals': None,
+                       'description': 'success',
+                       'result': 0,
+                       'message': '',
+                       'type': 'addResponse'}
 
     def set_directory(self, directory):
         self.directory = directory
@@ -148,14 +156,6 @@ class Connection(object):
         self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
-
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
@@ -709,7 +709,8 @@ class Ldap3Mock(object):
     def _on_Connection(self, server, user, password,
                        auto_bind=None, client_strategy=None,
                        authentication=None, check_names=None,
-                       auto_referrals=None, receive_timeout=None):
+                       auto_referrals=None, receive_timeout=None,
+                       collect_usage=None):
         """
         We need to create a Connection object with
         methods:
