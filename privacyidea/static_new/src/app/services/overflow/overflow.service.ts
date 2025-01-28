@@ -22,7 +22,7 @@ export class OverflowService {
       case 'token_enrollment':
         return 1240;
       case 'token_get_serial':
-        return 1880;
+        return 1240;
     }
     return 1920;
   }
