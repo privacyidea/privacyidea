@@ -18,8 +18,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import json
 
-from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
+from privacyidea.models import TokenContainer
 
 
 class ContainerTemplateBase:
@@ -29,47 +29,47 @@ class ContainerTemplateBase:
         self._db_template = db_template
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container template class.
         """
         return "generic"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the supported token types for this container template.
         """
         supported_token_types = ["hotp", "remote", "daypassword", "spass", "totp", "4eyes", "paper", "push",
-                                 "indexedsecret", "webauthn", "tan", "applspec", "registration", "sms", "email", "tiqr"]
+                                 "indexedsecret", "tan", "applspec", "registration", "sms", "email", "tiqr"]
         supported_token_types.sort()
         return supported_token_types
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._db_template.name
 
     @property
-    def container_type(self):
+    def container_type(self) -> str:
         return self._db_template.container_type
 
     @classmethod
-    def get_template_class_options(cls):
+    def get_template_class_options(cls) -> dict:
         return cls.template_option_values
 
     @classmethod
-    def get_template_option_keys(cls):
+    def get_template_option_keys(cls) -> list[str]:
         return cls.template_option_values.keys()
 
     @property
-    def template_options(self):
+    def template_options(self) -> str:
         return self._db_template.options
 
-    def get_template_options_as_dict(self):
+    def get_template_options_as_dict(self) -> dict:
         return json.loads(self.template_options) if self.template_options else {}
 
     @template_options.setter
-    def template_options(self, options):
+    def template_options(self, options: dict):
         if not isinstance(options, dict):
             raise ParameterError("options must be a dict")
         validated_options = {}
@@ -87,11 +87,11 @@ class ContainerTemplateBase:
         self._db_template.save()
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._db_template.id
 
     @property
-    def default(self):
+    def default(self) -> bool:
         return self._db_template.default
 
     @default.setter
@@ -102,7 +102,7 @@ class ContainerTemplateBase:
         self._db_template.save()
 
     @property
-    def containers(self):
+    def containers(self) -> list[TokenContainer]:
         return self._db_template.containers
 
     def delete(self):

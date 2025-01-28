@@ -1990,7 +1990,7 @@ class TokenClass(object):
         token_dict["info_list"] = self.get_tokeninfo(decrypted=True)
         return token_dict
 
-    def get_enroll_url(self, user, params):
+    def get_enroll_url(self, user: User, params: dict):
         """
         Return the URL to enroll this token. It is not supported by all token types.
         """

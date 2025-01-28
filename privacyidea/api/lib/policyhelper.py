@@ -157,7 +157,7 @@ def get_token_user_attributes(serial: str):
     return user_attributes
 
 
-def get_container_user_attributes(container_serial: str):
+def get_container_user_attributes(container_serial: str) -> UserAttributes:
     """
     Get the user and container realms from the request.
     If a user attribute (username, realm, resolver) is not available, it is set to None.
@@ -165,7 +165,6 @@ def get_container_user_attributes(container_serial: str):
 
     :param container_serial: Serial of the container
     :return: container_owner_attributes
-    :rtype: UserAttributes
     """
     container_owner_attributes = UserAttributes()
 
@@ -186,7 +185,7 @@ def get_container_user_attributes(container_serial: str):
     return container_owner_attributes
 
 
-def check_token_action_allowed(g, action: str, serial: str, user_attributes: UserAttributes):
+def check_token_action_allowed(g, action: str, serial: str, user_attributes: UserAttributes) -> bool:
     """
     Retrieves user attributes from the token and checks if the logged-in user is allowed to perform the action on the
     token.
@@ -257,7 +256,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
     return action_allowed
 
 
-def check_container_action_allowed(g, action: str, container_serial: str, user_attributes: UserAttributes):
+def check_container_action_allowed(g, action: str, container_serial: str, user_attributes: UserAttributes) -> bool:
     """
     Retrieves user attributes from the container and checks if the logged-in user is allowed to perform the action
     on the container.
@@ -329,7 +328,8 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     return action_allowed
 
 
-def user_is_owner(logged_in_user_attr: UserAttributes, owner_attr: UserAttributes, allow_no_owner=False):
+def user_is_owner(logged_in_user_attr: UserAttributes, owner_attr: UserAttributes,
+                  allow_no_owner: bool = False) -> bool:
     """
     Checks if the logged-in user is the owner of the token or container.
 

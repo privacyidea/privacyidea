@@ -26,7 +26,7 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
         super().__init__(db_template)
 
     @classmethod
-    def get_template_class_options(cls):
+    def get_template_class_options(cls) -> dict:
         custom_option_values = YubikeyContainer.get_class_options()
 
         template_option_values = ContainerTemplateBase.get_template_class_options()
@@ -34,17 +34,17 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
         return custom_option_values
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container template class.
         """
         return "yubikey"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the supported token types for this container template.
         """
-        supported_token_types = ["hotp", "webauthn"]
+        supported_token_types = ["hotp"]
         supported_token_types.sort()
         return supported_token_types

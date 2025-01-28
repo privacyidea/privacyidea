@@ -32,14 +32,14 @@ class YubikeyContainer(TokenContainerClass):
         super().__init__(db_container)
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container class.
         """
         return "yubikey"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """
@@ -48,14 +48,14 @@ class YubikeyContainer(TokenContainerClass):
         return supported_token_types
 
     @classmethod
-    def get_class_prefix(cls):
+    def get_class_prefix(cls) -> str:
         """
         Returns the container class specific prefix for the serial.
         """
         return "YUBI"
 
     @classmethod
-    def get_class_description(cls):
+    def get_class_description(cls) -> str:
         """
         Returns a description of the container class.
         """

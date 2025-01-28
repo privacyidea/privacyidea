@@ -168,7 +168,7 @@ def extract_answered_challenges(challenges):
     return answered_challenges
 
 
-def delete_challenges(serial: str = None, transaction_id: str = None):
+def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     """
     This function deletes challenges from the database.
 
