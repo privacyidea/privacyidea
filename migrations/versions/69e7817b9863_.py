@@ -269,5 +269,4 @@ def downgrade():
             print("Table 'tokencontainer' already removed.")
         else:
             print("Could not remove table 'tokencontainer'.")
-            print
     # ### end Alembic commands ###
