@@ -26,7 +26,8 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
                                            check_admin_tokenlist, check_container_action, check_token_list_action,
                                            check_container_register_rollover, container_registration_config,
-                                           smartphone_config, check_client_container_action, hide_tokeninfo)
+                                           smartphone_config, check_client_container_action, hide_tokeninfo,
+                                           check_client_container_disabled_action)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -603,13 +604,11 @@ def registration_init():
 
     if container_rollover:
         # Set registration state
-        container.add_container_info("registration_state", "rollover")
-        container.add_container_info("rollover_server_url", server_url)
-        container.add_container_info("rollover_challenge_ttl", challenge_ttl)
+        container.update_container_info({"registration_state": "rollover", "rollover_server_url": server_url,
+                                         "rollover_challenge_ttl": challenge_ttl})
     else:
         # save policy values in container info
-        container.add_container_info("server_url", server_url)
-        container.add_container_info("challenge_ttl", challenge_ttl)
+        container.update_container_info({"server_url": server_url, "challenge_ttl": challenge_ttl})
 
     # Audit log
     g.audit_object.log({"success": True})
@@ -673,16 +672,16 @@ def registration_terminate(container_serial: str):
     return send_result({"success": res})
 
 
-@container_blueprint.route('register/<string:container_serial>/terminate/client', methods=['POST'])
-@prepolicy(check_client_container_action, request, action=ACTION.CLIENT_CONTAINER_UNREGISTER)
+@container_blueprint.route('register/terminate/client', methods=['POST'])
+@prepolicy(check_client_container_disabled_action, request, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
 @event('container_unregister', request, g)
 @log_with(log)
-def registration_terminate_client(container_serial: str):
+def registration_terminate_client():
     """
     Terminates the synchronization of a container with privacyIDEA.
     This endpoint can only be called from clients that are registered at the container, providing a valid signature.
 
-    :param container_serial: Serial of the container
+    :jsonparam container_serial: Serial of the container
     :jsonparam signature: Signature of the client
     :return: dictionary with success information such as
         ::
@@ -690,13 +689,14 @@ def registration_terminate_client(container_serial: str):
             {"success": True}
     """
     params = request.all_data
+    container_serial = getParam(params, "container_serial", required)
     container = find_container_by_serial(container_serial)
 
     server_url = container.get_container_info_dict().get("server_url")
     if server_url is None:
         log.debug("Server url is not set in the container info. Container might not be registered correctly.")
         server_url = " "
-    scope = create_endpoint_url(server_url, f"container/register/{container_serial}/terminate/client")
+    scope = create_endpoint_url(server_url, "container/register/terminate/client")
     params.update({'scope': scope})
     container.check_challenge_response(params)
 
@@ -710,15 +710,15 @@ def registration_terminate_client(container_serial: str):
     return send_result({"success": res})
 
 
-@container_blueprint.route('<string:container_serial>/challenge', methods=['POST'])
+@container_blueprint.route('/challenge', methods=['POST'])
 @event('container_create_challenge', request, g)
 @log_with(log)
-def create_challenge(container_serial: str):
+def create_challenge():
     """
     Creates a challenge for a container.
 
-    :param container_serial: Serial of the container
-    :jsonparam scope: Scope of the challenge, e.g. 'https://pi.com/container/SMPH001/sync'
+    :jsonparam container_serial: Serial of the container
+    :jsonparam scope: Scope of the challenge, e.g. 'https://pi.com/container/synchronize'
     :return: dictionary with the challenge information
 
     An example response looks like this:
@@ -733,7 +733,9 @@ def create_challenge(container_serial: str):
 
     """
     # Get params
-    scope = getParam(request.all_data, "scope", optional=False)
+    params = request.all_data
+    scope = getParam(params, "scope", optional=False)
+    container_serial = getParam(params, "container_serial", optional=False)
     container = find_container_by_serial(container_serial)
 
     # Audit log
@@ -758,10 +760,10 @@ def create_challenge(container_serial: str):
     return send_result(res)
 
 
-@container_blueprint.route('<string:container_serial>/sync', methods=['POST'])
+@container_blueprint.route('/synchronize', methods=['POST'])
 @prepolicy(smartphone_config, request)
 @event('container_synchronize', request, g)
-def synchronize(container_serial: str):
+def synchronize():
     """
     Compares the client tokens with the server tokens and returns the differences. Returns a dictionary with the
     container properties and the tokens to be added or updated. For the tokens to be added, the enroll information is
@@ -770,7 +772,7 @@ def synchronize(container_serial: str):
     Additional parameters and entries in the response are possible, depending on the container type.
     The container is only authorized to synchronize if the challenge is valid.
 
-    :param container_serial: Serial of the container
+    :jsonparam container_serial: Serial of the container
     :jsonparam container_dict_client: container data with included tokens from the client. The provided information
         may differ for different container and token types. To identify tokens at least the serial shall be provided.
         However, some clients might not have the serial. In this case, the client can provide a list of at least two
@@ -800,13 +802,14 @@ def synchronize(container_serial: str):
                                           {"serial": "HOTP001", "otp": ["1234", "9876"],
                                            "tokentype": "hotp", "counter": 2}]}
                 "policies": {"container_client_rollover": True,
-                             "container_initial_token_transfer": False,
-                             "client_token_deletable": False,
-                             "client_container_unregister": True}
+                             "initially_add_tokens_to_container": False,
+                             "disable_client_token_deletion": True,
+                             "disable_client_container_unregister": True}
             }
 
     """
     params = request.all_data
+    container_serial = getParam(params, "container_serial", optional=False)
     container_client_str = getParam(params, "container_dict_client", optional=True)
     container_client = json.loads(container_client_str) if container_client_str else {}
 
@@ -826,13 +829,13 @@ def synchronize(container_serial: str):
     if server_url is None:
         log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
         server_url = " "
-    scope = create_endpoint_url(server_url, f"container/{container_serial}/sync")
+    scope = create_endpoint_url(server_url, "container/synchronize")
     params.update({'scope': scope})
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
     container.check_challenge_response(params)
-    initial_token_transfer = request.all_data.get("client_policies").get(ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER)
-    container_dict = container.synchronize_container_details(container_client, initial_token_transfer)
+    initially_add_tokens = request.all_data.get("client_policies").get(ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+    container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
 
     # Write token serials to audit log
     add_serials = ", ".join([serial for serial in container_dict["tokens"]["add"]])
@@ -880,17 +883,18 @@ def synchronize(container_serial: str):
     return send_result(res)
 
 
-@container_blueprint.route('<string:container_serial>/rollover', methods=['POST'])
+@container_blueprint.route('/rollover', methods=['POST'])
 @prepolicy(check_client_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
 @prepolicy(container_registration_config, request)
 @event('container_init_rollover', request, g)
-def rollover(container_serial):
+def rollover():
     """
     Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
     The data or QR code is returned for the container to re-register.
     This endpoint can be used to transfer a container from one device to another.
     Parameters and entries in the returned dictionary are container type specific.
 
+    :jsonparam container_serial: Serial of the container
     :return: Result of the rollover process as dictionary. The information may differ depending on the container
         type.
 
@@ -912,6 +916,7 @@ def rollover(container_serial):
             }
     """
     params = request.all_data
+    container_serial = getParam(params, "container_serial", optional=False)
     container = find_container_by_serial(container_serial)
     # Params set by pre-policies
     server_url = getParam(params, "server_url")

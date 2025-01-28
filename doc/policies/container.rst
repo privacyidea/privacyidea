@@ -11,8 +11,6 @@ rights for containers to use the REST API :ref:`rest_container`.
 
 Technically, container policies are checked using :ref:`code_policy` and :ref:`code_api_policy`.
 
-.. note:: If no container policy is defined, the container has no action available.
-
 The container policies respect all policy conditions. However, since no logged-in user is available in the client
 container requests, instead the user is determined by the container owner.
 
@@ -84,35 +82,37 @@ The rollover can also be used to transfer the container with all tokens to a new
 
 New in version 3.11
 
-container_initial_token_transfer
+initially_add_tokens_to_container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-During the first synchronization, this action allows the server to add tokens from the client to the container on the
-server. This action enables the registration of smartphones with already enrolled tokens as a container on the server.
-However, the tokens already have to exist on the server. No new token is created, it only allows to add existing tokens
-to the container.
+During the first synchronization, this action allows the server to automatically add tokens from the client to the
+container on the server. This allows to register devices with existing tokens as container without having to manually
+add the tokens on the device to the container. However, the tokens already have to exist on the server. No new token is
+created, it only allows to add existing tokens to the container.
 
 New in version 3.11
 
-client_token_deletable
+disable_client_token_deletion
 ~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-This action allows the user to delete tokens locally on the smartphone. The tokens will remain on the server.
-If this action is not enabled, the tokens can not be deleted by the user in the authenticator app as long as the
-smartphone is registered on the server or the policy changes.
+By default, the user is allowed to delete tokens locally on the smartphone. The tokens will remain on the server.
+Activating this action will disable the deletion of tokens in the authenticator app as long as the smartphone is
+registered on the server or this policy changes.
 
 New in version 3.11
 
-client_container_unregister
+disable_client_container_unregister
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-This action allows the client to unregister the container. The container will remain on the server but will not be
-connected to the smartphone.
+By default, the user is allowed to delete the container locally on the smartphone and thus unregister the container.
+The container will remain on the server but will not be connected to the smartphone.
+To prevent the user from unregistering the container, this action can be activated. It will also disable the deletion of
+the container in the authenticator app as long as the smartphone is registered on the server or this policy changes.
 
 New in version 3.11

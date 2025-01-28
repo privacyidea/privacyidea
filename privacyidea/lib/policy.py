@@ -417,9 +417,10 @@ class ACTION(object):
     CONTAINER_TEMPLATE_DELETE = "container_template_delete"
     CONTAINER_TEMPLATE_LIST = "container_template_list"
     CONTAINER_CLIENT_ROLLOVER = "container_client_rollover"
-    CONTAINER_INITIAL_TOKEN_TRANSFER = "container_initial_token_transfer"
-    CLIENT_TOKEN_DELETABLE = "client_token_deletable"
-    CLIENT_CONTAINER_UNREGISTER = "client_container_unregister"
+    INITIALLY_ADD_TOKENS_TO_CONTAINER = "initially_add_tokens_to_container"
+    DISABLE_CLIENT_TOKEN_DELETION = "disable_client_token_deletion"
+    DISABLE_CLIENT_CONTAINER_UNREGISTER = "disable_client_container_unregister"
+    DEFAULT_CONTAINER_TYPE = "default_container_type"
 
 
 class TYPE(object):
@@ -1620,6 +1621,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
+    from .container import get_container_token_types
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2830,6 +2832,11 @@ def get_static_policy_definitions(scope=None):
                           "enrollment dialog."),
                 'value': get_token_types()
             },
+            ACTION.DEFAULT_CONTAINER_TYPE: {
+                'type': 'str',
+                'desc': _("This is the default container type in the container create dialog."),
+                'value': list(get_container_token_types().keys())
+            },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
                 'desc': _("A list of realm names, which are "
@@ -2916,23 +2923,22 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The client is allowed to perform a rollover of the container and the included tokens.'),
                 'group': GROUP.SMARTPHONE
             },
-            ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER: {
+            ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER: {
                 'type': 'bool',
-                'desc': _('During the first synchronization the server adds token from the client to the container. '
-                          'This allows to register existing devices as a container without manually adding the '
-                          'tokens.'),
+                'desc': _('During the first synchronization, the server automatically adds the clients tokens existing '
+                          'in privacyIDEA to the container. This allows to register devices with existing tokens as '
+                          'container without having to manually add the tokens on the device to the container.'),
                 'group': GROUP.SMARTPHONE
             },
-            ACTION.CLIENT_TOKEN_DELETABLE: {
+            ACTION.DISABLE_CLIENT_TOKEN_DELETION: {
                 'type': 'bool',
-                'desc': _('The user is allowed to delete tokens locally on the smartphone. '
-                          'The tokens will remain on the server.'),
+                'desc': _('The user is disabled from deleting tokens locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
             },
-            ACTION.CLIENT_CONTAINER_UNREGISTER: {
+            ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER: {
                 'type': 'bool',
-                'desc': _('The client is allowed to unregister the container. '
-                          'The container will remain on the server but is not connected to the smartphone.'),
+                'desc': _('The client is disabled to unregister the container. The user can not delete the container '
+                          'locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
             }
         }

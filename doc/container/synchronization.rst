@@ -4,7 +4,7 @@ Synchronization
 ................
 
 Beginning from version 3.11, privacyIDEA supports the synchronization of smartphones with the privacyIDEA
-server. This requires the privacyIDEA Authenticator App (v4.5 or higher) to be installed on the smartphone.
+server. This requires the privacyIDEA Authenticator App (v4.5.0 or higher) to be installed on the smartphone.
 It is only supported for the container type ``smartphone``.
 
 Use Cases
@@ -15,9 +15,18 @@ The synchronization enables the following use cases:
       to scan each token individually.
     * If new tokens are added to the container on the server, the user can synchronize the container with the
       privacyIDEA server to add the new tokens to the authenticator app.
+    * If the user already has tokens on his smartphone, he can synchronize the container with the privacyIDEA server
+      to add the tokens to the container on the server.
     * Perform a rollover for all tokens in case the token secrets might be compromised.
     * Transfer all tokens to a new smartphone and invalidate the tokens on the old smartphone. This might be required if
       the smartphone is lost or stolen or if the user switches to a new smartphone.
+
+Note that not all of these scenarios work for offline tokens. Offline tokens already existing on the smartphone
+can be synchronized with the server and also be automatically added to the container on the server. However, a transfer
+to a new device is not possible as well as a rollover. This would renew the token secret and hence invalidate the
+offline otp values.
+
+Additionally, sms tokens will not be synchronized, because they are not stored on the smartphone.
 
 Setup
 ~~~~~
@@ -45,6 +54,15 @@ To set the smartphone synchronization up properly, the following steps are requi
 4. **Synchronize Container**:
    After a successful registration, the pi Authenticator app triggers a synchronization automatically. The user
    can also manually synchronize the container.
+
+The following endpoints must be reachable for the smartphone:
+    * ``/container/register/finalize``: The endpoint that the smartphone contacts to complete the registration.
+    * ``/container/register/terminate/client``: The endpoint to terminate the registration. If the container is deleted
+        on the smartphone, this endpoint is called to inform the server that the container is no longer available.
+    * ``/container/challenge``: Creates a scoped challenge.
+    * ``/container/synchronize``: The endpoint to synchronize the container.
+    * ``/container/rollover``: The endpoint to perform a rollover of the container with all tokens. This endpoint must
+        only be available if the rollover is allowed for the client using the policy `container_client_rollover`.
 
 
 Implementation Details

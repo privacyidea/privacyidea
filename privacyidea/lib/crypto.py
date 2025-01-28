@@ -54,7 +54,8 @@ import binascii
 import ctypes
 import base64
 import traceback
-from cryptography.exceptions import UnsupportedAlgorithm
+from typing import Union
+
 from cryptography.hazmat.primitives._serialization import NoEncryption
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
@@ -934,7 +935,7 @@ def get_elliptic_curve_instance(curve_name: str):
         class_obj = getattr(m, cls)
         class_instance = class_obj()
     except Exception as ex:  # pragma: no cover
-        log.warning(f"Error importing module {cls}: {ex}")
+        log.debug(f"Could not import module {cls}: {ex}")
 
     return class_instance
 
@@ -954,12 +955,12 @@ def get_private_key_class(curve_name):
         m = importlib.import_module(f"{mod}.{curve_name.lower()}")
         class_obj = getattr(m, cls)
     except Exception as ex:  # pragma: no cover
-        log.warning(f"Error importing module {cls}: {ex}")
+        log.debug(f"Could not import module {cls}: {ex}")
 
     return class_obj
 
 
-def generate_keypair_ecc(curve_name: str):
+def generate_keypair_ecc(curve_name: str) -> KeyPair:
     """
     Generates a key pair using the given elliptic curve.
 
@@ -988,7 +989,8 @@ def generate_keypair_ecc(curve_name: str):
     return ecc_keys
 
 
-def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None, private_key: EllipticCurvePrivateKey = None):
+def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None,
+                               private_key: EllipticCurvePrivateKey = None) -> KeyPair:
     """
     Encodes the given ECC key (pair) in urlsafe base64 to a string. If one key is None, an empty string is returned for
     this key.
@@ -1013,7 +1015,7 @@ def ecc_key_pair_to_b64url_str(public_key: EllipticCurvePublicKey = None, privat
     return str_keys
 
 
-def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: str = None):
+def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: str = None) -> KeyPair:
     """
     Converts public and private keys as base64url encoded strings to ECC key objects.
     If only one key is given, None is returned for the other one.
@@ -1032,7 +1034,7 @@ def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: 
     return ecc_keys
 
 
-def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None):
+def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None) -> type[HashAlgorithm]:
     """
     Returns the HashAlgorithm object for the given algorithm name.
 
@@ -1059,7 +1061,7 @@ def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None
     return hash_algorithm
 
 
-def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str):
+def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str) -> dict[str, Union[bytes, str]]:
     """
     Signs a message with the given ecc private key.
 
@@ -1082,7 +1084,8 @@ def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_nam
     return {"signature": signature, "hash_algorithm": hash_algorithm.name}
 
 
-def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublicKey, algorithm_name: str):
+def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublicKey,
+               algorithm_name: str) -> dict[str, Union[bool, str]]:
     """
     Verifies a signature with the given public key.
     Raises InvalidSignature if the signature is invalid.
@@ -1107,7 +1110,7 @@ def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublic
     return {"valid": valid, "hash_algorithm": hash_algorithm.name}
 
 
-def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey):
+def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey) -> bytes:
     """
     Performs an ECDH key exchange.
     The shared key is calculated from the private and public key. Afterward, a key derivation is performed.
@@ -1127,14 +1130,12 @@ def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey
     return derived_key
 
 
-def encrypt_ecc(message: bytes, shared_key: bytes, algorithm_name: str, mode_name):
+def encrypt_aes(message: bytes, shared_key: bytes) -> dict[str, str]:
     """
-    Encrypts a message with the given public key.
+    Encrypts a message with the given shared key using AES (Advanced Encryption Standard) and GCM (Galois Counter Mode).
 
     :param message: The message to encrypt
     :param shared_key: The shared key to use for encryption
-    :param algorithm_name: The name of the algorithm to use for the encryption
-    :param mode_name: The name of the mode to use for the encryption
     :return: Dictionary containing the encrypted message and further parameters required for the decryption such as:
 
         ::
@@ -1146,8 +1147,6 @@ def encrypt_ecc(message: bytes, shared_key: bytes, algorithm_name: str, mode_nam
                 "tag": <tag base64 encoded, str>
             }
     """
-    # TODO: Make that applicable for different algorithms and modes
-
     init_vector = geturandom(16)
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(init_vector))
     encryptor = cipher.encryptor()
@@ -1158,18 +1157,17 @@ def encrypt_ecc(message: bytes, shared_key: bytes, algorithm_name: str, mode_nam
     init_vector_str = base64.urlsafe_b64encode(init_vector).decode("utf-8")
     tag_str = base64.urlsafe_b64encode(encryptor.tag).decode("utf-8")
 
-    res = {"cipher": secret_str, "algorithm": algorithm_name, "mode": mode_name, "init_vector": init_vector_str,
+    res = {"cipher": secret_str, "algorithm": "AES", "mode": "GCM", "init_vector": init_vector_str,
            "tag": tag_str}
     return res
 
 
-def decrypt_ecc(secret: bytes, shared_key: bytes, algorithm: str, params: dict):
+def decrypt_aes(secret: bytes, shared_key: bytes, params: dict) -> bytes:
     """
     Decrypts a message with the given key.
 
     :param secret: The encrypted message
     :param shared_key: The shared key to use for decryption
-    :param algorithm: The name of the algorithm to use for the decryption
     :param params: The Further parameters for the decryption depending on the algorithm like
 
         ::
@@ -1179,7 +1177,7 @@ def decrypt_ecc(secret: bytes, shared_key: bytes, algorithm: str, params: dict):
                 "tag": "Wzuu8O5WYI_xf4Hb14rEBA=="
             }
 
-    :return: The decrypted message as bytes
+    :return: The decrypted message
     """
     if isinstance(secret, str):
         secret = base64.urlsafe_b64decode(secret)

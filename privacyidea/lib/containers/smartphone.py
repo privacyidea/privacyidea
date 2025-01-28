@@ -30,8 +30,9 @@ from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
-                                    generate_keypair_ecc, encrypt_ecc)
+                                    generate_keypair_ecc, encrypt_aes)
 from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
@@ -42,7 +43,7 @@ log = logging.getLogger(__name__)
 def create_container_registration_url(nonce: str, time_stamp: str, server_url: str, container_serial: str,
                                       key_algorithm: str, hash_algorithm: str, extra_data: dict = None,
                                       passphrase: str = "", issuer: str = "privacyIDEA", ttl: int = 10,
-                                      ssl_verify: bool = True):
+                                      ssl_verify: bool = True) -> str:
     """
     Create a URL for binding a container to a physical container.
 
@@ -76,17 +77,6 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     return url
 
 
-class SmartphoneOptions:
-    """
-    Options for the smartphone container.
-    """
-    KEY_ALGORITHM = "key_algorithm"
-    HASH_ALGORITHM = "hash_algorithm"
-    ENCRYPT_KEY_ALGORITHM = "encrypt_key_algorithm"
-    ENCRYPT_ALGORITHM = "encrypt_algorithm"
-    ENCRYPT_MODE = "encrypt_mode"
-
-
 class SmartphoneContainer(TokenContainerClass):
     # The first value in the list is the default value
     options = {SmartphoneOptions.KEY_ALGORITHM: ["secp384r1"],
@@ -99,14 +89,14 @@ class SmartphoneContainer(TokenContainerClass):
         super().__init__(db_container)
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container class.
         """
         return "smartphone"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """
@@ -115,21 +105,21 @@ class SmartphoneContainer(TokenContainerClass):
         return supported_token_types
 
     @classmethod
-    def get_class_prefix(cls):
+    def get_class_prefix(cls) -> str:
         """
         Returns the container class specific prefix for the serial.
         """
         return "SMPH"
 
     @classmethod
-    def get_class_description(cls):
+    def get_class_description(cls) -> str:
         """
         Returns a description of the container class.
         """
         return _("A smartphone that uses an authenticator app.")
 
     def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool,
-                          params: dict = None):
+                          params: dict = None) -> dict:
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
@@ -234,7 +224,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         return response_detail
 
-    def finalize_registration(self, params: dict):
+    def finalize_registration(self, params: dict) -> dict[str, bool]:
         """
         Finalize the registration of a container.
         Validates whether the smartphone is authorized to register. If successful, the registration state is set as
@@ -276,10 +266,10 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Update container info
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
-        self.add_container_info("public_key_container", pub_key_container_str)
+        new_container_info = {"public_key_client": pub_key_container_str}
 
         if device != "":
-            self.add_container_info("device", device)
+            new_container_info["device"] = device
         else:
             # this might be a rollover, delete old device information
             self.delete_container_info("device")
@@ -288,11 +278,14 @@ class SmartphoneContainer(TokenContainerClass):
         container_info = self.get_container_info_dict()
         registration_state = container_info.get("registration_state", "")
         if registration_state != "rollover":
-            self.add_container_info("registration_state", "registered")
+            new_container_info["registration_state"] = "registered"
 
         # check right for initial token transfer
-        if params.get("client_policies", {}).get("container_initial_token_transfer"):
-            self.add_container_info("initial_synchronized", False)
+        if params.get("client_policies", {}).get("initially_add_tokens_to_container"):
+            new_container_info["initially_synchronized"] = "False"
+
+        # update container info
+        self.update_container_info(new_container_info)
 
         return {"success": True}
 
@@ -303,14 +296,14 @@ class SmartphoneContainer(TokenContainerClass):
         as well.
         """
         # Delete registration / synchronization info
-        self.delete_container_info("public_key_container")
+        self.delete_container_info("public_key_client")
         self.delete_container_info("device")
         self.delete_container_info("server_url")
         self.delete_container_info("registration_state")
         self.delete_container_info("challenge_ttl")
-        self.delete_container_info("initial_synchronized")
+        self.delete_container_info("initially_synchronized")
 
-    def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None):
+    def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:
         """
         Create a challenge for the container.
 
@@ -326,8 +319,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "enc_key_algorithm": <encryption key algorithm, str>
                 }
         """
-        if not data:
-            data = {}
+        data = data or {}
 
         # Create challenge
         nonce = geturandom(20, hex=True)
@@ -350,7 +342,7 @@ class SmartphoneContainer(TokenContainerClass):
                "enc_key_algorithm": enc_key_algorithm}
         return res
 
-    def check_challenge_response(self, params: dict):
+    def check_challenge_response(self, params: dict) -> bool:
         """
         Checks if the response to a challenge is valid.
 
@@ -379,7 +371,7 @@ class SmartphoneContainer(TokenContainerClass):
         device_model = getParam(params, "device_model", optional=True)
 
         try:
-            pub_key_sig_container_str = self.get_container_info_dict()["public_key_container"]
+            pub_key_sig_container_str = self.get_container_info_dict()["public_key_client"]
         except KeyError:
             raise ContainerNotRegistered("The container is not registered or was unregistered!")
         sig_keys_container = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_sig_container_str)
@@ -395,7 +387,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         return valid_challenge
 
-    def encrypt_dict(self, container_dict: dict, params: dict):
+    def encrypt_dict(self, container_dict: dict, params: dict) -> dict:
         """
         Encrypt a container dictionary.
 
@@ -423,19 +415,14 @@ class SmartphoneContainer(TokenContainerClass):
         encr_server = generate_keypair_ecc(enc_key_algorithm)
         public_key_encr_server_str = base64.urlsafe_b64encode(encr_server.public_key.public_bytes_raw()).decode('utf-8')
 
-        # Get encryption algorithm and mode
-        container_info = self.get_container_info_dict()
-        encrypt_algorithm = container_info.get(SmartphoneOptions.ENCRYPT_ALGORITHM)
-        encrypt_mode = container_info.get(SmartphoneOptions.ENCRYPT_MODE)
-
         # encrypt container dict
         session_key = encr_server.private_key.exchange(pub_key_encr_container)
         container_dict_bytes = json.dumps(container_dict).encode('utf-8')
-        encryption_params = encrypt_ecc(container_dict_bytes, session_key, encrypt_algorithm, encrypt_mode)
+        encryption_params = encrypt_aes(container_dict_bytes, session_key)
         container_dict_encrypted = encryption_params["cipher"]
         del encryption_params["cipher"]
 
-        res = {"encryption_algorithm": encrypt_algorithm,
+        res = {"encryption_algorithm": "AES",
                "encryption_params": encryption_params,
                "container_dict_server": container_dict_encrypted,
                "public_server_key": public_key_encr_server_str}

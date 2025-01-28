@@ -80,6 +80,7 @@ DEFAULT_LOGOUT_TIME = 120
 DEFAULT_AUDIT_PAGE_SIZE = 10
 DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
+DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
@@ -100,6 +101,7 @@ class postpolicy(object):
     function.
     The postpolicy decorator is to be used in the API calls.
     """
+
     def __init__(self, function, request=None):
         """
         :param function: This is the policy function the is to be called
@@ -120,6 +122,7 @@ class postpolicy(object):
         :type wrapped_function: API function
         :return: Response object
         """
+
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
             response = wrapped_function(*args, **kwds)
@@ -132,6 +135,7 @@ class postrequest(object):
     """
     Decorator that is supposed to be used with after_request.
     """
+
     def __init__(self, function, request=None):
         """
         :param function: This is the policy function the is to be called
@@ -286,7 +290,7 @@ def check_tokeninfo(request, response):
     serial = response.json.get("detail", {}).get("serial")
 
     if serial:
-        tokeninfos_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO)\
+        tokeninfos_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO) \
             .action_values(unique=False, allow_white_space_in_action=True)
         if tokeninfos_pol:
             tokens = get_tokens(serial=serial)
@@ -324,7 +328,7 @@ def no_detail_on_success(request, response):
     content = response.json
 
     # get the serials from a policy definition
-    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS)\
+    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS) \
         .policies(write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
@@ -353,7 +357,7 @@ def preferred_client_mode(request, response):
     user_object = request.User
 
     # get the preferred client mode from a policy definition
-    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object) \
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
@@ -398,7 +402,7 @@ def add_user_detail_to_response(request, response):
     content = response.json
 
     # Check for ADD USER IN RESPONSE
-    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User) \
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -412,7 +416,7 @@ def add_user_detail_to_response(request, response):
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
-    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User) \
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
@@ -596,9 +600,11 @@ def get_webui_settings(request, response):
         hide_buttons = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
                                      user=loginname, realm=realm).any()
         deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION,
-                                     user=loginname, realm=realm).any()
+                                              user=loginname, realm=realm).any()
         default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
                                               user=loginname, realm=realm).action_values(unique=True)
+        default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_CONTAINER_TYPE,
+                                                   user=loginname, realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                   user=loginname, realm=realm).any()
         show_node = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE, realm=realm).any()
@@ -621,6 +627,7 @@ def get_webui_settings(request, response):
         user_page_size = DEFAULT_PAGE_SIZE
         require_description = list(require_description.keys())
         default_tokentype = DEFAULT_TOKENTYPE
+        default_container_type = DEFAULT_CONTAINER_TYPE
         logout_redirect_url = ""
         if len(audit_page_size_pol) == 1:
             audit_page_size = int(list(audit_page_size_pol)[0])
@@ -630,6 +637,8 @@ def get_webui_settings(request, response):
             user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
             default_tokentype = list(default_tokentype_pol)[0]
+        if len(default_container_type_pol) == 1:
+            default_container_type = list(default_container_type_pol)[0]
         if len(logout_redirect_url_pol) == 1:
             logout_redirect_url = list(logout_redirect_url_pol)[0]
 
@@ -663,6 +672,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_page_size"] = user_page_size
         content["result"]["value"]["policy_template_url"] = policy_template_url
         content["result"]["value"]["default_tokentype"] = default_tokentype
+        content["result"]["value"]["default_container_type"] = default_container_type
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
@@ -728,7 +738,7 @@ def autoassign(request, response):
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
         user_obj = request.User
-        #user_obj = get_user_from_param(request.all_data)
+        # user_obj = get_user_from_param(request.all_data)
         password = request.all_data.get("pass", "")
         if user_obj.login and user_obj.realm:
             # If there is no user in the request (because it is a serial
@@ -814,7 +824,7 @@ def multichallenge_enroll_via_validate(request, response):
         user = request.User
         if user.login and user.realm:
             enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
-                                    user_object=user).action_values(unique=True, write_to_audit_log=False)
+                                         user_object=user).action_values(unique=True, write_to_audit_log=False)
             # check if we have a multi enroll policy
             if enroll_policies:
                 tokentype = list(enroll_policies)[0]
@@ -824,9 +834,9 @@ def multichallenge_enroll_via_validate(request, response):
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
                         # Now get the alternative text from the policies
                         text_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
-                                              user_object=user).action_values(unique=True,
-                                                                                  write_to_audit_log=False,
-                                                                                  allow_white_space_in_action=True)
+                                                   user_object=user).action_values(unique=True,
+                                                                                   write_to_audit_log=False,
+                                                                                   allow_white_space_in_action=True)
                         message = None
                         if text_policies:
                             message = list(text_policies)[0]
@@ -850,7 +860,7 @@ def construct_radius_response(request, response):
     :return:
     """
     if request.url_rule.rule == '/validate/radiuscheck':
-        return_code = 400 # generic 400 error by default
+        return_code = 400  # generic 400 error by default
         if response.json['result']['status']:
             if response.json['result']['value']:
                 # user was successfully authenticated

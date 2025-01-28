@@ -74,13 +74,13 @@ myApp.service('ContainerUtils', function () {
     this.containerTemplateDiffCallback = function (data) {
         // Converts the output of the container template comparison API output to a format that can be displayed
         // for each container a single string of missing and additional tokens is created
-        let diff_list = data.result.value;
-        let templateContainerDiff = diff_list;
+        let diffList = data.result.value;
+        let templateContainerDiff = diffList;
 
-        angular.forEach(diff_list, function (containerDiff, serial) {
+        angular.forEach(diffList, function (containerDiff, serial) {
             angular.forEach(["missing", "additional"], function (key) {
                 templateContainerDiff[serial]["tokens"][key] = helperCreateDisplayList(
-                    diff_list[serial]["tokens"][key], true);
+                    diffList[serial]["tokens"][key], true);
             });
         });
         return templateContainerDiff;
@@ -97,7 +97,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             containerTypes: {},
         };
         $scope.form = {
-            containerType: "generic",
+            containerType: $scope.default_container_type,
             description: "",
             template: {},
             tokens: []
@@ -233,17 +233,29 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 let templatesList = data.result.value.templates;
                 // sort them by the container type and add for each type a "No Template" option
                 angular.forEach(["generic", "smartphone", "yubikey"], function (containerType) {
-                    $scope.templates[containerType] = {"No Template": {"name": "noTemplate"}};
+                    $scope.templates[containerType] = {
+                        "No Template": {
+                            "name": "noTemplate",
+                            "template_display": "No Template"
+                        }
+                    };
                 });
                 // default selection
                 $scope.form.template = $scope.templates["generic"]["No Template"];
                 // Sort the templates by the container type
                 angular.forEach(templatesList, function (template) {
                     $scope.templates[template.container_type][template.name] = template;
+                    // create display string with all contained token types
+                    let templateTokenTypes = [];
+                    angular.forEach(template.template_options.tokens, function (token) {
+                        templateTokenTypes.push(token.type);
+                    });
+                    template["template_display"] = template.name + ": "
+                        + ContainerUtils.createDisplayList(templateTokenTypes, true);
                     if (template.default) {
                         // save default template
                         $scope.defaultTemplates[template.container_type] = template;
-                        if (template.container_type == $scope.form.containerType) {
+                        if (template.container_type === $scope.form.containerType) {
                             // select default template for selected container type
                             $scope.selectTemplate(true);
                         }
@@ -333,11 +345,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
                     angular.forEach($scope.tokenInitData, function (initData, serial) {
                         if (initData.otps) {
-                            const otps_count = Object.keys(initData.otps).length;
-                            let otp_row_count = parseInt(otps_count / 5 + 0.5);
-                            let otp_rows = Object.keys(initData.otps).slice(0, otp_row_count);
+                            const otpsCount = Object.keys(initData.otps).length;
+                            let otpRowCount = parseInt(otpsCount / 5 + 0.5);
+                            let otp_rows = Object.keys(initData.otps).slice(0, otpRowCount);
                             initData["otp_rows"] = otp_rows;
-                            initData["otp_row_count"] = otp_row_count;
+                            initData["otp_row_count"] = otpRowCount;
                         }
                         if (initData.webAuthnRegisterRequest) {
                             $scope.click_wait = true;
@@ -352,12 +364,12 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         };
 
         $scope.regenerateToken = function (serial) {
-            let init_params = $scope.tokenInitData[serial].init_params;
-            init_params["serial"] = serial;
-            TokenFactory.enroll({}, init_params, function (data) {
+            let initParams = $scope.tokenInitData[serial].init_params;
+            initParams["serial"] = serial;
+            TokenFactory.enroll({}, initParams, function (data) {
                 $scope.tokenInitData[serial] = data.detail;
-                $scope.tokenInitData[serial].init_params = init_params;
-                $scope.tokenInitData[serial].type = init_params.type;
+                $scope.tokenInitData[serial].initParams = initParams;
+                $scope.tokenInitData[serial].type = initParams.type;
             });
         };
 
@@ -369,11 +381,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
                 if (data.result.value.containers.length > 0) {
                     let container = data.result.value.containers[0];
-                    let registration_state = container.info['registration_state'];
-                    if (registration_state === "client_wait" && $location.path() == "/token/container") {
+                    let registrationState = container.info['registration_state'];
+                    if (registrationState === "client_wait" && $location.path() === "/token/container") {
                         // stop polling if the page changed or the container was (un)registered
                         $timeout($scope.pollContainerDetails, 2500);
-                    } else if (registration_state === "registered") {
+                    } else if (registrationState === "registered") {
                         // container successfully registered, move to details page
                         $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                     }
@@ -873,6 +885,51 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 }
             });
             $scope.showDialogAll = false;
+        };
+
+        $scope.assignUserToAllTokens = function () {
+            if ($scope.containerOwner) {
+                let tokensToAssign = [];
+                angular.forEach($scope.container.tokens, function (token, index) {
+                    if (token.username === "") {
+                        tokensToAssign.push(token.serial);
+                    }
+                });
+
+                angular.forEach(tokensToAssign, function (serial, index) {
+                    let params = {
+                        serial: serial,
+                        user: $scope.containerOwner.user_name,
+                        realm: $scope.containerOwner.user_realm
+                    }
+                    if (index == tokensToAssign.length - 1) {
+                        TokenFactory.assign(params, $scope.getContainer);
+                    } else {
+                        TokenFactory.assign(params, function (data) {
+                        });
+                    }
+
+                });
+            }
+        };
+
+        $scope.unassignUsersFromAllTokens = function () {
+            // Get tokens with the same user as the container owner
+            let tokensToUnassign = [];
+            angular.forEach($scope.container.tokens, function (token, index) {
+                if (token.username === $scope.containerOwner.user_name && token.user_realm === $scope.containerOwner.user_realm) {
+                    tokensToUnassign.push(token.serial);
+                }
+            });
+            // Unassign the user from the tokens
+            angular.forEach(tokensToUnassign, function (serial, index) {
+                if (index == tokensToUnassign.length - 1) {
+                    TokenFactory.unassign(serial, $scope.getContainer);
+                } else {
+                    TokenFactory.unassign(serial, function (data) {
+                    });
+                }
+            });
         };
 
         // --- Add token functions ---

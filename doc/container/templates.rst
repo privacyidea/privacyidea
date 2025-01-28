@@ -62,8 +62,6 @@ Generic
   password.
 * :ref:`tan_token` - TANs printed on a sheet of paper.
 * :ref:`totp_token` - time based One Time Password tokens.
-* :ref:`webauthn` - The WebAuthn or FIDO2 token which can use several different mechanisms like
-  USB tokens or TPMs to authenticate via public key cryptography.
 
 
 Smartphone
@@ -85,5 +83,3 @@ Yubikey
 ~~~~~~~
 
 * :ref:`hotp_token` - event based One Time Password token
-* :ref:`webauthn` - The WebAuthn or FIDO2 token which can use several different mechanisms like
-  USB tokens or TPMs to authenticate via public key cryptography.

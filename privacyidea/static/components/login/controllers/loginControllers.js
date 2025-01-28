@@ -461,6 +461,7 @@ angular.module("privacyideaApp")
                 $scope.user_page_size = data.result.value.user_page_size;
                 $scope.user_details_in_tokenlist = data.result.value.user_details;
                 $scope.default_tokentype = data.result.value.default_tokentype;
+                $scope.default_container_type = data.result.value.default_container_type;
                 $scope.timeout_action = data.result.value.timeout_action;
                 $scope.admin_dashboard = data.result.value.admin_dashboard;
                 if ($scope.admin_dashboard) {

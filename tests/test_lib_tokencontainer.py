@@ -888,6 +888,33 @@ class TokenContainerManagementTestCase(MyTestCase):
         yubikey.template = "test"
         self.assertIsNone(yubikey.template)
 
+    def test_38_update_container_info(self):
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Set initial info fields
+        container.update_container_info({"key1": "abc", "key2": "123"})
+        container_info = get_container_info_dict(container_serial)
+        self.assertEqual("abc", container_info["key1"])
+        self.assertEqual("123", container_info["key2"])
+        self.assertEqual(2, len(container_info))
+
+        # Update info fields
+        container.update_container_info({"key2": "456", "key3": "xyz"})
+        container_info = get_container_info_dict(container_serial)
+        self.assertEqual("abc", container_info["key1"])
+        self.assertEqual("456", container_info["key2"])
+        self.assertEqual("xyz", container_info["key3"])
+        self.assertEqual(3, len(container_info))
+
+        # Pass empty dict
+        container.update_container_info({})
+        container_info = get_container_info_dict(container_serial)
+        self.assertEqual(3, len(container_info))
+
+        # Clean up
+        container.delete()
+
 
 class MockSmartphone:
 
@@ -1019,7 +1046,7 @@ class MockSmartphone:
         sign_res = sign_ecc(message.encode("utf-8"), self.private_key_sign, "sha256")
 
         params = {"signature": base64.b64encode(sign_res["signature"]), "public_enc_key_client": pub_key_enc_smph_str,
-                  "scope": scope}
+                  "scope": scope, "container_serial": self.container_serial}
         if self.container:
             params.update({"container_dict_client": json.dumps(self.container)})
         return params
@@ -1031,7 +1058,7 @@ class MockSmartphone:
         message = f"{nonce}|{time_stamp}|{self.container_serial}|{scope}"
         sign_res = sign_ecc(message.encode("utf-8"), self.private_key_sign, "sha256")
 
-        params = {"signature": base64.b64encode(sign_res["signature"])}
+        params = {"signature": base64.b64encode(sign_res["signature"]), "container_serial": self.container_serial}
         return params
 
 
@@ -1162,7 +1189,7 @@ class TokenContainerSynchronization(MyTestCase):
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
-        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
         self.assertEqual("registered", container_info["registration_state"])
 
@@ -1173,7 +1200,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # create challenges
-        params = {"scope": "https://pi.net/container/SMPH0011/sync"}
+        params = {"scope": "https://pi.net/container/synchronize"}
         smartphone.create_challenge(params)
         smartphone.create_challenge(params)
         smartphone.create_challenge(params)
@@ -1185,7 +1212,7 @@ class TokenContainerSynchronization(MyTestCase):
         # Check that the container info is deleted
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
-        self.assertNotIn("public_key_container", container_info_keys)
+        self.assertNotIn("public_key_client", container_info_keys)
         self.assertNotIn("device", container_info_keys)
         self.assertNotIn("registration_state", container_info_keys)
         self.assertNotIn("server_url", container_info_keys)
@@ -1220,12 +1247,12 @@ class TokenContainerSynchronization(MyTestCase):
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
-        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_client", container_info_keys)
 
     def test_06_create_container_challenge(self):
         container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
-        scope = "https://pi.net/container/SMPH0001/sync"
+        scope = "https://pi.net/container/synchronize"
 
         res = container.create_challenge(scope)
         self.assertIn("nonce", res.keys())
@@ -1257,7 +1284,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Create challenge for synchronization
-        scope = f"https://pi.net/container/{smartphone_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         result = smartphone.create_challenge(scope)
         result_entries = result.keys()
         self.assertIn("nonce", result_entries)
@@ -1277,7 +1304,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
         result_entries = challenge_params.keys()
         self.assertIn("nonce", result_entries)
@@ -1297,7 +1324,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
 
         # Wrong nonce
@@ -1311,7 +1338,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertRaises(ContainerInvalidChallenge, smartphone.check_challenge_response, smph_params)
 
         # Another scope
-        wrong_scope = f"https://pi.net/container/register/{mock_smph.container_serial}/terminate/client"
+        wrong_scope = "https://pi.net/container/register/terminate/client"
         smph_params = mock_smph.synchronize(challenge_params, wrong_scope)
         self.assertRaises(ContainerInvalidChallenge, smartphone.check_challenge_response, smph_params)
 
@@ -1326,7 +1353,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope, 0)
 
         smph_params = mock_smph.synchronize(challenge_params, scope)
@@ -1338,7 +1365,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
 
         # pass no public key
@@ -1356,8 +1383,8 @@ class TokenContainerSynchronization(MyTestCase):
         # tokens
         hotp_server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
         hotp_token = init_token({"genkey": "1", "type": "hotp"})
-        _, _, otp_dict = hotp_token.get_multi_otp(2)
-        hotp_otps = list(otp_dict["otp"].values())
+        _, _, otp_dict = hotp_token.get_multi_otp(3)
+        hotp_otps = list(otp_dict["otp"].values())[1:]
         totp_token = init_token({"genkey": "1", "type": "totp"})
         # the function uses the local time, hence we have to pass the utc time
         time_now = datetime.now(timezone.utc)
@@ -1368,7 +1395,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone.add_token(totp_token)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
         result_entries = challenge_params.keys()
         self.assertIn("nonce", result_entries)
@@ -1378,8 +1405,11 @@ class TokenContainerSynchronization(MyTestCase):
         # Mock smartphone
         # In the first step the smph does not know the container. hence it only sends the token infos
         random_otp = "123456"
-        mock_smph.container = {"tokens": [{"type": "hotp", "otp": hotp_otps}, {"type": "totp", "otp": totp_otps},
-                                          {"type": "hotp", "otp": [random_otp]}]}
+        mock_smph.container = {
+            "tokens": [{"tokentype": "HOTP", "otp": hotp_otps, "issuer": "privacyIDEA", "label": "123", "pin": "False",
+                        "algorithm": "SHA1", "digits": "6", "counter": "1"},
+                       {"tokentype": "TOTP", "otp": totp_otps},
+                       {"tokentype": "HOTP", "otp": [random_otp]}]}
         smph_params = mock_smph.synchronize(challenge_params, scope)
 
         # Finalize sync
@@ -1410,7 +1440,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{smartphone_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
 
         # Mock smartphone
@@ -1427,7 +1457,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(mock_smph.container_serial)
 
         # Init sync
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
         result_entries = challenge_params.keys()
         self.assertIn("nonce", result_entries)
@@ -1515,7 +1545,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone.add_container_info("allow_client_rollover", "True")
 
         # Create Challenge for rollover
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/rollover"
+        scope = "https://pi.net/container/rollover"
         challenge_data = smartphone.create_challenge(scope)
 
         # Mock smartphone
@@ -1538,7 +1568,7 @@ class TokenContainerSynchronization(MyTestCase):
         # Check if container info is set correctly
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
-        self.assertIn("public_key_container", container_info_keys)
+        self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph_new.device_brand} {mock_smph_new.device_model}", container_info["device"])
         self.assertEqual("rollover", container_info["registration_state"])
         self.assertEqual("https://pi.net/", container_info["server_url"])
@@ -1568,7 +1598,7 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone.add_token(daypassword)
 
         # Create Challenge for rollover
-        scope = f"https://pi.net/container/{mock_smph.container_serial}/rollover"
+        scope = "https://pi.net/container/rollover"
         challenge_data = smartphone.create_challenge(scope)
 
         # Mock smartphone
@@ -1618,7 +1648,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Registration
         mock_smph = self.test_03_register_smartphone_success(smartphone_serial)
-        smartphone.add_container_info("initial_synchronized", "False")
+        smartphone.add_container_info("initially_synchronized", "False")
 
         # tokens
         hotp_token = init_token({"genkey": "1", "type": "hotp"})
@@ -1628,7 +1658,7 @@ class TokenContainerSynchronization(MyTestCase):
         spass_token = init_token({"type": "spass"})
 
         # Init sync
-        scope = f"https://pi.net/container/{smartphone_serial}/sync"
+        scope = "https://pi.net/container/synchronize"
         challenge_params = smartphone.create_challenge(scope)
         result_entries = challenge_params.keys()
         self.assertIn("nonce", result_entries)

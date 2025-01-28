@@ -1415,6 +1415,51 @@ def check_client_container_action(request=None, action=None):
     return True
 
 
+def check_client_container_disabled_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE CONTAINER.
+    This decorator is used for api calls that perform actions on container requested from a client.
+    It verifies policies that explicitly disable an action.
+
+    Example for the action 'disable_client_container_unregister':
+    If a policy contains this action, the client is not allowed to unregister the container. This function searches for
+    these policies and raises a PolicyError. If no policy is found defining this action, the client is allowed to
+    unregister containers and hence this function returns True meaning the client is allowed to unregister the
+    container.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: Raises an Exception if the action is enabled, True otherwise
+    """
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    user_attributes = get_container_user_attributes(container_serial)
+
+    # If the container has no owner, check for generic policies only
+    user_attributes.username = user_attributes.username or ""
+    user_attributes.realm = user_attributes.realm or ""
+    user_attributes.resolver = user_attributes.resolver or ""
+
+    # Check action for container
+    match = Match.generic(g,
+                          scope=SCOPE.CONTAINER,
+                          action=action,
+                          user=user_attributes.username,
+                          resolver=user_attributes.resolver,
+                          realm=user_attributes.realm,
+                          additional_realms=user_attributes.additional_realms,
+                          active=True)
+    # Check if the action is explicitly disabled
+    policies_at_all = match.policies(write_to_audit_log=True)
+
+    action_allowed = len(policies_at_all) == 0
+
+    if not action_allowed:
+        # A policy with the passed action is defined, hence it is explicitly disabled
+        raise PolicyError(f"The action is not allowed! Policy {action} is set.")
+    return True
+
+
 def check_user_params(request=None, action=None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
@@ -2567,9 +2612,9 @@ def smartphone_config(request, action=None):
 
         policies = {}
         actions = [ACTION.CONTAINER_CLIENT_ROLLOVER,
-                   ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
-                   ACTION.CLIENT_TOKEN_DELETABLE,
-                   ACTION.CLIENT_CONTAINER_UNREGISTER]
+                   ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                   ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                   ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER]
 
         for action in actions:
             # Check if action is allowed for the client

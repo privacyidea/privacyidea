@@ -26,7 +26,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     encrypt, decrypt, Sign, generate_keypair,
                                     generate_password, pass_hash, verify_pass_hash, generate_keypair_ecc,
                                     ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
-                                    ecdh_key_exchange, encrypt_ecc, decrypt_ecc, verify_ecc)
+                                    ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -447,8 +447,8 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         derived_key = ecdh_key_exchange(client_keys.private_key, server_keys.public_key)
 
         message = b"Hello World"
-        enc_params = encrypt_ecc(message, derived_key, "AES", "")
-        decrypted_message = decrypt_ecc(enc_params["cipher"], derived_key, "", enc_params)
+        enc_params = encrypt_aes(message, derived_key)
+        decrypted_message = decrypt_aes(enc_params["cipher"], derived_key, enc_params)
 
         self.assertEqual(message, decrypted_message)
 
@@ -463,8 +463,8 @@ class EllipticCurveCryptoTestCase(MyTestCase):
         derived_key = ecdh_key_exchange(server_keys.private_key, pub_key_client)
 
         message = b"Hello World"
-        enc_params = encrypt_ecc(message, derived_key, "AES", "")
-        decrypted_message = decrypt_ecc(enc_params["cipher"], derived_key, "", enc_params)
+        enc_params = encrypt_aes(message, derived_key)
+        decrypted_message = decrypt_aes(enc_params["cipher"], derived_key, enc_params)
 
         self.assertEqual(message, decrypted_message)
 

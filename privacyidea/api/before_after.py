@@ -160,13 +160,12 @@ def before_container_request():
     # auth free endpoints
     ensure_no_config_object()
     request.all_data = get_all_params(request)
-    container_serial = getParam(request.all_data, "container_serial")
     auth_token_free_endpoints = ["/container/register/finalize",
-                                 f"/container/register/{container_serial}/terminate/client",
-                                 f"/container/{container_serial}/challenge",
-                                 f"/container/{container_serial}/sync",
-                                 f"/container/{container_serial}/rollover", ]
-    is_auth_free = [True for endpoint in auth_token_free_endpoints if request.path == endpoint]
+                                 "/container/register/terminate/client",
+                                 "/container/challenge",
+                                 "/container/synchronize",
+                                 "/container/rollover", ]
+    is_auth_free = request.path in auth_token_free_endpoints
 
     # Get auth token
     auth_token = request.headers.get('PI-Authorization')
@@ -174,7 +173,7 @@ def before_container_request():
         auth_token = request.headers.get('Authorization')
 
     # Verify auth token for all non-auth-token-free endpoints anyway
-    if True not in is_auth_free:
+    if not is_auth_free:
         r = verify_auth_token(auth_token, ["user", "admin"])
         g.logged_in_user = {"username": r.get("username"),
                             "realm": r.get("realm"),
@@ -529,6 +528,34 @@ def privacyidea_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
     return send_error(str(error), error_code=error.id), 400
+
+
+@system_blueprint.app_errorhandler(NotImplementedError)
+@realm_blueprint.app_errorhandler(NotImplementedError)
+@defaultrealm_blueprint.app_errorhandler(NotImplementedError)
+@resolver_blueprint.app_errorhandler(NotImplementedError)
+@policy_blueprint.app_errorhandler(NotImplementedError)
+@user_blueprint.app_errorhandler(NotImplementedError)
+@token_blueprint.app_errorhandler(NotImplementedError)
+@audit_blueprint.app_errorhandler(NotImplementedError)
+@application_blueprint.app_errorhandler(NotImplementedError)
+@smtpserver_blueprint.app_errorhandler(NotImplementedError)
+@eventhandling_blueprint.app_errorhandler(NotImplementedError)
+@register_blueprint.app_errorhandler(NotImplementedError)
+@recover_blueprint.app_errorhandler(NotImplementedError)
+@subscriptions_blueprint.app_errorhandler(NotImplementedError)
+@monitoring_blueprint.app_errorhandler(NotImplementedError)
+@ttype_blueprint.app_errorhandler(NotImplementedError)
+@tokengroup_blueprint.app_errorhandler(NotImplementedError)
+@serviceid_blueprint.app_errorhandler(NotImplementedError)
+@container_blueprint.app_errorhandler(NotImplementedError)
+def not_implemented_error(error):
+    """
+    This function is called when an NotImplementedError occurs.
+    """
+    if "audit_object" in g:
+        g.audit_object.log({"info": str(error)})
+    return send_error(str(error), error_code=-501), 501
 
 
 # other errors
