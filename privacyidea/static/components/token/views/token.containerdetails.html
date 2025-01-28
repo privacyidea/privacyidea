@@ -230,11 +230,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!------------ Container Synchronization ------------>
 <div class="form-group"
-     ng-hide="container.type === 'generic' || (!checkRight('container_register') && !checkRight('container_rollover'))">
+     ng-hide="container.type !== 'smartphone' || (!checkRight('container_register') && !checkRight('container_rollover'))">
     <hr class="horizontal-line-invisible">
     <h4 translate>Synchronization</h4>
 
-    <uib-accordion ng-hide="container.type !== 'smartphone'">
+    <uib-accordion>
         <div uib-accordion-group
              class="panel-default"
              is-open="registrationOptions.open">
@@ -337,7 +337,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <td>
                 <button id="unassignAdminButton"
                         ng-click="unassignUser()"
-                        ng-show="checkRight('container_unassign_user')"
+                        ng-disabled="!checkRight('container_unassign_user')"
+                        ng-hide="!checkRight('container_unassign_user') && hide_buttons"
                         class="btn btn-warning">
                     <span class="glyphicon glyphicon-resize-full"></span>
                     <span translate>Unassign User</span>
@@ -347,6 +348,24 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <tr>
             <td translate>Realm</td>
             <td><a ui-sref="config.realms.list">{{ containerOwner.user_realm }}</a>
+            </td>
+            <td>
+                <button type="button" ng-click="assignUserToAllTokens()"
+                        id="assignButton"
+                        ng-disabled="!checkRight('assign')"
+                        ng-hide="!checkRight('assign') && hide_buttons"
+                        class="btn btn-primary">
+                    <span class="glyphicon glyphicon-resize-small"></span>
+                    <span translate>Assign User To All Tokens</span>
+                </button>
+                <button id="unassignAdminButton"
+                        ng-click="unassignUsersFromAllTokens()"
+                        ng-disabled="!checkRight('unassign')"
+                        ng-hide="!checkRight('unassign') && hide_buttons"
+                        class="btn btn-warning">
+                    <span class="glyphicon glyphicon-resize-full"></span>
+                    <span translate>Unassign User From All Tokens</span>
+                </button>
             </td>
         </tr>
         <tr>
@@ -418,7 +437,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <th translate>Otplen</th>
             <th ng-show="loggedInUser.role=='admin'" translate> User</th>
             <th ng-show="loggedInUser.role=='admin'" translate> Realm</th>
-            <th ng-show="loggedInUser.role=='admin'" translate> Token realms</th>
+            <th ng-show="loggedInUser.role=='admin'" translate> Token Realms</th>
             <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">

@@ -24,7 +24,8 @@ This is the directive for assigning users.
            typeahead-focus-first="true"
            uib-typeahead="newuser for newuser in loadUsers($viewValue)"
            typeahead-no-results="noResults"
-           typeahead-loading="loadingUsers" class="form-control">
+           typeahead-loading="loadingUsers" class="form-control"
+           ng-disabled="newUserObject.realmOnly">
     <div ng-show="loadingUsers">
         <i class="glyphicon glyphicon-refresh"></i><span translate>Loading users...</span>
     </div>

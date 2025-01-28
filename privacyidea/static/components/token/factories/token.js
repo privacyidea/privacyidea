@@ -303,6 +303,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     if (username) {
                         params.user = username;
                         params.realm = userObject.realm;
+                    } else if (userObject.realmOnly) {
+                        params.realm = userObject.realm;
                     }
                     $http.post(tokenUrl + "/init", params,
                         {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
