@@ -8,7 +8,6 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 
-PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
@@ -17,8 +16,9 @@ import mock
 import ldap3
 import responses
 import datetime
+import shutil
+import tempfile
 import uuid
-import pytest
 import json
 import ssl
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
@@ -39,6 +39,8 @@ from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
 from requests import HTTPError
 
+PWFILE = "tests/testdata/passwords"
+
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
@@ -58,27 +60,27 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": objectGUIDs[0],
                                 'mobile': ["1234", "45678"]}},
-                {"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[1],
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[2],
-                                'oid': "1"}},
+                 {"dn": 'cn=bob,ou=example,o=test',
+                  "attributes": {'cn': 'bob',
+                                 "sn": "Marley",
+                                 "givenName": "Robert",
+                                 "email": "bob@example.com",
+                                 "mobile": "123456",
+                                 "homeDirectory": "/home/bob",
+                                 'userPassword': 'bobpwééé',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": objectGUIDs[1],
+                                 'oid': "3"}},
+                 {"dn": 'cn=manager,ou=example,o=test',
+                  "attributes": {'cn': 'manager',
+                                 "givenName": "Corny",
+                                 "sn": "keule",
+                                 "email": "ck@o",
+                                 "mobile": "123354",
+                                 'userPassword': 'ldaptest',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": objectGUIDs[2],
+                                 'oid': "1"}},
                  {"dn": 'cn=kölbel,ou=example,o=test',
                   "attributes": {'cn': "kölbel",
                                  "givenName": "Cornelius",
@@ -92,26 +94,26 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                  "oid": "4"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[0],
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[1],
-                                'oid': "1"}},
+                        "attributes": {'cn': 'bob',
+                                       "sn": "Marley",
+                                       "givenName": "Robert",
+                                       "email": "bob@example.com",
+                                       "mobile": "123456",
+                                       "homeDirectory": "/home/bob",
+                                       'userPassword': 'bobpwééé',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[0],
+                                       'oid': "3"}},
+                       {"dn": 'cn=manager,ou=example,o=test',
+                        "attributes": {'cn': 'manager',
+                                       "givenName": "Corny",
+                                       "sn": "keule",
+                                       "email": "ck@o",
+                                       "mobile": "123354",
+                                       'userPassword': 'ldaptest',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[1],
+                                       'oid': "1"}},
                        {"dn": 'cn=salesman,ou=example,o=test',
                         "attributes": {'cn': 'salesman',
                                        'givenName': 'hans',
@@ -122,27 +124,27 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1
 LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[0] + "}",
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[1] + "}",
-                                'oid': "1"}}
-                       ]
+                                   "attributes": {'cn': 'bob',
+                                                  "sn": "Marley",
+                                                  "givenName": "Robert",
+                                                  "email": "bob@example.com",
+                                                  "mobile": "123456",
+                                                  "homeDirectory": "/home/bob",
+                                                  'userPassword': 'bobpwééé',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[0] + "}",
+                                                  'oid': "3"}},
+                                  {"dn": 'cn=manager,ou=example,o=test',
+                                   "attributes": {'cn': 'manager',
+                                                  "givenName": "Corny",
+                                                  "sn": "keule",
+                                                  "email": "ck@o",
+                                                  "mobile": "123354",
+                                                  'userPassword': 'ldaptest',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[1] + "}",
+                                                  'oid': "1"}}
+                                  ]
 
 
 class SQLResolverTestCase(MyTestCase):
@@ -163,7 +165,20 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-    }
+                  }
+
+    @classmethod
+    def setUp(cls):
+        # Copy original user database to a temporary work db
+        work_dir = tempfile.mkdtemp()
+        shutil.copy("tests/testdata/testuser.sqlite", f"{work_dir}/testuser.sqlite")
+        # SQLAlchemy needs an extra slash for absolute paths with SQLite
+        cls.parameters['Server'] = f"/{work_dir}"
+
+    @classmethod
+    def tearDownClass(cls):
+        # Remove temporary work directory
+        shutil.rmtree(cls.parameters["Server"])
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -1391,12 +1406,12 @@ class LDAPResolverTestCase(MyTestCase):
         user = "achmed"
 
         # First we add the user with add_user
-        r = y.add_user({"username" : user,
-                        "surname" : "Ali",
-                        "email" : "achmed.ali@example.com",
-                        "password" : "testing123",
+        r = y.add_user({"username": user,
+                        "surname": "Ali",
+                        "email": "achmed.ali@example.com",
+                        "password": "testing123",
                         'mobile': ["1234", "45678"],
-                        "givenname" : "Achmed"})
+                        "givenname": "Achmed"})
         self.assertTrue(r)
 
         # Find the new users user_id

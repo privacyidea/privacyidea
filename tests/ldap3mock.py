@@ -161,18 +161,15 @@ class Connection(object):
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-            # Create a entry object for the new user
-            entry = {}
-            entry['dn'] = dn
-            entry['attributes'] = attributes
-            if object_class != None:
-                entry['attributes'].update( {'objectClass': object_class} )
+            # to create an entry object for the new user
+            entry = {'dn': dn, 'attributes': attributes}
+            if object_class is not None:
+                entry['attributes'].update( {'objectClass': object_class})
         else:
             # User already exists
             self.result["description"] = "failure"
             self.result["result"] = 68
-            self.result["message"] = \
-                    "Error entryAlreadyExists for {0}".format(dn)
+            self.result["message"] = "Error entryAlreadyExists for {0}".format(dn)
             return False
 
         # Add the user entry to the directory
@@ -186,12 +183,12 @@ class Connection(object):
 
     def delete(self, dn, controls=None):
 
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
+        self.result = {'dn': '',
+                       'referrals': None,
+                       'description': 'success',
+                       'result': 0,
+                       'message': '',
+                       'type': 'addResponse'}
 
         # Check to see if the user exists in the directory
         try:

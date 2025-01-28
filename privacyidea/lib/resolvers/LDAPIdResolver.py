@@ -389,8 +389,10 @@ class IdResolver (UserIdResolver):
                                        auto_referrals=not self.noreferrals,
                                        start_tls=self.start_tls)
             if not l.bind():
-                log.info(f"Bind operation failed: {l.result.description} ({l.result.result})")
-                raise ResolverError(f"Bind failed with: {l.result.description} ({l.result.result})")
+                log.info(f"Bind operation failed: {l.result.get('description')} "
+                         f"({l.result.get('result')})")
+                raise ResolverError(f"Bind failed with: {l.result.get('description')} "
+                                    f"({l.result.get('result')})")
             log.debug(f"LDAP bind operation took {self.l.usage.elapsed_time}")
             l.unbind()
             log.debug("unbind successful.")
@@ -535,7 +537,8 @@ class IdResolver (UserIdResolver):
                 raise ResolverError(f"Error performing bind operation: {ex}!")
             if not bound:
                 raise ResolverError(f"Unable to perform bind operation: "
-                                    f"{self.l.result.description} ({self.l.result.result})!")
+                                    f"{self.l.result.get('description')} "
+                                    f"({self.l.result.get('result')})!")
             self.i_am_bound = True
 
     def _search(self, search_base, search_filter, attributes):
@@ -1180,9 +1183,9 @@ class IdResolver (UserIdResolver):
             log.debug("{0}".format(traceback.format_exc()))
             raise privacyIDEAError(e)
 
-        if self.l.result.result != 0:
+        if self.l.result.get("result") != 0:
             log.warning(f"Error during adding of user {dn}: "
-                        f"{self.l.result.description} ({self.l.result.result})")
+                        f"{self.l.result.get('description')} ({self.l.result.get('result')})")
             raise privacyIDEAError(self.l.result.get('message'))
 
         return self.getUserId(attributes.get("username"))
