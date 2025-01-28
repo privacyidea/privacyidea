@@ -1348,3 +1348,15 @@ def compare_template_with_container(template: ContainerTemplateBase, container: 
         result["tokens"]["equal"] = False
 
     return result
+
+
+def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
+    """
+    Returns a list of serials of offline tokens in the container.
+
+    :param container: A TokenContainerClass object
+    :return: List of serials of offline tokens in the container
+    """
+    tokens = container.get_tokens()
+    offline_serials = [token.get_serial() for token in tokens if is_offline_token(token.get_serial())]
+    return offline_serials

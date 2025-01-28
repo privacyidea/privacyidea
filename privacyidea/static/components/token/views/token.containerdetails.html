@@ -289,6 +289,24 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </p>
             </div>
         </div>
+
+        <div class="alert alert-info" role="alert" ng-show="offline_tokens.length > 0">
+            <div>
+                <span translate>The container contains the following offline tokens:</span>
+                <span ng-repeat="(index, token) in offline_tokens">
+                    <a ui-sref="token.details({tokenSerial:token})">
+                        {{ token }}
+                    </a>
+                    <span ng-show="index < offline_tokens.length - 1">,</span>
+                </span>
+            </div>
+            <div ng-show="container.info['registration_state'] === 'rollover'" translate>
+                Offline tokens can not be rolled over and can not be transferred to a new device.
+            </div>
+            <div ng-show="container.info['registration_state'] === 'client_wait'" translate>
+                Offline tokens can not be synchronized if they do not yet exist on the smartphone.
+            </div>
+        </div>
     </div>
     <!--- Unregister --->
     <div ng-show="container.info['registration_state']">

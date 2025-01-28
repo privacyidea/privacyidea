@@ -39,11 +39,11 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        create_container_template,
                                        get_templates_by_query, create_container_tokens_from_template, get_template_obj,
                                        set_default_template, get_container_template_classes,
-                                       get_container_classes, create_container_from_db_object,
+                                       create_container_from_db_object,
                                        compare_template_with_container, unregister,
                                        finalize_registration, init_container_rollover,
-                                       set_options, get_container_realms,
-                                       add_not_authorized_tokens_result)
+                                       get_container_realms,
+                                       add_not_authorized_tokens_result, get_offline_token_serials)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
@@ -609,6 +609,9 @@ def registration_init():
     else:
         # save policy values in container info
         container.update_container_info({"server_url": server_url, "challenge_ttl": challenge_ttl})
+
+    # Check for offline tokens
+    res["offline_tokens"] = get_offline_token_serials(container)
 
     # Audit log
     g.audit_object.log({"success": True})

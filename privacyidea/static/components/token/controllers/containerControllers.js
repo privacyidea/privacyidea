@@ -724,6 +724,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.registrationOptions = {"open": false};
         $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
@@ -738,6 +739,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     $scope.showQR = true;
                     $scope.containerRegistrationURL = data.result.value['container_url']['value'];
                     $scope.containerRegistrationQR = data.result.value['container_url']['img'];
+                    $scope.offline_tokens = data.result.value['offline_tokens'];
                 }
                 $scope.registrationOptions = {"open": false};
                 // Set registration state to start the polling

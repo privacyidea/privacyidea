@@ -894,13 +894,14 @@ class TokenContainerClass:
         update_dict = []
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
+            offline = is_offline_token(serial)
             token_dict_all = token.get_as_dict()
             token_dict = {"serial": token_dict_all["serial"], "tokentype": token_dict_all["tokentype"],
-                          "offline": is_offline_token(serial)}
+                          "offline": offline}
             # rename count to counter for the client
             if "count" in token_dict_all:
                 # For offline tokens the counter shall not be sent to the client
-                if not is_offline_token(serial):
+                if not offline:
                     token_dict["counter"] = token_dict_all["count"]
 
             # add otp values to allow the client identifying the token if he has no serial yet
