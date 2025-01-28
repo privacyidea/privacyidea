@@ -6,7 +6,7 @@
       <h3 style="color: var(--blue-base)"> {{ tokenSerial() }} </h3>
     </div>
     <div [ngClass]="[
-       overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
+       overflowService.isWidthOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
          class="details-flex-layout">
       <div>
         <table [dataSource]="tokenDetailData()"
@@ -182,7 +182,7 @@
               mat-row></tr>
         </table>
       </div>
-      @if (overflowService.isOverflowing('.token-layout', 1310)) {
+      @if (overflowService.isWidthOverflowing('.token-layout', 1310)) {
         <br style="margin: 10px" />
         <mat-divider /><br style="margin: 10px" />
       }
@@ -197,7 +197,7 @@
                                 [tokenSerial]="tokenSerial"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
-        <div [ngClass]="[overflowService.isOverflowing('.token-layout', 1580)
+        <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580)
         ? 'flex-column ali-center' : 'flex-row']"
              class="details-flex-layout">
           <app-token-details-info [detailData]="tokenDetailData"

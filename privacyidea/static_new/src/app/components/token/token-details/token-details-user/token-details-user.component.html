@@ -1,6 +1,6 @@
 <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row',
-        overflowService.isOverflowing('.token-layout', 1310) ? 'pad-0' :
+        overflowService.isWidthOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row',
+        overflowService.isWidthOverflowing('.token-layout', 1310) ? 'pad-0' :
         '']"
      class="user-container ali-center">
   <table [dataSource]="userData()"

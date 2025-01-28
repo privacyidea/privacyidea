@@ -17,7 +17,7 @@
                    showFirstLastButtons></mat-paginator>
   </div>
   <div [ngClass]="[
-      overflowService.isOverflowing('.token-layout', 1580)
+      overflowService.isWidthOverflowing('.token-layout', 1580)
         ? 'flex-column'
         : 'flex-row']">
     <table [dataSource]="dataSource()"
@@ -90,7 +90,7 @@
       </tr>
     </table>
     <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1580)
+        overflowService.isWidthOverflowing('.token-layout', 1580)
           ? 'container-details-action-column'
           : 'container-details-action-row']">
       <button (click)="toggleAll('activate')"

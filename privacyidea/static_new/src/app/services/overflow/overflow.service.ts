@@ -1,12 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OverflowService {
-  isOverflowing(selector: string, threshold: number): boolean {
+  isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
     return element ? element.clientWidth < threshold : false;
+  }
+
+  isHeightOverflowing(selector: string, threshold: number): boolean {
+    const element = document.querySelector(selector);
+    return element ? element.clientHeight < threshold : false;
   }
 
   getOverflowThreshold(selectedContent: string) {

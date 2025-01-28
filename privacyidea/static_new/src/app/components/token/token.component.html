@@ -1,6 +1,6 @@
 <div aria-label="Token Layout"
      class="token-layout">
-  @if (!overflowService.isOverflowing('.token-layout', overflowService.getOverflowThreshold(selectedContent()))) {
+  @if (!overflowService.isWidthOverflowing('.token-layout', overflowService.getOverflowThreshold(selectedContent()))) {
     <app-token-card class="margin-right-1"
                     [active]="tokenIsActive"
                     [states]="states"
@@ -13,11 +13,13 @@
                     [selectedContent]="selectedContent"></app-token-card>
   }
   <mat-drawer-container>
-    @if (overflowService.isOverflowing('.token-layout',
+    @if (overflowService.isWidthOverflowing('.token-layout',
       overflowService.getOverflowThreshold(selectedContent()))) {
       <mat-drawer #drawer
                   [mode]="'over'"
-                  class="token-drawer">
+                  [ngClass]="[this.overflowService.isHeightOverflowing('.mat-drawer-inner-container',  543) ?
+                  'token-drawer-overflow' :
+                  'token-drawer']">
         <app-token-card [active]="tokenIsActive"
                         [states]="states"
                         [refreshTokenDetails]="refreshTokenDetails"
@@ -31,7 +33,7 @@
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isOverflowing('.token-layout',
+        @if (overflowService.isWidthOverflowing('.token-layout',
           overflowService.getOverflowThreshold(selectedContent()))) {
           <div class="drawer-button-div">
             <button mat-fab
@@ -42,7 +44,7 @@
           </div>
         }
         <main>
-          <div [ngClass]="[(overflowService.isOverflowing('.token-layout',
+          <div [ngClass]="[(overflowService.isWidthOverflowing('.token-layout',
           overflowService.getOverflowThreshold(selectedContent())))
           ? 'main-margin' : 'main-margin-overflow']">
             @switch (selectedContent()) {

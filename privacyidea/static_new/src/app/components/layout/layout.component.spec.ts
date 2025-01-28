@@ -6,7 +6,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
-describe('GridLayoutComponent', () => {
+describe('LayoutComponent', () => {
   let component: LayoutComponent;
   let fixture: ComponentFixture<LayoutComponent>;
 
@@ -20,7 +20,6 @@ describe('GridLayoutComponent', () => {
           {
             provide: ActivatedRoute,
             useValue: {
-              // Mock the necessary parts of ActivatedRoute, like params, queryParams, etc.
               params: of({ id: '123' }),
             },
           },

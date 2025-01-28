@@ -6,7 +6,7 @@
       <h3 style="color: var(--blue-base)"> {{ containerSerial() }} </h3>
     </div>
     <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
+        overflowService.isWidthOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
          class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()"
@@ -181,13 +181,13 @@
                                       [isEditingUser]="isEditingUser"
                                       [refreshDetails]="refreshContainerDetails"></app-container-details-info>
         </div>
-        @if (overflowService.isOverflowing('.token-layout', 1310)) {
+        @if (overflowService.isWidthOverflowing('.token-layout', 1310)) {
           <br />
           <mat-divider></mat-divider><br />
         }
       </div>
       <div [ngClass]="[
-        overflowService.isOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
+        overflowService.isWidthOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
            class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
