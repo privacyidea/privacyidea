@@ -513,3 +513,16 @@ def get_auth_items(hostname=None, ip=None, application=None,
             auth_items[mtoken.get("application")].append(auth_item)
 
     return auth_items
+
+
+def is_offline_token(serial: str) -> bool:
+    """
+    Verifies if the token with the given serial number is an offline token.
+
+    :param serial: The serial number of the token
+    :return: True if the token is an offline token, False otherwise
+    """
+    machines = list_token_machines(serial)
+    machine_applications = [machine.get("application") for machine in machines]
+    is_offline = "offline" in machine_applications
+    return is_offline

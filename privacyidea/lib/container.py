@@ -21,6 +21,9 @@ import importlib
 import json
 import logging
 import os
+from typing import Union
+
+from sqlalchemy.orm import Query
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import delete_challenges
@@ -29,6 +32,7 @@ from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError
 from privacyidea.lib.log import log_with
+from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
@@ -39,7 +43,7 @@ from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, Toke
 log = logging.getLogger(__name__)
 
 
-def delete_container_by_id(container_id: int):
+def delete_container_by_id(container_id: int) -> int:
     """
     Delete the container with the given id. If it does not exist, raises a ResourceNotFoundError.
 
@@ -57,7 +61,7 @@ def delete_container_by_id(container_id: int):
     return container.delete()
 
 
-def delete_container_by_serial(serial: str):
+def delete_container_by_serial(serial: str) -> int:
     """
     Delete the container with the given serial. If it does not exist, raises a ResourceNotFoundError.
 
@@ -74,7 +78,7 @@ def delete_container_by_serial(serial: str):
     return container.delete()
 
 
-def _gen_serial(container_type: str):
+def _gen_serial(container_type: str) -> str:
     """
     Generate a new serial for a container of the given type
 
@@ -101,7 +105,7 @@ def _gen_serial(container_type: str):
     return serial
 
 
-def create_container_from_db_object(db_container: TokenContainer):
+def create_container_from_db_object(db_container: TokenContainer) -> Union[TokenContainerClass, None]:
     """
     Create a TokenContainerClass object from the given db object.
 
@@ -120,7 +124,7 @@ def create_container_from_db_object(db_container: TokenContainer):
 
 
 @log_with(log)
-def find_container_by_id(container_id: int):
+def find_container_by_id(container_id: int) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
 
@@ -134,7 +138,7 @@ def find_container_by_id(container_id: int):
     return create_container_from_db_object(db_container)
 
 
-def find_container_by_serial(serial: str):
+def find_container_by_serial(serial: str) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
 
@@ -149,8 +153,9 @@ def find_container_by_serial(serial: str):
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, realms=None,
-                            template=None, sortby='serial', sortdir='asc'):
+def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+                            realms: list[str] = None, template: str = None, sortby: str = 'serial',
+                            sortdir: str = 'asc') -> Query:
     """
     Generates a sql query to filter containers by the given parameters.
 
@@ -200,8 +205,9 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     return sql_query
 
 
-def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
-                       sortdir='asc', template=None, page=0, pagesize=0):
+def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+                       realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc', template: str = None,
+                       page: int = 0, pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -237,7 +243,8 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     return ret
 
 
-def create_pagination(page, pagesize, sql_query, object_list_key):
+def create_pagination(page: int, pagesize: int, sql_query: Query,
+                      object_list_key: str) -> dict[str, Union[int, None, list[any]]]:
     """
         Creates the pagination of a sql query.
 
@@ -271,7 +278,7 @@ def create_pagination(page, pagesize, sql_query, object_list_key):
     return ret
 
 
-def find_container_for_token(serial):
+def find_container_for_token(serial: str) -> TokenContainerClass:
     """
     Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
     if the token does not exist.
@@ -291,7 +298,7 @@ def find_container_for_token(serial):
     return container
 
 
-def get_container_classes():
+def get_container_classes() -> dict[str, type[TokenContainerClass]]:
     """
     Returns a dictionary of all available container classes in the format: { type: class }.
     New container types have to be added here.
@@ -315,7 +322,7 @@ def get_container_classes():
     return ret
 
 
-def get_container_policy_info(container_type=None):
+def get_container_policy_info(container_type: Union[str, None] = None):
     """
     Returns the policy info for the given container type or for all container types if no type is defined.
 
@@ -335,7 +342,7 @@ def get_container_policy_info(container_type=None):
         return ret
 
 
-def init_container(params):
+def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -414,7 +421,7 @@ def init_container(params):
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request):
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
@@ -457,19 +464,26 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                require_description)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
+    # Create each token defined in the template. The template contains the enroll information for each token.
     for token_info in template_tokens:
         token = None
         user = User()
+        # If the user flag is set, the token is assigned to the container owner: set the full user information in the
+        # enroll information
         if token_info.get("user"):
             token_info["user"] = container_owner.login
             token_info["realm"] = container_owner.realm
             token_info["resolver"] = container_owner.resolver
             user = container_owner
 
+        # The pre-policy decorator functions require a request object containing the enroll information.
+        # Hence, we need to clear the data in the request object from the previous token and set the new enroll
+        # information for the current token.
         request.all_data = {}
         request.all_data.update(token_info)
 
         # Pre-policy checks
+        # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
         try:
             check_max_token_realm(request, None)
             require_description(request, None)
@@ -513,6 +527,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
         # Post-policy checks
         try:
+            # Post-policy decorators require a response object containing the result of the token creation.
             response = send_result(True, details=init_result[token.get_serial()])
             check_verify_enrollment(request, response)
             save_pin_change(request, response)
@@ -526,7 +541,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     return init_result
 
 
-def add_token_to_container(container_serial, token_serial):
+def add_token_to_container(container_serial: str, token_serial: str) -> bool:
     """
     Add a single token to a container. If a token is already in a container it is removed from the old container.
     Raises a ResourceNotFoundError if either the container or token does not exist.
@@ -554,7 +569,7 @@ def add_token_to_container(container_serial, token_serial):
     return res
 
 
-def add_multiple_tokens_to_container(container_serial: str, token_serials: list):
+def add_multiple_tokens_to_container(container_serial: str, token_serials: list) -> dict[str, bool]:
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
@@ -579,7 +594,7 @@ def add_multiple_tokens_to_container(container_serial: str, token_serials: list)
     return ret
 
 
-def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list):
+def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list) -> dict[str, bool]:
     """
     Add the result False for all tokens the user is not authorized to manage.
 
@@ -593,7 +608,7 @@ def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list)
     return result
 
 
-def get_container_classes_descriptions():
+def get_container_classes_descriptions() -> dict[str, str]:
     """
     Returns a dictionary of {"type": "Type: description"} entries for all container types.
     Used to list the container types.
@@ -605,7 +620,7 @@ def get_container_classes_descriptions():
     return ret
 
 
-def get_container_token_types():
+def get_container_token_types() -> dict[str, list[str]]:
     """
     Returns a dictionary of {"type": ["tokentype0", "tokentype1", ...]} entries for all container types.
     Used to list the supported token types for each container type.
@@ -617,7 +632,7 @@ def get_container_token_types():
     return ret
 
 
-def remove_token_from_container(container_serial, token_serial):
+def remove_token_from_container(container_serial: str, token_serial: str) -> bool:
     """
     Remove the given token from the container with the given serial.
     Raises a ResourceNotFoundError if the container or token does not exist.
@@ -632,7 +647,7 @@ def remove_token_from_container(container_serial, token_serial):
     return res
 
 
-def remove_multiple_tokens_from_container(container_serial, token_serials):
+def remove_multiple_tokens_from_container(container_serial: str, token_serials: str) -> dict[str, bool]:
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
@@ -658,7 +673,7 @@ def remove_multiple_tokens_from_container(container_serial, token_serials):
     return ret
 
 
-def add_container_info(serial, ikey, ivalue):
+def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     """
     Add the given info to the container with the given serial.
 
@@ -673,7 +688,7 @@ def add_container_info(serial, ikey, ivalue):
     return True
 
 
-def set_container_info(serial, info):
+def set_container_info(serial, info: dict) -> bool:
     """
     Set the given info to the container with the given serial.
 
@@ -686,7 +701,7 @@ def set_container_info(serial, info):
     return True
 
 
-def get_container_info_dict(serial, ikey=None):
+def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[str, None]]:
     """
     Returns the info of the given key or all infos if no key is given for the container with the given serial.
 
@@ -706,13 +721,13 @@ def get_container_info_dict(serial, ikey=None):
     return container_info
 
 
-def delete_container_info(serial, ikey=None):
+def delete_container_info(serial: str, ikey: str = None) -> dict[str, bool]:
     """
     Delete the info of the given key or all infos if no key is given.
 
     :param serial: The serial of the container
     :param ikey: The info key or None to delete all info keys
-    :return: True on success, False otherwise
+    :return: Dictionary with all info keys or only ikey if given and the value True on success, False otherwise
     """
     container = find_container_by_serial(serial)
 
@@ -720,7 +735,7 @@ def delete_container_info(serial, ikey=None):
     return res
 
 
-def assign_user(serial, user: User):
+def assign_user(serial: str, user: User) -> bool:
     """
     Assign a user to a container.
 
@@ -734,7 +749,7 @@ def assign_user(serial, user: User):
     return res
 
 
-def unassign_user(serial, user: User):
+def unassign_user(serial: str, user: User) -> bool:
     """
     Unassign a user from a container.
 
@@ -748,7 +763,7 @@ def unassign_user(serial, user: User):
     return res
 
 
-def set_container_description(serial, description):
+def set_container_description(serial: str, description: str):
     """
     Set the description of a container.
 
@@ -760,7 +775,7 @@ def set_container_description(serial, description):
     container.description = description
 
 
-def set_container_states(serial, states):
+def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     """
     Set the states of a container.
 
@@ -774,7 +789,7 @@ def set_container_states(serial, states):
     return res
 
 
-def add_container_states(serial, states):
+def add_container_states(serial: str, states: str) -> dict[str, bool]:
     """
     Add the states to a container.
 
@@ -788,7 +803,8 @@ def add_container_states(serial, states):
     return res
 
 
-def set_container_realms(serial, realms, allowed_realms=[]):
+def set_container_realms(serial: str, realms: list[str],
+                         allowed_realms: Union[list[str], None] = []) -> dict[str, bool]:
     """
     Set the realms of a container.
 
@@ -822,7 +838,7 @@ def set_container_realms(serial, realms, allowed_realms=[]):
     return res
 
 
-def add_container_realms(serial, realms, allowed_realms):
+def add_container_realms(serial: str, realms: list[str], allowed_realms: Union[list[str], None]) -> dict[str, bool]:
     """
     Add the realms to the container realms.
 
@@ -850,7 +866,7 @@ def add_container_realms(serial, realms, allowed_realms):
     return res
 
 
-def get_container_realms(serial):
+def get_container_realms(serial: str) -> list[str]:
     """
     Get the realms of the container.
 
@@ -861,8 +877,9 @@ def get_container_realms(serial):
     return [realm.name for realm in container.realms]
 
 
-def create_container_dict(container_list, no_token=False, user=None, logged_in_user_role='user',
-                          allowed_token_realms=[], hide_token_info: list = None):
+def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
+                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
+                          hide_token_info: list[str] = None) -> list[dict]:
     """
     Create a dictionary for each container in the list.
     It contains the container properties, owners, realms, tokens and info.
@@ -926,7 +943,7 @@ def create_container_dict(container_list, no_token=False, user=None, logged_in_u
     return res
 
 
-def create_endpoint_url(base_url: str, endpoint: str):
+def create_endpoint_url(base_url: str, endpoint: str) -> str:
     """
     Creates the url for an endpoint. It concat the base_url and the endpoint if the endpoint is not already in the
     base_url. base_url and endpoint are separated by a slash.
@@ -945,7 +962,7 @@ def create_endpoint_url(base_url: str, endpoint: str):
     return endpoint_url
 
 
-def finalize_registration(container_serial: str, params: dict):
+def finalize_registration(container_serial: str, params: dict) -> dict:
     """
     Finalize the registration of a container if the challenge response is valid.
     If the container is in the registration_state `rollover`, it finalizes the container rollover.
@@ -994,7 +1011,15 @@ def finalize_container_rollover(container: TokenContainerClass):
     """
 
     tokens = container.get_tokens()
-    for token in tokens:
+
+    # Offline tokens can not be rolled over, that would invalidate the offline otp values
+    offline_serials = [token.get_serial() for token in tokens if is_offline_token(token.get_serial())]
+    online_tokens = [token for token in tokens if token.get_serial() not in offline_serials]
+    if len(offline_serials) > 0:
+        log.info(f"The following offline tokens are in the container: {offline_serials}. "
+                 "They can not be rolled over.")
+
+    for token in online_tokens:
         params = {"serial": token.get_serial(),
                   "type": token.get_type(),
                   "genkey": True,
@@ -1012,7 +1037,7 @@ def finalize_container_rollover(container: TokenContainerClass):
 
 
 def init_container_rollover(container: TokenContainerClass, server_url: str, challenge_ttl: int, registration_ttl: int,
-                            ssl_verify: str, params: dict):
+                            ssl_verify: str, params: dict) -> dict:
     """
     Initializes the rollover of a container.
     First the response to the challenge is validated. If it is valid, the registration is initialized.
@@ -1027,7 +1052,7 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     :return: dictionary with container specific information for the client
     """
     # Check challenge if rollover is allowed
-    rollover_scope = create_endpoint_url(server_url, f"container/{container.serial}/rollover")
+    rollover_scope = create_endpoint_url(server_url, "container/rollover")
     params.update({"scope": rollover_scope})
     container.check_challenge_response(params)
 
@@ -1038,14 +1063,13 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     res = container.init_registration(server_url, registration_scope, registration_ttl, ssl_verify, params)
 
     # Set registration state
-    container.add_container_info("registration_state", "rollover")
-    container.add_container_info("rollover_server_url", server_url)
-    container.add_container_info("rollover_challenge_ttl", challenge_ttl)
+    container.update_container_info({"registration_state": "rollover", "rollover_server_url": server_url,
+                                     "rollover_challenge_ttl": challenge_ttl})
 
     return res
 
 
-def unregister(container: TokenContainerClass):
+def unregister(container: TokenContainerClass) -> bool:
     """
     Unregister a container from the synchronization and deletes all challenges for the container.
 
@@ -1073,7 +1097,7 @@ def set_options(serial: str, options: dict):
     container.add_options(options)
 
 
-def get_container_template_classes():
+def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
     """
     Returns a dictionary of all available container template classes in the format: { type: class }.
     New container template types have to be added here.
@@ -1097,7 +1121,7 @@ def get_container_template_classes():
     return ret
 
 
-def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False):
+def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False) -> int:
     """
     Create a new container template.
 
@@ -1134,7 +1158,7 @@ def create_container_template(container_type: str, template_name: str, options: 
     return template.id
 
 
-def create_container_template_from_db_object(db_template: TokenContainerTemplate):
+def create_container_template_from_db_object(db_template: TokenContainerTemplate) -> Union[ContainerTemplateBase, None]:
     """
     Create a TokenContainerTemplate object from the given db object.
 
@@ -1154,7 +1178,8 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
 
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
-                           pagesize: int = 0, sortdir: str = "asc", sortby: str = "name"):
+                           pagesize: int = 0, sortdir: str = "asc",
+                           sortby: str = "name") -> dict[str, Union[int, list[dict], None]]:
     """
     Returns a list of all templates or a list filtered by the given parameters.
 
@@ -1216,7 +1241,7 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     return ret
 
 
-def get_template_obj(template_name: str):
+def get_template_obj(template_name: str) -> ContainerTemplateBase:
     """
     Returns the template class object for the given template name.
     Raises a ResourceNotFoundError if no template with this name exists.
@@ -1245,11 +1270,10 @@ def set_default_template(name: str):
         template_obj = get_template_obj(template["name"])
         template_obj.default = False
 
-    # Set new default template
     default_template.default = True
 
 
-def compare_template_dicts(template_a: dict, template_b: dict):
+def compare_template_dicts(template_a: dict, template_b: dict) -> bool:
     """
     Compares two template dictionaries for equal tokens.
 
@@ -1257,8 +1281,6 @@ def compare_template_dicts(template_a: dict, template_b: dict):
     :param template_b: The second template dictionary
     :return: True if the templates contain the same tokens, False otherwise.
     """
-    equal = True
-
     if template_a is None or template_b is None:
         return False
 
@@ -1278,10 +1300,10 @@ def compare_template_dicts(template_a: dict, template_b: dict):
     if len(unique_tokens_a) > 0 or len(unique_tokens_b) > 0:
         return False
 
-    return equal
+    return True
 
 
-def compare_template_with_container(template: ContainerTemplateBase, container: TokenContainerClass):
+def compare_template_with_container(template: ContainerTemplateBase, container: TokenContainerClass) -> dict:
     """
     Compares the template with the container. It is only evaluated if the token types are equal.
 

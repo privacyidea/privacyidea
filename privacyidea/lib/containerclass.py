@@ -20,7 +20,7 @@
 import logging
 from datetime import datetime, timezone
 
-from typing import List
+from typing import List, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
@@ -29,13 +29,15 @@ from flask import json
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.crypto import verify_ecc, decryptPassword
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, privacyIDEAError
+from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import create_tokenclass_object, get_tokens, get_serial_by_otp_list, \
-    get_tokens_from_serial_or_user
+from privacyidea.lib.machine import is_offline_token
+from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
+                                   get_tokens_from_serial_or_user)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
                                 TokenContainerInfo, TokenContainerRealm, TokenContainerTemplate)
 
@@ -59,7 +61,7 @@ class TokenContainerClass:
         self.options = {}
 
     @classmethod
-    def get_class_options(cls, only_selectable=False):
+    def get_class_options(cls, only_selectable=False) -> dict[str, list[str]]:
         """
         Returns the options for the container class.
 
@@ -72,7 +74,7 @@ class TokenContainerClass:
             class_options = cls.options
         return class_options
 
-    def set_default_option(self, key):
+    def set_default_option(self, key) -> str:
         """
         Checks if a value is set in the container info for the requested key.
         If not, the default value is set, otherwise the already set value is kept.
@@ -97,11 +99,11 @@ class TokenContainerClass:
         return value
 
     @property
-    def serial(self):
+    def serial(self) -> str:
         return self._db_container.serial
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self._db_container.description
 
     @description.setter
@@ -112,11 +114,11 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self._db_container.type
 
     @property
-    def last_authentication(self):
+    def last_authentication(self) -> Union[datetime, None]:
         """
         Returns the timestamp of the last seen field in the database.
         It is the time when a token of the container was last used successfully for authentication.
@@ -146,7 +148,7 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def last_synchronization(self):
+    def last_synchronization(self) -> Union[datetime, None]:
         """
         Returns the timestamp of the last updated field in the database.
         It is the time when the container was last synchronized with the privacyIDEA server.
@@ -175,10 +177,10 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def realms(self):
+    def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms, add=False):
+    def set_realms(self, realms, add=False) -> dict[str, bool]:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
@@ -230,15 +232,15 @@ class TokenContainerClass:
 
         return result
 
-    def _get_user_realms(self):
+    def _get_user_realms(self) -> list[str]:
         """
-        Returns a list of the realms of the users that are assigned to the container.
+        Returns a list of the realm names of the users that are assigned to the container.
         """
         owners = self.get_users()
         realms = [owner.realm for owner in owners]
         return realms
 
-    def remove_token(self, serial: str):
+    def remove_token(self, serial: str) -> bool:
         """
         Remove a token from the container. Raises a ResourceNotFoundError if the token does not exist.
 
@@ -257,7 +259,7 @@ class TokenContainerClass:
         self.tokens = [t for t in self.tokens if t.get_serial() != serial]
         return True
 
-    def add_token(self, token: TokenClass):
+    def add_token(self, token: TokenClass) -> bool:
         """
         Add a token to the container.
         Raises a ParameterError if the token type is not supported by the container.
@@ -275,19 +277,20 @@ class TokenContainerClass:
             return True
         return False
 
-    def get_tokens(self):
+    def get_tokens(self) -> list[TokenClass]:
         """
         Returns the tokens of the container as a list of TokenClass objects.
         """
         return self.tokens
 
-    def delete(self):
+    def delete(self) -> int:
         """
         Deletes the container and all associated objects from the database.
+        Returns the id of the deleted container.
         """
         return self._db_container.delete()
 
-    def add_user(self, user: User):
+    def add_user(self, user: User) -> bool:
         """
         Assign a user to the container.
         Raises a UserError if the user does not exist.
@@ -310,7 +313,7 @@ class TokenContainerClass:
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
 
-    def remove_user(self, user: User):
+    def remove_user(self, user: User) -> bool:
         """
         Remove a user from the container. Raises a ResourceNotFoundError if the user does not exist.
 
@@ -324,14 +327,14 @@ class TokenContainerClass:
         db.session.commit()
         return count > 0
 
-    def get_users(self):
+    def get_users(self) -> list[User]:
         """
         Returns a list of users that are assigned to the container.
         """
         db_container_owners: List[TokenContainerOwner] = TokenContainerOwner.query.filter_by(
             container_id=self._db_container.id).all()
 
-        users: List[User] = []
+        users: list[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
             user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
@@ -339,7 +342,7 @@ class TokenContainerClass:
 
         return users
 
-    def get_states(self):
+    def get_states(self) -> list[str]:
         """
         Returns the states of the container as a list of strings.
         """
@@ -347,7 +350,7 @@ class TokenContainerClass:
         states = [state.state for state in db_states]
         return states
 
-    def _check_excluded_states(self, states):
+    def _check_excluded_states(self, states) -> bool:
         """
         Validates whether the state list contains states that excludes each other
 
@@ -363,7 +366,7 @@ class TokenContainerClass:
                     return True
         return False
 
-    def set_states(self, state_list: List[str]):
+    def set_states(self, state_list: list[str]) -> dict[str, bool]:
         """
         Set the states of the container. Previous states will be removed.
         Raises a ParameterError if the state list contains exclusive states.
@@ -395,7 +398,7 @@ class TokenContainerClass:
                 res[state] = True
         return res
 
-    def add_states(self, state_list: List[str]):
+    def add_states(self, state_list: list[str]) -> dict[str, bool]:
         """
         Add states to the container. Previous states are only removed if a new state excludes them.
         Raises a ParameterError if the state list contains exclusive states.
@@ -432,7 +435,7 @@ class TokenContainerClass:
         return res
 
     @classmethod
-    def get_state_types(cls):
+    def get_state_types(cls) -> dict[str, list[str]]:
         """
         Returns the state types that are supported by this container class and the states that are exclusive
         to each of these states.
@@ -466,7 +469,16 @@ class TokenContainerClass:
         """
         self._db_container.set_info({key: value})
 
-    def get_container_info(self):
+    def update_container_info(self, info: dict[str, str]):
+        """
+        Updates the container info for the passed dictionary. Non-existing keys are added and the values for existing
+        keys are updated.
+
+        :param info: dictionary in the format: {key: value}
+        """
+        self._db_container.set_info(info)
+
+    def get_container_info(self) -> list[TokenContainerInfo]:
         """
         Return the tokencontainerinfo from the DB
 
@@ -474,7 +486,7 @@ class TokenContainerClass:
         """
         return self._db_container.info_list
 
-    def get_container_info_dict(self):
+    def get_container_info_dict(self) -> dict[str, str]:
         """
         Return the tokencontainerinfo from the DB as dictionary
 
@@ -484,11 +496,12 @@ class TokenContainerClass:
         container_info_dict = {info.key: info.value for info in container_info_list}
         return container_info_dict
 
-    def delete_container_info(self, key=None):
+    def delete_container_info(self, key=None) -> dict[str, bool]:
         """
         Delete the tokencontainerinfo from the DB
 
         :param key: key to delete, if None all keys are deleted
+        :return: dictionary of deleted keys in the format {key: deleted}
         """
         res = {}
         if key:
@@ -520,7 +533,7 @@ class TokenContainerClass:
                 log.debug(f"Option key {key} not found for container type {self.get_class_type()}.")
 
     @property
-    def template(self):
+    def template(self) -> TokenContainerTemplate:
         """
         Returns the template the container is based on.
         """
@@ -539,7 +552,8 @@ class TokenContainerClass:
             else:
                 log.info(f"Template {template_name} is not compatible with container type {self.type}.")
 
-    def init_registration(self, server_url, scope, registration_ttl, ssl_verify, params):
+    def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool,
+                          params: dict = None):
         """
         Initializes the registration: Generates a QR code containing all relevant data.
 
@@ -549,19 +563,19 @@ class TokenContainerClass:
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters
         """
-        raise privacyIDEAError("Registration is not implemented for this container type.")
+        raise NotImplementedError("Registration is not implemented for this container type.")
 
     def finalize_registration(self, params):
         """
         Finalize the registration of a container.
         """
-        raise privacyIDEAError("Registration is not implemented for this container type.")
+        raise NotImplementedError("Registration is not implemented for this container type.")
 
     def terminate_registration(self):
         """
         Terminate the synchronisation of the container with privacyIDEA.
         """
-        raise privacyIDEAError("Registration is not implemented for this container type.")
+        raise NotImplementedError("Registration is not implemented for this container type.")
 
     def check_challenge_response(self, params: dict):
         """
@@ -575,8 +589,9 @@ class TokenContainerClass:
         """
         return {}
 
-    def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str, transaction_id=None,
-                           key: str = None, container: str = None, device_brand: str = None, device_model: str = None):
+    def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
+                           transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,
+                           device_model: str = None) -> bool:
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -621,25 +636,31 @@ class TokenContainerClass:
                     message += f"|{device_model}"
                 if passphrase:
                     passphrase = decryptPassword(passphrase)
-                    message += f"|{passphrase}"
+                    if passphrase == FAILED_TO_DECRYPT_PASSWORD:
+                        challenge.delete()
+                        log.warning("Failed to decrypt the passphrase from the challenge. "
+                                    "Hence, deleted the challenge.")
+                        continue
+                    else:
+                        message += f"|{passphrase}"
                 if key:
                     message += f"|{key}"
                 if container:
                     message += f"|{container}"
 
-                # log to find reason for invalid signature
-                log.debug(
-                    f"Challenge data: nonce={nonce}, timestamp={times_stamp}, serial={self.serial}, scope={scope}")
-                log.debug(f"Challenge data from client: device_brand={device_brand}, device_model={device_model}, "
-                          f"key={key}, container={container} ")
-                log.debug(f"Used hash algorithm: {hash_algorithm}")
-
                 # Check signature
                 try:
                     verify_res = verify_ecc(message.encode("utf-8"), signature, public_key, hash_algorithm)
                 except InvalidSignature:
-                    # It is not the right challenge
+                    # It is not the right challenge: log to find reason for invalid signature
                     log.debug(f"Used hash algorithm to verify: {verify_res['hash_algorithm']}")
+                    challenge_data_log = (f"Challenge data: nonce={nonce}, timestamp={times_stamp}, "
+                                          f"serial={self.serial}, scope={scope}")
+                    if passphrase:
+                        challenge_data_log += f", passphrase={len(passphrase) * '*'}"
+                    log.debug(challenge_data_log)
+                    log.debug(f"Challenge data from the client: device_brand={device_brand}, "
+                              f"device_model={device_model}, key={key}, container={container} ")
                     continue
 
                 # Valid challenge: delete it
@@ -651,7 +672,8 @@ class TokenContainerClass:
 
         return verify_res["valid"]
 
-    def get_as_dict(self, include_tokens: bool = True, public_info: bool = True, additional_hide_info: list = None):
+    def get_as_dict(self, include_tokens: bool = True, public_info: bool = True,
+                    additional_hide_info: list = None) -> dict[str, any]:
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
@@ -691,13 +713,13 @@ class TokenContainerClass:
                    "states": self.get_states()}
 
         if public_info or additional_hide_info:
-            black_key_list = []
+            key_blacklist = []
             if public_info:
-                black_key_list = ["public_key_container", "rollover_server_url", "rollover_challenge_ttl"]
+                key_blacklist = ["public_key_client", "rollover_server_url", "rollover_challenge_ttl"]
             if additional_hide_info:
-                black_key_list.extend(additional_hide_info)
+                key_blacklist.extend(additional_hide_info)
             info = self.get_container_info()
-            info_dict = {i.key: i.value for i in info if i.key not in black_key_list}
+            info_dict = {i.key: i.value for i in info if i.key not in key_blacklist}
         else:
             info_dict = self.get_container_info_dict()
         details["info"] = info_dict
@@ -729,14 +751,14 @@ class TokenContainerClass:
         return details
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container class.
         """
         return "generic"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """
@@ -745,14 +767,14 @@ class TokenContainerClass:
         return supported_token_types
 
     @classmethod
-    def get_class_prefix(cls):
+    def get_class_prefix(cls) -> str:
         """
         Returns the container class specific prefix for the serial.
         """
         return "CONT"
 
     @classmethod
-    def get_class_description(cls):
+    def get_class_description(cls) -> str:
         """
         Returns a description of the container class.
         """
@@ -763,9 +785,10 @@ class TokenContainerClass:
         Encrypts a dictionary with the public key of the container.
         It is not supported by all container classes. Classes not supporting the encryption raise a privacyIDEA error.
         """
-        raise privacyIDEAError("Encryption is not implemented for this container type.")
+        raise NotImplementedError("Encryption is not implemented for this container type.")
 
-    def synchronize_container_details(self, container_client: dict, initial_transfer_allowed: bool = False):
+    def synchronize_container_details(self, container_client: dict,
+                                      initial_transfer_allowed: bool = False) -> dict[str, dict[str, any]]:
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.
@@ -782,9 +805,10 @@ class TokenContainerClass:
             ::
 
                 {
-                    "container": {"type": "smartphone", "serial": "SMPH001"},
-                    "tokens": [{"serial": "TOTP001", "type": "totp"},
-                                {"otp": ["1234", "9876"], "type": "hotp"}]
+                    "serial": "SMPH001",
+                    "type": "smartphone",
+                    "tokens": [{"serial": "TOTP001", "tokentype": "TOTP"},
+                                {"otp": ["1234", "9876"], "tokentype": "HOTP", "counter": "2"}]
                 }
 
         :return: container dictionary
@@ -810,14 +834,19 @@ class TokenContainerClass:
             # Get serial from otp if required
             if "serial" not in dict_keys and "otp" in dict_keys:
                 token_type = token.get("tokentype")
+                if token_type:
+                    token_type = token_type.lower()
                 token_list = get_tokens(tokentype=token_type)
-                serial_list = get_serial_by_otp_list(token_list, otp_list=token["otp"])
+                client_counter = token.get("counter")
+                if client_counter:
+                    client_counter = int(client_counter)
+                serial_list = get_serial_by_otp_list(token_list, otp_list=token["otp"], counter=client_counter)
                 if len(serial_list) == 1:
                     serial = serial_list[0]
                     token["serial"] = serial
                     serial_otp_map[serial] = token["otp"]
                 elif len(serial_list) > 1:
-                    log.debug(f"Multiple serials found for otp {token['otp']}. Ignoring this token.")
+                    log.warning(f"Multiple serials found for otp {token['otp']}. Ignoring this token.")
                 # shall we ignore otp values where multiple serials are found?
 
         # map client and server tokens
@@ -833,9 +862,17 @@ class TokenContainerClass:
             missing_serials = list(set(server_token_serials).difference(set(client_serials)))
             same_serials = list(set(server_token_serials).intersection(set(client_serials)))
 
+        # Offline tokens that do not exist on the client can not be added during synchronization since the offline
+        # counter is not known by the server
+        offline_serials = [serial for serial in missing_serials if is_offline_token(serial)]
+        missing_serials = list(set(missing_serials).difference(set(offline_serials)))
+        if len(offline_serials) > 0:
+            log.info(f"The following offline tokens do not exist on the client: {offline_serials}. "
+                     "They can not be added during synchronization.")
+
         # Initial synchronization after registration or rollover
-        if initial_transfer_allowed and container_info.get("initial_synchronized") == "False":
-            self.add_container_info("initial_synchronized", "True")
+        if initial_transfer_allowed and not is_true(container_info.get("initially_synchronized")):
+            self.add_container_info("initially_synchronized", "True")
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
             for serial in server_missing_tokens:
                 # Try to add the missing token to the container on the server
@@ -858,10 +895,13 @@ class TokenContainerClass:
         for serial in same_serials:
             token = get_tokens_from_serial_or_user(serial, None)[0]
             token_dict_all = token.get_as_dict()
-            token_dict = {"serial": token_dict_all["serial"], "tokentype": token_dict_all["tokentype"]}
+            token_dict = {"serial": token_dict_all["serial"], "tokentype": token_dict_all["tokentype"],
+                          "offline": is_offline_token(serial)}
             # rename count to counter for the client
             if "count" in token_dict_all:
-                token_dict["counter"] = token_dict_all["count"]
+                # For offline tokens the counter shall not be sent to the client
+                if not is_offline_token(serial):
+                    token_dict["counter"] = token_dict_all["count"]
 
             # add otp values to allow the client identifying the token if he has no serial yet
             otp = serial_otp_map.get(serial)
@@ -870,5 +910,8 @@ class TokenContainerClass:
             update_dict.append(token_dict)
 
         container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
+
+        if registration_state == "rollover":
+            container_dict["tokens"]["offline"] = offline_serials
 
         return container_dict

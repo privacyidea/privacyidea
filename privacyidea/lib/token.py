@@ -65,7 +65,9 @@ import datetime
 import os
 import logging
 from collections import defaultdict
+from typing import Union
 
+from flask import Request
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
@@ -1074,7 +1076,7 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10):
+def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, counter: int = None) -> list[str]:
     """
     Returns a list of serials for a given list of OTP values
     The tokenobject_list would be created by get_tokens()
@@ -1082,24 +1084,28 @@ def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10):
     :param token_list: the list of token objects to be investigated
     :param otp_list: a list of otp values, that need to be found
     :param window: the window of search
+    :param counter: the counter value to be used for the OTP calculation,
+        if None the actual counter of the token is used
 
-    :return: the serial for a given OTP value and the user
-    :rtype: basestring
+    :return: a list of serials for the given OTP values and the user
     """
     result_list = []
 
     for otp in otp_list:
         for token in token_list:
-            log.debug("checking token {0!r}".format(token.get_serial()))
+            log.debug(f"checking token {token.get_serial()}")
             try:
-                r = token.check_otp_exist(otp=otp, window=window, inc_counter=False)
-                log.debug("result = {0:d}".format(int(r)))
+                if token.type == "hotp":
+                    r = token.check_otp_exist(otp=otp, window=window, inc_counter=False, counter=counter)
+                else:
+                    r = token.check_otp_exist(otp=otp, window=window, inc_counter=False)
+                log.debug(f"otp_exists = {r > 0}")
                 if r >= 0:
                     result_list.append(token)
             except Exception as err:
                 # A flaw in a single token should not stop privacyidea from finding
                 # the right token
-                log.warning(f"error in calculating OTP for token {token.token.serial}: {err}")
+                log.warning(f"error in calculating OTP for token {token.get_serial()}: {err}")
         token_list = result_list
         result_list = []
 
@@ -2318,7 +2324,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
             r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
-                    transactionid=transaction_id, options=options)
+                transactionid=transaction_id, options=options)
             # We need to pass the info if a push token has been triggered, so that require presence can re-use the
             # challenge instead of creating a new one with a different answer
             options["push_triggered"] = token_obj.get_type() == "push" if not options["push_triggered"] else True
@@ -2931,7 +2937,7 @@ def challenge_text_replace(message, user, token_obj):
     return message
 
 
-def regenerate_enroll_url(serial, request, g):
+def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     """
     Returns the enroll URL for a token with the given serial number that is already enrolled.
     Loads the configurations from the policies.
@@ -2954,6 +2960,7 @@ def regenerate_enroll_url(serial, request, g):
     g.serial = serial
 
     # Get policies for the token
+    # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
     from privacyidea.api.lib.prepolicy import (pushtoken_add_config, tantoken_count, papertoken_count,
                                                init_tokenlabel)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment
