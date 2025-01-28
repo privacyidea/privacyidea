@@ -1172,7 +1172,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         set_policy("policy", scope=SCOPE.CONTAINER,
                    action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
         # Create Challenge for rollover
-        scope = f"https://pi.net/container/{container.serial}/rollover"
+        scope = "https://pi.net/container/rollover"
         challenge_data = container.create_challenge(scope)
         # Mock smartphone
         params = mock_smph.register_finalize(challenge_data["nonce"],
@@ -1180,7 +1180,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                              scope)
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/{container.serial}/rollover',
+            self.request_assert_success("/container/rollover",
                                         params,
                                         None, 'POST')
 

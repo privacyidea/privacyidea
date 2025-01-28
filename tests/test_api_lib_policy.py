@@ -4187,7 +4187,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_client_container_request()
 
         # No rollover policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CLIENT_TOKEN_DELETABLE)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_TOKEN_DELETION)
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=ACTION.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
@@ -4399,17 +4399,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
         self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
-        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
-        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
                    action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
-                           ACTION.CLIENT_TOKEN_DELETABLE,
-                           ACTION.CLIENT_CONTAINER_UNREGISTER],
+                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER],
                    realm=self.realm2)
 
         # No policy: use default values
@@ -4417,39 +4417,39 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
         self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
-        self.assertFalse(policies[ACTION.CLIENT_TOKEN_DELETABLE])
-        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # Generic policy defined
         set_policy("policy", SCOPE.CONTAINER,
                    action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER,
-                           ACTION.CLIENT_TOKEN_DELETABLE,
-                           ACTION.CLIENT_CONTAINER_UNREGISTER])
+                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
         self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertTrue(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
-        self.assertTrue(policies[ACTION.CLIENT_TOKEN_DELETABLE])
-        self.assertTrue(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertTrue(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
         delete_policy("policy")
 
         # Policy for realm defined
         set_policy("policy", SCOPE.CONTAINER,
                    action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.CLIENT_TOKEN_DELETABLE],
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION],
                    realm=self.realm3)
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
         self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.CONTAINER_INITIAL_TOKEN_TRANSFER])
-        self.assertTrue(policies[ACTION.CLIENT_TOKEN_DELETABLE])
-        self.assertFalse(policies[ACTION.CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # wrong container type

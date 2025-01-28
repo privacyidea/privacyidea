@@ -4564,13 +4564,11 @@ class APIContainerTemplate(APIContainerTest):
                                                        PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push",
                                                        ACTION.TOKENISSUER: "{realm}",
                                                        ACTION.TOKENLABEL: "serial_{serial}"})
-        set_policy("webauthn", scope=SCOPE.ENROLL, action={WEBAUTHNACTION.RELYING_PARTY_ID: "example.com",
-                                                           WEBAUTHNACTION.RELYING_PARTY_NAME: "example"})
         set_policy("admin", SCOPE.ADMIN, action={ACTION.CONTAINER_CREATE: True,
                                                  "enrollHOTP": True, "enrollREMOTE": True, "enrollDAYPASSWORD": True,
                                                  "enrollSPASS": True, "enrollTOTP": True, "enroll4EYES": True,
                                                  "enrollPAPER": True, "enrollTAN": True, "enrollPUSH": True,
-                                                 "enrollINDEXEDSECRET": True, "enrollWEBAUTHN": True,
+                                                 "enrollINDEXEDSECRET": True,
                                                  "enrollAPPLSPEC": True, "enrollREGISTRATION": True, "enrollSMS": True,
                                                  "enrollEMAIL": True, "enrollTIQR": True,
                                                  "indexedsecret_force_attribute": "username",
@@ -4593,7 +4591,7 @@ class APIContainerTemplate(APIContainerTest):
             {"type": "4eyes", "4eyes": {self.realm3: {"count": 2, "selected": True}}},
             {"type": "paper"}, {"type": "tan"}, {"type": "push", "genkey": True, "user": True},
             {"type": "indexedsecret", "user": True},
-            {"type": "webauthn", "user": True}, {"type": "applspec", "genkey": True, "service_id": service_id},
+            {"type": "applspec", "genkey": True, "service_id": service_id},
             {"type": "registration"}, {"type": "sms", "dynamic_phone": True, "genkey": True, "user": True},
             {"type": "email", "dynamic_email": True, "genkey": True, "user": True}, {"type": "tiqr", "user": True}
         ]
@@ -4615,8 +4613,8 @@ class APIContainerTemplate(APIContainerTest):
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertEqual(16, len(tokens))
-        self.assertEqual(16, len(result["result"]["value"]["tokens"]))
+        self.assertEqual(15, len(tokens))
+        self.assertEqual(15, len(result["result"]["value"]["tokens"]))
 
         # check tokens and init details
         owner = User(login="cornelius", realm=self.realm3)
@@ -4625,7 +4623,7 @@ class APIContainerTemplate(APIContainerTest):
             token_type = token.get_type()
 
             # check user assignment
-            if token_type in ["hotp", "webauthn", "indexedsecret", "push", "sms", "email", "tiqr"]:
+            if token_type in ["hotp", "indexedsecret", "push", "sms", "email", "tiqr"]:
                 self.assertEqual(owner, token.user)
                 if token_type == "hotp":
                     # check default hashlib
@@ -4644,8 +4642,6 @@ class APIContainerTemplate(APIContainerTest):
                 self.assertTrue(isinstance(push_url, dict))
                 self.assertIn(f"issuer={self.realm3}", push_url["value"])
                 self.assertIn(f"serial_{serial}", push_url["value"])
-            elif token_type == "webauthn":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("webAuthnRegisterRequest"), dict))
             elif token_type == "applspec":
                 self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
             elif token_type == "registration":
@@ -4658,19 +4654,18 @@ class APIContainerTemplate(APIContainerTest):
         [token.delete_token() for token in tokens]
 
         delete_policy("push")
-        delete_policy("webauthn")
         delete_policy("admin")
         delete_policy("pw_length")
 
     def test_10_create_container_with_template_some_tokens_fail(self):
-        # tokens that require policies fail: push, webauthn
+        # tokens that require policies fail: push
         # tokens that require user fail: tiqr
         # Policies
         set_policy("admin", SCOPE.ADMIN, action={ACTION.CONTAINER_CREATE: True,
                                                  "enrollHOTP": True, "enrollREMOTE": True, "enrollDAYPASSWORD": True,
                                                  "enrollSPASS": True, "enrollTOTP": True, "enroll4EYES": True,
                                                  "enrollPAPER": True, "enrollTAN": True, "enrollPUSH": True,
-                                                 "enrollINDEXEDSECRET": True, "enrollWEBAUTHN": True,
+                                                 "enrollINDEXEDSECRET": True,
                                                  "enrollAPPLSPEC": True, "enrollREGISTRATION": True, "enrollSMS": True,
                                                  "enrollEMAIL": True, "enrollTIQR": True,
                                                  "indexedsecret_force_attribute": "username",
@@ -4693,7 +4688,7 @@ class APIContainerTemplate(APIContainerTest):
             {"type": "4eyes", "4eyes": {self.realm3: {"count": 2, "selected": True}}},
             {"type": "paper"}, {"type": "tan"}, {"type": "push", "genkey": True, "user": True},
             {"type": "indexedsecret", "user": True},
-            {"type": "webauthn", "user": True}, {"type": "applspec", "genkey": True, "service_id": service_id},
+            {"type": "applspec", "genkey": True, "service_id": service_id},
             {"type": "registration"}, {"type": "sms", "dynamic_phone": True, "genkey": True, "user": True},
             {"type": "email", "dynamic_email": True, "genkey": True, "user": True}, {"type": "tiqr", "user": True}
         ]
@@ -4717,7 +4712,6 @@ class APIContainerTemplate(APIContainerTest):
         tokens = container.get_tokens()
         all_token_types = [token.get_type() for token in tokens]
         self.assertNotIn("push", all_token_types)
-        self.assertNotIn("webauthn", all_token_types)
         self.assertNotIn("tiqr", all_token_types)
         self.assertEqual(13, len(tokens))
         self.assertEqual(13, len(result["result"]["value"]["tokens"]))
