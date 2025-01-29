@@ -2874,8 +2874,6 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     if additional_tags:
         tags.update(additional_tags)
 
-    if tokentype != "push":
-        tags.pop("presence_answer", None)
     if tokentype == "sms":
         if is_true(token_obj.get_tokeninfo("dynamic_phone")):
             phone = token_obj.user.get_user_phone("mobile")
