@@ -536,13 +536,13 @@ class IdResolver (UserIdResolver):
                 bound = self.l.bind()
             except Exception as ex:
                 log.error(f"Error performing bind operation: {ex}!")
-                raise ResolverError(f"Error performing bind operation: {ex}!")
+                raise ResolverError(f"Error performing bind operation: {ex}")
             if not bound:
                 res = self.l.result
                 log.error(f"LDAP Bind unsuccessful: "
                             f"{res.get('description')} ({res.get('result')})!")
                 raise ResolverError(f"Unable to perform bind operation: "
-                                    f"{res.get('description')} ({res.get('result')})!")
+                                    f"{res.get('description')} ({res.get('result')})")
             self.i_am_bound = True
 
     def _search(self, search_base, search_filter, attributes):
@@ -1112,7 +1112,10 @@ class IdResolver (UserIdResolver):
                                       keytabfile=param.get('KEYTABFILE', None))
 
             if not l.bind():
-                raise Exception("Wrong credentials")
+                log.error(f"LDAP Bind unsuccessful: "
+                          f"{l.result.get('description')} ({l.result.get('result')})!")
+                raise ResolverError(f"Unable to perform bind operation: "
+                                    f"{l.result.get('description')} ({l.result.get('result')})!")
             # create searchattributes
             attributes = list(yaml.safe_load(param["USERINFO"]).values())
             if uidtype.lower() != "dn":
@@ -1127,9 +1130,13 @@ class IdResolver (UserIdResolver):
                 size_limit=size_limit,
                 generator=True)
             # returns a generator of dictionaries
+            elapsed_time = l.usage.elapsed_time.total_seconds()
             count = 0
             uidtype_count = 0
             for entry in ignore_sizelimit_exception(l, g):
+                # Fix for searchResRef entries which have no attributes
+                if entry.get('type') == 'searchResRef':
+                    continue
                 try:
                     userid = cls._get_uid(entry, uidtype)
                     count += 1
@@ -1141,17 +1148,18 @@ class IdResolver (UserIdResolver):
                     log.debug("{0!s}".format(traceback.format_exc()))
 
             if uidtype_count < count:  # pragma: no cover
-                desc = _("Your LDAP config found {0!s} user objects, but only {1!s} "
-                         "with the specified uidtype").format(count, uidtype_count)
+                desc = _("Your LDAP config found {0!s} user objects in {2:.4f}s, "
+                         "but only {1!s} with the specified "
+                         "uidtype.").format(count, uidtype_count, elapsed_time)
             else:
                 desc = _("Your LDAP config seems to be OK, {0!s} user objects "
-                         "found.").format(count)
+                         "found in {1:.4f}s.").format(count, elapsed_time)
 
             l.unbind()
             success = True
 
         except Exception as e:
-            desc = "{0!r}".format(e)
+            desc = f"{e}"
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, desc

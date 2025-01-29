@@ -580,7 +580,7 @@ class SQLResolverTestCase(MyTestCase):
         self.parameters['Database'] = "does_not_exist"
         result = y.testconnection(self.parameters)
         self.assertTrue(result[0] == -1, result)
-        self.assertTrue("failed to retrieve" in result[1], result)
+        self.assertEqual("Failed to retrieve users.", result[1], result)
 
 
 class SCIMResolverTestCase(MyTestCase):
@@ -1093,11 +1093,11 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertTrue(res[0], res)
         self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
-        #'Your LDAP config seems to be OK, 3 user objects found.'
+        self.assertTrue(res[1].startswith("Your LDAP config seems to be OK,"), res)
 
     @ldap3mock.activate
     def test_04_testconnection_fail(self):
@@ -1117,10 +1117,10 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertFalse(res[0], res)
-        self.assertTrue("Wrong credentials" in res[1], res)
+        self.assertTrue(res[1].startswith("ERR907: Unable to perform bind operation:"), res)
 
     @ldap3mock.activate
     def test_05_authtype_not_supported(self):
@@ -1943,7 +1943,6 @@ class LDAPResolverTestCase(MyTestCase):
             # We get all three entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertEqual(len(ret), 3)
 
-
         # We imitate a hypothetical later ldap3 version and raise an exception *after having returned all entries*!
         # As ``getUserList`` stops consuming the generator after the size limit has been reached, we can only
         # test this using testconnection.
@@ -1984,10 +1983,7 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(mock_search.called)
             # We do not get any duplicate entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertTrue(ret[0])
-            self.assertTrue(ret[1] in ['Your LDAP config seems to be OK, 1 user objects found.',
-                                       'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
-                            ret[1])
-
+            self.assertTrue(ret[1].startswith("Your LDAP config seems to be OK, 1 user objects found"), ret)
 
     @ldap3mock.activate
     def test_30_login_with_objectGUID(self):
