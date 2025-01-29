@@ -500,11 +500,11 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info("using the connect string "
-                 "{0!s}".format(censor_connect_string(self.connect_string)))
+        log.debug("using the connect string "
+                  "{0!s}".format(censor_connect_string(self.connect_string)))
+        log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
+            self.pool_size, self.pool_timeout, self.pool_recycle))
         try:
-            log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
-                self.pool_size, self.pool_timeout, self.pool_recycle))
             engine = create_engine(self.connect_string,
                                    encoding=self.encoding,
                                    convert_unicode=False,

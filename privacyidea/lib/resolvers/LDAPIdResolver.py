@@ -82,6 +82,7 @@ from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 import datetime
 
 from privacyidea.lib import _
+from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
 from privacyidea.lib.error import privacyIDEAError, ResolverError
@@ -330,9 +331,10 @@ class IdResolver (UserIdResolver):
         # The number of seconds that ldap3 waits if no server is left in the pool, before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
-        log.info("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
+        log.debug("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
+    @log_with(log)
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -521,24 +523,26 @@ class IdResolver (UserIdResolver):
         if not self.i_am_bound:
             if not self.serverpool:
                 self.serverpool = self.get_serverpool_instance(self.get_info)
-            self.l = self.create_connection(authtype=self.authtype,
-                                            server=self.serverpool,
-                                            user=self.binddn,
-                                            password=self.bindpw,
-                                            receive_timeout=self.timeout,
-                                            auto_referrals=not
-                                            self.noreferrals,
-                                            start_tls=self.start_tls,
-                                            keytabfile=self.keytabfile)
             try:
+                self.l = self.create_connection(authtype=self.authtype,
+                                                server=self.serverpool,
+                                                user=self.binddn,
+                                                password=self.bindpw,
+                                                receive_timeout=self.timeout,
+                                                auto_referrals=not
+                                                self.noreferrals,
+                                                start_tls=self.start_tls,
+                                                keytabfile=self.keytabfile)
                 bound = self.l.bind()
             except Exception as ex:
-                log.warning(f"Error performing bind operation: {ex}!")
+                log.error(f"Error performing bind operation: {ex}!")
                 raise ResolverError(f"Error performing bind operation: {ex}!")
             if not bound:
+                res = self.l.result
+                log.error(f"LDAP Bind unsuccessful: "
+                            f"{res.get('description')} ({res.get('result')})!")
                 raise ResolverError(f"Unable to perform bind operation: "
-                                    f"{self.l.result.get('description')} "
-                                    f"({self.l.result.get('result')})!")
+                                    f"{res.get('description')} ({res.get('result')})!")
             self.i_am_bound = True
 
     def _search(self, search_base, search_filter, attributes):
@@ -712,14 +716,13 @@ class IdResolver (UserIdResolver):
 
         return userid
 
-    def getUserList(self, searchDict=None):
+    def     getUserList(self, searchDict=None):
         """
         :param searchDict: A dictionary with search parameters
         :type searchDict: dict
         :return: list of users, where each user is a dictionary
         """
         ret = []
-        self._bind()
         attributes = list(self.userinfo.values())
         ad_timestamp = get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
@@ -742,14 +745,19 @@ class IdResolver (UserIdResolver):
                                                  searchDict[search_key])
         search_filter += ")"
 
-        g = self.l.extend.standard.paged_search(search_base=self.basedn,
-                                                search_filter=search_filter,
-                                                search_scope=self.scope,
-                                                attributes=attributes,
-                                                paged_size=100,
-                                                size_limit=self.sizelimit,
-                                                generator=True)
-        log.debug(f"LDAP paged search operation took {self.l.usage.elapsed_time}")
+        self._bind()
+        try:
+            g = self.l.extend.standard.paged_search(search_base=self.basedn,
+                                                    search_filter=search_filter,
+                                                    search_scope=self.scope,
+                                                    attributes=attributes,
+                                                    paged_size=100,
+                                                    size_limit=self.sizelimit,
+                                                    generator=True)
+            log.debug(f"LDAP paged search operation took {self.l.usage.elapsed_time}")
+        except Exception as e:
+            log.error(f"Error performing paged search: {e}")
+            raise ResolverError(f"Error performing paged search: {e}")
         # returns a generator of dictionaries
         for entry in ignore_sizelimit_exception(self.l, g):
             # Simple fix for ignored sizelimit with Active Directory
@@ -763,8 +771,8 @@ class IdResolver (UserIdResolver):
                 user = self._ldap_attributes_to_user_object(attributes)
                 user['userid'] = self._get_uid(entry, self.uidtype)
                 ret.append(user)
-            except Exception as exx:  # pragma: no cover
-                log.error("Error during fetching LDAP objects: {0!r}".format(exx))
+            except Exception as ex:  # pragma: no cover
+                log.error(f"Error during fetching LDAP objects: {ex}")
                 log.debug("{0!s}".format(traceback.format_exc()))
 
         return ret
