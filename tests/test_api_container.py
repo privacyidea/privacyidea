@@ -3226,7 +3226,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("add", tokens_dict)
         self.assertIn("update", tokens_dict)
         tokens = tokens_dict["add"]
-        self.assertEqual(4, len(tokens))
+        # sms is skipped for synchronization
+        self.assertEqual(3, len(tokens))
 
         # check token properties
         # new tokens are rolled over: enrollment settings need to be the same and not reset to defaults
@@ -3357,7 +3358,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("update", tokens_dict)
         tokens = tokens_dict["add"]
         # totp, daypassword and hotp token to be added (sms token can not be enrolled in the app)
-        self.assertEqual(4, len(tokens))
+        self.assertEqual(3, len(tokens))
         # check hotp enroll url
         for token in tokens:
             if "hotp" in token:
