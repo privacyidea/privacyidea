@@ -915,6 +915,27 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Clean up
         container.delete()
 
+    def test_39_get_tokens_for_synchronization(self):
+        # Arrange
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        hotp = init_token({"genkey": True, "type": "hotp"})
+        container.add_token(hotp)
+        totp = init_token({"genkey": True, "type": "totp"})
+        container.add_token(totp)
+        sms = init_token({"type": "sms", "phone": "+123456789", "genkey": True})
+        container.add_token(sms)
+        push = init_token({"type": "push", "genkey": True})
+        container.add_token(push)
+
+        # Act
+        tokens = container.get_tokens_for_synchronization()
+
+        # Assert
+        token_types = [token.get_tokentype() for token in tokens]
+        self.assertSetEqual({"hotp", "totp", "push"}, set(token_types))
+        self.assertNotIn("sms", token_types)
+
 
 class MockSmartphone:
 

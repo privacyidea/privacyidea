@@ -283,6 +283,12 @@ class TokenContainerClass:
         """
         return self.tokens
 
+    def get_tokens_for_synchronization(self) -> list[TokenClass]:
+        """
+        Returns the tokens of the container that can be synchronized with a client as a list of TokenClass objects.
+        """
+        return self.tokens
+
     def delete(self) -> int:
         """
         Deletes the container and all associated objects from the database.
@@ -824,7 +830,7 @@ class TokenContainerClass:
                 }
         """
         container_dict = {"container": {"type": self.type, "serial": self.serial}}
-        server_token_serials = [token.get_serial() for token in self.get_tokens()]
+        server_token_serials = [token.get_serial() for token in self.get_tokens_for_synchronization()]
 
         # Get serials for client tokens without serial
         client_tokens = container_client.get("tokens", [])
@@ -866,6 +872,12 @@ class TokenContainerClass:
         # counter is not known by the server
         offline_serials = [serial for serial in missing_serials if is_offline_token(serial)]
         missing_serials = list(set(missing_serials).difference(set(offline_serials)))
+        if registration_state == "rollover":
+            # offline tokens known by the client can be added to the update list
+            # (indicating the tokens are still in the container)
+            same_serials = list(set(client_serials).intersection(set(offline_serials)))
+            # only offline tokens not known to the client are excluded (they can not be added to the client)
+            offline_serials = list(set(offline_serials).difference(set(client_serials)))
         if len(offline_serials) > 0:
             log.info(f"The following offline tokens do not exist on the client: {offline_serials}. "
                      "They can not be added during synchronization.")

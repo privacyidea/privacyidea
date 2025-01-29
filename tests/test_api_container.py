@@ -4420,6 +4420,105 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("transfer_policy")
 
+    def test_60_rollover_and_synchronize_with_offline_tokens(self):
+        # Registration
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        registration = self.register_smartphone_success()
+        mock_smph = registration.mock_smph
+        smartphone = find_container_by_serial(mock_smph.container_serial)
+        smartphone.add_container_info("registration_state", "rollover")
+
+        # tokens
+        server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        server_token_otps = server_token.get_multi_otp(100)[2]["otp"]
+        client_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_no_serial_otps = client_token_no_serial.get_multi_otp(100)[2]["otp"]
+        client_token_with_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_with_serial_otps = client_token_with_serial.get_multi_otp(100)[2]["otp"]
+        shared_token = init_token({"genkey": "1", "type": "hotp"})
+        shared_token_otps = shared_token.get_multi_otp(100)[2]["otp"]
+        shared_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        shared_token_no_serial_otps = shared_token_no_serial.get_multi_otp(100)[2]["otp"]
+        online_token = init_token({"genkey": "1", "type": "hotp"})
+
+        smartphone.add_token(server_token)
+        smartphone.add_token(shared_token)
+        smartphone.add_token(shared_token_no_serial)
+        smartphone.add_token(online_token)
+
+        # Create offline token
+        self.create_offline_token(server_token.get_serial(), server_token_otps)
+        self.create_offline_token(client_token_no_serial.get_serial(), client_token_no_serial_otps)
+        self.create_offline_token(client_token_with_serial.get_serial(), client_token_with_serial_otps)
+        self.create_offline_token(shared_token.get_serial(), shared_token_otps)
+        self.create_offline_token(shared_token_no_serial.get_serial(), shared_token_no_serial_otps)
+
+        # Challenge
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": mock_smph.container_serial}, None,
+                                             "POST")
+
+        mock_smph.container = {
+            "tokens": [{"tokentype": "HOTP", "otp": list(client_token_no_serial_otps.values())[2:4], "counter": "2"},
+                       {"tokentype": "HOTP", "serial": client_token_with_serial.get_serial()},
+                       {"tokentype": "HOTP", "serial": shared_token.get_serial()},
+                       {"tokentype": "HOTP", "otp": list(shared_token_no_serial_otps.values())[2:4], "counter": "2"},
+                       {"tokentype": "HOTP", "serial": online_token.get_serial()}]}
+        params = mock_smph.synchronize(result["result"]["value"], scope)
+
+        # Finalize
+        result = self.request_assert_success("container/synchronize",
+                                             params, None, 'POST')
+        result_entries = result["result"]["value"].keys()
+        self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
+        self.assertIn("encryption_params", result_entries)
+        self.assertIn("public_server_key", result_entries)
+        self.assertIn("container_dict_server", result_entries)
+        self.assertIn("server_url", result_entries)
+
+        # check token info
+        container_dict_server_enc = result["result"]["value"]["container_dict_server"]
+        pub_key_server = X25519PublicKey.from_public_bytes(
+            base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
+        shared_key = mock_smph.private_key_encr.exchange(pub_key_server)
+        container_dict_server = json.loads(decrypt_aes(container_dict_server_enc, shared_key,
+                                                       result["result"]["value"]["encryption_params"]).decode("utf-8"))
+        tokens_dict = container_dict_server["tokens"]
+        self.assertIn("add", tokens_dict)
+        self.assertIn("update", tokens_dict)
+        # Online the online token is rolled over and hence in the add list with the new token secret
+        add_tokens = tokens_dict["add"]
+        self.assertEqual(1, len(add_tokens))
+        self.assertIn(online_token.get_serial(), add_tokens[0])
+
+        # the token only on the server can not be added to the client since the server does not know the offline counter
+        offline_tokens = tokens_dict["offline"]
+        self.assertIn(server_token.get_serial(), offline_tokens)
+        self.assertEqual(103, server_token.token.count)
+
+        update_tokens = {token["serial"]: token for token in tokens_dict["update"]}
+        update_tokens_serials = update_tokens.keys()
+        # the token from the client with serial is added to the container with unchanged counter
+        self.assertIn(client_token_with_serial.get_serial(), update_tokens_serials)
+        self.assertEqual(103, client_token_with_serial.token.count)
+        self.assertTrue(update_tokens[client_token_with_serial.get_serial()]["offline"])
+        # the shared token stays unchanged (counter = 103)
+        self.assertIn(shared_token.get_serial(), update_tokens_serials)
+        self.assertEqual(103, shared_token.token.count)
+        self.assertTrue(update_tokens[shared_token.get_serial()]["offline"])
+        # The token from the client without serial is added to the server and the counter is unchanged
+        self.assertIn(client_token_no_serial.get_serial(), update_tokens_serials)
+        self.assertEqual(103, client_token_no_serial.token.count)
+        self.assertTrue(update_tokens[client_token_no_serial.get_serial()]["offline"])
+        # Shared token: otp values could be mapped to serial
+        self.assertIn(shared_token_no_serial.get_serial(), update_tokens_serials)
+        self.assertEqual(103, shared_token_no_serial.token.count)
+        self.assertTrue(update_tokens[shared_token_no_serial.get_serial()]["offline"])
+        self.assertEqual(4, len(update_tokens_serials))
+
+        delete_policy("transfer_policy")
+
 
 class APIContainerTemplate(APIContainerTest):
 

@@ -34,6 +34,7 @@ from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
 from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
 
@@ -117,6 +118,12 @@ class SmartphoneContainer(TokenContainerClass):
         Returns a description of the container class.
         """
         return _("A smartphone that uses an authenticator app.")
+
+    def get_tokens_for_synchronization(self) -> list[TokenClass]:
+        """
+        Returns the tokens of the container that can be synchronized with a client as a list of TokenClass objects.
+        """
+        return [token for token in self.tokens if token.get_tokentype() != "sms"]
 
     def init_registration(self, server_url: str, scope: str, registration_ttl: int, ssl_verify: bool,
                           params: dict = None) -> dict:
