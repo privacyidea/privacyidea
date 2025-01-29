@@ -504,7 +504,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
             if ($scope.enrolledToken.passkey_registration) {
                 $scope.click_wait = true;
-                console.log($scope.enrolledToken.passkey_registration);
+                //console.log($scope.enrolledToken.passkey_registration);
                 let options = $scope.enrolledToken.passkey_registration;
                 let excludedCredentials = [];
                 for (const cred of options.excludeCredentials) {
@@ -532,8 +532,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         attestation: options.attestation
                     }
                 }).then(function (publicKeyCred) {
-                    console.log("Successfully registered passkey");
-                    console.log(publicKeyCred);
+                    //console.log("Successfully registered passkey");
+                    //console.log(publicKeyCred);
                     let params = {
                         user: $scope.newUser.user,
                         realm: $scope.newUser.realm,

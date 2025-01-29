@@ -119,4 +119,8 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     if token.type == "webauthn":
         options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
     options.update({"user": token.user})
-    return token.check_otp(None, options=options)
+    ret = token.check_otp(None, options=options)
+    # On success, mark the challenge as completed
+    if ret > 0:
+        db_challenge.delete()
+    return ret

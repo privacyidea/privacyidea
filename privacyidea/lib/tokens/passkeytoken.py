@@ -314,6 +314,8 @@ class PasskeyTokenClass(TokenClass):
                         if attributes:
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
+            # Remove the challenge
+            challenges[0].delete()
         return response_detail
 
     @check_token_locked
