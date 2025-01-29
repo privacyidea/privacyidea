@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
         <div class="form-group" ng-show="loggedInUser.role=='admin'">
             <hr class="horizontal-line-invisible">
-            <h4  translate>
+            <h4 translate>
                 Assign the Container to a User
             </h4>
             <div>
@@ -89,6 +89,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                          function-obj="functionObject"
                          mark-add-remove="true"
                          show-default-selection="false"
+                         edit="checkRight('container_template_create')"
+                         hide-buttons="hide_buttons"
                          class="form-group"
                     ></div>
                     <span translate>Note: Changes will only be applied to this container and not to the template.</span>
@@ -106,15 +108,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 smartphone.</label>
             <div class="form-group">
                 <button class="btn btn-default"
-                       ng-click="registrationSettings=true"
-                       ng-hide="registrationSettings"
-                       translate>
+                        ng-click="registrationSettings=true"
+                        ng-hide="registrationSettings"
+                        translate>
                     Edit Settings
                 </button>
                 <button class="btn btn-default"
-                       ng-click="registrationSettings=false"
-                       ng-show="registrationSettings"
-                       translate>
+                        ng-click="registrationSettings=false"
+                        ng-show="registrationSettings"
+                        translate>
                     Hide Settings
                 </button>
             </div>
@@ -170,7 +172,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             The following tokens were successfully enrolled in the container using the template
             <a ui-sref="token.containertemplates.edit({templateName: form.template.name})"
                ng-show="checkRight('container_template_list')">
-                    {{ form.template.name }}</a>.
+                {{ form.template.name }}
+            </a>.
         </div>
 
 

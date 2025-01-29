@@ -105,7 +105,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.containerClassOptions = {};
 
         $scope.containerRegister = false;
-        $scope.initRegistration = false;
+        $scope.initRegistration = $scope.form.containerType === "smartphone";
         $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
@@ -255,12 +255,9 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     if (template.default) {
                         // save default template
                         $scope.defaultTemplates[template.container_type] = template;
-                        if (template.container_type === $scope.form.containerType) {
-                            // select default template for selected container type
-                            $scope.selectTemplate(true);
-                        }
                     }
                 });
+                $scope.selectTemplate(true);
             });
         };
 
