@@ -403,6 +403,17 @@ export class ContainerDetailsComponent {
       });
   }
 
+  handleCancelAction(type: string) {
+    switch (type) {
+      case 'realms':
+        this.selectedRealms.set([]);
+        break;
+      default:
+        this.showContainerDetail().subscribe();
+        break;
+    }
+  }
+
   private fetchTokenData() {
     this.tokenService
       .getTokenData(
@@ -428,17 +439,6 @@ export class ContainerDetailsComponent {
     return this.userOptions().filter((option) =>
       option.toLowerCase().includes(filterValue),
     );
-  }
-
-  private handleCancelAction(type: string) {
-    switch (type) {
-      case 'realms':
-        this.selectedRealms.set([]);
-        break;
-      default:
-        this.showContainerDetail().subscribe();
-        break;
-    }
   }
 
   private handleRealms(action: string) {

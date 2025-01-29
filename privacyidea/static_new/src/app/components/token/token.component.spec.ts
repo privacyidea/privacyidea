@@ -33,18 +33,28 @@ class MockContainerDetailsComponent {
 }
 
 class MockOverflowService {
+  private _overflow = false;
+
   getOverflowThreshold() {
     return 1920;
   }
 
-  isOverflowing() {
-    return false;
+  setWidthOverflow(value: boolean) {
+    this._overflow = value;
+  }
+
+  isWidthOverflowing(selector: string, threshold: number) {
+    return this._overflow;
+  }
+
+  isHeightOverflowing(selector: string, threshold: number) {
+    return this._overflow;
   }
 }
 
 class MockNotificationService {
   openSnackBar(msg: string) {
-    console.log('NotificationService.openSnackBar:', msg);
+    console.warn('NotificationService.openSnackBar:', msg);
   }
 }
 
@@ -102,15 +112,56 @@ describe('TokenComponent', () => {
   });
 
   it('should refresh token details successfully', fakeAsync(() => {
-    const spy = spyOn(component, 'onRefreshTokenDetails').and.returnValue(
-      void 0,
-    );
+    const onRefreshTokenDetails = spyOn(
+      component,
+      'onRefreshTokenDetails',
+    ).and.returnValue(void 0);
 
     component.refreshTokenDetails.set(true);
 
     TestBed.flushEffects();
+    fixture.detectChanges();
 
-    //TODO testing effects doesn't work
-    //expect(spy).toHaveBeenCalled();
+    expect(onRefreshTokenDetails).toHaveBeenCalled();
   }));
+
+  it('should refresh container details successfully', fakeAsync(() => {
+    const onRefreshContainerDetails = spyOn(
+      component,
+      'onRefreshContainerDetails',
+    ).and.returnValue(void 0);
+
+    component.refreshContainerDetails.set(true);
+
+    TestBed.flushEffects();
+    fixture.detectChanges();
+
+    expect(onRefreshContainerDetails).toHaveBeenCalled();
+  }));
+
+  it('should show token card outside the drawer if overflowService returns false', () => {
+    mockOverflowService.setWidthOverflow(false);
+    fixture.detectChanges();
+
+    const cardOutsideDrawer = fixture.nativeElement.querySelector(
+      'app-token-card.margin-right-1',
+    );
+    const drawer = fixture.nativeElement.querySelector('mat-drawer');
+
+    expect(cardOutsideDrawer).toBeTruthy();
+    expect(drawer).toBeNull();
+  });
+
+  it('should show token card in drawer if overflowService returns true', () => {
+    mockOverflowService.setWidthOverflow(true);
+    fixture.detectChanges();
+
+    const cardOutsideDrawer = fixture.nativeElement.querySelector(
+      'app-token-card.margin-right-1',
+    );
+    const drawer = fixture.nativeElement.querySelector('mat-drawer');
+
+    expect(cardOutsideDrawer).toBeNull();
+    expect(drawer).toBeTruthy();
+  });
 });
