@@ -134,7 +134,7 @@ def check_webui_user(user_obj,
                         if container:
                             container.update_last_authentication()
                     except Exception as e:
-                        log.debug(f"Could not find container for token {details.get("serial")}: {e}")
+                        log.debug(f"Could not find container for token {details.get('serial')}: {e}")
         except Exception as e:
             log.debug("Error authenticating user against privacyIDEA: {0!r}".format(e))
     else:
