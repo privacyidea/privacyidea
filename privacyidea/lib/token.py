@@ -2900,7 +2900,8 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     # Append the answer to the message
     presence_answer = tags.get("presence_answer", None)
     if presence_answer and tokentype == "push" and "{presence_answer}" not in message:
-        message += f" Please press: {presence_answer}"
+        # PyBabel gettext and f-strings don't like each other
+        message += _(" Please press: {presence_answer}".format(presence_answer=presence_answer))
 
     message = message.format_map(defaultdict(str, tags))
 
