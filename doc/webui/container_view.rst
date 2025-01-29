@@ -64,18 +64,19 @@ If the container was created from a template, the template name is displayed. Cl
 template details page.
 
 Additionally, the container can be compared to the template. This is useful if the template was changed after the
-container was created. Clicking the 'Compare' button will show a table with the differences. The row 'missing'
-lists the token types contained in the template but not in the container. The row 'additional' lists the token
+container was created. Clicking the `Compare` button will show a table with the differences. The row `missing`
+lists the token types contained in the template but not in the container. The row `additional` lists the token
 types included in the container but not in the template.
 
 Synchronization
 ...............
 
-Smartphones can be synchronized with the container on the privacyIDEA server. To enable the synchronization,
-registration is required first. The registration can be initiated in the dropdown 'Registration Configuration'.
+Beginning from version 3.11, smartphones can be synchronized with the container on the privacyIDEA server. To enable
+the synchronization, registration is required first.
+The registration can be initiated in the dropdown `Registration Configuration`.
 Optionally, the user can secure the registration with a passphrase. For this, a prompt that will be displayed to the
 user in the authenticator app, and the correct passphrase response can be configured. After clicking the button
-'Register Container on Device', a QR code is displayed. The user has to scan this QR code with the privacyIDEA
+`Register Container on Device`, a QR code is displayed. The user has to scan this QR code with the privacyIDEA
 Authenticator app to complete the registration.
 
 .. note:: It is required to configure a container policy specifying at least the `privacyIDEA_server_url` action.
@@ -88,7 +89,7 @@ Authenticator app to complete the registration.
 
 If the smartphone is successfully registered, the `registration_state` in the container info changes from `client_wait`
 to `registered`. In case the QR code gets lost or the passphrase needs to be changed, the QR code can be regenerated
-in the dropdown 'Registration Configuration'. However, this is only possible while the registration is in the
+in the dropdown `Registration Configuration`. However, this is only possible while the registration is in the
 `client_wait` state.
 
 For registered containers, the time of the last synchronization and the last time a token from the container
@@ -96,16 +97,18 @@ was used for successful authentication are displayed. Note that these timestamps
 containers, hence the last authentication time stamp is not set yet for a newly registered container.
 
 If the container with all tokens shall be registered on a new smartphone, a rollover can be performed. Similar to
-the registration, you can set a passphrase in the dropdown 'Registration Configuration' and generate a new QR code
-by clicking on the 'Rollover' button. The user has to scan the QR code with the new smartphone. If the new smartphone
+the registration, you can set a passphrase in the dropdown `Registration Configuration` and generate a new QR code
+by clicking on the `Rollover` button. The user has to scan the QR code with the new smartphone. If the new smartphone
 has been registered successfully, the old smartphone can no longer be synchronized. The rollover generates new secrets
 for all tokens in the container. This invalidates all tokens on the old smartphone.
 During the rollover, the `registration_state` changes from `registered` to `rollover`. After a successful rollover and
 a first synchronization with the new device, it changes back to `registered`.
 
-The container can always be unregistered by clicking the 'Unregister' button. The smartphone can not be synchronized
+The container can always be unregistered by clicking the `Unregister` button. The smartphone can not be synchronized
 with the server anymore. A window will appear asking if you want to disable all tokens. The window disappears
 automatically after a few seconds.
+
+.. note:: Not all synchronization features work for offline tokens. See :ref:`synchronization` for more information.
 
 Tokens
 ......
@@ -131,7 +134,7 @@ Container Create
 
 To create a new container, first of all a type has to be selected. Below the drop-down menu, all token types that are
 supported by the container type are displayed. Additionally, you can set a description and assign the container to a
-user.
+user. From version 3.11, you can also assign the container only to a realm.
 
 .. figure:: images/container_create.png
    :width: 500

@@ -58,11 +58,11 @@ To set the smartphone synchronization up properly, the following steps are requi
 The following endpoints must be reachable for the smartphone:
     * ``/container/register/finalize``: The endpoint that the smartphone contacts to complete the registration.
     * ``/container/register/terminate/client``: The endpoint to terminate the registration. If the container is deleted
-        on the smartphone, this endpoint is called to inform the server that the container is no longer available.
+      on the smartphone, this endpoint is called to inform the server that the container is no longer available.
     * ``/container/challenge``: Creates a scoped challenge.
     * ``/container/synchronize``: The endpoint to synchronize the container.
     * ``/container/rollover``: The endpoint to perform a rollover of the container with all tokens. This endpoint must
-        only be available if the rollover is allowed for the client using the policy `container_client_rollover`.
+      only be available if the rollover is allowed for the client using the policy `container_client_rollover`.
 
 
 Implementation Details

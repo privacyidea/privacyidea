@@ -50,6 +50,8 @@ The user is allowed to assign an existing token that is
 located in their realm and that does not belong to any other user
 by entering the serial number.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 disable
 ~~~~~~~
 
@@ -476,6 +478,8 @@ container_assign_user
 type: ``bool``
 
 This action allows users to assign themselves to containers without an owner.
+
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
 
 .. versionadded:: 3.10
 

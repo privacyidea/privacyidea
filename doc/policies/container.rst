@@ -26,7 +26,7 @@ has no effect on registered containers. To apply the changes to registered conta
 privacyIDEA_server_url
 ~~~~~~~~~~~~~~~~~~~~~~
 
-type: str
+type: ``str``
 
 The URL of the privacyIDEA server, e.g. ``https://pi.net/``. It is used to build URLs of API endpoints the container
 can contact for registration and synchronization. Note that the URL might differ from the server URL of the WebUI.
@@ -36,7 +36,7 @@ New in version 3.11
 container_registration_ttl
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: int
+type: ``int``
 
 The time in minutes the client has to do the second step of the registration (to scan the QR code). The default is ten
 minutes.
@@ -46,7 +46,7 @@ New in version 3.11
 container_challenge_ttl
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: int
+type: ``int``
 
 After the client (a registered container) has challenged an action such as synchronization,
 ``container_challenge_ttl`` defines the time in minutes the client has to complete the action.
@@ -57,7 +57,7 @@ New in version 3.11
 container_ssl_verify
 ~~~~~~~~~~~~~~~~~~~~
 
-type: str
+type: ``str``
 
 If set to ``True`` the client needs to verify the SSL certificate of the privacyIDEA server.
 If no value is set, the default is ``True``. It is highly recommended to use SSL.
@@ -74,7 +74,7 @@ The policies are checked before each API request and sent to the client during e
 container_client_rollover
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows the client to perform a container rollover with all contained tokens.
 The rollover generates new secrets for all contained tokens, and the client has to generate a new asymmetric key pair.
@@ -85,7 +85,7 @@ New in version 3.11
 initially_add_tokens_to_container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 During the first synchronization, this action allows the server to automatically add tokens from the client to the
 container on the server. This allows to register devices with existing tokens as container without having to manually
@@ -97,7 +97,7 @@ New in version 3.11
 disable_client_token_deletion
 ~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 By default, the user is allowed to delete tokens locally on the smartphone. The tokens will remain on the server.
 Activating this action will disable the deletion of tokens in the authenticator app as long as the smartphone is
@@ -108,7 +108,7 @@ New in version 3.11
 disable_client_container_unregister
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 By default, the user is allowed to delete the container locally on the smartphone and thus unregister the container.
 The container will remain on the server but will not be connected to the smartphone.

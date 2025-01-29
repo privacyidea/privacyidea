@@ -293,6 +293,8 @@ enroll a new token to a user.
 Without this action, the administrator can not create
 a connection (assignment) between a user and a token.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 unassign
 ~~~~~~~~
 
@@ -1081,6 +1083,8 @@ container_assign_user
 type: ``bool``
 
 The administrator is allowed to assign users to containers.
+
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
 
 .. versionadded:: 3.10
 
