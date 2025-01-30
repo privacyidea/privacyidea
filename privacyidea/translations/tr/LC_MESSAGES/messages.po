@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2022-12-14 20:50+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/tr/>\n"
+"privacyidea-server/tr/>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -90,6 +91,7 @@ msgstr ""
 "değilsiniz!"
 
 #: api/lib/utils.py:413
+#, fuzzy
 msgid "'{0!s}' is an invalid policy name."
 msgstr "geçersiz bir politika adı."
 
@@ -2294,6 +2296,7 @@ msgstr ""
 "şekilde içerebilir."
 
 #: lib/eventhandler/usernotification.py:224
+#, fuzzy
 msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
@@ -2612,16 +2615,19 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "E-posta: Kullanıcılara e-posta adresine bir kez şifre gönderin."
 
 #: lib/tokens/emailtoken.py:165
+#, fuzzy
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
 "Bir e-posta belirteci için e-posta yoluyla gönderilecek metin. {OTP} ve "
-"{Serial} gibi birkaç etiket parametre olarak kullanılabilir. Ayrıca \"Dosya:"
-"\" ile başlayan e-posta şablonu olarak bir dosya adı belirleyebilirsiniz."
+"{Serial} gibi birkaç etiket parametre olarak kullanılabilir. Ayrıca "
+"\"Dosya:\" ile başlayan e-posta şablonu olarak bir dosya adı "
+"belirleyebilirsiniz."
 
 #: lib/tokens/emailtoken.py:172
+#, fuzzy
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
@@ -3113,6 +3119,7 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS: Cep telefonuna bir kerelik şifre gönder."
 
 #: lib/tokens/smstoken.py:209
+#, fuzzy
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
