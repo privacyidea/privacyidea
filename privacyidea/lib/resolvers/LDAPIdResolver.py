@@ -334,7 +334,7 @@ class IdResolver (UserIdResolver):
         log.debug("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
-    @log_with(log)
+    @log_with(log, hide_args=[2])
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -540,7 +540,7 @@ class IdResolver (UserIdResolver):
             if not bound:
                 res = self.l.result
                 log.error(f"LDAP Bind unsuccessful: "
-                            f"{res.get('description')} ({res.get('result')})!")
+                          f"{res.get('description')} ({res.get('result')})!")
                 raise ResolverError(f"Unable to perform bind operation: "
                                     f"{res.get('description')} ({res.get('result')})")
             self.i_am_bound = True
