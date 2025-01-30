@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2022-12-10 13:47+0000\n"
-"Last-Translator: Eric <hamburger1024@duck.com>\n"
-"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-ui/zh_Hans/>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
+"projects/privacyidea/privacyidea-server/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -66,6 +67,7 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "验证失败。缺少授权标头。"
 
 #: api/lib/utils.py:351 api/lib/utils.py:384
+#, fuzzy
 msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgstr "验证失败。解码令牌时出错：{0！s}"
 
@@ -74,18 +76,21 @@ msgid "Authentication failure. Your token has expired: {0!s}"
 msgstr "验证失败,因为您的令牌已过期: {0!s}"
 
 #: api/lib/utils.py:391
+#, fuzzy
 msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate via "
 "JWT."
 msgstr "验证失败。用户名{0！s}不允许通过JWT模拟。"
 
 #: api/lib/utils.py:395
+#, fuzzy
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to access "
 "this resource!"
 msgstr "验证失败。您没有访问此资源所需的角色（{0！s}）！"
 
 #: api/lib/utils.py:413
+#, fuzzy
 msgid "'{0!s}' is an invalid policy name."
 msgstr "'{0！s}'是无效的策略名称。"
 
@@ -997,11 +1002,11 @@ msgid ""
 msgstr ""
 
 #: lib/policy.py:2530
+#, fuzzy
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
-msgstr ""
-"允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
+msgstr "允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
 
 #: lib/policy.py:2537
 msgid ""
@@ -1438,23 +1443,26 @@ msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "允许管理员初始化{0！s}令牌。"
 
 #: lib/token.py:2635
+#, fuzzy
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "允许用户注册{0！s}令牌。"
 
 #: lib/token.py:2666
+#, fuzzy
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "设置{0！s}令牌的最大允许PIN长度。"
 
 #: lib/token.py:2673
+#, fuzzy
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "设置{0！s}令牌所需的最小PIN长度。"
 
 #: lib/token.py:2679
+#, fuzzy
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
-msgstr ""
-"指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
+msgstr "指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
 "[+/-]！"
 
 #: lib/token.py:2724 lib/token.py:2740
@@ -2113,13 +2121,14 @@ msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "您的LDAP配置似乎正常，%i机器对象已发现。"
 
 #: lib/resolvers/LDAPIdResolver.py:1130
+#, fuzzy
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the specified "
 "uidtype"
-msgstr ""
-"您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有指定uidtype的用户对象"
+msgstr "您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有指定uidtype的用户对象"
 
 #: lib/resolvers/LDAPIdResolver.py:1133
+#, fuzzy
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "您的LDAP配置似乎正常，找到了{0！s}个用户对象。"
 
@@ -2390,15 +2399,17 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "电子邮件：向用户的电子邮件地址发送一次性密码。"
 
 #: lib/tokens/emailtoken.py:165
+#, fuzzy
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
-"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> 等标签作"
-"为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
+"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> "
+"等标签作为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
 
 #: lib/tokens/emailtoken.py:172
+#, fuzzy
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
@@ -2530,6 +2541,7 @@ msgid "Please scan the QR code and enter the OTP value!"
 msgstr "请扫描二维码！"
 
 #: lib/tokens/indexedsecrettoken.py:49
+#, fuzzy
 msgid "Please enter the positions {0!s} from your secret."
 msgstr "请从您的秘密中输入职位{0！s}。"
 
@@ -2830,6 +2842,7 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS：向用户手机发送一次性密码。"
 
 #: lib/tokens/smstoken.py:209
+#, fuzzy
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
@@ -2995,6 +3008,7 @@ msgid "You need to define the appId in the token config!"
 msgstr "您需要在令牌配置中定义appId！"
 
 #: lib/tokens/u2ftoken.py:443
+#, fuzzy
 msgid "Please confirm with your U2F token ({0!s})"
 msgstr "请使用您的U2F令牌（{0！s}）进行确认"
 
@@ -3016,6 +3030,7 @@ msgid "Generic WebAuthn Token"
 msgstr "通用WebAuthn令牌"
 
 #: lib/tokens/webauthntoken.py:468
+#, fuzzy
 msgid "Please confirm with your WebAuthn token ({0!s})"
 msgstr "请使用您的WebAuthn令牌（{0！s}）进行确认"
 
