@@ -142,8 +142,7 @@ def get_machine_id(hostname, ip=None):
 
 
 @log_with(log)
-def attach_token(serial, application, hostname=None, machine_id=None,
-                 resolver_name=None, options=None):
+def attach_token(serial, application, hostname=None, machine_id=None, resolver_name=None, options=None):
     """
     Attach a token with an application to a machine. You need to provide
     either the hostname or the (machine_id, resolver_name) of the machine,
@@ -156,11 +155,9 @@ def attach_token(serial, application, hostname=None, machine_id=None,
     :param hostname: The hostname of the machine, to which your want to
     attach the token. If the hostname is not unique, an exception is raised.
     :type hostname: basestring
-    :param machine_id: The machine ID of the machine, you want to attach the
-    token to.
+    :param machine_id: The machine ID of the machine, you want to attach the token to.
     :type machine_id: basestring
-    :param resolver_name: The resolver_name of the machine you want attach
-    the token to.
+    :param resolver_name: The resolver_name of the machine you want to attach the token to.
     :type resolver_name: basestring
     :param options: additional options
     :return: the new MachineToken Object
@@ -176,24 +173,21 @@ def attach_token(serial, application, hostname=None, machine_id=None,
             f"Application {application} is not supported. Valid applications are {valid_applications}.")
 
     if hostname or machine_id or resolver_name:
-        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                         resolver_name)
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
     # Now we have all data to create the MachineToken
-    machinetoken = MachineToken(machineresolver=resolver_name,
-                                machine_id=machine_id, serial=serial,
-                                application=application)
-    machinetoken.save()
+    machine_token = MachineToken(machineresolver=resolver_name, machine_id=machine_id, serial=serial,
+                                 application=application)
+    machine_token.save()
     # Add options to the machine token
     if options:
-        add_option(machinetoken_id=machinetoken.id,
-                   options=options)
+        add_option(machine_token_id=machine_token.id, options=options)
 
-    return machinetoken
+    return machine_token
 
 
 @log_with(log)
-def detach_token(serial, application, hostname=None, machine_id=None,
-                 resolver_name=None, mtid=None, filter_params=None):
+def detach_token(serial, application, hostname=None, machine_id=None, resolver_name=None, machine_token_id=None,
+                 filter_params=None):
     """
     Delete a machine token.
     Also deletes the corresponding MachineTokenOptions
@@ -212,17 +206,17 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     :type machine_id: basestring
     :param resolver_name: The resolver_name of the machine
     :type resolver_name: basestring
-    :param mtid: The specific id of a specific machinetoken
-    :param filter_params: additional machinetoken options to filter the detachment
+    :param machine_token_id: The specific id of a specific machine token
+    :param filter_params: additional machine token options to filter the detachment
     :type filter_params: dict
     :return: the number of deleted MachineToken objects
     """
     r = None
-    if mtid:
-        # We have specific mtid, which we are supposed to delete.
-        MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == int(mtid)).delete()
+    if machine_token_id:
+        # We have specific machine_token_id, which we are supposed to delete.
+        MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == int(machine_token_id)).delete()
         # Delete MachineToken
-        r = MachineToken.query.filter(MachineToken.id == int(mtid)).delete()
+        r = MachineToken.query.filter(MachineToken.id == int(machine_token_id)).delete()
     else:
         filter_params = filter_params or {}
         if machine_id == ANY_MACHINE and resolver_name == NO_RESOLVER:
@@ -230,34 +224,35 @@ def detach_token(serial, application, hostname=None, machine_id=None,
             machine_id = None
             resolver_name = None
 
-        mts = list_token_machines(serial)
+        machine_tokens = list_token_machines(serial)
         # Delete MachineTokenOptions
-        for mt in mts:
-            if (mt.get("application") == application and (
-                    (not machine_id or machine_id == mt.get("machine_id") and
-                     (not hostname or hostname == mt.get("hostname")) and
-                     (not resolver_name or resolver_name == mt.get("resolver"))))):
+        for machine_token in machine_tokens:
+            if (machine_token.get("application") == application
+                    and ((not machine_id or machine_id == machine_token.get("machine_id")
+                          and (not hostname or hostname == machine_token.get("hostname"))
+                          and (not resolver_name or resolver_name == machine_token.get("resolver"))))):
                 delete_mt = True
                 for key, value in filter_params.items():
-                    # Check if the machinetoken contains the correct filter values
-                    if mt.get("options").get(key) != value:
+                    # Check if the machine token contains the correct filter values
+                    if machine_token.get("options").get(key) != value:
                         delete_mt = False
                 if delete_mt:
-                    MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == mt.get("id")).delete()
+                    MachineTokenOptions.query.filter(
+                        MachineTokenOptions.machinetoken_id == machine_token.get("id")).delete()
                     # Delete MachineToken
-                    r = MachineToken.query.filter(MachineToken.id == mt.get("id")).delete()
+                    r = MachineToken.query.filter(MachineToken.id == machine_token.get("id")).delete()
     db.session.commit()
     return r
 
 
-def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
+def add_option(machine_token_id=None, machine_id=None, resolver_name=None,
                hostname=None, serial=None, application=None, options=None):
     """
     Add options to the machine token definition.
-    You can either specify machinetoken_id or
-     * machine_id, resolvername, serial, application or
+    You can either specify machine_token_id or
+     * machine_id, resolver_name, serial, application or
      * hostname, serial, application
-    :param machinetoken_id: The database id of the machinetoken
+    :param machine_token_id: The database id of the machine token
     :param machine_id: the resolver dependent machine id
     :param resolver_name: the name of the machine resolver
     :param hostname: the machine name
@@ -267,64 +262,53 @@ def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     """
     if options is None:
         options = {}
-    if machinetoken_id:
-        machinetoken_ids = [machinetoken_id]
+    if machine_token_id:
+        machine_token_ids = [machine_token_id]
     else:
-        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                         resolver_name)
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
 
-        machinetoken_ids = get_machinetoken_ids(machine_id,
-                                                resolver_name,
-                                                serial,
-                                                application)
+        machine_token_ids = get_machinetoken_ids(machine_id, resolver_name, serial, application)
 
     for option_name, option_value in options.items():
-        for mtid in machinetoken_ids:
-            MachineTokenOptions(mtid, option_name, option_value)
+        for machine_token_id in machine_token_ids:
+            MachineTokenOptions(machine_token_id, option_name, option_value)
     return len(options)
 
 
-def delete_option(machinetoken_id=None, machine_id=None, resolver_name=None,
+def delete_option(machine_token_id=None, machine_id=None, resolver_name=None,
                   hostname=None, serial=None, application=None, key=None):
     """
     delete option from a machine token definition
 
-    You can either specify machinetoken_id or
-     * machine_id, resolvername, serial, application or
+    You can either specify machine_token_id or
+     * machine_id, resolver_name, serial, application or
      * hostname, serial, application
-    :param machinetoken_id: The database id of the machinetoken
+    :param machine_token_id: The database id of the machine token
     :param machine_id: the resolver dependent machine id
     :param resolver_name: the name of the machine resolver
     :param hostname: the machine name
     :param serial: the serial number of the token
     :param application: the application
+    :param key: the key of the option
     """
-    if machinetoken_id:
-        machinetoken_ids = [int(machinetoken_id)]
+    if machine_token_id:
+        machine_token_ids = [int(machine_token_id)]
     else:
-        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                         resolver_name)
-        machinetoken_ids = get_machinetoken_ids(machine_id,
-                                                resolver_name,
-                                                serial,
-                                                application)
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
+        machine_token_ids = get_machinetoken_ids(machine_id, resolver_name, serial, application)
 
-    for mtid in machinetoken_ids:
-        r = MachineTokenOptions.query.filter(and_(
-            MachineTokenOptions.machinetoken_id == mtid,
+    res = 0
+    for machine_token_id in machine_token_ids:
+        res = MachineTokenOptions.query.filter(and_(
+            MachineTokenOptions.machinetoken_id == machine_token_id,
             MachineTokenOptions.mt_key == key)).delete()
     db.session.commit()
-    return r
+    return res
 
 
 @log_with(log)
-def list_machine_tokens(hostname=None,
-                        machine_id=None,
-                        resolver_name=None,
-                        serial=None,
-                        application=None,
-                        filter_params=None,
-                        serial_pattern=None):
+def list_machine_tokens(hostname=None, machine_id=None, resolver_name=None, serial=None, application=None,
+                        filter_params=None, serial_pattern=None):
     """
     Returns a list of tokens assigned to the given machine.
 
@@ -336,11 +320,10 @@ def list_machine_tokens(hostname=None,
     service_id = filter_params.get("service_id")
     # The service_id overrules the hostname
     if not service_id and (hostname or machine_id or resolver_name):
-        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                         resolver_name)
-        machineresolver_id = get_machineresolver_id(resolver_name)
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
+        machine_resolver_id = get_machineresolver_id(resolver_name)
         sql_query = MachineToken.query.filter(and_(MachineToken.machine_id == machine_id,
-                                                   MachineToken.machineresolver_id == machineresolver_id))
+                                                   MachineToken.machineresolver_id == machine_resolver_id))
     else:
         # If we have no specific machine defined, we find all applications/serials
         sql_query = MachineToken.query.filter()
@@ -358,24 +341,24 @@ def list_machine_tokens(hostname=None,
         options = {}
         for option in option_list:
             options[option.mt_key] = option.mt_value
-        include_mt = True
+        include_machine_token = True
         # check serial_pattern
         if serial_pattern:
             if not re.match(serial_pattern, row.token.serial, re.I):
-                include_mt = False
+                include_machine_token = False
         # we still think, it should be included
-        if include_mt:
+        if include_machine_token:
             for key, value in filter_params.items():
-                tokenoptionvalue = options.get(key, "")
+                token_option_value = options.get(key, "")
                 if "*" in value:
                     # Simple wildcard matching
                     pattern = value.replace("*", ".*")
-                    # We do a case insensitive match
-                    if not re.match(pattern, tokenoptionvalue, re.I):
-                        include_mt = False
-                elif tokenoptionvalue != value:
-                    include_mt = False
-        if include_mt:
+                    # We do a case-insensitive match
+                    if not re.match(pattern, token_option_value, re.I):
+                        include_machine_token = False
+                elif token_option_value != value:
+                    include_machine_token = False
+        if include_machine_token:
             res.append({"serial": row.token.serial,
                         "machine_id": machine_id,
                         "resolver": resolver_name,
@@ -400,8 +383,8 @@ def list_token_machines(serial):
     for machine in db_token.machine_list:
         hostname = "unknown"
         if machine.machine_id and machine.machineresolver_id:
-            MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
-            resolver_name = MR.name
+            machine_resolver = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
+            resolver_name = machine_resolver.name
         else:
             resolver_name = NO_RESOLVER
             hostname = "any host"
@@ -433,9 +416,9 @@ def list_token_machines(serial):
 
 def _get_host_identifier(hostname, machine_id, resolver_name):
     """
-    This returns the combiniation of machine_id and resolver_name for some
+    This returns the combination of machine_id and resolver_name for some
     of the given values. This is used when attaching and detaching tokens to
-    a machine to create a uniquely identifyable machine object.
+    a machine to create a uniquely identifiable machine object.
 
     :param hostname:
     :param machine_id:
@@ -450,18 +433,16 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
     return machine_id, resolver_name
 
 
-def get_auth_items(hostname=None, ip=None, application=None,
-                   serial=None, challenge=None, filter_param=None, user_agent=None):
+def get_auth_items(hostname=None, application=None, serial=None, challenge=None, filter_param=None, user_agent=None):
     """
     Return the authentication items for a given hostname and the application.
     The hostname is used to identify the machine object. Then all attached
     tokens to this machine and its applications are searched.
 
     :param hostname:
-    :param ip:
     :param application:
     :param serial:
-    :param challenge: A challenge for the authitem
+    :param challenge: A challenge for the auth_item
     :type challenge: basestring
     :param filter_param: Additional application specific parameter to filter
         the return value
@@ -486,30 +467,27 @@ def get_auth_items(hostname=None, ip=None, application=None,
                  ] }
     """
     auth_items = {}
-    machine_tokens = list_machine_tokens(hostname=hostname,
-                                         serial=serial,
-                                         application=application,
+    machine_tokens = list_machine_tokens(hostname=hostname, serial=serial, application=application,
                                          filter_params=filter_param)
 
-    for mtoken in machine_tokens:
-        auth_item = get_auth_item(mtoken.get("application"),
-                                  mtoken.get("type"),
-                                  mtoken.get("serial"),
+    for machine_token in machine_tokens:
+        auth_item = get_auth_item(machine_token.get("application"),
+                                  machine_token.get("type"),
+                                  machine_token.get("serial"),
                                   challenge,
-                                  options=mtoken.get("options"),
+                                  options=machine_token.get("options"),
                                   filter_param=filter_param,
                                   user_agent=user_agent)
         if auth_item:
-            if mtoken.get("application") not in auth_items:
+            if machine_token.get("application") not in auth_items:
                 # we create a new empty list for the new application type
-                auth_items[mtoken.get("application")] = []
+                auth_items[machine_token.get("application")] = []
 
             # Add the options to auth_item
-            for k, v in mtoken.get("options", {}).items():
-                auth_item[k] = v
+            auth_item.update(machine_token.get("options", {}))
             auth_item["serial"] = serial
 
             # append the auth_item to the list
-            auth_items[mtoken.get("application")].append(auth_item)
+            auth_items[machine_token.get("application")].append(auth_item)
 
     return auth_items

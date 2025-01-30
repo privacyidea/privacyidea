@@ -167,9 +167,9 @@ def get_application_types():
             try:
                 mod = import_module("privacyidea.lib.applications.{0!s}".format(f))
                 name = mod.MachineApplication.application_name
-                tokenoptions = mod.MachineApplication.get_options()
-                ret[name] = {"options": tokenoptions}
+                token_options = mod.MachineApplication.get_options()
+                ret[name] = {"options": token_options}
             except Exception as exx:
-                log.info("Can not get application type: {0!s}".format(exx))
+                log.info(f"Can not get application type: {exx}")
 
     return ret

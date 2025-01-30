@@ -65,6 +65,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 
 import logging
 from dataclasses import replace
+from typing import Union
 
 from OpenSSL import crypto
 from privacyidea.lib import _
@@ -72,6 +73,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminErro
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
@@ -99,8 +101,7 @@ from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              AUTHENTICATOR_ATTACHMENT_TYPES,
                                              USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
                                              ATTESTATION_FORMS)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
@@ -110,6 +111,7 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL,
                                                   is_webauthn_assertion_response)
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -1729,8 +1731,7 @@ def u2ftoken_allowed(request, action):
         if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
             log.warning("The U2F device {0!s} is not "
                         "allowed to be registered due to policy "
-                        "restriction".format(
-                serial))
+                        "restriction".format(serial))
             raise PolicyError("The U2F device is not allowed "
                               "to be registered due to policy "
                               "restriction.")
@@ -1827,7 +1828,8 @@ def webauthntoken_request(request, action):
 
     # Check if this is an enrollment request for a WebAuthn token.
     ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
+    if ttype and (ttype.lower() == WebAuthnTokenClass.get_class_type()
+                  or ttype.lower() == PasskeyTokenClass.get_class_type()):
         scope = SCOPE.ENROLL
 
     # Check if a WebAuthn token is being used for authentication.
@@ -1846,33 +1848,32 @@ def webauthntoken_request(request, action):
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if not request.all_data.get("type") \
-            and not is_webauthn_assertion_response(request.all_data) \
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+    if not request.all_data.get("type") and not is_webauthn_assertion_response(request.all_data) and (
+            'serial' not in request.all_data
+            or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
         scope = SCOPE.AUTH
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
     if scope:
         actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
         actions.update(WebAuthnTokenClass.get_class_info('policy').get(SCOPE.AUTHZ))
-        if WEBAUTHNACTION.TIMEOUT in actions:
+        if FIDO2PolicyAction.TIMEOUT in actions:
             timeout_policies = Match \
                 .user(g,
                       scope=scope,
-                      action=WEBAUTHNACTION.TIMEOUT,
+                      action=FIDO2PolicyAction.TIMEOUT,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=True)
             timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
-            request.all_data[WEBAUTHNACTION.TIMEOUT] \
+            request.all_data[FIDO2PolicyAction.TIMEOUT] \
                 = timeout * 1000
 
-        if WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT in actions:
+        if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in actions:
             user_verification_requirement_policies = Match \
                 .user(g,
                       scope=scope,
-                      action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                      action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=True)
             user_verification_requirement = list(user_verification_requirement_policies)[0] \
@@ -1881,17 +1882,17 @@ def webauthntoken_request(request, action):
             if user_verification_requirement not in USER_VERIFICATION_LEVELS:
                 raise PolicyError(
                     "{0!s} must be one of {1!s}"
-                    .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                    .format(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                             ", ".join(USER_VERIFICATION_LEVELS)))
 
-            request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] \
+            request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] \
                 = user_verification_requirement
 
-        if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
+        if FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST in actions:
             allowed_aaguids_pols = Match \
                 .user(g,
                       scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
-                      action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                      action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,
                                allow_white_space_in_action=True)
@@ -1902,7 +1903,7 @@ def webauthntoken_request(request, action):
             )
 
             if allowed_aaguids:
-                request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
+                request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] \
                     = list(allowed_aaguids)
 
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
@@ -1935,94 +1936,69 @@ def webauthntoken_authz(request, action):
         allowed_certs_pols = Match \
             .user(g,
                   scope=SCOPE.AUTHZ,
-                  action=WEBAUTHNACTION.REQ,
+                  action=FIDO2PolicyAction.REQ,
                   user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False)
 
-        request.all_data[WEBAUTHNACTION.REQ] \
+        request.all_data[FIDO2PolicyAction.REQ] \
             = list(allowed_certs_pols)
 
     return True
 
 
-def webauthntoken_auth(request, action):
+def fido2_auth(request, action):
     """
-    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerchallenge,
-    /validate/check, and /auth.
-
-    This will enrich the challenge creation request for WebAuthn tokens with the
-    necessary configuration information from policy actions with
-    scope=SCOPE.AUTH. The request will be augmented with the allowed
-    transports and the text to display to the user when asking to confirm
-    the challenge on the token, as specified by the actions
-    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and ACTION.CHALLENGETEXT, respectively.
-
-    Both of these policies are optional, and have sensible defaults.
-
-    :param request:
-    :type request:
-    :param action:
-    :type action:
-    :return:
-    :rtype:
+    Add policy values for FIDO2 tokens to the request.
+    The following policy values are added:
+    - WEBAUTHNACTION.ALLOWED_TRANSPORTS
+    - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
     """
-
-    # Check if this is an auth request (as opposed to an enrollment), and it
-    # is not a WebAuthn authorization, and the request is either for
-    # authentication with a WebAuthn token, or not for any particular token at
-    # all (since authentication requests contain almost no parameters, it is
-    # necessary to define them by what they are not, rather than by what they
-    # are).
-    #
-    # This logic means that we will add WebAuthn specific information to any
-    # unspecific authentication request, even if the user does not actually
-    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
-    # passive and will just pull values from policies and add them to properly
-    # prefixed fields in the request data, this is not a problem.
-    if not request.all_data.get("type") \
-            and not is_webauthn_assertion_response(request.all_data) \
-            and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
-        allowed_transports_policies = Match \
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
-        allowed_transports = set(
-            transport
-            for allowed_transports_policy in (
-                list(allowed_transports_policies)
-                if allowed_transports_policies
-                else [DEFAULT_ALLOWED_TRANSPORTS]
-            )
-            for transport in allowed_transports_policy.split()
+    user_object = request.User if hasattr(request, "User") else None
+    allowed_transports_policies = (Match.user(g,
+                                              scope=SCOPE.AUTH,
+                                              action=FIDO2PolicyAction.ALLOWED_TRANSPORTS,
+                                              user_object=user_object)
+                                   .action_values(unique=False, allow_white_space_in_action=True))
+    allowed_transports = set(
+        transport
+        for allowed_transports_policy in (
+            list(allowed_transports_policies)
+            if allowed_transports_policies
+            else [DEFAULT_ALLOWED_TRANSPORTS]
         )
+        for transport in allowed_transports_policy.split()
+    )
+    # Challenge texts
+    for t in [WebAuthnTokenClass, PasskeyTokenClass]:
+        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_auth(), scope=SCOPE.AUTH)
+        request.all_data[action] = challenge_text
 
-        challengetext_policies = Match \
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True,
-                           write_to_audit_log=False)
-        challengetext = list(challengetext_policies)[0] \
-            if challengetext_policies \
-            else DEFAULT_CHALLENGE_TEXT_AUTH
+    request.all_data[FIDO2PolicyAction.ALLOWED_TRANSPORTS] = list(allowed_transports)
 
-        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
-            = list(allowed_transports)
-        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
-            = challengetext
-
+    rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
+    if rp_id:
+        request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
     return True
 
 
-def webauthntoken_enroll(request, action):
+def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+                           allowed_values: Union[list, None] = None) -> str:
     """
-    This is a token specific wrapper for the WebAuthn token for the endpoint /token/init.
+    Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
+    return the default value. If allowed_values is provided, check if the policy value is in the allowed values.
+    """
+    policies = (Match.user(g, scope=scope, action=policy_action, user_object=user)
+                .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False))
+    policy_value = list(policies)[0] if policies else default
+    if allowed_values and policy_value not in allowed_values:
+        raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
+    return policy_value
+
+
+def fido2_enroll(request, action):
+    """
+    This is a token specific wrapper for FIDO2 token and the endpoint /token/init.
 
     This will enrich the initialization request for WebAuthn tokens with the
     necessary configuration information from policy actions with
@@ -2037,7 +2013,7 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-    WEAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+    WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
     ACTION.CHALLENGETEXT, respectively.
 
@@ -2052,131 +2028,113 @@ def webauthntoken_enroll(request, action):
     :return:
     :rtype:
     """
+    # Check if this is an enrollment request for a WebAuthn/Passkey token. If not, exit immediately.
+    token_type = request.all_data.get("type")
+    if not token_type or token_type.lower() not in [WebAuthnTokenClass.get_class_type().lower(),
+                                                    PasskeyTokenClass.get_class_type().lower()]:
+        return True
 
-    ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        rp_id_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        if rp_id_policies:
-            rp_id = list(rp_id_policies)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
+    user_object = request.User if hasattr(request, 'User') else None
+    rp_id_policies = (Match.user(g,
+                                 scope=SCOPE.ENROLL,
+                                 action=FIDO2PolicyAction.RELYING_PARTY_ID,
+                                 user_object=user_object)
+                      .action_values(unique=True))
+    if rp_id_policies:
+        rp_id = list(rp_id_policies)[0]
+    else:
+        raise PolicyError(f"Missing enrollment policy for WebauthnToken: {FIDO2PolicyAction.RELYING_PARTY_ID}")
 
-        rp_name_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True)
-        if rp_name_policies:
-            rp_name = list(rp_name_policies)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
+    rp_name_policies = Match.user(g,
+                                  scope=SCOPE.ENROLL,
+                                  action=FIDO2PolicyAction.RELYING_PARTY_NAME,
+                                  user_object=user_object).action_values(unique=True,
+                                                                         allow_white_space_in_action=True)
+    if rp_name_policies:
+        rp_name = list(rp_name_policies)[0]
+    else:
+        raise PolicyError(f"Missing enrollment policy for WebauthnToken: {FIDO2PolicyAction.RELYING_PARTY_NAME}")
 
-        # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
-        if not is_fqdn(rp_id):
-            log.warning(
-                "Illegal value for {0!s} (must be a domain name): {1!s}"
-                .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))
-            raise PolicyError(
-                "Illegal value for {0!s} (must be a domain name)."
-                .format(WEBAUTHNACTION.RELYING_PARTY_ID))
+    # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
+    if not is_fqdn(rp_id):
+        message = f"Illegal value for {FIDO2PolicyAction.RELYING_PARTY_ID} (must be a domain name): {rp_id}"
+        log.warning(message)
+        raise PolicyError(message)
 
-        authenticator_attachment_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attachment = list(authenticator_attachment_policies)[0] \
-            if authenticator_attachment_policies \
-               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
-            else None
+    authenticator_attachment_policies = Match.user(g,
+                                                   scope=SCOPE.ENROLL,
+                                                   action=FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT,
+                                                   user_object=user_object).action_values(unique=True)
+    authenticator_attachment = None
+    if (authenticator_attachment_policies
+            and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES):
+        authenticator_attachment = list(authenticator_attachment_policies)[0]
 
-        # we need to set `unique` to False since this policy can contain multiple values
-        public_key_credential_algorithm_pref_policies = Match.user(
-            g,
-            scope=SCOPE.ENROLL,
-            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-            user_object=request.User if hasattr(request, 'User') else None
-        ).action_values(unique=False)
-        public_key_credential_algorithm_pref = public_key_credential_algorithm_pref_policies.keys() \
-            if public_key_credential_algorithm_pref_policies \
-            else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in public_key_credential_algorithm_pref]):
-            raise PolicyError(
-                "{0!s} must be one of {1!s}"
-                .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                        ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())))
+    # We need to set 'unique' to False since this policy can contain multiple values
+    pubkey_credential_algo_pref_policies = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+        user_object=user_object).action_values(unique=False)
 
-        authenticator_attestation_level_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
-            if authenticator_attestation_level_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
-        if authenticator_attestation_level not in ATTESTATION_LEVELS:
-            raise PolicyError(
-                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                    ', '.join(ATTESTATION_LEVELS)))
+    pubkey_credential_algo_pref = (pubkey_credential_algo_pref_policies.keys()
+                                   if pubkey_credential_algo_pref_policies
+                                   else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE)
 
-        authenticator_attestation_form_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
-            if authenticator_attestation_form_policies \
-            else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
-        if authenticator_attestation_form not in ATTESTATION_FORMS:
-            raise PolicyError(
-                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                                                    ', '.join(ATTESTATION_FORMS)))
+    if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in pubkey_credential_algo_pref]):
+        raise PolicyError(f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS} must be one "
+                          f"of {', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())}")
 
-        challengetext_policies = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True,
-                           allow_white_space_in_action=True,
-                           write_to_audit_log=False)
-        challengetext = list(challengetext_policies)[0] \
-            if challengetext_policies \
-            else DEFAULT_CHALLENGE_TEXT_ENROLL
+    authenticator_attestation_level = get_first_policy_value(
+        policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL,
+        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL, scope=SCOPE.ENROLL, allowed_values=ATTESTATION_LEVELS)
 
-        avoid_double_registration_policy = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
-                  user_object=request.User if hasattr(request, 'User') else None).any()
+    authenticator_attestation_form = get_first_policy_value(
+        policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM, default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+        scope=SCOPE.ENROLL, allowed_values=ATTESTATION_FORMS)
 
-        request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
-        request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
+    user_verification_requirement = get_first_policy_value(
+        policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        scope=SCOPE.ENROLL, allowed_values=USER_VERIFICATION_LEVELS)
 
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
-            = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] \
-            = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
-               for x in PUBKEY_CRED_ALGORITHMS_ORDER
-               if x in public_key_credential_algorithm_pref]
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
-            = authenticator_attestation_level
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
-            = authenticator_attestation_form
-        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
-            = challengetext
-        request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
+    avoid_double_registration_policy = Match.user(g,
+                                                  scope=SCOPE.ENROLL,
+                                                  action=FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION,
+                                                  user_object=user_object).any()
 
+    # Challenge texts
+    for t in [PasskeyTokenClass, WebAuthnTokenClass]:
+        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
+        request.all_data[action] = challenge_text
+
+    request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
+    request.all_data[FIDO2PolicyAction.RELYING_PARTY_NAME] = rp_name
+
+    request.all_data[FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+    request.all_data[FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] = ([PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                                                                             for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                                                                             if
+                                                                             x in pubkey_credential_algo_pref])
+    request.all_data[FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL] = authenticator_attestation_level
+    request.all_data[FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM] = authenticator_attestation_form
+
+    request.all_data[FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
+    request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
+    passkey_attestation_policies = Match.user(g,
+                                              scope=SCOPE.ENROLL,
+                                              action=PasskeyAction.AttestationConveyancePreference,
+                                              user_object=user_object).action_values(unique=True)
+
+    passkey_attestation = (list(passkey_attestation_policies)[0]
+                           if passkey_attestation_policies
+                           else None)
+    if passkey_attestation:
+        request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
+    if request and hasattr(request, "environ"):
+        request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
+    else:
+        log.debug("request or request.environ is not available. Unable to add HTTP_ORIGIN to request data.")
     return True
 
 
@@ -2206,7 +2164,7 @@ def webauthntoken_allowed(request, action):
     :return:
     :rtype:
     """
-
+    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
     ttype = request.all_data.get("type")
 
     # Get the registration data of the 2nd step of enrolling a WebAuthn token
@@ -2230,14 +2188,14 @@ def webauthntoken_allowed(request, action):
         allowed_certs_pols = Match \
             .user(g,
                   scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.REQ,
+                  action=FIDO2PolicyAction.REQ,
                   user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False)
 
         allowed_aaguids_pols = Match \
             .user(g,
                   scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                  action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                   user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False,
                            allow_white_space_in_action=True)
@@ -2258,13 +2216,13 @@ def webauthntoken_allowed(request, action):
         if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
             log.warning(
                 "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
-                .format(serial, WEBAUTHNACTION.REQ))
+                .format(serial, FIDO2PolicyAction.REQ))
             raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
 
         if allowed_aaguids and aaguid not in [allowed_aaguid.replace("-", "") for allowed_aaguid in allowed_aaguids]:
             log.warning(
                 "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
-                .format(serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                .format(serial, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
             raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
 
     return True

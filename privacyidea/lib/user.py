@@ -208,8 +208,7 @@ class User(object):
         """
         resolver_tuples = []
         realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {}) \
-            .get("resolver", [])
+        resolvers_in_realm = realm_config.get(self.realm, {}).get("resolver", [])
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
@@ -808,7 +807,7 @@ def get_username(userid, resolvername):
     return username
 
 
-def log_used_user(user, other_text=""):
+def log_used_user(user: User, other_text: str = "") -> str:
     """
     This creates a log message combined of a user and another text.
     The user information is only added, if user.login != user.used_login

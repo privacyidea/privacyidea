@@ -186,6 +186,7 @@ urllib3==2.2.3
     #   responses
 werkzeug==3.0.6
     # via flask
+webauthn==2.2.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -338,8 +338,6 @@ class PushTokenClass(TokenClass):
     """
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
     client_mode = CLIENTMODE.POLL
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = True
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
@@ -672,21 +670,19 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             log.debug("Do the 2nd step of the enrollment.")
             try:
-                token_obj = get_one_token(serial=serial,
-                                          tokentype="push",
-                                          rollout_state=ROLLOUTSTATE.CLIENTWAIT)
-                token_obj.update(request_data)
+                token = get_one_token(serial=serial, tokentype="push", rollout_state=ROLLOUTSTATE.CLIENTWAIT)
+                token.update(request_data)
                 # in case of validate/check enrollment
-                chals = get_challenges(serial=serial)
-                if chals and chals[0].is_valid() and chals[0].get_session() == CHALLENGE_SESSION.ENROLLMENT:
-                    chals[0].set_otp_status(True)
-                    chals[0].save()
+                challenges = get_challenges(serial=serial)
+                if (challenges and challenges[0].is_valid()
+                        and challenges[0].get_session() == CHALLENGE_SESSION.ENROLLMENT):
+                    challenges[0].set_otp_status(True)
+                    challenges[0].save()
             except ResourceNotFoundError:
-                raise ResourceNotFoundError("No token with this serial number "
-                                            "in the rollout state 'clientwait'.")
+                raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
             init_detail_dict = request_data
 
-            details = token_obj.get_init_detail(init_detail_dict)
+            details = token.get_init_detail(init_detail_dict)
             result = True
         elif "signature" in request_data and "new_fb_token" not in request_data:
             log.debug("Handling the authentication response from the smartphone.")
@@ -694,11 +690,8 @@ class PushTokenClass(TokenClass):
             decline = is_true(getParam(request_data, "decline", default=False))
             presence_answer = getParam(request_data, "presence_answer", optional=True)
 
-            # Get the token_obj for the given serial:
-            token_obj = get_one_token(serial=serial, tokentype="push")
-            pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-            # Do the 2nd step of the authentication
-            # Find valid challenges
+            token = get_one_token(serial=serial, tokentype="push")
+            public_key = _build_verify_object(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             challenges = get_challenges(serial=serial)
 
             if challenges:
@@ -711,7 +704,7 @@ class PushTokenClass(TokenClass):
                     if presence_answer:
                         sign_data += f"|{presence_answer}"
                     try:
-                        pubkey_obj.verify(b32decode(signature),
+                        public_key.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
@@ -739,9 +732,9 @@ class PushTokenClass(TokenClass):
             cls._check_timestamp_in_range(timestamp, UPDATE_FB_TOKEN_WINDOW)
             try:
                 tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
-                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+                public_key = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
                 sign_data = "{new_fb_token}|{serial}|{timestamp}".format(**request_data)
-                pubkey_obj.verify(b32decode(signature),
+                public_key.verify(b32decode(signature),
                                   sign_data.encode("utf8"),
                                   padding.PKCS1v15(),
                                   hashes.SHA256())
@@ -786,17 +779,17 @@ class PushTokenClass(TokenClass):
         # now check the signature
         # first get the token
         try:
-            tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
+            token = get_one_token(serial=serial, tokentype=cls.get_class_type())
             # If the push_allow_polling policy is set to "token" we also
             # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
             # to 'False', polling is not allowed for this token. If the
             # tokeninfo value evaluates to 'True' or is not set at all,
             # polling is allowed for this token.
             if allow_polling == PushAllowPolling.TOKEN:
-                if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                if not is_true(token.get_tokeninfo(POLLING_ALLOWED, default='True')):
                     log.debug(f'Polling not allowed for pushtoken {serial} due to tokeninfo.')
                     raise PolicyError('Polling not allowed!')
-            pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+            pubkey_obj = _build_verify_object(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{serial}|{timestamp}".format(**request_data)
             pubkey_obj.verify(b32decode(signature),
                               sign_data.encode("utf8"),
@@ -804,7 +797,7 @@ class PushTokenClass(TokenClass):
                               hashes.SHA256())
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
-            pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
+            private_key = token.get_tokeninfo(PRIVATE_KEY_SERVER)
             # We need the registration URL for the challenge
             registration_url = get_action_values_from_options(
                 SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options={'g': g})
@@ -812,24 +805,24 @@ class PushTokenClass(TokenClass):
                 raise ResourceNotFoundError('There is no registration_url defined for the '
                                             f' pushtoken {serial}. You need to define a push_registration_url '
                                             'in an enrollment policy.')
-            options = {'g': g}
-            challenges = []
-            challengeobject_list = get_challenges(serial=serial)
-            for chal in challengeobject_list:
-                if (chal.get_session() == CHALLENGE_SESSION.DECLINED):
+            options = {"g": g}
+            open_challenges = []
+            db_challenges = get_challenges(serial=serial)
+            for challenge in db_challenges:
+                if challenge.get_session() == CHALLENGE_SESSION.DECLINED:
                     continue
                 # check if the challenge is active and not already answered
-                _cnt, answered = chal.get_otp_status()
-                if not answered and chal.is_valid():
-                    # Ensure, if we require presence, that the user has to confirm with the correct button
-                    require_presence = "1" if chal.get_data() else "0"
-                    current_presence_options = chal.get_data().split(",")[:-1] if require_presence == "1" else None
+                _, answered = challenge.get_otp_status()
+                if not answered and challenge.is_valid():
+                    # If we require presence, make sure that the user has to confirm with the correct button
+                    require_presence = "1" if challenge.get_data() else "0"
+                    current_presence_options = challenge.get_data().split(",")[:-1] if require_presence == "1" else None
                     # then return the necessary smartphone data to answer the challenge
-                    sp_data = _build_smartphone_data(tok, chal.challenge,
-                                                     registration_url, pem_privkey, options, current_presence_options)
-                    challenges.append(sp_data)
+                    sp_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key, options,
+                                                     current_presence_options)
+                    open_challenges.append(sp_data)
             # return the challenges as a list in the result value
-            result = challenges
+            result = open_challenges
         except (ResourceNotFoundError, ParameterError,
                 InvalidSignature, ConfigAdminError, BinasciiError) as e:
             # to avoid disclosing information we always fail with an invalid
@@ -936,9 +929,9 @@ class PushTokenClass(TokenClass):
         We need to define the function again, to get rid of the
         is_challenge_request-decorator of the base class
 
-        :param passw: password, which might be pin or pin+otp
+        :param passw: password, which might be the pin or pin+otp
+        :param user: the user object
         :param options: dictionary of additional request parameters
-
         :return: returns true or false
         """
         if options.get(PUSH_ACTION.WAIT):
@@ -971,7 +964,7 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
-        # Determine, if we require presence
+        # Determine if require presence is enabled
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
@@ -1069,7 +1062,7 @@ class PushTokenClass(TokenClass):
         """
         High level interface which covers the check_pin and check_otp
         This is the method that verifies single shot authentication.
-        The challenge is send to the smartphone app and privacyIDEA
+        The challenge is sent to the smartphone app and privacyIDEA
         waits for the response to arrive.
 
         :param passw: the password which could be pin+otp value
@@ -1171,9 +1164,7 @@ class PushTokenClass(TokenClass):
         """
         # Get the firebase configuration from the policies
         params = get_pushtoken_add_config(g, user_obj=user_obj)
-        token_obj = init_token({"type": cls.get_class_type(),
-                                "genkey": 1,
-                                "2stepinit": 1}, user=user_obj)
+        token_obj = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token_obj.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
@@ -1183,14 +1174,12 @@ class PushTokenClass(TokenClass):
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        c = token_obj.create_challenge(options={"g": g, "user": user_obj,
-                                                "session": CHALLENGE_SESSION.ENROLLMENT})
+        c = token_obj.create_challenge(options={"g": g, "user": user_obj, "session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
-                                                       token_type=cls.get_class_type())
+        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
         params.update(enroll_params)
-        init_details = token_obj.get_init_detail(params=params,
-                                                 user=user_obj)
+        init_details = token_obj.get_init_detail(params=params, user=user_obj)
+
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
@@ -1200,3 +1189,7 @@ class PushTokenClass(TokenClass):
                 "message": message or _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return True
