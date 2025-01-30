@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2024-09-07 16:09+0000\n"
-"Last-Translator: Federico Cucinella <fede.cuci@gmail.com>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1281,6 +1281,7 @@ msgstr ""
 "        {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
+#, fuzzy
 msgid "Details for user {{ username }} in realm"
 msgstr "Dettagli per l'utente {{ nome utente }} nel realm"
 

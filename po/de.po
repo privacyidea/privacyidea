@@ -6,12 +6,14 @@
 # pablo-knight <julio.storch@netknights.it>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
 # Nils Behlen <nils.behlen@netknights.it>, 2024.
+# Moonwalk4797 <moonwalk4797@users.noreply.hosted.weblate.org>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-11-22 13:04+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2024-12-17 23:00+0000\n"
+"Last-Translator: Moonwalk4797 <moonwalk4797@users.noreply.hosted.weblate.org>"
+"\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -19,7 +21,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.9.2-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -2414,7 +2416,7 @@ msgstr "Die Anzahl der Tage, wie lange eine erzeugte CRL gültig sein soll."
 
 #: privacyidea/static/components/machine/views/machine.html:20
 msgid "Number of machines: {{ $scope.machinecount }}"
-msgstr "Anzahl der Maschinen: {{ $sope.machinecount }}"
+msgstr "Anzahl der Maschinen: {{ $scope.machinecount }}"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:34
 msgid "Number of required tokens"
