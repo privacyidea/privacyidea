@@ -84,6 +84,7 @@ export class TokenTabComponent {
   deleteToken(): void {
     this.tokenService.deleteToken(this.tokenSerial()).subscribe({
       next: () => {
+        this.selectedContent.set('token_overview');
         this.tokenSerial.set('');
       },
       error: (error) => {

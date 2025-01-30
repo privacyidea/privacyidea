@@ -209,4 +209,8 @@ html, body {
     display: flex;
     align-items: center;
   }
+
+  .cdk-overlay-pane.mat-mdc-dialog-panel {
+    max-width: unset;
+  }
 }

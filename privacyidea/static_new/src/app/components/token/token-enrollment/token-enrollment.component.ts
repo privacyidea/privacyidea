@@ -1,4 +1,11 @@
-import { Component, effect, Injectable, signal } from '@angular/core';
+import {
+  Component,
+  effect,
+  Injectable,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import {
   MatFormField,
   MatHint,
@@ -32,9 +39,13 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TokenService } from '../../../services/token/token.service';
+import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
+import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-enrollment-dialog.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -102,6 +113,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatSuffix,
     MatButton,
     MatIcon,
+    EnrollTotpComponent,
+    MatIconButton,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -113,8 +126,12 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
+  protected readonly TokenEnrollmentDialogComponent =
+    TokenEnrollmentDialogComponent;
   tokenTypesOptions = TokenComponent.tokenTypes;
   timezoneOptions = TIMEZONE_OFFSETS;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<string>;
   selectedType = signal(this.tokenTypesOptions[0]);
   setPinValue = signal('');
   repeatPinValue = signal('');
@@ -126,16 +143,19 @@ export class TokenEnrollmentComponent {
   containerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
-  generateOnServer = signal(false);
-  otpLength = signal(6);
+  generateOnServer = signal(true);
+  otpLength = signal('6');
   otpKey = signal('');
-  hashAlgorithm = signal('');
+  hashAlgorithm = signal('sha1');
   description = signal('');
   selectedTimezoneOffset = signal('+01:00');
   selectedStartTime = signal(0);
   selectedEndTime = signal(0);
   selectedStartDate = signal(new Date());
   selectedEndDate = signal(new Date());
+  timeStep = signal('30');
+  response: WritableSignal<any> = signal(null);
+  regenerateToken = signal(false);
 
   constructor(
     private containerService: ContainerService,
@@ -143,6 +163,7 @@ export class TokenEnrollmentComponent {
     private notificationService: NotificationService,
     private userService: UserService,
     private tokenService: TokenService,
+    protected dialog: MatDialog,
   ) {
     effect(() => {
       const value = this.selectedContainer();
@@ -176,6 +197,21 @@ export class TokenEnrollmentComponent {
       const value = this.selectedUsername();
       const filteredOptions = this._filterUserOptions(value || '');
       this.filteredUserOptions.set(filteredOptions);
+    });
+
+    effect(() => {
+      if (this.regenerateToken()) {
+        this.enrollToken(
+          this.selectedType().key,
+          this.generateOnServer(),
+          this.otpLength(),
+          this.otpKey(),
+          this.hashAlgorithm(),
+          this.description(),
+          this.timeStep(),
+          this.tokenSerial(),
+        );
+      }
     });
   }
 
@@ -212,34 +248,65 @@ export class TokenEnrollmentComponent {
   }
 
   enrollToken(
+    type: string,
     generateOnServer: boolean,
-    otpLength: number,
+    otpLength: string,
     otpKey: string,
     hashAlgorithm: string,
     description: string,
+    timeStep: string,
+    tokenSerial: string,
   ) {
-    switch (this.selectedType().key) {
+    let response = new Observable();
+    switch (type) {
       case 'hotp':
-        this.tokenService
-          .enrollHotpToken(
-            generateOnServer,
-            otpLength,
-            otpKey,
-            hashAlgorithm,
-            description,
-          )
-          .subscribe({
-            next: (response: any) => {
-              this.notificationService.openSnackBar(
-                'Token ' + response.detail.serial + ' enrolled successfully.',
-              );
-            },
-            error: (error) => {
-              console.error('Failed to enroll token.', error);
-              this.notificationService.openSnackBar('Failed to enroll token.');
-            },
-          });
+        response = this.tokenService.enrollHotpToken(
+          generateOnServer,
+          otpLength,
+          otpKey,
+          hashAlgorithm,
+          description,
+          tokenSerial,
+        );
+        break;
+      case 'totp':
+        response = this.tokenService.enrollTotpToken(
+          generateOnServer,
+          otpLength,
+          otpKey,
+          hashAlgorithm,
+          description,
+          timeStep,
+          tokenSerial,
+        );
+        break;
     }
+    response.subscribe({
+      next: (response: any) => {
+        if (!this.regenerateToken()) {
+          this.notificationService.openSnackBar(
+            'Token ' + response.detail.serial + ' enrolled successfully.',
+          );
+        }
+        this.response.set(response);
+        this.tokenSerial.set(response.detail.serial);
+        this.dialog.open(TokenEnrollmentDialogComponent, {
+          data: {
+            response: response,
+            tokenSerial: this.tokenSerial,
+            selectedContent: this.selectedContent,
+            regenerateToken: this.regenerateToken,
+          },
+        });
+        if (this.regenerateToken()) {
+          this.regenerateToken.set(false);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to enroll token.', error);
+        this.notificationService.openSnackBar('Failed to enroll token.');
+      },
+    });
   }
 
   private _filterContainerOptions(value: string): string[] {

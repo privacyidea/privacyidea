@@ -47,6 +47,7 @@
       }
     </mat-form-field>
   </div>
+  <div class="flex-row gap-1">
   <mat-form-field class="description-form">
     <mat-label>Description</mat-label>
     <textarea [(ngModel)]="description"
@@ -55,4 +56,12 @@
               placeholder="Enter description"
               rows="3"></textarea>
   </mat-form-field>
+  <mat-form-field class="timestep-form">
+    <mat-label>Timestep</mat-label>
+    <mat-select [(ngModel)]="timeStep">
+      <mat-option value="30">30</mat-option>
+      <mat-option value="60">60</mat-option>
+    </mat-select>
+  </mat-form-field>
+  </div>
 </div>

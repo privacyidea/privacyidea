@@ -58,6 +58,7 @@ export class ContainerTabComponent {
   deleteContainer() {
     this.containerService.deleteContainer(this.containerSerial()).subscribe({
       next: () => {
+        this.selectedContent.set('container_overview');
         this.containerSerial.set('');
       },
       error: (error) => {

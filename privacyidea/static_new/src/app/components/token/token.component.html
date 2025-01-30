@@ -55,7 +55,8 @@
                                  [selectedContent]="selectedContent"></app-token-table>
               }
               @case ("token_enrollment") {
-                <app-token-enrollment />
+                <app-token-enrollment [tokenSerial]="tokenSerial"
+                                      [selectedContent]="selectedContent"/>
               }
               @case ("token_details") {
                 <app-token-details #tokenDetailsComponent

@@ -285,21 +285,50 @@ export class TokenService {
   }
 
   enrollHotpToken(
-    generateOnServe: boolean,
-    otpLength: number,
+    generateOnServer: boolean,
+    otpLength: string,
     otpKey: string,
     hashAlgorithm: string,
     description: string,
+    tokenSerial: string,
   ) {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.tokenBaseUrl}init`,
       {
-        otpkey: otpKey,
-        genkey: generateOnServe ? 1 : 0,
-        otplen: otpLength,
+        type: 'hotp',
+        otpkey: generateOnServer ? null : otpKey,
+        genkey: generateOnServer ? 1 : 0,
+        otplen: Number(otpLength),
         description: description,
         hashlib: hashAlgorithm,
+        serial: tokenSerial,
+      },
+      { headers },
+    );
+  }
+
+  enrollTotpToken(
+    generateOnServer: boolean,
+    otpLength: string,
+    otpKey: string,
+    hashAlgorithm: string,
+    description: string,
+    timeStep: string,
+    tokenSerial: string,
+  ) {
+    const headers = this.localService.getHeaders();
+    return this.http.post(
+      `${this.tokenBaseUrl}init`,
+      {
+        type: 'totp',
+        otpkey: generateOnServer ? null : otpKey,
+        genkey: generateOnServer ? 1 : 0,
+        otplen: Number(otpLength),
+        description: description,
+        hashlib: hashAlgorithm,
+        timeStep: Number(timeStep),
+        serial: tokenSerial,
       },
       { headers },
     );

@@ -155,11 +155,12 @@ describe('TokenTabComponent', () => {
   });
 
   describe('deleteToken()', () => {
-    it('calls tokenService.deleteToken and clears tokenSerial on success', () => {
+    it('calls tokenService.deleteToken and clears tokenSerial and redirects to overview', () => {
       component.deleteToken();
 
       expect(tokenServiceSpy.deleteToken).toHaveBeenCalledWith('Mock serial');
       expect(component.tokenSerial()).toBe('');
+      expect(component.selectedContent()).toBe('token_overview');
     });
 
     it('opens a snackBar on error', () => {

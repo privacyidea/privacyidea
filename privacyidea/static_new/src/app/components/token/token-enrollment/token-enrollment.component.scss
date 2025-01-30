@@ -70,8 +70,11 @@ h5 {
   margin: 0 0 0 1rem;
 }
 
-.enroll-button {
-  margin-left: 533px;
+.enroll-button-container {
+  display: flex;
+  flex-direction: row;
+  margin-left: 497px;
+  gap: 8px;
 }
 
 ::ng-deep {

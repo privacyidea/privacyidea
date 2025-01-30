@@ -16,13 +16,27 @@
       }
     </mat-hint>
   </mat-form-field>
-  <button (click)="enrollToken(generateOnServer(), otpLength(), otpKey(), hashAlgorithm(),
-          description())"
-          class="card-button enroll-button"
-          mat-flat-button>
-    <mat-icon>add</mat-icon>
-    Enroll {{ selectedType().key }} token
-  </button>
+  <div class="enroll-button-container">
+    <button (click)="this.dialog.open(TokenEnrollmentDialogComponent, {
+          data: {
+            response: this.response(),
+            tokenSerial: this.tokenSerial,
+            selectedContent: this.selectedContent
+
+          },
+        });"
+            [disabled]="this.response() === null"
+            mat-icon-button>
+      <mat-icon>qr_code_scanner</mat-icon>
+    </button>
+    <button (click)="enrollToken(this.selectedType().key, generateOnServer(), otpLength(), otpKey(),
+   hashAlgorithm(), description(), timeStep(),'')"
+            class="card-button"
+            mat-flat-button>
+      <mat-icon>add</mat-icon>
+      Enroll {{ selectedType().key }} token
+    </button>
+  </div>
   @switch (selectedType().key) {
     @case ("hotp") {
       <app-enroll-hotp [generateOnServer]="generateOnServer"
@@ -30,6 +44,14 @@
                        [otpKey]="otpKey"
                        [hashAlgorithm]="hashAlgorithm"
                        [description]="description" />
+    }
+    @case ("totp") {
+      <app-enroll-totp [generateOnServer]="generateOnServer"
+                       [otpLength]="otpLength"
+                       [otpKey]="otpKey"
+                       [hashAlgorithm]="hashAlgorithm"
+                       [description]="description"
+                       [timeStep]="timeStep" />
     }
   }
   <h4>Assign token to user:</h4>
