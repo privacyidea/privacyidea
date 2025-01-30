@@ -140,7 +140,7 @@ Policies
 --------
 
 You can use ``pi-manage config policy`` to enable, disable, create and delete policies.
-Using the sub commands ``config export`` and `` config import`` you can also export a
+Using the sub commands ``config export -t policy`` and ``config import -t policy`` you can also export a
 backup of your policies and import this policy set later.
 
 This could also be used to transfer the policies from one privacyIDEA

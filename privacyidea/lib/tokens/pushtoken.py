@@ -251,7 +251,11 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
                            recipient={"givenname": user_object.info.get("givenname") if user_object else "",
                                       "surname": user_object.info.get("surname") if user_object else ""},
                            challenge=options.get("challenge"))
-    message_on_mobile = message_on_mobile.format(**tags)
+    try:
+        message_on_mobile = message_on_mobile.format(**tags)
+    except KeyError as e:
+        log.warning(f"Could not format the message: {e}. Using default message.")
+        message_on_mobile = DEFAULT_MOBILE_TEXT
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
     title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
@@ -966,6 +970,7 @@ class PushTokenClass(TokenClass):
                                       user_object=options.get("user")).any()
         data = None
         current_presence_options = None
+        reply_dict = {}
         if is_true(require_presence):
             if not options["push_triggered"]:
                 # Create a new challenge data
@@ -980,15 +985,19 @@ class PushTokenClass(TokenClass):
                     selected_option = secrets.choice(available_presence_options)
                     available_presence_options.remove(selected_option)
                     current_presence_options.append(selected_option)
-                correct_option = secrets.choice(current_presence_options)
+                correct_presence_option = secrets.choice(current_presence_options)
                 # The data contains all selected options and the correct option at the end.
-                data = ",".join(current_presence_options + [correct_option])
+                data = ",".join(current_presence_options + [correct_presence_option])
             else:
                 # If the user has more than one token and more than one challenge is created, we need to ensure
                 # that the challenge data for all push token is the same.
                 challenges = get_challenges(transaction_id=transactionid)
                 data = next(c.data for c in challenges if c.serial.startswith("PIPU") and c.data) or ""
-                current_presence_options = data.split(",")[:-1]  # The correct option is the last one, so we remove it
+                # The correct option is the last one, so we remove it
+                split_presence_options = data.split(",")
+                current_presence_options = split_presence_options[:-1]
+                correct_presence_option = split_presence_options[-1]
+            reply_dict.update({"presence_answer": correct_presence_option})
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -1045,14 +1054,7 @@ class PushTokenClass(TokenClass):
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
-        reply_dict = {"attributes": {"hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}}
-
-        if data:
-            # If the message contains {} we replace it with the data otherwise we add a new text
-            if "{}" in message:
-                message = message.format(data.split(",").pop())  # The correct presence option is the last one
-            else:
-                message += f" Please press: {data.split(',').pop()}"  # The correct presence option is the last one
+        reply_dict.update({"attributes": {"hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}})
         return True, message, transactionid, reply_dict
 
     @check_token_locked
