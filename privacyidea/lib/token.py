@@ -2265,20 +2265,20 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     message_list = []
     for token in token_list:
         # Check if the max auth is succeeded
-        if token_obj.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = token_obj.create_challenge(
+        if token.check_all(message_list):
+            r_chal, message, transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
             # We need to pass the info if a push token has been triggered, so that require presence can re-use the
             # challenge instead of creating a new one with a different answer
             # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
             additional_tags = {}
-            if token_obj.get_type() == "push":
+            if token.get_type() == "push":
                 options["push_triggered"] = True
                 if "presence_answer" in challenge_info:
                     additional_tags["presence_answer"] = challenge_info["presence_answer"]
             # Add the reply to the response
-            message = challenge_text_replace(message, user=token_obj.user, token_obj=token_obj,
+            message = challenge_text_replace(message, user=token.user, token_obj=token,
                                              additional_tags=additional_tags)
             message_list.append(message)
             if r_chal:
@@ -2851,8 +2851,8 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     # TODO environment stuff into that function
     serial = token_obj.token.serial if token_obj.token.serial else None
     tokenowner = user if user else None
-    tokentype = token_obj.token.tokentype if token_obj.token.tokentype else ""
-    tags = create_tag_dict(serial=serial, tokenowner=tokenowner, tokentype=tokentype)
+    token_type = token_obj.token.tokentype if token_obj.token.tokentype else ""
+    tags = create_tag_dict(serial=serial, tokenowner=tokenowner, tokentype=token_type)
     if additional_tags:
         tags.update(additional_tags)
 
@@ -2881,7 +2881,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     # If the message is for a pushtoken and the presence_answer is set, but there is no tag for placing that answer,
     # Append the answer to the message
     presence_answer = tags.get("presence_answer", None)
-    if presence_answer and tokentype == "push" and "{presence_answer}" not in message:
+    if presence_answer and token_type == "push" and "{presence_answer}" not in message:
         # PyBabel gettext and f-strings don't like each other
         message += _(" Please press: {presence_answer}".format(presence_answer=presence_answer))
 
