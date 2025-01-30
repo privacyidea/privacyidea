@@ -5,17 +5,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Artem <artem@molotov.work>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -517,6 +517,7 @@ msgid "Assign a new token {{ newToken.serial }}"
 msgstr "Призначити новий токен {{newToken.serial}}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
+#, fuzzy
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Призначити новий токен {{newToken.serial}}"
 
@@ -1280,6 +1281,7 @@ msgstr ""
 "        {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
+#, fuzzy
 msgid "Details for user {{ username }} in realm"
 msgstr "Деталі для користувача {{ім’я користувача}} в області"
 
@@ -1407,6 +1409,7 @@ msgid "Edit"
 msgstr "Редагувати"
 
 #: privacyidea/static/components/config/views/config.system.html:191
+#, fuzzy
 msgid "Edit CA Connector {{ connectorname }}"
 msgstr "Редагувати коннектор CA {{connectionname}}"
 
@@ -2473,6 +2476,7 @@ msgid "New privacyIDEA server"
 msgstr "Новий сервер privacyIDEA"
 
 #: privacyidea/static/components/config/views/config.system.html:205
+#, fuzzy
 msgid "New {{ connectortype | uppercase }} CA Connector"
 msgstr "Новий {{typetype | uppercase }} CA Connector"
 
