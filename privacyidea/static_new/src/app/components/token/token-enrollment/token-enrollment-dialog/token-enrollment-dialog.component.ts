@@ -46,6 +46,7 @@ export class TokenEnrollmentDialogComponent {
       containerSerial: WritableSignal<string>;
       selectedContent: WritableSignal<string>;
       regenerateToken: WritableSignal<boolean>;
+      isProgrammaticChange: WritableSignal<boolean>;
     },
   ) {}
 
@@ -63,6 +64,7 @@ export class TokenEnrollmentDialogComponent {
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
     this.data.selectedContent.set('container_details');
+    this.data.isProgrammaticChange.set(true);
     this.data.containerSerial.set(containerSerial);
   }
 }

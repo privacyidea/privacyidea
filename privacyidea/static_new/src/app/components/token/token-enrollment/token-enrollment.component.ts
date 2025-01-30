@@ -133,6 +133,7 @@ export class TokenEnrollmentComponent {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() selectedContent!: WritableSignal<string>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   selectedType = signal(this.tokenTypesOptions[0]);
   setPinValue = signal('');
   repeatPinValue = signal('');
@@ -347,6 +348,7 @@ export class TokenEnrollmentComponent {
             containerSerial: this.containerSerial,
             selectedContent: this.selectedContent,
             regenerateToken: this.regenerateToken,
+            isProgrammaticChange: this.isProgrammaticChange,
           },
         });
         if (this.regenerateToken()) {

@@ -57,7 +57,8 @@
               @case ("token_enrollment") {
                 <app-token-enrollment [tokenSerial]="tokenSerial"
                                       [containerSerial]="containerSerial"
-                                      [selectedContent]="selectedContent"/>
+                                      [selectedContent]="selectedContent"
+                                      [isProgrammaticChange]="isProgrammaticChange" />
               }
               @case ("token_details") {
                 <app-token-details #tokenDetailsComponent
