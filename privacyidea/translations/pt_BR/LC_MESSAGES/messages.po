@@ -8,18 +8,20 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2022-03-10 23:07+0000\n"
-"Last-Translator: Thiago Augusto Koroll <thiagok@cloudbasis.com.br>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-ui/pt_BR/>\n"
+"privacyidea/privacyidea-server/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
+#, fuzzy
 msgid "Authentication failure. Unknown realm: {0!s}."
 msgstr "Falha na autenticação. Domínio: {0!s} desconhecido: {0!s}."
 
@@ -2267,6 +2269,7 @@ msgstr ""
 "conforme especificado na documentação."
 
 #: lib/eventhandler/usernotification.py:224
+#, fuzzy
 msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
