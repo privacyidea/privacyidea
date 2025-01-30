@@ -43,6 +43,7 @@ export class TokenEnrollmentDialogComponent {
     public data: {
       response: any;
       tokenSerial: WritableSignal<string>;
+      containerSerial: WritableSignal<string>;
       selectedContent: WritableSignal<string>;
       regenerateToken: WritableSignal<boolean>;
     },
@@ -57,5 +58,11 @@ export class TokenEnrollmentDialogComponent {
   regenerateQRCode() {
     this.data.regenerateToken.set(true);
     this.dialogRef.close();
+  }
+
+  containerSelected(containerSerial: string) {
+    this.dialogRef.close();
+    this.data.selectedContent.set('container_details');
+    this.data.containerSerial.set(containerSerial);
   }
 }

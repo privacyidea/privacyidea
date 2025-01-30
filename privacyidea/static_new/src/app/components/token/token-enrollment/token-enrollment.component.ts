@@ -131,6 +131,7 @@ export class TokenEnrollmentComponent {
   tokenTypesOptions = TokenComponent.tokenTypes;
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
   @Input() selectedContent!: WritableSignal<string>;
   selectedType = signal(this.tokenTypesOptions[0]);
   setPinValue = signal('');
@@ -149,8 +150,8 @@ export class TokenEnrollmentComponent {
   hashAlgorithm = signal('sha1');
   description = signal('');
   selectedTimezoneOffset = signal('+01:00');
-  selectedStartTime = signal(0);
-  selectedEndTime = signal(0);
+  selectedStartTime = signal('');
+  selectedEndTime = signal('');
   selectedStartDate = signal(new Date());
   selectedEndDate = signal(new Date());
   timeStep = signal('30');
@@ -210,6 +211,19 @@ export class TokenEnrollmentComponent {
           this.description(),
           this.timeStep(),
           this.tokenSerial(),
+          this.selectedUsername(),
+          this.selectedContainer(),
+          this.formatDateTimeOffset(
+            this.selectedStartDate(),
+            this.selectedStartTime(),
+            this.selectedTimezoneOffset(),
+          ),
+          this.formatDateTimeOffset(
+            this.selectedEndDate(),
+            this.selectedEndTime(),
+            this.selectedTimezoneOffset(),
+          ),
+          this.setPinValue(),
         );
       }
     });
@@ -247,6 +261,27 @@ export class TokenEnrollmentComponent {
     });
   }
 
+  formatDateTimeOffset(date: Date, time: string, offset: string): string {
+    const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
+    if (!timeMatch) {
+      return '';
+    }
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const newDate = new Date(date.getTime());
+
+    newDate.setHours(hours, minutes, 0, 0);
+
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, '0');
+    const day = String(newDate.getDate()).padStart(2, '0');
+    const formattedHours = String(newDate.getHours()).padStart(2, '0');
+    const formattedMinutes = String(newDate.getMinutes()).padStart(2, '0');
+    const offsetNoColon = offset.replace(':', '');
+
+    return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
+  }
+
   enrollToken(
     type: string,
     generateOnServer: boolean,
@@ -256,6 +291,11 @@ export class TokenEnrollmentComponent {
     description: string,
     timeStep: string,
     tokenSerial: string,
+    user: string,
+    container_serial: string,
+    validity_period_start: string,
+    validity_period_end: string,
+    pin: string,
   ) {
     let response = new Observable();
     switch (type) {
@@ -267,6 +307,11 @@ export class TokenEnrollmentComponent {
           hashAlgorithm,
           description,
           tokenSerial,
+          user,
+          container_serial,
+          validity_period_start,
+          validity_period_end,
+          pin,
         );
         break;
       case 'totp':
@@ -278,6 +323,11 @@ export class TokenEnrollmentComponent {
           description,
           timeStep,
           tokenSerial,
+          user,
+          container_serial,
+          validity_period_start,
+          validity_period_end,
+          pin,
         );
         break;
     }
@@ -294,6 +344,7 @@ export class TokenEnrollmentComponent {
           data: {
             response: response,
             tokenSerial: this.tokenSerial,
+            containerSerial: this.containerSerial,
             selectedContent: this.selectedContent,
             regenerateToken: this.regenerateToken,
           },

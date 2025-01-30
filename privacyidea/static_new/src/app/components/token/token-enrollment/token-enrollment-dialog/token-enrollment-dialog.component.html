@@ -3,6 +3,12 @@
   <p>
     The token was successfully enrolled with serial number
     <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.
+    @if (data.response.detail.container_serial) {
+      The token has been enrolled in the container
+      <a (click)="containerSelected(data.response.detail.container_serial)"> {{
+          data.response.detail.container_serial
+        }} </a>.
+    }
   </p>
   <div class="flex-row gap-1">
     <img alt="QR Code"

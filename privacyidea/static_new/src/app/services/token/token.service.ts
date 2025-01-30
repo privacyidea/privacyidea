@@ -291,6 +291,11 @@ export class TokenService {
     hashAlgorithm: string,
     description: string,
     tokenSerial: string,
+    user: string,
+    container_serial: string,
+    validity_period_start: string,
+    validity_period_end: string,
+    pin: string,
   ) {
     const headers = this.localService.getHeaders();
     return this.http.post(
@@ -303,6 +308,11 @@ export class TokenService {
         description: description,
         hashlib: hashAlgorithm,
         serial: tokenSerial,
+        user: user,
+        container_serial: container_serial,
+        validity_period_start: validity_period_start,
+        validity_period_end: validity_period_end,
+        pin: pin,
       },
       { headers },
     );
@@ -316,6 +326,11 @@ export class TokenService {
     description: string,
     timeStep: string,
     tokenSerial: string,
+    user: string,
+    container_serial: string,
+    validity_period_start: string,
+    validity_period_end: string,
+    pin: string,
   ) {
     const headers = this.localService.getHeaders();
     return this.http.post(
@@ -329,6 +344,11 @@ export class TokenService {
         hashlib: hashAlgorithm,
         timeStep: Number(timeStep),
         serial: tokenSerial,
+        user: user,
+        container_serial: container_serial,
+        validity_period_start: validity_period_start,
+        validity_period_end: validity_period_end,
+        pin: pin,
       },
       { headers },
     );

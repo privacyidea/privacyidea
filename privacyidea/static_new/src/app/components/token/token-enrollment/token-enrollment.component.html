@@ -30,7 +30,17 @@
       <mat-icon>qr_code_scanner</mat-icon>
     </button>
     <button (click)="enrollToken(this.selectedType().key, generateOnServer(), otpLength(), otpKey(),
-   hashAlgorithm(), description(), timeStep(),'')"
+   hashAlgorithm(), description(), timeStep(),'', selectedUsername(), selectedContainer(),
+             this.formatDateTimeOffset(
+            this.selectedStartDate(),
+            this.selectedStartTime(),
+            this.selectedTimezoneOffset()
+          ),
+          this.formatDateTimeOffset(
+            this.selectedEndDate(),
+            this.selectedEndTime(),
+            this.selectedTimezoneOffset()
+          ), setPinValue())"
             class="card-button"
             mat-flat-button>
       <mat-icon>add</mat-icon>
