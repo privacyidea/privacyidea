@@ -2,15 +2,15 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-# sebastien C <sebastien.netknights@outlook.com>, 2023.
+# sebastien C <sebastien.netknights@outlook.com>, 2023, 2025.
 # Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2025-01-03 09:01+0000\n"
-"Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
+"PO-Revision-Date: 2025-01-30 11:19+0000\n"
+"Last-Translator: sebastien C <sebastien.netknights@outlook.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
 "Language: fr\n"
@@ -307,7 +307,7 @@ msgid ""
 "user to another token."
 msgstr ""
 "L'administrateur est autorisé à copier l'utilisateur assigné vers un autre "
-"jeton, c'est à dire assigner un utilisateur à un autre jeton."
+"jeton, c'est-à-dire assigner un utilisateur à un autre jeton."
 
 #: lib/policy.py:1754
 msgid "Admin is allowed to trigger the lost token workflow."
@@ -356,16 +356,16 @@ msgid ""
 "Admin is allowed to write and modify the resolver and realm configuration."
 msgstr ""
 "L'administrateur est autorisé à écrire et modifier la configuration des "
-"interpréteurs et des domaines."
+"resolvers et des domaines."
 
 #: lib/policy.py:1805
 msgid "Admin is allowed to delete resolvers and realms."
 msgstr ""
-"L'administrateur est autorisé à supprimer des interpréteurs et des domaines."
+"L'administrateur est autorisé à supprimer des resolvers et des domaines."
 
 #: lib/policy.py:1810
 msgid "Admin is allowed to read resolvers."
-msgstr "L'administrateur est autorisé à lire les interpréteurs."
+msgstr "L'administrateur est autorisé à lire les resolvers."
 
 #: lib/policy.py:1814
 msgid ""
@@ -387,17 +387,15 @@ msgstr "L'administrateur est autorisé à lire les définitions de Connecteur CA
 #: lib/policy.py:1830
 msgid "Admin is allowed to write and modify the machine resolvers."
 msgstr ""
-"L'administrateur est autorisé à écrire et modifier des interpréteurs de "
-"machine."
+"L'administrateur est autorisé à écrire et modifier des resolvers de machine."
 
 #: lib/policy.py:1836
 msgid "Admin is allowed to delete machine resolvers."
-msgstr ""
-"L'administrateur est autorisé à supprimer des interpréteurs de machine."
+msgstr "L'administrateur est autorisé à supprimer des resolvers de machine."
 
 #: lib/policy.py:1842
 msgid "Admin is allowed to read machine resolvers."
-msgstr "L'administrateur est autorisé à lire les interpréteurs de machine."
+msgstr "L'administrateur est autorisé à lire les resolvers de machine."
 
 #: lib/policy.py:1849 lib/policy.py:2174
 msgid "Set the maximum allowed length of the OTP PIN."
@@ -1587,7 +1585,7 @@ msgstr "Assignation jeton échouée pour {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1418
 msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
-msgstr "Désassignation jeton échouée pour {0!r}/{1!r}: {2!r}"
+msgstr "Retrait du jeton échoué pour {0!r}/{1!r}: {2!r}"
 
 #: lib/token.py:1494
 msgid "Parameter user must not be a string: {0!r}"
@@ -3122,7 +3120,7 @@ msgstr "URL pour le jeton Push privacyIDEA"
 
 #: lib/tokens/pushtoken.py:1201
 msgid "Please scan the QR code!"
-msgstr "Veuillez scanner le code QR!"
+msgstr "Veuillez scanner le QR code!"
 
 #: lib/tokens/questionnairetoken.py:96
 msgid "Questionnaire: Enroll Questions for the user."
