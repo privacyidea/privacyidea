@@ -779,8 +779,8 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
-        except Exception as exx:  # pragma: no cover
-            log.error("{0!r}".format(exx))
+        except Exception as ex:  # pragma: no cover
+            log.error(f"Unable to get user list: {ex}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 
