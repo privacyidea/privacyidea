@@ -867,7 +867,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         # user list with searchResRef entries
         # we are mocking the mock here
-        original_search = y.l.extend.standard.paged_search
+        original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
@@ -1602,11 +1602,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'START_TLS': '1',
@@ -1618,12 +1618,11 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check two things:
         # 1) start_tls has actually been called!
-        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
-
 
     @ldap3mock.activate
     def test_24_ldaps(self):
@@ -1685,7 +1684,7 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual(len(result), len(LDAPDirectory))
             # We check two things:
             # 1) start_tls has actually been called!
-            self.assertTrue(start_tls_resolver.l.start_tls_called)
+            self.assertTrue(start_tls_resolver.connection.start_tls_called)
             # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
@@ -1928,7 +1927,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), 3)
 
         # We imitate ldap3 2.4.1 and raise an exception without having returned any entries
-        original_search = y.l.extend.standard.paged_search
+        original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
                 results = original_search(*args, **kwargs)
@@ -2090,12 +2089,12 @@ class LDAPResolverTestCase(MyTestCase):
             mock_search.assert_not_called()
         self.assertIn('bob', CACHE[y.getResolverId()]['getUserId'])
         # assert requests later than CACHE_TIMEOUT seconds query the directory again
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             # we now live CACHE_TIMEOUT + 2 seconds in the future
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=cache_timeout + 2)
-            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
                 bob_id3 = y.getUserId('bob')
                 self.assertEqual(bob_id, bob_id3)
                 mock_search.assert_called_once()
@@ -2140,7 +2139,7 @@ class LDAPResolverTestCase(MyTestCase):
         # assert the cache does not contain this entry
         self.assertNotIn(y.getResolverId(), CACHE)
         # assert subsequent requests query the directory
-        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
             bob_id2 = y.getUserId('bob')
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_called_once()

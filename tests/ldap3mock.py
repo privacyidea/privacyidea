@@ -154,6 +154,7 @@ class Connection(object):
 
     def start_tls(self, read_server_info=True):
         self.start_tls_called = True
+        return True
 
     def add(self, dn, object_class=None, attributes=None):
         # Check to see if the user exists in the directory
@@ -169,7 +170,7 @@ class Connection(object):
             # User already exists
             self.result["description"] = "failure"
             self.result["result"] = 68
-            self.result["message"] = "Error entryAlreadyExists for {0}".format(dn)
+            self.result["message"] = f"Error entryAlreadyExists for {dn}"
             return False
 
         # Add the user entry to the directory
