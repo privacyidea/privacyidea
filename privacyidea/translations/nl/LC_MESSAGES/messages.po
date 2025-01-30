@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2023-05-18 16:53+0000\n"
-"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
 "Language: nl\n"
@@ -17,6 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -1535,6 +1536,7 @@ msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr "Token toewijzen mislukt voor {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1418
+#, fuzzy
 msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
 msgstr "Token niet meer toewijzen mislukt voor {0!r}/{1!s} : {2!r}"
 
@@ -2819,6 +2821,7 @@ msgid "Please scan the QR code and enter the OTP value!"
 msgstr "Scan de QR-code!"
 
 #: lib/tokens/indexedsecrettoken.py:49
+#, fuzzy
 msgid "Please enter the positions {0!s} from your secret."
 msgstr "Geef de posities {0!s van je geheim."
 
