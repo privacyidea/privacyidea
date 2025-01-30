@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Ethem <ethem.saciak@gmail.com>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/tr/>\n"
 "Language: tr\n"
@@ -13,7 +13,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1016,6 +1016,7 @@ msgid "Create a new Policy"
 msgstr "Yeni bir politika oluştur"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:5
+#, fuzzy
 msgid "Create a new RADIUS server {{ params.identifier }}"
 msgstr "Yeni bir RADIUS sunucusu oluşturun {{params.Identifier}}"
 
@@ -1028,6 +1029,7 @@ msgid "Create a new SMS gateway"
 msgstr "Yeni SMS Ağ Geçidi Oluştur"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:5
+#, fuzzy
 msgid "Create a new SMTP server {{ params.identifier }}"
 msgstr "Yeni bir SMTP sunucusu oluşturun {{params.Identifier}}"
 
@@ -1057,6 +1059,7 @@ msgid "Create a new hosts Machine Resolver"
 msgstr "Yeni bir Hosts Makine Çözücü Oluşturma"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:5
+#, fuzzy
 msgid "Create a new privacyIDEA server {{ params.identifier }}"
 msgstr "Yeni bir PRIVACYIDEA sunucusu oluşturun {{params.Identifier}}"
 
@@ -1270,6 +1273,7 @@ msgid "Detail"
 msgstr "Detay"
 
 #: privacyidea/static/components/machine/views/machine.details.html:2
+#, fuzzy
 msgid ""
 "Details for machine {{ machineid }} in Machine Resolver\n"
 "        {{ machineresolver }}"
@@ -1452,6 +1456,7 @@ msgid "Edit Options"
 msgstr "Seçenekleri Düzenle"
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:3
+#, fuzzy
 msgid "Edit Passwd Resolver {{ resolvername }}"
 msgstr "Passwd Resolver'ı düzenleyin {{Resoolvername}}"
 
@@ -1460,10 +1465,12 @@ msgid "Edit Periodic Task {{ ptaskid }}"
 msgstr "Düzenleme periyodik görev {{ptaskid}}"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:3
+#, fuzzy
 msgid "Edit Policy {{ existingPolicyname }}"
 msgstr "Politikayı düzenle {{MevcutpolicyName}}"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:2
+#, fuzzy
 msgid "Edit RADIUS server {{ identifier }}"
 msgstr "Radius Server'ı düzenleyin {{Tantive}}"
 
@@ -1473,22 +1480,27 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:12
 #: privacyidea/static/components/config/views/config.resolvers.html:12
+#, fuzzy
 msgid "Edit Resolver {{ resolvername }}"
 msgstr "Çözücü Düzenle {{{Resoolvername}}"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:3
+#, fuzzy
 msgid "Edit SCIM Resolver {{ resolvername }}"
 msgstr "SCIM Çözücü Düzenle {{Resolvername}}"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:3
+#, fuzzy
 msgid "Edit SMS gateway {{ form.name }}"
 msgstr "SMS Gateway'ı düzenleyin {{Form.Name}}"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:2
+#, fuzzy
 msgid "Edit SMTP server {{ identifier }}"
 msgstr "SMTP Sunucusu'nu düzenleyin {{{Tantive}}"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:3
+#, fuzzy
 msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "SQL Resolver'ı düzenleyin {{Resolevername}}"
 
@@ -1502,6 +1514,7 @@ msgid "Edit Tokengroup {{ groupname }}"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
+#, fuzzy
 msgid ""
 "Edit hosts Machine Resolver\n"
 "        {{ resolvername }}"
@@ -1510,6 +1523,7 @@ msgstr ""
 "        {{Resoolvername}}"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:2
+#, fuzzy
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr "PrivacyIDEA sunucusunu düzenleyin {{tanımlayıcısı}}"
 
@@ -2318,6 +2332,7 @@ msgid "Login"
 msgstr "Giriş"
 
 #: privacyidea/static/components/login/views/login.html:9
+#, fuzzy
 msgid ""
 "Login as\n"
 "                {{ remoteUser }}"
@@ -2466,14 +2481,17 @@ msgid "New privacyIDEA server"
 msgstr "Yeni PrivacyIDEA Sunucusu"
 
 #: privacyidea/static/components/config/views/config.system.html:205
+#, fuzzy
 msgid "New {{ connectortype | uppercase }} CA Connector"
 msgstr "Yeni {{connectortype | büyük harf}} ca konektörü"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:25
+#, fuzzy
 msgid "New {{ mResolvertype | uppercase }} Resolver"
 msgstr "Yeni {{mresolvertype | büyük harf}} çözümleyici"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:26
+#, fuzzy
 msgid "New {{ resolvertype }}"
 msgstr "Yeni {{roolvertype}}"
 
@@ -2503,6 +2521,7 @@ msgid "No"
 msgstr "Numara"
 
 #: privacyidea/static/components/token/views/token.getserial.html:105
+#, fuzzy
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "OTP değeri {{OTP}} için hiçbir seri numarası bulunamadı."
 
@@ -2550,6 +2569,7 @@ msgid "Number of days the generated CRL should be valid."
 msgstr "Oluşturulan CRL'nin gün sayısı geçerli olması gerekir."
 
 #: privacyidea/static/components/machine/views/machine.html:20
+#, fuzzy
 msgid "Number of machines: {{ $scope.machinecount }}"
 msgstr "Makinelerin sayısı: {{$ scope.machineCount}}"
 
@@ -2774,6 +2794,7 @@ msgid "Phone number"
 msgstr "Telefon numarası"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:8
+#, fuzzy
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr "Lütfen aşağıdaki soruların en azından {{num_Aswers}} cevabını verin."
 
@@ -2802,6 +2823,7 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Lütfen PrivacyIDEA sunucusunun temel URL'sini sağlayın."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
+#, fuzzy
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
@@ -4070,6 +4092,7 @@ msgstr ""
 "    Bu, güvenli bir kabuğun kimliğini doğrulamak için kullanılabilir."
 
 #: privacyidea/static/components/token/views/token.getserial.html:95
+#, fuzzy
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
@@ -4400,6 +4423,7 @@ msgid "The number of lookahead OTP values. Default 10."
 msgstr "LOOKAHEAD OTP değerlerinin sayısı. Varsayılan 10."
 
 #: privacyidea/static/components/token/views/token.lost.html:17
+#, fuzzy
 msgid ""
 "The old token\n"
 "    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
@@ -4418,6 +4442,7 @@ msgid "The password can not be shown again, later!"
 msgstr "Şifre daha sonra tekrar gösterilemiyor!"
 
 #: privacyidea/static/components/token/views/token.lost.html:44
+#, fuzzy
 msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
 "        <b>{{ lostResult.password }}</b>"
@@ -4535,6 +4560,7 @@ msgid "The serial number on the remote server"
 msgstr "Uzak sunucudaki seri numarası"
 
 #: privacyidea/static/components/token/views/token.lost.html:38
+#, fuzzy
 msgid ""
 "The serial of the new token is\n"
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
@@ -4656,6 +4682,7 @@ msgid "The token is enrolled."
 msgstr "Belirteç kayıtlı."
 
 #: privacyidea/static/components/token/views/token.lost.html:52
+#, fuzzy
 msgid "The token is valid till {{ lostResult.end_date }}."
 msgstr "Belirteç {{lostresult.end_date}} kadar geçerlidir."
 
@@ -4671,6 +4698,7 @@ msgid "The token was marked lost successfully."
 msgstr "Token başarıyla kaybolan işaretlendi."
 
 #: privacyidea/static/components/token/views/token.enroll.html:185
+#, fuzzy
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -4685,11 +4713,13 @@ msgstr ""
 "            <a ui-sref=\"token.details( {Serial :enRolledten.serial}\">\n"
 "                {{enroledtoken.serial}} </a>\n"
 "            kullanıcı için\n"
-"            <a ui-sref=\"user.details('sererName:newuser.user, realmname:"
-"newuser.realm fromerm}\"> {{newuser.user}} </a> realm\n"
+"            <a ui-sref="
+"\"user.details('sererName:newuser.user, realmname:newuser.realm fromerm}\"> "
+"{{newuser.user}} </a> realm\n"
 "            {{newuser.realm}}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:194
+#, fuzzy
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5140,6 +5170,7 @@ msgid "Token successfully verified"
 msgstr "Kayıt başarıyla doğrulandı."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
+#, fuzzy
 msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "Jeton {{selectedtoken.serial}} kayboldu?"
 
@@ -5160,6 +5191,7 @@ msgid "Tokens"
 msgstr "Jetonlar"
 
 #: privacyidea/static/components/machine/views/machine.details.html:34
+#, fuzzy
 msgid "Tokens and Applications for machine {{ machineid }}"
 msgstr "Jeton ve makine uygulamaları {{machineID}}"
 
@@ -5612,6 +5644,7 @@ msgstr ""
 "                    belirteç modeli."
 
 #: privacyidea/static/templates/menu.html:162
+#, fuzzy
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "{{Mycountdown}} ikinci (ler) de oturum açacaksınız."
 
@@ -5644,6 +5677,7 @@ msgid "Your password has been reset successfully."
 msgstr "Şifreniz başarıyla sıfırlandı."
 
 #: privacyidea/static/components/token/views/token.getserial.html:75
+#, fuzzy
 msgid ""
 "Your search would include {{ count }} tokens. This can take a lot of\n"
 "        time and could even timeout. Do you want to run the search? You\n"
@@ -5685,6 +5719,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:43
 #: privacyidea/static/components/token/views/token.enrolled.push.html:19
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:43
+#, fuzzy
 msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
 msgstr "Belirteçiniz {{enolroledtoken.serial}} tamamen kayıt olmadı."
 
@@ -6035,6 +6070,7 @@ msgid "token type"
 msgstr "Token türü"
 
 #: privacyidea/static/components/token/views/token.list.html:12
+#, fuzzy
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "Toplam belirteçler: {{TOKENDATA.COUNT}}"
 
