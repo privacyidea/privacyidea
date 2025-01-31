@@ -39,7 +39,7 @@ import re
 from copy import copy
 from urllib.parse import unquote
 from flask import (jsonify,
-                   current_app)
+                   current_app, Response)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -59,6 +59,61 @@ SESSION_KEY_LENGTH = 32
 
 optional = True
 required = False
+
+
+def _get_param(dictionary, key, default=None):
+    """
+    Get the parameter from the dictionary. If the parameter is not present, return the default value or None.
+    """
+    ret = None
+    if dictionary and key in dictionary:
+        ret = dictionary[key]
+    elif default:
+        ret = default
+    return ret
+
+
+def get_required(dictionary, key):
+    """
+    Get the required parameter from the dictionary. If the parameter is not present, raise a ParameterError.
+    If the parameter is present, but empty, the empty value will be returned.
+    This just checks for None.
+    """
+    ret = _get_param(dictionary, key, None)
+    if not ret:
+        raise ParameterError(f"Missing parameter: {key}", id=905)
+    return ret
+
+
+def get_required_one_of(param, keys):
+    """
+    Get the first parameter from the list of keys that is present in the param dictionary.
+    If none of the keys is present, raise a ParameterError.
+    """
+    for key in keys:
+        ret = _get_param(param, key, None)
+        if ret:
+            return ret
+    raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
+
+
+def get_optional(param, key, default=None):
+    """
+    Get the optional parameter from the dictionary. If the parameter is not present, return the default value or None.
+    """
+    return _get_param(param, key, default)
+
+
+def get_optional_one_of(param, keys, default=None):
+    """
+    Get the first parameter from the list of keys that is present in the param dictionary.
+    If none of the keys is present, return the default value or None.
+    """
+    for key in keys:
+        ret = _get_param(param, key, default)
+        if ret is not None:
+            return ret
+    return default
 
 
 def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
@@ -101,7 +156,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     return ret
 
 
-def send_result(obj, rid=1, details=None):
+def send_result(obj, rid=1, details=None) -> Response:
     """
     sendResult - return a json result document
 
@@ -342,13 +397,12 @@ def verify_auth_token(auth_token, required_role=None):
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
-        raise AuthError(_("Authentication failure. Missing Authorization header."),
-                        id=ERROR.AUTHENTICATE_AUTH_HEADER)
+        raise AuthError(_("Authentication failure. Missing Authorization header."), id=ERROR.AUTHENTICATE_AUTH_HEADER)
 
     try:
         headers = jwt.get_unverified_header(auth_token)
     except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+        raise AuthError(_(f"Authentication failure. Error during decoding your token: {err!s}"),
                         id=ERROR.AUTHENTICATE_DECODING_ERROR)
     algorithm = headers.get("alg")
     wrong_username = None
@@ -358,11 +412,9 @@ def verify_auth_token(auth_token, required_role=None):
         for trusted_jwt in trusted_jwts:
             try:
                 if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
-                    j = jwt.decode(auth_token,
-                                   trusted_jwt.get("public_key"),
-                                   algorithms=[trusted_jwt.get("algorithm")])
-                    if dict((k, j.get(k)) for k in ("role", "resolver", "realm")) == \
-                            dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm")):
+                    j = jwt.decode(auth_token, trusted_jwt.get("public_key"), algorithms=[trusted_jwt.get("algorithm")])
+                    if (dict((k, j.get(k)) for k in ("role", "resolver", "realm")) ==
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm"))):
                         if re.match(trusted_jwt.get("username") + "$", j.get("username")):
                             r = j
                             break
@@ -374,28 +426,26 @@ def verify_auth_token(auth_token, required_role=None):
                 log.info("A given JWT definition does not match.")
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
-                raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                raise AuthError(_(f"Authentication failure. Your token has expired: {err!s}"),
                                 id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
 
     if not r:
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
         except jwt.DecodeError as err:
-            raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+            raise AuthError(_(f"Authentication failure. Error during decoding your token: {err!s}"),
                             id=ERROR.AUTHENTICATE_DECODING_ERROR)
         except jwt.ExpiredSignatureError as err:
-            raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+            raise AuthError(_(f"Authentication failure. Your token has expired: {err!s}"),
                             id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if wrong_username:
-        raise AuthError(_("Authentication failure. The username {0!s} is not allowed to "
-                          "impersonate via JWT.".format(wrong_username)))
+        raise AuthError(
+            _(f"Authentication failure. The username {wrong_username} is not allowed to impersonate via JWT."))
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
-        raise AuthError(_("Authentication failure. "
-                          "You do not have the necessary role ({0!s}) to access "
-                          "this resource!").format(required_role),
-                        id=ERROR.AUTHENTICATE_MISSING_RIGHT)
+        raise AuthError(_(f"Authentication failure. You do not have the necessary role ({required_role}) to access "
+                          "this resource!"), id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
 
 
@@ -410,11 +460,10 @@ def check_policy_name(name):
                            ("^pi-update-policy-", re.IGNORECASE)]
     for disallowed_pattern in disallowed_patterns:
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
-            raise ParameterError(_("'{0!s}' is an invalid policy name.").format(name))
+            raise ParameterError(_(f"'{name}' is an invalid policy name."))
 
     if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
-        raise ParameterError(_("The name of the policy may only contain "
-                               "the characters a-zA-Z0-9_. -"))
+        raise ParameterError(_("The name of the policy may only contain the characters a-zA-Z0-9_. -"))
 
 
 def attestation_certificate_allowed(cert_info, allowed_certs_pols):
@@ -442,7 +491,7 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     if allowed_certs_pols:
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)
-            tag_value = cert_info.get("attestation_{0!s}".format(tag))
+            tag_value = cert_info.get(f"attestation_{tag!s}")
             # if we do not get a match, we bail out
             m = re.search(matching, tag_value) if matching and tag_value else None
             if matching and not m:

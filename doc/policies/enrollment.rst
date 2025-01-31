@@ -713,6 +713,20 @@ by an unknown certificate.
     this is of concern for your attack scenarios, please make sure to properly
     configure your attestation roots!
 
+.. _policy_passkey_attestation_conveyance_preference:
+
+passkey_attestation_conveyance_preference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures the attestation conveyance preference for the passkey enrollment. Possible values are:
+"none", "indirect" and "direct" and "enterprise". The default is "none". If attestation is requested and the
+authenticator return a statement, the certificate will be saved in the token info. Currently, there is no further
+validation.
+This policy is separate from :ref:`policy_webauthn_authenticator_attestation_form` and
+:ref:`policy_webauthn_authenticator_attestation_level` which are not used for passkey enrollment.
+
 .. _policy_webauthn_enroll_req:
 
 webauthn_req

@@ -318,6 +318,18 @@ angular.module("TokenModule", ["privacyideaAuth"])
                             }
                         });
                 },
+                initToken: function (params, callback) {
+                    if (params["user"]) {
+                        params["user"] = fixUser(params["user"]);
+                    }
+                    $http.post(tokenUrl + "/init", params,
+                        {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+                    ).then(function (response) {
+                        callback(response.data);
+                    }, function (error) {
+                        AuthFactory.authError(error.data);
+                    });
+                },
                 delete: function (serial, callback) {
                     $http.delete(tokenUrl + "/" + serial,
                         {
@@ -357,5 +369,15 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                deleteTokenInfo: function (serial, key, callback) {
+                    $http.delete(tokenUrl + "/info/" + serial + "/" + key,
+                        {
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                        }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                }
             };
         }]);

@@ -59,6 +59,9 @@ from flask import (Blueprint, request, g, current_app)
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from ..lib.tokenclass import ROLLOUTSTATE
+from ..lib.tokens.passkeytoken import PasskeyTokenClass
+from ..lib.tokens.webauthntoken import WebAuthnTokenClass
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -72,9 +75,10 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups)
+from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError)
+from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError, ERROR)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -98,7 +102,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            sms_identifiers, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
+                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
@@ -152,7 +156,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(indexedsecret_force_attribute, request)
 @prepolicy(webauthntoken_allowed, request)
 @prepolicy(webauthntoken_request, request)
-@prepolicy(webauthntoken_enroll, request)
+@prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)
@@ -294,16 +298,29 @@ def init():
     """
     response_details = {}
     param = request.all_data
-    user = request.User
 
-    token_object = init_token(param, user)
-    if token_object:
+    user = request.User
+    token = init_token(param, user)
+
+    if token:
         g.audit_object.log({"success": True})
-        # The token was created successfully, so we add token specific
-        # init details like the Google URL to the response
-        init_details = token_object.get_init_detail(param, user)
-        response_details.update(init_details)
-        # Check if a containerSerial is set and assign the token to the container
+
+        # If the token is a fido2 token, find all enrolled fido2 token for the user
+        # to avoid registering the same authenticator multiple times
+        if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
+                and token.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+            param["registered_credential_ids"] = get_credential_ids_for_user(user)
+
+        # The token was created successfully, so we add token specific init details like the Google URL to the response
+        try:
+            init_details = token.get_init_detail(param, user)
+            response_details.update(init_details)
+        except ParameterError as e:
+            if e.id is ERROR.PARAMETER_USER_MISSING:
+                remove_token(serial=token.get_serial())
+            raise e
+
+        # Check if a container_serial is set and assign the token to the container
         container_serial = param.get("container_serial", {})
         if container_serial:
             # Check if user is allowed to add tokens to containers
@@ -311,23 +328,24 @@ def init():
                 container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
-                log.info(f"User {user.login} is not allowed to add token {token_object.get_serial()} to container "
+                log.info(f"User {user.login} is not allowed to add token {token.get_serial()} to container "
                          f"{container_serial}.")
             if container_add_token_right:
+                # The enrollment will not be blocked if there is problem adding the new token to a container
+                # there will just be a warning in the log
                 try:
-                    add_token_to_container(container_serial, token_object.get_serial())
+                    add_token_to_container(container_serial, token.get_serial())
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
-                    g.audit_object.log({"container_serial": container_serial,
-                                        "container_type": container.type})
+                    g.audit_object.log({"container_serial": container_serial, "container_type": container.type})
                 except ResourceNotFoundError:
                     log.warning(f"Container with serial {container_serial} not found while enrolling token "
-                                f"{token_object.get_serial()}.")
+                                f"{token.get_serial()}.")
 
-    g.audit_object.log({'user': user.login,
-                        'realm': user.realm,
-                        'serial': token_object.token.serial,
-                        'token_type': token_object.token.tokentype})
+    g.audit_object.log({"user": user.login,
+                        "realm": user.realm,
+                        "serial": token.token.serial,
+                        "token_type": token.token.tokentype})
 
     return send_result(True, details=response_details)
 
@@ -494,7 +512,7 @@ def assign_api():
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, err_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, error_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 

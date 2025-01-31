@@ -715,7 +715,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            data={"serial": "123456"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(404, res.status_code)
 
     def test_03_check_user(self):
         # get the original counter
@@ -2690,7 +2690,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             result = res.json.get("result")
             error_msg = result.get("error").get("message")
-            self.assertEqual("ERR905: You need to specify a serial or a user.", error_msg)
+            self.assertEqual("ERR905: You need to specify a serial, user or credential_id.", error_msg)
 
         # wrong username
         with self.app.test_request_context('/validate/check',
@@ -3619,7 +3619,6 @@ class WebAuthn(MyApiTestCase):
                                                     "Origin": "https://pi.example.com"}):
             res = self.app.full_dispatch_request()
             data = res.json
-            print(data)
             self.assertEqual(200, res.status_code)
             self.assertTrue("transaction_id" in data.get("detail"))
             self.assertEqual(self.serial, data.get("detail").get("serial"))
@@ -6289,7 +6288,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
               "W3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7Il" \
               "ggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
 
-    rpid = "netknights.it"
+    rp_id = "netknights.it"
 
     recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
                                  "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
@@ -6305,7 +6304,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action=("webauthn_relying_party_id={0!s}".format(self.rpid)))
+                   action=("webauthn_relying_party_id={0!s}".format(self.rp_id)))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -6440,7 +6439,6 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             headers.update({"User-Agent": self.user_agents[i]})
             transaction_id = self._trigger_and_modify_challenge(headers)
             res = self._validate_check(headers, transaction_id)
-
             self.assertEqual(200, res.status_code)
             data = res.json
             detail = data.get("detail")
@@ -6448,6 +6446,8 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual("Found matching challenge", detail.get("message"))
+            self.assertIn("serial", detail)
+            self.assertIn("auth_items", data)
             auth_items = data.get("auth_items")
             """
             auth_items looks like this:
@@ -6467,13 +6467,13 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             # Offline returns the credential ID and the pub key
             self.assertEqual(self.recorded_allow_credentials, response.get("credentialId"))
             self.assertIn("pubKey", response)
-            self.assertEqual(self.rpid, response.get("rpId"))
+            self.assertEqual(self.rp_id, response.get("rpId"))
             self.refilltokens.append(auth_items.get("offline")[0].get("refilltoken"))
 
             # Set the sign count back to be able to use the same data for authentication again
             token = get_one_token(serial=self.serial)
             if not token:
-                self.fail("No token found for serial {0!s}".format(self.serial))
+                self.fail(f"No token found for serial {self.serial}")
             token.set_otp_count(0)
 
         # Check that the refilltokens are NOT the same

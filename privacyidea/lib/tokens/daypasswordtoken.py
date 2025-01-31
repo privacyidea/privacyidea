@@ -11,19 +11,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import datetime
 import logging
 import time
-import datetime
-from privacyidea.lib.tokens.HMAC import HmacOtp
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
-from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
+
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.config import get_from_config
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.HMAC import HmacOtp
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.utils import parse_time_sec_int
 
 log = logging.getLogger(__name__)
 

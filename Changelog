@@ -1,3 +1,8 @@
+Version 3.11dev2, 2025-01-30
+
+  Features:
+  * Passkeys (#4024)
+
 Version 3.10.2, 2024-11-26
 
   Fixes:

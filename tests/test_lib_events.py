@@ -3674,8 +3674,7 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'https://test.com', 'This is a test')
+            text = "A webhook is called at 'https://test.com' with data: 'This is a test'"
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3691,8 +3690,6 @@ class WebhookTestCase(MyTestCase):
                        }
             res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'https://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3802,9 +3799,12 @@ class WebhookTestCase(MyTestCase):
             data = '{"{realm}": {"{realm}": {"{realm}": "This is {logged_in_user} from realm {realm}"}}}'
             options = {"g": g,
                        "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": CONTENT_TYPE.JSON,
-                                       "replace": True,
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.JSON,
+                                       "replace":
+                                           True,
                                        "data": data
                                        }
                        }
@@ -3812,7 +3812,7 @@ class WebhookTestCase(MyTestCase):
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
             text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'https://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
+                'http://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
@@ -3844,7 +3844,7 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_broken_json(self, mock_post):
+    def test_08_replace_function_error(self, mock_post):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
@@ -3856,19 +3856,23 @@ class WebhookTestCase(MyTestCase):
                 t_handler = WebHookHandler()
                 options = {"g": g,
                            "handler_def": {
-                               "options": {"URL": 'https://test.example',
-                                           "content_type": CONTENT_TYPE.JSON,
-                                           "replace": True,
-                                           "data": 'invalid json string'
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               '{"{token_serial}": "{token_owner} {unknown_tag}"}'
                                            }
                            }
                            }
                 res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to parse JSON string 'invalid json string': "
-                                         "Expecting value: line 1 column 1 (char 0)")
+                mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
+                                         " Please check the webhooks data option.")
                 text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                    'https://test.example', 'invalid json string')
+                    'http://test.com', '{"{token_serial}": "{token_owner} {unknown_tag}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
@@ -3897,10 +3901,14 @@ class WebhookTestCase(MyTestCase):
                 options = {"g": g,
                            "request": req,
                            "handler_def": {
-                               "options": {"URL": 'https://test.com',
-                                           "content_type": CONTENT_TYPE.JSON,
-                                           "replace": True,
-                                           "data": '{"text": "The token serial is {token_seril}"}'
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               '{"text": "The token serial is {token_seril}"}'
                                            }
                            }
                            }
@@ -3909,6 +3917,6 @@ class WebhookTestCase(MyTestCase):
                 mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
                                          " Please check the webhooks data option.")
                 text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                    'https://test.com', '{"text": "The token serial is {token_seril}"}')
+                    'http://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)

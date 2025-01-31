@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # built documents.
 #
 # The short X.Y version.
-version = '3.10.2'
+version = '3.11dev2'
 # The full version, including alpha/beta/rc tags.
 #release = '2.16dev5'
 release = version

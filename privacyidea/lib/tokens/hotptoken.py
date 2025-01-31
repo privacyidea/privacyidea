@@ -93,8 +93,6 @@ class HotpTokenClass(TokenClass):
 
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = True
 
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
@@ -885,6 +883,10 @@ class HotpTokenClass(TokenClass):
         except AttributeError:
             # Certain from HOTP inherited tokenclasses might not set currently_in_challenge
             return False
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return True
 
     def get_enroll_url(self, user: User, params: dict) -> str:
         """

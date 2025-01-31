@@ -363,14 +363,13 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
         "admin" or "public". If "public", only values with type="public"
         are returned.
     :type role: string
-    :param return_bool: If the a boolean value should be returned. Returns
+    :param return_bool: Whether a boolean value should be returned. Returns
         True if value is "True", "true", 1, "1", True...
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
     config_object = get_config_object()
-    return config_object.get_config(key=key, default=default, role=role,
-                                    return_bool=return_bool)
+    return config_object.get_config(key=key, default=default, role=role, return_bool=return_bool)
 
 
 # @cache.cached(key_prefix="resolver")
@@ -747,6 +746,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.pushtoken")
     module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
     module_list.add("privacyidea.lib.tokens.webauthntoken")
+    module_list.add("privacyidea.lib.tokens.passkeytoken")
 
     # Dynamic token modules
     dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")
@@ -809,12 +809,6 @@ def get_token_module_list():
         if mod_name == '\\' or len(mod_name.strip()) == 0:
             continue
 
-        # load all token class implementations
-        # if mod_name in sys.modules:
-        #    module = sys.modules[mod_name]
-        #    log.debug('module %s loaded' % (mod_name))
-        #    modules.append(module)
-        # else:
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)
@@ -1105,7 +1099,6 @@ def get_multichallenge_enrollable_tokentypes():
     enrollable_tokentypes = []
     # If the token is enrollable via multichallenge
     for tclass in get_token_classes():
-        if tclass.is_multichallenge_enrollable:
+        if tclass.is_multichallenge_enrollable():
             enrollable_tokentypes.append(tclass.get_class_type())
-
     return enrollable_tokentypes

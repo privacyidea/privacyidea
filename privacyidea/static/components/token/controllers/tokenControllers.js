@@ -31,10 +31,9 @@ myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'A
 
         // watch the location to change the side menu from token to container
         $rootScope.$on('$locationChangeSuccess', function () {
-            if ($location.path().includes("container"))  {
+            if ($location.path().includes("container")) {
                 $scope.tokenMenu = false;
-            }
-            else{
+            } else {
                 $scope.tokenMenu = true;
             }
         })
@@ -485,8 +484,94 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             if ($scope.enrolledToken.rollout_state === "clientwait" && !$scope.form["2stepinit"]) {
                 $scope.pollTokenInfo();
             }
+            // Passkey
+            $scope.bytesToBase64 = function (bytes) {
+                const binString = Array.from(bytes, (byte) =>
+                    String.fromCodePoint(byte),).join("");
+                return btoa(binString);
+            };
+            $scope.base64URLToBytes = function (base64URLString) {
+                const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
+                const padLength = (4 - (base64.length % 4)) % 4;
+                const padded = base64.padEnd(base64.length + padLength, '=');
+                const binary = atob(padded);
+                const buffer = new ArrayBuffer(binary.length);
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return buffer;
+            }
+
+            if ($scope.enrolledToken.passkey_registration) {
+                $scope.click_wait = true;
+                //console.log($scope.enrolledToken.passkey_registration);
+                let options = $scope.enrolledToken.passkey_registration;
+                let excludedCredentials = [];
+                for (const cred of options.excludeCredentials) {
+                    excludedCredentials.push({
+                        id: $scope.base64URLToBytes(cred.id),
+                        type: cred.type,
+                    });
+                }
+                navigator.credentials.create({
+                    publicKey: {
+                        rp: options.rp,
+                        user: {
+                            id: $scope.base64URLToBytes(options.user.id),
+                            name: options.user.name,
+                            displayName: options.user.displayName
+                        },
+                        challenge: Uint8Array.from(options.challenge, c => c.charCodeAt(0)),
+                        pubKeyCredParams: options.pubKeyCredParams,
+                        excludeCredentials: excludedCredentials,
+                        authenticatorSelection: options.authenticatorSelection,
+                        timeout: options.timeout,
+                        extensions: {
+                            credProps: true,
+                        },
+                        attestation: options.attestation
+                    }
+                }).then(function (publicKeyCred) {
+                    //console.log("Successfully registered passkey");
+                    //console.log(publicKeyCred);
+                    let params = {
+                        user: $scope.newUser.user,
+                        realm: $scope.newUser.realm,
+                        transaction_id: data.detail.transaction_id,
+                        serial: data.detail.serial,
+                        type: "passkey",
+                        credential_id: publicKeyCred.id,
+                        rawId: $scope.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
+                        authenticatorAttachment: publicKeyCred.authenticatorAttachment,
+                        attestationObject: $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject)),
+                        clientDataJSON: $scope.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON)),
+                    }
+                    if (publicKeyCred.response.attestationObject) {
+                        params.attestationObject = $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject));
+                    }
+                    const extResults = publicKeyCred.getClientExtensionResults();
+                    if (extResults.credProps) {
+                        params.credProps = extResults.credProps;
+                    }
+                    TokenFactory.initToken(params, function (response) {
+                        $scope.click_wait = false;
+                    });
+                }, function (error) {
+                    console.log("Error while registering passkey");
+                    console.log(error);
+                    inform.add("Error while registering passkey, the token will not be created!",
+                        {type: "danger", ttl: 10000});
+                    TokenFactory.delete(data.detail.serial, function (response) {
+                        $state.go('token.list');
+                    });
+                });
+            }
+            // End Passkey
             $('html,body').scrollTop(0);
-        };
+        }
 
         $scope.enrollToken = function () {
             $scope.enrolling = true;
@@ -701,8 +786,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             formatYear: 'yy',
             startingDay: 1
         };
-    }]);
-
+    }
+]);
 
 myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory', 'tokenUrl', 'ConfigFactory', 'inform',
     'gettextCatalog',
