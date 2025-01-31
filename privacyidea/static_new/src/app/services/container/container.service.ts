@@ -269,8 +269,21 @@ export class ContainerService {
         }
         if (action === 'activate' || action === 'deactivate') {
           return forkJoin(
-            tokensForAction.map((token: { serial: string; active: boolean }) =>
-              this.tokenService.toggleActive(token.serial, token.active),
+            tokensForAction.map(
+              (token: {
+                serial: string;
+                active: boolean;
+                revoked: boolean;
+              }) => {
+                if (!token.revoked) {
+                  return this.tokenService.toggleActive(
+                    token.serial,
+                    token.active,
+                  );
+                } else {
+                  return of(null);
+                }
+              },
             ),
           );
         } else if (action === 'remove') {
