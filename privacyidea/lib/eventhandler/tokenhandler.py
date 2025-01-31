@@ -460,7 +460,7 @@ class TokenEventHandler(BaseEventHandler):
         handler_options = handler_def.get("options", {})
 
         serial_list = self._get_token_serials(request, content, g)
-
+        log.debug(f"Serial list for event handling: {serial_list}")
         if action.lower() in [ACTION_TYPE.SET_TOKENREALM,
                               ACTION_TYPE.SET_DESCRIPTION,
                               ACTION_TYPE.DELETE, ACTION_TYPE.DISABLE,
@@ -480,13 +480,12 @@ class TokenEventHandler(BaseEventHandler):
 
             serials = serial_list.replace(' ', '').split(',')
             for serial in serials:
-                log.info("{0!s} for token {1!s}".format(action, serial))
+                log.info(f"{action} for token {serial}")
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
                     only_realm = is_true(handler_options.get("only_realm"))
-                    # Set the realm..
-                    log.info("Setting realm of token {0!s} to {1!s}".format(
-                        serial, realm))
+                    # Set the realm.
+                    log.info(f"Setting realm of token {serial} to {realm}")
                     # Add the token realm
                     set_realms(serial, [realm], add=not only_realm)
                 elif action.lower() == ACTION_TYPE.SET_RANDOM_PIN:

@@ -182,11 +182,6 @@ angular.module("privacyideaApp")
                     $scope.lock_screen();
                 }
             });
-            /*
-             $rootScope.$on('Keepalive', function() {
-                $scope.logoutWarning = false;
-            });
-            */
 
             // helper function
             $scope.isChecked = function (val) {
@@ -223,7 +218,53 @@ angular.module("privacyideaApp")
                 $scope.unlocking = false;
                 $scope.authenticate();
             };
-
+            // PASSKEY LOGIN
+            $scope.bytesToBase64 = function (bytes) {
+                const binString = Array.from(bytes, (byte) =>
+                    String.fromCodePoint(byte),).join("");
+                return btoa(binString);
+            };
+            $scope.passkeyLogin = function () {
+                $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
+                        let data = response.data.detail.passkey;
+                        // TODO for the webui, userVerification is always required so that is a 2FA
+                        let userVerification = "required";
+                        //console.log(data);
+                        navigator.credentials.get({
+                            publicKey: {
+                                challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
+                                rpId: data.rpId,
+                                userVerification: userVerification,
+                            },
+                        }).then(credential => {
+                            //console.log(credential);
+                            let params = {
+                                transaction_id: data.transaction_id,
+                                credential_id: credential.id,
+                                authenticatorData: $scope.bytesToBase64(
+                                    new Uint8Array(credential.response.authenticatorData)),
+                                clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+                                signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
+                                userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
+                            };
+                            $http.post(authUrl, params, {}).then(function (response) {
+                                let data = response.data;
+                                //console.log(data);
+                                if (data.result.value) {
+                                    $scope.do_login_stuff(response.data);
+                                } else {
+                                    AuthFactory.authError(response.data);
+                                }
+                            }, function (error) {
+                                AuthFactory.authError(error.data);
+                            });
+                        }, function (error) {
+                            AuthFactory.authError(error.data);
+                        });
+                    }
+                );
+            };
+            // END PASSKEY LOGIN
             $scope.authenticate = function () {
                 $scope.polling = false;
                 $scope.image = false;
@@ -254,9 +295,8 @@ angular.module("privacyideaApp")
                             $state.go("response");
                         }
                         inform.add(gettextCatalog.getString("Challenge Response " +
-                                "Authentication. You" +
-                                " are not completely authenticated, yet."),
-                            {type: "warning", ttl: 5000});
+                                "Authentication. " + data.detail.message),
+                            {type: "warning", ttl: 60000});
                         $scope.hideResponseInput = true;
                         $scope.u2fSignRequests = Array();
                         $scope.webAuthnSignRequests = [];
@@ -650,7 +690,6 @@ angular.module("privacyideaApp")
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
             };
-
         }]);
 
 angular.module("privacyideaApp")

@@ -47,29 +47,25 @@ This code is tested in tests/test_lib_tokens_sms
 """
 
 import datetime
+import logging
 import traceback
+from json import loads
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
-from privacyidea.lib.utils import is_true, create_tag_dict
-
+from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
-from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import Match
 from privacyidea.lib.crypto import safe_compare
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import Match, SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
-from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE, HotpTokenClass
-from json import loads
-from privacyidea.lib import _
-
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.models import Challenge
-from privacyidea.lib.decorators import check_token_locked
-import logging
-
 
 log = logging.getLogger(__name__)
 

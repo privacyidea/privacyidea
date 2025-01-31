@@ -41,9 +41,10 @@ Cleaning based on the number of entries:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
-up the audit log table, you can call ``pi-manage`` at command line::
+up the audit log table, you can call :ref:`the pi-manage script <pimanage>` on
+the command line::
 
-   pi-manage rotate_audit --highwatermark 20000 --lowwatermark 18000
+   pi-manage audit rotate --highwatermark 20000 --lowwatermark 18000
 
 If there are more than 20000 log entries, this will clean up all old log entries, leaving only 18000 log entries.
 
@@ -52,7 +53,7 @@ Cleaning based on the age:
 
 You can specify the number of days, how old an audit entry may be at a max::
 
-   pi-manage rotate_audit --age 365
+   pi-manage audit rotate --age 365
 
 This will delete all audit entries that are older than one year.
 
@@ -109,7 +110,7 @@ If is a good idea to have a *catch-all* rule at the end.
 
 You can then add a call like::
 
-   pi-manage rotate_audit --config /etc/privacyidea/audit.yaml
+   pi-manage audit rotate --config /etc/privacyidea/audit.yaml
 
 in your crontab.
 
@@ -128,7 +129,7 @@ So you can simply specify a config file with only the content::
 Then you can call ``pi-manage`` like this::
 
    PRIVACYIDEA_CONFIGFILE=/home/cornelius/src/privacyidea/audit.cfg \
-   pi-manage rotate_audit
+   pi-manage audit rotate
 
 This will read the configuration (only the database URI) from the config file
 ``audit.cfg``.

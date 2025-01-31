@@ -1,0 +1,4 @@
+@startuml
+Service -> privacyIDEA: POST /validate/check
+Service <-- privacyIDEA
+@enduml

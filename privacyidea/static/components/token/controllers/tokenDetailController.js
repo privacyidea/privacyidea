@@ -49,14 +49,14 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
     '$state', '$rootScope',
     'ValidateFactory', 'AuthFactory',
     'ConfigFactory', 'MachineFactory',
-    'inform', 'gettextCatalog', 'ContainerFactory',
+    'inform', 'gettextCatalog', 'ContainerFactory', '$http', 'validateUrl',
     function ($scope, TokenFactory,
               UserFactory, $stateParams,
               $state, $rootScope,
               ValidateFactory,
               AuthFactory, ConfigFactory,
               MachineFactory, inform,
-              gettextCatalog, ContainerFactory) {
+              gettextCatalog, ContainerFactory, $http, validateUrl) {
 
         // Container
         $scope.tokenIsInContainer = false;
@@ -87,6 +87,84 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
         // End container
+
+        // Passkey test button
+        $scope.bytesToBase64 = function (bytes) {
+            const binString = Array.from(bytes, (byte) =>
+                String.fromCodePoint(byte),).join("");
+            return btoa(binString);
+        };
+        let mediation = "silent";
+        if (window.PublicKeyCredential) {
+            const available = PublicKeyCredential.isConditionalMediationAvailable()
+                .then((available) => {
+                    //console.log("isConditionalMediationAvailable: " + available);
+                    if (available) {
+                        mediation = "conditional";
+                    }
+                });
+        }
+
+        $scope.testPasskey = function () {
+            $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
+                    let data = response.data.detail.passkey;
+                    let userVerification = "preferred";
+                    if (["required", "preferred", "discouraged"].includes(data.user_verification)) {
+                        userVerification = data.user_verification;
+                    }
+                    //console.log(data);
+                    navigator.credentials.get({
+                        publicKey: {
+                            challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
+                            rpId: data.rpId,
+                            userVerification: userVerification,
+                        },
+                    }).then(credential => {
+                        //console.log(credential);
+                        let params = {
+                            transaction_id: data.transaction_id,
+                            credential_id: credential.id,
+                            authenticatorData: $scope.bytesToBase64(
+                                new Uint8Array(credential.response.authenticatorData)),
+                            clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+                            signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
+                            userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
+                        };
+                        $http.post(validateUrl + "/check", params, {}
+                        ).then(function (response) {
+                            let data = response.data;
+                            //console.log(data);
+                            if (data.result.value) {
+                                $scope.loggedinUsername = data.detail.username;
+                            } else {
+                                $scope.loggedinUsername = "failure";
+                            }
+                        }, function (error) {
+                            AuthFactory.authError(error.data)
+                        });
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                }
+            )
+            ;
+        };
+        // End Passkey test button
+
+        // Tokeninfo operations (for refilltoken)
+        $scope.askDeleteInfo = false;
+        $scope.deleteTokenInfo = function (key) {
+            TokenFactory.deleteTokenInfo($scope.tokenSerial, key, function (data) {
+                $scope.askDeleteInfo = false;
+                $scope.get();
+            });
+        };
+        $scope.copyTokeninfoClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                inform.add(gettextCatalog.getString("Refilltoken copied to clipboard!"),
+                    {type: "info", ttl: 3000})
+            });
+        }
 
         $scope.tokenSerial = $stateParams.tokenSerial;
         // This is the parent object
@@ -379,7 +457,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         //----------------------------------------------------------------
         //   Admin functions
         //
-
         if ($scope.loggedInUser.role === "admin") {
             // These are functions that can only be used by administrators.
             // If the user is admin, we can fetch all realms

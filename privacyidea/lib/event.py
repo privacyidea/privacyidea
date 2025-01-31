@@ -27,6 +27,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.utils.export import (register_import, register_export)
 import functools
 import logging
+
 log = logging.getLogger(__name__)
 
 AVAILABLE_EVENTS = []
@@ -54,6 +55,7 @@ class event(object):
         :param func: The function that is decorated
         :return: function
         """
+
         @functools.wraps(func)
         def event_wrapper(*args, **kwds):
             # here we have to evaluate the event configuration from the
@@ -61,38 +63,27 @@ class event(object):
             # do Pre-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname, position="pre")
             for e_handler_def in e_handles:
-                log.debug("Pre-Handling event {eventname} with "
-                          "{eventDef}".format(eventname=self.eventname,
-                                              eventDef=e_handler_def))
+                log.debug(f"Pre-Handling event {self.eventname} with {e_handler_def}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
-                # The "action is determined by the event configuration
+                # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
-                options = {"request": self.request,
-                           "g": self.g,
-                           "handler_def": e_handler_def}
+                options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
                 if event_handler.check_condition(options=options):
-                    log.debug("Pre-Handling event {eventname} with options"
-                              "{options}".format(eventname=self.eventname,
-                                                  options=options))
+                    log.debug(f"Pre-Handling event {self.eventname} with options {options}")
                     # create a new audit object for this action
                     event_audit = getAudit(self.g.audit_object.config)
                     # copy all values from the original audit entry
                     event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = "PRE-EVENT {trigger}>>" \
-                                                 "{handler}:{action}".format(
-                        trigger=self.eventname,
-                        handler=e_handler_def.get("handlermodule"),
-                        action=e_handler_def.get("action"))
-                    event_audit_data["action_detail"] = "{0!s}".format(
-                        e_handler_def.get("options"))
+                    event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
+                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
 
-                    result = event_handler.do(e_handler_def.get("action"),
-                                               options=options)
+                    result = event_handler.do(e_handler_def.get("action"), options=options)
                     if not result and event_handler.run_details:
-                        event_audit_data["info"] += " ({!s})".format(event_handler.run_details)
+                        event_audit_data["info"] += f" ({event_handler.run_details})"
                         event_audit.log(event_audit_data)
                     # set audit object to success
                     event_audit.log({"success": result})
@@ -103,39 +94,30 @@ class event(object):
             # Post-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname)
             for e_handler_def in e_handles:
-                log.debug("Post-Handling event {eventname} with "
-                          "{eventDef}".format(eventname=self.eventname,
-                                              eventDef=e_handler_def))
+                log.debug(f"Post-Handling event {self.eventname} with {e_handler_def}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
-                # The "action is determined by the event configuration
+                # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request,
                            "g": self.g,
                            "response": f_result,
                            "handler_def": e_handler_def}
                 if event_handler.check_condition(options=options):
-                    log.debug("Post-Handling event {eventname} with options"
-                              "{options}".format(eventname=self.eventname,
-                                                 options=options))
+                    log.debug(f"Post-Handling event {self.eventname} with options {options}")
                     # create a new audit object
                     event_audit = getAudit(self.g.audit_object.config)
                     # copy all values from the original audit entry
                     event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = "POST-EVENT {trigger}>>" \
-                                                 "{handler}:{action}".format(
-                            trigger=self.eventname,
-                            handler=e_handler_def.get("handlermodule"),
-                            action=e_handler_def.get("action"))
-                    event_audit_data["action_detail"] = "{0!s}".format(
-                        e_handler_def.get("options"))
+                    event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
+                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
                     event_audit_data["info"] = e_handler_def.get("name")
                     event_audit.log(event_audit_data)
 
-                    result = event_handler.do(e_handler_def.get("action"),
-                                               options=options)
+                    result = event_handler.do(e_handler_def.get("action"), options=options)
                     if not result and event_handler.run_details:
-                        event_audit_data["info"] += " ({!s})".format(event_handler.run_details)
+                        event_audit_data["info"] += f" ({event_handler.run_details})"
                         event_audit.log(event_audit_data)
                     # In case the handler has modified the response
                     f_result = options.get("response")
@@ -148,12 +130,12 @@ class event(object):
         return event_wrapper
 
 
-def get_handler_object(handlername):
+def get_handler_object(handler_name):
     """
     Return an event handler object based on the Name of the event handler class
 
-    :param handlername: The identifier of the Handler Class
-    :type hanldername: basestring
+    :param handler_name: The identifier of the Handler Class
+    :type handler_name: basestring
     :return:
     """
     # TODO: beautify and make this work with several different handlers
@@ -170,30 +152,30 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
     from privacyidea.lib.eventhandler.webhookeventhandler import WebHookHandler
     from privacyidea.lib.eventhandler.containerhandler import ContainerEventHandler
-    h_obj = None
-    if handlername == "UserNotification":
-        h_obj = UserNotificationEventHandler()
-    elif handlername == "Token":
-        h_obj = TokenEventHandler()
-    elif handlername == "Script":
-        h_obj = ScriptEventHandler()
-    elif handlername == "Federation":
-        h_obj = FederationEventHandler()
-    elif handlername == "Counter":
-        h_obj = CounterEventHandler()
-    elif handlername == "RequestMangler":
-        h_obj = RequestManglerEventHandler()
-    elif handlername == "ResponseMangler":
-        h_obj = ResponseManglerEventHandler()
-    elif handlername == "Logging":
-        h_obj = LoggingEventHandler()
-    elif handlername == "CustomUserAttributes":
-        h_obj = CustomUserAttributesHandler()
-    elif handlername == "WebHook":
-        h_obj = WebHookHandler()
-    elif handlername == "Container":
-        h_obj = ContainerEventHandler()
-    return h_obj
+    handler = None
+    if handler_name == "UserNotification":
+        handler = UserNotificationEventHandler()
+    elif handler_name == "Token":
+        handler = TokenEventHandler()
+    elif handler_name == "Script":
+        handler = ScriptEventHandler()
+    elif handler_name == "Federation":
+        handler = FederationEventHandler()
+    elif handler_name == "Counter":
+        handler = CounterEventHandler()
+    elif handler_name == "RequestMangler":
+        handler = RequestManglerEventHandler()
+    elif handler_name == "ResponseMangler":
+        handler = ResponseManglerEventHandler()
+    elif handler_name == "Logging":
+        handler = LoggingEventHandler()
+    elif handler_name == "CustomUserAttributes":
+        handler = CustomUserAttributesHandler()
+    elif handler_name == "WebHook":
+        handler = WebHookHandler()
+    elif handler_name == "Container":
+        handler = ContainerEventHandler()
+    return handler
 
 
 def enable_event(event_id, enable=True):
@@ -215,7 +197,6 @@ def enable_event(event_id, enable=True):
 
 def set_event(name=None, event=None, handlermodule=None, action=None, conditions=None,
               ordering=0, options=None, id=None, active=True, position="post"):
-
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
@@ -295,7 +276,7 @@ class EventConfiguration(object):
         :return:
         """
         eventlist = [e for e in self.events if (
-            eventname in e.get("event") and e.get("active") and e.get("position") == position)]
+                eventname in e.get("event") and e.get("active") and e.get("position") == position)]
         return eventlist
 
     def get_event(self, eventid):

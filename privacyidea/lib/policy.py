@@ -1313,19 +1313,18 @@ class PolicyClass(object):
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
             if role in tokenclass.get_class_info("ui_enroll"):
-                enroll_types[tokenclass.get_class_type()] = \
-                    tokenclass.get_class_info("description")
+                enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         else:
             extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         if pols:
-            # admin policies or user policies are set, so we need to
+            # Admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
-                # determine, if there is a enrollment policy for this very type
+                # determine, if there is an enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
                                                user=username,
                                                realm=userrealm,
@@ -1349,7 +1348,6 @@ class PolicyClass(object):
 #  NEW STUFF
 #
 #
-
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
@@ -3076,7 +3074,7 @@ class Match(object):
         The client IP is matched implicitly.
         From the token object we try to determine the user as the owner.
         If the token has no owner, we try to determine the tokenrealm.
-        We fallback to realm=None
+        We fall back to realm=None
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``

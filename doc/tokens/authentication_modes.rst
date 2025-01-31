@@ -71,22 +71,21 @@ modes in more detail.
 ``authenticate`` mode
 ---------------------
 
-.. uml::
-  :width: 500
-
-  Service -> privacyIDEA: POST /validate/check
-  Service <-- privacyIDEA
+.. figure:: images/authentication_mode_simple.svg
+   :width: 300
 
 The *Service* is an application that is protected with a second factor by privacyIDEA.
 
 * The user enters a OTP PIN along with an OTP value at the *Service*.
 * The plugin sends a request to the ``/validate/check`` endpoint of privacyIDEA:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/check
+    POST /validate/check HTTP/1.1
+    Accept: application/json
 
-    user=<user>&pass=<PIN+OTP>
+    user=<user>
+    pass=<PIN+OTP>
 
  and privacyIDEA returns whether the authentication request has succeeded
  or not.
@@ -96,45 +95,27 @@ The *Service* is an application that is protected with a second factor by privac
 ``challenge`` mode
 ------------------
 
-.. uml::
-  :width: 500
-
-  alt with pin
-
-    Service -> privacyIDEA: POST /validate/check
-    Service <-- privacyIDEA: transaction_id
-
-  else without pin
-
-    Service -> privacyIDEA: POST /validate/triggerchallenge
-    Service <-- privacyIDEA: transaction_id
-
-  end
-
-  privacyIDEA -> "SMS Gateway": OTP
-
-  ...User enters OTP from SMS...
-
-  Service -> privacyIDEA: POST /validate/check
-  Service <-- privacyIDEA
+.. figure:: images/authentication_mode_challenge.svg
+   :width: 500
 
 * The plugin triggers a challenge, for example via the
   ``/validate/triggerchallenge`` endpoint:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/triggerchallenge
+    POST /validate/triggerchallenge HTTP/1.1
 
     user=<user>
 
   Alternatively, a challenge can be triggered via the ``/validate/check``
   endpoint with the PIN of a challenge-response token:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/check
+    POST /validate/check HTTP/1.1
 
-    user=<user>&pass=<PIN>
+    user=<user>
+    pass=<PIN>
 
   In both variants, the plugin receives a transaction ID which we call
   ``transaction_id`` and asks the user for the challenge response.
@@ -142,11 +123,13 @@ The *Service* is an application that is protected with a second factor by privac
   The plugin forwards the response to privacyIDEA along with the
   transaction ID:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/check
+    POST /validate/check HTTP/1.1
 
-    user=<user>&transaction_id=<transaction_id>&pass=<OTP>
+    user=<user>
+    transaction_id=<transaction_id>
+    pass=<OTP>
 
  and privacyIDEA returns whether the authentication request succeeded or not.
 
@@ -157,68 +140,35 @@ To clean up expired challenges read the :ref:`pimanage_challenge` section.
 ``outofband`` mode
 ------------------
 
-.. uml::
-  :width: 500
-
-  alt with pin
-
-    Service -> privacyIDEA: POST /validate/check
-    Service <-- privacyIDEA: transaction_id
-
-  else without pin
-
-    Service -> privacyIDEA: POST /validate/triggerchallenge
-    Service <-- privacyIDEA: transaction_id
-
-  end
-
-  privacyIDEA -> Firebase: PUSH Notification
-  Firebase -> Phone: PUSH Notification
-
-  loop until confirmed
-
-    Service -> privacyIDEA: GET /validate/polltransaction
-    Service <-- privacyIDEA: false
-
-  end
-
-  ...User confirms sign in on phone...
-
-  Phone -> privacyIDEA: POST /ttype/push
-
-  Service -> privacyIDEA: GET /validate/polltransaction
-  Service <-- privacyIDEA: true
-
-  |||
-
-  Service -> privacyIDEA: POST /validate/check
-  Service <-- privacyIDEA
+.. figure:: images/authentication_mode_outofband.svg
+   :width: 500
 
 * The plugin triggers a challenge, for example via the
   ``/validate/triggerchallenge`` endpoint:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/triggerchallenge
+    POST /validate/triggerchallenge HTTP/1.1
 
     user=<user>
 
   or via the ``/validate/check`` endpoint with the PIN of a out-of-band token:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/check
+    POST /validate/check HTTP/1.1
 
-    user=<user>&pass=<PIN>
+    user=<user>
+    pass=<PIN>
 
   In both variants, the plugin receives a transaction ID which we call
   ``transaction_id``.
   The plugin may now periodically query the status of the challenge by
   polling the ``/validate/polltransaction`` endpoint:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    GET /validate/polltransaction
+    GET /validate/polltransaction HTTP/1.1
 
     transaction_id=<transaction_id>
 
@@ -230,11 +180,13 @@ To clean up expired challenges read the :ref:`pimanage_challenge` section.
 * Once ``/validate/polltransaction`` returns ``true``, the plugin *must*
   finalize the authentication via the ``/validate/check`` endpoint:
 
-  .. code-block:: text
+  .. sourcecode:: http
 
-    POST /validate/check
+    POST /validate/check HTTP/1.1
 
-    user=<user>&transaction_id=<transaction_id>&pass=
+    user=<user>
+    transaction_id=<transaction_id>
+    pass=
 
   For the ``pass`` parameter, the plugin sends an empty string.
 

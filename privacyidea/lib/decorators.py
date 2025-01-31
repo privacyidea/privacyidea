@@ -69,7 +69,7 @@ def check_user_or_serial(func):
     """
     Decorator to check user and serial at the beginning of a function
     The wrapper will check the parameters user and serial and verify that
-    not both parameters are None. Otherwise it will throw an exception
+    not both parameters are None. Otherwise, it will throw an exception
     ParameterError.
     """
     @functools.wraps(func)
@@ -93,7 +93,7 @@ def check_user_or_serial(func):
     return user_or_serial_wrapper
 
 
-class check_user_or_serial_in_request(object):
+class check_user_serial_or_cred_id_in_request(object):
     """
     Decorator to check user and serial in a request.
     If the request does not contain a serial number (serial) or a user
@@ -107,8 +107,9 @@ class check_user_or_serial_in_request(object):
         def check_user_or_serial_in_request_wrapper(*args, **kwds):
             user = self.request.all_data.get("user", "").strip()
             serial = self.request.all_data.get("serial", "").strip()
-            if not serial and not user:
-                raise ParameterError(_("You need to specify a serial or a user."))
+            credential_id = self.request.all_data.get("credential_id", "").strip()
+            if not serial and not user and not credential_id:
+                raise ParameterError(_("You need to specify a serial, user or credential_id."))
             if "*" in serial:
                 raise ParameterError(_("Invalid serial number."))
             if "%" in user:
