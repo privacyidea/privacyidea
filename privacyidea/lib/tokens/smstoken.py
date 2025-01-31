@@ -204,7 +204,8 @@ class SmsTokenClass(HotpTokenClass):
                            'type': 'str',
                            'desc': _('The text that will be send via SMS for '
                                      'an SMS token. Use tags like {otp} and {serial} '
-                                     'as parameters.')},
+                                     'as parameters. Note: If you use a comma in the '
+                                     'message, you need to escape it with a backslash.')},
                        SMSACTION.SMSAUTO: {
                            'type': 'bool',
                            'desc': _('If set, a new SMS OTP will be sent '
@@ -215,7 +216,9 @@ class SmsTokenClass(HotpTokenClass):
                            'desc': _('Use an alternative challenge text for telling the '
                                      'user to enter the code from the SMS. You can also '
                                      'use tags for automated replacement. Check out the '
-                                     'documentation for more details.')
+                                     'documentation for more details. Note: If you use '
+                                     'a comma in the message, you need to escape it '
+                                     'with a backslash.')
                        }
                    },
                    SCOPE.ADMIN: {
@@ -320,6 +323,9 @@ class SmsTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the SMS:")
+
+        return_message = return_message.replace(r'\,', ',')
+
         reply_dict = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
 
@@ -531,6 +537,8 @@ class SmsTokenClass(HotpTokenClass):
                 allow_white_space_in_action=True, unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
+
+        message = message.replace(r'\,', ',')
 
         return message
 

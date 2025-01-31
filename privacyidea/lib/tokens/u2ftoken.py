@@ -262,7 +262,9 @@ class U2fTokenClass(TokenClass):
                            'desc': _('Use an alternative challenge text for telling the '
                                      'user to confirm with his U2F device. You can also '
                                      'use tags for automated replacement. Check out the '
-                                     'documentation for more details.')
+                                     'documentation for more details. Note: If you use '
+                                     'a comma in the message, you need to escape it '
+                                     'with a backslash.')
                        }
                    },
                    SCOPE.AUTHZ: {
@@ -442,6 +444,8 @@ class U2fTokenClass(TokenClass):
                                                                       ACTION.CHALLENGETEXT),
                                                  options) or _('Please confirm with your U2F token ({0!s})').format(
             self.token.description)
+
+        message = message.replace(r'\,', ',')
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()

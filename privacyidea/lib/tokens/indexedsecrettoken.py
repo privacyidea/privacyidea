@@ -107,7 +107,8 @@ class IndexedSecretTokenClass(TokenClass):
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user which positions of the secret he should enter. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details.'),
+                                 'for more details. Note: If you use a comma in the message, you '
+                                 'need to escape it with a backslash.'),
                        'group': "Indexed Secret Token"
                    },
                    PIIXACTION.COUNT: {
@@ -199,6 +200,8 @@ class IndexedSecretTokenClass(TokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or DEFAULT_CHALLENGE_TEXT
+
+        return_message = return_message.replace(r'\,', ',')
 
         if self.get_tokeninfo("multichallenge"):
             # In case of multichallenge we ask only once.
