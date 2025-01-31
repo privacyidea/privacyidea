@@ -296,7 +296,7 @@ class TokenClass(object):
                                realm=tokenowner.realm.name)
         return user_object
 
-    def is_orphaned(self):
+    def is_orphaned(self, exception_default=True):
         """
         Return True if the token is orphaned.
 
@@ -314,8 +314,8 @@ class TokenClass(object):
                     orphaned = True
             except Exception:
                 # If any other resolving error occurs, we also assume the
-                # token to be orphaned
-                orphaned = True
+                # token to be orphaned per default, You can change this with exception_default.
+                orphaned = exception_default
         return orphaned
 
     def get_user_displayname(self):
