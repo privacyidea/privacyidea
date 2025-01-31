@@ -209,7 +209,7 @@ class SmsTokenClass(HotpTokenClass):
                            'desc': _('The text that will be send via SMS for '
                                      'an SMS token. Use tags like {otp} and {serial} '
                                      'as parameters. Note: If you use a comma in the '
-                                     'massage, you need to escape it with a backslash.')},
+                                     'message, you need to escape it with a backslash.')},
                        SMSACTION.SMSAUTO: {
                            'type': 'bool',
                            'desc': _('If set, a new SMS OTP will be sent '
@@ -221,7 +221,7 @@ class SmsTokenClass(HotpTokenClass):
                                      'user to enter the code from the SMS. You can also '
                                      'use tags for automated replacement. Check out the '
                                      'documentation for more details. Note: If you use '
-                                     'a comma in the massage, you need to escape it '
+                                     'a comma in the message, you need to escape it '
                                      'with a backslash.')
                        }
                    },

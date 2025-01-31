@@ -1689,6 +1689,8 @@ class TokenClass(object):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _('please enter otp: ')
+        message = message.replace("\,", ",")
+
         data = None
         reply_dict = {}
 

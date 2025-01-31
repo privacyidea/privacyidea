@@ -167,7 +167,7 @@ class EmailTokenClass(HotpTokenClass):
                                  '{serial} can be used as parameters. You may '
                                  'also specify a filename as email template '
                                  'starting with "file:". Note: If you use a '
-                                 'comma in the massage, you need to escape '
+                                 'comma in the message, you need to escape '
                                  'it with a backslash.')},
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
@@ -184,7 +184,7 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user to enter the code from the e-mail. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details. Note: If you use a comma in the massage, you '
+                                 'for more details. Note: If you use a comma in the message, you '
                                  'need to escape it with a backslash.')
                    },
                },

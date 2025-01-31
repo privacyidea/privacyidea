@@ -263,7 +263,7 @@ class U2fTokenClass(TokenClass):
                                      'user to confirm with his U2F device. You can also '
                                      'use tags for automated replacement. Check out the '
                                      'documentation for more details. Note: If you use '
-                                     'a comma in the massage, you need to escape it '
+                                     'a comma in the message, you need to escape it '
                                      'with a backslash.')
                        }
                    },

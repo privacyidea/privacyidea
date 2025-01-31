@@ -107,7 +107,7 @@ class IndexedSecretTokenClass(TokenClass):
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user which positions of the secret he should enter. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details. Note: If you use a comma in the massage, you '
+                                 'for more details. Note: If you use a comma in the message, you '
                                  'need to escape it with a backslash.'),
                        'group': "Indexed Secret Token"
                    },
