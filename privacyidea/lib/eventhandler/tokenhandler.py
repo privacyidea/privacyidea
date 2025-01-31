@@ -669,8 +669,7 @@ class TokenEventHandler(BaseEventHandler):
                 if container_serial:
                     user = request.User
                     user_role = g.logged_in_user.get("role")
-                    add_token_to_container(container_serial, t.get_serial(), user=user,
-                                           user_role=user_role)
+                    add_token_to_container(container_serial, t.get_serial())
                 else:
                     log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
 

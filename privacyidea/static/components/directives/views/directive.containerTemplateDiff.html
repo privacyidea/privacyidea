@@ -1,0 +1,49 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<span translate>Tokens</span>:
+<span ng-show="diff[containerSerial]['tokens']['equal']">
+                        <span translate>Equal</span>
+                        <span class="glyphicon glyphicon-ok"></span>
+                    </span>
+<table class="table table-transparent"
+       ng-hide="diff[containerSerial]['tokens']['equal']">
+    <tbody>
+    <tr>
+        <td translate>
+            Missing
+        </td>
+        <td ng-show="diff[containerSerial]['tokens']['missing'].length > 0">
+            {{ diff[containerSerial]["tokens"]["missing"] }}
+        </td>
+        <td ng-hide="diff[containerSerial]['tokens']['missing'].length > 0">
+            -
+        </td>
+    </tr>
+    <tr>
+        <td translate>
+            Additional
+        </td>
+        <td ng-show="diff[containerSerial]['tokens']['additional'].length > 0">
+            {{ diff[containerSerial]["tokens"]["additional"] }}
+        </td>
+        <td ng-hide="diff[containerSerial]['tokens']['additional'].length > 0">
+            -
+        </td>
+    </tr>
+    </tbody>
+</table>

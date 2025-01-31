@@ -82,6 +82,7 @@ DEFAULT_LOGOUT_TIME = 120
 DEFAULT_AUDIT_PAGE_SIZE = 10
 DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
+DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
@@ -609,6 +610,8 @@ def get_webui_settings(request, response):
                                               user=username, realm=realm).any()
         default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
                                               user=username, realm=realm).action_values(unique=True)
+        default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_CONTAINER_TYPE,
+                                                   user=username, realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                   user=username, realm=realm).any()
         show_node = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE, realm=realm).any()
@@ -631,6 +634,7 @@ def get_webui_settings(request, response):
         user_page_size = DEFAULT_PAGE_SIZE
         require_description = list(require_description.keys())
         default_tokentype = DEFAULT_TOKENTYPE
+        default_container_type = DEFAULT_CONTAINER_TYPE
         logout_redirect_url = ""
         if len(audit_page_size_pol) == 1:
             audit_page_size = int(list(audit_page_size_pol)[0])
@@ -640,6 +644,8 @@ def get_webui_settings(request, response):
             user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
             default_tokentype = list(default_tokentype_pol)[0]
+        if len(default_container_type_pol) == 1:
+            default_container_type = list(default_container_type_pol)[0]
         if len(logout_redirect_url_pol) == 1:
             logout_redirect_url = list(logout_redirect_url_pol)[0]
 
@@ -668,6 +674,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_page_size"] = user_page_size
         content["result"]["value"]["policy_template_url"] = policy_template_url
         content["result"]["value"]["default_tokentype"] = default_tokentype
+        content["result"]["value"]["default_container_type"] = default_container_type
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd

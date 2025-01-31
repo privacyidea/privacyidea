@@ -19,40 +19,44 @@
 #
 import logging
 
+from privacyidea.lib import _
 from privacyidea.lib.containerclass import TokenContainerClass
 
 log = logging.getLogger(__name__)
 
 
 class YubikeyContainer(TokenContainerClass):
+    options = {}
 
     def __init__(self, db_container):
         super().__init__(db_container)
 
     @classmethod
-    def get_class_type(cls):
+    def get_class_type(cls) -> str:
         """
         Returns the type of the container class.
         """
         return "yubikey"
 
     @classmethod
-    def get_supported_token_types(cls):
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """
-        return ["hotp", "certificate", "webauthn", "yubico", "yubikey", "passkey"]
+        supported_token_types = ["hotp", "certificate", "webauthn", "yubico", "yubikey", "passkey"]
+        supported_token_types.sort()
+        return supported_token_types
 
     @classmethod
-    def get_class_prefix(cls):
+    def get_class_prefix(cls) -> str:
         """
         Returns the container class specific prefix for the serial.
         """
         return "YUBI"
 
     @classmethod
-    def get_class_description(cls):
+    def get_class_description(cls) -> str:
         """
         Returns a description of the container class.
         """
-        return "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
+        return _("Yubikey hardware device that can hold HOTP, certificate and webauthn token")

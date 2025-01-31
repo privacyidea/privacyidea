@@ -189,6 +189,19 @@ type: ``string``
 Defines the default tokentype when enrolling a new token in the WebUI. This
 tokentype will be selected when entering the enrollment dialog.
 
+.. index:: Default Container Type
+.. _policy_default_container_type:
+
+default_container_type
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Defines the default container type when creating a new container in the WebUI. This container type will be selected
+when entering the container create dialog. If this policy is not set, the default type is `Generic`.
+
+New in version 3.11
+
 .. index:: Wizard, Token wizard
 .. _policy_token_wizard:
 

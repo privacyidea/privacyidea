@@ -65,13 +65,16 @@ import os
 import string
 import traceback
 from collections import defaultdict
+from typing import Union
 
 from dateutil.tz import tzlocal
+from flask import Request
 from sqlalchemy import (and_, func)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
 
+from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
@@ -83,7 +86,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -422,7 +425,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
-def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None):
+def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None, hidden_token_info=None):
     """
     Convert a list of token objects to a list of dictionaries.
     Additionally, checks whether the requesting user is allowed to see the token information.
@@ -436,6 +439,7 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
     :type user_role: str
     :param allowed_realms: A list of the realms the admin is allowed to see, None if the admin is allowed to see all
                            realms
+    :param hidden_token_info: List of token-info keys to remove from the results
     :return: A list of dictionaries
     :rtype: list
     """
@@ -449,15 +453,20 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
             token_dict["username"] = ""
             token_dict["user_realm"] = ""
             try:
-                user = token.user
-                if user:
-                    token_dict["username"] = user.login
-                    token_dict["user_realm"] = user.realm
-                    token_dict["user_editable"] = get_resolver_object(user.resolver).editable
+                token_owner = token.user
+                if token_owner:
+                    token_dict["username"] = token_owner.login
+                    token_dict["user_realm"] = token_owner.realm
+                    token_dict["user_editable"] = get_resolver_object(token_owner.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
+
+            if hidden_token_info:
+                for key in list(token_dict['info']):
+                    if key in hidden_token_info:
+                        token_dict['info'].pop(key)
 
             # check if token is in a container
             token_dict["container_serial"] = ""
@@ -1054,6 +1063,45 @@ def get_serial_by_otp(token_list, otp="", window=10):
         serial = token.get_serial()
 
     return serial
+
+
+@log_with(log)
+def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, counter: int = None) -> list[str]:
+    """
+    Returns a list of serials for a given list of OTP values
+    The tokenobject_list would be created by get_tokens()
+
+    :param token_list: the list of token objects to be investigated
+    :param otp_list: a list of otp values, that need to be found
+    :param window: the window of search
+    :param counter: the counter value to be used for the OTP calculation,
+        if None the actual counter of the token is used
+
+    :return: a list of serials for the given OTP values and the user
+    """
+    result_list = []
+
+    for otp in otp_list:
+        for token in token_list:
+            log.debug(f"checking token {token.get_serial()}")
+            try:
+                if token.type == "hotp":
+                    r = token.check_otp_exist(otp=otp, window=window, inc_counter=False, counter=counter)
+                else:
+                    r = token.check_otp_exist(otp=otp, window=window, inc_counter=False)
+                log.debug(f"otp_exists = {r > 0}")
+                if r >= 0:
+                    result_list.append(token)
+            except Exception as err:
+                # A flaw in a single token should not stop privacyidea from finding
+                # the right token
+                log.warning(f"error in calculating OTP for token {token.get_serial()}: {err}")
+        token_list = result_list
+        result_list = []
+
+    serials = [token.get_serial() for token in token_list]
+
+    return serials
 
 
 @log_with(log)
@@ -2888,3 +2936,59 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     message = message.format_map(defaultdict(str, tags))
 
     return message
+
+
+def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
+    """
+    Returns the enroll URL for a token with the given serial number that is already enrolled.
+    Loads the configurations from the policies.
+    If the rollout state of a token is 'enrolled' None is returned.
+
+    :param serial: The serial number of the token
+    :param request: The request object
+    :param g: The g object
+    :return: The enroll URL or None
+    """
+    token = get_one_token(serial=serial)
+    token_owner = token.user or User()
+    request.User = token_owner
+    if token_owner:
+        request.all_data["user"] = token_owner.login
+        request.all_data["realm"] = token_owner.realm
+        request.all_data["resolver"] = token_owner.resolver
+    request.all_data["serial"] = serial
+    request.all_data["type"] = token.get_type()
+    g.serial = serial
+
+    # Get policies for the token
+    # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
+    from privacyidea.api.lib.prepolicy import (pushtoken_add_config, tantoken_count, papertoken_count,
+                                               init_tokenlabel)
+    from privacyidea.api.lib.postpolicy import check_verify_enrollment
+
+    try:
+        pushtoken_add_config(request, None)
+        tantoken_count(request, None)
+        papertoken_count(request, None)
+        init_tokenlabel(request, None)
+    except PolicyError as ex:
+        log.warning(f"{ex}")
+
+    params = request.all_data
+    params.update({"genkey": True, "rollover": True})
+    token_info = token.get_tokeninfo()
+    params.update(token_info)
+    token = init_token(params)
+    enroll_url = token.get_enroll_url(token_owner, params)
+
+    # Check post policies
+    init_result = {}
+    init_result[token.get_serial()] = {"type": token.get_type()}
+    init_result[token.get_serial()].update(token.get_init_detail(params, token_owner))
+    try:
+        response = send_result(True, details=init_result[token.get_serial()])
+        check_verify_enrollment(request, response)
+    except PolicyError as ex:
+        log.warning(f"{ex}")
+
+    return enroll_url

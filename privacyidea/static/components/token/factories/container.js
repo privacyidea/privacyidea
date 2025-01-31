@@ -143,15 +143,6 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
-            updateLastSeen: function (serial) {
-                $http.post(containerUrl + "/" + serial + "/lastseen",
-                    {}, {
-                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).then(function (response) {
-                }, function (error) {
-                    AuthFactory.authError(error.data)
-                });
-            },
             setStates: function (params, callback) {
                 $http.post(containerUrl + "/" + params["container_serial"] + "/states", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
@@ -186,6 +177,71 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     callback(response.data);
                 }, function (error) {
                     AuthFactory.authError(error.data)
+                });
+            },
+            initializeRegistration: function (params, callback) {
+                $http.post(containerUrl + "/register/initialize", params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            terminateRegistration: function (container_serial, callback) {
+                $http.post(containerUrl + "/register/" + container_serial + "/terminate", {}, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            getTemplates: function (params, callback) {
+                $http.get(containerUrl + "/templates", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            createTemplate: function (params, callback) {
+                $http.post(containerUrl + "/" + params.type + "/template/" + params.name, params, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            deleteTemplate: function (template_name, callback) {
+                $http.delete(containerUrl + "/template/" + template_name, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            compareTemplateWithContainers: function (template_name, params, callback) {
+                $http.get(containerUrl + "/template/" + template_name + "/compare", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
+            getTemplateTokenTypes: function (callback) {
+                $http.get(containerUrl + "/template/tokentypes", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
                 });
             }
         }

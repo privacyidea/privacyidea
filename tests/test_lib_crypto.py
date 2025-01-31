@@ -1,11 +1,20 @@
 """
 This test file tests the lib.crypto and lib.security.default
 """
+import base64
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey, Ed448PrivateKey
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.x448 import X448PublicKey, X448PrivateKey
 from mock import call
 import binascii
 
 from privacyidea.config import TestingConfig
-from privacyidea.lib.error import HSMException
+from privacyidea.lib.error import HSMException, ParameterError
 from .base import MyTestCase, OverrideConfigTestCase
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
@@ -15,7 +24,9 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
                                     encrypt, decrypt, Sign, generate_keypair,
-                                    generate_password, pass_hash, verify_pass_hash)
+                                    generate_password, pass_hash, verify_pass_hash, generate_keypair_ecc,
+                                    ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
+                                    ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -278,6 +289,184 @@ class CryptoTestCase(MyTestCase):
         keypub, keypriv = generate_keypair(rsa_keysize=4096)
         self.assertTrue(keypub.startswith("-----BEGIN RSA PUBLIC KEY-----"), keypub)
         self.assertTrue(keypriv.startswith("-----BEGIN RSA PRIVATE KEY-----"), keypriv)
+
+
+class EllipticCurveCryptoTestCase(MyTestCase):
+
+    def test_01_generate_keypair_ecc_success(self):
+        key_pair = generate_keypair_ecc("secp384r1")
+        self.assertTrue(isinstance(key_pair.public_key, ec.EllipticCurvePublicKey))
+        self.assertTrue(isinstance(key_pair.private_key, ec.EllipticCurvePrivateKey))
+
+        key_pair = generate_keypair_ecc("x25519")
+        self.assertTrue(isinstance(key_pair.public_key, X25519PublicKey))
+        self.assertTrue(isinstance(key_pair.private_key, X25519PrivateKey))
+
+        key_pair = generate_keypair_ecc("x448")
+        self.assertTrue(isinstance(key_pair.public_key, X448PublicKey))
+        self.assertTrue(isinstance(key_pair.private_key, X448PrivateKey))
+
+        key_pair = generate_keypair_ecc("ed25519")
+        self.assertTrue(isinstance(key_pair.public_key, Ed25519PublicKey))
+        self.assertTrue(isinstance(key_pair.private_key, Ed25519PrivateKey))
+
+        key_pair = generate_keypair_ecc("ed448")
+        self.assertTrue(isinstance(key_pair.public_key, Ed448PublicKey))
+        self.assertTrue(isinstance(key_pair.private_key, Ed448PrivateKey))
+
+    def test_02_generate_keypair_ecc_fail(self):
+        self.assertRaises(ParameterError, generate_keypair_ecc, "unknown")
+
+    def test_03_convert_ecc_keys_to_str_and_back(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        # ECC to string
+        str_keys = ecc_key_pair_to_b64url_str(ecc_keys.public_key, ecc_keys.private_key)
+        # String to ECC
+        new_ecc_keys = b64url_str_key_pair_to_ecc_obj(str_keys.public_key, str_keys.private_key)
+
+        # Sign with old private key and verify with new public key
+        message = b"Hello World"
+        signature = ecc_keys.private_key.sign(message, ec.ECDSA(hashes.SHA256()))
+        self.assertIsNone(new_ecc_keys.public_key.verify(signature, message, ec.ECDSA(hashes.SHA256())))
+
+        # Sign with new private key, verify with old public key
+        signature = new_ecc_keys.private_key.sign(message, ec.ECDSA(hashes.SHA256()))
+        self.assertIsNone(ecc_keys.public_key.verify(signature, message, ec.ECDSA(hashes.SHA256())))
+
+    def test_04_ecc_key_pair_to_b64url_str_single_key(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        # only public key
+        str_keys = ecc_key_pair_to_b64url_str(public_key=ecc_keys.public_key)
+        self.assertNotEqual("", str_keys.public_key)
+        self.assertEqual("", str_keys.private_key)
+        # only private key
+        str_keys = ecc_key_pair_to_b64url_str(private_key=ecc_keys.private_key)
+        self.assertNotEqual("", str_keys.private_key)
+        self.assertEqual("", str_keys.public_key)
+        # No key
+        str_keys = ecc_key_pair_to_b64url_str()
+        self.assertEqual("", str_keys.public_key)
+        self.assertEqual("", str_keys.private_key)
+
+    def test_05_b64url_str_key_pair_to_ecc_obj(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        str_keys = ecc_key_pair_to_b64url_str(public_key=ecc_keys.public_key, private_key=ecc_keys.private_key)
+
+        # only public key
+        ecc_keys = b64url_str_key_pair_to_ecc_obj(public_key_str=str_keys.public_key)
+        self.assertTrue(isinstance(ecc_keys.public_key, ec.EllipticCurvePublicKey))
+        self.assertIsNone(ecc_keys.private_key)
+        # only private key
+        ecc_keys = b64url_str_key_pair_to_ecc_obj(private_key_str=str_keys.private_key)
+        self.assertTrue(isinstance(ecc_keys.private_key, ec.EllipticCurvePrivateKey))
+        self.assertIsNone(ecc_keys.public_key)
+        # No key
+        ecc_keys = b64url_str_key_pair_to_ecc_obj()
+        self.assertIsNone(ecc_keys.public_key)
+        self.assertIsNone(ecc_keys.private_key)
+
+    def test_06_sign_ecc_sha256(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        message = b"Hello World"
+        hash_algorithm = "SHA256"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+        self.assertIsNotNone(sign_res["signature"])
+        self.assertEqual(hash_algorithm.lower(), sign_res["hash_algorithm"])
+
+    def test_07_sign_ecc_sha512(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        message = b"Hello World"
+        # Correct name
+        hash_algorithm = "SHA512"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+        self.assertIsNotNone(sign_res["signature"])
+        self.assertEqual(hash_algorithm.lower(), sign_res["hash_algorithm"])
+
+        # Name in lower cases
+        hash_algorithm = "sha512"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+        self.assertIsNotNone(sign_res["signature"])
+        self.assertEqual(hash_algorithm.lower(), sign_res["hash_algorithm"])
+
+        # Name capitalized
+        hash_algorithm = "Sha512"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+        self.assertIsNotNone(sign_res["signature"])
+        self.assertEqual(hash_algorithm.lower(), sign_res["hash_algorithm"])
+
+        # Invalid name
+        hash_algorithm = "invalid"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+        self.assertIsNotNone(sign_res["signature"])
+        self.assertEqual("sha256", sign_res["hash_algorithm"])
+
+    def test_08_sign_ecc_message_not_bytes(self):
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        message = "Hello World"
+        sign_res = sign_ecc(message, ecc_keys.private_key, "SHA256")
+        self.assertIsNotNone(sign_res["signature"])
+
+    def test_09_verify_ecc_valid(self):
+        # Sign message
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        message = b"Hello World"
+        hash_algorithm = "SHA256"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+
+        # Verify signature
+        verify_res = verify_ecc(message, sign_res["signature"], ecc_keys.public_key, hash_algorithm)
+        self.assertTrue(verify_res["valid"])
+        self.assertEqual(hash_algorithm, verify_res["hash_algorithm"].upper())
+
+    def test_10_verify_ecc_invalid(self):
+        # Sign message
+        ecc_keys = generate_keypair_ecc("secp384r1")
+        message = b"Hello World"
+        hash_algorithm = "SHA256"
+        sign_res = sign_ecc(message, ecc_keys.private_key, hash_algorithm)
+
+        # Verify signature: Wrong pub_key
+        wrong_keys = generate_keypair_ecc("secp384r1")
+        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+
+        # Verify signature: Wrong message/signature
+        another_message = b'Top Secret!'
+        self.assertRaises(InvalidSignature, verify_ecc, another_message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+
+        # Verify signature: Wrong hash_algorithm
+        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], ecc_keys.public_key, "SHA512")
+
+        # Verify signature: Unknown hash_algorithm (uses per default SHA256)
+        sign_res = sign_ecc(message, ecc_keys.private_key, "SHA512")
+        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], ecc_keys.public_key, "Unknown")
+
+    def test_09_ecdh_encryption_decryption(self):
+        server_keys = generate_keypair_ecc("x25519")
+        client_keys = generate_keypair_ecc("x25519")
+
+        derived_key = ecdh_key_exchange(client_keys.private_key, server_keys.public_key)
+
+        message = b"Hello World"
+        enc_params = encrypt_aes(message, derived_key)
+        decrypted_message = decrypt_aes(enc_params["cipher"], derived_key, enc_params)
+
+        self.assertEqual(message, decrypted_message)
+
+    def test_10_ecdh_encryption_decryption_serialization(self):
+        server_keys = generate_keypair_ecc("x25519")
+        client_keys = generate_keypair_ecc("x25519")
+
+        # serialize pub_key_client RAW
+        pub_key_client_str = base64.urlsafe_b64encode(client_keys.public_key.public_bytes_raw()).decode("utf-8")
+        pub_key_client = X25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(pub_key_client_str))
+
+        derived_key = ecdh_key_exchange(server_keys.private_key, pub_key_client)
+
+        message = b"Hello World"
+        enc_params = encrypt_aes(message, derived_key)
+        decrypted_message = decrypt_aes(enc_params["cipher"], derived_key, enc_params)
+
+        self.assertEqual(message, decrypted_message)
 
 
 class RandomTestCase(MyTestCase):

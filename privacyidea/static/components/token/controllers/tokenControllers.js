@@ -188,11 +188,12 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             type: $scope.default_tokentype,
             hashlib: "sha1",
             'radius.system_settings': true,
-            container_serial: $stateParams.containerSerial,
+            container_serial: null,
         };
         if ($state.includes('token.rollover')) {
             $scope.form.serial = $stateParams.tokenSerial;
             $scope.form.type = $stateParams.tokenType;
+            $scope.form.container_serial = $stateParams.containerSerial;
         }
         $scope.vasco = {
             // Note: A primitive does not work in the ng-model of the checkbox!
@@ -607,10 +608,14 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             })
         };
 
-        $scope.regenerateToken = function () {
+        $scope.regenerateToken = function (serial) {
             const params = $scope.form;
-            params.serial = $scope.enrolledToken.serial;
-            TokenFactory.enroll($scope.newUser, params, $scope.callback);
+            if (serial) {
+                params.serial = serial;
+            } else {
+                params.serial = $scope.enrolledToken.serial;
+            }
+            TokenFactory.enroll(null, params, $scope.callback);
         };
 
         $scope.sendClientPart = function () {

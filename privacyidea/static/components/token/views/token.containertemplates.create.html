@@ -1,0 +1,69 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="form-group">
+    <h3 translate>Create a New Container Template</h3>
+
+    <div class="form-group">
+        <label for="name" translate>Name</label>
+        <input type="text" class="form-control" id="name"
+               placeholder="{{ 'A unique name for this template'|translate }}"
+               required
+               ng-model="selection.templateName"/>
+        <div ng-show="invalidName">
+            <span class="glyphicon glyphicon-exclamation-sign text text-danger"></span>
+            <span class="text text-danger" translate>
+                A template with this name already exists. Please choose a different name.
+            </span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="containertype" translate>Container Type</label>
+        <select class="form-control"
+                id="containertype"
+                ng-model="selection.containerType"
+                ng-options="type as attr.description for (type, attr) in containerTypes">
+        </select>
+    </div>
+    <div class="form-group">
+        <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
+    </div>
+
+    <div class="form-group">
+        <div container-template-details
+             selection="selection"
+             form-init="tokenSettings"
+             allowed-token-types="allowedTokenTypes"
+             function-obj="functionObject"
+             mark-add-remove="false"
+             show-default-selection="true"
+             edit="checkRight('container_template_create')"
+             hide-buttons="hide_buttons"
+        ></div>
+    </div>
+
+    <div class="form-group">
+        <button class="btn btn-capitalize btn-primary"
+                ng-disabled="!selection.templateName || !selection.containerType ||
+                             !checkRight('container_template_create') || invalidName"
+                ng-click="createTemplate()"
+                translate>
+            Create Template
+        </button>
+    </div>
+</div>

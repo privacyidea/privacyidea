@@ -58,7 +58,12 @@
             <td>
                {{ challenge.timestamp }}
             </td>
-            <td><a ui-sref="token.details({tokenSerial:challenge.serial})"
+            <td ng-show="!challenge.data.type || challenge.data.type !== 'container'">
+                <a ui-sref="token.details({tokenSerial:challenge.serial})"
+                   ng-click="$rootScope.returnTo=token.challenges;">
+                {{ challenge.serial }}</a></td>
+            <td ng-show="challenge.data.type === 'container'">
+                <a ui-sref="token.containerdetails({containerSerial:challenge.serial})"
                    ng-click="$rootScope.returnTo=token.challenges;">
                 {{ challenge.serial }}</a></td>
             <td>{{ challenge.transaction_id }}</td>

@@ -99,6 +99,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
@@ -494,10 +495,24 @@ def check():
     # At this point there will be a user, even for FIDO2 credentials
     g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 
-    if "multi_challenge" in details:
-        serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+    # update last authentication for all tokens
+    if 'multi_challenge' in details:
+        serial_list = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+    elif "serial" in details:
+        serial_list = [details.get("serial")]
     else:
-        serials = details.get("serial")
+        serial_list = []
+
+    if success:
+        for serial in serial_list:
+            try:
+                container = find_container_for_token(serial)
+                if container:
+                    container.update_last_authentication()
+            except Exception as e:
+                log.debug(f"Could not find container for token {serial}: {e}")
+
+    serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,

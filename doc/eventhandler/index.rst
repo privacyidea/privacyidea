@@ -414,6 +414,48 @@ The action is only triggered if the container is of the given type.
 
 The action is only triggered if the container has or has not at least one token.
 
+**container_info**
+
+The ``container_info`` condition can compare any arbitrary container info field against a fixed value. You can compare
+strings and integers. Integers are converted automatically. Valid compares are: ::
+
+    myValue == 1000
+    myValue > 1000
+    myValue < 99
+    myInfoField == EnrollmentState
+    myInfoField < ABC
+    myInfoField > abc
+
+"myValue" and "myTokenInfoField" being any possible tokeninfo fields.
+
+**container_realm**
+
+The action is only triggered if the container is in this realm or in no realm at all.
+If multiple realms are selected, the action is triggered if the container is in at least one of the realms.
+The condition is not checked if the container has no realm, hence the action would be triggered.
+
+**container_resolver**
+
+The action is only triggered if the owner of the container is in the given resolver.
+If multiple resolvers are selected, the condition is fulfilled if at least one owner is in one resolver. The condition
+is not checked if the container has no owner, hence the action would be triggered.
+
+**container_last_auth**
+
+The action is only triggered if the last authentication of the container is older than the specified time delta.
+The time value has to be an integer followed by a time unit.
+Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds)
+Only one unit is allowed.
+Examples: ``'8h', '7d', '1y'``
+
+**container_last_sync**
+
+The action is only triggered if the last synchronization of the container is older than the specified time delta.
+The time value has to be an integer followed by a time unit.
+Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds)
+Only one unit is allowed.
+Examples: ``'8h', '7d', '1y'``
+
 
 Managing Events
 ---------------

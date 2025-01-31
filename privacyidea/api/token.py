@@ -334,8 +334,7 @@ def init():
                 # The enrollment will not be blocked if there is problem adding the new token to a container
                 # there will just be a warning in the log
                 try:
-                    logged_in_user_role = g.logged_in_user.get("role")
-                    add_token_to_container(container_serial, token.get_serial(), user, logged_in_user_role)
+                    add_token_to_container(container_serial, token.get_serial())
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
                     g.audit_object.log({"container_serial": container_serial, "container_type": container.type})
@@ -354,7 +353,7 @@ def init():
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
 @admin_required
-@prepolicy(check_token_action, request, action=ACTION.GETCHALLENGES)
+@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
 def get_challenges_api(serial=None):

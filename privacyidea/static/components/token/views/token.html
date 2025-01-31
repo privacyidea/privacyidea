@@ -26,7 +26,8 @@
                         </a>
                     </li>
                     <li ng-class="{active: $state.includes('token.containerlist')
-                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')}">
+                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')
+                        || $state.includes('token.containertemplates')}">
                         <a ui-sref="token.containerlist" ng-click="tokenMenu=false">
                             <span class="glyphicon glyphicon-folder-close"
                                   aria-hidden="true"></span>
@@ -185,6 +186,81 @@
                             <span class="glyphicon glyphicon-plus"></span>
                             <span translate>Create Container</span>
                         </a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="checkRight('container_template_list')"
+                        ng-class="{active: $state.includes('token.containertemplates')}">
+                        <a ui-sref="token.containertemplates.list">
+                            <span class="glyphicon glyphicon-duplicate"></span>
+                            <span translate>Templates</span>
+                        </a>
+                    </li>
+                    <ul ng-show="$state.includes('token.containertemplates')"
+                        class="nav nav-pills nav-stacked pi-submenu nav-capitalize">
+                        <li role="presentation"
+                            ng-show="checkRight('container_template_list')"
+                            ng-class="{active: $state.includes('token.containertemplates.list')}">
+                            <a ui-sref="token.containertemplates.list">
+                                <span class="glyphicon glyphicon-list"></span>
+                                <span translate>List Templates</span>
+                            </a>
+                        </li>
+                        <li role="presentation"
+                            ng-class="{active: $state.includes('token.containertemplates.edit')}"
+                            ng-show="$state.includes('token.containertemplates.edit')"><a>
+                            Template {{ $stateParams.templateName }}</a>
+                        </li>
+                        <li role="presentation"
+                            ng-show="checkRight('container_template_create')"
+                            ng-class="{active: $state.includes('token.containertemplates.create')}">
+                            <a ui-sref="token.containertemplates.create">
+                                <span class="glyphicon glyphicon-plus"></span>
+                                <span translate>Create New Template</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerlist'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#containers' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Containers</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containercreate'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Container</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerdetails'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Details</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#templates' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Templates</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.create'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Template</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.edit'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Template Details</span></a>
                     </li>
                 </ul>
             </div>

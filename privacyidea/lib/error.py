@@ -60,6 +60,10 @@ class ERROR:
     PARAMETER = 905
     RESOLVER = 907
     PARAMETER_USER_MISSING = 9051
+    CONTAINER = 3000
+    CONTAINER_NOT_REGISTERED = 3001
+    CONTAINER_INVALID_CHALLENGE = 3002
+    CONTAINER_ROLLOVER = 3003
 
 
 class privacyIDEAError(Exception):
@@ -191,6 +195,7 @@ class ParameterError(privacyIDEAError):
 
 class DatabaseError(privacyIDEAError):
     """Error in the database layer"""
+
     def __init__(self, description="database error!", eid=ERROR.DATABASE):
         privacyIDEAError.__init__(self, description=description, id=eid)
 
@@ -199,3 +204,23 @@ class ResolverError(privacyIDEAError):
     """Error in user resolver"""
     def __init__(self, description="resolver error!", eid=ERROR.RESOLVER):
         privacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class ContainerError(privacyIDEAError):
+    def __init__(self, description="container error!", eid=ERROR.CONTAINER):
+        privacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class ContainerNotRegistered(ContainerError):
+    def __init__(self, description="container is not registered error!", eid=ERROR.CONTAINER_NOT_REGISTERED):
+        ContainerError.__init__(self, description=description, eid=eid)
+
+
+class ContainerInvalidChallenge(ContainerError):
+    def __init__(self, description="container challenge error!", eid=ERROR.CONTAINER_INVALID_CHALLENGE):
+        ContainerError.__init__(self, description=description, eid=eid)
+
+
+class ContainerRollover(ContainerError):
+    def __init__(self, description="container rollover error", eid=ERROR.CONTAINER_ROLLOVER):
+        ContainerError.__init__(self, description=description, eid=eid)

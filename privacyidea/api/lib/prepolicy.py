@@ -69,6 +69,7 @@ from typing import Union
 
 from OpenSSL import crypto
 from privacyidea.lib import _
+from privacyidea.lib.container import find_container_by_serial
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -85,7 +86,8 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
                                               check_token_action_allowed, check_container_action_allowed,
-                                              UserAttributes)
+                                              UserAttributes,
+                                              get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -1382,6 +1384,84 @@ def check_container_action(request: Request = None, action: str = None):
     return True
 
 
+def check_client_container_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE CONTAINER.
+    This decorator is used for api calls that perform actions on container requested from a client.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True if action is allowed, otherwise raises an Exception
+    """
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    user_attributes = get_container_user_attributes(container_serial)
+
+    # If the container has no owner, check for generic policies only
+    user_attributes.username = user_attributes.username or ""
+    user_attributes.realm = user_attributes.realm or ""
+    user_attributes.resolver = user_attributes.resolver or ""
+
+    # Check action for container
+    match = Match.generic(g,
+                          scope=SCOPE.CONTAINER,
+                          action=action,
+                          user=user_attributes.username,
+                          resolver=user_attributes.resolver,
+                          realm=user_attributes.realm,
+                          additional_realms=user_attributes.additional_realms)
+    action_allowed = match.allowed()
+
+    if not action_allowed:
+        raise PolicyError(f"Container actions are defined, but the action {action} is not allowed!")
+    return True
+
+
+def check_client_container_disabled_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action for the SCOPE CONTAINER.
+    This decorator is used for api calls that perform actions on container requested from a client.
+    It verifies policies that explicitly disable an action.
+
+    Example for the action 'disable_client_container_unregister':
+    If a policy contains this action, the client is not allowed to unregister the container. This function searches for
+    these policies and raises a PolicyError. If no policy is found defining this action, the client is allowed to
+    unregister containers and hence this function returns True meaning the client is allowed to unregister the
+    container.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: Raises an Exception if the action is enabled, True otherwise
+    """
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    user_attributes = get_container_user_attributes(container_serial)
+
+    # If the container has no owner, check for generic policies only
+    user_attributes.username = user_attributes.username or ""
+    user_attributes.realm = user_attributes.realm or ""
+    user_attributes.resolver = user_attributes.resolver or ""
+
+    # Check action for container
+    match = Match.generic(g,
+                          scope=SCOPE.CONTAINER,
+                          action=action,
+                          user=user_attributes.username,
+                          resolver=user_attributes.resolver,
+                          realm=user_attributes.realm,
+                          additional_realms=user_attributes.additional_realms,
+                          active=True)
+    # Check if the action is explicitly disabled
+    policies_at_all = match.policies(write_to_audit_log=True)
+
+    action_allowed = len(policies_at_all) == 0
+
+    if not action_allowed:
+        # A policy with the passed action is defined, hence it is explicitly disabled
+        raise PolicyError(f"The action is not allowed! Policy {action} is set.")
+    return True
+
+
 def check_user_params(request=None, action=None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
@@ -1396,7 +1476,11 @@ def check_user_params(request=None, action=None):
     params = request.all_data
     user_object = request.User
     resolver = user_object.resolver if user_object else None
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    if "logged_in_user" in g:
+        (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    else:
+        role, adminuser, adminrealm = None, None, None
+        username, realm = "", ""
 
     param_user = params.get("user")
     param_realm = params.get("realm")
@@ -1428,6 +1512,23 @@ def check_user_params(request=None, action=None):
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
+
+
+def check_container_register_rollover(request=None, action=None):
+    """
+    Checks if the user is allowed to register or rollover the container.
+    Checks for the container_rollover action if the parameter 'rollover' is set in the request to True. Checks for the
+    container_register action otherwise.
+
+    :param request: The request object
+    :return: True if the action is allowed, otherwise raises an Exception
+    """
+    params = request.all_data
+    container_rollover = getParam(params, "rollover", optional)
+    if container_rollover:
+        return check_container_action(request, ACTION.CONTAINER_ROLLOVER)
+    else:
+        return check_container_action(request, ACTION.CONTAINER_REGISTER)
 
 
 def check_token_upload(request=None, action=None):
@@ -2360,8 +2461,8 @@ def require_description(request=None, action=None):
         tok = None
         serial = getParam(params, "serial")
         if serial:
-            tok = get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True) or \
-                  get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
+            tok = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
+                   or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
@@ -2387,3 +2488,116 @@ def jwt_validity(request, action):
             log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
     request.all_data[ACTION.JWTVALIDITY] = validity_time
     return True
+
+
+def container_registration_config(request, action=None):
+    """
+    This decorator gets the configuration for the container registration from the policies.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True on success, otherwise raises a PolicyError
+    """
+    user = request.User
+    if not user:
+        user = None
+
+    # Get server url the client can contact
+    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
+                                           user_object=user).action_values(unique=True))
+    if len(server_url_config) == 0:
+        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+    request.all_data["server_url"] = server_url_config[0]
+
+    # Get validity time for the registration
+    registration_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
+                                                 action=ACTION.CONTAINER_REGISTRATION_TTL,
+                                                 user_object=user).action_values(unique=True))
+    if len(registration_ttl_config) > 0:
+        request.all_data["registration_ttl"] = int(registration_ttl_config[0])
+        if request.all_data["registration_ttl"] <= 0:
+            # default 10 min
+            request.all_data["registration_ttl"] = 10
+    else:
+        request.all_data["registration_ttl"] = 10
+
+    # Get validity time for further challenges
+    challenge_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
+                                              action=ACTION.CONTAINER_CHALLENGE_TTL,
+                                              user_object=user).action_values(unique=True))
+    if len(challenge_ttl_config) > 0:
+        request.all_data["challenge_ttl"] = int(challenge_ttl_config[0])
+        if request.all_data["challenge_ttl"] <= 0:
+            # default 2 min
+            request.all_data["challenge_ttl"] = 2
+    else:
+        request.all_data["challenge_ttl"] = 2
+
+    # Get ssl verify
+    ssl_verify_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,
+                                           user_object=user).action_values(unique=True))
+    if len(ssl_verify_config) > 0:
+        request.all_data["ssl_verify"] = ssl_verify_config[0]
+        if request.all_data["ssl_verify"] not in ["True", "False"]:
+            log.debug(
+                f"Invalid value for {ACTION.CONTAINER_SSL_VERIFY}: {request.all_data['ssl_verify']}. Using 'True'.")
+            request.all_data["ssl_verify"] = 'True'
+    else:
+        request.all_data["ssl_verify"] = 'True'
+
+    return True
+
+
+def smartphone_config(request, action=None):
+    """
+    This decorator gets the smartphone specific configurations from the policies.
+    It is only applied for containers of type smartphone. For all other types or if the type could not be determined,
+    the configuration is not fetched.
+    Raises a PolicyError if conflicting policies exist.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True on success, False if the container is not a smartphone
+    """
+    # Get container type
+    params = request.all_data
+    container_serial = params.get("container_serial")
+    try:
+        container_type = find_container_by_serial(container_serial).type
+    except Exception:
+        container_type = None
+        log.info(f"Container type could not be determined. Ignoring smartphone configurations.")
+
+    is_smartphone = False
+    # Get configuration for smartphones
+    if container_type and container_type == "smartphone":
+        is_smartphone = True
+        user_attributes = get_container_user_attributes(container_serial)
+
+        # If the container has no owner, check for generic policies only
+        user_attributes.username = user_attributes.username or ""
+        user_attributes.realm = user_attributes.realm or ""
+        user_attributes.resolver = user_attributes.resolver or ""
+
+        policies = {}
+        actions = [ACTION.CONTAINER_CLIENT_ROLLOVER,
+                   ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                   ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                   ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER]
+
+        for action in actions:
+            # Check if action is allowed for the client
+            action_policies = Match.generic(g,
+                                            scope=SCOPE.CONTAINER,
+                                            action=action,
+                                            user=user_attributes.username,
+                                            realm=user_attributes.realm,
+                                            resolver=user_attributes.resolver,
+                                            additional_realms=user_attributes.additional_realms).policies()
+            if len(action_policies) > 0:
+                policies[action] = action_policies[0]['action'][action]
+            else:
+                policies[action] = False
+
+        request.all_data["client_policies"] = policies
+    return is_smartphone

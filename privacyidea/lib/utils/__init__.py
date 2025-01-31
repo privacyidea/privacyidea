@@ -33,7 +33,7 @@ import re
 import string
 import threading
 import traceback
-from datetime import time as dt_time
+from datetime import time as dt_time, timezone
 from datetime import timedelta, datetime
 from importlib import import_module
 from typing import Union
@@ -888,12 +888,12 @@ def compare_generic_condition(cond, key_method, warning):
     Compares a condition like "tokeninfoattribute == value".
     It uses the "key_method" to determine the value of "tokeninfoattribute".
 
-    If the value does not match, it returns False.
+    If the value does not match or the key does not exist, it returns False.
 
     :param cond: A condition containing a comparator like "==", ">", "<"
     :param key_method: A function call, that get the value from the key
-    :param warning: A warning message to be written to the log file.
-    :return: True of False
+    :param warning: A warning message to be written to the log file in case the condition is not parsable.
+    :return: True or False
     """
     key = value = None
     for comparator in ["==", ">", "<"]:
@@ -901,13 +901,39 @@ def compare_generic_condition(cond, key_method, warning):
             key, value = [x.strip() for x in cond.split(comparator)]
             break
     if value:
-        res = compare_value_value(key_method(key), comparator, value)
-        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
-        return res
+        if key_method(key) is not None:
+            res = compare_value_value(key_method(key), comparator, value)
+            log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+            return res
+        else:
+            log.debug(f"Key {key} not found.")
+            return False
     else:
         # There is a condition, but we do not know it!
         log.warning(warning.format(cond))
         raise Exception("Condition not parsable.")
+
+
+def compare_time(cond: str, time_value: datetime) -> bool:
+    """
+    Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
+
+    :param cond: The maximum time difference the time value may have to now, e.g. "5d", "2h", "30m"
+                 The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param time_value: The timestamp to be compared to now
+    :return: True if the time difference between the time stamp and now is less than the condition value,
+             False otherwise
+    """
+    # parse condition value to timedelta format
+    cond_time_delta = parse_timedelta(cond)
+
+    # calculate the true time difference between the time stamp and now
+    now = datetime.now(timezone.utc)
+    true_time_delta = now - time_value
+
+    # compare the true time value with the condition time value
+    res = compare_value_value(true_time_delta, "<", cond_time_delta)
+    return res
 
 
 def int_to_hex(serial):
@@ -1357,7 +1383,10 @@ def create_tag_dict(logged_in_user=None,
                     client_ip=None,
                     pin=None,
                     challenge=None,
-                    escape_html=False):
+                    escape_html=False,
+                    container_serial=None,
+                    container_url_value=None,
+                    container_url_img=None):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1380,6 +1409,9 @@ def create_tag_dict(logged_in_user=None,
     :param pin: The PIN of a token
     :param challenge: The challenge data
     :param escape_html: Whether the values for the tags should be html escaped
+    :param container_serial: The serial number of the container
+    :param container_url_value: The URL for the container registration
+    :param container_url_img: The URL as QR code for the container registration
     :return: The tag dictionary
     """
     time = datetime.now().strftime("%H:%M:%S")
@@ -1410,7 +1442,10 @@ def create_tag_dict(logged_in_user=None,
                 pin=pin,
                 ua_browser=request.user_agent.browser if request else "",
                 ua_string=request.user_agent.string if request else "",
-                challenge=challenge if challenge else "")
+                challenge=challenge if challenge else "",
+                container_serial=container_serial,
+                container_url_value=container_url_value,
+                container_url_img=container_url_img)
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():

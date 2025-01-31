@@ -1,5 +1,13 @@
 # Update Notes
 
+## Update to 3.11
+To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be 
+listed for users with access restricted to a realm (i.e. helpdesk admins). The user with access restricted to a realm
+will now only be able to see the token that are in that realm. Users whose access is not restricted to any realm, will
+still see all tokens. This restriction is currently for all token and container operations except for the user 
+assignment. So for example a helpdesk admin of realm A can still assign a token without a realm to a user in realm A, 
+but the serial of the token is required.
+
 ## Update from 3.9 to 3.10
 
 * Due to stability and performance reasons, unanswered challenges will remain in the database table

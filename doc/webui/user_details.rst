@@ -1,4 +1,3 @@
-
 .. _user_details:
 
 User Details
