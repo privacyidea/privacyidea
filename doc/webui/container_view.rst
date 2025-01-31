@@ -54,7 +54,7 @@ User
 ....
 
 To assign a user, select a realm and start typing the users name. Select one of the suggested users and assign it to the
-container by clicking on the 'Assign User' button. Clicking on the assigned users name, redirects to the
+container by clicking on the `Assign User` button. Clicking on the assigned users name, redirects to the
 :ref:`user_details` page.
 
 Template
@@ -119,7 +119,7 @@ If another user's token is in the container, the user will only see the serial a
 
 There are two ways to add tokens to the container. Firstly, a new token can be enrolled. The user will be redirected to
 the enrollment page where the user of the container and the container are pre-selected. The second option is to add an
-existing token. Clicking on the 'Add Tokens to Container' button will open a token table with all the tokens that the
+existing token. Clicking on the `Add Tokens to Container` button will open a token table with all the tokens that the
 administrator or user is allowed to see. By default, only tokens that are not yet in a container are displayed.
 Deselecting this option displays all tokens. Adding a token that is already in a container to another container removes
 it from the previous container. The token list can be filtered and sorted by various token attributes.
@@ -204,10 +204,11 @@ from the previous default template.
 
 **Tokens**
 
-In this section, a table shows all tokens of the template. Clicking on the 'Edit' button opens a section to change the
+In this section, a table shows all tokens of the template. Clicking on the `Edit` button opens a section to change the
 token type specific enroll options. At the bottom is a checkbox to assign the token to the user of the container.
-This option is checked by default. Removing a token from the template will first highlight the token in red and finally
-remove if after saving the template.
+This option is checked by default. It is only relevant for admins. Users are always assigned to the tokens they
+enroll. Removing a token from the template will first highlight the token in red and finally remove if after saving
+the template.
 
 .. figure:: images/container_template_details_tokens.png
    :width: 500
@@ -221,9 +222,9 @@ tokens are removed immediately from the table without highlighting them in red b
 **Containers Created With This Template**
 
 Optionally, a table of all containers created from the template can be displayed. Additionally, clicking the
-button 'Compare' adds a new column to the table showing the differences for the token types between the containers
-and the template. The row 'missing' lists the token types included in the template but not in the container.
-The row 'additional' lists the token types included in the container but not in the template.
+button `Compare` adds a new column to the table showing the differences for the token types between the containers
+and the template. The row `missing` lists the token types included in the template but not in the container.
+The row `additional` lists the token types included in the container but not in the template.
 
 .. figure:: images/container_template_details_containers.png
    :width: 500
@@ -241,7 +242,7 @@ types supported for templates of the container type are displayed.
 The template can be selected as the default for this container type. For each container type, one template can be the
 default. Setting the template as default removes the default setting of the previous default template.
 
-Finally, the tokens have to be added to the template. Clicking on the 'Edit' button behind the token opens a section
+Finally, the tokens have to be added to the template. Clicking on the `Edit` button behind the token opens a section
 where you can change the enroll options for the token. By default, the token will be assigned to the user of the
 container. This can be disabled at the bottom of the section.
 

@@ -230,11 +230,16 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!------------ Container Synchronization ------------>
 <div class="form-group"
-     ng-hide="container.type !== 'smartphone' || (!checkRight('container_register') && !checkRight('container_rollover'))">
+     ng-hide="container.type !== 'smartphone' || (hide_buttons &&
+              ((!container.info['registration_state'] && !anyRegistrationRights['none'])
+              || container.info['registration_state'] && !anyRegistrationRights[container.info['registration_state']]))">
     <hr class="horizontal-line-invisible">
     <h4 translate>Synchronization</h4>
 
-    <uib-accordion>
+    <uib-accordion ng-hide="hide_buttons &&
+                            ((!container.info['registration_state'] && !registrationOrRolloverRights['none']) ||
+                            (container.info['registration_state'] &&
+                            !registrationOrRolloverRights[container.info['registration_state']]))">
         <div uib-accordion-group
              class="panel-default"
              is-open="registrationOptions.open">
@@ -251,13 +256,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </div>
             <div class="text-center">
                 <button class="btn btn-primary"
-                        ng-show="!container.info['registration_state']"
+                        ng-show="!container.info['registration_state']
+                                 && (checkRight('container_register') || !hide_buttons)"
                         ng-disabled="!checkRight('container_register')"
                         ng-click="registerContainer(false)">
                     <span translate>Register Container on Device</span>
                 </button>
                 <button class="btn btn-primary"
-                        ng-show="container.info['registration_state'] === 'client_wait'"
+                        ng-show="container.info['registration_state'] === 'client_wait'
+                                 && (checkRight('container_register') || !hide_buttons)"
                         ng-disabled="!checkRight('container_register')"
                         ng-click="registerContainer(false)">
                     <span translate>Regenerate QR Code</span>
@@ -265,7 +272,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <button class="btn btn-primary"
                         ng-show="(container.info['registration_state'] === 'registered'
                                  || container.info['registration_state'] === 'rollover')
-                                 && (checkRight('container_rollover') || !hideButtons)"
+                                 && (checkRight('container_rollover') || !hide_buttons)"
                         ng-disabled="!checkRight('container_rollover')"
                         ng-click="registerContainer(true)">
                     <span translate>Rollover</span>
@@ -274,8 +281,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </uib-accordion>
 
-    <div ng-show="(container.info['registration_state'] === 'client_wait' || container.info['registration_state'] === 'rollover')
-                    && container.type === 'smartphone'">
+    <div ng-show="(container.info['registration_state'] === 'client_wait' ||
+                  container.info['registration_state'] === 'rollover') &&
+                  container.type === 'smartphone'">
         <div class="row" ng-show="showQR">
             <div class="col-sm-4">
                 <img width="250" ng-src="{{ containerRegistrationQR }}"/>
@@ -309,7 +317,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </div>
     </div>
     <!--- Unregister --->
-    <div ng-show="container.info['registration_state']">
+    <div ng-show="container.info['registration_state'] && (!hide_buttons || checkRight('container_unregister'))">
         <div class="text-center">
             <button class="btn btn-warning"
                     ng-click="unregisterContainer()"

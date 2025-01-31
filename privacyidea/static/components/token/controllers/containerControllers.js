@@ -182,8 +182,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     // if there is a default realm, preset the default realm
                     if (realm.default && !$stateParams.realmname) {
                         $scope.newUser = {user: "", realm: realmname, realmOnly: false};
-                        //debug: console.log("tokenEnrollController");
-                        //debug: console.log($scope.newUser);
                     }
                 });
                 // init the user, if token.containercreate was called from the user.details
@@ -415,7 +413,6 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
         // Change the pagination
         $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.get();
         };
 
@@ -786,6 +783,24 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     $scope.showDiff = true;
                 }
             );
+        };
+
+        // Check if the user has any registration rights relevant for each state
+        const register_allowed = $scope.checkRight('container_register');
+        const unregister_allowed = $scope.checkRight('container_unregister');
+        const rollover_allowed = $scope.checkRight('container_rollover');
+        $scope.anyRegistrationRights = {
+            "none": register_allowed,
+            "client_wait": register_allowed || unregister_allowed,
+            "registered": unregister_allowed || rollover_allowed,
+            "rollover": unregister_allowed || rollover_allowed
+        };
+        // Check if the user has either registration or rollover rights depending on the state
+        $scope.registrationOrRolloverRights = {
+            "none": register_allowed,
+            "client_wait": register_allowed,
+            "registered": rollover_allowed,
+            "rollover": rollover_allowed
         };
 
         if ($scope.loggedInUser.isAdmin) {

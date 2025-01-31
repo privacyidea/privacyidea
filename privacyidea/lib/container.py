@@ -449,12 +449,12 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         container_owner = users[0]
     else:
         container_owner = User()
+    realms = get_container_realms(container_serial)
 
     init_result = {}
 
     # Get policies for the token
     from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
-                                               webauthntoken_enroll, webauthntoken_request, webauthntoken_allowed,
                                                indexedsecret_force_attribute, pushtoken_add_config,
                                                tantoken_count, papertoken_count, init_token_length_contents,
                                                init_token_defaults, check_external, check_otp_pin, encrypt_pin,
@@ -471,10 +471,19 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         # If the user flag is set, the token is assigned to the container owner: set the full user information in the
         # enroll information
         if token_info.get("user"):
-            token_info["user"] = container_owner.login
-            token_info["realm"] = container_owner.realm
-            token_info["resolver"] = container_owner.resolver
+            if container_owner:
+                token_info["user"] = container_owner.login
+                token_info["realm"] = container_owner.realm
+                token_info["resolver"] = container_owner.resolver
+            elif realms:
+                token_info["realm"] = realms[0]
+                del token_info["user"]
             user = container_owner
+        elif request.User:
+            user = request.User
+            token_info["user"] = user.login
+            token_info["realm"] = user.realm
+            token_info["resolver"] = user.resolver
 
         # The pre-policy decorator functions require a request object containing the enroll information.
         # Hence, we need to clear the data in the request object from the previous token and set the new enroll
@@ -504,9 +513,6 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             tantoken_count(request, None)
             pushtoken_add_config(request, None)
             indexedsecret_force_attribute(request, None)
-            webauthntoken_allowed(request, None)
-            webauthntoken_request(request, None)
-            webauthntoken_enroll(request, None)
         except Exception as ex:
             log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
             continue

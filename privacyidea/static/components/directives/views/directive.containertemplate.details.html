@@ -65,9 +65,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <ng-include src="instanceUrl + '/static/components/token/views/token.enroll.'
                                          + token.type + '.html' + fileVersionSuffix">
                 </ng-include>
-                <input type="checkbox" ng-model="token.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
+                <input type="checkbox" ng-model="form.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
                 <label for="checkboxAssignUserFromContainer" translate>
-                    Assign the token to the container owner.</label>
+                    Assign the token to the container owner and/or realm.</label>
+            </div>
+        </td>
+        <td>
+            <div class="alert alert-warning" role="alert" ng-show="!allowedTokenTypes.displaySelection[token.type]"
+                 translate>
+                You are not allowed to enroll this token type! It will be skipped!
             </div>
         </td>
     </tr>

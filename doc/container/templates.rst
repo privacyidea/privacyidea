@@ -18,7 +18,8 @@ information during the rollout, e.g. the Questionnaire token.
 Additionally, one can set a default template for each container type. This template is preselected when creating a new
 container of this type.
 
-By default, the tokens are assigned to the container owner. This can be deselected for each token in the template.
+By default, the tokens are assigned to the container owner. This can be deselected for each token in the template, but
+is only applied to admin users. Normal users will always be assigned to all tokens of the template.
 
 During the creation of a container, the user can edit the template in place. However, these changes are only applied to
 the container and do not change the template itself. If the template is not changed, the container will be

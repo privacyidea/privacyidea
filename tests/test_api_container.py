@@ -681,27 +681,33 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         template.delete()
 
     def test_34_create_container_with_template(self):
-        # user is allowed to create container and enroll HOTP tokens, but not TOTP tokens
-        set_policy("policy", scope=SCOPE.USER, action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
+        # user is allowed to create container and enroll HOTP and TOTP tokens, but not spass tokens
+        set_policy("policy", scope=SCOPE.USER, action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True,
+                                                       "enrollTOTP": True})
 
         template_params = {"name": "test",
-                           "container_type": "smartphone",
+                           "container_type": "generic",
                            "template_options": {
                                "tokens": [{"type": "totp", "genkey": True, "user": True},
-                                          {"type": "hotp", "genkey": True, "user": True}]}}
+                                          {"type": "hotp", "genkey": True, "user": False},
+                                          {"type": "spass"}]}}
         create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        request_params = json.dumps({"type": "generic", "template": template_params})
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at_user, 'POST')
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
-        self.assertEqual("hotp", tokens[0].get_type())
+        self.assertSetEqual({"hotp", "totp"}, {token.get_tokentype() for token in tokens})
+        # The user is assigned to both tokens because users are always assigned to tokens during enrollment
+        for token in tokens:
+            self.assertEqual("selfservice", token.user.login)
+            self.assertEqual(self.realm1, token.user.realm)
+
         container_template = container.template
         self.assertEqual(template_params["name"], container_template.name)
 
@@ -1778,14 +1784,55 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         get_template_obj("test").delete()
 
-    def test_28_helpdesk_create_container_with_template(self):
+    def test_28_helpdesk_create_container_with_template_with_user(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
                    realm=self.realm1)
 
         template_params = {"name": "test",
-                           "container_type": "smartphone",
+                           "container_type": "generic",
+                           "template_options": {
+                               "tokens": [{"type": "totp", "genkey": True, "user": True},
+                                          {"type": "hotp", "genkey": True},
+                                          {"type": "spass"}]}}
+        create_container_template(container_type=template_params["container_type"],
+                                  template_name=template_params["name"],
+                                  options=template_params["template_options"])
+
+        request_params = json.dumps(
+            {"type": "generic", "template": template_params, "user": "hans", "realm": self.realm1})
+        result = self.request_assert_success('/container/init',
+                                             request_params,
+                                             self.at, 'POST')
+        container_serial = result["result"]["value"]["container_serial"]
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertSetEqual({"totp", "hotp"}, {token.get_type() for token in tokens})
+        self.assertEqual(2, len(tokens))
+        # check user of tokens
+        for token in tokens:
+            if token.get_tokentype() == "totp":
+                self.assertEqual("hans", token.user.login)
+                self.assertEqual(self.realm1, token.user.realm)
+            elif token.get_tokentype() == "hotp":
+                self.assertIsNone(token.user)
+        container_template = container.template
+        self.assertEqual(template_params["name"], container_template.name)
+
+        template = get_template_obj(template_params["name"])
+        template.delete()
+
+        delete_policy("policy")
+
+    def test_29_helpdesk_create_container_with_template_with_realm(self):
+        # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
+        set_policy("policy", scope=SCOPE.ADMIN,
+                   action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
+                   realm=self.realm1)
+
+        template_params = {"name": "test",
+                           "container_type": "generic",
                            "template_options": {
                                "tokens": [{"type": "totp", "genkey": True, "user": True},
                                           {"type": "hotp", "genkey": True}]}}
@@ -1794,14 +1841,25 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                   options=template_params["template_options"])
 
         request_params = json.dumps(
-            {"type": "smartphone", "template": template_params, "user": "hans", "realm": self.realm1})
+            {"type": "generic", "template": template_params, "realm": self.realm1})
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
+        self.assertSetEqual({"totp", "hotp"}, {token.get_type() for token in tokens})
         self.assertEqual(2, len(tokens))
+        # check realm of tokens
+        for token in tokens:
+            self.assertIsNone(token.user)
+            realms = token.get_realms()
+            if token.get_tokentype() == "totp":
+                self.assertEqual(1, len(realms))
+                self.assertEqual(self.realm1, realms[0])
+            elif token.get_tokentype() == "hotp":
+                self.assertEqual(0, len(realms))
+
         container_template = container.template
         self.assertEqual(template_params["name"], container_template.name)
 
