@@ -27,7 +27,6 @@ from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.tokens.webauthntoken import WEBAUTHNACTION
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase

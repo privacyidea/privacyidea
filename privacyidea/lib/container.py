@@ -421,7 +421,8 @@ def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request) -> dict[str, dict]:
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
+                                          user_role: str) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
@@ -432,6 +433,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
         contains the details for a token to be enrolled
     :param request: The request object
+    :param user_role: The role of the user ('admin' or 'user')
     :return: A dictionary containing the enroll details for each created token in the format:
 
     ::
@@ -478,12 +480,17 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             elif realms:
                 token_info["realm"] = realms[0]
                 del token_info["user"]
+            else:
+                del token_info["user"]
             user = container_owner
-        elif request.User:
+        elif user_role == "user" and request.User:
+            # Users are always assigned to the tokens, only admins can create tokens without a user
             user = request.User
             token_info["user"] = user.login
             token_info["realm"] = user.realm
             token_info["resolver"] = user.resolver
+        elif token_info.get("user") is not None:
+            del token_info["user"]
 
         # The pre-policy decorator functions require a request object containing the enroll information.
         # Hence, we need to clear the data in the request object from the previous token and set the new enroll

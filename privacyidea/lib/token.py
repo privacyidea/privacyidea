@@ -68,11 +68,13 @@ from collections import defaultdict
 from typing import Union
 
 from dateutil.tz import tzlocal
+from flask import Request
 from sqlalchemy import (and_, func)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
 
+from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
@@ -84,7 +86,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -451,11 +453,11 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
             token_dict["username"] = ""
             token_dict["user_realm"] = ""
             try:
-                user = token.user
-                if user:
-                    token_dict["username"] = user.login
-                    token_dict["user_realm"] = user.realm
-                    token_dict["user_editable"] = get_resolver_object(user.resolver).editable
+                token_owner = token.user
+                if token_owner:
+                    token_dict["username"] = token_owner.login
+                    token_dict["user_realm"] = token_owner.realm
+                    token_dict["user_editable"] = get_resolver_object(token_owner.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())

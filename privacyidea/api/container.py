@@ -194,7 +194,7 @@ def init():
     # Template handling
     template_tokens = init_res["template_tokens"]
     if template_tokens:
-        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request)
+        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role)
 
     # Audit log
     owners = container.get_users()

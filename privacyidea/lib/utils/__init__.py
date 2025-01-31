@@ -33,7 +33,7 @@ import re
 import string
 import threading
 import traceback
-from datetime import time as dt_time
+from datetime import time as dt_time, timezone
 from datetime import timedelta, datetime
 from importlib import import_module
 from typing import Union
