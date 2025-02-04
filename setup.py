@@ -60,7 +60,8 @@ install_requires = [
     "requests",
     "segno",
     "smpplib",
-    "SQLAlchemy<2.0"
+    "SQLAlchemy<2.0",
+    "webauthn"
 ]
 
 
