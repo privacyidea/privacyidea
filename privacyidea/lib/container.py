@@ -1011,6 +1011,7 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
                 container.delete_container_info(key)
 
         finalize_container_rollover(container)
+        container.add_container_info("registration_state", "rollover_completed")
 
     return res
 

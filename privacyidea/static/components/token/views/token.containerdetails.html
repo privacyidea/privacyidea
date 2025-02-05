@@ -162,7 +162,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <td>
                 <button class="btn btn-primary"
                         ng-disabled="!checkRight('container_template_list') || !container.template"
-                        ng-hide="showDiff || (!checkRight('container_template_list') && hide_buttons)"
+                        ng-hide="showDiff || ((!checkRight('container_template_list') || !container.template) &&
+                                 hide_buttons)"
                         ng-click="compareWithTemplate() "
                         translate>
                     Compare
@@ -270,8 +271,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <span translate>Regenerate QR Code</span>
                 </button>
                 <button class="btn btn-primary"
-                        ng-show="(container.info['registration_state'] === 'registered'
-                                 || container.info['registration_state'] === 'rollover')
+                        ng-show="['registered', 'rollover', 'rollover_completed'].indexOf(container.info['registration_state']) >= 0
                                  && (checkRight('container_rollover') || !hide_buttons)"
                         ng-disabled="!checkRight('container_rollover')"
                         ng-click="registerContainer(true)">
@@ -329,14 +329,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
     <div class="well" ng-show="showDisableAllTokens >= -0.25 && checkRight('disable') && !allTokensDisabled()">
         <div class="form-group">
-            <div translate>Do you want to disable all tokens in this container?</div>
             <button class="btn btn-danger"
                     ng-click="disableAllTokens()"
                     translate>
                 Disable All Tokens
             </button>
         </div>
-        <div class="form-group progress">
+        <div class="progress">
             <div class="progress-bar progress-bar-info" role="progressbar"
                  aria-valuenow="{{ showDisableAllTokens }}"
                  aria-valuemin="0" aria-valuemax="{{ startCountdown }}"

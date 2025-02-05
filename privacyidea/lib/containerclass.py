@@ -860,7 +860,7 @@ class TokenContainerClass:
 
         container_info = self.get_container_info_dict()
         registration_state = container_info.get("registration_state", "")
-        if registration_state == "rollover":
+        if registration_state == "rollover_completed":
             # rollover all tokens: generate new enroll info for all tokens
             missing_serials = server_token_serials
             same_serials = []
@@ -872,7 +872,7 @@ class TokenContainerClass:
         # counter is not known by the server
         offline_serials = [serial for serial in missing_serials if is_offline_token(serial)]
         missing_serials = list(set(missing_serials).difference(set(offline_serials)))
-        if registration_state == "rollover":
+        if registration_state == "rollover_completed":
             # offline tokens known by the client can be added to the update list
             # (indicating the tokens are still in the container)
             same_serials = list(set(client_serials).intersection(set(offline_serials)))
@@ -924,7 +924,7 @@ class TokenContainerClass:
 
         container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
 
-        if registration_state == "rollover":
+        if registration_state == "rollover_completed":
             container_dict["tokens"]["offline"] = offline_serials
 
         return container_dict

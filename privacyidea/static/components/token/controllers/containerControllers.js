@@ -793,14 +793,16 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             "none": register_allowed,
             "client_wait": register_allowed || unregister_allowed,
             "registered": unregister_allowed || rollover_allowed,
-            "rollover": unregister_allowed || rollover_allowed
+            "rollover": unregister_allowed || rollover_allowed,
+            "rollover_completed": unregister_allowed || rollover_allowed
         };
         // Check if the user has either registration or rollover rights depending on the state
         $scope.registrationOrRolloverRights = {
             "none": register_allowed,
             "client_wait": register_allowed,
             "registered": rollover_allowed,
-            "rollover": rollover_allowed
+            "rollover": rollover_allowed,
+            "rollover_completed": rollover_allowed
         };
 
         if ($scope.loggedInUser.isAdmin) {

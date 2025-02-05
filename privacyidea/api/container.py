@@ -45,7 +45,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_container_realms,
                                        add_not_authorized_tokens_result, get_offline_token_serials)
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -585,14 +585,14 @@ def registration_init():
                         "action_detail": f"rollover={container_rollover}",
                         "info": info_str})
 
-    # Check registration state: registration init is only allowed for None and "client_wait"
+    # Check registration state: registration init is only allowed for None (not yet registered) and "client_wait"
+    # otherwise do a rollover
     registration_state = container.get_container_info_dict().get("registration_state")
     if container_rollover:
-        if registration_state != "registered" and registration_state != "rollover":
-            raise ContainerNotRegistered(f"Container is not registered.")
-    else:
-        if registration_state and registration_state != "client_wait":
-            raise ContainerNotRegistered(f"Container is already registered.")
+        if registration_state not in ["registered", "rollover", "rollover_completed"]:
+            raise ContainerNotRegistered("Container is not registered.")
+    elif registration_state and registration_state != "client_wait":
+        raise ContainerError("Container is already registered.")
 
     # Reset last synchronization and authentication time stamps from possible previous registration
     container.reset_last_synchronization()
@@ -748,7 +748,7 @@ def create_challenge():
 
     container_info = container.get_container_info_dict()
     registration_state = container_info.get("registration_state")
-    if registration_state != "registered" and registration_state != "rollover":
+    if registration_state not in ["registered", "rollover", "rollover_completed"]:
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # validity time for the challenge in minutes
@@ -875,7 +875,7 @@ def synchronize():
 
     # Rollover completed: Change registration state to registered
     registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state == "rollover":
+    if registration_state == "rollover_completed":
         container.add_container_info("registration_state", "registered")
     audit_info += f", rollover: {registration_state == 'rollover'}"
 

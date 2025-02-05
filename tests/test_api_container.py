@@ -2666,7 +2666,7 @@ class APIContainerSynchronization(APIContainerTest):
         # try to reinit registration
         result = self.request_assert_error(400, 'container/register/initialize',
                                            data, self.at, 'POST')
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.assertEqual(3000, result["result"]["error"]["code"])
 
         delete_policy("policy")
 
@@ -3872,7 +3872,6 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
-        challenge_data = result["result"]["value"]
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
@@ -3909,8 +3908,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        # Check if the response contains the expected values
-        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
 
         # Challenge for Sync
         scope = "https://new-pi.net/container/synchronize"
@@ -4045,8 +4043,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        # Check if the response contains the expected values
-        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
 
         # Try to sync with old smartphone
         scope = "https://pi.net/container/synchronize"
@@ -4054,12 +4051,10 @@ class APIContainerSynchronization(APIContainerTest):
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
         params = mock_smph.synchronize(result["result"]["value"], scope)
-
-        # Sync
         result = self.request_assert_error(400, "container/synchronize",
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
-        self.assertEqual("rollover", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
 
         # Sync with new smartphone
         scope = "https://new-pi.net/container/synchronize"
@@ -4071,8 +4066,6 @@ class APIContainerSynchronization(APIContainerTest):
                                    "tokens": [{"serial": hotp.get_serial(), "type": "HOTP", "label": hotp.get_serial(),
                                                "issuer": "privacIDEA", "pin": False, "algorithm": "SHA1", "digits": 6}]}
         params = new_mock_smph.synchronize(result["result"]["value"], scope)
-
-        # Sync
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
         container_dict_server_enc = result["result"]["value"]["container_dict_server"]
@@ -4102,6 +4095,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         # token
         hotp = init_token({"genkey": "1", "type": "hotp"})
+        hotp_secret = hotp.token.get_otpkey().getKey().decode("utf-8")
         smartphone.add_token(hotp)
 
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
@@ -4119,11 +4113,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        mock_smph.container = {"serial": mock_smph.container_serial, "type": "smartphone",
+                               "tokens": [{"serial": hotp.get_serial(), "type": "HOTP"}]}
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
-        # Sync
-        self.request_assert_success("container/synchronize",
-                                    params, None, 'POST')
+        self.request_assert_success("container/synchronize", params, None, 'POST')
+        # check that token is not rolled over
+        new_hotp_secret = hotp.token.get_otpkey().getKey().decode("utf-8")
+        self.assertEqual(hotp_secret, new_hotp_secret)
 
         delete_policy("policy")
 
@@ -4484,7 +4481,7 @@ class APIContainerSynchronization(APIContainerTest):
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.add_container_info("registration_state", "rollover")
+        smartphone.add_container_info("registration_state", "rollover_completed")
 
         # tokens
         server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -4545,7 +4542,7 @@ class APIContainerSynchronization(APIContainerTest):
         tokens_dict = container_dict_server["tokens"]
         self.assertIn("add", tokens_dict)
         self.assertIn("update", tokens_dict)
-        # Online the online token is rolled over and hence in the add list with the new token secret
+        # Only the online token is rolled over and hence in the add list with the new token secret
         add_tokens = tokens_dict["add"]
         self.assertEqual(1, len(add_tokens))
         self.assertIn(online_token.get_serial(), add_tokens[0])

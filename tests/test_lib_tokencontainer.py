@@ -1591,7 +1591,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph_new.device_brand} {mock_smph_new.device_model}", container_info["device"])
-        self.assertEqual("rollover", container_info["registration_state"])
+        self.assertEqual("rollover_completed", container_info["registration_state"])
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
 
@@ -1662,7 +1662,38 @@ class TokenContainerSynchronization(MyTestCase):
         new_daypw_secret = daypassword.token.get_otpkey().getKey().decode("utf-8")
         self.assertNotEqual(daypw_secret, new_daypw_secret)
 
-    def test_20_initial_synchronize_smartphone(self):
+    def test_20_container_rollover_aborted(self):
+        mock_smph = self.test_03_register_smartphone_success()
+        smartphone = find_container_by_serial(mock_smph.container_serial)
+        smartphone.add_container_info("allow_client_rollover", "True")
+
+        # Add tokens
+        hotp = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        smartphone.add_token(hotp)
+        totp = init_token({"genkey": "1", "type": "totp", "otplen": 8, "hashlib": "sha256", "timeStep": 60})
+        smartphone.add_token(totp)
+
+        # Create Challenge for rollover
+        scope = "https://pi.net/container/rollover"
+        challenge_data = smartphone.create_challenge(scope)
+
+        # Mock smartphone
+        params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"], scope,
+                                             smartphone.serial)
+
+        # Rollover init
+        init_container_rollover(smartphone, "https://pi.net/", 20, 10, "True", params)
+
+        # Rollover is not completed by the new device. The old device is still active
+        # Synchronize with old device
+        client_container = {"serial": smartphone.serial, "type": "smartphone",
+                            "tokens": [{"serial": hotp.get_serial(), "type": "hotp"},
+                                       {"serial": totp.get_serial(), "type": "totp"}]}
+        synced_container_details = smartphone.synchronize_container_details(client_container)
+        self.assertEqual(0, len(synced_container_details["tokens"]["add"]))
+        self.assertEqual(2, len(synced_container_details["tokens"]["update"]))
+
+    def test_21_initial_synchronize_smartphone(self):
         # setup container
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
