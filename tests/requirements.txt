@@ -10,6 +10,8 @@ argon2-cffi==23.1.0
     # via privacyIDEA (setup.py)
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
+asn1crypto==1.5.1
+    # via webauthn
 babel==2.16.0
     # via flask-babel
 bcrypt==4.2.0
@@ -21,7 +23,9 @@ blinker==1.8.2
 cachetools==5.5.0
     # via google-auth
 cbor2==5.6.5
-    # via privacyIDEA (setup.py)
+    # via
+    #   privacyIDEA (setup.py)
+    #   webauthn
 certifi==2024.8.30
     # via requests
 cffi==1.17.1
@@ -34,8 +38,7 @@ click==8.1.7
     # via flask
 configobj==5.0.9
     # via privacyIDEA (setup.py)
-coverage[toml]==7.6.1;python_version == "3.8"
-coverage[toml]==7.6.2;python_version > "3.8"
+coverage[toml]==7.6.2
     # via pytest-cov
 croniter==3.0.3
     # via privacyIDEA (setup.py)
@@ -43,6 +46,7 @@ cryptography==42.0.8
     # via
     #   privacyIDEA (setup.py)
     #   pyopenssl
+    #   webauthn
 defusedxml==0.7.1
     # via privacyIDEA (setup.py)
 flask==3.0.3
@@ -86,8 +90,7 @@ lxml==5.3.0
     # via beautifulsoup4
 mako==1.3.5
     # via alembic
-markupsafe==2.1.5;python_version == "3.8"
-markupsafe==3.0.1;python_version > "3.8"
+markupsafe==3.0.1
     # via
     #   jinja2
     #   mako
@@ -123,7 +126,9 @@ pyjwt==2.9.0
 pymysql==1.1.1
     # via privacyIDEA (setup.py)
 pyopenssl==24.0.0
-    # via privacyIDEA (setup.py)
+    # via
+    #   privacyIDEA (setup.py)
+    #   webauthn
 pyparsing==3.1.4
     # via privacyIDEA (setup.py)
 pyrad==2.4
@@ -184,9 +189,10 @@ urllib3==2.2.3
     # via
     #   requests
     #   responses
+webauthn==2.2.0
+    # via privacyIDEA (setup.py)
 werkzeug==3.0.6
     # via flask
-webauthn==2.2.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
