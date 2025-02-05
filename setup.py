@@ -120,7 +120,6 @@ setup(
         'doc': ["Pallets-Sphinx-Themes",
                 "Sphinx",
                 "sphinxcontrib-httpdomain",
-                "sphinxcontrib-plantuml",
                 "sphinxcontrib-spelling"],
         'test': ["mock",
                  "pyparsing",
