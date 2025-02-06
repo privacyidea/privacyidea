@@ -117,7 +117,7 @@ class EventHandlerLibTestCase(MyTestCase):
         # If eventid is None, then the whole list is returned
         r = event_config.get_event(None)
         self.assertEqual(r, event_config.events)
-        # return a destinct eventid
+        # return a distinct eventid
         r = event_config.get_event(events[0].get("id"))
         self.assertEqual(r[0].get("id"), events[0].get("id"))
         self.assertEqual(r[0].get("position"), "post")
@@ -873,14 +873,11 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
 
-        options = {"g": {},
-                   "handler_def": {},
-                   "request": req,
-                   "response": resp}
+        options = {"g": {}, "handler_def": {}, "request": req, "response": resp,
+                   'handler_def': {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False"}}}
 
         # Token is not in a container
         # Check if the condition matches
-        options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
