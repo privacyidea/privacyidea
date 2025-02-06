@@ -5,7 +5,7 @@ Synchronization
 
 Beginning from version 3.11, privacyIDEA supports the synchronization of smartphones with the privacyIDEA
 server. This requires the privacyIDEA Authenticator App (v4.5.0 or higher) to be installed on the smartphone.
-It is only supported for the container type ``smartphone``.
+It is only currently supported for the container type ``smartphone``.
 
 Use Cases
 ~~~~~~~~~
@@ -23,10 +23,10 @@ The synchronization enables the following use cases:
 
 Note that not all of these scenarios work for offline tokens. Offline tokens already existing on the smartphone
 can be synchronized with the server and also be automatically added to the container on the server. However, a transfer
-to a new device is not possible as well as a rollover. This would renew the token secret and hence invalidate the
+to a new device or a rollover is not possible, as this would renew the token secret and hence invalidate the
 offline otp values.
 
-Additionally, sms tokens will not be synchronized, because they are not stored on the smartphone.
+Additionally, SMS tokens will not be synchronized, because they are not stored on the smartphone.
 
 Setup
 ~~~~~
