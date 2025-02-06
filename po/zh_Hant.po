@@ -1,10 +1,11 @@
 # Michael Yang <pcgames99@gmail.com>, 2024.
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-01-30 15:33+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-02-06 17:28+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Chinese (Traditional Han script) <https://hosted.weblate.org/"
 "projects/privacyidea/privacyidea-webui/zh_Hant/>\n"
 "Language: zh_Hant\n"
@@ -908,10 +909,8 @@ msgid "Container Type"
 msgstr "綁定類型"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:2
-#, fuzzy
-#| msgid "Token details for {{ tokenSerial }}"
 msgid "Container details for {{ containerSerial }}"
-msgstr "{{ tokenSerial }} 的令牌詳細資訊"
+msgstr "{{ containerSerial }} 的令牌詳細資訊"
 
 #: privacyidea/static/components/token/views/token.html:33
 msgid "Containers"
@@ -1018,9 +1017,8 @@ msgid "Create a new SQL Resolver"
 msgstr "創建新的 SQL 解析程式"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:5
-#, fuzzy
 msgid "Create a new Service ID {{ params.servicename }}"
-msgstr "創建一個新的 SMTP 伺服器 {{ params.identifier }}"
+msgstr "創建一個新的 SMTP 伺服器 {{ params.servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
 msgid "Create a new Tokengroup {{ params.groupname }}"
@@ -1262,9 +1260,8 @@ msgstr ""
 "        {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
-#, fuzzy
 msgid "Details for user {{ username }} in realm"
-msgstr "領域中使用者 {{ 使用者名 }} 的詳細資訊"
+msgstr "領域中使用者 {{ username }} 的詳細資訊"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
@@ -1303,11 +1300,10 @@ msgid "Do not verify the authenticity"
 msgstr ""
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
-#, fuzzy
 msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
-msgstr "是否確實要從使用者 {{ token.username }} 中刪除令牌 {{ token.username }}？"
+msgstr "是否確實要從使用者 {{ tokenSerial }} 中刪除令牌 {{ token.username }}？"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -1477,9 +1473,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "編輯 SQL 解析器 {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:2
-#, fuzzy
 msgid "Edit Service ID {{ servicename }}"
-msgstr "編輯密碼解析器 {{ resolvername }}"
+msgstr "編輯密碼解析器 {{ servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
 msgid "Edit Tokengroup {{ groupname }}"
@@ -4267,7 +4262,6 @@ msgstr ""
 "                    是"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
-#, fuzzy
 msgid ""
 "The authentication request can be handled by the default privacyIDEA\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
@@ -4279,12 +4273,13 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "認證請求可以由默認的privacyIDEA處理\n"
-"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
-"validate.html\">\n"
+"    <a href="
+"\"http://privacyidea.readthedocs.org/en/latest/modules/api/validate.html\">\n"
 "        驗證 API</a> 但也可以由\n"
-"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\">\n"
+"    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
+"api_endpoint\" target=\"_blank\">\n"
 "        Yubico 驗證協議 </a>。"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4652,7 +4647,6 @@ msgid "The token was marked lost successfully."
 msgstr "令牌已成功標記為丟失。"
 
 #: privacyidea/static/components/token/views/token.enroll.html:185
-#, fuzzy
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -4666,7 +4660,7 @@ msgstr ""
 "令牌已成功註冊序列號\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
 "\n"
-"                {{ 已註冊的令牌.serial }}</a>\n"
+"                {{ enrolledToken.serial }}</a>\n"
 "            對於使用者\n"
 "            <a ui-sref="
 "\"user.details({username:newUser.user, realmname:newUser.realm})\">{{ "
@@ -5469,7 +5463,6 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -5478,7 +5471,7 @@ msgid ""
 "                credentials."
 msgstr ""
 "Web 伺服器以使用者身份對您進行身份驗證\n"
-"                <b>{{ 遠端使用者 }}</b>。\n"
+"                <b>{{ remoteUser }}</b>。\n"
 "                您可以以此使用者身份登錄privacyIDEA ，無需任何進一步操作\n"
 "                憑據。"
 
@@ -5641,9 +5634,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:43
 #: privacyidea/static/components/token/views/token.enrolled.push.html:19
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:43
-#, fuzzy
 msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
-msgstr "您的令牌 {{ registeredToken.serial }} 尚未完全註冊。"
+msgstr "您的令牌 {{ enrolledToken.serial }} 尚未完全註冊。"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
 #, fuzzy
