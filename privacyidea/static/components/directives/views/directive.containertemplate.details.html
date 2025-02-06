@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
        ng-show="selection.tokens.length > 0">
     <tr ng-repeat="token in selection.tokens track by $index"
         ng-class="colorMap[token.state]">
-        <td>
+        <td class="width-25">
             {{ token.type }}
         </td>
         <td>
@@ -61,6 +61,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <translate>Add Token</translate>
                 </button>
             </div>
+            <div class="alert alert-warning" role="alert" ng-show="!allowedTokenTypes.displaySelection[token.type]"
+                 translate>
+                You are not allowed to enroll this token type! It will be skipped!
+            </div>
             <div class="well" ng-show="token.edit">
                 <ng-include src="instanceUrl + '/static/components/token/views/token.enroll.'
                                          + token.type + '.html' + fileVersionSuffix">
@@ -68,12 +72,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <input type="checkbox" ng-model="form.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
                 <label for="checkboxAssignUserFromContainer" translate>
                     Assign the token to the container owner and/or realm.</label>
-            </div>
-        </td>
-        <td>
-            <div class="alert alert-warning" role="alert" ng-show="!allowedTokenTypes.displaySelection[token.type]"
-                 translate>
-                You are not allowed to enroll this token type! It will be skipped!
             </div>
         </td>
     </tr>

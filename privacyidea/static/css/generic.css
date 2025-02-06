@@ -47,6 +47,10 @@ fieldset[disabled] .btn-transparent.focus {
     font-weight: bold;
 }
 
+.btn-margin-small {
+    margin: 2px;
+}
+
 .horizontal-line {
     width: 95%;
     height: 5px;
@@ -69,4 +73,8 @@ tr.table-remove {
 
 tr.table-add {
     background-color: #efffdf;
+}
+
+td.width-25 {
+    width: 25%;
 }

@@ -24,9 +24,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <tr>
             <td translate>Type</td>
             <td class="table-capitalize">{{ container.type }}</td>
-            <td>
+            <td class="width-25">
                 <!-- Delete container -->
-                <button class="btn btn-danger" ng-click="deleteContainerButton=true"
+                <button class="btn btn-danger btn-margin-small" ng-click="deleteContainerButton=true"
                         ng-disabled="!checkRight('container_delete')"
                         ng-hide="deleteContainerButton || (!checkRight('container_delete') && hide_buttons)">
                     <span class="glyphicon glyphicon-trash"></span>
@@ -35,23 +35,22 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <!-- Opens on delete -->
                 <fieldset ng-hide="!deleteContainerButton || (!checkRight('container_delete') && hide_buttons)"
                           ng-disabled="!checkRight('container_delete')">
-                    <button class="btn btn-danger"
+                    <button class="btn btn-danger btn-margin-small"
                             ng-disabled="!checkRight('container_delete')"
                             ng-hide="!checkRight('container_delete') && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=false)">
-                        <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
                     <!-- Only allowed if delete token action is set -->
-                    <button class="btn btn-danger"
+                    <button class="btn btn-danger btn-margin-small"
                             ng-disabled="!checkRight('container_delete') || !checkRight('delete') ||
                                          getAllTokenSerials().length === 0"
-                            ng-hide="!checkRight('container_delete') && hide_buttons"
+                            ng-hide="(!checkRight('container_delete') || !checkRight('delete') ||
+                                         getAllTokenSerials().length === 0) && hide_buttons"
                             ng-click="deleteContainerMode(deleteTokens=true)">
-                        <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container and Tokens</span>
                     </button>
-                    <button class="btn btn-danger"
+                    <button class="btn btn-danger btn-margin-small"
                             ng-click="deleteContainerButton=false">
                         <span translate>Cancel</span>
                     </button>
@@ -770,8 +769,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <a ui-sref="config.resolvers.list">{{ token_add.resolver }}</a>
                 </td>
                 <td>
-                    <a ui-sref="token.containerdetails({containerSerial: token_add.container_serial})">{{ token_add.container_serial
-                        }}</a>
+                    <a ui-sref="token.containerdetails({containerSerial: token_add.container_serial})">{{ token_add.container_serial }}</a>
                 </td>
                 <td>
                     <button ng-click="addToken(token_add.serial)"

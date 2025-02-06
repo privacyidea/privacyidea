@@ -2930,13 +2930,13 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.DISABLE_CLIENT_TOKEN_DELETION: {
                 'type': 'bool',
-                'desc': _('The user is disabled from deleting tokens locally on the smartphone.'),
+                'desc': _('The user is not allowed to delete tokens locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
             },
             ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER: {
                 'type': 'bool',
-                'desc': _('The client is disabled to unregister the container. The user can not delete the container '
-                          'locally on the smartphone.'),
+                'desc': _('The client is not allowed to unregister the container. The user can not delete the '
+                          'container locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
             }
         }
