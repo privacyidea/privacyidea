@@ -2,14 +2,14 @@
 # Copyright (C) 2021 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
-#
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2025-01-30 15:33+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-02-06 17:27+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-server/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -2269,7 +2269,6 @@ msgstr ""
 "conforme especificado na documentação."
 
 #: lib/eventhandler/usernotification.py:224
-#, fuzzy
 msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
@@ -2277,7 +2276,7 @@ msgid ""
 msgstr ""
 "O nome do arquivo da notificação. Os arquivos existentes são sobregravados. "
 "O nome pode conter tags como especificado na documentação e também pode "
-"conter a tag {aleatória}."
+"conter a tag {random}."
 
 #: lib/eventhandler/webhookeventhandler.py:84
 msgid "The URL the WebHook is posted to"
