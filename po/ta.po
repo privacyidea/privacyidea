@@ -1,9 +1,10 @@
 # தமிழ்நேரம் <anishprabu.t@gmail.com>, 2025.
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2025-02-04 08:03+0000\n"
-"Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
+"PO-Revision-Date: 2025-02-06 17:28+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ta/>\n"
 "Language: ta\n"
@@ -861,9 +862,8 @@ msgid "Container Type"
 msgstr "கொள்கலன் வகை"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:2
-#, fuzzy
 msgid "Container details for {{ containerSerial }}"
-msgstr "{{ containerSerial } க்கு க்கான கொள்கலன் விவரங்கள்"
+msgstr "{{ containerSerial }} க்கு க்கான கொள்கலன் விவரங்கள்"
 
 #: privacyidea/static/components/token/views/token.html:33
 msgid "Containers"
@@ -1187,17 +1187,15 @@ msgid "Detail"
 msgstr "விவரம்"
 
 #: privacyidea/static/components/machine/views/machine.details.html:2
-#, fuzzy
 msgid ""
 "Details for machine {{ machineid }} in Machine Resolver\n"
 "        {{ machineresolver }}"
 msgstr ""
-"இயந்திரத் தீர்வில் {{ machineid } the இயந்திரத்திற்கான விவரங்கள் {{ machineid }}"
+"இயந்திரத் தீர்வில் {{ machineid }} the இயந்திரத்திற்கான விவரங்கள் {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
-#, fuzzy
 msgid "Details for user {{ username }} in realm"
-msgstr "பயனருக்கான விவரங்கள் {{ username } the}} சாம்ராச்யத்தில்"
+msgstr "பயனருக்கான விவரங்கள் {{ username }} சாம்ராச்யத்தில்"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
@@ -1234,10 +1232,9 @@ msgid "Do not verify the authenticity"
 msgstr "நம்பகத்தன்மையை சரிபார்க்க வேண்டாம்"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
-#, fuzzy
 msgid "Do you really want to delete the Token {{ tokenSerial }} from user {{ token.username }}?"
 msgstr ""
-"பயனரை {{ tokenSerial } இருந்து இலிருந்து கிள்ளாக்கு {{ tokenSerial }} ஐ நீக்க "
+"பயனரை {{ tokenSerial }} இருந்து இலிருந்து கிள்ளாக்கு {{ token.username }} ஐ நீக்க "
 "விரும்புகிறீர்களா?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
@@ -1379,9 +1376,8 @@ msgid "Edit RADIUS server {{ identifier }}"
 msgstr "ஆரம் சேவையகத்தைத் திருத்து {{ identifier }}"
 
 #: privacyidea/static/components/config/views/config.realms.html:11
-#, fuzzy
 msgid "Edit Realm {{ $stateParams.realmName }}"
-msgstr "{{$ StateParams.RealMname}} ஐத் திருத்து"
+msgstr "{{ $stateParams.realmName }} ஐத் திருத்து"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:12
 #: privacyidea/static/components/config/views/config.resolvers.html:12
@@ -2352,14 +2348,12 @@ msgid "New privacyIDEA server"
 msgstr "புதிய தனியுரிமை சேவையகம்"
 
 #: privacyidea/static/components/config/views/config.system.html:205
-#, fuzzy
 msgid "New {{ connectortype | uppercase }} CA Connector"
-msgstr "புதிய {{கனெக்டோர்டைப் | பெரிய எழுத்து}} ca இணைப்பான்"
+msgstr "புதிய {{ connectortype | uppercase }} ca இணைப்பான்"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:25
-#, fuzzy
 msgid "New {{ mResolvertype | uppercase }} Resolver"
-msgstr "புதிய {{mrsolvertype | பெரிய எழுத்தாளர்}} தீர்வி"
+msgstr "புதிய {{ mResolvertype | uppercase }} தீர்வி"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:26
 msgid "New {{ resolvertype }}"
@@ -2655,10 +2649,9 @@ msgid "Phone number"
 msgstr "தொலைபேசி எண்"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:8
-#, fuzzy
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
-"பின்வரும் கேள்விகளில் குறைந்தபட்சம் {{ num_answers } பெறுநர் க்கு பதிலளிக்கவும்."
+"பின்வரும் கேள்விகளில் குறைந்தபட்சம் {{ num_answers }} பெறுநர் க்கு பதிலளிக்கவும்."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:267
 msgid "Please confirm with one of these tokens:"
@@ -3118,9 +3111,8 @@ msgid "Rollover Token"
 msgstr "ரோல்ஓவர் கிள்ளாக்கு"
 
 #: privacyidea/static/components/token/views/token.enroll.html:7
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "ரோல்ஓவர் கிள்ளாக்கு {{{ form.serial }}"
+msgstr "ரோல்ஓவர் கிள்ளாக்கு {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:46
 msgid "Rounds"
@@ -4885,9 +4877,8 @@ msgid "Token data"
 msgstr "கிள்ளாக்கு தரவு"
 
 #: privacyidea/static/components/token/views/token.details.html:2
-#, fuzzy
 msgid "Token details for {{ tokenSerial }}"
-msgstr "{{ tokenSerial } க்கு க்கான கிள்ளாக்கு விவரங்கள்"
+msgstr "{{ tokenSerial }} க்கு க்கான கிள்ளாக்கு விவரங்கள்"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:4
@@ -4903,9 +4894,8 @@ msgstr ""
 " வழிகாட்டி"
 
 #: privacyidea/static/components/user/views/user.details.html:140
-#, fuzzy
 msgid "Token of {{username}} without a container"
-msgstr "ஒரு கொள்கலன் இல்லாமல் {{username} of இன் கிள்ளாக்கு"
+msgstr "ஒரு கொள்கலன் இல்லாமல் {{username}} of இன் கிள்ளாக்கு"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:284
 #: privacyidea/static/components/token/views/token.containerdetails.html:522
