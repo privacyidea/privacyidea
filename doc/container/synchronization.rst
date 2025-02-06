@@ -143,8 +143,8 @@ but can be deactivated in the policies.
 Synchronization
 ---------------
 
-In the synchronization, the server response is additionally encrypted to secure the token secrets included in the
-response. For the encryption, the ECC Diffie-Hellmann key exchange is used.
+When synchronising, the server response is additionally encrypted to secure the token secrets included in the
+response. For the encryption, the ECC Diffie-Hellmann key exchange is used to create a session key.
 
 To synchronize the smartphone with the server, the authenticator app first requests a challenge at
 :http:post:`/container/challenge` for the container and a scope (the synchronization endpoint). This endpoint returns
