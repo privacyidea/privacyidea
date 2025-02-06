@@ -79,8 +79,8 @@ user in the authenticator app, and the correct passphrase response can be config
 `Register Container on Device`, a QR code is displayed. The user has to scan this QR code with the privacyIDEA
 Authenticator app to complete the registration.
 
-.. note:: It is required to configure a container policy specifying at least the `privacyIDEA_server_url` action.
-    See :ref:`container_policies` for more information.
+.. note:: It is required to configure a container policy specifying at least the :ref:`container_policy_server_url`
+    action. See :ref:`container_policies` for more information.
 
 .. figure:: images/container_details_synchronization.png
    :width: 500
@@ -93,7 +93,7 @@ in the dropdown `Registration Configuration`. However, this is only possible whi
 `client_wait` state.
 
 For registered containers, the time of the last synchronization and the last time a token from the container
-was used for successful authentication are displayed. Note that these timestamps are only set for registered
+was used for a successful authentication are displayed. Note that these timestamps are only set for registered
 containers, hence the last authentication time stamp is not set yet for a newly registered container.
 
 If the container with all tokens shall be registered on a new smartphone, a rollover can be performed. Similar to

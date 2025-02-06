@@ -238,6 +238,24 @@ class SmartphoneContainer(TokenContainerClass):
         registered and the client public key is stored in the container info.
         Raises a ContainerInvalidSignature error if the signature is not valid.
 
+        The message the client shall sign is a concatenation of the following values separated by '|':
+            * nonce (from the registration challenge)
+            * timestamp (from the registration challenge)
+            * serial of the container
+            * scope: The URL the client contacts to finalize the registration, e.g.
+              "https://pi.net/container/register/finalize"
+            * device brand (optional)
+            * device model (optional)
+            * passphrase response if defined in the registration challenge
+            * public key of the client in PEM format (curve secp384r1)
+
+        ::
+
+            message = <nonce>|<time>|<serial>|<scope>|<device_brand>|<device_model>|<passphrase_response>|<public_key_client>
+
+        To verify the signature, the ECDSA signature algorithm with SHA256 hash function is used. The public key is
+        expected to be an ecc key of curve secp384r1.
+
         :param params: The parameters from the smartphone for the registration as dictionary like:
 
         ::
@@ -245,12 +263,12 @@ class SmartphoneContainer(TokenContainerClass):
             {
                 "container_serial": <serial of the container, str>,
                 "signature": <sign(message), str>,
-                "public_client_key": <public key of the smartphone base 64 url safe encoded>,
+                "public_client_key": <public key of the smartphone serialized in the PEM format>,
                 "device_brand": <Brand of the smartphone, str> (optional),
                 "device_model": <Model of the smartphone, str> (optional),
             }
 
-        :return: A dictionary with the success status like {"success": True}
+        :return: A dictionary with the success status like ``{"success": True}``
         """
         # Get params
         signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
@@ -272,7 +290,6 @@ class SmartphoneContainer(TokenContainerClass):
             raise ContainerInvalidChallenge('Could not verify signature!')
 
         # Update container info
-        pub_key_container_str = getParam(params, "public_client_key", optional=False)
         new_container_info = {"public_key_client": pub_key_container_str}
 
         if device != "":
@@ -351,7 +368,18 @@ class SmartphoneContainer(TokenContainerClass):
 
     def check_challenge_response(self, params: dict) -> bool:
         """
-        Checks if the response to a challenge is valid.
+        Checks if the response to a challenge is valid:
+            * Challenge exists and is not expired
+            * Equal scope
+            * Valid signature
+
+        The message the client shall sign is a concatenation of the following values separated by '|':
+            * nonce (from the challenge)
+            * timestamp (from the challenge)
+            * serial of the container
+            * scope: The URL the client wants to contact, e.g. "https://pi.net/container/register/finalize"
+            * ecc public key of the client in PEM format (optional)
+            * container dict of the client (optional)
 
         :param params: Dictionary with the parameters for the challenge. The device information is optional.
 
@@ -361,7 +389,8 @@ class SmartphoneContainer(TokenContainerClass):
                 {
                     "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
                     "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
-                    "container_dict_client": {"serial": "SMPH0001", "type": "smartphone", ...}
+                    "container_dict_client": {"serial": "SMPH0001", "type": "smartphone",
+                        "tokens": [{"serial": "1234", "type": "HOTP"}]...}
                     "scope": "https://pi/container/SMPH001/sync",
                     "device_brand": "XYZ",
                     "device_model": "123"

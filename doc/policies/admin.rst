@@ -1106,6 +1106,9 @@ The administrator is allowed to edit the container realms.
 
 .. versionadded:: 3.10
 
+
+.. _admin_policy_container_register:
+
 container_register
 ~~~~~~~~~~~~~~~~~~
 

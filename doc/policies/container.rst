@@ -23,6 +23,9 @@ The group ``registration and synchronization`` contains all actions to configure
 These actions are only read once at the registration and before a rollover. Changing the actions after the registration
 has no effect on registered containers. To apply the changes to registered containers a rollover can be performed.
 
+
+.. _container_policy_server_url:
+
 privacyIDEA_server_url
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,6 +74,9 @@ Smartphone
 The group ``smartphone`` contains all actions applicable to smartphone containers.
 The policies are checked before each API request and sent to the client during each synchronization.
 
+
+.. _container_policy_client_rollover:
+
 container_client_rollover
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -83,7 +89,7 @@ The rollover can also be used to transfer the container with all tokens to a new
 New in version 3.11
 
 initially_add_tokens_to_container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -95,7 +101,7 @@ created, it only allows to add existing tokens to the container.
 New in version 3.11
 
 disable_client_token_deletion
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -105,8 +111,11 @@ registered on the server or this policy changes.
 
 New in version 3.11
 
+
+.. _container_policy_disable_client_unregister:
+
 disable_client_container_unregister
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
