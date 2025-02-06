@@ -346,7 +346,7 @@ def delete_policy_api(name=None):
        }
     """
     ret = delete_policy(name)
-    g.audit_object.log({'success': ret,
+    g.audit_object.log({'success': True,
                         'info': name})
     return send_result(ret)
 
