@@ -65,30 +65,15 @@ In case if authenticating a serial number:
 
 """
 
+import json
+import logging
 import threading
 
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.user import get_user_from_param, log_used_user
-from .lib.utils import send_result, getParam
-from ..lib.decorators import (check_user_or_serial_in_request)
-from .lib.utils import required
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token)
-from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
-from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.config import (return_saml_attributes, get_from_config,
-                                    return_saml_attributes_on_fail,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib.audit import getAudit
+from flask_babel import gettext
+
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
-from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
-                                           api_key_required, mangle,
-                                           save_client_application_type,
-                                           check_base_action, pushtoken_validate, webauthntoken_auth,
-                                           webauthntoken_authz,
-                                           webauthntoken_request, check_application_tokentype,
-                                           increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -98,23 +83,42 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode)
-from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.event import EventConfiguration
-import logging
-from privacyidea.api.register import register_blueprint
+from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
+                                           api_key_required, mangle,
+                                           save_client_application_type,
+                                           check_base_action, pushtoken_validate, fido2_auth,
+                                           webauthntoken_authz,
+                                           webauthntoken_request, check_application_tokentype,
+                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll)
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
-from privacyidea.lib.event import event
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
-from privacyidea.lib.subscriptions import CheckSubscription
-from privacyidea.api.auth import admin_required
-from privacyidea.lib.policy import ACTION
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.machine import list_machine_tokens
+from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
+from privacyidea.lib.config import (return_saml_attributes, get_from_config,
+                                    return_saml_attributes_on_fail,
+                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.event import event
+from privacyidea.lib.machine import list_machine_tokens
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.lib.token import (check_user_pass, check_serial_pass,
+                                   check_otp, create_challenges_from_tokens, get_one_token)
+from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
+from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-import json
-
+from privacyidea.lib.user import get_user_from_param, log_used_user, User
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
+from .lib.utils import required
+from .lib.utils import send_result, getParam, get_required, get_optional
+from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
+from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
@@ -135,8 +139,8 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy and it
-    # can be passed to the innerpolicies.
+    # This audit_object can be used in the postpolicy and prepolicy
+    # It can be passed to the inner policies.
 
     g.policy_object = PolicyClass()
 
@@ -159,52 +163,57 @@ def before_request():
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
-@check_user_or_serial_in_request(request)
+@check_user_serial_or_cred_id_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
     """
-    This endpoint allows to fetch new offline OTP values for a token,
-    that is already offline.
-    According to the definition it will send the missing OTP values, so that
-    the client will have as much otp values as defined.
+    For HOTP token, this endpoint will return the amount of offline OTP values so that the client has the defined count,
+    which is why the last pass is required.
+    For WebAuthn/Passkey, this endpoint will return nothing specific.
+    Every response contains the serial and a new refilltoken.
+    Returns an error in case the token has been unmarked for offline use or if the refilltoken is incorrect.
 
     :param serial: The serial number of the token, that should be refilled.
     :param refilltoken: The authorization token, that allows refilling.
-    :param pass: the last password (maybe password+OTP) entered by the user
-    :return:
+    :param pass: The last password (or password+OTP) entered by the user.
+                 For WebAuthn/Passkey, the value should be empty ("").
+    :return: Hashed OTP values (HOTP) or nothing (WebAuthn/Passkey). Returns an error in case the token has been
+     unmarked for offline use or if the refilltoken is incorrect (out of sync).
     """
     serial = getParam(request.all_data, "serial", required)
     refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
-    tokenobj_list = get_tokens(serial=serial)
-    if len(tokenobj_list) != 1:
+    tokens = get_tokens(serial=serial)
+    if len(tokens) != 1:
         raise ParameterError("The token does not exist")
     else:
-        tokenobj = tokenobj_list[0]
+        token = tokens[0]
         # check if token is disabled or otherwise not fit for auth
         message_list = []
-        if not tokenobj.check_all(message_list):
-            log.info("Failed to offline refill: {0!s}".format(message_list))
+        if not token.check_all(message_list):
+            log.info(f"Failed to offline refill: {message_list}")
             raise ParameterError("The token is not valid.")
-        tokenattachments = list_machine_tokens(serial=serial, application="offline")
-        if tokenattachments:
+        token_attachments = list_machine_tokens(serial=serial, application="offline")
+        if token_attachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
             # check refill token depending on token type
             refilltoken_stored = None
-            if tokenobj.type.lower() == "hotp":
-                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken")
-            elif tokenobj.type.lower() == "webauthn":
+            if token.type.lower() == "hotp":
+                refilltoken_stored = token.get_tokeninfo("refilltoken")
+            elif token.type.lower() in ["webauthn", "passkey"]:
                 computer_name = get_computer_name_from_user_agent(request.user_agent.string)
-                if computer_name is None:
-                    raise ParameterError("The computer name is missing.")
-                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken_" + computer_name)
+                if not computer_name:
+                    log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
+                                f"{request.user_agent.string}")
+                    raise ParameterError("Machine can not be identified by user agent!")
+                refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
 
             if refilltoken_stored and refilltoken_stored == refilltoken_request:
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
-                options = tokenattachments[0].get("options")
-                otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken_new = MachineApplication.generate_new_refilltoken(tokenobj, request.user_agent.string)
+                options = token_attachments[0].get("options")
+                otps = MachineApplication.get_refill(token, password, options)
+                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
@@ -240,8 +249,8 @@ def offlinerefill():
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
-@prepolicy(webauthntoken_auth, request=request)
-@check_user_or_serial_in_request(request)
+@prepolicy(fido2_auth, request=request)
+@check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
@@ -253,7 +262,7 @@ def check():
     In case of successful authentication it returns ``result->value: true``.
 
     In case of a challenge response authentication a parameter ``exception=1``
-    can be passed. This would result in a HTTP 500 Server Error response if
+    can be passed. This would result in an HTTP 500 Server Error response if
     an error occurred during sending of SMS or Email.
 
     In case ``/validate/radiuscheck`` is requested, the responses are
@@ -392,28 +401,69 @@ def check():
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
-    user = request.User
-    serial = getParam(request.all_data, "serial")
-    password = getParam(request.all_data, "pass", required)
-    otp_only = getParam(request.all_data, "otponly")
-    token_type = getParam(request.all_data, "type")
-    options = {"g": g,
-               "clientip": g.client_ip,
-               "user": user}
+    user: User = request.User
+    serial: str = getParam(request.all_data, "serial")
+    password: str = getParam(request.all_data, "pass")
+    otp_only: bool = getParam(request.all_data, "otponly")
+    token_type: str = getParam(request.all_data, "type")
+
     # Add all params to the options
-    for key, value in request.all_data.items():
-        if value and key not in ["g", "clientip", "user"]:
-            options[key] = value
+    options: dict = {}
+    options.update(request.all_data)
+    options.update({"g": g, "clientip": g.client_ip, "user": user})
 
-    g.audit_object.log({"user": user.login,
-                        "resolver": user.resolver,
-                        "realm": user.realm})
+    details: dict = {}
+    # Passkey/FIDO2: Identify the user by the credential ID
+    credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
 
-    if serial:
+    # If only the credential ID is given, try to use it to identify the token
+    if credential_id:
+        # Find the token that responded to the challenge
+        transaction_id: str = get_required(request.all_data, "transaction_id")
+        token = get_fido2_token_by_credential_id(credential_id)
+        if not token:
+            log.info(f"No token found for the given credential id {credential_id}. "
+                     f"Trying to get the token by transaction id...")
+            # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
+            token = get_fido2_token_by_transaction_id(transaction_id)
+            if not token:
+                log.info(f"No token found for the given transaction id {transaction_id}.")
+                return send_result(False, rid=2, details={
+                    "message": "No token found for the given credential ID or transaction ID!"})
+
+            if not token.user:
+                return send_result(False, rid=2, details={
+                    "message": "No user found for the token with the given credential ID!"})
+        user = token.user
+
+        # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
+        # This does behave correctly but is obviously not a good solution in the long run
+        attestation_object: str = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+        if attestation_object:
+            request.all_data.update({"type": "passkey"})
+            fido2_enroll(request, None)
+            try:
+                _ = token.update(request.all_data)
+                r = 1
+            except Exception as ex:
+                log.error(f"Error updating token: {ex}")
+                r = 0
+        else:
+            r: int = verify_fido2_challenge(transaction_id, token, request.all_data)
+        result = r > 0
+        success = result
+        if r > 0:
+            # If the authentication was successful, return the username of the token owner
+            # TODO what is returned could be configurable, attribute mapping
+            details = {"username": token.user.login,
+                       "message": gettext("Found matching challenge"),
+                       "serial": token.get_serial()}
+    # End Passkey
+    elif serial:
         if user:
-            # check if the given token belongs to the user
+            # Check if the given token belongs to the user
             if not get_tokens(user=user, serial=serial, count=True):
-                raise ParameterError('Given serial does not belong to given user!')
+                raise ParameterError("Given serial does not belong to given user!")
         if not otp_only:
             success, details = check_serial_pass(serial, password, options=options)
         else:
@@ -425,32 +475,36 @@ def check():
         success, details = check_user_pass(user, password, options=options)
         result = success
         if request.path.endswith("samlcheck"):
-            ui = user.info
-            result = {"auth": success,
-                      "attributes": {}}
+            result = {"auth": success, "attributes": {}}
             if return_saml_attributes():
                 if success or return_saml_attributes_on_fail():
                     # privacyIDEA's own attribute map
-                    result["attributes"] = {"username": ui.get("username"),
-                                                "realm": user.realm,
-                                                "resolver": user.resolver,
-                                                "email": ui.get("email"),
-                                                "surname": ui.get("surname"),
-                                                "givenname": ui.get("givenname"),
-                                                "mobile": ui.get("mobile"),
-                                                "phone": ui.get("phone")}
-                    # additional attributes
-                    for k, v in ui.items():
+                    user_info = user.info
+                    result["attributes"] = {"username": user_info.get("username"),
+                                            "realm": user.realm,
+                                            "resolver": user.resolver,
+                                            "email": user_info.get("email"),
+                                            "surname": user_info.get("surname"),
+                                            "givenname": user_info.get("givenname"),
+                                            "mobile": user_info.get("mobile"),
+                                            "phone": user_info.get("phone")}
+                    # Additional attributes
+                    for k, v in user_info.items():
                         result["attributes"][k] = v
-    serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
-        if 'multi_challenge' in details else details.get('serial')
-    r = send_result(result, rid=2, details=details)
+    # At this point there will be a user, even for FIDO2 credentials
+    g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
+
+    if "multi_challenge" in details:
+        serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+    else:
+        serials = details.get("serial")
+    ret = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
-                        "authentication": r.json.get("result").get("authentication") or "",
+                        "authentication": ret.json.get("result").get("authentication") or "",
                         "serial": serials,
                         "token_type": details.get("type")})
-    return r
+    return ret
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
@@ -459,12 +513,12 @@ def check():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
-@check_user_or_serial_in_request(request)
+@check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
-@prepolicy(webauthntoken_auth, request=request)
+@prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():
     """
@@ -634,12 +688,11 @@ def poll_transaction(transaction_id=None):
 
     if transaction_id is None:
         transaction_id = getParam(request.all_data, "transaction_id", required)
-    # Fetch a list of non-exired challenges with the given transaction ID
+    # Fetch a list of challenges that are not expired with the given transaction ID
     # and determine whether it contains at least one non-expired answered challenge.
     matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
-
     declined_challenges = []
     if answered_challenges:
         result = True
@@ -682,3 +735,31 @@ def poll_transaction(transaction_id=None):
     })
 
     return send_result(result, rid=2, details=details)
+
+
+@validate_blueprint.route('/initialize', methods=['POST', 'GET'])
+@prepolicy(fido2_auth, request=request)
+def initialize():
+    """
+    Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
+    :jsonparam type: The type of the token, for which a challenge should be created.
+    """
+    token_type = get_optional(request.all_data, "type")
+    details = {}
+    if token_type.lower() == "passkey":
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
+        if not rp_id:
+            raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
+
+        user_verification = get_first_policy_value(policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                                                   default="preferred", scope=SCOPE.AUTH)
+        challenge = create_fido2_challenge(rp_id, user_verification=user_verification)
+        if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
+            challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
+        details["passkey"] = challenge
+
+    else:
+        raise ParameterError("Unsupported token type for authentication initialization!")
+    g.audit_object.log({"success": True})
+    response = send_result(False, rid=2, details=details)
+    return response

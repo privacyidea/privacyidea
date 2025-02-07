@@ -8,7 +8,6 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 
-PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
@@ -17,8 +16,9 @@ import mock
 import ldap3
 import responses
 import datetime
+import shutil
+import tempfile
 import uuid
-import pytest
 import json
 import ssl
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
@@ -39,6 +39,8 @@ from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
 from requests import HTTPError
 
+PWFILE = "tests/testdata/passwords"
+
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
@@ -58,27 +60,27 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": objectGUIDs[0],
                                 'mobile': ["1234", "45678"]}},
-                {"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[1],
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[2],
-                                'oid': "1"}},
+                 {"dn": 'cn=bob,ou=example,o=test',
+                  "attributes": {'cn': 'bob',
+                                 "sn": "Marley",
+                                 "givenName": "Robert",
+                                 "email": "bob@example.com",
+                                 "mobile": "123456",
+                                 "homeDirectory": "/home/bob",
+                                 'userPassword': 'bobpwééé',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": objectGUIDs[1],
+                                 'oid': "3"}},
+                 {"dn": 'cn=manager,ou=example,o=test',
+                  "attributes": {'cn': 'manager',
+                                 "givenName": "Corny",
+                                 "sn": "keule",
+                                 "email": "ck@o",
+                                 "mobile": "123354",
+                                 'userPassword': 'ldaptest',
+                                 "accountExpires": 9223372036854775807,
+                                 "objectGUID": objectGUIDs[2],
+                                 'oid': "1"}},
                  {"dn": 'cn=kölbel,ou=example,o=test',
                   "attributes": {'cn': "kölbel",
                                  "givenName": "Cornelius",
@@ -92,26 +94,26 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                  "oid": "4"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[0],
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": objectGUIDs[1],
-                                'oid': "1"}},
+                        "attributes": {'cn': 'bob',
+                                       "sn": "Marley",
+                                       "givenName": "Robert",
+                                       "email": "bob@example.com",
+                                       "mobile": "123456",
+                                       "homeDirectory": "/home/bob",
+                                       'userPassword': 'bobpwééé',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[0],
+                                       'oid': "3"}},
+                       {"dn": 'cn=manager,ou=example,o=test',
+                        "attributes": {'cn': 'manager',
+                                       "givenName": "Corny",
+                                       "sn": "keule",
+                                       "email": "ck@o",
+                                       "mobile": "123354",
+                                       'userPassword': 'ldaptest',
+                                       "accountExpires": 9223372036854775807,
+                                       "objectGUID": objectGUIDs[1],
+                                       'oid': "1"}},
                        {"dn": 'cn=salesman,ou=example,o=test',
                         "attributes": {'cn': 'salesman',
                                        'givenName': 'hans',
@@ -122,27 +124,27 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1
 LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                "homeDirectory": "/home/bob",
-                                'userPassword': 'bobpwééé',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[0] + "}",
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                "accountExpires": 9223372036854775807,
-                                "objectGUID": "{" + objectGUIDs[1] + "}",
-                                'oid': "1"}}
-                       ]
+                                   "attributes": {'cn': 'bob',
+                                                  "sn": "Marley",
+                                                  "givenName": "Robert",
+                                                  "email": "bob@example.com",
+                                                  "mobile": "123456",
+                                                  "homeDirectory": "/home/bob",
+                                                  'userPassword': 'bobpwééé',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[0] + "}",
+                                                  'oid': "3"}},
+                                  {"dn": 'cn=manager,ou=example,o=test',
+                                   "attributes": {'cn': 'manager',
+                                                  "givenName": "Corny",
+                                                  "sn": "keule",
+                                                  "email": "ck@o",
+                                                  "mobile": "123354",
+                                                  'userPassword': 'ldaptest',
+                                                  "accountExpires": 9223372036854775807,
+                                                  "objectGUID": "{" + objectGUIDs[1] + "}",
+                                                  'oid': "1"}}
+                                  ]
 
 
 class SQLResolverTestCase(MyTestCase):
@@ -163,7 +165,20 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-    }
+                  }
+
+    @classmethod
+    def setUp(cls):
+        # Copy original user database to a temporary work db
+        work_dir = tempfile.mkdtemp()
+        shutil.copy("tests/testdata/testuser.sqlite", f"{work_dir}/testuser.sqlite")
+        # SQLAlchemy needs an extra slash for absolute paths with SQLite
+        cls.parameters['Server'] = f"/{work_dir}"
+
+    @classmethod
+    def tearDownClass(cls):
+        # Remove temporary work directory
+        shutil.rmtree(cls.parameters["Server"])
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -565,7 +580,7 @@ class SQLResolverTestCase(MyTestCase):
         self.parameters['Database'] = "does_not_exist"
         result = y.testconnection(self.parameters)
         self.assertTrue(result[0] == -1, result)
-        self.assertTrue("failed to retrieve" in result[1], result)
+        self.assertEqual("Failed to retrieve users.", result[1], result)
 
 
 class SCIMResolverTestCase(MyTestCase):
@@ -852,7 +867,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         # user list with searchResRef entries
         # we are mocking the mock here
-        original_search = y.l.extend.standard.paged_search
+        original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
@@ -1078,11 +1093,11 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertTrue(res[0], res)
         self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
-        #'Your LDAP config seems to be OK, 3 user objects found.'
+        self.assertTrue(res[1].startswith("Your LDAP config seems to be OK,"), res)
 
     @ldap3mock.activate
     def test_04_testconnection_fail(self):
@@ -1102,10 +1117,10 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertFalse(res[0], res)
-        self.assertTrue("Wrong credentials" in res[1], res)
+        self.assertTrue(res[1].startswith("ERR907: Unable to perform bind operation:"), res)
 
     @ldap3mock.activate
     def test_05_authtype_not_supported(self):
@@ -1391,12 +1406,12 @@ class LDAPResolverTestCase(MyTestCase):
         user = "achmed"
 
         # First we add the user with add_user
-        r = y.add_user({"username" : user,
-                        "surname" : "Ali",
-                        "email" : "achmed.ali@example.com",
-                        "password" : "testing123",
+        r = y.add_user({"username": user,
+                        "surname": "Ali",
+                        "email": "achmed.ali@example.com",
+                        "password": "testing123",
                         'mobile': ["1234", "45678"],
-                        "givenname" : "Achmed"})
+                        "givenname": "Achmed"})
         self.assertTrue(r)
 
         # Find the new users user_id
@@ -1587,11 +1602,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'START_TLS': '1',
@@ -1603,12 +1618,11 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check two things:
         # 1) start_tls has actually been called!
-        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
-
 
     @ldap3mock.activate
     def test_24_ldaps(self):
@@ -1670,7 +1684,7 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual(len(result), len(LDAPDirectory))
             # We check two things:
             # 1) start_tls has actually been called!
-            self.assertTrue(start_tls_resolver.l.start_tls_called)
+            self.assertTrue(start_tls_resolver.connection.start_tls_called)
             # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
@@ -1913,7 +1927,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), 3)
 
         # We imitate ldap3 2.4.1 and raise an exception without having returned any entries
-        original_search = y.l.extend.standard.paged_search
+        original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
                 results = original_search(*args, **kwargs)
@@ -1927,7 +1941,6 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(mock_search.called)
             # We get all three entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertEqual(len(ret), 3)
-
 
         # We imitate a hypothetical later ldap3 version and raise an exception *after having returned all entries*!
         # As ``getUserList`` stops consuming the generator after the size limit has been reached, we can only
@@ -1969,10 +1982,7 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(mock_search.called)
             # We do not get any duplicate entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertTrue(ret[0])
-            self.assertTrue(ret[1] in ['Your LDAP config seems to be OK, 1 user objects found.',
-                                       'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
-                            ret[1])
-
+            self.assertTrue(ret[1].startswith("Your LDAP config seems to be OK, 1 user objects found"), ret)
 
     @ldap3mock.activate
     def test_30_login_with_objectGUID(self):
@@ -2079,12 +2089,12 @@ class LDAPResolverTestCase(MyTestCase):
             mock_search.assert_not_called()
         self.assertIn('bob', CACHE[y.getResolverId()]['getUserId'])
         # assert requests later than CACHE_TIMEOUT seconds query the directory again
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             # we now live CACHE_TIMEOUT + 2 seconds in the future
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=cache_timeout + 2)
-            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
                 bob_id3 = y.getUserId('bob')
                 self.assertEqual(bob_id, bob_id3)
                 mock_search.assert_called_once()
@@ -2129,7 +2139,7 @@ class LDAPResolverTestCase(MyTestCase):
         # assert the cache does not contain this entry
         self.assertNotIn(y.getResolverId(), CACHE)
         # assert subsequent requests query the directory
-        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
             bob_id2 = y.getUserId('bob')
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_called_once()

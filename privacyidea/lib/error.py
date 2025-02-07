@@ -46,6 +46,7 @@ class ERROR:
     AUTHENTICATE_DECODING_ERROR = 4304
     AUTHENTICATE_TOKEN_EXPIRED = 4305
     AUTHENTICATE_MISSING_RIGHT = 4306
+    AUTHENTICATE_ILLEGAL_METHOD = 4307
     ENROLLMENT = 404
     CA = 503
     CA_CSR_INVALID = 504
@@ -57,6 +58,8 @@ class ERROR:
     SERVER = 903
     USER = 904
     PARAMETER = 905
+    RESOLVER = 907
+    PARAMETER_USER_MISSING = 9051
 
 
 class privacyIDEAError(Exception):
@@ -73,21 +76,13 @@ class privacyIDEAError(Exception):
         return self.message
 
     def __str__(self):
-        pstr = "ERR%d: %r"
         if isinstance(self.message, str):
-            pstr = "ERR%d: %s"
+            return f"ERR{self.id}: {self.message}"
 
-        # if we have unicode here, we might fail with conversion error
-        try:
-            res = pstr % (self.id, self.message)
-        except Exception as exx:
-            res = "ERR{0:d}: {1!r}".format(self.id, self.message)
-        return res
+        return f"ERR{self.id}: {self.message!r}"
 
     def __repr__(self):
-        ret = '{0!s}(description={1!r}, id={2:d})'.format(type(self).__name__,
-                                                          self.message, self.id)
-        return ret
+        return f"{type(self).__name__}(description={self.message!r}, id={self.id:d})"
 
 
 class SubscriptionError(privacyIDEAError):
@@ -197,4 +192,10 @@ class ParameterError(privacyIDEAError):
 class DatabaseError(privacyIDEAError):
     """Error in the database layer"""
     def __init__(self, description="database error!", eid=ERROR.DATABASE):
+        privacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class ResolverError(privacyIDEAError):
+    """Error in user resolver"""
+    def __init__(self, description="resolver error!", eid=ERROR.RESOLVER):
         privacyIDEAError.__init__(self, description=description, id=eid)

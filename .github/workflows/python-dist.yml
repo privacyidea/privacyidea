@@ -27,7 +27,7 @@ jobs:
       run: >-
         python -m build --sdist --wheel --outdir dist/
     - name: Upload packages to artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: dist/*
     - name: Create GitHub pre-release

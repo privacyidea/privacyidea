@@ -1,0 +1,23 @@
+name: codespell
+on: [pull_request]
+jobs:
+  reviewdog-codespell:
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    name: reviewdog / codespell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install codespell
+        run: |
+          python -m pip install -U codespell
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          codespell -q 3 -S $(paste -s -d, .codespell_skip) $(test -e .codespell_ignore && echo "-I .codespell_ignore") . \
+          | reviewdog -efm="%f:%l: %m" -name="rd-codespell" -reporter=github-pr-review -level=info

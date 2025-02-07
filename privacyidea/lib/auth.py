@@ -89,11 +89,7 @@ def delete_db_admin(username):
 
 
 @libpolicy(login_mode)
-def check_webui_user(user_obj,
-                     password,
-                     options=None,
-                     superuser_realms=None,
-                     check_otp=False):
+def check_webui_user(user, password, options=None, superuser_realms=None, check_otp=False):
     """
     This function is used to authenticate the user at the web ui.
     It checks against the userstore or against OTP/privacyidea (check_otp).
@@ -103,8 +99,8 @@ def check_webui_user(user_obj,
     * the role of the user
     * the "detail" dictionary of the response
 
-    :param user_obj: The user who tries to authenticate
-    :type user_obj: User Object
+    :param user: The user who tries to authenticate
+    :type user: User Object
     :param password: Password, static and or OTP
     :param options: additional options like g and clientip
     :type options: dict
@@ -123,7 +119,7 @@ def check_webui_user(user_obj,
     if check_otp:
         # check if the given password matches an OTP token
         try:
-            check, details = check_user_pass(user_obj, password, options=options)
+            check, details = check_user_pass(user, password, options=options)
             details["loginmode"] = "privacyIDEA"
             if check:
                 user_auth = True
@@ -131,12 +127,12 @@ def check_webui_user(user_obj,
             log.debug("Error authenticating user against privacyIDEA: {0!r}".format(e))
     else:
         # check the password of the user against the userstore
-        if user_obj.check_password(password):
+        if user.check_password(password):
             user_auth = True
 
     # If the realm is in the SUPERUSER_REALM then the authorization role
     # is risen to "admin".
-    if user_obj.realm in superuser_realms:
+    if user.realm in superuser_realms:
         role = ROLE.ADMIN
 
     return user_auth, role, details

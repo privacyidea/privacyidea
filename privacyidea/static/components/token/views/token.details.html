@@ -205,9 +205,23 @@
                                       aria-hidden="true"></span>
                                 <span translate>PKCS12</span></a>.
                         </span>
-                        <span ng-hide="['certificate', 'pkcs12']
-                        .indexOf(k)!=-1">
-                            {{ k }}: {{ v | truncate:30 }}
+                        <span ng-hide="['certificate', 'pkcs12'].indexOf(k)!=-1">
+                            <!-- Extra options for refilltoken: Delete and copy to clipboard -->
+                            <button class="btn btn-transparent btn-sm btn-danger"
+                                    ng-show="!askDeleteInfo && token.tokentype =='passkey' && k.startsWith('refilltoken')
+                                            && loggedInUser.role == 'admin' && checkRight('settokeninfo')"
+                                    ng-click="askDeleteInfo=true">
+                               <span class="glyphicon glyphicon-trash"></span>
+                            </button>
+                            <button ng-show="askDeleteInfo" ng-click="deleteTokenInfo(k)" translate>Delete</button>
+                            <button ng-show="askDeleteInfo" ng-click="askDeleteInfo = false" translate>Cancel</button>
+                            <button class="btn btn-transparent btn-sm"
+                                    ng-show="!askDeleteInfo && token.tokentype =='passkey' && k.startsWith('refilltoken')"
+                                    ng-click="copyTokeninfoClipboard(v)">
+                               <span class="glyphicon glyphicon-copy"></span>
+                           </button>
+                            <!-- Truncate at 85 so at least the refilltokens can be shown in full -->
+                            {{ k }}: {{ v | truncate:85 }}
                         </span>
                     </li>
                 </ul>
@@ -401,7 +415,6 @@
         </tr>
 
         <!-- =================== TOKEN FUNCTIONS =============================== -->
-
         <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0
             || token.locked || !checkRight('resync')">
             <td>
@@ -485,21 +498,31 @@
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
-
-                <button class="btn btn-primary" ng-disabled="!testPassword"
+                <button class="btn btn-primary" ng-disabled="!testPassword" ng-hide="token.tokentype == 'passkey'"
                         id="testOtpButton"
                         uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test token</span>
                 </button>
-                <button class="btn btn-primary" ng-disabled="!testPassword"
+                <button class="btn btn-primary" ng-disabled="!testPassword" ng-hide="token.tokentype == 'passkey'"
                         id="testOtpOnlyButton"
                         uib-tooltip="{{ 'Check OTP only.'|translate }}"
                         ng-click="testOtp('1')">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test OTP only</span>
                 </button>
+                <!-- Test Passkey -->
+                <button class="btn btn-primary" ng-show="token.tokentype == 'passkey'"
+                        id="testPasskeyButton"
+                        uib-tooltip="{{ 'Test Passkey.'|translate }}"
+                        ng-click="testPasskey()">
+                    <span class="glyphicon glyphicon-question-sign"></span>
+                    <span>Test Passkey</span>
+                </button>
+                <div ng-show="loggedinUsername">
+                    <p translate>You will be logged in as: {{ loggedinUsername }}</p>
+                </div>
             </td>
         </tr>
     </table>
@@ -556,7 +579,6 @@
         </button>
     </div>
 </div>
-
 
 <div ng-show="checkRight('assign')">
     <h4 ng-hide="token.user_id || token.locked" translate>

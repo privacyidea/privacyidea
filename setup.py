@@ -4,7 +4,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.10"
+VERSION = "3.11dev2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -61,7 +61,8 @@ install_requires = [
     "requests",
     "segno",
     "smpplib",
-    "SQLAlchemy<2.0"
+    "SQLAlchemy<2.0",
+    "webauthn"
 ]
 
 
@@ -120,7 +121,6 @@ setup(
         'doc': ["Pallets-Sphinx-Themes",
                 "Sphinx",
                 "sphinxcontrib-httpdomain",
-                "sphinxcontrib-plantuml",
                 "sphinxcontrib-spelling"],
         'test': ["mock",
                  "pyparsing",
@@ -158,7 +158,6 @@ setup(
                  " Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
                  'Programming Language :: Python :: 3.10',
                  'Programming Language :: Python :: 3.11',

@@ -10,6 +10,8 @@ maxstaubach @ GitHub
 Nils Behlen <nils.behlen@netknights.it>
 pablo-knight <julio.storch@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
+Clemens Weissbacher <clemens.weissbacher@uibk.ac.at>
+samir-at-netknights <samir.nasher_taher@netknights.it>
 
 # Authors in version 3.9
 

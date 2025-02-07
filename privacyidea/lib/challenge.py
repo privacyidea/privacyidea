@@ -46,16 +46,12 @@ def get_challenges(serial=None, transaction_id=None, challenge=None):
     sql_query = Challenge.query
 
     if serial is not None:
-        # filter for serial
         sql_query = sql_query.filter(Challenge.serial == serial)
 
     if transaction_id is not None:
-        # filter for transaction id
-        sql_query = sql_query.filter(Challenge.transaction_id ==
-                                     transaction_id)
+        sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
 
     if challenge is not None:
-        # filter for this challenge
         sql_query = sql_query.filter(Challenge.challenge == challenge)
 
     challenges = sql_query.all()

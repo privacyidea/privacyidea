@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete Container</span>
                     </button>
-                    <!-- only allowed if delete token action is set -->
+                    <!-- Only allowed if delete token action is set -->
                     <button class="btn btn-danger"
                             ng-disabled="!checkRight('container_delete') || !checkRight('delete') ||
                                          getAllTokenSerials().length === 0"
@@ -304,13 +304,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <th>
                 <div ng-show="loggedInUser.isAdmin">
                     <button ng-click="removeAllTokens(token.serial)"
-                            class="btn btn-transparent btn-danger btn-header"
+                            class="btn btn-transparent btn-warning btn-header btn-sm"
                             ng-hide="showDialogAll"
                             ng-disabled="!checkRight('container_remove_token') || getAllTokenSerials().length === 0">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove All</span>
                     </button>
-                    <button class="btn btn-transparent btn-danger btn-header" ng-click="showDialogAll=true"
+                    <button class="btn btn-transparent btn-danger btn-header btn-sm" ng-click="showDialogAll=true"
                             ng-disabled="!checkRight('delete') || getAllTokenSerials().length === 0"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialogAll">
                         <span class="glyphicon glyphicon-trash"></span>
@@ -318,7 +318,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     </button>
                     <span ng-show="showDialogAll" translate> Delete all tokens?</span><br>
                     <button class="btn btn-danger" ng-click="deleteAllTokens(getContainer)"
-                            ng-show="showDialogAll">
+                            ng-show="showDialogAll && checkRight('delete')">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                     </button>
@@ -401,28 +401,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </td>
             <td>
                 <fieldset ng-disabled="!token.tokentype">
-                    <button class="btn btn-transparent btn-danger"
+                    <button class="btn btn-transparent btn-warning btn-sm"
                             ng-hide="showDialog[token.serial]"
                             ng-disabled="!checkRight('container_remove_token')"
                             ng-click="removeOneToken(token.serial)">
                         <span class="glyphicon glyphicon-remove"></span>
                         <span translate>Remove</span>
                     </button>
-                    <button class="btn btn-transparent btn-danger" ng-click="deleteOneToken(token.serial, true)"
+                    <button class="btn btn-transparent btn-sm btn-danger" ng-click="deleteOneToken(token.serial, true)"
                             ng-disabled="!checkRight('delete')"
                             ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                     </button>
-                    <span ng-show="showDialog[token.serial]" translate> Delete this token? </span>
-                    <button class="btn btn-danger"
+                    <button class="btn btn-sm btn-danger"
                             ng-click="deleteOneToken(token.serial, false)"
-                            ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                            ng-show="showDialog[token.serial] && checkRight('delete')"
                             ng-disabled="!checkRight('delete')">
-                        <span class="glyphicon glyphicon-trash"></span>
-                        <span translate>Delete</span>
+                        <span translate>Delete Token</span>
                     </button>
-                    <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
+                    <button class="btn btn-sm btn-danger" ng-click="showDialog[token.serial]=false"
                             ng-show="showDialog[token.serial]">
                         <span translate>Cancel</span>
                     </button>
@@ -609,11 +607,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <a ui-sref="config.resolvers.list">{{ token_add.resolver }}</a>
                 </td>
                 <td>
-                    <a ui-sref="token.containerdetails({containerSerial: token_add.container_serial})">{{ token_add.container_serial }}</a>
+                    <a ui-sref="token.containerdetails({containerSerial: token_add.container_serial})">{{ token_add.container_serial
+                        }}</a>
                 </td>
                 <td>
                     <button ng-click="addToken(token_add.serial)"
-                            class="btn btn-transparent btn-primary"
+                            class="btn btn-transparent btn-sm btn-primary"
                             ng-disabled="token_add.container_serial===containerSerial || !checkRight('container_add_token')"
                             ng-hide="(token_add.container_serial===containerSerial || !checkRight('container_add_token')) && hide_buttons">
                         <span class="glyphicon glyphicon-plus"></span>

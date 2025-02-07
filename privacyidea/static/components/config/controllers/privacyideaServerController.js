@@ -19,80 +19,91 @@
  *
  */
 myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "inform",
-                                                 "gettextCatalog", "$state",
-                                                 "$location", "ConfigFactory",
-                                                 function($scope, $stateParams,
-                                                          inform, gettextCatalog,
-                                                          $state, $location,
-                                                          ConfigFactory) {
-    // Set the default route
-    if ($location.path() === "/config/privacyideaserver") {
-        $location.path("/config/privacyideaserver/list");
-    }
+    "gettextCatalog", "$state",
+    "$location", "ConfigFactory",
+    function ($scope, $stateParams,
+              inform, gettextCatalog,
+              $state, $location,
+              ConfigFactory) {
+        // Set the default route
+        if ($location.path() === "/config/privacyideaserver") {
+            $location.path("/config/privacyideaserver/list");
+        }
 
-    // Get all servers
-    $scope.getPrivacyideaServers = function (identifier) {
-        ConfigFactory.getPrivacyidea(function(data) {
-            $scope.privacyideaServers = data.result.value;
-            //debug: console.log("Fetched all privacyidea servers");
-            //debug: console.log($scope.privacyideaServers);
-            // return one single privacyIDEA server
-            if (identifier) {
-                $scope.params = $scope.privacyideaServers[identifier];
-                $scope.params["identifier"] = identifier;
-            }
-        });
-    };
-
-    if ($location.path() === "/config/privacyideaserver/list") {
-    // in case of list we fetch all servers
-        $scope.getPrivacyideaServers();
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing privacyIDEA Server
-        $scope.getPrivacyideaServers($scope.identifier);
-        } else {
-        // This is a new privacyIDEA server
+        $scope.identifier = $stateParams.identifier;
         $scope.params = {
             tls: true
-        }
-    }
+        };
 
-    $scope.delPrivacyideaServer = function (identifier) {
-        ConfigFactory.delPrivacyidea(identifier, function(data) {
+        // Get all servers
+        $scope.getPrivacyideaServers = function () {
+            ConfigFactory.getPrivacyidea(function (data) {
+                $scope.privacyideaServers = data.result.value;
+                //debug: console.log("Fetched all privacyidea servers");
+                //debug: console.log($scope.privacyideaServers);
+                // return one single privacyIDEA server
+                if ($scope.identifier) {
+                    // We are editing an existing privacyIDEA Server
+                    $scope.params = $scope.privacyideaServers[$scope.identifier];
+                    $scope.params["identifier"] = $scope.identifier;
+                } else {
+                    // This is a new privacyIDEA server or the list of all servers
+                    $scope.params = {
+                        tls: true
+                    };
+                }
+            });
+        };
+
+        $scope.getPrivacyideaServers();
+
+        $scope.delPrivacyideaServer = function (identifier) {
+            ConfigFactory.delPrivacyidea(identifier, function (data) {
+                $scope.getPrivacyideaServers();
+            });
+        };
+
+        $scope.addPrivacyideaServer = function (params) {
+            ConfigFactory.addPrivacyidea(params, function (data) {
+                $scope.getPrivacyideaServers();
+            });
+        };
+
+        $scope.testPrivacyideaServer = function () {
+            ConfigFactory.testPrivacyidea($scope.params, function (data) {
+                if (data.result.value === true) {
+                    inform.add(gettextCatalog.getString("Request to remote" +
+                            " privacyIDEA server successful."),
+                        {type: "info"});
+                }
+            });
+        };
+
+        $scope.savePrivacyideaServer = function () {
+            ConfigFactory.addPrivacyidea($scope.params, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("privacyIDEA Server" + " Config saved."), {type: "info"});
+                    $scope.deselectPrivacyideaServer();
+                    $state.go('config.privacyideaserver.list');
+                    $scope.reload();
+                }
+            });
+        };
+
+        $scope.deselectPrivacyideaServer = function () {
+            $scope.identifier = null;
+            $scope.params = {
+                tls: true
+            };
             $scope.getPrivacyideaServers();
-        });
-    };
+        };
 
-    $scope.addPrivacyideaServer = function (params) {
-        ConfigFactory.addPrivacyidea(params, function(data) {
+        $scope.editPrivacyideaServer = function (identifier) {
+            $scope.identifier = identifier;
             $scope.getPrivacyideaServers();
-        });
-    };
+        };
 
-    $scope.testPrivacyideaServer = function() {
-        ConfigFactory.testPrivacyidea($scope.params, function(data) {
-           if (data.result.value === true) {
-               inform.add(gettextCatalog.getString("Request to remote" +
-                       " privacyIDEA server successful."),
-                   {type: "info"});
-           }
-        });
-    };
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getPrivacyideaServers);
 
-    $scope.savePrivacyideaServer= function() {
-        ConfigFactory.addPrivacyidea($scope.params, function(data){
-            if (data.result.status === true) {
-                inform.add(gettextCatalog.getString("privacyIDEA Server" + " Config saved."), {type: "info"});
-                $state.go('config.privacyideaserver.list');
-                $scope.reload();
-            }
-        });
-    };
-
-    // listen to the reload broadcast
-    $scope.$on("piReload", $scope.getPrivacyideaServers);
-
-}]);
+    }]);

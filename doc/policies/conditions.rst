@@ -3,8 +3,8 @@
 Extended Policy Conditions
 --------------------------
 
-Since privacyIDEA 3.1, *extended policy conditions* allow to define more advanced rules
-for policy matching, i.e. for determining which policies are valid for a
+Since privacyIDEA 3.1, *extended policy conditions* allow defining more advanced
+rules for policy matching, i.e. for determining which policies are valid for a
 specific request.
 
 Conditions can be added to a policy via the WebUI. In order for a policy to
@@ -33,8 +33,8 @@ Sections
 privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``
 and ``HTTP Environment``.
 
-``userinfo``
-^^^^^^^^^^^^
+userinfo
+^^^^^^^^
 
 The section ``userinfo`` can be used to define conditions that are checked against attributes of the
 current user in the request (the so-called *handled user*).
@@ -63,12 +63,15 @@ with the following attribute mapping:
 
 .. code-block:: json
 
-    { "phone": "telephoneNumber",
+    {
+      "phone": "telephoneNumber",
       "mobile": "mobile",
       "email": "mailPrimaryAddress",
       "groups": "memberOf",
       "surname": "sn",
-      "givenname": "givenName" }
+      "givenname": "givenName"
+    }
+
 
 You can further define ``groups`` to be a multi-value attribute by setting the
 *Multivalue Attributes* option to ``["groups"]``.
@@ -84,11 +87,13 @@ email address ending in ``@example.com``:
 * **Scope**: webui
 * **Action**: ``login_mode=disable``
 * 1) **additional condition** (active):
+
     * **Section**: ``userinfo``
     * **Key**: ``email``
     * **Comparator**: ``matches``
     * **Value**: ``.*@example.com``
-  2) **additional condition** (active):
+*  2) **additional condition** (active):
+
     * **Section**: ``userinfo``
     * **Key**: ``groups``
     * **Comparator:** ``contains``
@@ -108,16 +113,16 @@ If the userinfo of the user that is trying to log in does not contain attributes
 throws an error and the request is aborted.
 
 
-``tokeninfo``
-^^^^^^^^^^^^
+tokeninfo
+^^^^^^^^^
 
 The tokeninfo condition works the same way as userinfo but matches the tokeninfo instead.
 
 .. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
    throw an exception whenever the token object cannot be determined (usually from the serial).
 
-``token``
-^^^^^^^^^
+token
+^^^^^
 
 The token condition works on the database columns of the token. This would be
 ``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
@@ -128,7 +133,7 @@ also ``failcount`` and ``tokentype``.
    It will also throw an error, if the request ``Key`` does not exist
    as a database column.
 
-.. note:: The matching is case sensitive. Note, that e.g. token types are
+.. note:: The matching is case-sensitive. Note, that e.g. token types are
    stored in lower case in the database.
 
 **Example**: The administrator could define a dedicated policy in the scope *user* with the
@@ -136,8 +141,8 @@ action ``delete`` and the token condition ``active``, ``<``, ``1``. For an inact
 would evaluate to ``0`` and thus be smaller than ``1``. An ``active`` token would evaluate to ``1``.
 This would allow the user to delete only inactive tokens, but not still active tokens.
 
-``HTTP Request Header``
-^^^^^^^^^^^^^^^^^^^^^^^
+HTTP Request Header
+^^^^^^^^^^^^^^^^^^^
 
 The section ``HTTP Request header`` can be used to define conditions that are checked against
 the request header key-value pairs.
@@ -149,18 +154,18 @@ of the required value.
 
 .. note:: privacyIDEA raises an error if ``Key`` refers to an unknown request header.
    If the header in question is missing, the policy can not get completely evaluated.
-   Be aware that requests, that do not contain the header ``Key`` will always fail!
+   Be aware that requests that do not contain the header ``Key`` will always fail!
    Thus, if you are using uncommon headers you should
    in addition restrict the policy e.g. to client IPs, to assure, that a request from
    this certain IP address will always contain the header, that is to be checked.
 
-``HTTP Environment``
-^^^^^^^^^^^^^^^^^^^^
+HTTP Environment
+^^^^^^^^^^^^^^^^
 
 The section ``HTTP Environment`` can be used to define conditions that are checked against
 the HTTP environment key-value pairs.
 
-The ``Key`` is case sensitive.
+The ``Key`` is case-sensitive.
 
 The environment contains information like the ``PATH_INFO`` which contains the name of the
 endpoint like ``/validate/check`` or ``/auth``.
@@ -186,13 +191,13 @@ The following comparators can be used in definitions of policy conditions:
   ``!matches`` evaluates to true if this is not the case.
 
 
-If you want to define a policy that e.g. only matches users from Active Directory, that are in a
+If you want to define a policy that e.g. only matches users from Active Directory that are in a
 VPN User group, you would first need to map the `memberOf` attribute in the LDAP resolver to a certain
 attribute like `"groups": "memberOf"`. Then you need to define the extended condition:
 
    "groups" contains "CN=VPN Users,OU=Groups,DC=example,DC=com"
 
-If you however want to define a policy that matches a certain e.g. a certain username from a list,
+If you however want to define a policy that matches e.g. a certain username from a list,
 you would have to define an extended condition like:
 
    "username" in "alice,bob,charlie"

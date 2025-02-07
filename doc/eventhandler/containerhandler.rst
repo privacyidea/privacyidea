@@ -1,7 +1,7 @@
 .. _containerhandler:
 
 Container Handler Module
---------------------
+------------------------
 
 .. index:: Container Handler, Handler Modules
 
