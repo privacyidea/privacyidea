@@ -416,9 +416,9 @@ will disable those tokens.
 
 This script can be well used with the :ref:`scripthandler`.
 
-.. _pitokenjanitor:
+.. _pi-tokenjanitor:
 
-The pi-token-janitor Script
+The pi-tokenjanitor Script
 -------------------------
 
 .. index:: pi-token-janitor
@@ -437,7 +437,7 @@ With the *find* command you can search for tokens in the database. You can use s
 '--tokenattribute' to find tokens with specific token attributes.
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=HOTP123456' --tokenattribute 'tokentype=hotp'
+    pi-tokenjanitor find --tokenattribute 'serial=HOTP123456' --tokenattribute 'tokentype=hotp'
 
 Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
 .. note:: You can also use regular expressions in the tokenattribute filter.
@@ -448,7 +448,7 @@ Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
 '--tokeninfo' to find tokens with tokeninfos.
 Example::
 
-    pitokenjanitor find --tokeninfo 'tokenkind=software,import_time<2021-06-01 18:00:00+0200'
+    pi-tokenjanitor find --tokeninfo 'tokenkind=software,import_time<2021-06-01 18:00:00+0200'
 
 Search for all tokens with the tokeninfo-key ``tokenkind`` and the value ''software'' and with an import_time before
 the given date.
@@ -460,7 +460,7 @@ the given date.
 '--tokencontainer' to find tokens in a specific token container.
 Example::
 
-    pitokenjanitor find --tokencontainer 'serial=SMPH00009272'
+    pi-tokenjanitor find --tokencontainer 'serial=SMPH00009272'
 
 Search for all tokens in the token container with the serial ``SMPH00009272``.
 .. note:: You can also use regular expressions in the tokencontainer filter.
@@ -472,13 +472,13 @@ Search for all tokens in the token container with the serial ``SMPH00009272``.
 without a specific tokeninfo-key.
 Example::
 
-    pitokenjanitor find --has-tokeninfo-key 'import_time'
+    pi-tokenjanitor find --has-tokeninfo-key 'import_time'
 
 Search for all tokens with the tokeninfo-key ``import_time``.
 '--has-not-tokeninfo-key' to find tokens without a specific tokeninfo-key.
 Example::
 
-    pitokenjanitor find --has-not-tokeninfo-key 'import_time'
+    pi-tokenjanitor find --has-not-tokeninfo-key 'import_time'
 
 --tokenower
 ***********
@@ -486,7 +486,7 @@ Example::
 the resolver.
 Example::
 
-    pitokenjanitor find --tokenowner 'user_id=642cf598-d9cf-1037-8083-a1df7d38c897'
+    pi-tokenjanitor find --tokenowner 'user_id=642cf598-d9cf-1037-8083-a1df7d38c897'
 
 .. note:: You can also use regular expressions in the tokenowner filter.
 .. note:: You can use the option '--tokenowner' multiple times.
@@ -496,10 +496,10 @@ Example::
 '--assigned' to find tokens that are assigned or unassigned.
 Example::
 
-    pitokenjanitor find --assigned False
+    pi-tokenjanitor find --assigned False
 
 or::
-    pitokenjanitor find --assigned True
+    pi-tokenjanitor find --assigned True
 
 --active
 ********
@@ -507,10 +507,10 @@ or::
 
 Example::
 
-    pitokenjanitor find --active False
+    pi-tokenjanitor find --active False
 
 or::
-    pitokenjanitor find --active True
+    pi-tokenjanitor find --active True
 
 --orphaned
 **********
@@ -519,7 +519,7 @@ exist in the user store anymore. This can happen e.g. if an LDAP user gets delet
 
 Example::
 
-    pitokenjanitor find --orphaned 1
+    pi-tokenjanitor find --orphaned 1
 
 --range-of-serials
 ******************
@@ -527,7 +527,7 @@ Example::
 
 Example::
 
-    pitokenjanitor find --range-of-serials 'HOTP00000000-HOTP99999999'
+    pi-tokenjanitor find --range-of-serials 'HOTP00000000-HOTP99999999'
 
 .. note:: This matches the string as ASCII values. So consider case sensitivity.
 
@@ -537,7 +537,7 @@ Lists all found tokens.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list
 
 ..Note:: This command is the default command if no action is specified.
 
@@ -547,7 +547,7 @@ You can use this option to extend the output with user attributes.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --user_attributes email
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --user_attributes email
 
 --token_attributes
 ...................
@@ -555,7 +555,7 @@ You can use this option to extend the output with token attributes.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --token_attributes tokeninfo
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --token_attributes tokeninfo
 
 --sum
 ......
@@ -563,7 +563,7 @@ You can use this option to group the token output by user.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
 
 .. note:: The option '--sum' only works with the option '--user_attributes' not with '--token_attributes'.
 
@@ -573,7 +573,7 @@ Exports all tokens found.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export
 
 --format
 ........
@@ -581,7 +581,7 @@ The option '--format' can be used to output the results in a specific format. Th
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format json
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format json
 
 --b32
 .....
@@ -589,7 +589,7 @@ The option '--b32' can be used to output the results in base32 format.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' export --form CSV --b32
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --form CSV --b32
 
 ..Note:: The option '--b32' only works with the CSV format.
 
@@ -604,7 +604,7 @@ This agent must be set to 'set-tokenrealms' to set the tokenrealms.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set-tokenrealms --tokenrealms defrealm
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set-tokenrealms --tokenrealms defrealm
 
 Disables
 ********
@@ -612,7 +612,7 @@ Disables the found tokens.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' disable
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' disable
 
 Delete
 ******
@@ -620,7 +620,7 @@ Deletes the found tokens.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' delete
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' delete
 
 Unassign
 ********
@@ -628,7 +628,7 @@ Unassigns the found tokens.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' unassign
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' unassign
 
 Set_description
 ***************
@@ -640,7 +640,7 @@ This argument must be set to 'set_description' to set the description.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set_description --description 'example'
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_description --description 'example'
 
 Set_tokeninfo
 **************
@@ -652,7 +652,7 @@ This argument must be set to set the tokeninfo.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' set_tokeninfo --tokeninfo 'import_time=2021-06-01 18:00:00+0200,serial=OATH0004C900'
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_tokeninfo --tokeninfo 'import_time=2021-06-01 18:00:00+0200,serial=OATH0004C900'
 
 Remove_tokeninfo
 ****************
@@ -664,7 +664,7 @@ This argument must be set to specify witch tokeninfo should be removed.
 
 Example::
 
-    pitokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
 
 Import
 ~~~~~~
@@ -676,7 +676,7 @@ Imports token data from a PSKC file.
 
 Example::
 
-    pitokenjanitor import pskc /path/to/pskcfile.xml
+    pi-tokenjanitor import pskc /path/to/pskcfile.xml
 
 --preshared_key
 ...............
@@ -684,7 +684,7 @@ The option '--preshared_key' can be used to specify the preshared key for the PS
 
 Example::
 
-    pitokenjanitor import pskc /path/to/pskcfile.xml --preshared_key 'mykey'
+    pi-tokenjanitor import pskc /path/to/pskcfile.xml --preshared_key 'mykey'
 
 --validate_mac
 ..............
@@ -701,5 +701,5 @@ Updates token data from a yaml file.
 
 Example::
 
-    pitokenjanitor update yaml /path/to/yamlfile.yaml
+    pi-tokenjanitor update yaml /path/to/yamlfile.yaml
 
