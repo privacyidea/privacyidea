@@ -1,43 +1,41 @@
 /**
- * http://www.privacyidea.org
- *
- * (c) Cornelius Kölbel, <cornelius.koelbel@netknights.it>
+ * (c) NetKnights GmbH 2024,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * License as published by the Free Software Foundation; either
+ * as published by the Free Software Foundation; either
  * version 3 of the License, or any later version.
  *
  * This code is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
  *
  * You should have received a copy of the GNU Affero General Public
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * SPDX-FileCopyrightText: 2024 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 
-myApp.controller("infoController", ["InfoFactory",
-                                         "$scope", "$location",
-                                         function (InfoFactory,
-                                                   $scope, $location ) {
+myApp.controller("infoController", ["InfoFactory", "$scope", "$location",
+    function (InfoFactory, $scope, $location) {
 
-$('html,body').scrollTop(0);
+        $('html,body').scrollTop(0);
 
-$scope.rss = [];
-$scope.getRSS = function () {
-    InfoFactory.getRSS(function (rssfeeds) {
-        $scope.rss = rssfeeds;
-    });
-}
+        $scope.rss = [];
+        $scope.getRSS = function () {
+            InfoFactory.getRSS(function (rssfeeds) {
+                $scope.rss = rssfeeds;
+            });
+        }
 
-$scope.getRSS()
+        $scope.getRSS()
 
- // listen to the reload broadcast
-$scope.$on("piReload", function () {
-    $scope.getRSS();
-});
+        // listen to the reload broadcast
+        $scope.$on("piReload", function () {
+            $scope.getRSS();
+        });
 
-}]);
+    }]);

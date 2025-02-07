@@ -19,15 +19,15 @@
 """
 This module reads news from the given RSS feeds
 """
-RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
-             "privacyIDEA News": "https://privacyidea.org/feed",
-             "NetKnights News": "https://netknights.it/en/feed"}
-
 
 import feedparser
 import logging
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
+
+RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
+             "privacyIDEA News": "https://privacyidea.org/feed",
+             "NetKnights News": "https://netknights.it/en/feed"}
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ RSS_NEWS = {}
 FETCH_DAYS = 180
 
 
-def get_news(rss_feeds=None, channel=None, days=FETCH_DAYS):
+def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = FETCH_DAYS) -> dict:
     """
     Fetch news from the given RSS feeds
 
