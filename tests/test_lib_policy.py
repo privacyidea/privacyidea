@@ -17,7 +17,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
-                                    get_allowed_custom_attributes)
+                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -25,7 +25,6 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
-
 
 
 def _check_policy_name(polname, policies):
@@ -1307,21 +1306,21 @@ class PolicyTestCase(MyTestCase):
 
         # an unknown section in the condition
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "equals", "verysecure", True)])
+                   conditions=[("somesection", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegex(PolicyError, r".*unknown section.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownsection")
 
         # ... but the error does not occur if the condition is inactive
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "equals", "verysecure", False)])
+                   conditions=[("somesection", "bla", "equals", "verysecure", False)])
         all_policies = P.list_policies()
         self.assertEqual(P.match_policies(user_object=user1), all_policies)
         delete_policy("unknownsection")
 
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("userinfo", "bla", "equals", "verysecure", True)])
+                   conditions=[("userinfo", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegex(PolicyError, r".*Unknown key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")
@@ -1351,7 +1350,7 @@ class PolicyTestCase(MyTestCase):
         # Check what the user "import_admin" is allowed to do
         # Allowed to import on pinode 1
         pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode1")
-        self.assertEqual({"import_node1"}, set(p['name'] for p in pols),)
+        self.assertEqual({"import_node1"}, set(p['name'] for p in pols), )
         # Not allowed to import on pinode 2
         pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode2")
         self.assertEqual(set(), set(p['name'] for p in pols))
@@ -1561,6 +1560,38 @@ class PolicyTestCase(MyTestCase):
         self.assertIn(test_ip, plist[0].get("client"))
         # clean up
         delete_policy(pname)
+
+    def test_41_convert_action_dict_to_python_dict_success(self):
+        action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        correct_dict = {"Key1": "Value1", "Community News": "https://community.privacyidea.org/c/news.rss",
+                        "Key2": "Value2"}
+        self.assertDictEqual(correct_dict, python_dict)
+
+        # single entry
+        action_dict = "'Key1':'Value1'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertDictEqual({"Key1": "Value1"}, python_dict)
+
+        # empty string
+        python_dict = convert_action_dict_to_python_dict("")
+        self.assertEqual({}, python_dict)
+
+    def test_42_convert_action_dict_to_python_dict_fail(self):
+        # invalid separator between key-value pairs
+        action_dict = "'Key1':'Value1'- 'Community News':'https://community.privacyidea.org/c/news.rss','Key2':'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
+
+        # keys and values not set in single quotes
+        action_dict = "Key1:Value1-Community News:https://community.privacyidea.org/c/news.rss-Key2:Value2"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
+
+        # invalid separator between key and value
+        action_dict = "'Key1' 'Value1'-'Community News': 'https://community.privacyidea.org/c/news.rss'-'Key2'-'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
 
 
 class PolicyMatchTestCase(MyTestCase):

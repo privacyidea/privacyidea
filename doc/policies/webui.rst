@@ -482,14 +482,18 @@ rss_feeds
 
 type: str
 
-This policy defines, which RSS feeds are displayed in the Web UI to the users or administrators.
-This takes a dictionary of feeds. While the key is a description of the corresponding feed.
+This policy defines which RSS feeds are displayed in the Web UI to the users or administrators.
+The input format is like ``'Feed Name':'URL'-'Another Feed Name':'URL'``. The feed name will be displayed as the title
+for the feed defined by the URL. Feed name and url shall be wrapped in single quotes and separated by a colon.
+Multiple feeds can be separated by a dash. Note that commas are not allowed in policy actions at all.
 
-The default is::
+The default is:
 
-  {"Community News": "https://community.privacyidea.org/c/news.rss",
-   "privacyIDEA News": "https://privacyidea.org/feed",
-   "NetKnights News": "https://netknights.it/en/feed"}
+.. code-block::
+
+    'Community News':'https://community.privacyidea.org/c/news.rss'-
+    'privacyIDEA News':'https://privacyidea.org/feed'-
+    'NetKnights News':'https://netknights.it/en/feed'
 
 This way you can display news feeds from the community, privacyIDEA and NetKnights informing you about new
 updates or other critical information.

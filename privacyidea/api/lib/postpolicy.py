@@ -52,7 +52,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
-from .prepolicy import check_max_token_user, check_max_token_realm
+from .prepolicy import check_max_token_user, check_max_token_realm, rss_age
 import functools
 import json
 import re
@@ -71,6 +71,7 @@ from privacyidea.lib.utils import create_img, get_version
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib import _, lazy_gettext
+from ...lib.info.rss import FETCH_DAYS
 
 log = logging.getLogger(__name__)
 
@@ -612,8 +613,6 @@ def get_webui_settings(request, response):
                                                 user=loginname, realm=realm).action_values(unique=True)
         require_description = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION,
                                             user=loginname, realm=realm).action_values(unique=False)
-        rss_age = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
-                                user=loginname, realm=realm).action_values(unique=True)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
@@ -634,8 +633,6 @@ def get_webui_settings(request, response):
             default_tokentype = list(default_tokentype_pol)[0]
         if len(logout_redirect_url_pol) == 1:
             logout_redirect_url = list(logout_redirect_url_pol)[0]
-        if len(rss_age) == 1:
-            rss_age = int(list(rss_age)[0])
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
@@ -688,7 +685,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         content["result"]["value"]["require_description"] = require_description
-        content["result"]["value"]["rss_age"] = rss_age
+        rss_age(request, None)
+        content["result"]["value"]["rss_age"] = request.all_data.get("rss_age", FETCH_DAYS)
+
         if role == ROLE.ADMIN:
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")

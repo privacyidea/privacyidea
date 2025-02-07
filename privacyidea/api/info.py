@@ -23,13 +23,10 @@ import logging
 from .lib.utils import send_result, getParam
 from ..lib.log import log_with
 from privacyidea.api.lib.prepolicy import prepolicy, rss_age
-from privacyidea.lib.policy import Match, SCOPE, ACTION
-from json import JSONDecodeError, loads
-
+from privacyidea.lib.policy import Match, SCOPE, ACTION, convert_action_dict_to_python_dict
 
 info_blueprint = Blueprint('info_blueprint', __name__)
 log = logging.getLogger(__name__)
-
 
 __doc__ = """
 The info API can be accessed via /info.
@@ -51,7 +48,7 @@ def rss():
     """
     Get the news from the configured RSS feeds.
 
-    :param channel: The channel to get the news from. If not given, the news from all channels are returned.
+    :jsonparam channel: The channel to get the news from. If not given, the news from all channels are returned.
     :type channel: str
 
     :return: JSON response with the news
@@ -60,14 +57,12 @@ def rss():
     param = request.all_data
     age = int(getParam(param, ACTION.RSS_AGE, default=FETCH_DAYS))
     channel = getParam(param, "channel")
-    feeds_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_FEEDS,
-                             user_object=request.User if hasattr(request, 'User') else None)
-                  .action_values(allow_white_space_in_action=True, unique=True))
-    if len(feeds_list) == 1:
-        try:
-            fk = list(feeds_list)[0]
-            feeds = loads(fk)
-        except JSONDecodeError as _e:
-            log.warning(u"RSS feeds could not be parsed. Check your policy {0!s}".format(feeds_list))
+    user = request.User if hasattr(request, 'User') else None
+    feeds_pol = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_FEEDS, user_object=user).action_values(
+        allow_white_space_in_action=True, unique=True))
+
+    if len(feeds_pol) == 1:
+        feeds_list = list(feeds_pol.keys())
+        feeds: dict = convert_action_dict_to_python_dict(feeds_list[0])
     r = get_news(channel=channel, days=age, rss_feeds=feeds)
     return send_result(r)

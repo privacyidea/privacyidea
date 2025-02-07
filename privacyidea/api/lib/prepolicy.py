@@ -2352,17 +2352,17 @@ def jwt_validity(request, action):
 
 def rss_age(request, action):
     """
-    This is a decorator for the /info/rss endpoint to adapt the the age of the displayed news feed
+    This is a decorator for the /info/rss endpoint to adapt the age of the displayed news feed
 
-    :param request:
-    :param action:
-    :return:
+    :param request: Request object
+    :param action: action value is not used in this decorator
+    :return: True
     """
     age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
                 user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
     # The default age for normal users is 0
     age = 0
-    if g.logged_in_user.get("role") == ROLE.ADMIN:
+    if g.get("logged_in_user", {}).get("role") == ROLE.ADMIN:
         # The default age for admins is 180
         age = 180
     if len(age_list) == 1:
