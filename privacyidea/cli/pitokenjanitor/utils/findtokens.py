@@ -321,11 +321,6 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
     if active is not None:
         active = is_true(active)
 
-    if assigned is not None:
-        filter_assigned = assigned.lower() == "true"
-    if active is not None:
-        filter_active = active.lower() == "true"
-
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
                                               realm=realm,
                                               resolver=resolver,
@@ -334,13 +329,13 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                                               assigned=assigned,
                                               psize=chunksize)
 
-    for tokenobj_list in iterable:
+    for token_object_list in iterable:
         filtered_list = []
-        tok_count = 0
-        tok_found = 0
-        for token_obj in tokenobj_list:
+        token_count = 0
+        token_found = 0
+        for token_obj in token_object_list:
             add = True
-            tok_count += 1
+            token_count += 1
             # TODO: We could do this with regex and the tokeninfo filter
             if has_not_tokeninfo_key:
                 if has_not_tokeninfo_key in token_obj.get_tokeninfo():
@@ -409,10 +404,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                     except ResolverError as e:
                         # Could not resolve user due to errors in the resolver.
                         # Don't mark the token as orphaned.
-                        if orphaned_on_error:
-                            add = True
-                        else:
-                            add = False
+                        add = is_true(orphaned_on_error)
                 else:
                     try:
                         if token_obj.user is not None and not token_obj.user.exist():
@@ -421,7 +413,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                         pass
 
             if add:
-                tok_found += 1
+                token_found += 1
                 # if everything matched, we append the token object
                 filtered_list.append(token_obj)
 
@@ -563,12 +555,12 @@ def export(ctx, export_format, b32):
                     continue
                 token_dict = tokenobj._to_dict(b32=b32)
                 owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
-                if type == "totp":
-                    print(f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
-                          f"{token_dict.get('otplen')}, {token_dict.get('info_list', {}).get('timStep')}")
-                else:
-                    print(f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
+                export = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
                           f"{token_dict.get('otplen')}")
+                if type == "totp":
+                    print(export + "{token_dict.get('info_list', {}).get('timeStep')}")
+                else:
+                    print(export)
         elif export_format == "yaml":
             token_list = []
             for tokenobj in tlist:

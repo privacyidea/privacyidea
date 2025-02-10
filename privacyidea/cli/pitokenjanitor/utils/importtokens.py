@@ -80,16 +80,16 @@ def pskc(pskc_file, preshared_key, validate_mac):
     failed_tokens = []
     for serial in tokens:
         try:
-            print("Importing token {0!s}".format(serial))
+            print(f"Importing token {serial}")
             import_token(serial, tokens[serial])
             success = success + 1
         except Exception as e:
             failed = failed + 1
             failed_tokens.append(serial)
-            print("--- Failed to import token. {0!s}".format(e))
+            print(f"--- Failed to import token. {e}")
 
     if not_parsed_tokens:
-        print("The following tokens were not read from the PSKC file"
-              " because they could not be validated: {0!s}".format(not_parsed_tokens))
-    print("Successfully imported {0!s} tokens.".format(success))
-    print("Failed to import {0!s} tokens: {1!s}".format(failed, failed_tokens))
+        print(f"The following tokens were not read from the PSKC file"
+              f" because they could not be validated: {not_parsed_tokens}")
+    print(f"Successfully imported {success} tokens.")
+    print(f"Failed to import {failed} tokens: {failed_tokens}")
