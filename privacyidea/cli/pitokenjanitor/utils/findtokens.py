@@ -63,7 +63,7 @@ def _compare_not(_key, given_regex):
 
 
 def _parse_datetime(key, value):
-    #TODO: Rewrite this function after #1586 is merged
+    # TODO: Rewrite this function after #1586 is merged
     if key == ACTION.LASTAUTH:
         # Special case for last_auth: Legacy values are given in UTC time!
         last_auth = parser.parse(value)
@@ -154,13 +154,13 @@ def build_tokenvalue_filter(m):
         try:  # try to convert the given value to datetime
             given_value = _try_convert_to_datetime(m.group(3))
             filter.append(_compare_before(m.group(1), given_value))
-        except:
+        except ValueError:
             filter.append(_compare_greater_than(m.group(1), m.group(3)))
     elif m.group(2) == '>':
         try:  # try to convert the given value to datetime
             given_value = _try_convert_to_datetime(m.group(3))
             filter.append(_compare_after(m.group(1), given_value))
-        except:
+        except ValueError:
             filter.append(_compare_less_than(m.group(1), m.group(3)))
     elif m.group(2) == '!':
         filter.append(_compare_not(m.group(1), m.group(3)))
@@ -246,9 +246,9 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
     filter_assigned = None
     orphaned = orphaned or ""
 
-    if not assigned is None:
+    if assigned is not None:
         filter_assigned = assigned.lower() == "true"
-    if not active is None:
+    if active is not None:
         filter_active = active.lower() == "true"
 
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
@@ -268,7 +268,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
             add = True
             sys.stderr.flush()
             tok_count += 1
-            #TODO: We could do this with regex and the tokeninfo filter
+            # TODO: We could do this with regex and the tokeninfo filter
             if has_not_tokeninfo_key:
                 if has_not_tokeninfo_key in token_obj.get_tokeninfo():
                     add = False
@@ -300,7 +300,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
             if tokenowner_filter:
                 for att in tokenowner_filter:
                     user = token_obj.user
-                    if not user is None:
+                    if user is not None:
                         value = user.info.get(att[0])
                         if value is None:
                             add = False
@@ -311,7 +311,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
             if tokencontaner_filter:
                 for att in tokencontaner_filter:
                     container = find_container_for_token(token_obj.token.serial)
-                    if not container is None:
+                    if container is not None:
                         container_info = vars(container)
                         container_info["serial"] = container.serial
                         container_info["type"] = container.type
@@ -343,7 +343,7 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
 
 @find_cli.group('find', invoke_without_command=True)
 @click.option('--chunksize', default=1000, help='The number of tokens to fetch in one request.')
-#TODO: Maby remove has-not-tokeninfo-key and has-tokeninfo-key and use regex instead
+# TODO: Maby remove has-not-tokeninfo-key and has-tokeninfo-key and use regex instead
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
 @click.option('--tokeninfo', 'tokeninfos', multiple=True, help='Match for a certain tokeninfo from the database.')
@@ -454,7 +454,7 @@ def list(ctx, user_attributes, token_attributes, sum_tokens):
                                   'Default is xml.')
 @click.option('--b32', is_flag=True,
               help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
-#TODO: check if there is a better way
+# TODO: check if there is a better way
 @click.pass_context
 def export(ctx, format, b32):
     """
