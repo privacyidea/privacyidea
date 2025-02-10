@@ -30,7 +30,7 @@ class PITokenJanitorLoadTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("Update existing tokens in the privacyIDEA system.",
                       result.output, result)
-        self.assertIn("Finds all tokens which match the conditions.",
+        self.assertIn("Find all tokens which match the given conditions.",
                       result.output, result)
 
     def test_02_pitokenjanitor_find_help(self):
@@ -39,16 +39,16 @@ class PITokenJanitorLoadTestCase(CliTestCase):
         self.assertIn("List all found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "export", "-h"])
-        self.assertIn("Exports the found tokens.",
+        self.assertIn("Export found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "set_tokenrealms", "-h"])
         self.assertIn("Sets the realms of the found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "disable", "-h"])
-        self.assertIn("Disables the found tokens.",
+        self.assertIn("Disable the found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "delete", "-h"])
-        self.assertIn("Deletes the found tokens.",
+        self.assertIn("Delete the found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "unassign", "-h"])
         self.assertIn("Unassigns the found tokens from their owners.",
