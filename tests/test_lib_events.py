@@ -1848,7 +1848,7 @@ class RequestManglerTestCase(MyTestCase):
                             "match_parameter": "user",
                             "value": "hans",
                             "match_pattern": "cornelius",
-                            "reset_user": False
+                            "reset_user": "False"
                         }
                 }
         }
