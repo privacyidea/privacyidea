@@ -53,6 +53,8 @@ defusedxml==0.7.1
     # via privacyIDEA (setup.py)
 docutils==0.21.2
     # via sphinx
+feedparser==6.0.11
+    # via privacyIDEA (setup.py)
 flask==3.0.3
     # via
     #   flask-babel
@@ -162,6 +164,8 @@ rsa==4.9
     # via google-auth
 segno==1.6.1
     # via privacyIDEA (setup.py)
+sgmllib3k==1.0.0
+    # via feedparser
 six==1.16.0
     # via
     #   pyrad

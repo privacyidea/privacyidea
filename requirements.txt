@@ -53,7 +53,6 @@ flask==3.0.3
     # via
     #   flask-babel
     #   flask-migrate
-    #   flask-script
     #   flask-sqlalchemy
     #   flask-versioned
     #   privacyIDEA (setup.py)
@@ -144,9 +143,10 @@ rsa==4.9
     # via google-auth
 segno==1.6.1
     # via privacyIDEA (setup.py)
+sgmllib3k==1.0.0
+    # via feedparser
 six==1.16.0
     # via
-    #   configobj
     #   pyrad
     #   python-dateutil
     #   smpplib
@@ -169,13 +169,6 @@ webauthn==2.2.0
     # via privacyIDEA (setup.py)
 werkzeug==3.0.6
     # via flask
-zipp==3.15.0 ; python_version == "3.7"
-zipp==3.19.1 ; python_version == "3.8"
-    # via
-    #   importlib-metadata
-    #   importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==68.0.0 ; python_version == "3.7"
-setuptools==70.0.0 ; python_version > "3.7"
-    # via flask-versioned
+# setuptools
