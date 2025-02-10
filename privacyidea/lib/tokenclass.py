@@ -82,6 +82,7 @@ from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
                     ParameterError)
+from .machineresolver import get_resolver_object
 
 from ..api.lib.utils import getParam
 from .log import log_with
@@ -1994,3 +1995,9 @@ class TokenClass(object):
     @classmethod
     def is_multichallenge_enrollable(cls):
         return False
+
+    def get_enroll_url(self, user: User, params: dict):
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+        """
+        return None

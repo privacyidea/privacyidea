@@ -1,0 +1,76 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="form-group">
+    <h3 translate>Container Templates</h3>
+
+    <div uib-pagination ng-show="templatedata.count > templatesPerPage"
+         total-items="templatedata.count" ng-model="params.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         items-per-page="{{ templatesPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()">
+    </div>
+
+    <div translate>Total Templates: {{ templatedata.count }}</div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-capitalize-header">
+            <thead>
+            <tr>
+                <th class="pifilter">
+                    <button class="btn btn-default unsorted"
+                            pi-sort-by="name"
+                            translate>Name
+                    </button>
+                </th>
+                <th class="pifilter">
+                    <button class="btn btn-default unsorted"
+                            pi-sort-by="container_type"
+                            translate>Type
+                    </button>
+                </th>
+                <th ng-hide="!checkRight('container_template_delete') && hide_buttons"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="template in templatedata.templates">
+                <td>
+                    <a ng-click="editTemplate(template.name)">{{ template.name }}
+                    </a>
+                </td>
+                <td>
+                    {{ template.container_type }}
+                </td>
+                <td ng-hide="!checkRight('container_template_delete') && hide_buttons">
+                    <button class="btn btn-danger btn-transparent"
+                            ng-disabled="!checkRight('container_template_delete')"
+                            ng-hide="!checkRight('container_template_delete') && hide_buttons"
+                            ng-click="deleteTemplate(template.name)">
+                            <span class="glyphicon glyphicon-remove">
+                            </span>
+                        <translate>Delete</translate>
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

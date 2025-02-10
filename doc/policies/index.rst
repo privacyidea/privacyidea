@@ -23,6 +23,7 @@ privacyIDEA knows these scopes:
    enrollment
    webui
    register
+   container
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.

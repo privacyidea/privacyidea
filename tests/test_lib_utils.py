@@ -950,6 +950,21 @@ class UtilsTestCase(MyTestCase):
                                                    mock_attribute,
                                                    "Error {0!s}"))
 
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d==1",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d<1",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition: key does not exist
+        self.assertFalse(compare_generic_condition("d>1",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
         # Wrong entry, that is not processed
         self.assertRaises(Exception, compare_generic_condition,
                           "c 500", mock_attribute, "Error {0!s}")

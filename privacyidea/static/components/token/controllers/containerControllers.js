@@ -17,52 +17,155 @@
  * SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
  * SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
  * SPDX-License-Identifier: AGPL-3.0-or-later
-**/
+ **/
+
+myApp.service('ContainerUtils', function () {
+
+    let helperCreateDisplayList = function (stringList, capitalize) {
+        // Creates a comma separated list as a single string out of a list of string objects.
+        // Each string is capitalized if capitalize is True.
+
+        let displayList = "";
+        angular.forEach(stringList, function (element) {
+            let firstChar = element.charAt(0);
+            if (capitalize) {
+                firstChar = firstChar.toUpperCase();
+            }
+            displayList += firstChar + element.slice(1) + ", ";
+        });
+        displayList = displayList.slice(0, -2);
+
+        return displayList;
+    }
+
+    this.createDisplayList = function (stringList, capitalize) {
+        return helperCreateDisplayList(stringList, capitalize);
+    };
+
+    this.setAllowedTokenTypes = function (containerType, tokensForContainerTypes, allTokenTypes) {
+        // Returns a dictionary containing the allowed token types for the selected container type in different formats:
+        // displayPhrase: single string to display the allowed token types list
+        // list: list of token types
+        // displaySelection: dictionary with token type as key and display string as value (for the drop-down selection)
+        // default: default token type for the selection
+        let allowedTokenTypes = {};
+        allowedTokenTypes.displayPhrase = tokensForContainerTypes[containerType].token_types_display;
+        allowedTokenTypes.list = tokensForContainerTypes[containerType].token_types;
+        allowedTokenTypes.displaySelection = {};
+        angular.forEach(allowedTokenTypes.list, function (tokenType) {
+            let displayString = allTokenTypes[tokenType];
+            if (displayString) {
+                allowedTokenTypes.displaySelection[tokenType] = displayString;
+            }
+        });
+
+        // Set default type
+        const types = Object.keys(allowedTokenTypes.displaySelection);
+        if (types.indexOf('hotp') >= 0) {
+            // Set hotp as default
+            allowedTokenTypes.default = 'hotp';
+        } else {
+            // Set the first token type as default
+            allowedTokenTypes.default = types[0];
+        }
+        return allowedTokenTypes;
+    };
+
+    this.containerTemplateDiffCallback = function (data) {
+        // Converts the output of the container template comparison API output to a format that can be displayed
+        // for each container a single string of missing and additional tokens is created
+        let diffList = data.result.value;
+        let templateContainerDiff = diffList;
+
+        angular.forEach(diffList, function (containerDiff, serial) {
+            angular.forEach(["missing", "additional"], function (key) {
+                templateContainerDiff[serial]["tokens"][key] = helperCreateDisplayList(
+                    diffList[serial]["tokens"][key], true);
+            });
+        });
+        return templateContainerDiff;
+    };
+
+});
 
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state',
+    'AuthFactory', 'ConfigFactory', 'UserFactory', '$state', 'TokenFactory', 'ContainerUtils', '$timeout', '$location',
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
-                                       AuthFactory, ConfigFactory, UserFactory, $state) {
+                                       AuthFactory, ConfigFactory, UserFactory, $state, TokenFactory, ContainerUtils,
+                                       $timeout, $location) {
         $scope.formData = {
             containerTypes: {},
         };
         $scope.form = {
-            containerType: "generic",
+            containerType: $scope.default_container_type,
             description: "",
-            token_types: ""
+            template: {},
+            tokens: []
+        };
+        $scope.containerClassOptions = {};
+
+        $scope.containerRegister = false;
+        $scope.initRegistration = $scope.form.containerType === "smartphone";
+        $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
+
+        $scope.allowedTokenTypes = {
+            list: [],
+            displayPhrase: "All",
+            displaySelection: [],
         };
 
-        $scope.$watch('form', function (newVal, oldVal) {
-            if (newVal && $scope.formData.containerTypes[newVal.containerType]) {
-                $scope.form.token_types = $scope.formData.containerTypes[newVal.containerType]["token_types_display"];
+        $scope.tokenSettings = {
+            tokenTypes: {},
+            timesteps: [30, 60],
+            otplens: [6, 8],
+            hashlibs: ["sha1", "sha256", "sha512"],
+            service_ids: {},
+            selectedType: ""
+        };
+
+        $scope.functionObject = {};
+        $scope.editTemplate = false;
+        $scope.showTokenEnrolled = false;
+        $scope.qrCodeWidth = 250;
+
+        $scope.$watch('form.containerType', function (newType, oldVal) {
+            if (newType && $scope.formData.containerTypes[newType]) {
+                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.form.containerType,
+                    $scope.formData.containerTypes, $scope.tokenSettings.tokenTypes);
+                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
+
+                $scope.selectTemplate(true);
+                $scope.editTemplate = false;
+
+                if (newType === "smartphone") {
+                    $scope.initRegistration = true;
+                } else {
+                    $scope.initRegistration = false;
+                }
             }
         }, true);
 
         // Get the supported token types for each container type once
-        ContainerFactory.getTokenTypes(function (data) {
-            $scope.formData.containerTypes = data.result.value;
+        $scope.getContainerTypes = function () {
+            ContainerFactory.getTokenTypes(function (data) {
+                $scope.formData.containerTypes = data.result.value;
 
-            angular.forEach($scope.formData.containerTypes, function (_, containerType) {
-                if (containerType === 'generic') {
-                    $scope.formData.containerTypes[containerType]["token_types_display"] = 'All';
-                } else {
-                    $scope.formData.containerTypes[containerType]["token_types_display"] = $scope.tokenTypesToDisplayString(
-                        $scope.formData.containerTypes[containerType].token_types);
-                }
+                // Create display string for supported token types of each container type
+                angular.forEach($scope.formData.containerTypes, function (_, containerType) {
+                    if (containerType === 'generic') {
+                        $scope.formData.containerTypes[containerType]["token_types_display"] = 'All';
+                    } else {
+                        $scope.formData.containerTypes[containerType]["token_types_display"] = ContainerUtils.createDisplayList(
+                            $scope.formData.containerTypes[containerType].token_types, true);
+                    }
+                });
+
+                // Sets the supported token types for the selected container type in different formats
+                // (list, display list, display selection of each type, default type for the selection)
+                $scope.allowedTokenTypes = ContainerUtils.setAllowedTokenTypes($scope.form.containerType,
+                    $scope.formData.containerTypes, $scope.tokenSettings.tokenTypes);
+                $scope.tokenSettings.selectedTokenType = $scope.allowedTokenTypes.default;
             });
-            $scope.form.token_types = $scope.formData.containerTypes[$scope.form.containerType]["token_types_display"];
-        });
-
-        // converts the supported token types to a display string
-        $scope.tokenTypesToDisplayString = function (containerTokenTypes) {
-            let displayString = "";
-            // create comma separated list out of token names
-            angular.forEach(containerTokenTypes, function (type) {
-                displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
-            });
-            displayString = displayString.slice(0, -2);
-
-            return displayString;
         };
 
         // User+Realm: Get the realms and fill the realm dropdown box
@@ -74,13 +177,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 angular.forEach($scope.realms, function (realm, realmname) {
                     if (size === 1) {
                         // if there is only one realm, preset it
-                        $scope.newUser = {user: "", realm: realmname};
+                        $scope.newUser = {user: "", realm: realmname, realmOnly: false};
                     }
                     // if there is a default realm, preset the default realm
                     if (realm.default && !$stateParams.realmname) {
-                        $scope.newUser = {user: "", realm: realmname};
-                        //debug: console.log("tokenEnrollController");
-                        //debug: console.log($scope.newUser);
+                        $scope.newUser = {user: "", realm: realmname, realmOnly: false};
                     }
                 });
                 // init the user, if token.containercreate was called from the user.details
@@ -101,7 +202,11 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             });
         } else if (AuthFactory.getRole() === 'user') {
             // init the user, if token.containercreate was called as a normal user
-            $scope.newUser = {user: AuthFactory.getUser().username, realm: AuthFactory.getUser().realm};
+            $scope.newUser = {
+                user: AuthFactory.getUser().username,
+                realm: AuthFactory.getUser().realm,
+                realmOnly: false
+            };
             if ($scope.checkRight('userlist')) {
                 UserFactory.getUserDetails({}, function (data) {
                     $scope.User = data.result.value[0];
@@ -118,11 +223,91 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
         }
 
+        $scope.defaultTemplates = {};
+        $scope.templates = {};
+        $scope.getTemplates = function () {
+            // Get the templates from the db
+            ContainerFactory.getTemplates({}, function (data) {
+                let templatesList = data.result.value.templates;
+                // sort them by the container type and add for each type a "No Template" option
+                angular.forEach(["generic", "smartphone", "yubikey"], function (containerType) {
+                    $scope.templates[containerType] = {
+                        "No Template": {
+                            "name": "noTemplate",
+                            "template_display": "No Template"
+                        }
+                    };
+                });
+                // default selection
+                $scope.form.template = $scope.templates["generic"]["No Template"];
+                // Sort the templates by the container type
+                angular.forEach(templatesList, function (template) {
+                    $scope.templates[template.container_type][template.name] = template;
+                    // create display string with all contained token types
+                    let templateTokenTypes = [];
+                    angular.forEach(template.template_options.tokens, function (token) {
+                        templateTokenTypes.push(token.type);
+                    });
+                    template["template_display"] = template.name + ": "
+                        + ContainerUtils.createDisplayList(templateTokenTypes, true);
+                    if (template.default) {
+                        // save default template
+                        $scope.defaultTemplates[template.container_type] = template;
+                    }
+                });
+                $scope.selectTemplate(true);
+            });
+        };
+
+        $scope.selectTemplate = function (defaultSelection) {
+            // Sets all template options according to the selected template
+            // optionally first selects the default template if defaultSelection is true
+            if (defaultSelection) {
+                // select default template if one exists or no template otherwise
+                $scope.form.template = $scope.defaultTemplates[$scope.form.containerType];
+                if (!$scope.form.template) {
+                    $scope.form.template = $scope.templates[$scope.form.containerType]["No Template"];
+                }
+            }
+
+            if ($scope.form.template.name === "noTemplate") {
+                // close edit dialog
+                $scope.editTemplate = false;
+            }
+
+            // set tokens according to the selected template
+            let templateOptions = $scope.form.template.template_options;
+            if (templateOptions !== undefined) {
+                $scope.form.tokens = templateOptions.tokens || [];
+            } else {
+                // no template is used or the template has no options
+                $scope.form.tokens = [];
+            }
+        };
+
         $scope.createContainer = function () {
             let ctype = $scope.form.containerType;
             let params = {"type": ctype};
+            if (templateListRight && $scope.form.template && $scope.form.template.name !== "noTemplate") {
+                params["template"] = $scope.form.template;
+                params["template"]["template_options"]["tokens"] = [];
+                if ($scope.form.tokens.length > 0) {
+                    angular.forEach($scope.form.tokens, function (token) {
+                        if (token.state === "add") {
+                            delete token.state;
+                        }
+                        if (token.state !== "remove") {
+                            params["template"]["template_options"]["tokens"].push(token);
+                        }
+                    });
+                }
+            }
+
             if ($scope.newUser.user) {
                 params["user"] = fixUser($scope.newUser.user);
+                params["realm"] = $scope.newUser.realm;
+            }
+            if ($scope.newUser.realmOnly && $scope.newUser.realm) {
                 params["realm"] = $scope.newUser.realm;
             }
             if ($scope.form.description) {
@@ -130,9 +315,92 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             }
 
             ContainerFactory.createContainer(params, function (data) {
-                $state.go("token.containerdetails", {"containerSerial": data.result.value.container_serial});
+                $scope.containerSerial = data.result.value.container_serial;
+                let stay = false;
+                if ($scope.initRegistration && AuthFactory.checkRight('container_register')) {
+                    let registrationParams =
+                        {
+                            "container_serial": $scope.containerSerial,
+                            "passphrase_ad": $scope.passphrase.ad,
+                            "passphrase_prompt": $scope.passphrase.prompt,
+                            "passphrase_response": $scope.passphrase.response
+                        };
+                    ContainerFactory.initializeRegistration(registrationParams, function (registrationData) {
+                        $scope.containerRegister = true;
+                        $scope.containerRegistrationURL = registrationData.result.value['container_url']['value'];
+                        $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
+                        $scope.pollContainerDetails();
+                    });
+                    stay = true;
+                }
+                if (data.result.value.tokens) {
+                    $scope.showTokenEnrolled = true;
+                    $scope.tokenInitData = data.result.value.tokens;
+                    stay = true;
+
+                    angular.forEach($scope.tokenInitData, function (initData, serial) {
+                        if (initData.otps) {
+                            const otpsCount = Object.keys(initData.otps).length;
+                            let otpRowCount = parseInt(otpsCount / 5 + 0.5);
+                            let otp_rows = Object.keys(initData.otps).slice(0, otpRowCount);
+                            initData["otp_rows"] = otp_rows;
+                            initData["otp_row_count"] = otpRowCount;
+                        }
+                        if (initData.webAuthnRegisterRequest) {
+                            $scope.click_wait = true;
+                        }
+                    });
+                }
+                if (!stay) {
+                    $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                }
+
             });
         };
+
+        $scope.regenerateToken = function (serial) {
+            let initParams = $scope.tokenInitData[serial].init_params;
+            initParams["serial"] = serial;
+            TokenFactory.enroll({}, initParams, function (data) {
+                $scope.tokenInitData[serial] = data.detail;
+                $scope.tokenInitData[serial].initParams = initParams;
+                $scope.tokenInitData[serial].type = initParams.type;
+            });
+        };
+
+        $scope.verifyTokenCallback = function (response) {
+            $scope.tokenInitData[response.detail.serial]["rollout_state"] = response.detail.rollout_state;
+        };
+
+        $scope.pollContainerDetails = function () {
+            ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
+                if (data.result.value.containers.length > 0) {
+                    let container = data.result.value.containers[0];
+                    let registrationState = container.info['registration_state'];
+                    if (registrationState === "client_wait" && $location.path() === "/token/container") {
+                        // stop polling if the page changed or the container was (un)registered
+                        $timeout($scope.pollContainerDetails, 2500);
+                    } else if (registrationState === "registered") {
+                        // container successfully registered, move to details page
+                        $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                    }
+                }
+            });
+        };
+
+        // Read the token types and container types from the server
+        $scope.getTokenAndContainerTypes = function () {
+            TokenFactory.getEnrollTokens(function (data) {
+                $scope.tokenSettings["tokenTypes"] = data.result.value;
+                $scope.getContainerTypes();
+            });
+        };
+
+        const templateListRight = AuthFactory.checkRight('container_template_list');
+        if (templateListRight) {
+            $scope.getTemplates();
+        }
+        $scope.getTokenAndContainerTypes();
     }]);
 
 myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
@@ -145,7 +413,6 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
         // Change the pagination
         $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.get();
         };
 
@@ -207,16 +474,18 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.$on("piReload", $scope.get);
     }]);
 
-myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
-    function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $state, $rootScope) {
+myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory',
+    'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location', 'ContainerUtils',
+    function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory,
+                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils) {
         $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
 
         $scope.container = {
             users: [],
-            last_seen: "",
-            last_updated: "",
+            last_authentication: "",
+            last_synchronization: "",
         };
         $scope.containerOwner = {};
         // Get possible container states
@@ -258,8 +527,18 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 if (data.result.value.containers.length > 0) {
                     $scope.container = data.result.value.containers[0];
                     $scope.containerOwner = $scope.container.users[0];
-                    $scope.container.last_seen = new Date($scope.container.last_seen);
-                    $scope.container.last_updated = new Date($scope.container.last_updated);
+
+                    // If the last authentication or synchronization date is not set, display a dash
+                    if ($scope.container.last_authentication != null) {
+                        $scope.container.last_authentication = new Date($scope.container.last_authentication);
+                    } else {
+                        $scope.container.last_authentication = "-";
+                    }
+                    if ($scope.container.last_synchronization != null) {
+                        $scope.container.last_synchronization = new Date($scope.container.last_synchronization);
+                    } else {
+                        $scope.container.last_synchronization = "-";
+                    }
 
                     angular.forEach($scope.container.states, function (state) {
                         $scope.excludeStates(state);
@@ -354,6 +633,40 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             });
         };
 
+        $scope.editContainerInfo = false;
+        $scope.containerInfoOptions = {};
+        $scope.selectedInfoOptions = {};
+        $scope.editInfo = function () {
+            $scope.editContainerInfo = true;
+
+            ContainerFactory.getClassOptions({
+                "only_selectable": true,
+                "container_type": $scope.container.type
+            }, function (data) {
+                $scope.containerInfoOptions = data.result.value[$scope.container.type];
+                angular.forEach($scope.containerInfoOptions, function (values, key) {
+                    let selected = $scope.container.info[key];
+                    if (selected !== undefined) {
+                        $scope.selectedInfoOptions[key] = selected;
+                    } else {
+                        $scope.selectedInfoOptions[key] = values[0];
+                    }
+                });
+
+            });
+        };
+
+        $scope.saveInfo = function () {
+            ContainerFactory.setOptions($scope.containerSerial,
+                {"options": $scope.selectedInfoOptions},
+                function () {
+                    $scope.editContainerInfo = false;
+                    $scope.getContainer();
+                }
+            );
+
+        };
+
         $scope.saveRealms = function () {
             let realmList = "";
             for (const realm in $scope.selectedRealms) {
@@ -384,13 +697,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.unassignUser = function () {
+            let params = {
+                container_serial: $scope.containerSerial,
+                user: fixUser($scope.containerOwner.user_name),
+                realm: $scope.containerOwner.user_realm
+            }
             ContainerFactory.unassignUser(
-                {
-                    container_serial: $scope.containerSerial,
-                    user: fixUser($scope.containerOwner.user_name),
-                    realm: $scope.containerOwner.realm,
-                    pin: $scope.containerOwner.pin
-                }
+                params
                 , $scope.getContainer);
         };
 
@@ -401,6 +714,95 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.saveContainerInfo = function () {
             $scope.editContainerInfo = false;
+        };
+
+        $scope.registrationOptions = {"open": false};
+        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.offline_tokens = [];
+        $scope.registerContainer = function (rollover) {
+            let registrationParams =
+                {
+                    "container_serial": $scope.containerSerial,
+                    "passphrase_ad": $scope.passphrase.ad,
+                    "passphrase_prompt": $scope.passphrase.prompt,
+                    "passphrase_response": $scope.passphrase.response,
+                    "rollover": rollover
+                };
+            ContainerFactory.initializeRegistration(registrationParams, function (data) {
+                if ($scope.container.type === "smartphone") {
+                    $scope.showQR = true;
+                    $scope.containerRegistrationURL = data.result.value['container_url']['value'];
+                    $scope.containerRegistrationQR = data.result.value['container_url']['img'];
+                    $scope.offline_tokens = data.result.value['offline_tokens'];
+                }
+                $scope.registrationOptions = {"open": false};
+                // Set registration state to start the polling
+                $scope.container.info["registration_state"] = "client_wait";
+                $scope.pollContainerDetails();
+            });
+        };
+
+        $scope.showDisableAllTokens = -1.0;
+        $scope.startCountdown = 5;
+        $scope.unregisterContainer = function () {
+            ContainerFactory.terminateRegistration($scope.containerSerial, function () {
+                $scope.showQR = false;
+                $scope.getContainer();
+                $scope.showDisableAllTokens = $scope.startCountdown;
+                $scope.disableCountdown();
+            });
+        };
+        $scope.disableCountdown = function () {
+            // Recursively call this function every 250 ms until the countdown is over
+            if ($scope.showDisableAllTokens >= -0.25) {
+                $timeout(function () {
+                    $scope.showDisableAllTokens -= 0.25;
+                    $scope.disableCountdown();
+                }, 250);
+            }
+        };
+
+        $scope.pollContainerDetails = function () {
+            $scope.getContainer();
+            let details_path = "/token/container/details/" + $scope.containerSerial;
+            let registration_state = $scope.container.info['registration_state'];
+            if ((registration_state === "client_wait" || registration_state === "rollover")
+                && $location.path() === details_path) {
+                // stop polling if the page changed or the container was (un)registered
+                $timeout($scope.pollContainerDetails, 2500);
+            }
+        };
+
+        $scope.showDiff = false;
+        $scope.compareWithTemplate = function (template) {
+
+            ContainerFactory.compareTemplateWithContainers(
+                $scope.container.template, {"container_serial": $scope.container.serial},
+                function (data) {
+                    $scope.templateContainerDiff = ContainerUtils.containerTemplateDiffCallback(data);
+                    $scope.showDiff = true;
+                }
+            );
+        };
+
+        // Check if the user has any registration rights relevant for each state
+        const register_allowed = $scope.checkRight('container_register');
+        const unregister_allowed = $scope.checkRight('container_unregister');
+        const rollover_allowed = $scope.checkRight('container_rollover');
+        $scope.anyRegistrationRights = {
+            "none": register_allowed,
+            "client_wait": register_allowed || unregister_allowed,
+            "registered": unregister_allowed || rollover_allowed,
+            "rollover": unregister_allowed || rollover_allowed,
+            "rollover_completed": unregister_allowed || rollover_allowed
+        };
+        // Check if the user has either registration or rollover rights depending on the state
+        $scope.registrationOrRolloverRights = {
+            "none": register_allowed,
+            "client_wait": register_allowed,
+            "registered": rollover_allowed,
+            "rollover": rollover_allowed,
+            "rollover_completed": rollover_allowed
         };
 
         if ($scope.loggedInUser.isAdmin) {
@@ -448,17 +850,30 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             $rootScope.returnTo = "token.containerdetails({containerSerial:$scope.containerSerial})";
         };
 
+        $scope.allTokensDisabled = function () {
+            let allDisabled = true;
+            angular.forEach($scope.container.tokens, function (token) {
+                if (token.active) {
+                    allDisabled = false;
+                }
+            });
+            return allDisabled;
+        };
+
         $scope.disableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (serial) {
-               $scope.disableToken(serial);
+                $scope.disableToken(serial);
             });
+            if ($scope.showDisableAllTokens > 0) {
+                $scope.showDisableAllTokens = 0;
+            }
         };
 
         $scope.enableAllTokens = function () {
             let tokenSerialList = $scope.getAllTokenSerials();
             angular.forEach(tokenSerialList, function (serial) {
-               $scope.enableToken(serial);
+                $scope.enableToken(serial);
             });
         };
 
@@ -481,10 +896,56 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     // last token: pass callback function
                     TokenFactory.delete(token, callback);
                 } else {
-                    TokenFactory.delete(token, function(){});
+                    TokenFactory.delete(token, function () {
+                    });
                 }
             });
             $scope.showDialogAll = false;
+        };
+
+        $scope.assignUserToAllTokens = function () {
+            if ($scope.containerOwner) {
+                let tokensToAssign = [];
+                angular.forEach($scope.container.tokens, function (token, index) {
+                    if (token.username === "") {
+                        tokensToAssign.push(token.serial);
+                    }
+                });
+
+                angular.forEach(tokensToAssign, function (serial, index) {
+                    let params = {
+                        serial: serial,
+                        user: $scope.containerOwner.user_name,
+                        realm: $scope.containerOwner.user_realm
+                    }
+                    if (index == tokensToAssign.length - 1) {
+                        TokenFactory.assign(params, $scope.getContainer);
+                    } else {
+                        TokenFactory.assign(params, function (data) {
+                        });
+                    }
+
+                });
+            }
+        };
+
+        $scope.unassignUsersFromAllTokens = function () {
+            // Get tokens with the same user as the container owner
+            let tokensToUnassign = [];
+            angular.forEach($scope.container.tokens, function (token, index) {
+                if (token.username === $scope.containerOwner.user_name && token.user_realm === $scope.containerOwner.user_realm) {
+                    tokensToUnassign.push(token.serial);
+                }
+            });
+            // Unassign the user from the tokens
+            angular.forEach(tokensToUnassign, function (serial, index) {
+                if (index == tokensToUnassign.length - 1) {
+                    TokenFactory.unassign(serial, $scope.getContainer);
+                } else {
+                    TokenFactory.unassign(serial, function (data) {
+                    });
+                }
+            });
         };
 
         // --- Add token functions ---
@@ -573,5 +1034,4 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         // ----------- Initial calls -------------
         $scope.getContainer();
-        ContainerFactory.updateLastSeen($scope.containerSerial);
     }]);

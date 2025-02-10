@@ -21,7 +21,8 @@
                 </button>
                 <button class="btn btn-danger"
                         ng-show="rolloverTokenAllowed(token)"
-                        ui-sref="token.rollover({tokenSerial:token.serial, tokenType:token.tokentype})"
+                        ui-sref="token.rollover({tokenSerial:token.serial, tokenType:token.tokentype,
+                                 containerSerial:token.container_serial})"
                         id="rolloverButton">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Rollover</span>
@@ -481,8 +482,8 @@
 
         <tr ng-hide="token.locked">
             <td><input type="checkbox" ng-model="showPassword"
-                       id="showPassword"><label for="showPassword"
-                                                translate> Show password</label></td>
+                       id="showPassword">
+                <label for="showPassword" translate>Show password</label></td>
             <td ng-hide="token.tokentype == 'registration'">
                 <input type="text" ng-model="testPassword"
                        name="testPassword"

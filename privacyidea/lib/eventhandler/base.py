@@ -41,7 +41,7 @@ from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.container import (find_container_by_serial, find_container_for_token, get_all_containers,
-                                       get_container_classes)
+                                       get_container_classes, get_container_realms)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.realm import get_realms
@@ -50,7 +50,7 @@ from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (compare_condition, compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
-                                   check_ip_in_policy, AUTH_RESPONSE)
+                                   check_ip_in_policy, AUTH_RESPONSE, compare_time)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.challenge import get_challenges
 
@@ -95,6 +95,11 @@ class CONDITION(object):
     CONTAINER_TYPE = "container_type"
     CONTAINER_HAS_TOKEN = "container_has_token"
     SERIAL = "serial"
+    CONTAINER_INFO = "container_info"
+    CONTAINER_REALM = "container_realm"
+    CONTAINER_RESOLVER = "container_resolver"
+    CONTAINER_LAST_AUTH = "container_last_authentication"
+    CONTAINER_LAST_SYNC = "container_last_synchronization"
 
 
 class GROUP(object):
@@ -433,7 +438,55 @@ class BaseEventHandler(object):
                     "desc": _("The container is of a certain type."),
                     "value": list(get_container_classes().keys()),
                     "group": GROUP.CONTAINER
-                }
+                },
+            CONDITION.CONTAINER_REALM:
+                {
+                    "type": "multi",
+                    "desc": _("The container is in this realm or in no realm at all. If multiple realms are selected, "
+                              "the condition is fulfilled if the container is in at least one realm of the list. The "
+                              "condition is not checked if the container has no realm, hence the action would be "
+                              "triggered."),
+                    "value": [{"name": r} for r in realms],
+                    "group": GROUP.CONTAINER
+                },
+            CONDITION.CONTAINER_RESOLVER:
+                {
+                    "type": "multi",
+                    "desc": _("An owner of the container is in this resolver. If multiple resolvers are selected, the "
+                              "condition is fulfilled if at least one owner is in one resolver. The condition is not "
+                              "checked if the container has no owner, hence the action would be triggered."),
+                    "value": [{"name": r} for r in resolvers],
+                    "group": GROUP.CONTAINER
+                },
+            CONDITION.CONTAINER_INFO:
+                {
+                    "type": "str",
+                    "desc": _("This condition can check any arbitrary container info field. You need to enter "
+                              "something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or 'fieldname < "
+                              "fieldvalue'."),
+                    "group": GROUP.CONTAINER
+                },
+            CONDITION.CONTAINER_LAST_AUTH:
+                {
+                    "type": "str",
+                    "desc": _(
+                        "Action is triggered, if the last authentication of the container is older than the specified "
+                        "time. The time value has to be an integer followed by a time unit. Supported units are "
+                        "'y' (years), 'd' (days), 'h' (hours), 'm' (minutes), 's' (seconds). Only one unit is allowed. "
+                        "Examples: '8h', '7d', '1y'"),
+
+                    "group": GROUP.CONTAINER
+                },
+            CONDITION.CONTAINER_LAST_SYNC:
+                {
+                    "type": "str",
+                    "desc": _(
+                        "Action is triggered, if the last synchronization of the container is older than the specified "
+                        "time. The time value has to be an integer followed by a time unit. Supported units are "
+                        "'y' (years), 'd' (days), 'h' (hours), 'm' (minutes), 's' (seconds). Only one unit is allowed. "
+                        "Examples: '8h', '7d', '1y'"),
+                    "group": GROUP.CONTAINER
+                },
         }
         return cond
 
@@ -879,10 +932,26 @@ class BaseEventHandler(object):
                 if not cond == token_obj.token.rollout_state:
                     return False
 
-            # We also put the challenge condition here. If we do not have a
-            # token-obj we can not identify challenges.
+            if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:
+                cond = conditions.get(CONDITION.TOKEN_IS_IN_CONTAINER)
+                container = find_container_for_token(serial)
+                token_is_in_container = container is not None
+                if token_is_in_container and cond in ["True", True]:
+                    res = True
+                elif not token_is_in_container and cond in ["False", False]:
+                    res = True
+                else:
+                    log.debug(f"Condition {CONDITION.TOKEN_IS_IN_CONTAINER} for token {token_obj} "
+                              "not fulfilled.")
+                    return False
+
+        # Evaluates the challenge either for a token or a container object
+        if token_obj or container:
+            serial = token_obj.get_serial() if token_obj else None
+            if not serial:
+                serial = container.serial
             if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
-                chals = get_challenges(serial=token_obj.token.serial, transaction_id=transaction_id)
+                chals = get_challenges(serial=serial, transaction_id=transaction_id)
                 if len(chals) == 1:
                     chal = chals[0]
                     if CONDITION.CHALLENGE_SESSION in conditions:
@@ -895,21 +964,12 @@ class BaseEventHandler(object):
                             return False
                 elif len(chals) > 1:
                     # If there is more than one challenge, the conditions seams awkward
-                    log.warning("There are more than one challenge for token {0!s} "
-                                "and transaction_id {1!s}".format(token_obj.token.serial, transaction_id))
-                    return False
-
-            if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:
-                cond = conditions.get(CONDITION.TOKEN_IS_IN_CONTAINER)
-                container = find_container_for_token(serial)
-                token_is_in_container = container is not None
-                if token_is_in_container and cond in ["True", True]:
-                    res = True
-                elif not token_is_in_container and cond in ["False", False]:
-                    res = True
-                else:
-                    log.debug(f"Condition {CONDITION.TOKEN_IS_IN_CONTAINER} for token {token_obj} "
-                              "not fulfilled.")
+                    if token_obj:
+                        log.warning(f"There is more than one challenge for token {token_obj.token.serial} "
+                                    f"and transaction_id {transaction_id}.")
+                    else:
+                        log.warning(f"There is more than one challenge for container {container.serial} "
+                                    f"and transaction_id {transaction_id}.")
                     return False
 
         # Container specific conditions
@@ -966,6 +1026,63 @@ class BaseEventHandler(object):
                 else:
                     log.debug(f"Condition container_has_token for container {container.serial} "
                               "not fulfilled.")
+                    return False
+
+            if CONDITION.CONTAINER_REALM in conditions:
+                condition_realms = conditions.get(CONDITION.CONTAINER_REALM).split(",")
+                container_realms = get_container_realms(container.serial)
+                # If the container is in no realm, the condition is not checked, it is fulfilled
+                if len(container_realms) > 0:
+                    # check if at least one realm of the condition is also a realm of the container
+                    matching_realms = list(set(condition_realms).intersection(container_realms))
+                    if len(matching_realms) == 0:
+                        log.debug(f"Condition container_realm {condition_realms} for container {container.serial} "
+                                  "not fulfilled.")
+                        return False
+
+            if CONDITION.CONTAINER_RESOLVER in conditions:
+                condition_resolvers = conditions.get(CONDITION.CONTAINER_RESOLVER).split(",")
+                container_resolvers = [user.resolver for user in container.get_users()]
+                # If the container has no owner, the condition is not checked, it is fulfilled
+                if len(container_resolvers) > 0:
+                    # check if at least one resolver of the condition is also a resolver of a container owner
+                    matching_resolvers = list(set(condition_resolvers).intersection(container_resolvers))
+                    if len(matching_resolvers) == 0:
+                        log.debug(
+                            f"Condition container_resolver {condition_resolvers} for container {container.serial} "
+                            "not fulfilled.")
+                        return False
+
+            if CONDITION.CONTAINER_INFO in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_INFO)
+
+                if not compare_generic_condition(cond,
+                                                 container.get_container_info_dict().get,
+                                                 "Misconfiguration in your container info condition: {0!s}"):
+                    return False
+
+            if CONDITION.CONTAINER_LAST_AUTH in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_LAST_AUTH)
+                last_auth = container.last_authentication
+                res = False
+
+                if last_auth:
+                    last_auth = last_auth.replace(tzinfo=datetime.timezone.utc)
+                    res = compare_time(cond, last_auth)
+
+                if not res:
+                    return False
+
+            if CONDITION.CONTAINER_LAST_SYNC in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_LAST_SYNC)
+                last_sync = container.last_synchronization
+                res = False
+
+                if last_sync:
+                    last_sync = last_sync.replace(tzinfo=datetime.timezone.utc)
+                    res = compare_time(cond, last_sync)
+
+                if not res:
                     return False
 
         return True
