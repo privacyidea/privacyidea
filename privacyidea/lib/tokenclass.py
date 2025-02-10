@@ -82,6 +82,7 @@ from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
                     ParameterError)
+from .machineresolver import get_resolver_object
 
 from ..api.lib.utils import getParam
 from .log import log_with
@@ -1688,6 +1689,8 @@ class TokenClass(object):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _('please enter otp: ')
+        message = message.replace("\,", ",")
+
         data = None
         reply_dict = {}
 
@@ -1992,3 +1995,9 @@ class TokenClass(object):
     @classmethod
     def is_multichallenge_enrollable(cls):
         return False
+
+    def get_enroll_url(self, user: User, params: dict):
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+        """
+        return None

@@ -954,7 +954,7 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")), token_count-1)
+        self.assertTrue(len(tokens.get("tokens")), token_count - 1)
         self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
@@ -1003,9 +1003,9 @@ class TokenTestCase(MyTestCase):
             self.assertIn(token["tokentype"], ["totp"])
 
         # Filter by container_serial
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         token = init_token({"type": "hotp", "genkey": 1})
-        add_token_to_container(container_serial, token.get_serial(), user_role="admin")
+        add_token_to_container(container_serial, token.get_serial())
         tokens_pag = get_tokens_paginate(container_serial=container_serial)
         self.assertEqual(1, len(tokens_pag["tokens"]))
 
@@ -1339,6 +1339,8 @@ class TokenTestCase(MyTestCase):
         # All challenges of the transaction_id have been deleted on
         # successful authentication
         r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
@@ -1669,11 +1671,30 @@ class TokenTestCase(MyTestCase):
         class dummy_token(object):
             def __init__(self, type):
                 self.type = type
+
         self.assertEqual(1000, weigh_token_type(dummy_token("push")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("hotp")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
         self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
 
+    def test_60_get_enroll_url(self):
+        hotp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True,
+                       'rollover': False, 'timeStep': 30, 'type': 'hotp', 'validity_period_end': '',
+                       'validity_period_start': ''}
+        hotp = init_token(hotp_params)
+        totp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True, 'rollover': False, 'timeStep': 30, 'type': 'totp',
+                       'validity_period_end': '', 'validity_period_start': ''}
+        totp = init_token(totp_params)
+
+        hotp_init = hotp.get_init_detail(hotp_params, User())
+        hotp_enroll_url = hotp.get_enroll_url(User(), {})
+        self.assertEqual(hotp_init["googleurl"]["value"], hotp_enroll_url)
+
+        totp_init = totp.get_init_detail(totp_params, User())
+        totp_enroll_url = totp.get_enroll_url(User(), {})
+        self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
 
 class TokenOutOfBandTestCase(MyTestCase):
 

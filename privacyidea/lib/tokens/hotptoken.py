@@ -70,6 +70,8 @@ import logging
 
 from passlib.crypto.digest import pbkdf2_hmac
 
+from ..user import User
+
 optional = True
 required = False
 log = logging.getLogger(__name__)
@@ -273,9 +275,7 @@ class HotpTokenClass(TokenClass):
                                         issuer=tokenissuer,
                                         user_obj=user,
                                         extra_data=extra_data)
-                    response_detail["googleurl"] = {"description":
-                                                        _("URL for google "
-                                                          "Authenticator"),
+                    response_detail["googleurl"] = {"description": _("URL for google Authenticator"),
                                                     "value": goo_url,
                                                     "img": create_img(goo_url)
                                                     }
@@ -439,24 +439,23 @@ class HotpTokenClass(TokenClass):
         return res
 
     @log_with(log)
-    def check_otp_exist(self, otp, window=10, symetric=False, inc_counter=True):
+    def check_otp_exist(self, otp: str, window: int = 10, symetric: bool = False, inc_counter: bool = True,
+                        counter: int = None) -> int:
         """
         checks if the given OTP value is/are values of this very token.
         This is used to autoassign and to determine the serial number of
         a token.
 
         :param otp: the to be verified otp value
-        :type otp: string
-
         :param window: the lookahead window for the counter
-        :type window: int
-
+        :param inc_counter: True if the counter shall be increased for a valid OTP, False otherwise
+        :param counter: The counter to be used to calculate the correct OTP value. If None the internal counter of the
+            token is used.
         :return: counter or -1 if otp does not exist
-        :rtype:  int
         """
         res = -1
         otplen = int(self.token.otplen)
-        counter = int(self.token.count)
+        counter = counter or int(self.token.count)
 
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, counter, otplen,
@@ -866,6 +865,7 @@ class HotpTokenClass(TokenClass):
         detail["messages"] = [message]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
+                "link": init_details.get("googleurl").get("value"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
@@ -888,3 +888,17 @@ class HotpTokenClass(TokenClass):
     @classmethod
     def is_multichallenge_enrollable(cls):
         return True
+
+    def get_enroll_url(self, user: User, params: dict) -> str:
+        """
+        Return the URL to enroll this token.
+
+        :param user: The user object
+        :param params: Further parameters
+        :return: The URL containing all required information to enroll the token
+        """
+        token_secret = self.token.get_otpkey().getKey().decode("utf-8")
+        self.init_details.update({"otpkey": token_secret})
+        init_details = self.get_init_detail(params, user)
+        enroll_url = init_details.get("googleurl").get("value")
+        return enroll_url

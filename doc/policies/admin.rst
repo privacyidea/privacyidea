@@ -293,6 +293,8 @@ enroll a new token to a user.
 Without this action, the administrator can not create
 a connection (assignment) between a user and a token.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 unassign
 ~~~~~~~~
 
@@ -1082,6 +1084,8 @@ type: ``bool``
 
 The administrator is allowed to assign users to containers.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 .. versionadded:: 3.10
 
 container_unassign_user
@@ -1101,3 +1105,62 @@ type: ``bool``
 The administrator is allowed to edit the container realms.
 
 .. versionadded:: 3.10
+
+
+.. _admin_policy_container_register:
+
+container_register
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to generate the QR code for the registration of a container.
+
+New in version 3.11
+
+container_unregister
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to unregister a container. This terminates the possibility to synchronize the container
+with the server.
+
+New in version 3.11
+
+container_rollover
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to perform a rollover of a container and all contained tokens.
+
+New in version 3.11
+
+container_template_create
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to create and edit container templates.
+
+New in version 3.11
+
+container_template_delete
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to delete container templates.
+
+New in version 3.11
+
+container_template_list
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to list container templates and see the template properties.
+In combination with the ```container_list`` policy, the administrator is allowed to compare templates with containers.
+
+New in version 3.11

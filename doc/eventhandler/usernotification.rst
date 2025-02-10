@@ -73,6 +73,9 @@ This will add the QR Code as an inline data image into the HTML email.
 Alternatively, if this event is triggered by enrolling a :ref:`push-token`, the
 tags are called ``pushurl_value`` and ``pushurl_img``.
 
+If the event is triggered by registering or rolling over a container, the tags are called ``container_url_value`` and
+``container_url_img``.
+
 .. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
    text. Everyone who receives this data has a detailed copy of this token.
    Thus we very much recommend to **never** send these data in an unencrypted
@@ -171,6 +174,8 @@ The body may contain the following tags
   * {googleurl_img} is the data image source of the google authenticator QR code.
   * {pushurl_value} is the KEY URI from a push token for enrolled in a authenticator app.
   * {pushurl_img} is the data image source of a push token qr code for enrolled in a authenticator app.
+  * {container_url_value} is the KEY URI for a token container registration.
+  * {container_url_img} is the data image source of the token container qr code.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
   * {client_ip} the client IP of the client, which issued the original request.
@@ -178,6 +183,9 @@ The body may contain the following tags
   * {ua_string} the complete user agent string (including version number), which issued the original request.
   * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
     PIN from the response using the *response mangler*.
+  * {container_serial} the serial number of the container.
+  * {container_url} the url for the registration of the container.
+  * {container_qr} the qr code for the registration of the container.
 
 
 Code

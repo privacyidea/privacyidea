@@ -36,6 +36,7 @@
 
 import binascii
 import logging
+import re
 import traceback
 from datetime import datetime, timedelta, timezone
 
@@ -1715,8 +1716,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority,
              "description": self.get_policy_description()}
-        action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
-            ",")]
+        action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
         action_dict = {}
         for a in action_list:
             if len(a) > 1:
@@ -3402,13 +3402,15 @@ class TokenContainer(MethodsMixin, db.Model):
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
-    last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    last_seen = db.Column(db.DateTime, default=None)
+    last_updated = db.Column(db.DateTime, default=None)
     states = db.relationship('TokenContainerStates', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
     info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
                                 cascade="all, delete-orphan")
     realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
+    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id', name="tokencontainertemplate_id"))
+    template = db.relationship('TokenContainerTemplate', back_populates='containers')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
@@ -3591,3 +3593,20 @@ class TokenContainerRealm(MethodsMixin, db.Model):
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
 
     __table_args__ = ({'mysql_row_format': 'DYNAMIC'})
+
+
+class TokenContainerTemplate(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainertemplate'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    options = db.Column(db.Unicode(2000), default='')
+    name = db.Column(db.Unicode(200), default='')
+    container_type = db.Column(db.Unicode(100), default='generic', nullable=False)
+    default = db.Column(db.Boolean, default=False, nullable=False)
+    containers = db.relationship('TokenContainer', back_populates='template')
+
+    def __init__(self, name, container_type="generic", options='', default=False):
+        self.name = name
+        self.container_type = container_type
+        self.options = options
+        self.default = default

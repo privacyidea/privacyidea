@@ -200,26 +200,26 @@
                 </td>
                 <td>
                     <fieldset ng-disabled="!token.tokentype">
-                        <button class="btn btn-transparent btn-warning"
+                        <button class="btn btn-transparent btn-warning btn-sm"
                                 ng-hide="showDialog[token.serial]"
                                 ng-disabled="!checkRight('unassign')"
                                 ng-click="unassign(token.serial)">
                             <span class="glyphicon glyphicon-resize-full" translate></span>
                             <span translate>Unassign</span>
                         </button>
-                        <button class="btn btn-transparent btn-danger" ng-click="deleteToken(token.serial, true)"
+                        <button class="btn btn-transparent btn-danger btn-sm" ng-click="deleteToken(token.serial, true)"
                                 ng-disabled="!checkRight('delete')"
                                 ng-hide="(!checkRight('delete') && hide_buttons) || showDialog[token.serial]">
                             <span class="glyphicon glyphicon-trash"></span>
                             <span translate>Delete</span>
                         </button>
-                        <button class="btn btn-danger"
+                        <button class="btn btn-danger btn-sm"
                                 ng-click="deleteToken(token.serial, false)"
-                                ng-show="showDialog[token.serial] && checkRight('delete') && !hide_buttons"
+                                ng-show="(showDialog[token.serial] && checkRight('delete')) || !hide_buttons"
                                 ng-disabled="!checkRight('delete')">
                             <span translate>Delete Token</span>
                         </button>
-                        <button class="btn btn-danger" ng-click="showDialog[token.serial]=false"
+                        <button class="btn btn-danger btn-sm" ng-click="showDialog[token.serial]=false"
                                 ng-show="showDialog[token.serial]">
                             <span translate>Cancel</span>
                         </button>
@@ -283,9 +283,10 @@
                 translate>Enroll New Token
         </button>
         <button class="btn btn-primary"
-                ng-click="addTokensToContainerMode()"
+                ng-click="showTokenOfUser = false"
                 ng-show="showTokenOfUser"
-                ng-disabled="!enableAddTokenToContainer || !checkRight('container_add_token')"
+                ng-disabled="!enableAddTokenToContainer || !checkRight('container_add_token') ||
+                             tokenWithoutContainer.length === 0"
                 id="putInContainerButton"
                 translate>Add Tokens to Container
         </button>

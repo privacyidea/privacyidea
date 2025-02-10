@@ -3,6 +3,8 @@ from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+
+from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
@@ -2640,10 +2642,10 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("chalemail")
 
         # Challenge_text with tags
-        set_policy("chalsms", SCOPE.AUTH, "sms_challenge_text=Hello {user} please enter "
-                                          "the otp sent to {phone}")
-        set_policy("chalemail", SCOPE.AUTH, "email_challenge_text=Hello {user} please enter "
-                                            "the otp sent to {email}")
+        set_policy("chalsms", SCOPE.AUTH, "sms_challenge_text=Hello {user}\, please enter "
+                                          "the otp sent to {phone},  increase_failcounter_on_challenge")
+        set_policy("chalemail", SCOPE.AUTH, "email_challenge_text=Hello {user}\, please enter "
+                                            "the otp sent to {email},  increase_failcounter_on_challenge")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -2652,10 +2654,21 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             resp = res.json
-            self.assertIn("Hello Cornelius please enter the otp sent to 123456",
+            self.assertIn("Hello Cornelius, please enter the otp sent to 123456",
                           resp.get("detail").get("message"))
-            self.assertIn("Hello Cornelius please enter the otp sent to hallo@example.com",
+            self.assertIn("Hello Cornelius, please enter the otp sent to hallo@example.com",
                           resp.get("detail").get("message"))
+
+        with self.app.test_request_context('/policy/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'], res.json)
+            value = res.json['result']['value']
+            pol1 = value[2]
+            self.assertEqual(pol1.get("action").get("increase_failcounter_on_challenge"), True, pol1)
+            self.assertIn("Hello {user}\\, please enter", pol1.get("action").get("sms_challenge_text"), pol1)
 
         remove_token("CHAL1")
         remove_token("CHAL2")
@@ -3093,6 +3106,62 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertIn("previous otp used again", detail.get("message"))
         # clean up
         remove_token("totp_previous")
+
+    def test_37_challenge_response_hotp_with_container(self):
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.add_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.add_token(token)
+
+        # Set the failcounter
+        token.set_failcount(5)
+
+        # set a chalresp policy for HOTP
+        set_policy("policy", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: 'hotp'})
+
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            transaction_id = detail.get("transaction_id")
+
+        # Authentication is not yet successfully, hence the last_authentication time stamp shall not be updated yet
+        self.assertIsNone(container.last_authentication)
+
+        # send the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
+        # check last authentication
+        auth_time = datetime.datetime.now(datetime.timezone.utc)
+        last_auth = container.last_authentication
+        time_diff = abs((auth_time - last_auth).total_seconds())
+        self.assertLessEqual(time_diff, 1)
+
+        # delete the token
+        remove_token(serial=serial)
 
 
 class RegistrationValidity(MyApiTestCase):
@@ -5604,6 +5673,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             chal = detail.get("multi_challenge")[0]
             self.assertEqual(CLIENTMODE.INTERACTIVE, chal.get("client_mode"), detail)
             self.assertIn("image", detail, detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://hotp"), link)
             self.assertEqual(1, len(detail.get("messages")))
             self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
@@ -5706,6 +5778,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://totp"), link)
             serial = detail.get("serial")
 
         # 3. scan the qrcode / Get the OTP value

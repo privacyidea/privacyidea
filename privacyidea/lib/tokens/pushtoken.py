@@ -964,7 +964,10 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
+        message = message.replace(r'\,', ',')
+
         # Determine if require presence is enabled
+
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
@@ -1183,6 +1186,7 @@ class PushTokenClass(TokenClass):
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
+                "link": init_details.get("pushurl", {}).get("value"),
                 "client_mode": CLIENTMODE.POLL,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
@@ -1193,3 +1197,15 @@ class PushTokenClass(TokenClass):
     @classmethod
     def is_multichallenge_enrollable(cls):
         return True
+
+    def get_enroll_url(self, user: User, params: dict) -> str:
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+
+        :param user: The user object
+        :param params: Further parameters
+        :return: The URL containing all required information to enroll the token
+        """
+        init_details = self.get_init_detail(params, user)
+        enroll_url = init_details.get("pushurl").get("value")
+        return enroll_url

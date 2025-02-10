@@ -50,6 +50,8 @@ The user is allowed to assign an existing token that is
 located in their realm and that does not belong to any other user
 by entering the serial number.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 disable
 ~~~~~~~
 
@@ -477,6 +479,8 @@ type: ``bool``
 
 This action allows users to assign themselves to containers without an owner.
 
+Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+
 .. versionadded:: 3.10
 
 container_unassign_user
@@ -487,3 +491,59 @@ type: ``bool``
 This action allows users to unassign themselves from containers.
 
 .. versionadded:: 3.10
+
+container_register
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to generate the QR code for the registration of a container.
+
+New in version 3.11
+
+container_unregister
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to unregister a container. This terminates the possibility to synchronize the container
+with the server.
+
+New in version 3.11
+
+container_rollover
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to perform a rollover of a container and all contained tokens.
+
+New in version 3.11
+
+container_template_create
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to create and edit container templates.
+
+New in version 3.11
+
+container_template_delete
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to delete container templates.
+
+New in version 3.11
+
+container_template_list
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows users to list container templates and see the template properties.
+In combination with the ```container_list`` policy, the users are allowed to compare templates with containers.
+
+New in version 3.11

@@ -55,7 +55,9 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
                                            require_description, jwt_validity, check_container_action,
-                                           check_token_action, check_token_list_action, check_user_params, rss_age)
+                                           check_token_action, check_token_list_action, check_user_params,
+                                           check_client_container_action, container_registration_config,
+                                           smartphone_config, check_client_container_disabled_action, rss_age)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3667,32 +3669,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         token.delete_token()
 
-    def mock_container_request(self, role):
+    def mock_container_request(self, role, container_type="generic"):
         """
         Mocks a request for a user or an admin.
-        A generic container is created for user 'root' in realm 'realm3' and resolver 'reso3' and an additional
+        A container is created for user 'root' in realm 'realm3' and resolver 'reso3' and an additional
         container realm 'realm1'. The container serial is included in the request.
 
         :param role: User role for whom to create the request 'admin' or 'user'
+        :param container_type: Type of the container to create
         :return: Request object and container object
         """
         # Create request object and container
-        req, container = self.mock_container_request_no_user(role)
+        req, container = self.mock_container_request_no_user(role, container_type)
 
-        # add user hans (realm3) and realm 1 to the container
-        hans = User(login="root", realm=self.realm3, resolver=self.resolvername3)
-        container.add_user(hans)
+        # add user root (realm3) and realm 1 to the container
+        root = User(login="root", realm=self.realm3, resolver=self.resolvername3)
+        container.add_user(root)
         container.set_realms([self.realm1], add=True)
-        req.User = hans
+        req.User = root
 
         return req, container
 
-    def mock_container_request_no_user(self, role):
+    def mock_container_request_no_user(self, role, container_type="generic"):
         """
         Mocks a request for a user or an admin.
-        A generic container is created. The container serial is included in the request.
+        A container is created. The container serial is included in the request.
 
         :param role: User role for whom to create the request 'admin' or 'user'
+        :param container_type: Type of the container to create
         :return: Request object and container object
         """
         if role == "admin":
@@ -3704,7 +3708,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                 "resolver": self.resolvername3,
                                 "role": "user"}
         # create container for user hans (realm3) and realm 1
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": container_type})["container_serial"]
         container = find_container_by_serial(container_serial)
         builder = EnvironBuilder(method='POST', data={'container_serial': container_serial}, headers={})
         env = builder.get_environ()
@@ -3719,6 +3723,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Mock request object
         self.setUp_user_realms()
         self.setUp_user_realm3()
+
+        # User is the container owner
         req, container = self.mock_container_request("user")
 
         # Generic policy
@@ -3744,9 +3750,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         container.delete()
 
+        # Container has no owner: only allowed for assign and create
+        req, container = self.mock_container_request_no_user("user")
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.USER, action=[ACTION.CONTAINER_ASSIGN_USER, ACTION.CONTAINER_CREATE])
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        container.delete()
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_CREATE))
+        delete_policy("policy")
+
     def test_68_check_container_action_user_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
+
+        # Container of the user
         req, container = self.mock_container_request("user")
 
         # No description policy
@@ -3771,6 +3788,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
+        container.delete()
+
+        # Container has no owner: only allowed for assign and create
+        req, container = self.mock_container_request_no_user("user")
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.USER, action=[ACTION.CONTAINER_ASSIGN_USER, ACTION.CONTAINER_DESCRIPTION])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        delete_policy("policy")
         container.delete()
 
     def test_69_check_container_action_admin_success(self):
@@ -4052,7 +4077,555 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_76_rss_age_admin(self):
+    def mock_client_container_request(self):
+        """
+        Mocks a request for a client.
+        A smartphone container is created for user 'root' in realm 'realm3' and resolver 'reso3' and an additional
+        container realm 'realm1'. The container serial is included in the request.
+
+        :return: Request object and container object
+        """
+        # Create request object and container
+        req, container = self.mock_client_container_request_no_user()
+
+        # add user hans (realm3) and realm 1 to the container
+        hans = User(login="root", realm=self.realm3, resolver=self.resolvername3)
+        container.add_user(hans)
+        container.set_realms([self.realm1], add=True)
+        req.User = hans
+
+        return req, container
+
+    @classmethod
+    def mock_client_container_request_no_user(cls):
+        """
+        Mocks a request for a client.
+        A smartphone container is created. The container serial is included in the request.
+
+        :return: Request object and container object
+        """
+        # create container for user hans (realm3) and realm 1
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        builder = EnvironBuilder(method='POST', data={'container_serial': container_serial}, headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"container_serial": container_serial}
+        req.User = User()
+        g.policy_object = PolicyClass()
+
+        return req, container
+
+    def test_76_check_client_container_action_user_success(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # container with user and realm
+        req, container = self.mock_client_container_request()
+
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        # Policy for resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+                   resolver=[self.resolvername3])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        # Policy for user realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        # Policy for additional realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        # Policy for user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, user="root",
+                   realm=[self.realm3], resolver=[self.resolvername3])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        container.delete()
+
+        # container without user
+        req, container = self.mock_client_container_request_no_user()
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+
+        # container with realms
+        container.set_realms([self.realm1, self.realm3], add=False)
+        # Policy for realm1
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+        # Policy for realm3
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        delete_policy("policy")
+        container.delete()
+
+    def test_77_check_client_container_action_user_denied(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+        # container with user and realm
+        req, container = self.mock_client_container_request()
+
+        # No rollover policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_TOKEN_DELETION)
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy for another resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+                   resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy for another realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy for another user of the same realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, user="hans",
+                   realm=[self.realm3],
+                   resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        container.delete()
+
+        # container without user
+        req, container = self.mock_client_container_request_no_user()
+        # Policy for a realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy for a resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+                   resolver=self.resolvername1)
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy for a user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1,
+                   user="hans")
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # Policy with all actions in the scope disabled action
+        set_policy(name="policy", scope=SCOPE.CONTAINER, realm=self.realm1,
+                   user="hans")
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # container with realms
+        container.set_realms([self.realm1, self.realm3], add=False)
+        # policy for another realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        # policy for a user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1],
+                   user="hans")
+        self.assertRaises(PolicyError, check_client_container_action, request=req,
+                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        delete_policy("policy")
+
+        container.delete()
+
+    def test_78_container_registration_config_success(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # Set a policy only valid for another realm
+        set_policy("policy_realm2", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://test.com",
+                           ACTION.CONTAINER_REGISTRATION_TTL: 60,
+                           ACTION.CONTAINER_CHALLENGE_TTL: 50,
+                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   realm=self.realm2)
+
+        # policy including server url + default values for ttl and ssl_verify
+        req, container = self.mock_container_request("user")
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
+        container_registration_config(req)
+        self.assertEqual("https://pi.com", req.all_data["server_url"])
+        self.assertEqual(10, req.all_data["registration_ttl"])
+        self.assertEqual(2, req.all_data["challenge_ttl"])
+        self.assertEqual("True", req.all_data["ssl_verify"])
+        delete_policy("policy")
+        container.delete()
+
+        # specifying valid values in generic policy
+        req, container = self.mock_container_request("user")
+        set_policy("generic_policy", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                           ACTION.CONTAINER_REGISTRATION_TTL: 20,
+                           ACTION.CONTAINER_CHALLENGE_TTL: 6,
+                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   priority=3)
+        container_registration_config(req)
+        self.assertEqual("https://pi.com", req.all_data["server_url"])
+        self.assertEqual(20, req.all_data["registration_ttl"])
+        self.assertEqual(6, req.all_data["challenge_ttl"])
+        self.assertEqual("False", req.all_data["ssl_verify"])
+        container.delete()
+
+        # specifying valid values in policy for realm with higher priority than generic policy
+        req, container = self.mock_container_request("user")
+        set_policy("policy", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                           ACTION.CONTAINER_REGISTRATION_TTL: 30,
+                           ACTION.CONTAINER_CHALLENGE_TTL: 8,
+                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   realm=self.realm3,
+                   priority=1)
+        container_registration_config(req)
+        self.assertEqual("https://pi.com", req.all_data["server_url"])
+        self.assertEqual(30, req.all_data["registration_ttl"])
+        self.assertEqual(8, req.all_data["challenge_ttl"])
+        self.assertEqual("False", req.all_data["ssl_verify"])
+        delete_policy("policy")
+        delete_policy("generic_policy")
+        container.delete()
+
+        # specifying invalid values sets default values
+        req, container = self.mock_container_request("user")
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+                                                      ACTION.CONTAINER_REGISTRATION_TTL: -20,
+                                                      ACTION.CONTAINER_CHALLENGE_TTL: -6,
+                                                      ACTION.CONTAINER_SSL_VERIFY: "maybe"})
+        container_registration_config(req)
+        self.assertEqual("https://pi.com", req.all_data["server_url"])
+        self.assertEqual(10, req.all_data["registration_ttl"])
+        self.assertEqual(2, req.all_data["challenge_ttl"])
+        self.assertEqual("True", req.all_data["ssl_verify"])
+        delete_policy("policy")
+        container.delete()
+
+        delete_policy("policy_realm2")
+
+    def test_79_container_registration_config_fail(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # policy without server url shall raise error
+        req, container = self.mock_container_request("user")
+        self.assertRaises(PolicyError, container_registration_config, req)
+        container.delete()
+
+        # specifying valid values in policy for another realm
+        req, container = self.mock_container_request("user")
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+                                                      ACTION.CONTAINER_REGISTRATION_TTL: 20,
+                                                      ACTION.CONTAINER_CHALLENGE_TTL: 6,
+                                                      ACTION.CONTAINER_SSL_VERIFY: "False"}, realm=self.realm2)
+        self.assertRaises(PolicyError, container_registration_config, req)
+        delete_policy("policy")
+
+        # conflicting policies for server url shall raise error
+        req, container = self.mock_container_request("user")
+        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test.com"})
+        self.assertRaises(PolicyError, container_registration_config, req)
+        delete_policy("policy1")
+        delete_policy("policy2")
+        container.delete()
+
+        # conflicting policies for registration ttl shall raise error
+        req, container = self.mock_container_request("user")
+        set_policy("policy1", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_REGISTRATION_TTL: 30})
+        self.assertRaises(PolicyError, container_registration_config, req)
+        delete_policy("policy1")
+        delete_policy("policy2")
+        container.delete()
+
+        # conflicting policies for challenge ttl shall raise error
+        req, container = self.mock_container_request("user")
+        set_policy("policy1", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_CHALLENGE_TTL: 30})
+        self.assertRaises(PolicyError, container_registration_config, req)
+        delete_policy("policy1")
+        delete_policy("policy2")
+        container.delete()
+
+        # conflicting policies for challenge ttl shall raise error
+        req, container = self.mock_container_request("user")
+        set_policy("policy1", SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SSL_VERIFY: "True"})
+        self.assertRaises(PolicyError, container_registration_config, req)
+        delete_policy("policy1")
+        delete_policy("policy2")
+        container.delete()
+
+    def test_80_smartphone_config(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # No container policy at all: use default values
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+
+        # Set a policy only valid for another realm
+        set_policy("policy_realm2", SCOPE.CONTAINER,
+                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
+                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER],
+                   realm=self.realm2)
+
+        # No policy: use default values
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+
+        # Generic policy defined
+        set_policy("policy", SCOPE.CONTAINER,
+                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
+                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
+                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+        delete_policy("policy")
+
+        # Policy for realm defined
+        set_policy("policy", SCOPE.CONTAINER,
+                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
+                           ACTION.DISABLE_CLIENT_TOKEN_DELETION],
+                   realm=self.realm3)
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+
+        # wrong container type
+        req, container = self.mock_container_request("user", "generic")
+        self.assertFalse(smartphone_config(req))
+        self.assertNotIn("client_policies", req.all_data.keys())
+        container.delete()
+
+        # Invalid container serial provided
+        req, container = self.mock_container_request("user", "smartphone")
+        container.delete()
+        self.assertFalse(smartphone_config(req))
+        self.assertNotIn("client_policies", req.all_data.keys())
+
+        # No container_serial provided
+        req, token = self.mock_token_request("admin")
+        self.assertFalse(smartphone_config(req))
+        self.assertNotIn("client_policies", req.all_data.keys())
+        token.delete_token()
+
+        delete_policy("policy")
+        delete_policy("policy_realm2")
+
+    def test_81_check_client_container_disabled_action_user_denied(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # container with user and realm
+        req, container = self.mock_client_container_request()
+
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        # Policy for resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        # Policy for user realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm3])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        # Policy for additional realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        # Policy for user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="root",
+                   realm=[self.realm3], resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        container.delete()
+
+        # container without user
+        req, container = self.mock_client_container_request_no_user()
+        # Generic policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+
+        # container with realms
+        container.set_realms([self.realm1, self.realm3], add=False)
+        # Policy for realm1
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+        # Policy for realm3
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm3])
+        self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
+                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        delete_policy("policy")
+        container.delete()
+
+    def test_82_check_client_container_action_user_success(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+        # container with user and realm
+        req, container = self.mock_client_container_request()
+
+        # No policy in the container scope at all
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+
+        # No unregister policy
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy for another resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   resolver=[self.resolvername1])
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy for another realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm2])
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy for another user of the same realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="hans",
+                   realm=[self.realm3],
+                   resolver=[self.resolvername3])
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        container.delete()
+
+        # container without user
+        req, container = self.mock_client_container_request_no_user()
+        # Policy for a realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=self.realm1)
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy for a resolver
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   resolver=self.resolvername1)
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy for a user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=self.realm1,
+                   user="hans")
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # Policy with all actions in the scope disabled action
+        set_policy(name="policy", scope=SCOPE.CONTAINER, realm=self.realm1,
+                   user="hans")
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # container with realms
+        container.set_realms([self.realm1, self.realm3], add=False)
+        # policy for another realm
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm2])
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        # policy for a user
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   realm=[self.realm1],
+                   user="hans")
+        self.assertTrue(
+            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+        delete_policy("policy")
+
+        container.delete()
+
+    def test_83_rss_age_admin(self):
         # Test default for admins:
         g.logged_in_user = {"username": "super",
                             "role": "admin"}
@@ -4066,7 +4639,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(r)
         self.assertEqual(180, req.all_data.get(f"{ACTION.RSS_AGE}"))
 
-    def test_77_rss_age_user(self):
+    def test_84_rss_age_user(self):
         g.logged_in_user = {"username": "cornelius",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -4896,6 +5469,16 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                          jresult.get("result").get("value").get("logout_redirect_url"),
                          jresult)
         delete_policy("pol_logout_redirect")
+
+        # Test default container type
+        # policy not set: default is generic
+        self.assertEqual("generic", new_response.json["result"]["value"]["default_container_type"])
+        # Set smartphone as default
+        set_policy(name="default_container", scope=SCOPE.WEBUI, action={ACTION.DEFAULT_CONTAINER_TYPE: "smartphone"})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual("smartphone", new_response.json["result"]["value"]["default_container_type"])
+        delete_policy("default_container")
 
     def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent

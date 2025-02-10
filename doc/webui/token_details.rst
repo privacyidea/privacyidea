@@ -170,6 +170,7 @@ is directly assigned to the user.
 
 If you enroll the token from the token view, you can select a user, to whom
 the token will be assigned.
+From version 3.11, you can also assign the token only to a realm.
 
 When enrolling a token, you can select the token type and according to the
 token type other necessary information.

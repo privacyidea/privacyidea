@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.container import find_container_for_token
 from privacyidea.models import Admin
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
@@ -123,6 +124,13 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
             details["loginmode"] = "privacyIDEA"
             if check:
                 user_auth = True
+                if details.get("serial"):
+                    try:
+                        container = find_container_for_token(details.get("serial"))
+                        if container:
+                            container.update_last_authentication()
+                    except Exception as e:
+                        log.debug(f"Could not find container for token {details.get('serial')}: {e}")
         except Exception as e:
             log.debug("Error authenticating user against privacyIDEA: {0!r}".format(e))
     else:

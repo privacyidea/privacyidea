@@ -12,7 +12,7 @@ import mock
 from mock import patch
 
 from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
-                                       delete_container_by_serial, add_token_to_container)
+                                       delete_container_by_serial, add_token_to_container, create_endpoint_url)
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE,
@@ -46,10 +46,12 @@ from privacyidea.models import Challenge
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import is_true
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from collections import OrderedDict
+
+from .test_lib_tokencontainer import MockSmartphone
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -117,7 +119,7 @@ class EventHandlerLibTestCase(MyTestCase):
         # If eventid is None, then the whole list is returned
         r = event_config.get_event(None)
         self.assertEqual(r, event_config.events)
-        # return a destinct eventid
+        # return a distinct eventid
         r = event_config.get_event(events[0].get("id"))
         self.assertEqual(r[0].get("id"), events[0].get("id"))
         self.assertEqual(r[0].get("position"), "post")
@@ -149,6 +151,36 @@ class EventHandlerLibTestCase(MyTestCase):
 
 
 class BaseEventHandlerTestCase(MyTestCase):
+
+    @classmethod
+    def setup_request(cls, req_data: dict = {}, all_data: dict = None, user: User = None, resp_data: str = None,
+                      resp_content_type: str = None, handler_def: dict = {}):
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data=req_data,
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        if all_data:
+            req.all_data = all_data
+        if user:
+            req.User = user
+
+        # fake response
+        resp = Response()
+        if resp_data:
+            resp.data = resp_data
+        else:
+            resp.data = """{"result": {"value": false}}"""
+        if resp_content_type:
+            resp.content_type = resp_content_type
+
+        # options for the event handler
+        options = {"g": {},
+                   "handler_def": handler_def,
+                   "request": req,
+                   "response": resp}
+        return options
 
     def test_01_basefunctions(self):
         actions = BaseEventHandler().actions
@@ -182,26 +214,13 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertEqual(tok.type, "pw")
 
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        req_data = {'user': "cornelius@realm1", "pass": "wrongvalue"}
+        user = User("cornelius", "realm1")
+        handler_def = {"conditions": {CONDITION.TOKENTYPE: "pw"}}
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, handler_def=handler_def)
+
         # Do checking
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENTYPE: "pw"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition(options)
         # The only token of the user is of type "pw".
         self.assertEqual(r, True)
 
@@ -217,105 +236,49 @@ class BaseEventHandlerTestCase(MyTestCase):
                          user=user)
         self.assertEqual(tok.type, "pw")
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        req_data = {'user': "cornelius@realm1", "pass": "wrongvalue"}
+        user = User("cornelius", "realm1")
+        handler_def = {"conditions": {CONDITION.COUNT_AUTH: "<100"}}
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, handler_def=handler_def)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: "<100"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = uhandler.check_condition(options)
         self.assertEqual(r, True)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: ">100"}},
-             "request": req,
-             "response": resp
-             }
-        )
+
+        options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH: ">100"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # Set the count_auth and count_auth_success
         add_tokeninfo(serial, "count_auth", 100)
         add_tokeninfo(serial, "count_auth_success", 50)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: ">99"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH: ">99"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_SUCCESS:
-                                                ">45"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH_SUCCESS: ">45"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
-                                                ">45"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH_FAIL: ">45"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
-                                                "<45"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH_FAIL: "<45"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # check for failcounter
         tok.set_failcount(8)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "<9"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: "<9"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: ">9"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: ">9"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "=8"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: "=8"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         remove_token(serial)
@@ -331,126 +294,61 @@ class BaseEventHandlerTestCase(MyTestCase):
                          user=user)
         self.assertEqual(tok.type, "pw")
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "secret"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "secret"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
+        req_data = {'user': "cornelius@realm1", "pass": "secret"}
+        user = User("cornelius", "realm1")
+        resp_data = """{"result": {"value": true}}"""
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
 
         tok.add_tokeninfo("myValue", "99")
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue<100"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myValue<100"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, True)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue<98"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myValue<98"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, False)
 
         tok.add_tokeninfo("myValue", "Hallo")
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue== Hallo"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myValue==Hallo"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, True)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue==hallo"}},
-             "request": req,
-             "response": resp
-             }
-        )
+
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myValue==hallo"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, False)
 
-        # The beginning of the year 2017 in smaller than now
+        # The beginning of the year 2017 is smaller than now
         tok.add_tokeninfo("myDate", "2017-01-01T10:00+0200")
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myDate < {now}"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myDate < {now}"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # myDate is one hour in the future
-        tok.add_tokeninfo("myDate",
-                          (datetime.now(tzlocal())
-                           + timedelta(hours=1)
-                           ).strftime(DATE_FORMAT))
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myDate > {now}-2h"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        tok.add_tokeninfo("myDate", (datetime.now(tzlocal()) + timedelta(hours=1)).strftime(DATE_FORMAT))
+        options["handler_def"] = {"conditions": {CONDITION.TOKENINFO: "myDate > {now}-2h"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
         remove_token(serial)
 
     def test_05_detail_messages_condition(self):
         self.setUp_user_realms()
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "secret"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "secret"}
-        req.User = User("cornelius", "realm1")
+        req_data = {'user': "cornelius@realm1", "pass": "secret"}
+        user = User("cornelius", "realm1")
+        resp_data = """{"result": {"value": true, "status": true},
+                    "detail": {"message": "something very special happened"}
+                    }
+                    """
+        resp_content_type = "application/json"
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data,
+                                     resp_content_type=resp_content_type)
 
-        # Check DETAIL_MESSAGE
-        resp = Response()
-        resp.data = """{"result": {"value": true, "status": true},
-        "detail": {"message": "something very special happened"}
-        }
-        """
-        resp.content_type = "application/json"
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, True)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "^special"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.DETAIL_MESSAGE: "^special"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, False)
 
         # Check DETAIL_MESSAGE to evaluate to False if it does not exist
@@ -459,14 +357,9 @@ class BaseEventHandlerTestCase(MyTestCase):
                 "detail": {"options": "Nothing"}
                 }
                 """
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["response"] = resp
+        options["handler_def"] = {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, False)
 
         # Check DETAIL_ERROR_MESSAGE
@@ -476,66 +369,37 @@ class BaseEventHandlerTestCase(MyTestCase):
             }
             """
         resp.content_type = "application/json"
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {
-                 CONDITION.DETAIL_ERROR_MESSAGE: "does not exist$"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["response"] = resp
+        options["handler_def"] = {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE: "does not exist$"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, True)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {
-                 CONDITION.DETAIL_ERROR_MESSAGE: "^does not exist"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE: "^does not exist"}}
+        r = uhandler.check_condition(options)
         self.assertEqual(r, False)
 
     def test_06_check_for_client_ip(self):
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "secret"},
-                                 headers={})
+        req_data = {'user': "cornelius@realm1", "pass": "secret"}
+        user = User("cornelius", "realm1")
+        resp_data = """{"result": {"value": true, "status": true},
+                        "detail": {"message": "something very special happened"}
+                        }
+                        """
+        resp_content_type = "application/json"
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data,
+                                     resp_content_type=resp_content_type)
+
         g = FakeFlaskG()
         g.client_ip = "10.0.0.1"
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "secret"}
-        req.User = User("cornelius", "realm1")
+        options["g"] = g
 
-        # Check DETAIL_MESSAGE
-        resp = Response()
-        resp.data = """{"result": {"value": true, "status": true},
-                "detail": {"message": "something very special happened"}
-                }
-                """
-        resp.content_type = "application/json"
-
-        r = uhandler.check_condition(
-            {"g": g,
-             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": g,
-             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24, !10.0.0.1"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24, !10.0.0.1"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
     def test_07_check_rollout_state(self):
@@ -552,37 +416,20 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         uhandler = BaseEventHandler()
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue"}
-        req.User = user
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
-        resp.content_type = "application/json"
+        req_data = {'user': "cornelius@realm1", "pass": "wrongvalue"}
+        resp_data = """{"result": {"value": false}}"""
+        resp_content_type = "application/json"
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data,
+                                     resp_content_type=resp_content_type)
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "fakestate"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.ROLLOUT_STATE: "fakestate"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "otherstate"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.ROLLOUT_STATE: "otherstate"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         remove_token(serial)
@@ -593,66 +440,32 @@ class BaseEventHandlerTestCase(MyTestCase):
             counter_increase("myCounter")
 
         uhandler = BaseEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "secret"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "secret"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        resp.content_type = "application/json"
+        req_data = {'user': "cornelius@realm1", "pass": "secret"}
+        user = User("cornelius", "realm1")
+        resp_data = """{"result": {"value": true}}"""
+        resp_content_type = "application/json"
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data,
+                                     resp_content_type=resp_content_type)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter<4"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNTER: "myCounter<4"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter==4"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNTER: "myCounter==4"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter>3"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNTER: "myCounter>3"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # If we have a nonexisting counter this should be treated as zero
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {
-                 CONDITION.COUNTER: "myNonExistingCounter>3"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNTER: "myNonExistingCounter>3"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {
-                 CONDITION.COUNTER: "myNonExistingCounter<3"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.COUNTER: "myNonExistingCounter<3"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
     def test_09_check_conditions_realm_and_resolver_value(self):
@@ -677,56 +490,28 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertEqual([{'name': 'realm1'}, {'name': 'realm2'}], realm_value, realm_value)
         self.assertEqual([{'name': 'resolver1'}], resolver_value, resolver_value)
 
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        # This is a kind of authentication request
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        req_data = {'user': "cornelius@realm1",
+                    "pass": "wrongvalue"}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.REALM: "realm1"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.REALM: "realm1"}}
+        r = uhandler.check_condition(options)
         # Works if the realm is correct
         self.assertEqual(r, True)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.REALM: "realm3"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.REALM: "realm3"}}
+        r = uhandler.check_condition(options)
         # False if the realm is incorrect
         self.assertEqual(r, False)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.RESOLVER: "resolver1"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.RESOLVER: "resolver1"}}
+        r = uhandler.check_condition(options)
         # Works if the resolver is correct
         self.assertEqual(r, True)
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.REALM: "resolver3"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.REALM: "resolver3"}}
+        r = uhandler.check_condition(options)
         # False if the resolver is incorrect
         self.assertEqual(r, False)
 
@@ -748,50 +533,26 @@ class BaseEventHandlerTestCase(MyTestCase):
         # One token with one declined challenge
         uhandler = BaseEventHandler()
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue",
-                                       "transaction_id": tid},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue",
-                        "transaction_id": tid}
-        req.User = user
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        req_data = {'user': "cornelius@realm1", "pass": "wrongvalue", "transaction_id": tid}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.ENROLLMENT}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.ENROLLMENT}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
+
         # We have two declined challenges, add a 2nd one.
         chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
         chal.save()
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}}
+        r = uhandler.check_condition(options)
         # We will receive a False and a log.warning
         self.assertFalse(r)
 
@@ -813,28 +574,13 @@ class BaseEventHandlerTestCase(MyTestCase):
         # One token with one declined challenge
         uhandler = BaseEventHandler()
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue",
-                                       "transaction_id": tid},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue",
-                        "transaction_id": tid}
-        req.User = user
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        req_data = {'user': "cornelius@realm1", "pass": "wrongvalue", "transaction_id": tid}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
 
         # Check if the condition matches
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "false"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_EXPIRED: "false"}}
+        r = uhandler.check_condition(options)
         # Right, the challenge has not yet expired.
         self.assertTrue(r)
 
@@ -843,13 +589,8 @@ class BaseEventHandlerTestCase(MyTestCase):
         chal = Challenge(serial=serial, transaction_id=tid, validitytime=-120)
         chal.save()
 
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.CHALLENGE_EXPIRED: "True"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_EXPIRED: "True"}}
+        r = uhandler.check_condition(options)
         # Right, the challenge has expired.
         self.assertTrue(r)
 
@@ -857,26 +598,16 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_12_check_token_is_in_container(self):
         # Prepare the container and token
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         token_serial = "SPASS01"
         init_token({"serial": "SPASS01", "type": "spass"})
 
         uhandler = BaseEventHandler()
 
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"serial": token_serial}
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
-
-        options = {"g": {},
-                   "handler_def": {},
-                   "request": req,
-                   "response": resp}
+        all_data = {"serial": token_serial}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
 
         # Token is not in a container
         # Check if the condition matches
@@ -890,7 +621,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Token is in a container
-        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
+        add_token_to_container(container_serial, token_serial)
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True"}}
         r = uhandler.check_condition(options)
@@ -902,60 +633,45 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
         remove_token(token_serial)
 
     def test_13_check_container_state(self):
         # Prepare the container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
         container.set_states(["disabled", "lost"])
 
         uhandler = BaseEventHandler()
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"container_serial": container_serial}
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        all_data = {"container_serial": container_serial}
+        resp_data = """{"result": {"value": true}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
 
         # Check if the condition matches
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "disabled"}},
-                                      "request": req,
-                                      "response": resp})
+        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_STATE: "disabled"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_STATE: "active"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_STATE: "active"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # ------------- Check condition container_single_state --------------
         # Check if the condition does not match due to multiple states
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # Check if the condition does not match due to wrong state
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # Check if the condition match
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled,lost"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "disabled,lost"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         container.delete()
@@ -967,7 +683,7 @@ class BaseEventHandlerTestCase(MyTestCase):
                          realm=self.realm1)
 
         # init container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
         container.add_user(test_user)
 
@@ -975,86 +691,63 @@ class BaseEventHandlerTestCase(MyTestCase):
         uhandler = BaseEventHandler()
 
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"container_serial": container_serial}
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        all_data = {"container_serial": container_serial}
+        res_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, user=test_user, resp_data=res_data)
 
         # Check if the condition matches
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # Unassign user
         container.remove_user(test_user)
 
         # Check if the condition matches
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "False"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_HAS_OWNER: "True"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         container.delete()
 
     def test_15_check_container_type(self):
         # Init container
-        container_serial = init_container({"type": "smartphone"})
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # event handler
         uhandler = BaseEventHandler()
 
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"container_serial": container_serial}
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        all_data = {"container_serial": container_serial}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
 
         # Check if the condition matches
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}},
-                                      "request": req,
-                                      "response": resp
-                                      })
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}}
+        r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        r = uhandler.check_condition({"g": {},
-                                      "handler_def": {"conditions": {CONDITION.CONTAINER_TYPE: "generic"}},
-                                      "request": req,
-                                      "response": resp})
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_TYPE: "generic"}}
+        r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         container.delete()
 
     def test_16_check_container_has_token(self):
         # Init container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
 
         # Init token
         token_serial = "SPASS01"
@@ -1063,17 +756,9 @@ class BaseEventHandlerTestCase(MyTestCase):
         uhandler = BaseEventHandler()
 
         # Prepare a fake request
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"container_serial": container_serial}
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
-
-        options = {"g": {}, "request": req, "response": resp,
-                   'handler_def': {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}}
+        all_data = {"container_serial": container_serial}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
 
         # Container has no token
         # Check if the condition matches
@@ -1086,7 +771,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Container has a token
-        add_token_to_container(container_serial, token_serial, user=User(), user_role="admin")
+        add_token_to_container(container_serial, token_serial)
         # Check if the condition matches
         options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
         r = uhandler.check_condition(options)
@@ -1098,7 +783,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Clean up
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
         remove_token(token_serial)
 
     def test_17_user_token_number(self):
@@ -1162,6 +847,225 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertFalse(r)
+
+    def test_19_check_container_realm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        # Init container
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # setup fake request
+        all_data = {'container_serial': container_serial}
+        options = self.setup_request(all_data=all_data)
+
+        event_handler = BaseEventHandler()
+
+        # Container in no realm: condition shall match
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_REALM: "realm1"}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # Add container to realm2: condition shall not match
+        container.set_realms([self.realm2])
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition for realm 2 shall match the container
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_REALM: "realm2"}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_REALM: "realm1,realm2"}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # Clean up
+        container.delete()
+
+    def test_20_check_container_resolver(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        # Init container
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        user = User("hans", self.realm1, self.resolvername1)
+
+        # setup fake request
+        all_data = {'container_serial': container_serial}
+        options = self.setup_request(all_data=all_data)
+
+        event_handler = BaseEventHandler()
+
+        # Container has no user: condition shall match
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_RESOLVER: self.resolvername2}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # Add user to container: condition shall not match
+        container.add_user(user)
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition for resolver 1 shall match the container
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_RESOLVER: self.resolvername1}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        options["handler_def"] = {
+            "conditions": {CONDITION.CONTAINER_RESOLVER: f"{self.resolvername1},{self.resolvername2}"}}
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # Clean up
+        container.delete()
+
+    def test_19_check_container_info(self):
+        # Init container
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # setup fake request
+        all_data = {'container_serial': container_serial}
+        options = self.setup_request(all_data=all_data)
+
+        event_handler = BaseEventHandler()
+
+        # --- Equality ---
+        # Condition not match: no info
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_INFO: "registration_state == registered"}}
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition not match: wrong info value
+        container.set_container_info({"registration_state": "client_wait"})
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition match
+        container.set_container_info({"registration_state": "registered"})
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # --- Smaller ---
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_INFO: "challenge_ttl < 5"}}
+
+        # Condition not match: no info
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition not match: value is greater
+        container.set_container_info({"challenge_ttl": "10"})
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # Condition match
+        container.set_container_info({"challenge_ttl": 3})
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # --- Greater ---
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_INFO: "challenge_ttl > 5"}}
+
+        # condition not match: no info
+        container.delete_container_info("challenge_ttl")
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # condition not match: value is smaller
+        container.set_container_info({"challenge_ttl": 3})
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # condition match
+        container.set_container_info({"challenge_ttl": 10})
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+        # Clean up
+        container.delete()
+
+    def test_20_check_last_authentication(self):
+        # Init container
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # setup fake request
+        all_data = {'container_serial': container_serial}
+        options = self.setup_request(all_data=all_data)
+
+        event_handler = BaseEventHandler()
+
+        # last auth not set: condition shall not match
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_LAST_AUTH: "1d"}}
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # set last auth to 2 days ago: condition shall not match
+        container._db_container.last_seen = datetime.now(timezone.utc) - timedelta(days=2)
+        container._db_container.save()
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # set last auth to now: condition shall match
+        container.update_last_authentication()
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+    def test_22_check_last_synchronization(self):
+        # Init container
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # setup fake request
+        all_data = {'container_serial': container_serial}
+        options = self.setup_request(all_data=all_data)
+
+        event_handler = BaseEventHandler()
+
+        # last sync not set: condition shall not match
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_LAST_SYNC: "1y"}}
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # set last auth to 1 year ago: condition shall not match
+        container._db_container.last_updated = datetime.now(timezone.utc) - timedelta(days=365)
+        container._db_container.save()
+        r = event_handler.check_condition(options)
+        self.assertFalse(r)
+
+        # set last auth to now: condition shall match
+        container.update_last_synchronization()
+        r = event_handler.check_condition(options)
+        self.assertTrue(r)
+
+    def test_23_check_container_challenge_expired(self):
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        # Prepare a challenge, that is not yet expired
+        chal = Challenge(serial=container_serial, validitytime=120)
+        chal.save()
+
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        req_data = {'container_serial': container_serial}
+        resp_data = """{"result": {"value": true}}"""
+        options = self.setup_request(all_data=req_data, resp_data=resp_data)
+
+        # Check if the condition matches
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_EXPIRED: "false"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Check if the condition does not match, so we have an expired challenge
+        chal.delete()
+        chal = Challenge(serial=container_serial, validitytime=0)
+        chal.save()
+
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_EXPIRED: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        delete_container_by_serial(container_serial)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -1738,6 +1642,7 @@ class RequestManglerTestCase(MyTestCase):
         r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
+        # todo this is pointless, req.all_data.get("user") is not used anywhere, but req.User...
         self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
 
         # The request does not contain the match_parameter, thus the
@@ -1778,6 +1683,88 @@ class RequestManglerTestCase(MyTestCase):
         self.assertTrue(res)
         # The user was not modified, since the number of tags did not match
         self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+    def test_03_reset_user(self):
+        """
+        If a param concerning the user is mangled and reset_user is enabled, the user that is appended to the request
+        is reset.
+        """
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "user": "cornelius", "realm": self.realm1}
+        resp = Response()
+
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def":
+                {
+                    "options":
+                        {
+                            "parameter": "user",
+                            "match_parameter": "user",
+                            "value": "hans",
+                            "match_pattern": "cornelius",
+                            "reset_user": True
+                        }
+                }
+        }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertTrue(hasattr(req, "User"))
+        self.assertEqual(req.User.login, "hans")
+        self.assertEqual(req.User.realm, self.realm1)
+
+    def test_04_reset_user_disabled(self):
+        """
+        If a param concerning the user is mangled and reset_user is enabled, the user that is appended to the request
+        is reset.
+        """
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "user": "cornelius", "realm": self.realm1}
+        resp = Response()
+
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def":
+                {
+                    "options":
+                        {
+                            "parameter": "user",
+                            "match_parameter": "user",
+                            "value": "hans",
+                            "match_pattern": "cornelius",
+                            "reset_user": "False"
+                        }
+                }
+        }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertTrue(hasattr(req, "User"))
+        self.assertEqual(req.User.login, "cornelius")
+        self.assertEqual(req.User.realm, self.realm1)
 
 
 class ResponseManglerTestCase(MyTestCase):
@@ -2008,6 +1995,23 @@ class ResponseManglerTestCase(MyTestCase):
 
 class ContainerEventTestCase(MyTestCase):
 
+    @classmethod
+    def register_smartphone(cls, smartphone):
+        # Register smartphone
+        server_url = "https://pi.com"
+        scope = create_endpoint_url(server_url, "container/register/finalize")
+        init_result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True",
+                                                   params={})
+        smartphone.add_container_info("server_url", server_url)
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_result["nonce"],
+                                             init_result["time_stamp"],
+                                             scope,
+                                             smartphone.serial)
+
+        smartphone.finalize_registration(params)
+        return mock_smph
+
     def setup_request(self, container_serial=None):
         g = FakeFlaskG()
         audit_object = FakeAudit()
@@ -2144,7 +2148,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_02_delete_container(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
 
         # Setup request
         options = self.setup_request(container_serial=container_serial)
@@ -2169,7 +2173,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_03_assign_and_unassign_container(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
         # create user
         self.setUp_user_realms()
@@ -2223,7 +2227,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_04_set_states(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Setup request
@@ -2278,7 +2282,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_05_add_states(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
         initial_states = container.get_states()
 
@@ -2326,7 +2330,7 @@ class ContainerEventTestCase(MyTestCase):
     def test_06_set_description(self):
         # create container
         initial_description = "Initial description"
-        container_serial = init_container({"type": "generic", "description": initial_description})
+        container_serial = init_container({"type": "generic", "description": initial_description})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Setup request and options
@@ -2358,7 +2362,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_07_remove_tokens(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # create token
@@ -2396,7 +2400,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_08_set_add_del_container_info(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
 
         # Setup request and options
         options = self.setup_request(container_serial=container_serial)
@@ -2459,7 +2463,7 @@ class ContainerEventTestCase(MyTestCase):
 
     def test_09_enable_disable_all_tokens(self):
         # create container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
 
         # create tokens
@@ -2504,6 +2508,28 @@ class ContainerEventTestCase(MyTestCase):
         container.delete()
         token_01.delete_token()
         token_02.delete_token()
+
+    def test_10_unregister(self):
+        # create container
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
+        smartphone = find_container_by_serial(smartphone_serial)
+
+        # Register smartphone
+        self.register_smartphone(smartphone)
+
+        # Setup request and options
+        options = self.setup_request(container_serial=smartphone_serial)
+        c_handler = ContainerEventHandler()
+
+        # unregister success
+        res = c_handler.do(C_ACTION_TYPE.UNREGISTER, options=options)
+        self.assertTrue(res)
+        self.assertIsNone(smartphone.get_container_info_dict().get("registration_state"))
+
+        # unregister for not registered container
+        res = c_handler.do(C_ACTION_TYPE.UNREGISTER, options=options)
+        self.assertTrue(res)
+        self.assertIsNone(smartphone.get_container_info_dict().get("registration_state"))
 
 
 class TokenEventTestCase(MyTestCase):
@@ -2935,7 +2961,7 @@ class TokenEventTestCase(MyTestCase):
         remove_token(t.token.serial)
 
         # Enroll token and assign to container
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         options['request'].all_data = {"container_serial": container_serial}
         options['handler_def']["options"] = {"tokentype": "spass",
                                              "user": False,
@@ -2952,7 +2978,7 @@ class TokenEventTestCase(MyTestCase):
 
         # Clean up
         remove_token(tokens["tokens"][0]["serial"])
-        delete_container_by_serial(container_serial, User(), "admin")
+        delete_container_by_serial(container_serial)
 
         # Enroll token and assign to container without a container serial
         options['request'].all_data = {}
