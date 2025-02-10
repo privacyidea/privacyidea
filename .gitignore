@@ -34,3 +34,4 @@ __pycache__/
 /private.pem
 dist/
 *.swp
+/ca/

@@ -119,7 +119,7 @@ class EventHandlerLibTestCase(MyTestCase):
         # If eventid is None, then the whole list is returned
         r = event_config.get_event(None)
         self.assertEqual(r, event_config.events)
-        # return a destinct eventid
+        # return a distinct eventid
         r = event_config.get_event(events[0].get("id"))
         self.assertEqual(r[0].get("id"), events[0].get("id"))
         self.assertEqual(r[0].get("position"), "post")
@@ -1642,6 +1642,7 @@ class RequestManglerTestCase(MyTestCase):
         r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
+        # todo this is pointless, req.all_data.get("user") is not used anywhere, but req.User...
         self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
 
         # The request does not contain the match_parameter, thus the
@@ -1682,6 +1683,88 @@ class RequestManglerTestCase(MyTestCase):
         self.assertTrue(res)
         # The user was not modified, since the number of tags did not match
         self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+    def test_03_reset_user(self):
+        """
+        If a param concerning the user is mangled and reset_user is enabled, the user that is appended to the request
+        is reset.
+        """
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "user": "cornelius", "realm": self.realm1}
+        resp = Response()
+
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def":
+                {
+                    "options":
+                        {
+                            "parameter": "user",
+                            "match_parameter": "user",
+                            "value": "hans",
+                            "match_pattern": "cornelius",
+                            "reset_user": True
+                        }
+                }
+        }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertTrue(hasattr(req, "User"))
+        self.assertEqual(req.User.login, "hans")
+        self.assertEqual(req.User.realm, self.realm1)
+
+    def test_04_reset_user_disabled(self):
+        """
+        If a param concerning the user is mangled and reset_user is enabled, the user that is appended to the request
+        is reset.
+        """
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "user": "cornelius", "realm": self.realm1}
+        resp = Response()
+
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def":
+                {
+                    "options":
+                        {
+                            "parameter": "user",
+                            "match_parameter": "user",
+                            "value": "hans",
+                            "match_pattern": "cornelius",
+                            "reset_user": "False"
+                        }
+                }
+        }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertTrue(hasattr(req, "User"))
+        self.assertEqual(req.User.login, "cornelius")
+        self.assertEqual(req.User.realm, self.realm1)
 
 
 class ResponseManglerTestCase(MyTestCase):

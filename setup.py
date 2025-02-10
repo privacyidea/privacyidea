@@ -60,7 +60,8 @@ install_requires = [
     "requests",
     "segno",
     "smpplib",
-    "SQLAlchemy<2.0"
+    "SQLAlchemy<2.0",
+    "webauthn"
 ]
 
 
@@ -119,7 +120,6 @@ setup(
         'doc': ["Pallets-Sphinx-Themes",
                 "Sphinx",
                 "sphinxcontrib-httpdomain",
-                "sphinxcontrib-plantuml",
                 "sphinxcontrib-spelling"],
         'test': ["mock",
                  "pyparsing",

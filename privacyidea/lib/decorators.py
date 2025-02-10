@@ -18,6 +18,8 @@
 
 import logging
 import functools
+
+from privacyidea.api.lib.utils import get_optional_one_of
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
@@ -107,7 +109,7 @@ class check_user_serial_or_cred_id_in_request(object):
         def check_user_or_serial_in_request_wrapper(*args, **kwds):
             user = self.request.all_data.get("user", "").strip()
             serial = self.request.all_data.get("serial", "").strip()
-            credential_id = self.request.all_data.get("credential_id", "").strip()
+            credential_id = get_optional_one_of(self.request.all_data, ["credential_id", "credentialid"])
             if not serial and not user and not credential_id:
                 raise ParameterError(_("You need to specify a serial, user or credential_id."))
             if "*" in serial:

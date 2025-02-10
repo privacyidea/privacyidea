@@ -964,7 +964,10 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
+        message = message.replace(r'\,', ',')
+
         # Determine if require presence is enabled
+
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
@@ -1183,6 +1186,7 @@ class PushTokenClass(TokenClass):
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
+                "link": init_details.get("pushurl", {}).get("value"),
                 "client_mode": CLIENTMODE.POLL,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,

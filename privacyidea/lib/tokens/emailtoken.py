@@ -166,7 +166,9 @@ class EmailTokenClass(HotpTokenClass):
                                  'an EMail-token. Several tags like {otp} and '
                                  '{serial} can be used as parameters. You may '
                                  'also specify a filename as email template '
-                                 'starting with "file:".')},
+                                 'starting with "file:". Note: If you use a '
+                                 'comma in the message, you need to escape '
+                                 'it with a backslash.')},
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
                        'desc': _('The subject of the EMail for '
@@ -182,7 +184,8 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user to enter the code from the e-mail. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details.')
+                                 'for more details. Note: If you use a comma in the message, you '
+                                 'need to escape it with a backslash.')
                    },
                },
                    SCOPE.ENROLL: {
@@ -276,6 +279,9 @@ class EmailTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the Email")
+
+        return_message = return_message.replace(r'\,', ',')
+
         reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 
@@ -386,6 +392,8 @@ class EmailTokenClass(HotpTokenClass):
                 .action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
+
+        message = message.replace(r'\,', ',')
 
         if message.startswith("file:"):
             # We read the template from the file.

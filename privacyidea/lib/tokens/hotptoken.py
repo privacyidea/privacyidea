@@ -865,6 +865,7 @@ class HotpTokenClass(TokenClass):
         detail["messages"] = [message]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
+                "link": init_details.get("googleurl").get("value"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
