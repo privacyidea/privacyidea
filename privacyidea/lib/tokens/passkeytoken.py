@@ -421,3 +421,28 @@ class PasskeyTokenClass(TokenClass):
         """
 
         return self.check_pin(passw, user=user, options=options or {})
+
+    @check_token_locked
+    def authenticate(self, passw, user=None, options=None):
+        """
+        This is called from check_tokenlist. Suppress missing params here so "wrong otp value" is returned if no
+        authentication could be made.
+        """
+        try:
+            authenticator_data = get_required_one_of(options, ["authenticatorData", "authenticatordata"])
+            client_data_json = get_required_one_of(options, ["clientDataJSON", "clientdata"])
+            signature = get_required_one_of(options, ["signature", "signaturedata"])
+            user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
+            expected_challenge = get_required(options, "challenge").encode("utf-8")
+            expected_origin = get_required(options, "HTTP_ORIGIN")
+            user_verification = get_optional(options, "user_verification", "preferred")
+        except ParameterError as e:
+            log.debug(f"Missing parameter for authentication with passkey: {e}")
+            # TODO authenticate has horrible return values
+            return False, -1, None
+
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if not pin_match:
+            return False, -1, None
+        otp_match = self.check_otp(None, 0, None, options)
+        return pin_match, otp_match, None
