@@ -27,6 +27,7 @@ import re
 from privacyidea.lib import _
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -159,7 +160,7 @@ class RequestManglerEventHandler(BaseEventHandler):
                             try:
                                 new_value = value.format(*m.groups())
                                 request.all_data[parameter] = new_value
-                                reset_user = handler_options.get("reset_user")
+                                reset_user = is_true(handler_options.get("reset_user"))
 
                                 # Optionally reset the user if a param of the user was mangled
                                 # TODO this should be a UserMangler to explicitly change the user
