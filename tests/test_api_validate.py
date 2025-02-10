@@ -5615,6 +5615,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             chal = detail.get("multi_challenge")[0]
             self.assertEqual(CLIENTMODE.INTERACTIVE, chal.get("client_mode"), detail)
             self.assertIn("image", detail, detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://hotp"), link)
             self.assertEqual(1, len(detail.get("messages")))
             self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
@@ -5717,6 +5720,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://totp"), link)
             serial = detail.get("serial")
 
         # 3. scan the qrcode / Get the OTP value
