@@ -1186,6 +1186,7 @@ class PushTokenClass(TokenClass):
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
+                "link": init_details.get("pushurl", {}).get("value"),
                 "client_mode": CLIENTMODE.POLL,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
