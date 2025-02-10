@@ -421,6 +421,8 @@ class ACTION(object):
     DISABLE_CLIENT_TOKEN_DELETION = "disable_client_token_deletion"
     DISABLE_CLIENT_CONTAINER_UNREGISTER = "disable_client_container_unregister"
     DEFAULT_CONTAINER_TYPE = "default_container_type"
+    RSS_FEEDS = "rss_feeds"
+    RSS_AGE = "rss_age"
 
 
 class TYPE(object):
@@ -2886,7 +2888,13 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
-            }
+            },
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _("The RSS feeds fetched for the user defined in the format: "
+                                         "<code>'Title':'URL'-'Title':'URL'</code> ")},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
+                                       'feed. For admins the default is 180 days and for users 0 days.')}
         },
         SCOPE.CONTAINER: {
             ACTION.PI_SERVER_URL: {
@@ -3004,6 +3012,30 @@ def get_policy_condition_comparators():
     """
     return {comparator: {"description": description}
             for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
+
+
+def convert_action_dict_to_python_dict(action: str) -> dict[str, str]:
+    """
+    Policy actions can not contain commas. Hence, the format 'key1':'value2'-'key2':'value2' is used.
+    This function takes such a string as input and converts it into a dictionary.
+
+    :param action: Action value of a policy
+    :return: Action value formatted as python dictionary
+    """
+    action_list = action.split("'-'")
+    action_dict = {}
+    for key_value_pair in action_list:
+        dict_components = key_value_pair.split("':'")
+        if len(dict_components) == 2:
+            # the first character of the key and the last character of the value could be single quotes which needs to
+            # be removed
+            key = dict_components[0][1:] if dict_components[0].startswith("'") else dict_components[0]
+            value = dict_components[1][:-1] if dict_components[1].endswith("'") else dict_components[1]
+            action_dict[key] = value
+        else:
+            log.debug(f"Invalid action format. The key-value pair is not separated by ':': {key_value_pair}")
+
+    return action_dict
 
 
 class MatchingError(ServerError):

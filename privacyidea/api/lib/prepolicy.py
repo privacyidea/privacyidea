@@ -2601,3 +2601,27 @@ def smartphone_config(request, action=None):
 
         request.all_data["client_policies"] = policies
     return is_smartphone
+
+
+def rss_age(request, action):
+    """
+    This is a decorator for the /info/rss endpoint to adapt the age of the displayed news feed
+
+    :param request: Request object
+    :param action: action value is not used in this decorator
+    :return: True
+    """
+    age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
+                user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
+    # The default age for normal users is 0
+    age = 0
+    if g.get("logged_in_user", {}).get("role") == ROLE.ADMIN:
+        # The default age for admins is 180
+        age = 180
+    if len(age_list) == 1:
+        try:
+            age = int(list(age_list)[0])
+        except ValueError:
+            log.warning(f"Invalid RSS_AGE: {age_list}. Using the default.")
+    request.all_data[ACTION.RSS_AGE] = age
+    return True

@@ -30,12 +30,21 @@
 
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard">
+
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
                     <span class="glyphicon glyphicon-dashboard"
                           aria-hidden="true"></span>
                         <translate>Dashboard</translate>
+                    </a></li>
+                <li ng-class="{ 'active': $state.includes('info')}"
+                    ng-show="loggedInUser.role && rss_age">
+                    <!-- We can hide this, if rss_age == 0. -->
+                    <a ui-sref="info">
+                    <span class="glyphicon glyphicon-info-sign"
+                          aria-hidden="true"></span>
+                        <translate>News</translate>
                     </a></li>
 
                 <li ng-class="{ 'active': $state.includes('token')}"

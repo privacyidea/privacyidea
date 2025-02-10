@@ -57,7 +57,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            require_description, jwt_validity, check_container_action,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action)
+                                           smartphone_config, check_client_container_disabled_action, rss_age)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -4624,6 +4624,59 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         container.delete()
+
+    def test_83_rss_age_admin(self):
+        # Test default for admins:
+        g.logged_in_user = {"username": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(180, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+    def test_84_rss_age_user(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Test default for users:
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        # Set policy for user to 12 days.
+        set_policy(name="rssage",
+                   scope=SCOPE.WEBUI,
+                   action=f"{ACTION.RSS_AGE}=12")
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = rss_age(req, None)
+        self.assertTrue(r)
+        self.assertEqual(12, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        # Now test a bogus policy
+        set_policy(name="rssage",
+                   scope=SCOPE.WEBUI,
+                   action=[f"{ACTION.RSS_AGE}=blubb"])
+        req = Request(env)
+        req.User = User("cornelius")
+        req.all_data = {}
+        r = jwt_validity(req, None)
+        self.assertTrue(r)
+        # We receive the default of None
+        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+
+        delete_policy("rssage")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -27,6 +27,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.tokenStates',
         //'privacyideaApp.containerStates',
         'privacyideaApp.dashboardStates',
+        'privacyideaApp.infoStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.registerStates',
@@ -66,6 +67,7 @@ myApp.constant("machineResolverUrl", backendUrl + instance + "/machineresolver")
 myApp.constant("machineUrl", backendUrl + instance + "/machine");
 myApp.constant("applicationUrl", backendUrl + instance + "/application");
 myApp.constant("realmUrl", backendUrl + instance + "/realm");
+myApp.constant("infoUrl", backendUrl + instance + "/info");
 myApp.constant("eventUrl", backendUrl + instance + "/event");
 myApp.constant("periodicTaskUrl", backendUrl + instance + "/periodictask");
 myApp.constant("smsgatewayUrl", backendUrl + instance + "/smsgateway");
@@ -166,8 +168,9 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
-        // allow only links to our readthedocs documentation, netknights homepage, "otpauth:" and pia scheme links
-        let url_re = /^\s*(https:\/\/(privacyidea\.readthedocs\.io|netknights\.it)\/|otpauth:|pia:|mailto:|file:|blob:)/;
+        // allow only links to our readthedocs documentation, netknights homepage, community privacyidea and
+        // "otpauth:" and pia scheme links
+        let url_re = /^\s*(https:\/\/(privacyidea\.readthedocs\.io|netknights\.it|community\.privacyidea\.org|www\.privacyidea\.org)\/|otpauth:|pia:|mailto:|file:|blob:)/;
         $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
     }]);
 

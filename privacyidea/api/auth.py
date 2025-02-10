@@ -135,7 +135,7 @@ def before_request():
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(fido2_auth, request=request)
 @prepolicy(jwt_validity, request)
-@postpolicy(get_webui_settings)
+@postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(check_tokentype, request=request)

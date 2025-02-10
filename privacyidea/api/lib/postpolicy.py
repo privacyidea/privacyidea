@@ -43,6 +43,7 @@ import datetime
 import functools
 import json
 import logging
+import netaddr
 import re
 import traceback
 from urllib.parse import quote
@@ -50,17 +51,15 @@ from urllib.parse import quote
 from flask import g, current_app, make_response
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import lazy_gettext
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
-from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
+from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
-from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
-from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE_LIST
-from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
+from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
+                                    SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED, Match)
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
@@ -69,10 +68,10 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, get_version
-from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll
-from ...lib.tokens.passkeytoken import PasskeyTokenClass
+from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
 
 log = logging.getLogger(__name__)
 
@@ -696,6 +695,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         content["result"]["value"]["require_description"] = require_description
+        rss_age(request, None)
+        content["result"]["value"]["rss_age"] = request.all_data.get("rss_age", FETCH_DAYS)
+
         if role == ROLE.ADMIN:
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")
