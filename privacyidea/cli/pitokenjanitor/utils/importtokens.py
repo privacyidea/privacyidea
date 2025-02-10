@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: (C) 2024 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
 # 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
@@ -44,34 +50,27 @@ from flask.cli import AppGroup
 import click
 from privacyidea.lib.token import import_token
 
-importtokens_cli = AppGroup("import")
+importtokens_cli = AppGroup("import", help="Import tokens from different sources.")
 
 
-@importtokens_cli.group("import")
-def importtokens():
-    """
-    Import tokens from different sources.
-    """
-    pass
-
-
-@importtokens.command("pskc")
-@click.argument('pskc', type=click.File())
+@importtokens_cli.command()
+@click.argument('pskc_file', type=click.File())
 @click.option('--preshared_key',
               help='The AES encryption key.')
 @click.option('--validate_mac', type=click.Choice(['no_check', 'check_fail_soft', 'check_fail_hard']),
               default='check_fail_hard',
-              help="How the file should be validated.\n"
-                   "'no_check' : Every token is parsed, ignoring HMAC\n"
-                   "'check_fail_soft' : Skip tokens with invalid HMAC\n"
-                   "'check_fail_hard' : Only import tokens if all HMAC are valid.")
-def pskc(pskc, preshared_key, validate_mac):
+              help="""\b
+              How the file should be validated.
+              'no_check': Every token is parsed, ignoring HMAC
+              'check_fail_soft': Skip tokens with invalid HMAC
+              'check_fail_hard': Only import tokens if all HMAC are valid.""")
+def pskc(pskc_file, preshared_key, validate_mac):
     """
-    Loads token data from the PSKC file.
+    Loads token data from the PSKC_FILE.
     """
     from privacyidea.lib.importotp import parsePSKCdata
 
-    file_contents = pskc.read()
+    file_contents = pskc_file.read()
 
     tokens, not_parsed_tokens = parsePSKCdata(file_contents,
                                               preshared_key_hex=preshared_key,

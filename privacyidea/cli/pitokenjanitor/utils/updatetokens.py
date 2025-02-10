@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: (C) 2024 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
 # 2024-10-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
@@ -41,25 +47,23 @@
 # ARISING IN ANY WAY OUT OF THE
 
 import click
-from flask.cli import AppGroup
+from flask.cli import with_appcontext
 from yaml import safe_load as yaml_safe_load
 from privacyidea.lib.token import get_tokens
 import sys
 
 
-updatetokens_cli = AppGroup("update")
-
-
-@updatetokens_cli.command("update")
-@click.argument('yaml', type=click.File())
-def updatetokens(yaml):
+@click.command("update")
+@click.argument('yaml_file', type=click.File())
+@with_appcontext
+def updatetokens(yaml_file):
     """
     Update existing tokens in the privacyIDEA system. You must specify a YAML
     file with the tokendata.
     Can be used to reencrypt data, when changing the encryption key.
     """
     click.echo("Loading YAML data. This may take a while.")
-    token_list = yaml_safe_load(yaml.read())
+    token_list = yaml_safe_load(yaml_file.read())
     for tok in token_list:
         del (tok["owner"])
         serial = tok.get("serial")

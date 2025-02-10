@@ -510,7 +510,7 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 print("Token serial\tTokeninfo")
                 print("=" * 42)
                 for token_obj in tlist:
-                    print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                    print("{0!s}\t({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
                         token_obj.token.serial,
                         token_obj.token.tokentype,
                         token_obj.token.description,
