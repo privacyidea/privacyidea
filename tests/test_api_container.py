@@ -2435,7 +2435,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("ssl_verify=True", qr_url)
         self.assertIn("nonce=", qr_url)
         self.assertIn("time=", qr_url)
-        self.assertIn("url=https://pi.net/", qr_url)
+        self.assertIn("url=https%3A//pi.net/", qr_url)
         self.assertIn(f"serial={smartphone_serial}", qr_url)
         self.assertIn("key_algorithm=", qr_url)
         self.assertIn("hash_algorithm", qr_url)
@@ -2533,7 +2533,7 @@ class APIContainerSynchronization(APIContainerTest):
         init_response_data = result["result"]["value"]
         # Check if the url contains all relevant data
         qr_url = init_response_data["container_url"]["value"]
-        self.assertIn("url=https://pi.net/", qr_url)
+        self.assertIn("url=https%3A//pi.net/", qr_url)
 
         # Finalize
         mock_smph = MockSmartphone(device_brand="XY", device_model="ABC123")
@@ -3499,7 +3499,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("ttl=24", qr_url)
         self.assertIn("nonce=", qr_url)
         self.assertIn("time=", qr_url)
-        self.assertIn("url=https://pi.net/", qr_url)
+        self.assertIn("url=https%3A//pi.net/", qr_url)
         self.assertIn(f"serial={smartphone_serial}", qr_url)
         self.assertIn("key_algorithm=", qr_url)
         self.assertIn("hash_algorithm", qr_url)
@@ -3894,7 +3894,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("ttl=36", qr_url)
         self.assertIn("nonce=", qr_url)
         self.assertIn("time=", qr_url)
-        self.assertIn("url=https://new-pi.net/", qr_url)
+        self.assertIn("url=https%3A//new-pi.net/", qr_url)
         self.assertIn(f"serial={mock_smph.container_serial}", qr_url)
         self.assertIn("key_algorithm=", qr_url)
         self.assertIn("hash_algorithm", qr_url)
@@ -4027,7 +4027,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("ttl=36", qr_url)
         self.assertIn("nonce=", qr_url)
         self.assertIn("time=", qr_url)
-        self.assertIn("url=https://new-pi.net/", qr_url)
+        self.assertIn("url=https%3A//new-pi.net/", qr_url)
         self.assertIn(f"serial={mock_smph.container_serial}", qr_url)
         self.assertIn("key_algorithm=", qr_url)
         self.assertIn("hash_algorithm", qr_url)

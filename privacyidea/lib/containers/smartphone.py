@@ -71,10 +71,12 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
     url_ssl_verify = quote(ssl_verify.encode("utf-8"))
+    url_server_url = quote(server_url.encode("utf-8"))
 
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
-           f"&url={server_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
-           f"&hash_algorithm={url_hash_algorithm}&ssl_verify={url_ssl_verify}&passphrase={url_passphrase}{url_extra_data}")
+           f"&url={url_server_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
+           f"&hash_algorithm={url_hash_algorithm}&ssl_verify={url_ssl_verify}"
+           f"&passphrase={url_passphrase}{url_extra_data}")
     return url
 
 
