@@ -13,6 +13,9 @@ on:
       - 'master'
       - 'branch-*'
 
+permissions:
+  contents: read
+
 jobs:
   pre_check:
     name: 'Check for code changes'
@@ -22,7 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 2
+        persist-credentials: false
     - uses: dorny/paths-filter@v3
       id: changes
       with:
@@ -31,9 +34,11 @@ jobs:
 
   build:
     name: 'Run tests with Python'
+    permissions:
+      checks: write
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       # don't cancel running matrix tests when one test fails
       fail-fast: false
@@ -46,7 +51,7 @@ jobs:
       with:
         # clone submodules as well
         submodules: 'recursive'
-
+        persist-credentials: false
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
