@@ -148,7 +148,7 @@ class RequestManglerEventHandler(BaseEventHandler):
                         # setting a parameter depending on another value,
                         # but only set it, if match_parameter exists
                         """
-                        Note: Beware user supplied  format-string like "match_pattern", it can
+                        Note: Beware user supplied format-string like "match_pattern", can
                         be dangerous: http://lucumr.pocoo.org/2016/12/29/careful-with-str-format/
                         but in our case it is fine because no objects are involved, as m.groups() 
                         always returns a tuple of strings
@@ -159,9 +159,11 @@ class RequestManglerEventHandler(BaseEventHandler):
                             try:
                                 new_value = value.format(*m.groups())
                                 request.all_data[parameter] = new_value
-                                reset_user = handler_options.get("reset_username")
+                                reset_user = handler_options.get("reset_user")
 
                                 # Optionally reset the user if a param of the user was mangled
+                                # TODO this should be a UserMangler to explicitly change the user
+                                # TODO then remove any user info from all_data...
                                 if parameter in ["realm", "username", "user"] and reset_user:
                                     realm = request.all_data.get("realm")
                                     user = request.all_data.get("username") or request.all_data.get("user")
