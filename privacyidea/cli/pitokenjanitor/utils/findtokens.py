@@ -558,7 +558,7 @@ def export(ctx, export_format, b32):
                 export = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
                           f"{token_dict.get('otplen')}")
                 if type == "totp":
-                    print(export + "{token_dict.get('info_list', {}).get('timeStep')}")
+                    print(export + f"{token_dict.get('info_list', {}).get('timeStep')}")
                 else:
                     print(export)
         elif export_format == "yaml":
