@@ -42,7 +42,7 @@ coverage[toml]==7.6.2
     # via pytest-cov
 croniter==3.0.3
     # via privacyIDEA (setup.py)
-cryptography==42.0.8
+cryptography==44.0.1
     # via
     #   privacyIDEA (setup.py)
     #   pyopenssl
