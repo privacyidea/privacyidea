@@ -6,7 +6,8 @@ Tools
 .. index:: tools
 
 privacyIDEA comes with a list of command line tools, which also help to
-automate tasks. The tools can be found in the directory `privacyidea/bin`.
+automate tasks. The tools are automatically available after an installation in
+the virtual environment.
 
 .. _token_janitor:
 
@@ -86,7 +87,7 @@ like the ``tokenkind`` to find out how many hardware tokens are not assigned and
 Last_auth
 *********
 
-Searches for all tokens, where the last authentication happens longer ago than the given value::
+Searches for all tokens, where the last authentication happens longer ago than the given value:
 
 Example::
 
@@ -419,155 +420,162 @@ This script can be well used with the :ref:`scripthandler`.
 .. _pi-tokenjanitor:
 
 The pi-tokenjanitor Script
--------------------------
+--------------------------
 
+.. versionadded:: 3.11
 .. index:: pi-token-janitor
 
-Starting with version 3.11 privacyIDEA comes the new version of the :ref:`privacyidea_token_janitor` script.
-The new script is called *pi-token-janitor*. The script can be used for three different tasks: to find
-tokens and perform actions on them, to load token data from the PSKC file or to update the token data.
+Starting with version 3.11 privacyIDEA comes with an improved version of the :ref:`token_janitor` script.
+The new script is called **pi-token-janitor**. The script can be used for three different tasks: to find
+tokens and perform actions on them, to import tokens from a PSKC file or to update the token data.
 
 Find
 ~~~~
 
-With the *find* command you can search for tokens in the database. You can use several options to filter the tokens.
+With the **find** command you can search for tokens in the database.
+You can use several options to filter the tokens.
 
---tokenattribute
-****************
-'--tokenattribute' to find tokens with specific token attributes.
-Example::
+``--chunksize``
+    The number of tokens to fetch in one database request (default: 1000).
 
-    pi-tokenjanitor find --tokenattribute 'serial=HOTP123456' --tokenattribute 'tokentype=hotp'
+``--tokenattribute``
+    Find tokens with specific token attributes. The most common used token attributes
+    are  ``serial``, ``description``, ``tokentype``, ``active``, ``locked``,
+    ``failcount`` and ``rollout_state``.
+    This option can be used multiple times.
 
-Search for all tokens with the serial ``HOTP123456`` and the tokentype ``hotp``.
-.. note:: You can also use regular expressions in the tokenattribute filter.
-.. note:: You can use the option '--tokenattribute' multiple times.
+    Example::
 
---tokeninfo
-***********
-'--tokeninfo' to find tokens with tokeninfos.
-Example::
+        pi-tokenjanitor find --tokenattribute 'serial=HOTP123456'
 
-    pi-tokenjanitor find --tokeninfo 'tokenkind=software,import_time<2021-06-01 18:00:00+0200'
+    Search for all tokens with the serial ``HOTP123456``.
 
-Search for all tokens with the tokeninfo-key ``tokenkind`` and the value ''software'' and with an import_time before
-the given date.
-.. note:: You can also use regular expressions in the tokeninfo filter.
-.. note:: You can use the option '--tokeninfo' multiple times.
+    .. note:: You can also use regular expressions in the tokenattribute filter.
 
---tokencontaner
-***************
-'--tokencontainer' to find tokens in a specific token container.
-Example::
+``--tokeninfo``
+    Find tokens with specific tokeninfo values.
+    This option can be used multiple times.
 
-    pi-tokenjanitor find --tokencontainer 'serial=SMPH00009272'
+    Example::
 
-Search for all tokens in the token container with the serial ``SMPH00009272``.
-.. note:: You can also use regular expressions in the tokencontainer filter.
-.. note:: You can use the option '--tokencontainer' multiple times.
+        pi-tokenjanitor find --tokeninfo 'tokenkind=software'
 
---has-tokeninfo-key/--has-not-tokeninfo-key
-*******************************************
-'--has-tokeninfo-key' to find tokens with a specific tokeninfo-key or '--has-not-tokeninfo-key' to find tokens
-without a specific tokeninfo-key.
-Example::
+    Search for all tokens with the tokeninfo-key ``tokenkind`` and the value ''software''.
 
-    pi-tokenjanitor find --has-tokeninfo-key 'import_time'
+    .. note:: You can also use regular expressions in the tokeninfo filter.
 
-Search for all tokens with the tokeninfo-key ``import_time``.
-'--has-not-tokeninfo-key' to find tokens without a specific tokeninfo-key.
-Example::
+``--tokencontainer``
+    Find tokens in a specific token container.
+    This option can be used multiple times.
 
-    pi-tokenjanitor find --has-not-tokeninfo-key 'import_time'
+    Example::
 
---tokenower
-***********
-'--tokenowner' to find tokens from a specific token owner(user). You can use things like the username, the realm or
-the resolver.
-Example::
+        pi-tokenjanitor find --tokencontainer 'serial=SMPH00009272'
 
-    pi-tokenjanitor find --tokenowner 'user_id=642cf598-d9cf-1037-8083-a1df7d38c897'
+    Search for all tokens in the token container with the serial ``SMPH00009272``.
 
-.. note:: You can also use regular expressions in the tokenowner filter.
-.. note:: You can use the option '--tokenowner' multiple times.
+    .. note:: You can also use regular expressions in the tokencontainer filter.
 
---assigned
-**********
-'--assigned' to find tokens that are assigned or unassigned.
-Example::
+``--has-tokeninfo-key/--has-not-tokeninfo-key``
+    Find tokens with a specific tokeninfo-key set or not set.
 
-    pi-tokenjanitor find --assigned False
+    Example::
 
-or::
-    pi-tokenjanitor find --assigned True
+        pi-tokenjanitor find --has-tokeninfo-key 'import_time'
 
---active
-********
-'--active' searches for tokens that are either active or inactive, this means enabled or disabled.
+    Search for all tokens which have the tokeninfo-key ``import_time``.
 
-Example::
+``--tokenower``
+    Find tokens from a specific token owner(user). You can use user attributes
+    like the username, the realm or the resolver.
+    This option can be used multiple times.
 
-    pi-tokenjanitor find --active False
+    Example::
 
-or::
-    pi-tokenjanitor find --active True
+        pi-tokenjanitor find --tokenowner 'uid=642cf598-d9cf-1037-8083-a1df7d38c897'
 
---orphaned
-**********
-'--orphaned' searches for tokens, that are orphaned. Orphaned tokens are assigned to a user. But the user does not
-exist in the user store anymore. This can happen e.g. if an LDAP user gets deleted in the LDAP directory.
+    .. note:: You can also use regular expressions in the tokenowner filter.
 
-Example::
+``--assigned``
+    Find tokens that are assigned to a user.
 
-    pi-tokenjanitor find --orphaned 1
+    Example::
 
---range-of-serials
-******************
-'--range-of-serials' to find tokens with serials in a specific range.
+        pi-tokenjanitor find --assigned true
 
-Example::
+    or::
 
-    pi-tokenjanitor find --range-of-serials 'HOTP00000000-HOTP99999999'
+        pi-tokenjanitor find --assigned 0
 
-.. note:: This matches the string as ASCII values. So consider case sensitivity.
+``--active``
+    Find tokens that are either active/enabled or inactive/disabled.
+
+    Example::
+
+        pi-tokenjanitor find --active True
+
+    or::
+
+        pi-tokenjanitor find --active 0
+
+``--orphaned``
+    Find tokens, that are orphaned. Orphaned tokens are assigned to a user but the user does not
+    exist in the user store anymore. This can happen e.g. if an LDAP user gets deleted in the LDAP directory.
+
+    Example::
+
+        pi-tokenjanitor find --orphaned 1
+
+``--orphaned-on-error``
+    When searching for orphaned tokens, mark the token as orphaned if the user
+    can not be found due to a resolver error.
+
+``--range-of-serials``
+    Find tokens with serials in a specific range.
+
+    Example::
+
+        pi-tokenjanitor find --range-of-serials 'HOTP00000000-HOTP99999999'
+
+    .. note:: This matches the string as ASCII values. So consider case sensitivity.
 
 list
 ****
-Lists all found tokens.
+List all found tokens.
 
 Example::
 
     pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list
 
-..Note:: This command is the default command if no action is specified.
+.. note:: This command is the default command if no action is specified.
 
---user_attributes
-..................
-You can use this option to extend the output with user attributes.
+``-u``, ``--show-user-attributes``
+    You can use this option to extend the output with user attributes.
+    This option can be used multiple times.
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --user_attributes email
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list -u email
 
---token_attributes
-...................
-You can use this option to extend the output with token attributes.
 
-Example::
+``-t``, ``--show-token-attributes``
+    You can use this option to extend the output with token attributes.
+    This option can be used multiple times.
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --token_attributes tokeninfo
+    Example::
 
---sum
-......
-You can use this option to group the token output by user.
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list -t tokenkind
 
-Example::
+``--sum``
+    You can use this option to group the token output by user.
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
+    Example::
 
-.. note:: The option '--sum' only works with the option '--user_attributes' not with '--token_attributes'.
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
 
-Export
+    .. note:: The option ``--sum`` only works with the option ``--show-user-attributes``.
+
+export
 ******
 Exports all tokens found.
 
@@ -575,102 +583,81 @@ Example::
 
     pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export
 
---format
-........
-The option '--format' can be used to output the results in a specific format. The format can be 'json', 'yaml' or 'xml'.
+``--format``
+    The export format of the token list. The format can be 'csv', 'yaml' or 'pskc'.
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format json
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format yaml
 
---b32
-.....
-The option '--b32' can be used to output the results in base32 format.
+``--b32``
+    Export the token secret as base32 instead of hex. Can be used with format CSV and YAML
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --form CSV --b32
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format CSV --b32
 
-..Note:: The option '--b32' only works with the CSV format.
-
-
-Set_tokenrealms
+set_tokenrealms
 ***************
 Sets a tokenrealm for the found tokens.
 
---tokenrealms
-.............
-This agent must be set to 'set-tokenrealms' to set the tokenrealms.
+``--tokenrealm``
+    The tokenrealm to set. Can be given multiple times.
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set-tokenrealms --tokenrealms defrealm
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set-tokenrealms --tokenrealm defrealm
 
-Disables
-********
-Disables the found tokens.
+disable
+*******
+Disable the found tokens.
 
-Example::
-
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' disable
-
-Delete
+delete
 ******
-Deletes the found tokens.
+Delete the found tokens.
 
-Example::
-
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' delete
-
-Unassign
+unassign
 ********
-Unassigns the found tokens.
+Unassign the found tokens.
 
-Example::
-
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' unassign
-
-Set_description
+set_description
 ***************
 Sets a description for the found tokens.
 
---description
-.............
-This argument must be set to 'set_description' to set the description.
+``--description``
+    The description to set.
 
 Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_description --description 'example'
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_description --description 'example description'
 
-Set_tokeninfo
+set_tokeninfo
 **************
-Sets a tokeninfo for the found tokens.
+Set a tokeninfo for the found tokens.
 
---tokeninfo
-...........
-This argument must be set to set the tokeninfo.
+``--tokeninfo``
+    The tokeninfo to set.
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_tokeninfo --tokeninfo 'import_time=2021-06-01 18:00:00+0200,serial=OATH0004C900'
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' set_tokeninfo --tokeninfo 'foo=bar'
 
-Remove_tokeninfo
+remove_tokeninfo
 ****************
-Removes a tokeninfo from the found tokens.
+Remove a tokeninfo from the found tokens.
 
---tokeninfo_key
-...............
-This argument must be set to specify witch tokeninfo should be removed.
+``--tokeninfo_key``
+    This argument must be set to specify witch tokeninfo should be removed.
 
-Example::
+    Example::
 
-    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
 
 Import
 ~~~~~~
 This command can be used to import token data from a file.
 
-PSKC
+pskc
 ****
 Imports token data from a PSKC file.
 
@@ -678,28 +665,24 @@ Example::
 
     pi-tokenjanitor import pskc /path/to/pskcfile.xml
 
---preshared_key
-...............
-The option '--preshared_key' can be used to specify the preshared key for the PSKC file.
+``--preshared_key``
+    Specify the preshared key for the PSKC file.
 
-Example::
+    Example::
 
-    pi-tokenjanitor import pskc /path/to/pskcfile.xml --preshared_key 'mykey'
+        pi-tokenjanitor import pskc /path/to/pskcfile.xml --preshared_key 'mykey'
 
---validate_mac
-..............
-With this option you can specify "How the file should be validated. 'no_check' for every token is parsed, ignoring HMAC,
-'check_fail_soft' for skip tokens with invalid HMAC and 'check_fail_hard' for only import tokens if all HMAC are valid.
+``--validate_mac``
+    With this option you can specify how the file should be validated:
+
+    - ``'no_check'``:  every token is parsed, ignoring HMAC
+    - ``'check_fail_soft'``:  skip tokens with invalid HMAC
+    - ``'check_fail_hard'``: only import tokens if all HMAC are valid.
 
 Update
 ~~~~~~
-This command can be used to update already existing token data.
-
-yaml
-****
-Updates token data from a yaml file.
+This command can be used to update already existing token data with a given YAML file.
 
 Example::
 
-    pi-tokenjanitor update yaml /path/to/yamlfile.yaml
-
+    pi-tokenjanitor update /path/to/yamlfile.yaml

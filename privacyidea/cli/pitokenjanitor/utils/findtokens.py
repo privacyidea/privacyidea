@@ -4,6 +4,8 @@
 #
 # Info: https://privacyidea.org
 #
+# 2024-11-11 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            New pi-token-janitor script
 # 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
@@ -49,7 +51,7 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time, is_true
 
 from privacyidea.models import Token, TokenContainer
-from privacyidea.lib.token import unassign_token, enable_token, remove_token, get_tokens_paginated_generator
+from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
@@ -242,7 +244,8 @@ def export_token_data(token_list, token_attributes=None, user_attributes=None):
     tokens = []
     for token_obj in token_list:
         token_data = {"serial": f'{token_obj.token.serial}',
-                      "tokentype": f'{token_obj.token.tokentype}'}
+                      "tokentype": f'{token_obj.token.tokentype}',
+                      "realms": f'{token_obj.get_realms()}'}
         token_info = token_obj.get_tokeninfo()
         export_ti = {}
         if token_attributes:
@@ -292,8 +295,8 @@ def export_user_data(token_list, user_attributes=None):
     for token_obj in token_list:
         try:
             user = token_obj.user
-        except Exception:
-            sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial}.\n")
+        except Exception as e:
+            sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial} ({e}.\n")
             user = None
         if user:
             uid = (f"'{user.info.get('username', '')}','{user.info.get('givenname', '')}',"
@@ -331,11 +334,8 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
 
     for token_object_list in iterable:
         filtered_list = []
-        token_count = 0
-        token_found = 0
         for token_obj in token_object_list:
             add = True
-            token_count += 1
             # TODO: We could do this with regex and the tokeninfo filter
             if has_not_tokeninfo_key:
                 if has_not_tokeninfo_key in token_obj.get_tokeninfo():
@@ -401,19 +401,18 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                             # Either the token has no user assigned or the
                             # assigned user exists in the resolver
                             add = False
-                    except ResolverError as e:
+                    except ResolverError:
                         # Could not resolve user due to errors in the resolver.
                         # Don't mark the token as orphaned.
-                        add = is_true(orphaned_on_error)
+                        add = orphaned_on_error
                 else:
                     try:
                         if token_obj.user is not None and not token_obj.user.exist():
                             add = False
-                    except ResolverError as e:
-                        pass
+                    except ResolverError:
+                        add = not orphaned_on_error
 
             if add:
-                token_found += 1
                 # if everything matched, we append the token object
                 filtered_list.append(token_obj)
 
@@ -421,7 +420,8 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
 
 
 @click.group('find', invoke_without_command=True, cls=AppGroup)
-@click.option('--chunksize', default=1000, help='The number of tokens to fetch in one request.')
+@click.option('--chunksize', default=1000, show_default=True,
+              help='The number of tokens to fetch in one request.')
 # TODO: Maby remove has-not-tokeninfo-key and has-tokeninfo-key and use regex instead
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
@@ -436,7 +436,8 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
               help='Match for certain information of tokencontainer from the database. Example: type=smartphone.')
 @click.option('--assigned',
               help='Whether the token is assigned to a user. Can be "True" or "False"')
-@click.option('--active', help='True|False|None')
+@click.option('--active',
+              help='Whether to token is active/enabled. Can be "True" or "False"')
 @click.option('--orphaned',
               help='Whether the token is an orphaned token. Can be "True" or "False"')
 @click.option('--orphaned-on-error', is_flag=True, default=False,
@@ -500,8 +501,6 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
                                        has_tokeninfo_key=has_tokeninfo_key,
                                        orphaned_on_error=orphaned_on_error)
 
-    sys.stderr.write(f"+ Reading tokens from database in chunks of {chunksize}...\n")
-
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_cmd)
 
@@ -537,11 +536,13 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 
 @findtokens.command('export')
 @click.option('--format', 'export_format',
-              type=click.Choice(['csv', 'yaml', 'xml'], case_sensitive=False),
-              default='xml', help='Please specify the format of the output. Possible values are: csv, yaml, xml. '
-                                  'Default is xml.')
+              type=click.Choice(['csv', 'yaml', 'pskc'], case_sensitive=False),
+              default='pskc', show_default=True,
+              help='The output format of the token export. CSV export only '
+                   'allows TOTP and HOTP token types')
 @click.option('--b32', is_flag=True,
-              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
+              help='In case of exporting tokens to CSV or YAML, the seed is '
+                   'written as base32 encoded instead of hex.')
 # TODO: check if there is a better way
 @click.pass_context
 def export(ctx, export_format, b32):
@@ -555,12 +556,12 @@ def export(ctx, export_format, b32):
                     continue
                 token_dict = tokenobj._to_dict(b32=b32)
                 owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
-                export = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, {token_dict.get('type')}, "
-                          f"{token_dict.get('otplen')}")
-                if type == "totp":
-                    print(export + f"{token_dict.get('info_list', {}).get('timeStep')}")
+                export_string = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, "
+                                 f"{token_dict.get('type')}, {token_dict.get('otplen')}")
+                if tokenobj.type.lower() == "totp":
+                    click.echo(export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
                 else:
-                    print(export)
+                    click.echo(export_string)
         elif export_format == "yaml":
             token_list = []
             for tokenobj in tlist:
@@ -569,23 +570,23 @@ def export(ctx, export_format, b32):
                     token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
                     token_list.append(token_dict)
                 except Exception as e:
-                    sys.stderr.write(f"\nFailed to export token {tokenobj.get('serial')}.\n")
-            print(yaml_safe_dump(token_list))
+                    sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
+            click.echo(yaml_safe_dump(token_list))
         else:
             key, token_num, soup = export_pskc(tlist)
             sys.stderr.write(f"\n{token_num} tokens exported.\n")
             sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
                              "You need this key to import the "
                              "tokens again:\n\n\t{key}\n\n")
-            print(f"{soup}")
+            click.echo(f"{soup}")
 
 
 @findtokens.command('set_tokenrealms')
-@click.option('--tokenrealms', multiple=True, required=True, type=str)
+@click.option('--tokenrealm', 'tokenrealms', multiple=True, required=True, type=str)
 @click.pass_context
 def set_tokenrealms(ctx, tokenrealms):
     """
-    Sets the realms of the found tokens.
+    Set the realms of the found tokens.
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
@@ -598,7 +599,7 @@ def set_tokenrealms(ctx, tokenrealms):
 @click.pass_context
 def disable(ctx):
     """
-    Disable the found tokens.
+    Disable found tokens.
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
@@ -611,7 +612,7 @@ def disable(ctx):
 @click.pass_context
 def enable(ctx):
     """
-    Disable the found tokens.
+    Enable found tokens.
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
@@ -624,7 +625,7 @@ def enable(ctx):
 @click.pass_context
 def delete(ctx):
     """
-    Delete the found tokens.
+    Delete found tokens.
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
@@ -636,7 +637,7 @@ def delete(ctx):
 @click.pass_context
 def unassign(ctx):
     """
-    Unassigns the found tokens from their owners.
+    Unassign the found tokens from their owners.
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
@@ -670,9 +671,9 @@ def set_tokeninfo(ctx, tokeninfo):
     tokeninfo_value = m.group(3)
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            print(f"Setting tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}={tokeninfo_value}")
             token_obj.add_tokeninfo(tokeninfo_key, tokeninfo_value)
             token_obj.save()
+            click.echo(f"Set tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}={tokeninfo_value}")
 
 
 @findtokens.command('remove_tokeninfo')

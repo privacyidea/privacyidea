@@ -4,7 +4,9 @@
 #
 # Info: https://privacyidea.org
 #
-# 2024-10-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+# 2024-11-11 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            New pi-token-janitor script
+# 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
 #            Select how to validate PSKC imports

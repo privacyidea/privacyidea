@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from privacyidea.lib.error import ERROR
 from .base import CliTestCase
 from privacyidea.cli.pitokenjanitor import cli as pi_token_janitor
 
@@ -42,16 +41,19 @@ class PITokenJanitorLoadTestCase(CliTestCase):
         self.assertIn("Export found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "set_tokenrealms", "-h"])
-        self.assertIn("Sets the realms of the found tokens.",
+        self.assertIn("Set the realms of the found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "disable", "-h"])
-        self.assertIn("Disable the found tokens.",
+        self.assertIn("Disable found tokens.",
+                      result.output, result)
+        result = runner.invoke(pi_token_janitor, ["find", "enable", "-h"])
+        self.assertIn("Enable found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "delete", "-h"])
-        self.assertIn("Delete the found tokens.",
+        self.assertIn("Delete found tokens.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "unassign", "-h"])
-        self.assertIn("Unassigns the found tokens from their owners.",
+        self.assertIn("Unassign the found tokens from their owners.",
                       result.output, result)
         result = runner.invoke(pi_token_janitor, ["find", "set_description", "-h"])
         self.assertIn("Sets the description of the found tokens.",
