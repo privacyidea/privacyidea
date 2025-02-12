@@ -35,35 +35,39 @@
 
 import sys
 
+from datetime import datetime
 from dateutil import parser
 import re
 from flask.cli import AppGroup
 
 import click
 from collections import defaultdict
-from dateutil.tz import tzlocal, tzutc
+from dateutil.tz import tzlocal
+from typing import Generator, Callable, Union
 from yaml import safe_dump as yaml_safe_dump
 
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time, is_true
 
 from privacyidea.models import Token, TokenContainer
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator
+from privacyidea.lib.tokenclass import TokenClass
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
+comparator_pattern = re.compile(r"^\s*([^!=<>]+?)\s*([!=<>])\s*([^!=<>]+?)\s*$")
 
-def _try_convert_to_integer(given_value_string):
+
+def _try_convert_to_integer(given_value_string: str) -> int:
     try:
         return int(given_value_string)
     except ValueError:
         raise click.ClickException(f'Not an integer: {given_value_string}')
 
 
-def _try_convert_to_datetime(given_value_string):
+def _try_convert_to_datetime(given_value_string: str) -> datetime:
     try:
         parsed = parser.parse(given_value_string, dayfirst=False)
         if not parsed.tzinfo:
@@ -74,21 +78,21 @@ def _try_convert_to_datetime(given_value_string):
         raise
 
 
-def _compare_regex_or_equal(_key, given_regex):
-    def comparator(value):
+def _compare_regex_or_equal(given_regex: str) -> Callable[[Union[int, bool, str]], bool]:
+    def comparator(value: Union[int, bool, str]) -> bool:
         if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
             return given_value == value
         else:
             # if the value from the database is a string, we compare regex
-            return re.search(given_regex, value)
+            return bool(re.search(given_regex, value))
 
     return comparator
 
 
-def _compare_not(_key, given_regex):
-    def comparator(value):
+def _compare_not(given_regex: str) -> Callable[[Union[int, bool, str]], bool]:
+    def comparator(value: Union[int, bool, str]) -> bool:
         if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
@@ -100,27 +104,14 @@ def _compare_not(_key, given_regex):
     return comparator
 
 
-def _parse_datetime(key, value):
-    # TODO: Rewrite this function after #1586 is merged
-    if key == ACTION.LASTAUTH:
-        # Special case for last_auth: Legacy values are given in UTC time!
-        last_auth = parser.parse(value)
-        if not last_auth.tzinfo:
-            last_auth = last_auth.replace(tzinfo=tzutc())
-        return last_auth
-    else:
-        # Other values are given in local time
-        return parser.parse(parse_legacy_time(value))
-
-
-def _compare_greater_than(_key, given_value_string):
+def _compare_greater_than(given_value: Union[int, str]) -> Callable[[int], bool]:
     """
     :return: a function which returns True if its parameter (converted to an integer)
              is greater than *given_value_string* (converted to an integer).
     """
-    given_value = _try_convert_to_integer(given_value_string)
+    given_value = int(given_value)
 
-    def comparator(value):
+    def comparator(value: int) -> bool:
         try:
             return int(value) > given_value
         except ValueError:
@@ -129,14 +120,14 @@ def _compare_greater_than(_key, given_value_string):
     return comparator
 
 
-def _compare_less_than(_key, given_value_string):
+def _compare_less_than(given_value: Union[int, str]) -> Callable[[int], bool]:
     """
     :return: a function which returns True if its parameter (converted to an integer)
              is less than *given_value_string* (converted to an integer).
     """
-    given_value = _try_convert_to_integer(given_value_string)
+    given_value = int(given_value)
 
-    def comparator(value):
+    def comparator(value: int) -> bool:
         try:
             return int(value) < given_value
         except ValueError:
@@ -145,92 +136,114 @@ def _compare_less_than(_key, given_value_string):
     return comparator
 
 
-def _compare_after(key, given_value_string):
+def _compare_after(given_value: datetime) -> Callable[[str], bool]:
     """
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
-             *given_value_string* (converted to a datetime).
+             given_value.
     """
-
-    def comparator(value):
+    def comparator(value: str):
         try:
-            return _parse_datetime(key, value) > given_value_string
+            return parse_legacy_time(value, return_date=True) > given_value
         except ValueError:
             return False
     return comparator
 
 
-def _compare_before(key, given_value_string):
+def _compare_before(given_value: datetime) -> Callable[[str], bool]:
     """
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
-             *given_value_string* (converted to a datetime).
+             given_value.
     """
-
-    def comparator(value):
+    def comparator(value: str):
         try:
-            return _parse_datetime(key, value) < given_value_string
+            return parse_legacy_time(value, return_date=True) < given_value
         except ValueError:
             return False
 
     return comparator
 
 
-def build_tokenvalue_filter(m):
+def build_filter(filter_string: str, allowed_keys: list[str] = None) -> tuple[str, Callable]:
     """
-    Build and return a token value filter, which is a list of comparator functions.
-    Each comparator function takes a tokeninfo value and returns True if the
-    user-defined criterion matches.
-    The filter matches a record if *all* comparator functions return True, i.e.
-    if the conjunction of all comparators returns True.
+    Build and return a filter closure, which is based on the given filter_string.
+    The filter closure takes a value and returns True if the user-defined criterion matches.
 
-    :param: m: a matching object from a regular expression which contains the key, the operator and the value
-    :return: a list of comparator functions
-    """
-    tv_filter = []
-    if m.group(2) == '=':
-        tv_filter.append(_compare_regex_or_equal(m.group(1), m.group(3)))
-    elif m.group(2) == '<':
-        try:  # try to convert the given value to datetime
-            given_value = _try_convert_to_datetime(m.group(3))
-            tv_filter.append(_compare_before(m.group(1), given_value))
-        except ValueError:
-            tv_filter.append(_compare_greater_than(m.group(1), m.group(3)))
-    elif m.group(2) == '>':
-        try:  # try to convert the given value to datetime
-            given_value = _try_convert_to_datetime(m.group(3))
-            tv_filter.append(_compare_after(m.group(1), given_value))
-        except ValueError:
-            tv_filter.append(_compare_less_than(m.group(1), m.group(3)))
-    elif m.group(2) == '!':
-        tv_filter.append(_compare_not(m.group(1), m.group(3)))
-    else:
-        raise click.ClickException("Invalid matching operator. Use =, >, <, or !")
-    return tv_filter
-
-
-def build_tokenattribute_filter(m):
-    """
-    Build and return a token attribute filter, which is a list of comparator functions.
-    Each comparator function takes a tokenattribute value and returns True if the
-    user-defined criterion matches.
-
-    :param: m: a matching object from a regular expression which contains the key, the operator and the value
-    :type m: re.Matcher
-    :return: a comparator function
+    :param: filter_string: a filter string which contains the key, the operator and the value
+    :type filter_string: str
+    :param allowed_keys: list of allowed values for keys
+    :type allowed_keys: list
+    :return: a tuple with the given key and comparator closure with the given value
     :rtype: func
     """
-    filter_func = {"=": _compare_regex_or_equal,
-                   "<": _compare_less_than,
-                   ">": _compare_greater_than,
-                   "!": _compare_not}
-    try:
-        ta_filter = filter_func[m.group(2)](m.group(1), m.group(3))
-    except KeyError:
-        raise click.ClickException("Invalid matching operator. Use =, >, <, or !")
+    match = comparator_pattern.match(filter_string)
+    if not match:
+        raise click.ClickException(f'The option requires a filter '
+                                   f'syntax like: "<key> = <value>" with '
+                                   f'possible comparators "=", "<", ">" and "!". '
+                                   f'(given: "{filter_string}")')
+    if allowed_keys and match.group(1) not in allowed_keys:
+        raise click.ClickException(f"Key '{match.group(1)}' not allowed. "
+                                   f"Allowed values for keys are '{allowed_keys}'")
+    if match.group(2) == '=':
+        return match.group(1), _compare_regex_or_equal(match.group(3))
+    elif match.group(2) == '<':
+        try:  # first try to convert the given value to an integer
+            given_value = int(match.group(3))
+            return match.group(1), _compare_less_than(given_value)
+        except ValueError:
+            try:  # then we try to parse as a datetime object
+                given_value = _try_convert_to_datetime(match.group(3))
+                return match.group(1), _compare_before(given_value)
+            except ValueError:
+                raise click.ClickException(f"Unable to find a comparator for {filter_string}")
+    elif match.group(2) == '>':
+        try:  # first try to convert the given value to an integer
+            given_value = int(match.group(3))
+            return match.group(1), _compare_greater_than(given_value)
+        except ValueError:
+            try:  # try to convert the given value to datetime
+                given_value = _try_convert_to_datetime(match.group(3))
+                return match.group(1), _compare_after(given_value)
+            except ValueError:
+                raise click.ClickException(f"Unable to find a comparator for {filter_string}")
+    elif match.group(2) == '!':
+        return match.group(1), _compare_not(match.group(3))
+    else:
+        raise click.ClickException('Invalid matching operator. Use "=", ">", "<" or "!"')
 
-    return ta_filter
+
+filter_funcs = {"=": _compare_regex_or_equal,
+                "<": _compare_less_than,
+                ">": _compare_greater_than,
+                "!": _compare_not}
 
 
-def export_token_data(token_list, token_attributes=None, user_attributes=None):
+def build_token_attribute_filter(tokenattribute: str) -> tuple[str, Callable]:
+    """
+    Build and return a token attribute filter.
+    The tokenattribute is separated into its components and the appropriate
+    filter closure is returned with the parsed value.
+
+    :param: tokenattribute: a string which contains the key, the operator and the value
+    :type tokenattribute: str
+    :return: tuple of the parsed attribute and a comparator function
+    :rtype: tuple
+    """
+    match = comparator_pattern.match(tokenattribute)
+    if not match:
+        raise click.ClickException(f'The tokenattribute option requires a filter '
+                                   f'syntax like: "<attribute> = <value>" with '
+                                   f'possible comparators "=", "<", ">" and "!". '
+                                   f'(given: "{tokenattribute}")')
+    if match.group(1) not in allowed_tokenattributes:
+        raise click.ClickException(f"Token attribute {match.group(1)} not allowed! "
+                                   f"Allowed token attributes are: {allowed_tokenattributes}")
+    else:
+        return match.group(1), filter_funcs[match.group(2)](match.group(3))
+
+
+def export_token_data(token_list: list, token_attributes: list = None,
+                      user_attributes: list = None) -> list[dict]:
     """
     Returns a list of tokens. Each token again is a dictionary of the requested
     token attributes, tokeninfo and user attributes
@@ -282,7 +295,7 @@ def export_token_data(token_list, token_attributes=None, user_attributes=None):
     return tokens
 
 
-def export_user_data(token_list, user_attributes=None):
+def export_user_data(token_list: list, user_attributes: list = None) -> dict:
     """
     Returns a list of users with the information how many tokens this user has assigned
 
@@ -315,10 +328,11 @@ def export_user_data(token_list, user_attributes=None):
     return users
 
 
-def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenattribute_filter,
+def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
+                   tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
                    tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
-                   orphaned, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
-                   orphaned_on_error=False):
+                   orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
+                   orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
     if assigned is not None:
         assigned = is_true(assigned)
     if active is not None:
@@ -343,41 +357,45 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
             if has_tokeninfo_key:
                 if has_tokeninfo_key not in token_obj.get_tokeninfo():
                     add = False
-            if range_of_seriel:
-                if not range_of_seriel[0] <= token_obj.token.serial <= range_of_seriel[1]:
+            if range_of_serial:
+                if not range_of_serial[0] <= token_obj.token.serial <= range_of_serial[1]:
                     add = False
             if tokeninfo_filter:
-                for att in tokeninfo_filter:
-                    value = token_obj.get_tokeninfo(att[0])
+                for tokeninfo_key, tokeninfo_comparator in tokeninfo_filter:
+                    value = token_obj.get_tokeninfo(tokeninfo_key)
                     # if the tokeninfo key is not even set, it does not match the filter
                     if value is None:
                         add = False
-                    # suppose not all comparator functions return True
-                    # => at least one comparator function returns False
-                    # => at least one user-supplied criterion does not match
-                    # => the token object does not match the user-supplied criteria
-                    elif not all(comparator(value) for comparator in att[1]):
+                    elif not tokeninfo_comparator(value):
                         add = False
             if tokenattribute_filter:
-                for att in tokenattribute_filter:
-                    value = token_obj.token.get(att[0])
+                for tokenattribute_key, tokenattribute_comparator in tokenattribute_filter:
+                    value = token_obj.token.get(tokenattribute_key)
                     if value is None:
                         add = False
-                    elif not att[1](value):
+                    elif not tokenattribute_comparator(value):
                         add = False
             if tokenowner_filter:
-                for att in tokenowner_filter:
+                try:
                     user = token_obj.user
                     if user is not None:
-                        value = user.info.get(att[0])
-                        if value is None:
-                            add = False
-                        elif not all(comparator(value) for comparator in att[1]):
-                            add = False
+                        # First check for attributes of the user object
+                        for tokenowner_key, tokenowner_comparator in tokenowner_filter:
+                            if tokenowner_key in ["uid", "resolver", "realm", "login"]:
+                                value = getattr(user, tokenowner_key)
+                            else:
+                                value = user.info.get(tokenowner_key)
+                            if value is None:
+                                add = False
+                            elif not tokenowner_comparator(value):
+                                add = False
                     else:
                         add = False
+                except ResolverError:
+                    # Unable to resolve user, no filter applicable
+                    add = False
             if tokencontaner_filter:
-                for att in tokencontaner_filter:
+                for tokenowner_key in tokencontaner_filter:
                     container = find_container_for_token(token_obj.token.serial)
                     if container is not None:
                         container_info = vars(container)
@@ -387,10 +405,10 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
                         container_info["realm"] = container.realms
                         container_info["last_seen"] = container.last_seen
                         container_info["last_update"] = container.last_updated
-                        value = container_info.get(att[0])
+                        value = container_info.get(tokenowner_key[0])
                         if value is None:
                             add = False
-                        elif not all(comparator(value) for comparator in att[1]):
+                        elif not all(comparator(value) for comparator in tokenowner_key[1]):
                             add = False
                     else:
                         add = False
@@ -423,9 +441,12 @@ def _get_tokenlist(assigned, active, range_of_seriel, tokeninfo_filter, tokenatt
 @click.option('--chunksize', default=1000, show_default=True,
               help='The number of tokens to fetch in one request.')
 # TODO: Maby remove has-not-tokeninfo-key and has-tokeninfo-key and use regex instead
-@click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
-@click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@click.option('--tokeninfo', 'tokeninfos', multiple=True, help='Match for a certain tokeninfo from the database.')
+@click.option('--has-not-tokeninfo-key',
+              help='filters for tokens that have not given the specified tokeninfo-key')
+@click.option('--has-tokeninfo-key',
+              help='filters for tokens that have given the specified tokeninfo-key.')
+@click.option('--tokeninfo', 'tokeninfos', multiple=True,
+              help='Match for a certain tokeninfo from the database.')
 @click.option('--tokenattribute', 'tokenattributes', multiple=True,
               help='Match for a certain token attribute from the database. You can use the following operators: '
                    '=, >, <, ! for you matching. For example: "rollout_state=clientwait" or "failcount>3".')
@@ -453,48 +474,32 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
     """
     if range_of_serial:
         range_of_serial = range_of_serial.split("-")
-    tafilter = []
+    ta_filter = []
     if tokenattributes:
         for tokenattribute in tokenattributes:
-            m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", tokenattribute)
-            if not m:
-                raise click.ClickException(f'The tokenattribute option requires '
-                                           f'an operator like "=", "<", ">" or "!"!')
-            if m.group(1) not in allowed_tokenattributes:
-                raise click.ClickException(f"Tokenattribute {m.group(1)} not allowed. "
-                                           f"Allowed tokenattributes are: {allowed_tokenattributes}")
-            else:
-                tafilter.append((m.group(1), build_tokenattribute_filter(m)))
+            ta_filter.append(build_token_attribute_filter(tokenattribute))
 
-    tvfilter = []
+    ti_filter = []
     if tokeninfos:
         for tokeninfo in tokeninfos:
-            m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", tokeninfo)
-            tvfilter.append((m.group(1), build_tokenvalue_filter(m)))
+            ti_filter.append(build_filter(tokeninfo))
 
-    tofilter = []
+    to_filter = []
     if tokenowners:
         for owner in tokenowners:
-            m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", owner)
-            tofilter.append((m.group(1), build_tokenvalue_filter(m)))
+            to_filter.append(build_filter(owner))
 
-    tcfilter = []
+    tc_filter = []
     if tokencontainers:
-        allowed_containers = [col.key for col in TokenContainer.__table__.columns]
-        allowed_containers = allowed_containers + ["serial", "type", "description", "realm", "last_seen", "last_update"]
+        allowed_container_keys = [col.key for col in TokenContainer.__table__.columns]
         for container in tokencontainers:
-            m = re.match(r"\s*([^!=<>]+)\s*([!=<>])\s*([^!=<>]+)\s*$", container)
-            if m.group(1) not in allowed_containers:
-                raise click.ClickException(f"Tokencontaner {m.group(1)} not allowed. "
-                                           f"Allowed container attributes are: {allowed_containers}")
-            else:
-                tcfilter.append((m.group(1), build_tokenvalue_filter(m)))
+            tc_filter.append(build_filter(container, allowed_container_keys))
 
     ctx.obj = dict()
 
-    ctx.obj['tokens'] = _get_tokenlist(assigned=assigned, active=active, range_of_seriel=range_of_serial,
-                                       tokeninfo_filter=tvfilter, tokenattribute_filter=tafilter,
-                                       tokenowner_filter=tofilter, tokencontaner_filter=tcfilter,
+    ctx.obj['tokens'] = _get_tokenlist(assigned=assigned, active=active, range_of_serial=range_of_serial,
+                                       tokeninfo_filter=ti_filter, tokenattribute_filter=ta_filter,
+                                       tokenowner_filter=to_filter, tokencontaner_filter=tc_filter,
                                        tokentype=None, realm=None, resolver=None,
                                        rollout_state=None, orphaned=orphaned,
                                        chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
@@ -666,9 +671,12 @@ def set_tokeninfo(ctx, tokeninfo):
     """
     Sets the tokeninfo of the found tokens.
     """
-    m = re.match(r"\s*(\w+)\s*(=)\s*(\w+)\s*$", tokeninfo)
-    tokeninfo_key = m.group(1)
-    tokeninfo_value = m.group(3)
+    match = re.match(r"\s*(\w+)\s*(=)\s*(\w+)\s*$", tokeninfo)
+    if not match:
+        raise click.ClickException(f"Can not parse tokeninfo to set. It should "
+                                   f"be given as \"<key> = <value>\". (actual: {tokeninfo})")
+    tokeninfo_key = match.group(1)
+    tokeninfo_value = match.group(3)
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
             token_obj.add_tokeninfo(tokeninfo_key, tokeninfo_value)
@@ -685,6 +693,6 @@ def remove_tokeninfo(ctx, tokeninfo_key):
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            print(f"Removing tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}")
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
+            click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
