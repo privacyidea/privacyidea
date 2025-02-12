@@ -762,10 +762,10 @@ class TokenBaseTestCase(MyTestCase):
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
         #testing for exception_default=True
-        orph = token_obj.is_orphaned(exception_default=True)
+        orph = token_obj.is_orphaned(orphaned_on_error=True)
         self.assertTrue(orph)
         #testing for exception_default=False
-        orph = token_obj.is_orphaned(exception_default=False)
+        orph = token_obj.is_orphaned(orphaned_on_error=False)
         self.assertFalse(orph)
 
         # clean up token
