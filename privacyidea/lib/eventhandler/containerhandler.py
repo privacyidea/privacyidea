@@ -23,7 +23,6 @@ from privacyidea.lib.container import (get_container_classes, delete_container_b
                                        find_container_by_serial, set_container_states, add_container_states,
                                        set_container_description, add_container_info, delete_container_info,
                                        assign_user, unassign_user, set_container_info,
-                                       add_multiple_tokens_to_container,
                                        unregister, add_token_to_container)
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
@@ -64,19 +63,21 @@ class ContainerEventHandler(BaseEventHandler):
     description = "This event handler can trigger new actions on containers."
 
     @property
-    def allowed_positions(cls):
+    def allowed_positions(self):
         """
         This returns the allowed positions of the event handler definition.
         This can be "post" or "pre" or both.
+
         :return: list of allowed positions
         """
         return ["pre", "post"]
 
     @property
-    def actions(cls):
+    def actions(self):
         """
         This method returns a list of available actions, that are provided
         by this event handler.
+
         :return: dictionary of actions.
         """
         container_types = list(get_container_classes().keys())
@@ -85,7 +86,7 @@ class ContainerEventHandler(BaseEventHandler):
         for state in container_states:
             action_states[state] = {"type": "bool",
                                     "required": False,
-                                    "description": _(f"Set the state {state}")}
+                                    "description": _("Set the state {state}".format(state=state))}
 
         actions = {
             ACTION_TYPE.INIT:
@@ -151,7 +152,7 @@ class ContainerEventHandler(BaseEventHandler):
         }
         return actions
 
-    def do(self, action, options):
+    def do(self, action, options=None):
         """
         Executes the defined action in the given event.
 

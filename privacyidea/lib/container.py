@@ -802,7 +802,7 @@ def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     return res
 
 
-def add_container_states(serial: str, states: str) -> dict[str, bool]:
+def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     """
     Add the states to a container.
 

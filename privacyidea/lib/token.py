@@ -339,7 +339,8 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         else:
             container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
             if container is None:
-                raise privacyIDEAError(_(f"No container with the serial {container_serial} exists."))
+                raise privacyIDEAError(_("No container with the serial {container_serial} "
+                                         "exists.".format(container_serial=container_serial)))
             token_container_token = TokenContainerToken.query.filter(
                 TokenContainerToken.container_id == container.id).all()
             token_ids = [token_id.token_id for token_id in token_container_token]
@@ -1228,7 +1229,7 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     token_types = get_token_types()
     if token_type.lower() not in token_types:
         log.error(f"type {token_type} not found in tokentypes: {token_types}")
-        raise TokenAdminError(_(f"init token failed: unknown token type {token_type}"), id=1610)
+        raise TokenAdminError(_("init token failed. Unknown token type:") + f" {token_type}", id=1610)
 
     serial = param.get("serial") or gen_serial(token_type, param.get("prefix"))
     check_serial_valid(serial)
@@ -1248,10 +1249,11 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
         # Make sure the type is not changed between the initialization and the update
         old_type = db_token.tokentype
         if old_type.lower() != token_type.lower():
-            msg = (f"Token {serial} already exists with type {old_type}. "
-                   f"Can not initialize token with new type {token_type}")
+            msg = _("Token {serial} already exists with type {old_type}. "
+                    "Can not initialize token with new type "
+                    "{token_type}".format(serial=serial, old_type=old_type, token_type=token_type))
             log.error(msg)
-            raise TokenAdminError(_(f"initToken failed: {msg}"))
+            raise TokenAdminError(_("init token failed:") + " " +  msg)
 
     # If there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
@@ -1427,7 +1429,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
     old_user = token.user
     if old_user:
         log.warning(f"token already assigned to user: {old_user!r}")
-        error_message = error_message or _(f"Token already assigned to user {old_user!r}")
+        error_message = error_message or _("Token already assigned to user {old_user!r}".format(old_user=old_user))
         raise TokenAdminError(error_message, id=1103)
 
     token.add_user(user)
@@ -1469,7 +1471,7 @@ def unassign_token(serial, user=None):
             token.save()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
-            raise TokenAdminError(_(f"Token unassign failed for {serial!r}/{user!r}: {e!r}"), id=1105)
+            raise TokenAdminError(_("Token unassign failed for") + f" {serial!r}/{user!r}: {e!r}", id=1105)
 
         log.debug(f"successfully unassigned token with serial {token.get_serial()!r}")
     # TODO: test with more than 1 token
@@ -1549,7 +1551,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning(f"Parameter user must not be a string: {user!r}")
-        raise ParameterError(_(f"Parameter user must not be a string: {user!r}"), id=1212)
+        raise ParameterError(_("Parameter user must not be a string:") + f" {user!r}", id=1212)
 
     tokens = get_tokens_from_serial_or_user(serial=serial, user=user)
 
