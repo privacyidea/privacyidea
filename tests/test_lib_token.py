@@ -135,10 +135,9 @@ class TokenTestCase(MyTestCase):
         # get unassigned tokens
         tokenobject_list = get_tokens(assigned=False)
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
-        # pass the wrong parameter
-        # This will ignore the filter!
+        # This will interpret the value as true as the functions expects a bool
         tokenobject_list = get_tokens(assigned="True")
-        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
+        self.assertEqual(len(tokenobject_list), 0, tokenobject_list)
 
         # get tokens of type HOTP
         tokenobject_list = get_tokens(tokentype="hotp")

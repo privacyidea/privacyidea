@@ -177,6 +177,8 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
 
+    :param: assigned: Whether the token is assigned to a user
+    :type assigned: bool or None
     :return: An SQLAlchemy sql query
     """
     sql_query = Token.query
@@ -235,12 +237,10 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
 
     if assigned is not None:
         # filter if assigned or not
-        if assigned is False:
-            sql_query = sql_query.where(TokenOwner.id.is_(None))
-        elif assigned is True:
+        if assigned:
             sql_query = sql_query.where(TokenOwner.id.is_not(None))
         else:
-            log.warning(f"'assigned' value not in [True, False]: {assigned}")
+            sql_query = sql_query.where(TokenOwner.id.is_(None))
 
     if stripped_resolver:
         # filter for given resolver
@@ -396,6 +396,8 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
     a token entry has an invalid type.
 
     :param psize: Maximum size of chunks that are fetched from the database
+    :param assigned: Whether the token is assigned to a user
+    :type assigned: bool or None
     :return: This is a generator that generates non-empty lists of token objects.
     """
     main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
