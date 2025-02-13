@@ -21,6 +21,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
@@ -69,7 +70,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             save_pin_change,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment)
+                                            check_verify_enrollment, preferred_client_mode)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -5933,3 +5934,132 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Also check the token object.
         self.assertEqual(tok.token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
         delete_policy("verify_toks")
+
+    def test_21_preferred_client_mode_for_user_allowed(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method="POST", data={}, headers={"user_agent": "privacyidea-cp"})
+        env = builder.get_environ()
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        # Allow to use preferred client mode per user
+        set_policy("user_client_mode", scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER)
+
+        # No custom user attribute available for the user and no policy: use default
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # No preferred client mode policy set
+        response = jsonify(response_data)
+        preferred_token_types = json.dumps({"privacyidea-cp": "push"})
+        user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, preferred_token_types, INTERNAL_USAGE)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred client mode policy with webauthn first, but user prefers push
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge: use preferred client mode policy
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge and no preferred_client_mode policy: use default
+        delete_policy("preferred_client_mode")
+        response = jsonify(response_data)
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        delete_policy("user_client_mode")
+
+    def test_22_preferred_client_mode_for_user_denied(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is not activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers={"user_agent": "privacyidea-cp"})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+        preferred_token_types = json.dumps({"privacyidea-cp": "push"})
+        user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, preferred_token_types, INTERNAL_USAGE)
+
+        # set any policy in scope AUTH
+        set_policy("challenge", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"})
+
+        # user_client_mode not allowed and also no preferred_client_mode policy: use default
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # user_client_mode not allowed: use preferred_client_mode policy: webauthn
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        delete_policy("preferred_client_mode")
+        delete_policy("challenge")

@@ -1,14 +1,17 @@
 import logging
+from datetime import timezone
+
 from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key, POLL_ONLY
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
@@ -4110,6 +4113,112 @@ class MultiChallege(MyApiTestCase):
         delete_policy("test")
         remove_token("CR2AAA")
         remove_token("CR2B")
+
+    def test_06_preferred_client_mode_for_user(self):
+        """
+        Test that the preferred token type is set for the user in validate check after a successful authentication.
+        In second authentication the preferred token type is used to set the preferred client mode.
+        """
+        REGISTRATION_URL = "http://test/ttype/push"
+        TTL = "10"
+        user = User("selfservice", self.realm1)
+
+        # set policy
+        set_policy("push", scope=SCOPE.ENROLL, action=f"{PUSH_ACTION.FIREBASE_CONFIG}={POLL_ONLY},"
+                                                      f"{PUSH_ACTION.REGISTRATION_URL}={REGISTRATION_URL},"
+                                                      f"{PUSH_ACTION.TTL}={TTL}")
+
+        pin = "otppin"
+        # create push token for user with PIN
+        # 1st step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push", "pin": pin, "user": "selfservice",
+                                                 "realm": self.realm1, "serial": self.serial_push, "genkey": True},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # 2nd step: as performed by the smartphone
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential, "serial": serial,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # create hotp token for the user with same PIN
+        hotp = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=User("selfservice", self.realm1))
+        set_policy("auth", scope=SCOPE.AUTH,
+                   action=f"{ACTION.CHALLENGERESPONSE}=hotp totp, {ACTION.CLIENT_MODE_PER_USER}")
+
+        # authenticate with PIN to trigger challenge-response: first auth, custom user attribute not set
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            # custom user attribute not set yet: use default
+            self.assertEqual("interactive", detail.get("preferred_client_mode"))
+            self.assertIsNone(user.attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE))
+
+        # answer challenge: custom user attribute shall be set
+        # We do poll only, so we need to poll
+        timestamp = datetime.datetime.now(timezone.utc).isoformat()
+        sign_string = f"{serial}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'), padding.PKCS1v15(), hashes.SHA256())
+        # now check that we receive the challenge when polling
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            nonce = result.get("value")[0].get("nonce")
+        # Answer challenge
+        sign_string = f"{nonce}|{serial}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'), padding.PKCS1v15(), hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           query_string={"serial": serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+        # finalize authentication: custom user attribute shall be set here for the next authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1,
+                                                 "pass": "", "transaction_id": transaction_id},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            preferred_token_types = json.loads(user.attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE))
+            self.assertEqual("push", preferred_token_types["privacyidea-cp"])
+
+        # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": pin},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            # custom user attribute set from last auth to poll
+            self.assertEqual("poll", detail.get("preferred_client_mode"))
+
+        delete_policy("auth")
+        delete_policy("push")
+        remove_token(serial)
+        hotp.delete_token()
 
 
 class PushChallengeTags(MyApiTestCase):

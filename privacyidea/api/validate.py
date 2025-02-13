@@ -121,6 +121,7 @@ from .lib.utils import send_result, getParam, get_required, get_optional
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
+from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 
 log = logging.getLogger(__name__)
 
@@ -504,6 +505,7 @@ def check():
         serial_list = []
 
     if success:
+        # update container last_auth
         for serial in serial_list:
             try:
                 container = find_container_for_token(serial)
@@ -511,6 +513,21 @@ def check():
                     container.update_last_authentication()
             except Exception as e:
                 log.debug(f"Could not find container for token {serial}: {e}")
+
+            # set the used token type as the preferred one for the user to indicate the preferred client mode for the
+            # next authentication
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token:
+                user_attribute = user.attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE)
+                if user_attribute:
+                    preferred_token_type = json.loads(user_attribute)
+                else:
+                    preferred_token_type = {}
+                token_type = token.get_tokentype()
+                user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+                preferred_token_type[user_agent] = token_type
+                user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, json.dumps(preferred_token_type),
+                                   INTERNAL_USAGE)
 
     serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)

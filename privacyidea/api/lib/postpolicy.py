@@ -70,8 +70,9 @@ from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token,
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import create_img, get_version
+from privacyidea.lib.utils import create_img, get_version, get_plugin_info_from_useragent
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
+from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
 
@@ -357,36 +358,60 @@ def preferred_client_mode(request, response):
     :return:
     """
     content = response.json
-    user_object = request.User
+    user = request.User
 
     # get the preferred client mode from a policy definition
-    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object) \
-        .action_values(allow_white_space_in_action=True, unique=True)
-
-    if detail_pol:
+    preferred_client_mode_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE,
+                                           user_object=user).action_values(allow_white_space_in_action=True,
+                                                                                  unique=True)
+    if preferred_client_mode_pol:
         # Split at whitespaces and strip
-        preferred_client_mode_list = str.split(list(detail_pol)[0])
+        preferred_client_mode_list = str.split(list(preferred_client_mode_pol)[0])
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
+
+    # check policy if client mode per user shall be used
+    client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
+                                          user_object=user).allowed()
+    preferred_token_type = None
+    if client_mode_per_user_pol:
+        user_attributes = user.attributes
+        preferred_token_types_str = user_attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE)
+        if preferred_token_types_str:
+            user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+            preferred_token_types = json.loads(preferred_token_types_str)
+            preferred_token_type = preferred_token_types.get(user_agent)
+
     if content.get("detail"):
         detail = content.get("detail")
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
-            client_modes = [x.get('client_mode') for x in multi_challenge]
 
-            try:
-                preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
-                content.setdefault("detail", {})["preferred_client_mode"] = preferred
-            except IndexError as err:
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('There was no acceptable client mode in the multi-challenge list. '
-                          'The preferred client mode is set to "interactive". '
-                          'Please check Your policy ({0!s}). '
-                          'Error: {1!s} '.format(preferred_client_mode_list, err))
-            except Exception as err:  # pragma no cover
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('Something went wrong during setting the preferred '
-                          'client mode. Error: {0!s}'.format(err))
+            # First try to use the users preferred token type
+            preferred = None
+            if preferred_token_type:
+                for challenge in multi_challenge:
+                    if challenge.get('type') == preferred_token_type:
+                        preferred = challenge.get('client_mode')
+                        content.setdefault("detail", {})["preferred_client_mode"] = preferred
+                        break
+
+            if not preferred:
+                # User preferred client mode not found, check the policy
+                client_modes = [x.get('client_mode') for x in multi_challenge]
+                try:
+                    preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
+                    content.setdefault("detail", {})["preferred_client_mode"] = preferred
+                except IndexError as err:
+                    content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                    log.error('There was no acceptable client mode in the multi-challenge list. '
+                              'The preferred client mode is set to "interactive". '
+                              'Please check Your policy ({0!s}). '
+                              'Error: {1!s} '.format(preferred_client_mode_list, err))
+                except Exception as err:  # pragma no cover
+                    content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                    log.error('Something went wrong during setting the preferred '
+                              'client mode. Error: {0!s}'.format(err))
 
     response.set_data(json.dumps(content))
     return response

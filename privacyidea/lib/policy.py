@@ -423,6 +423,7 @@ class ACTION(object):
     DEFAULT_CONTAINER_TYPE = "default_container_type"
     RSS_FEEDS = "rss_feeds"
     RSS_AGE = "rss_age"
+    CLIENT_MODE_PER_USER = "client_mode_per_user"
 
 
 class TYPE(object):
@@ -2611,6 +2612,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('When enabled, authentication attempts will be interpreted as either the PIN or '
                           'the answer to a challenge. PIN concatenated with OTP can not be used anymore! '
                           'Does only work when authenticating with a username.'),
+            },
+            ACTION.CLIENT_MODE_PER_USER: {
+                'type': 'bool',
+                'desc': _('Store the last used token type per user and application in the custom user attributes. '
+                          'For the next authentication the last used token type is used to identify the preferred '
+                          'token type.'),
             }
         },
         SCOPE.AUTHZ: {
