@@ -1,11 +1,12 @@
 # Michael Yang <pcgames99@gmail.com>, 2024.
 # Paul Lettich <paul.lettich@netknights.it>, 2025.
+# hugoalh <hugoalh@users.noreply.hosted.weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-02-06 17:28+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-02-13 12:05+0000\n"
+"Last-Translator: hugoalh <hugoalh@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Traditional Han script) <https://hosted.weblate.org/"
 "projects/privacyidea/privacyidea-webui/zh_Hant/>\n"
 "Language: zh_Hant\n"
@@ -885,9 +886,8 @@ msgid "Connector name"
 msgstr "連接器名稱"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:101
-#, fuzzy
 msgid "Contained Tokens:"
-msgstr "匯入令牌"
+msgstr "包含的令牌："
 
 #: privacyidea/static/components/token/views/token.containerlist.html:56
 #, fuzzy
@@ -1189,17 +1189,13 @@ msgid "Delete User"
 msgstr "刪除使用者"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:301
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete all tokens?"
-msgstr "删除令牌"
+msgstr "刪除全部令牌？"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:399
 #: privacyidea/static/components/user/views/user.details.html:225
-#, fuzzy
-#| msgid "Delete Token"
 msgid "Delete this token?"
-msgstr "删除令牌"
+msgstr "刪除此令牌？"
 
 #: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
@@ -1240,7 +1236,7 @@ msgstr "描述"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:26
 msgid "Description of the container"
-msgstr ""
+msgstr "容器描述"
 
 #: privacyidea/static/components/machine/views/machine.details.html:99
 #: privacyidea/static/components/token/views/token.details.html:698
@@ -2783,15 +2779,15 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "請提供privacyIDEA 伺服器的基本URL。"
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
-#, fuzzy
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
 "link</a> on your\n"
 "            smartphone."
 msgstr ""
-"請使用privacyIDEA身份驗證器應用掃描二維碼並輸入\n"
-"            下面生成的代碼。"
+"請使用 privacyIDEA 身分驗證應用程式掃描 QR 圖碼\n"
+"            或在您的手機上點擊\n"
+"            <a href=\"{{ enrolledToken.pushurl.value }}\">此連結</a>。"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:46
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:46
@@ -4462,9 +4458,8 @@ msgstr ""
 "    已在本地檢查。"
 
 #: privacyidea/static/app.js:90
-#, fuzzy
 msgid "The resource name must consist of letters, numbers and '_', '-', '.'"
-msgstr "資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成。"
+msgstr "資源名稱必須由字母、數字和「_」、「-」、「.」組成"
 
 #: privacyidea/static/app.js:100
 #, fuzzy
@@ -5023,13 +5018,10 @@ msgid "To"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:12
-#, fuzzy
 msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
-msgstr ""
-"選擇預定義的\n"
-"        <a ui-sref=\"config.smtp\">SMTP 伺服器配置</a>.。"
+msgstr "若要定義服務 ID，請前往<a ui-sref=\"config.serviceid\">服務 ID 組態</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5107,9 +5099,8 @@ msgid "Token resync successful."
 msgstr "令牌重新同步成功。"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:550
-#, fuzzy
 msgid "Token successfully verified"
-msgstr "測試電子郵件已成功發送。"
+msgstr "令牌驗證成功"
 
 #: privacyidea/static/components/token/views/token.lost.html:2
 msgid "Token {{ selectedToken.serial }} is lost?"
@@ -5153,9 +5144,8 @@ msgid "Total Challenges:"
 msgstr "總挑戰："
 
 #: privacyidea/static/components/token/views/token.containerlist.html:12
-#, fuzzy
 msgid "Total Containers: {{ containerdata.count }}"
-msgstr "總令牌： {{ tokendata.count }}"
+msgstr "容器總數：{{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
@@ -5576,9 +5566,8 @@ msgid "Your OTP pin expires on"
 msgstr "您的OTP密碼密碼過期"
 
 #: privacyidea/static/components/token/views/token.enrolled.applspec.html:8
-#, fuzzy
 msgid "Your Password:"
-msgstr "重置您的密碼"
+msgstr "您的密碼："
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:4
 msgid ""
@@ -5610,9 +5599,8 @@ msgid "Your secret phrase."
 msgstr "你的密語。"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:542
-#, fuzzy
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
-msgstr "通過privacyIDEA Authenticator App使用兩步註冊"
+msgstr "您對 privacyIDEA 身分驗證器的訂閱已過期。"
 
 #: privacyidea/static/templates/menu.html:167
 msgid ""
@@ -6002,10 +5990,8 @@ msgid "total tokens: {{ tokendata.count }}"
 msgstr "總令牌： {{ tokendata.count }}"
 
 #: privacyidea/static/components/user/views/user.html:53
-#, fuzzy
-#| msgid "All users"
 msgid "total users:"
-msgstr "所有使用者"
+msgstr "使用者總數："
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
