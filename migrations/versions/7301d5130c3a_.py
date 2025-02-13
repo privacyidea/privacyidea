@@ -24,9 +24,9 @@ def upgrade():
                    .where(eventhandleroption.c.Key == op.inline_literal("content_type"))
                    .where(eventhandleroption.c.Value == op.inline_literal("urlendcode"))
                    .values({"Value": op.inline_literal("urlencoded")}))
-    except Exception as exx:
+    except Exception as e:
         print("Failed to update urlendcode to urlencoded in eventhandleroption table.")
-        print(exx)
+        print(e)
         session.rollback()
         raise
 
@@ -42,9 +42,9 @@ def downgrade():
                    .where(eventhandleroption.c.Key == op.inline_literal("content_type"))
                    .where(eventhandleroption.c.Value == op.inline_literal("urlencoded"))
                    .values({"Value": op.inline_literal("urlendcode")}))
-    except Exception as exx:
+    except Exception as e:
         print("Failed to revert urlencoded to urlendcode in eventhandleroption table.")
-        print(exx)
+        print(e)
         session.rollback()
         raise
 
