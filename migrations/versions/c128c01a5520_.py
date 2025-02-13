@@ -1,4 +1,4 @@
-"""Added token container template table and a 'template' column in the token container table.
+"""v3.11: Added token container template table and a 'template' column in the token container table.
 
 Revision ID: c128c01a5520
 Revises: 69e7817b9863
@@ -11,7 +11,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = 'c128c01a5520'
-down_revision = 'eac770c0bbed'
+down_revision = '7301d5130c3a'
 
 
 def upgrade():
