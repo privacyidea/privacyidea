@@ -3985,17 +3985,29 @@ class APIContainerSynchronization(APIContainerTest):
         # tokens
         self.setUp_user_realms()
 
-        push = init_token({"genkey": "1", "type": "push"})
+        push = init_token({"genkey": "1", "type": "push", PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
+        self.assertEqual("poll only", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
         smartphone.add_token(push)
 
         hotp_params = {"type": "hotp",
                        "genkey": True,
                        "realm": self.realm1,
-                       "user": "hans"}
+                       "user": "hans",
+                       "hashlib": "sha256"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
         initial_enroll_url = result["detail"]["googleurl"]["value"]
         hotp = get_one_token(serial=result["detail"]["serial"])
+        self.assertEqual("sha256", hotp.hashlib)
         smartphone.add_token(hotp)
+
+        totp = init_token({"genkey": True, "type": "totp", "otplen": 8, "hashlib": "sha256", "timeStep": 60})
+        self.assertEqual("sha256", totp.hashlib)
+        self.assertEqual(60, totp.timestep)
+        smartphone.add_token(totp)
+        daypassword = init_token({"genkey": True, "type": "daypassword", "hashlib": "sha256", "timeStep": 30})
+        self.assertEqual("sha256", daypassword.hashlib)
+        self.assertEqual(30, daypassword.timestep)
+        smartphone.add_token(daypassword)
 
         # Offline token
         offline_hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -4005,6 +4017,14 @@ class APIContainerSynchronization(APIContainerTest):
 
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        # Firebase config
+        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
+                     FIREBASE_CONFIG.TTL: 10}
+        set_smsgateway("firebase", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                       fb_config)
+        set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "firebase",
+                                                       PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
@@ -4077,10 +4097,20 @@ class APIContainerSynchronization(APIContainerTest):
         token_diff = container_dict_server["tokens"]
         # only online hotp token is included, for the push token the config is missing and offline tokens can not be
         # synchronized
-        self.assertEqual(1, len(token_diff["add"]))
-        self.assertNotEqual(initial_enroll_url, token_diff["add"][0])
+        self.assertEqual(4, len(token_diff["add"]))
+        new_hotp_enroll_url = [enroll_url for enroll_url in token_diff["add"] if hotp.get_serial() in enroll_url][0]
+        self.assertNotEqual(initial_enroll_url, new_hotp_enroll_url)
         self.assertIn(offline_hotp.get_serial(), token_diff["offline"])
         self.assertEqual(103, offline_hotp.token.count)
+
+        # check tokens
+        self.assertEqual("sha256", hotp.hashlib)
+        self.assertEqual("sha256", totp.hashlib)
+        self.assertEqual(60, totp.timestep)
+        self.assertEqual("sha256", daypassword.hashlib)
+        self.assertEqual(30, daypassword.timestep)
+        # due to new policy push token config changed to firebase
+        self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
         self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
