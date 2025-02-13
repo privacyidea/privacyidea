@@ -2978,8 +2978,6 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     params = request.all_data
     params.update({"genkey": True, "rollover": True})
-    token_info = token.get_tokeninfo()
-    params.update(token_info)
     token = init_token(params)
     enroll_url = token.get_enroll_url(token_owner, params)
 
