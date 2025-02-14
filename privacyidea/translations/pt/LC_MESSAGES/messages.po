@@ -8,13 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2025-02-14 14:08+0000\n"
+"Last-Translator: Pompeu Gabriel Costa <pompeugcosta@gmail.com>\n"
+"Language-Team: Portuguese <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/pt/>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 5.10\n"
 "Generated-By: Babel 2.13.1\n"
 
 #: api/auth.py:227
@@ -1552,7 +1555,7 @@ msgstr ""
 #: lib/eventhandler/containerhandler.py:99
 #: lib/eventhandler/containerhandler.py:121
 msgid "Description of the container"
-msgstr ""
+msgstr "Descrição do contentor"
 
 #: lib/eventhandler/containerhandler.py:104
 msgid "Assign container to user in request or to token/container owner"
