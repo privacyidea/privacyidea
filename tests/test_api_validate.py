@@ -2659,16 +2659,17 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertIn("Hello Cornelius, please enter the otp sent to hallo@example.com",
                           resp.get("detail").get("message"))
 
-        with self.app.test_request_context('/policy/',
+        with self.app.test_request_context('/policy/chalsms',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
             value = res.json['result']['value']
-            pol1 = value[2]
-            self.assertEqual(pol1.get("action").get("increase_failcounter_on_challenge"), True, pol1)
-            self.assertIn("Hello {user}\\, please enter", pol1.get("action").get("sms_challenge_text"), pol1)
+            sms_policy = value[0]
+            self.assertEqual(sms_policy.get("action").get("increase_failcounter_on_challenge"), True, sms_policy)
+            self.assertIn("Hello {user}\\, please enter", sms_policy.get("action").get("sms_challenge_text"),
+                          sms_policy)
 
         remove_token("CHAL1")
         remove_token("CHAL2")
