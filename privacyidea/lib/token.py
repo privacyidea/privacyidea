@@ -337,7 +337,8 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             sql_query = (sql_query.outerjoin(TokenContainerToken)
                          .filter(TokenContainerToken.container_id.is_(None)))
         else:
-            container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
+            container = TokenContainer.query.filter(
+                func.upper(TokenContainer.serial) == container_serial.upper()).first()
             if container is None:
                 raise privacyIDEAError(_(f"No container with the serial {container_serial} exists."))
             token_container_token = TokenContainerToken.query.filter(

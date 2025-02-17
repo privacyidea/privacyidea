@@ -14,7 +14,7 @@ getToken....
 """
 import logging
 from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -1015,6 +1015,17 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn(token.get_serial(), token_serials)
         for token in tokens_pag["tokens"]:
             self.assertEqual("", token["container_serial"])
+
+        # filter for container serial in lower cases
+        container_serial = init_container({"type": "generic", "container_serial": "CONT0001"})["container_serial"]
+        token_in_container = init_token({"genkey": True, "type": "hotp"})
+        container = find_container_by_serial(container_serial)
+        container.add_token(token_in_container)
+        tokens = get_tokens_paginate(container_serial="cont0001")["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
+        container.delete()
+        token_in_container.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

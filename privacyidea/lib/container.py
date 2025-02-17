@@ -23,6 +23,7 @@ import logging
 import os
 from typing import Union
 
+from sqlalchemy import func
 from sqlalchemy.orm import Query
 
 from privacyidea.api.lib.utils import send_result
@@ -146,7 +147,7 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     :return: container object
     :rtype: privacyidea.lib.containerclass.TokenContainerClass
     """
-    db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
+    db_container = TokenContainer.query.filter(func.upper(TokenContainer.serial) == serial.upper()).first()
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
@@ -174,7 +175,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
 
     if serial:
-        sql_query = sql_query.filter(TokenContainer.serial == serial)
+        sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
     if ctype:
         sql_query = sql_query.filter(TokenContainer.type == ctype)
@@ -342,7 +343,7 @@ def get_container_policy_info(container_type: Union[str, None] = None):
         return ret
 
 
-def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
+def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -378,7 +379,14 @@ def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
         raise EnrollmentError(f"Type '{ctype}' is not a valid type!")
 
     desc = params.get("description") or ""
-    serial = params.get("container_serial") or _gen_serial(ctype)
+    serial = params.get("container_serial")
+    if serial:
+        # Check if a container with this serial already exists
+        containers = get_all_containers(serial=serial)["containers"]
+        if len(containers) > 0:
+            raise EnrollmentError(f"Container with serial {serial} already exists!")
+    else:
+        serial = _gen_serial(ctype)
     db_container = TokenContainer(serial=serial, container_type=ctype.lower(), description=desc)
     db_container.save()
 

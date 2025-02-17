@@ -88,6 +88,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Empty container type raises exception
         self.assertRaises(EnrollmentError, init_container, {})
 
+        # create container with existing serial
+        serial = init_container({"type": "generic"})["container_serial"]
+        self.assertRaises(EnrollmentError, init_container, {"type": "generic", "container_serial": serial})
+
     def test_03_create_container_wrong_user_parameters(self):
         # Init container with user: User shall not be assigned (realm required)
         serial = init_container({"type": "Generic", "user": "hans"})["container_serial"]
@@ -125,6 +129,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(res)
         # Check if token is added to container
         smartphone = find_container_by_serial(self.smartphone_serial)
+        tokens = smartphone.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertIn(self.totp_serial_smph, tokens[0].get_serial())
+
+        # Try to add the same token again to the container
+        res = add_token_to_container(self.smartphone_serial, self.totp_serial_smph)
+        self.assertFalse(res)
         tokens = smartphone.get_tokens()
         self.assertEqual(1, len(tokens))
         self.assertIn(self.totp_serial_smph, tokens[0].get_serial())
@@ -297,9 +308,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertRaises(ResourceNotFoundError, find_container_by_serial, None)
 
     def test_18_find_container_success(self):
-        # Find by serial
-        serial = init_container({"type": "generic", "description": "find container"})["container_serial"]
-        container = find_container_by_serial(serial)
+        serial = "CONT0001"
+        init_container({"type": "generic", "container_serial": serial})
+        # Find by serial exact
+        container = find_container_by_serial("CONT0001")
+        self.assertEqual(serial, container.serial)
+
+        # find by serial in lower cases
+        container = find_container_by_serial("cont0001")
         self.assertEqual(serial, container.serial)
 
         # Find by ID
@@ -614,19 +630,34 @@ class TokenContainerManagementTestCase(MyTestCase):
             container.delete()
 
         # Arrange
-        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        types = ["generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        realms = ["realm1", "realm2", "realm1", "realm2", "realm1", "realm1"]
-        container_serials = []
-        for t, r in zip(types, realms):
+        realms = ["realm2", "realm1", "realm2", "realm1", "realm1"]
+        container_serials = ["SMPH0001"]
+        init_container(
+            {"type": "smartphone", "description": "test container", "realm": "realm1", "container_serial": "SMPH0001"})
+        for t, r, serial in zip(types, realms, container_serials):
             serial = init_container({"type": t, "description": "test container", "realm": r})["container_serial"]
             container_serials.append(serial)
 
-        # Filter for container serial
-        container_data = get_all_containers(serial=container_serials[3], pagesize=15)
+        # Filter for exact container serial
+        container_data = get_all_containers(serial=container_serials[0], pagesize=15)
         self.assertEqual(1, container_data["count"])
-        self.assertEqual(container_data["containers"][0].serial, container_serials[3])
+        self.assertEqual(container_serials[0], container_data["containers"][0].serial)
+
+        # Filter for container serial in lower cases
+        container_data = get_all_containers(serial="smph0001", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        self.assertEqual("SMPH0001", container_data["containers"][0].serial)
+
+        # Filter for container serial stored as lower cases in db
+        init_container(
+            {"type": "generic", "description": "test container", "realm": "realm2", "container_serial": "cont0001"})
+        container_data = get_all_containers(serial="CONT0001", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        self.assertEqual("cont0001", container_data["containers"][0].serial)
+        find_container_by_serial("cont0001").delete()
 
         # Filter for non-existing serial
         container_data = get_all_containers(serial="non_existing_serial")
