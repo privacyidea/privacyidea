@@ -41,9 +41,11 @@ import {
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  EnrollmentOptions,
+  TokenService,
+} from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
-import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-enrollment-dialog.component';
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
@@ -188,6 +190,7 @@ export class TokenEnrollmentComponent {
     effect(() => {
       if (this.selectedType()) {
         this.response.set(null);
+        this.tokenSerial.set('');
       }
     });
 
@@ -217,30 +220,7 @@ export class TokenEnrollmentComponent {
 
     effect(() => {
       if (this.regenerateToken()) {
-        this.enrollToken(
-          this.selectedType().key,
-          this.generateOnServer(),
-          this.otpLength(),
-          this.otpKey(),
-          this.hashAlgorithm(),
-          this.description(),
-          this.timeStep(),
-          this.tokenSerial(),
-          this.selectedUsername(),
-          this.selectedContainer(),
-          this.formatDateTimeOffset(
-            this.selectedStartDate(),
-            this.selectedStartTime(),
-            this.selectedTimezoneOffset(),
-          ),
-          this.formatDateTimeOffset(
-            this.selectedEndDate(),
-            this.selectedEndTime(),
-            this.selectedTimezoneOffset(),
-          ),
-          this.setPinValue(),
-          this.motpPin(),
-        );
+        this.enrollToken();
       }
     });
   }
@@ -298,86 +278,37 @@ export class TokenEnrollmentComponent {
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
 
-  enrollToken(
-    type: string,
-    generateOnServer: boolean,
-    otpLength: string,
-    otpKey: string,
-    hashAlgorithm: string,
-    description: string,
-    timeStep: string,
-    tokenSerial: string,
-    user: string,
-    container_serial: string,
-    validity_period_start: string,
-    validity_period_end: string,
-    pin: string,
-    motpPin: string,
-  ) {
-    let response = new Observable();
-    switch (type) {
-      case 'hotp':
-        response = this.tokenService.enrollHotpToken(
-          generateOnServer,
-          otpLength,
-          otpKey,
-          hashAlgorithm,
-          description,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-        );
-        break;
-      case 'totp':
-        response = this.tokenService.enrollTotpToken(
-          generateOnServer,
-          otpLength,
-          otpKey,
-          hashAlgorithm,
-          description,
-          timeStep,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-        );
-        break;
-      case 'spass':
-        response = this.tokenService.enrollSpassToken(
-          description,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-        );
-        break;
-      case 'motp':
-        response = this.tokenService.enrollMotpToken(
-          generateOnServer,
-          otpKey,
-          description,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-          motpPin,
-        );
-        break;
-    }
-    response.subscribe({
+  enrollToken() {
+    const enrollmentOptions: EnrollmentOptions = {
+      type: this.selectedType().key,
+      generateOnServer: this.generateOnServer(),
+      otpLength: this.otpLength(),
+      otpKey: this.otpKey(),
+      hashAlgorithm: this.hashAlgorithm(),
+      timeStep: this.timeStep(),
+      description: this.description(),
+      tokenSerial: this.tokenSerial(),
+      user: this.selectedUsername(),
+      container_serial: this.selectedContainer(),
+      validity_period_start: this.formatDateTimeOffset(
+        this.selectedStartDate(),
+        this.selectedStartTime(),
+        this.selectedTimezoneOffset(),
+      ),
+      validity_period_end: this.formatDateTimeOffset(
+        this.selectedEndDate(),
+        this.selectedEndTime(),
+        this.selectedTimezoneOffset(),
+      ),
+      pin: this.setPinValue(),
+      motpPin: this.motpPin(),
+    };
+
+    this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
         if (!this.regenerateToken()) {
           this.notificationService.openSnackBar(
-            'Token ' + response.detail.serial + ' enrolled successfully.',
+            `Token ${response.detail.serial} enrolled successfully.`,
           );
         }
         this.response.set(response);

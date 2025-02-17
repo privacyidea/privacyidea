@@ -2,6 +2,7 @@
   <div class="token-type-paragraph">
     <p>{{ text }}</p>
   </div>
+  <h4 class="enroll-h4">Token configuration</h4>
   <mat-checkbox [(ngModel)]="generateOnServer"
                 class="server-checkbox">
     Generate OTP key on the server
@@ -38,7 +39,7 @@
   <input style="display:none"
          type="text" /> <input style="display:none"
                                type="password" />
-  <h4>mOTP PIN:</h4>
+  <h4 class="enroll-h4">mOTP PIN</h4>
   <span>The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>
   <div class="motp-pin-input">
     <input [(ngModel)]="motpPin"

@@ -29,22 +29,11 @@
             mat-icon-button>
       <mat-icon>qr_code_scanner</mat-icon>
     </button>
-    <button (click)="enrollToken(this.selectedType().key, generateOnServer(), otpLength(), otpKey(),
-   hashAlgorithm(), description(), timeStep(),'', selectedUsername(), selectedContainer(),
-             this.formatDateTimeOffset(
-            this.selectedStartDate(),
-            this.selectedStartTime(),
-            this.selectedTimezoneOffset()
-          ),
-          this.formatDateTimeOffset(
-            this.selectedEndDate(),
-            this.selectedEndTime(),
-            this.selectedTimezoneOffset()
-          ), setPinValue(), motpPin())"
-            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !==
-            repeatPinValue(),' card-button': true}"
-            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
-            mat-flat-button>
+    <button (click)="enrollToken()"
+      [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+       'card-button': true}"
+      [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
+      mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
     </button>
@@ -75,7 +64,7 @@
                        [description]="description" />
     }
   }
-  <h4>Assign token to user:</h4>
+  <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
     <input style="display:none"
            type="text" />
@@ -105,7 +94,7 @@
     </mat-form-field>
 
     <div class="flex-column">
-      <h5>Pin / Password:</h5>
+      <h5>Pin / Password</h5>
       <div class="user-pin-input">
         <input [(ngModel)]="setPinValue"
                [type]="'password'"
@@ -120,7 +109,7 @@
     </div>
   </div>
 
-  <h4>Assign token to a container:</h4>
+  <h4 class="enroll-h4">Assign token to a container</h4>
   <mat-form-field class="enroll-input-form">
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="selectedContainer"
@@ -136,7 +125,7 @@
   <mat-accordion>
     <mat-expansion-panel class="expension-panel">
       <mat-expansion-panel-header>
-        <mat-panel-title> Extended Attributes:</mat-panel-title>
+        <mat-panel-title> Extended Attributes</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="flex-row">
         <mat-form-field class="date-picker">

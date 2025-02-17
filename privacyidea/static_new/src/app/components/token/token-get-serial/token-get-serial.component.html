@@ -7,7 +7,7 @@
       By entering an OTP value you can get the serial number of the token. You can also enter
       additional optional parameters, to narrow down the search for the token. So you can only
       search within certain token types or in assigned or unassigned tokens. </p>
-    <h4 translate>OTP Value (required)</h4>
+    <h4 class="enroll-h4" translate>OTP Value</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-100">
         <input (keyup.enter)="onPressEnter()"
@@ -27,7 +27,7 @@
         Run Search
       </button>
     </div>
-    <h4 translate>Token Type</h4>
+    <h4 class="enroll-h4" translate>Token Type</h4>
     <mat-form-field class="width-100">
       <mat-select (keyup.enter)="onPressEnter()"
                   [(ngModel)]="tokenType"
@@ -39,7 +39,7 @@
         }
       </mat-select>
     </mat-form-field>
-    <h4 translate>Assignment State</h4>
+    <h4 class="enroll-h4" translate>Assignment State</h4>
     <mat-form-field class="width-100">
       <mat-select (keyup.enter)="onPressEnter()"
                   [(ngModel)]="assignmentState"
@@ -55,7 +55,7 @@
     </mat-form-field>
     <div class="flex-row gap-1">
       <div class="flex-column width-66">
-        <h4 translate>Serial Substring</h4>
+        <h4 class="enroll-h4" translate>Serial Substring</h4>
         <mat-form-field class="width-100">
           <input (keyup.enter)="onPressEnter()"
                  [(ngModel)]="serialSubstring"
@@ -66,7 +66,7 @@
         </mat-form-field>
       </div>
       <div class="flex-column width-33">
-        <h4 translate>Count Window</h4>
+        <h4  class="enroll-h4" translate>Count Window</h4>
         <mat-form-field>
           <input (keyup.enter)="onPressEnter()"
                  [(ngModel)]="countWindow"

@@ -17,6 +17,39 @@ import { NotificationService } from '../../services/notification/notification.se
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
 
+export type TokenType =
+  | 'hotp'
+  | 'totp'
+  | 'spass'
+  | 'motp'
+  | 'sshkey'
+  | 'yubikey'
+  | 'remote'
+  | 'yubico'
+  | 'radius'
+  | 'sms'
+  | '4eyes'
+  | 'ASP'
+  | 'cert'
+  | 'daypassword'
+  | 'email'
+  | 'indexsecret'
+  | 'paper'
+  | 'push'
+  | 'questionnaire'
+  | 'registration'
+  | 'tan'
+  | 'tiqr'
+  | 'u2f'
+  | 'vasco'
+  | 'webauthn';
+
+export interface TokenTypeOption {
+  key: TokenType;
+  info: string;
+  text: string;
+}
+
 @Component({
   selector: 'app-token-grid',
   standalone: true,
@@ -39,7 +72,7 @@ import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.co
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
-  static tokenTypes = [
+  static tokenTypes: TokenTypeOption[] = [
     {
       key: 'hotp',
       info: 'HOTP: Counter-based One Time Passwords',
