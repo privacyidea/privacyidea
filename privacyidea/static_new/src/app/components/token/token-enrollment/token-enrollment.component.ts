@@ -46,6 +46,9 @@ import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-enrollment-dialog.component';
+import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
+import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
+import { NgClass } from '@angular/common';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -115,6 +118,9 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatIcon,
     EnrollTotpComponent,
     MatIconButton,
+    EnrollSpassComponent,
+    EnrollMotpComponent,
+    NgClass,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -158,6 +164,8 @@ export class TokenEnrollmentComponent {
   timeStep = signal('30');
   response: WritableSignal<any> = signal(null);
   regenerateToken = signal(false);
+  motpPin = signal('');
+  repeatMotpPin = signal('');
 
   constructor(
     private containerService: ContainerService,
@@ -175,6 +183,12 @@ export class TokenEnrollmentComponent {
 
     effect(() => {
       this.getContainerOptions();
+    });
+
+    effect(() => {
+      if (this.selectedType()) {
+        this.response.set(null);
+      }
     });
 
     effect(() => {
@@ -225,6 +239,7 @@ export class TokenEnrollmentComponent {
             this.selectedTimezoneOffset(),
           ),
           this.setPinValue(),
+          this.motpPin(),
         );
       }
     });
@@ -297,6 +312,7 @@ export class TokenEnrollmentComponent {
     validity_period_start: string,
     validity_period_end: string,
     pin: string,
+    motpPin: string,
   ) {
     let response = new Observable();
     switch (type) {
@@ -329,6 +345,31 @@ export class TokenEnrollmentComponent {
           validity_period_start,
           validity_period_end,
           pin,
+        );
+        break;
+      case 'spass':
+        response = this.tokenService.enrollSpassToken(
+          description,
+          tokenSerial,
+          user,
+          container_serial,
+          validity_period_start,
+          validity_period_end,
+          pin,
+        );
+        break;
+      case 'motp':
+        response = this.tokenService.enrollMotpToken(
+          generateOnServer,
+          otpKey,
+          description,
+          tokenSerial,
+          user,
+          container_serial,
+          validity_period_start,
+          validity_period_end,
+          pin,
+          motpPin,
         );
         break;
     }

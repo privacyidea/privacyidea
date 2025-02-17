@@ -1,12 +1,9 @@
-$input-height: 40px;
-$input-width: 107px;
 $focus-outline: 3px solid var(--blue-light);
-$button-border-radius: 3px;
 
 .input {
-  height: $input-height;
-  width: $input-width;
-  border-radius: $button-border-radius;
+  height: 40px;
+  width: 107px;
+  border-radius: 3px;
   outline: none;
 
   &:focus {

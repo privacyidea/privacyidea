@@ -353,4 +353,62 @@ export class TokenService {
       { headers },
     );
   }
+
+  enrollSpassToken(
+    description: string,
+    tokenSerial: string,
+    user: string,
+    container_serial: string,
+    validity_period_start: string,
+    validity_period_end: string,
+    pin: string,
+  ) {
+    return this.http.post(
+      `${this.tokenBaseUrl}init`,
+      {
+        type: 'spass',
+        description: description,
+        serial: tokenSerial,
+        user: user,
+        container_serial: container_serial,
+        validity_period_start: validity_period_start,
+        validity_period_end: validity_period_end,
+        pin: pin,
+      },
+      { headers: this.localService.getHeaders() },
+    );
+  }
+
+  enrollMotpToken(
+    generateOnServer: boolean,
+    otpKey: string,
+    description: string,
+    tokenSerial: string,
+    user: string,
+    container_serial: string,
+    validity_period_start: string,
+    validity_period_end: string,
+    pin: string,
+    motpPin: string,
+  ) {
+    return this.http.post(
+      `${this.tokenBaseUrl}init`,
+      {
+        otpkey: generateOnServer ? null : otpKey,
+        genkey: generateOnServer ? 1 : 0,
+        type: 'motp',
+        description: description,
+        serial: tokenSerial,
+        user: user,
+        container_serial: container_serial,
+        validity_period_start: validity_period_start,
+        validity_period_end: validity_period_end,
+        pin: pin,
+        motppin: motpPin,
+      },
+      {
+        headers: this.localService.getHeaders(),
+      },
+    );
+  }
 }

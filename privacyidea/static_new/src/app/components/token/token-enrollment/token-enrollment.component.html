@@ -40,8 +40,10 @@
             this.selectedEndDate(),
             this.selectedEndTime(),
             this.selectedTimezoneOffset()
-          ), setPinValue())"
-            class="card-button"
+          ), setPinValue(), motpPin())"
+            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !==
+            repeatPinValue(),' card-button': true}"
+            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
             mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
@@ -62,6 +64,15 @@
                        [hashAlgorithm]="hashAlgorithm"
                        [description]="description"
                        [timeStep]="timeStep" />
+    }
+    @case ("spass") {
+      <app-enroll-spass [description]="description" />
+    }
+    @case ("motp") {
+      <app-enroll-motp [motpPin]="motpPin"
+                       [repeatMotpPin]="repeatMotpPin"
+                       [generateOnServer]="generateOnServer"
+                       [description]="description" />
     }
   }
   <h4>Assign token to user:</h4>
