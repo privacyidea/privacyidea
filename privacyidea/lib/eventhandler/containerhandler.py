@@ -86,7 +86,7 @@ class ContainerEventHandler(BaseEventHandler):
         for state in container_states:
             action_states[state] = {"type": "bool",
                                     "required": False,
-                                    "description": _("Set the state {state}".format(state=state))}
+                                    "description": _("Set the state {state}").format(state=state)}
 
         actions = {
             ACTION_TYPE.INIT:

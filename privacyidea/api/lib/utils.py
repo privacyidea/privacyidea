@@ -440,12 +440,12 @@ def verify_auth_token(auth_token, required_role=None):
                             id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if wrong_username:
         raise AuthError(_("Authentication failure. The username {wrong_username} "
-                          "is not allowed to impersonate via JWT.".format(wrong_username=wrong_username)))
+                          "is not allowed to impersonate via JWT.").format(wrong_username=wrong_username))
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
         raise AuthError(_("Authentication failure. You do not have the necessary "
-                          "role ({required_role}) to access this resource!".format(required_role=required_role)),
+                          "role ({required_role}) to access this resource!").format(required_role=required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
 

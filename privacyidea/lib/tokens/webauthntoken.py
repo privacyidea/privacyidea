@@ -656,8 +656,8 @@ class WebAuthnTokenClass(TokenClass):
                         'type': 'str',
                         'desc': _("Which algorithm are available to use for creating public key "
                                   "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
-                                  "[{1!s}])".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
-                                                    ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER))),
+                                  "[{1!s}])").format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                                                    ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER)),
                         'group': WebAuthnGroup.WEBAUTHN,
                         'multiple': True,
                         'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
