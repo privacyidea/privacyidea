@@ -596,6 +596,7 @@ class PushTokenClass(TokenClass):
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
+            extra_data["poll_only"] = fb_identifier == POLL_ONLY
 
             # enforce App pin
             if params.get(ACTION.FORCE_APP_PIN):
