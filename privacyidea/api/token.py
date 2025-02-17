@@ -497,6 +497,7 @@ def list_api():
 def assign_api():
     """
     Assign a token to a user.
+    It also adds the user's realm to the token realms. Existing token realms are preserved.
 
     :jsonparam serial: The token, which should be assigned to a user
     :jsonparam user: The username of the user

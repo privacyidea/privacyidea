@@ -243,7 +243,7 @@ class TokenClass(object):
                        user_id=uid, resolver=resolvername,
                        realmname=user.realm).save()
         # set the tokenrealm
-        self.set_realms([user.realm])
+        self.set_realms([user.realm], add=True)
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
