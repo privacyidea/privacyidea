@@ -176,6 +176,7 @@ def _compare_after(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              *given_value_string* (converted to a datetime).
     """
+    given_value_string = parse_legacy_time(given_value_string, return_date=True)
 
     def comparator(value):
         try:
@@ -191,6 +192,7 @@ def _compare_before(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              *given_value_string* (converted to a datetime).
     """
+    given_value_string = parse_legacy_time(given_value_string, return_date=True)
 
     def comparator(value):
         try:
