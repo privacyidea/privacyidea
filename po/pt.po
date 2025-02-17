@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2025-02-15 15:02+0000\n"
+"PO-Revision-Date: 2025-02-17 11:09+0000\n"
 "Last-Translator: Pompeu Gabriel Costa <pompeugcosta@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/pt/>\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10\n"
+"X-Generator: Weblate 5.10.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -368,7 +368,7 @@ msgstr "Administrador"
 
 #: privacyidea/static/components/config/views/config.system.html:185
 msgid "All CA Connectors"
-msgstr "Todos os conectores CA"
+msgstr "Todos os conectores de AC"
 
 #: privacyidea/static/components/config/views/config.events.html:8
 msgid "All Event Handlers"
@@ -593,31 +593,31 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
-msgstr "Certificado CA"
+msgstr "Certificado da AC"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr "Conector CA"
+msgstr "Conector da AC"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
-msgstr "Nome do Conector CA"
+msgstr "Nome do Conector da AC"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr "Chave CA"
+msgstr "Chave da AC"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
 msgid "CA certificate (filename)"
-msgstr "Certificado CA (nome do ficheiro)"
+msgstr "Certificado da AC (nome do ficheiro)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
-msgstr "Opções específicas da CA"
+msgstr "Opções específicas da AC"
 
 #: privacyidea/static/components/config/views/config.system.html:178
 msgid "CAs"
-msgstr "CAs"
+msgstr "ACs"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
@@ -933,11 +933,11 @@ msgstr "Criar um novo resolvedor LDAP"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:7
 msgid "Create a new Local CA Connector"
-msgstr "Criar um novo conector CA local"
+msgstr "Criar um novo conector de AC local"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:7
 msgid "Create a new Microsoft CA Connector"
-msgstr "Criar um novo conector CA da Microsoft"
+msgstr "Criar um novo conector de AC da Microsoft"
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
@@ -1283,7 +1283,7 @@ msgstr "Pretende mesmo eliminar este resolvedor?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
-msgstr "Domínio CA"
+msgstr "Domínio da AC"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -1321,7 +1321,7 @@ msgstr "Editar"
 
 #: privacyidea/static/components/config/views/config.system.html:191
 msgid "Edit CA Connector {{ connectorname }}"
-msgstr "Editar conector CA {{ connectorname }}"
+msgstr "Editar conector da AC {{ connectorname }}"
 
 #: privacyidea/static/components/config/views/config.events.details.html:3
 msgid "Edit Event Handler {{ eventid }}"
@@ -1348,7 +1348,7 @@ msgid ""
 "Edit Local CA Connector\n"
 "        {{ connectorname }}"
 msgstr ""
-"Editar conector CA local\n"
+"Editar conector da AC local\n"
 "        {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.html:17
@@ -1360,7 +1360,7 @@ msgid ""
 "Edit Microsoft CA Connector\n"
 "        {{ connectorname }}"
 msgstr ""
-"Editar conector CA da Microsoft\n"
+"Editar conector da AC da Microsoft\n"
 "        {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.details.html:95
@@ -1477,7 +1477,7 @@ msgstr "Data de fim antes da data de início!"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:19
 msgid "Endpoint (URL)"
-msgstr "Endpoint (URL)"
+msgstr "Ponto de acesso (URL)"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:418
 #: privacyidea/static/components/user/views/user.details.html:289
@@ -1736,7 +1736,7 @@ msgstr "Obter documentação do sistema"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:140
 msgid "Get available CAs"
-msgstr "Obter CAs disponíveis"
+msgstr "Obter as ACs disponíveis"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:439
 msgid "Get the Authenticator App for Android."
@@ -1855,7 +1855,7 @@ msgstr "Ajuda sobre Service IDs"
 
 #: privacyidea/static/components/config/views/config.system.html:144
 msgid "Help on Tokengroups"
-msgstr "Ajuda sobre Tokengroups"
+msgstr "Ajuda sobre Grupos de tokens"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:8
 msgid "Here you can define how the SMS will be sent - via which kind of gateway."
@@ -2097,7 +2097,8 @@ msgstr "Emissor"
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:22
 msgid "It will send the missing registration data to the configured endpoint."
-msgstr "Enviará os dados de registo em falta para o endpoint configurado."
+msgstr ""
+"Enviará os dados de registo em falta para o ponto de acesso configurado."
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:7
 msgid "Key"
@@ -2303,11 +2304,11 @@ msgstr "Método"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:31
 msgid "Microsoft CA worker hostname"
-msgstr "Nome de anfitrião do trabalhador CA da Microsoft"
+msgstr "Nome de anfitrião do trabalhador da AC da Microsoft"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:44
 msgid "Microsoft CA worker port"
-msgstr "Porta do trabalhador CA da Microsoft"
+msgstr "Porta do trabalhador da AC da Microsoft"
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
@@ -2367,7 +2368,7 @@ msgstr "Novo servidor privacyIDEA"
 
 #: privacyidea/static/components/config/views/config.system.html:205
 msgid "New {{ connectortype | uppercase }} CA Connector"
-msgstr "Novo conector CA {{ connectortype | uppercase }}"
+msgstr "Novo conector AC {{ connectortype | uppercase }}"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:25
 msgid "New {{ mResolvertype | uppercase }} Resolver"
@@ -2530,7 +2531,7 @@ msgstr "Tokens offline anexados aos notebooks"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
-msgstr "Okay"
+msgstr "Ok"
 
 #: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:136
@@ -3116,7 +3117,7 @@ msgstr "Revogar"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:156
 msgid "Roll the token"
-msgstr ""
+msgstr "Girar o token"
 
 #: privacyidea/static/components/token/views/token.details.html:74
 msgid "Rollout State"
@@ -3124,15 +3125,15 @@ msgstr "Estado de Rollout"
 
 #: privacyidea/static/components/token/views/token.details.html:27
 msgid "Rollover"
-msgstr ""
+msgstr "Substituir"
 
 #: privacyidea/static/components/token/views/token.enroll.html:170
 msgid "Rollover Token"
-msgstr ""
+msgstr "Substituir Token"
 
 #: privacyidea/static/components/token/views/token.enroll.html:7
 msgid "Rollover token {{ form.serial }}"
-msgstr ""
+msgstr "Substituir token {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:46
 msgid "Rounds"
@@ -3218,7 +3219,7 @@ msgstr "Guardar"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:171
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:163
 msgid "Save CA"
-msgstr "Guardar CA"
+msgstr "Guardar a AC"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:116
 msgid "Save Container Info"
@@ -3727,7 +3728,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:27
 msgid "The AppID must not end with a \"/\"."
-msgstr "O AppID não deve terminar com uma \"/\"."
+msgstr "O ID da aplicação não deve terminar com uma \"/\"."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:23
 msgid "The AppID needs to start with \"https\"."
@@ -3760,7 +3761,7 @@ msgid ""
 "    by the given CA."
 msgstr ""
 "O Token de Certificado permite-lhe registar um certificado x509\n"
-"    da CA indicada."
+"    da AC indicada."
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:2
 msgid ""
@@ -4025,7 +4026,8 @@ msgid ""
 "    privacyIDEA installation."
 msgstr ""
 "O token U2F é um token de hardware que comunica com o navegador.\n"
-"    É necessário definir o appId correto, que, na realidade, é o URL\n"
+"    É necessário definir o ID da aplicação correto, que, na realidade, é o "
+"URL\n"
 "    da instalação do privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.enroll.u2f.html:1
@@ -4219,7 +4221,7 @@ msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
 msgstr ""
-"O ficheiro que contém o certificado CA que assinou o\n"
+"O ficheiro que contém o certificado da AC que assinou o\n"
 "                    certificado LDAP TLS."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:114
@@ -4558,11 +4560,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
-msgstr "O trust_anchor_dir deve ser um caminho absoluto."
+msgstr "O diretório_âncoras_confiança deve ser um caminho absoluto."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:37
 msgid "The trust_anchor_dir must not end with a \"/\"."
-msgstr "O trust_anchor_dir não deve terminar com uma \"/\"."
+msgstr "O diretório_âncoras_confiança não deve terminar com uma \"/\"."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:98
 msgid ""
@@ -4995,7 +4997,7 @@ msgstr "Tokengroup guardado."
 
 #: privacyidea/static/components/config/views/config.system.html:126
 msgid "Tokengroups"
-msgstr "Tokengroups"
+msgstr "Grupos de tokens"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:48
@@ -5220,7 +5222,7 @@ msgstr "Utilizadores"
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:9
 msgid "VASCO Token blob"
-msgstr ""
+msgstr "Blob do Token VASCO"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:16
 msgid "Valid subscription"
@@ -5552,7 +5554,7 @@ msgstr "uma substring de série opcional"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:9
 msgid "appId"
-msgstr "appId"
+msgstr "ID da aplicação"
 
 #: privacyidea/static/components/audit/views/audit.log.html:57
 msgid "authentication"
@@ -5807,7 +5809,7 @@ msgstr "definir palavra-passe"
 
 #: privacyidea/static/components/audit/views/audit.log.html:148
 msgid "sig_check"
-msgstr "sig_check"
+msgstr "verificação_de_assinatura"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:8
 msgid "start typing a machine."
@@ -5845,7 +5847,7 @@ msgstr "thread_id"
 
 #: privacyidea/static/components/token/views/token.challenges.html:20
 msgid "timestamp"
-msgstr "timestamp"
+msgstr "Data e hora"
 
 #: privacyidea/static/components/audit/views/audit.log.html:75
 msgid "token type"
@@ -5871,7 +5873,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:9
 msgid "trust_anchor_dir"
-msgstr "trust_anchor_dir"
+msgstr "diretório_âncoras_confiança"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
