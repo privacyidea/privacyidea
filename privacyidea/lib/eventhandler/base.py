@@ -63,6 +63,7 @@ class CONDITION(object):
     """
     TOKEN_HAS_OWNER = "token_has_owner"  # nosec B105 # condition name
     TOKEN_IS_ORPHANED = "token_is_orphaned"  # nosec B105 # condition name
+    TOKEN_LOCKED = "token_locked"  # nosec B105 # condition name
     TOKEN_VALIDITY_PERIOD = "token_validity_period"  # nosec B105 # condition name
     USER_TOKEN_NUMBER = "user_token_number"  # nosec B105 # condition name
     USER_CONTAINER_NUMBER = "user_container_number"
@@ -130,7 +131,6 @@ class BaseEventHandler(object):
 
     def __init__(self):
         pass
-        self.run_details = None
 
     @property
     def allowed_positions(self):
@@ -257,7 +257,7 @@ class BaseEventHandler(object):
                         AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.REJECT, AUTH_RESPONSE.CHALLENGE, AUTH_RESPONSE.DECLINED),
                     "group": GROUP.GENERAL
                 },
-            "token_locked":
+            CONDITION.TOKEN_LOCKED:
                 {
                     "type": "str",
                     "desc": _("Check if the max failcounter of the token is "
@@ -771,11 +771,11 @@ class BaseEventHandler(object):
                 return False
 
         # checking of max-failcounter state of the token
-        if "token_locked" in conditions:
+        if  CONDITION.TOKEN_LOCKED in conditions:
             if token_obj:
                 locked = token_obj.get_failcount() >= \
                          token_obj.get_max_failcount()
-                if (conditions.get("token_locked") in ["True", True]) != \
+                if (conditions.get(CONDITION.TOKEN_LOCKED) in ["True", True]) != \
                         locked:
                     return False
             else:
