@@ -340,7 +340,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             container = TokenContainer.query.filter(TokenContainer.serial == container_serial).first()
             if container is None:
                 raise privacyIDEAError(_("No container with the serial {container_serial} "
-                                         "exists.".format(container_serial=container_serial)))
+                                         "exists.").format(container_serial=container_serial))
             token_container_token = TokenContainerToken.query.filter(
                 TokenContainerToken.container_id == container.id).all()
             token_ids = [token_id.token_id for token_id in token_container_token]
@@ -1251,9 +1251,9 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
         if old_type.lower() != token_type.lower():
             msg = _("Token {serial} already exists with type {old_type}. "
                     "Can not initialize token with new type "
-                    "{token_type}".format(serial=serial, old_type=old_type, token_type=token_type))
+                    "{token_type}").format(serial=serial, old_type=old_type, token_type=token_type)
             log.error(msg)
-            raise TokenAdminError(_("init token failed:") + " " +  msg)
+            raise TokenAdminError(_("init token failed:") + " " + msg)
 
     # If there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
@@ -1429,7 +1429,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
     old_user = token.user
     if old_user:
         log.warning(f"token already assigned to user: {old_user!r}")
-        error_message = error_message or _("Token already assigned to user {old_user!r}".format(old_user=old_user))
+        error_message = error_message or _("Token already assigned to user {old_user!r}").format(old_user=old_user)
         raise TokenAdminError(error_message, id=1103)
 
     token.add_user(user)
