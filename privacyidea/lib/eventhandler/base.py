@@ -128,6 +128,7 @@ class BaseEventHandler(object):
     identifier = "BaseEventHandler"
     description = "This is the base class of an EventHandler with no " \
                   "functionality"
+    run_details = None
 
     def __init__(self):
         pass
