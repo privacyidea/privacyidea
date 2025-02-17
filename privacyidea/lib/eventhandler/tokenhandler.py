@@ -628,14 +628,16 @@ class TokenEventHandler(BaseEventHandler):
                           "genkey": 1,
                           "realm": handler_options.get("realm", "")}
             user = None
+
+            # Some tokentypes need additional parameters
+            if handler_options.get("additional_params"):
+                add_params = yaml.safe_load(handler_options.get("additional_params"))
+                if isinstance(add_params, dict):
+                    init_param.update(add_params)
+
             if is_true(handler_options.get("user")):
                 user = self._get_tokenowner(request)
                 tokentype = handler_options.get("tokentype")
-                # Some tokentypes need additional parameters
-                if handler_options.get("additional_params"):
-                    add_params = yaml.safe_load(handler_options.get("additional_params"))
-                    if isinstance(add_params, dict):
-                        init_param.update(add_params)
 
                 if tokentype == "sms":
                     if is_true(handler_options.get("dynamic_phone")):
