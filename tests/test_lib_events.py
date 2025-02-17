@@ -2960,6 +2960,25 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
         remove_token(t.token.serial)
 
+        # Enroll a totp token with genkey but no user
+        req.User = user_obj
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "totp",
+                                        "additional_params": "{'totp.hashlib': 'sha256'}"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created with additional parameter
+        t = get_tokens(tokentype="totp")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
+        remove_token(t.token.serial)
+
         # Enroll token and assign to container
         container_serial = init_container({"type": "generic"})["container_serial"]
         options['request'].all_data = {"container_serial": container_serial}
