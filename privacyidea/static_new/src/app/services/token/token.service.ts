@@ -7,6 +7,7 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
 
 export interface EnrollmentOptions {
+  sshPublicKey: string;
   type: TokenType;
   description: string;
   tokenSerial: string;
@@ -16,7 +17,7 @@ export interface EnrollmentOptions {
   validity_period_end: string;
   pin: string;
   generateOnServer?: boolean;
-  otpLength?: string;
+  otpLength?: number;
   otpKey?: string;
   hashAlgorithm?: string;
   timeStep?: string;
@@ -331,6 +332,15 @@ export class TokenService {
 
     if (options.type === 'motp') {
       payload.motppin = options.motpPin;
+    }
+
+    if (options.type === 'sshkey') {
+      payload.sshkey = options.sshPublicKey;
+    }
+
+    if (options.type === 'yubikey') {
+      payload.otplen = Number(options.otpLength);
+      payload.otpkey = options.otpKey;
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });

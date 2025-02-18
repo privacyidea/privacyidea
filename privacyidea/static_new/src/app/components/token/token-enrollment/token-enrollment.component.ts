@@ -51,6 +51,8 @@ import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
 import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
 import { NgClass } from '@angular/common';
+import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
+import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -123,6 +125,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollSpassComponent,
     EnrollMotpComponent,
     NgClass,
+    EnrollSshkeyComponent,
+    EnrollYubikeyComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -154,7 +158,7 @@ export class TokenEnrollmentComponent {
   realmOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   generateOnServer = signal(true);
-  otpLength = signal('6');
+  otpLength = signal(6);
   otpKey = signal('');
   hashAlgorithm = signal('sha1');
   description = signal('');
@@ -168,6 +172,7 @@ export class TokenEnrollmentComponent {
   regenerateToken = signal(false);
   motpPin = signal('');
   repeatMotpPin = signal('');
+  sshPublicKey = signal('');
 
   constructor(
     private containerService: ContainerService,
@@ -302,6 +307,7 @@ export class TokenEnrollmentComponent {
       ),
       pin: this.setPinValue(),
       motpPin: this.motpPin(),
+      sshPublicKey: this.sshPublicKey(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

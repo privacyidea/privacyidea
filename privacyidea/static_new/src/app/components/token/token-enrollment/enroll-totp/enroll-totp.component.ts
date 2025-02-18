@@ -25,7 +25,7 @@ import { TokenComponent } from '../../token.component';
 export class EnrollTotpComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'totp')?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
-  @Input() otpLength!: WritableSignal<string>;
+  @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() hashAlgorithm!: WritableSignal<string>;
   @Input() timeStep!: WritableSignal<string>;

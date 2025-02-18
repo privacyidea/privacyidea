@@ -29,7 +29,7 @@ import { MatInput } from '@angular/material/input';
 export class EnrollHotpComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'hotp')?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
-  @Input() otpLength!: WritableSignal<string>;
+  @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() hashAlgorithm!: WritableSignal<string>;
   @Input() description!: WritableSignal<string>;

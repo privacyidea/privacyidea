@@ -43,7 +43,8 @@
         </button>
       }
 
-      <mat-accordion class="otpkey-expension">
+      @if (data.response.detail?.otpkey?.value) {
+        <mat-accordion class="otpkey-expension">
         <mat-expansion-panel>
           <mat-expansion-panel-header>
             <mat-panel-title> The OTP key</mat-panel-title>
@@ -54,6 +55,7 @@
           }
         </mat-expansion-panel>
       </mat-accordion>
+      }
     </div>
   </div>
 </mat-dialog-content>

@@ -30,10 +30,10 @@
       <mat-icon>qr_code_scanner</mat-icon>
     </button>
     <button (click)="enrollToken()"
-      [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
+            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
        'card-button': true}"
-      [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
-      mat-flat-button>
+            mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
     </button>
@@ -62,6 +62,15 @@
                        [repeatMotpPin]="repeatMotpPin"
                        [generateOnServer]="generateOnServer"
                        [description]="description" />
+    }
+    @case ("sshkey") {
+      <app-enroll-sshkey [description]="description"
+                         [sshPublicKey]="sshPublicKey" />
+    }
+    @case ("yubikey") {
+      <app-enroll-yubikey [otpKey]="otpKey"
+                          [otpLength]="otpLength"
+                          [description]="description" />
     }
   }
   <h4 class="enroll-h4">Assign token to user</h4>

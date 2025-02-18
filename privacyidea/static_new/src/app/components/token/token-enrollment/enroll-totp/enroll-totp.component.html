@@ -28,8 +28,8 @@
     <mat-form-field class="otp-input-form">
       <mat-label>OTP length</mat-label>
       <mat-select [(ngModel)]="otpLength">
-        <mat-option value="6">6</mat-option>
-        <mat-option value="8">8</mat-option>
+        <mat-option value=6>6</mat-option>
+        <mat-option value=8>8</mat-option>
       </mat-select>
       @if (generateOnServer()) {
         <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
