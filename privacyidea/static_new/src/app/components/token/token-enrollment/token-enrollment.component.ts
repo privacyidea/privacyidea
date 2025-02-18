@@ -138,8 +138,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
-  protected readonly TokenEnrollmentDialogComponent =
-    TokenEnrollmentDialogComponent;
   tokenTypesOptions = TokenComponent.tokenTypes;
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
@@ -173,6 +171,8 @@ export class TokenEnrollmentComponent {
   motpPin = signal('');
   repeatMotpPin = signal('');
   sshPublicKey = signal('');
+  protected readonly TokenEnrollmentDialogComponent =
+    TokenEnrollmentDialogComponent;
 
   constructor(
     private containerService: ContainerService,

@@ -28,8 +28,8 @@
     <mat-form-field class="otp-input-form">
       <mat-label>OTP length</mat-label>
       <mat-select [(ngModel)]="otpLength">
-        <mat-option value=6>6</mat-option>
-        <mat-option value=8>8</mat-option>
+        <mat-option value="6">6</mat-option>
+        <mat-option value="8">8</mat-option>
       </mat-select>
       @if (generateOnServer()) {
         <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
@@ -48,20 +48,20 @@
     </mat-form-field>
   </div>
   <div class="flex-row gap-1">
-  <mat-form-field class="description-form">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
-  <mat-form-field class="timestep-form">
-    <mat-label>Timestep</mat-label>
-    <mat-select [(ngModel)]="timeStep">
-      <mat-option value="30">30</mat-option>
-      <mat-option value="60">60</mat-option>
-    </mat-select>
-  </mat-form-field>
+    <mat-form-field class="description-form">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+    <mat-form-field class="timestep-form">
+      <mat-label>Timestep</mat-label>
+      <mat-select [(ngModel)]="timeStep">
+        <mat-option value="30">30</mat-option>
+        <mat-option value="60">60</mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 </div>

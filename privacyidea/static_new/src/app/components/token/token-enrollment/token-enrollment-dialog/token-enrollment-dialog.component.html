@@ -28,11 +28,10 @@
       @let url = data.response.detail?.googleurl?.value ?? data.response.detail?.motpurl?.value;
       @if (url) {
         <p class="qr-code-text">
-          Click <a href="{{ url }}">here</a> or scan the QR Code,
-          if you want to add the Token to your smartphone authenticator app. The QR Code contains
-          the secret key of your token. You need to protect it. <strong> If you are in doubt, that
-          someone else saw it, please regenerate the QR Code, when no one else is
-          watching. </strong>
+          Click <a href="{{ url }}">here</a> or scan the QR Code, if you want to add the Token to
+          your smartphone authenticator app. The QR Code contains the secret key of your token. You
+          need to protect it. <strong> If you are in doubt, that someone else saw it, please
+          regenerate the QR Code, when no one else is watching. </strong>
         </p>
 
         <button (click)="regenerateQRCode()"
@@ -45,16 +44,16 @@
 
       @if (data.response.detail?.otpkey?.value) {
         <mat-accordion class="otpkey-expension">
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title> The OTP key</mat-panel-title>
-          </mat-expansion-panel-header>
-          <p>Hex: {{ data.response.detail.otpkey.value }}</p>
-          @if (data.response.detail.otpkey.value_b32) {
-            <p>Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
-          }
-        </mat-expansion-panel>
-      </mat-accordion>
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title> The OTP key</mat-panel-title>
+            </mat-expansion-panel-header>
+            <p>Hex: {{ data.response.detail.otpkey.value }}</p>
+            @if (data.response.detail.otpkey.value_b32) {
+              <p>Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
+            }
+          </mat-expansion-panel>
+        </mat-accordion>
       }
     </div>
   </div>

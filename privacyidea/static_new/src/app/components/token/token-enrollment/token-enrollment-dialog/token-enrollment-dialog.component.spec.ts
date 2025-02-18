@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
+  MAT_DIALOG_DATA,
   MatDialog,
   MatDialogRef,
-  MAT_DIALOG_DATA,
 } from '@angular/material/dialog';
 import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog.component';
 import { of } from 'rxjs';

@@ -23,15 +23,15 @@ export class EnrollYubikeyComponent {
   @Input() otpLength!: WritableSignal<number>;
   testYubiKey = signal('');
 
-  ngOnInit() {
-    this.otpLength.set(44);
-  }
-
   constructor() {
     effect(() => {
       if (this.testYubiKey()) {
         this.otpLength.set(this.testYubiKey().length);
       }
     });
+  }
+
+  ngOnInit() {
+    this.otpLength.set(44);
   }
 }
