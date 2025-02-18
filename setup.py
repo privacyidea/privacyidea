@@ -4,7 +4,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.11dev2"
+VERSION = "3.11dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -103,7 +103,7 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='https://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     packages=find_packages(),
     scripts=get_scripts("tools"),
     entry_points={
@@ -129,9 +129,9 @@ setup(
                  "pytest-cov",
                  "responses",
                  "testfixtures"],
-        'postgres': ['psycopg2>=2.8.3'],
-        'hsm': ['PyKCS11>=1.5.10'],
-        'kerberos': ['gssapi>=1.7.0']
+        'postgres': ['psycopg2'],
+        'hsm': ['PyKCS11'],
+        'kerberos': ['gssapi']
     },
     install_requires=install_requires,
     include_package_data=True,
