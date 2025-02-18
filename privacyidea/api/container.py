@@ -43,8 +43,10 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        compare_template_with_container, unregister,
                                        finalize_registration, init_container_rollover,
                                        get_container_realms,
-                                       add_not_authorized_tokens_result, get_offline_token_serials)
+                                       add_not_authorized_tokens_result, get_offline_token_serials,
+                                       delete_container_info)
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
@@ -523,6 +525,7 @@ def set_realms(container_serial):
 def set_container_info(container_serial, key):
     """
     Set the value of a container info key. Overwrites the old value if the key already exists.
+    However, existing entries of type PI_INTERNAL are not overwritten and a PolicyError is raised.
 
     :param container_serial: Serial of the container
     :param key: Key of the container info
@@ -537,6 +540,27 @@ def set_container_info(container_serial, key):
                         "value": value,
                         "success": res})
     return send_result(res)
+
+
+@container_blueprint.route('<string:container_serial>/info/delete/<key>', methods=['DELETE'])
+@admin_required
+@prepolicy(check_container_action, request, action=ACTION.CONTAINER_INFO)
+@log_with(log)
+def delete_container_info_entry(container_serial, key):
+    """
+    Deletes the container info for the given key. Entries of type PI_INTERNAL can not be deleted.
+
+    :param container_serial: Serial of the container
+    :param key: Key of the container info
+    """
+    res = delete_container_info(container_serial, key)
+
+    # Audit log
+    g.audit_object.log({"container_serial": container_serial,
+                        "key": key,
+                        "success": res[key]})
+    return send_result(res[key])
+
 
 
 @container_blueprint.route('register/initialize', methods=['POST'])
@@ -605,11 +629,14 @@ def registration_init():
 
     if container_rollover:
         # Set registration state
-        container.update_container_info({"registration_state": "rollover", "rollover_server_url": server_url,
-                                         "rollover_challenge_ttl": challenge_ttl})
+        info = [TokenContainerInfoData(key="registration_state", value="rollover", info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="rollover_challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
     else:
         # save policy values in container info
-        container.update_container_info({"server_url": server_url, "challenge_ttl": challenge_ttl})
+        info = [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
+    container.update_container_info(info)
 
     # Check for offline tokens
     res["offline_tokens"] = get_offline_token_serials(container)
@@ -877,7 +904,8 @@ def synchronize():
     # Rollover completed: Change registration state to registered
     registration_state = container.get_container_info_dict().get("registration_state")
     if registration_state == "rollover_completed":
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
     audit_info += f", rollover: {registration_state == 'rollover'}"
 
     # Audit log

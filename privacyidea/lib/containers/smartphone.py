@@ -30,6 +30,7 @@ from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
@@ -70,7 +71,7 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     url_passphrase = quote(passphrase.encode("utf-8"))
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
-    url_ssl_verify = quote(ssl_verify.encode("utf-8"))
+    url_ssl_verify = quote(f"{ssl_verify}".encode("utf-8"))
     url_server_url = quote(server_url.encode("utf-8"))
 
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
@@ -216,7 +217,8 @@ class SmartphoneContainer(TokenContainerClass):
         qr_img = create_img(qr_url)
 
         # Set container info
-        self.add_container_info("registration_state", "client_wait")
+        self.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="client_wait", info_type=PI_INTERNAL)])
 
         # Response
         response_detail = {"container_url": {"description": _("URL for privacyIDEA Container Registration"),
@@ -292,23 +294,26 @@ class SmartphoneContainer(TokenContainerClass):
             raise ContainerInvalidChallenge('Could not verify signature!')
 
         # Update container info
-        new_container_info = {"public_key_client": pub_key_container_str}
+        new_container_info = [
+            TokenContainerInfoData(key="public_key_client", value=pub_key_container_str, info_type=PI_INTERNAL)]
 
         if device != "":
-            new_container_info["device"] = device
+            new_container_info.append(TokenContainerInfoData(key="device", value=device, info_type=PI_INTERNAL))
         else:
             # this might be a rollover, delete old device information
-            self.delete_container_info("device")
+            self.delete_container_info("device", keep_internal=False)
 
         # The rollover is completed with the first synchronization
         container_info = self.get_container_info_dict()
         registration_state = container_info.get("registration_state", "")
         if registration_state != "rollover":
-            new_container_info["registration_state"] = "registered"
+            new_container_info.append(
+                TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL))
 
         # check right for initial token transfer
         if params.get("client_policies", {}).get("initially_add_tokens_to_container"):
-            new_container_info["initially_synchronized"] = "False"
+            new_container_info.append(
+                TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL))
 
         # update container info
         self.update_container_info(new_container_info)
@@ -322,12 +327,12 @@ class SmartphoneContainer(TokenContainerClass):
         as well.
         """
         # Delete registration / synchronization info
-        self.delete_container_info("public_key_client")
-        self.delete_container_info("device")
-        self.delete_container_info("server_url")
-        self.delete_container_info("registration_state")
-        self.delete_container_info("challenge_ttl")
-        self.delete_container_info("initially_synchronized")
+        self.delete_container_info("public_key_client", keep_internal=False)
+        self.delete_container_info("device", keep_internal=False)
+        self.delete_container_info("server_url", keep_internal=False)
+        self.delete_container_info("registration_state", keep_internal=False)
+        self.delete_container_info("challenge_ttl", keep_internal=False)
+        self.delete_container_info("initially_synchronized", keep_internal=False)
 
     def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:
         """
