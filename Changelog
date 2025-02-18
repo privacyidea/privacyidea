@@ -10,6 +10,7 @@ Version 3.11dev3, 2025-02-17
   * Containers Part 2 (#3950)
     * Synchronize Smartphone Container with Server
     * Rollover a Smartphone Container
+    * Container templates
 
   Enhancements:
   * Health check API endpoint (#1115)
