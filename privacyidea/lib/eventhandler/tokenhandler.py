@@ -619,11 +619,9 @@ class TokenEventHandler(BaseEventHandler):
                             log.warning(f"Misconfiguration: Failed to attach token "
                                         f"to machine. Token serial: {serial}")
             else:
-                log.info(f"No token serials found in request {request} for token event handling.")
-        else:
-            log.info(f"Action {action} is not supported by the token handler.")
-
-        if action.lower() == ACTION_TYPE.INIT:
+                log.info(f"No token serials found for token event handling action '{action}'.")
+                ret = False
+        elif action.lower() == ACTION_TYPE.INIT:
             try:
                 log.info("Initializing new token")
                 init_param = {"type": handler_options.get("tokentype"),
@@ -634,7 +632,7 @@ class TokenEventHandler(BaseEventHandler):
                 # Some tokentypes need additional parameters
                 if handler_options.get("additional_params"):
                     add_params = yaml.safe_load(handler_options.get("additional_params"))
-                    if isinstance(add_params, dict):
+                    if add_params:
                         init_param.update(add_params)
 
                 if is_true(handler_options.get("user")):
@@ -676,8 +674,11 @@ class TokenEventHandler(BaseEventHandler):
                         add_token_to_container(container_serial, t.get_serial())
                     else:
                         log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
-            except Exception as exx:
-                log.error(f"Failed to initialize token: {exx}")
+            except Exception as e:
+                log.error(f"Failed to initialize token: {e}")
                 ret = False
+        else:
+            log.warning(f"Action '{action}' is not supported by the token handler.")
+            ret = False
 
         return ret

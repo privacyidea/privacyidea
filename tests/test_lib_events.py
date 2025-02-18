@@ -6,6 +6,8 @@ lib/event.py (the decorator)
 """
 import requests.exceptions
 import responses
+from testfixtures import log_capture
+
 import os
 import mock
 
@@ -2955,12 +2957,11 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(res)
         # Check if the token was created and assigned
         t = get_tokens(tokentype="totp")[0]
-        self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
         self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
         remove_token(t.token.serial)
 
-        # Enroll a totp token with genkey but no user
+        # Enroll a totp token with additional params but no user assignment
         req.User = user_obj
         options = {"g": g,
                    "request": req,
@@ -2975,9 +2976,26 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(res)
         # Check if the token was created with additional parameter
         t = get_tokens(tokentype="totp")[0]
-        self.assertTrue(t)
-        self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
+        self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256", t)
+        # Check that the token is not assigned to a user
+        self.assertFalse(t.user)
         remove_token(t.token.serial)
+
+        # Check error handling, wrong token type
+        options["handler_def"]["options"] = {
+            "tokentype": "wrong-token-type"
+        }
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertFalse(res)
+        # Check error handling, broken yaml
+        options["handler_def"] = {
+            "options": {
+                "additional_params": "a:1, b:2"
+            }}
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertFalse(res)
 
         # Enroll token and assign to container
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2986,7 +3004,7 @@ class TokenEventTestCase(MyTestCase):
                                              "user": False,
                                              "container": True}
 
-        # With container cerial
+        # With container serial
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
 
@@ -3589,6 +3607,81 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(token_obj.get("application"), "offline")
         self.assertEqual(token_obj.get("hostname"), "any host")
         self.assertEqual(token_obj.get("machine_id"), "any machine")
+
+    @log_capture()
+    def test_15_missing_serial(self, capture):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Now the initiailized token will be set in realm2
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.DELETE, options=options)
+        self.assertFalse(res)
+        capture.check_present(
+            ("privacyidea.lib.eventhandler.tokenhandler", "INFO",
+             "No token serials found for token event handling action 'delete'.")
+        )
+        remove_token(serial="SPASS01")
+
+    @log_capture()
+    def test_16_unknown_action(self, capture):
+        # setup realms
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS01", "type": "spass"})
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Now the initiailized token will be set in realm2
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do("unknown_tokenhandler_action", options=options)
+        self.assertFalse(res)
+        capture.check_present(
+            ("privacyidea.lib.eventhandler.tokenhandler", "WARNING",
+             "Action 'unknown_tokenhandler_action' is not supported by the token handler.")
+        )
+        remove_token(serial="SPASS01")
 
 
 class CustomUserAttributesTestCase(MyTestCase):
