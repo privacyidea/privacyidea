@@ -72,6 +72,15 @@
                           [otpLength]="otpLength"
                           [description]="description" />
     }
+    @case ("remote") {
+      <app-enroll-remote [remoteSerial]="remoteSerial"
+                         [remoteServer]="remoteServer"
+                         [remoteRealm]="remoteRealm"
+                         [remoteUser]="remoteUser"
+                         [remoteResolver]="remoteResolver"
+                         [checkPinLocally]="checkPinLocally"
+                         [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

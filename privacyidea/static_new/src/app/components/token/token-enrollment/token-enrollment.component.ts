@@ -53,6 +53,7 @@ import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
 import { NgClass } from '@angular/common';
 import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
+import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -127,6 +128,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     NgClass,
     EnrollSshkeyComponent,
     EnrollYubikeyComponent,
+    EnrollRemoteComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -171,6 +173,12 @@ export class TokenEnrollmentComponent {
   motpPin = signal('');
   repeatMotpPin = signal('');
   sshPublicKey = signal('');
+  checkPinLocally = signal(false);
+  remoteServer = signal({ url: '', id: '' });
+  remoteSerial = signal('');
+  remoteUser = signal('');
+  remoteRealm = signal('');
+  remoteResolver = signal('');
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
 
@@ -308,6 +316,12 @@ export class TokenEnrollmentComponent {
       pin: this.setPinValue(),
       motpPin: this.motpPin(),
       sshPublicKey: this.sshPublicKey(),
+      remoteServer: this.remoteServer(),
+      remoteSerial: this.remoteSerial(),
+      remoteUser: this.remoteUser(),
+      remoteRealm: this.remoteRealm(),
+      remoteResolver: this.remoteResolver(),
+      checkPinLocally: this.checkPinLocally(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

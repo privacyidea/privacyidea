@@ -22,6 +22,12 @@ export interface EnrollmentOptions {
   hashAlgorithm?: string;
   timeStep?: string;
   motpPin?: string;
+  remoteServer?: { url: string; id: string };
+  remoteSerial?: string;
+  remoteUser?: string;
+  remoteRealm?: string;
+  remoteResolver?: string;
+  checkPinLocally?: boolean;
 }
 
 @Injectable({
@@ -341,6 +347,15 @@ export class TokenService {
     if (options.type === 'yubikey') {
       payload.otplen = Number(options.otpLength);
       payload.otpkey = options.otpKey;
+    }
+
+    if (options.type === 'remote') {
+      payload['remote.server_id'] = options.remoteServer;
+      payload['remote.serial'] = options.remoteSerial;
+      payload['remote.user'] = options.remoteUser;
+      payload['remote.realm'] = options.remoteRealm;
+      payload['remote.resolver'] = options.remoteResolver;
+      payload['remote.local_checkpin'] = options.checkPinLocally;
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
