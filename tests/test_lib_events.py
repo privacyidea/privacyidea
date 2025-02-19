@@ -44,7 +44,7 @@ from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
 from privacyidea.models import Challenge
 from privacyidea.lib.user import User
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string
@@ -1121,6 +1121,13 @@ class CounterEventTestCase(MyTestCase):
 
 class ScriptEventTestCase(MyTestCase):
 
+    def test_00_instantiate(self):
+        # Default script directory path. Should be unavailable
+        del self.app.config['PI_SCRIPT_HANDLER_DIRECTORY']
+        sh = ScriptEventHandler()
+        with self.assertRaises(ConfigAdminError):
+            _actions = sh.actions
+
     def test_01_runscript(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
@@ -1162,7 +1169,8 @@ class ScriptEventTestCase(MyTestCase):
         script_name = "ls.sh"
         d = os.getcwd()
         d = "{0!s}/tests/testdata/scripts/".format(d)
-        t_handler = ScriptEventHandler(script_directory=d)
+        self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
+        t_handler = ScriptEventHandler()
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
 
@@ -1207,7 +1215,8 @@ class ScriptEventTestCase(MyTestCase):
         script_name = "fail.sh"
         d = os.getcwd()
         d = "{0!s}/tests/testdata/scripts/".format(d)
-        t_handler = ScriptEventHandler(script_directory=d)
+        self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
+        t_handler = ScriptEventHandler()
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
 
     def test_03_sync_to_db(self):
@@ -1242,7 +1251,8 @@ class ScriptEventTestCase(MyTestCase):
         script_name = "ls.sh"
         d = os.getcwd()
         d = "{0!s}/tests/testdata/scripts/".format(d)
-        t_handler = ScriptEventHandler(script_directory=d)
+        self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
+        t_handler = ScriptEventHandler()
         # first check that the db session is not synced by default
         with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
             res = t_handler.do(script_name, options=options)
