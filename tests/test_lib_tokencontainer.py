@@ -21,6 +21,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        finalize_registration, finalize_container_rollover, init_container_rollover)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.containers.smartphone import SmartphoneOptions, SmartphoneContainer
 from privacyidea.lib.containers.yubikey import YubikeyContainer
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
@@ -29,7 +30,7 @@ from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTe
 from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc,
                                     decryptPassword, KeyPair)
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
-                                   TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered)
+                                   TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
@@ -88,6 +89,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Empty container type raises exception
         self.assertRaises(EnrollmentError, init_container, {})
 
+        # create container with existing serial
+        serial = init_container({"type": "generic"})["container_serial"]
+        self.assertRaises(EnrollmentError, init_container, {"type": "generic", "container_serial": serial})
+
     def test_03_create_container_wrong_user_parameters(self):
         # Init container with user: User shall not be assigned (realm required)
         serial = init_container({"type": "Generic", "user": "hans"})["container_serial"]
@@ -125,6 +130,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(res)
         # Check if token is added to container
         smartphone = find_container_by_serial(self.smartphone_serial)
+        tokens = smartphone.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertIn(self.totp_serial_smph, tokens[0].get_serial())
+
+        # Try to add the same token again to the container
+        res = add_token_to_container(self.smartphone_serial, self.totp_serial_smph)
+        self.assertFalse(res)
         tokens = smartphone.get_tokens()
         self.assertEqual(1, len(tokens))
         self.assertIn(self.totp_serial_smph, tokens[0].get_serial())
@@ -297,9 +309,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertRaises(ResourceNotFoundError, find_container_by_serial, None)
 
     def test_18_find_container_success(self):
-        # Find by serial
-        serial = init_container({"type": "generic", "description": "find container"})["container_serial"]
-        container = find_container_by_serial(serial)
+        serial = "CONT0001"
+        init_container({"type": "generic", "container_serial": serial})
+        # Find by serial exact
+        container = find_container_by_serial("CONT0001")
+        self.assertEqual(serial, container.serial)
+
+        # find by serial in lower cases
+        container = find_container_by_serial("cont0001")
         self.assertEqual(serial, container.serial)
 
         # Find by ID
@@ -433,13 +450,19 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("", container_info["key"])
 
+        # Try to modify internal info raises exception
+        container = find_container_by_serial(container_serial)
+        container.update_container_info(
+            [TokenContainerInfoData(key="public_server_key", value="123456789", info_type=PI_INTERNAL)])
+        self.assertRaises(PolicyError, add_container_info, container_serial, "public_server_key", "000000000")
+
     def test_23_set_container_info(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "add container info"})["container_serial"]
 
         # Set container info
         res = set_container_info(container_serial, {"key1": "value1"})
-        self.assertTrue(res)
+        self.assertTrue(res["key1"])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("value1", container_info["key1"])
         container_info = get_container_info_dict(container_serial, ikey="key1")
@@ -447,7 +470,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set second info overwrites first info
         res = set_container_info(container_serial, {"key2": "value2"})
-        self.assertTrue(res)
+        self.assertTrue(res["key2"])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("value2", container_info["key2"])
         self.assertNotIn("key1", container_info.keys())
@@ -455,22 +478,27 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsNone(container_info["key1"])
 
         # Pass no info only deletes old entries
-        res = set_container_info(container_serial, None)
-        self.assertTrue(res)
+        res = set_container_info(container_serial, {})
+        self.assertDictEqual({}, res)
         container_info = get_container_info_dict(container_serial)
         self.assertEqual(0, len(container_info))
 
         # Pass no value
         res = set_container_info(container_serial, {"key": None})
-        self.assertTrue(res)
+        self.assertTrue(res["key"])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("", container_info["key"])
 
-        # Pass no key only deletes old entries
-        res = set_container_info(container_serial, {None: "value"})
-        self.assertTrue(res)
+        # Try to set internal info
+        container = find_container_by_serial(container_serial)
+        container.update_container_info(
+            [TokenContainerInfoData(key="public_server_key", value="123456", info_type=PI_INTERNAL)])
+        res = set_container_info(container_serial, {"public_server_key": "0000", "key": "value"})
+        self.assertFalse(res["public_server_key"])
+        self.assertTrue(res["key"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(0, len(container_info))
+        self.assertEqual("123456", container_info["public_server_key"])
+        self.assertEqual("value", container_info["key"])
 
     def test_24_delete_container_info(self):
         # Arrange
@@ -482,7 +510,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Delete non-existing key
         res = delete_container_info(container_serial, "non_existing_key")
-        self.assertEqual(0, len(res))
+        self.assertFalse(res["non_existing_key"])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual(3, len(container_info))
 
@@ -499,6 +527,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(res["key3"])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual(0, len(container_info))
+
+        # Try to delete internal info key
+        container.update_container_info(
+            [TokenContainerInfoData(key="public_server_key", value="123456789", info_type=PI_INTERNAL)])
+        res = delete_container_info(container_serial, "public_server_key")
+        self.assertDictEqual({"public_server_key": False}, res)
+        res = delete_container_info(container_serial)
+        self.assertDictEqual({"public_server_key": False}, res)
 
     def test_25_set_description(self):
         # Arrange
@@ -614,19 +650,34 @@ class TokenContainerManagementTestCase(MyTestCase):
             container.delete()
 
         # Arrange
-        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        types = ["generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        realms = ["realm1", "realm2", "realm1", "realm2", "realm1", "realm1"]
-        container_serials = []
-        for t, r in zip(types, realms):
+        realms = ["realm2", "realm1", "realm2", "realm1", "realm1"]
+        container_serials = ["SMPH0001"]
+        init_container(
+            {"type": "smartphone", "description": "test container", "realm": "realm1", "container_serial": "SMPH0001"})
+        for t, r, serial in zip(types, realms, container_serials):
             serial = init_container({"type": t, "description": "test container", "realm": r})["container_serial"]
             container_serials.append(serial)
 
-        # Filter for container serial
-        container_data = get_all_containers(serial=container_serials[3], pagesize=15)
+        # Filter for exact container serial
+        container_data = get_all_containers(serial=container_serials[0], pagesize=15)
         self.assertEqual(1, container_data["count"])
-        self.assertEqual(container_data["containers"][0].serial, container_serials[3])
+        self.assertEqual(container_serials[0], container_data["containers"][0].serial)
+
+        # Filter for container serial in lower cases
+        container_data = get_all_containers(serial="smph0001", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        self.assertEqual("SMPH0001", container_data["containers"][0].serial)
+
+        # Filter for container serial stored as lower cases in db
+        init_container(
+            {"type": "generic", "description": "test container", "realm": "realm2", "container_serial": "cont0001"})
+        container_data = get_all_containers(serial="CONT0001", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        self.assertEqual("cont0001", container_data["containers"][0].serial)
+        find_container_by_serial("cont0001").delete()
 
         # Filter for non-existing serial
         container_data = get_all_containers(serial="non_existing_serial")
@@ -893,22 +944,24 @@ class TokenContainerManagementTestCase(MyTestCase):
         container = find_container_by_serial(container_serial)
 
         # Set initial info fields
-        container.update_container_info({"key1": "abc", "key2": "123"})
+        info = [TokenContainerInfoData(key="key1", value="abc"), TokenContainerInfoData(key="key2", value="123")]
+        container.update_container_info(info)
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("abc", container_info["key1"])
         self.assertEqual("123", container_info["key2"])
         self.assertEqual(2, len(container_info))
 
         # Update info fields
-        container.update_container_info({"key2": "456", "key3": "xyz"})
+        info = [TokenContainerInfoData(key="key2", value="456"), TokenContainerInfoData(key="key3", value="xyz")]
+        container.update_container_info(info)
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("abc", container_info["key1"])
         self.assertEqual("456", container_info["key2"])
         self.assertEqual("xyz", container_info["key3"])
         self.assertEqual(3, len(container_info))
 
-        # Pass empty dict
-        container.update_container_info({})
+        # Pass empty list
+        container.update_container_info([])
         container_info = get_container_info_dict(container_serial)
         self.assertEqual(3, len(container_info))
 
@@ -1098,8 +1151,9 @@ class TokenContainerSynchronization(MyTestCase):
             params.update(passphrase_params)
 
         # Prepare
-        result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True", params=params)
-        smartphone.add_container_info("server_url", server_url)
+        result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify=True, params=params)
+        smartphone.update_container_info(
+            [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL)])
 
         # Check result entries
         result_entries = result.keys()
@@ -1563,7 +1617,6 @@ class TokenContainerSynchronization(MyTestCase):
     def test_18_container_rollover(self):
         mock_smph = self.test_03_register_smartphone_success()
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.add_container_info("allow_client_rollover", "True")
 
         # Create Challenge for rollover
         scope = "https://pi.net/container/rollover"
@@ -1602,7 +1655,6 @@ class TokenContainerSynchronization(MyTestCase):
     def test_19_container_rollover_with_tokens(self):
         mock_smph = self.test_03_register_smartphone_success()
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.add_container_info("allow_client_rollover", "True")
 
         # Add tokens
         hotp = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -1665,7 +1717,6 @@ class TokenContainerSynchronization(MyTestCase):
     def test_20_container_rollover_aborted(self):
         mock_smph = self.test_03_register_smartphone_success()
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.add_container_info("allow_client_rollover", "True")
 
         # Add tokens
         hotp = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -1700,7 +1751,8 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Registration
         mock_smph = self.test_03_register_smartphone_success(smartphone_serial)
-        smartphone.add_container_info("initially_synchronized", "False")
+        smartphone.update_container_info(
+            [TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL)])
 
         # tokens
         hotp_token = init_token({"genkey": "1", "type": "hotp"})

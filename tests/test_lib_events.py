@@ -13,6 +13,7 @@ from mock import patch
 
 from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
                                        delete_container_by_serial, add_token_to_container, create_endpoint_url)
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE,
@@ -968,7 +969,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         options["handler_def"] = {"conditions": {CONDITION.CONTAINER_INFO: "challenge_ttl > 5"}}
 
         # condition not match: no info
-        container.delete_container_info("challenge_ttl")
+        container.delete_container_info("challenge_ttl", keep_internal=False)
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
@@ -2012,7 +2013,8 @@ class ContainerEventTestCase(MyTestCase):
         scope = create_endpoint_url(server_url, "container/register/finalize")
         init_result = smartphone.init_registration(server_url, scope, registration_ttl=100, ssl_verify="True",
                                                    params={})
-        smartphone.add_container_info("server_url", server_url)
+        smartphone.update_container_info(
+            [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL)])
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize(init_result["nonce"],
                                              init_result["time_stamp"],
