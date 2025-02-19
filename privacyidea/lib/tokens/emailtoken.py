@@ -72,7 +72,8 @@ from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+                                    get_action_values_from_options)
 from privacyidea.lib.policy import Match
 from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
@@ -166,9 +167,9 @@ class EmailTokenClass(HotpTokenClass):
                                  'an EMail-token. Several tags like {otp} and '
                                  '{serial} can be used as parameters. You may '
                                  'also specify a filename as email template '
-                                 'starting with "file:". Note: If you use a '
-                                 'comma in the message, you need to escape '
-                                 'it with a backslash.')},
+                                 'starting with "file:".')
+                               + " " + comma_escape_text
+                   },
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
                        'desc': _('The subject of the EMail for '
@@ -184,8 +185,8 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user to enter the code from the e-mail. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details. Note: If you use a comma in the message, you '
-                                 'need to escape it with a backslash.')
+                                 'for more details.')
+                               + " " + comma_escape_text
                    },
                },
                    SCOPE.ENROLL: {

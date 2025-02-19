@@ -34,7 +34,8 @@ returns -1.
 import logging
 import datetime
 from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+                                    get_action_values_from_options)
 from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
@@ -104,12 +105,12 @@ class IndexedSecretTokenClass(TokenClass):
                'policy': {SCOPE.AUTH: {
                    ACTION.CHALLENGETEXT: {
                        'type': 'str',
+                       'group': "Indexed Secret Token",
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user which positions of the secret he should enter. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details. Note: If you use a comma in the message, you '
-                                 'need to escape it with a backslash.'),
-                       'group': "Indexed Secret Token"
+                                 'for more details.')
+                               + " " + comma_escape_text
                    },
                    PIIXACTION.COUNT: {
                        'type': 'int',

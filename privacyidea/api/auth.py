@@ -228,12 +228,12 @@ def get_auth_token():
     passkey_login_success = False
     if not passkey_login_enabled and credential_id:
         log.debug("WebUI passkey login disabled in pi.cfg!")
-        raise AuthError(_(f"Authentication with passkey disabled."), id=ERROR.AUTHENTICATE_ILLEGAL_METHOD)
+        raise AuthError(_("Authentication with passkey disabled."), id=ERROR.AUTHENTICATE_ILLEGAL_METHOD)
     if credential_id and passkey_login_enabled:
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            raise AuthError(_(f"Authentication failure. The passkey is not registered."),
+            raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.user:
             raise AuthError(_("Authentication failure. Token has no user."),
@@ -247,12 +247,12 @@ def get_auth_token():
             realm = user.realm
             username = user.login
         else:
-            raise AuthError(_(f"Authentication failure using passkey."), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+            raise AuthError(_("Authentication failure using passkey."), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
-            raise AuthError(_(f"Authentication failure. Unknown realm: {realm_param}."),
+            raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
                             id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:

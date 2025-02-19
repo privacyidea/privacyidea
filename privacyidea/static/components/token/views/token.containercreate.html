@@ -168,8 +168,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <!--- Tokens enrolled --->
     <div ng-show="showTokenEnrolled && !containerRegister">
         <h4 translate>Tokens</h4>
-        <div class="form-group" translate>
-            The following tokens were successfully enrolled in the container using the template
+        <div class="form-group">
+            <span translate>
+                The following tokens were successfully enrolled in the container using the template
+            </span>
             <a ui-sref="token.containertemplates.edit({templateName: form.template.name})"
                ng-show="checkRight('container_template_list')">
                 {{ form.template.name }}

@@ -186,7 +186,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
 import re
@@ -202,6 +202,8 @@ DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netk
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
 
+comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
+                                 "need to escape it with a backslash.")
 
 class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
@@ -2519,8 +2521,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Use an alternative challenge text for telling the '
                           'user to enter an OTP value. You can also use '
                           'tags for automated replacement. Check out the '
-                          'documentation for more details. Note: If you use '
-                          'a comma in the message, you need to escape it with a backslash.')
+                          'documentation for more details.') + " " + comma_escape_text
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',
