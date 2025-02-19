@@ -210,8 +210,10 @@ export class ContainerService {
 
   deleteInfo(containerSerial: string, key: string) {
     const headers = this.localService.getHeaders();
-    //TODO: API is missing the delete endpoint
-    return;
+    return this.http.delete(
+      `${this.containerBaseUrl}${containerSerial}/info/delete/${key}`,
+      { headers },
+    );
   }
 
   addTokenToContainer(containerSerial: string, tokenSerial: string) {
