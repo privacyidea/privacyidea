@@ -2574,7 +2574,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
+        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2621,7 +2621,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2664,7 +2663,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2718,7 +2716,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -3062,7 +3059,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -3535,7 +3531,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # The count window of the token will be set to 123
+        # The tokengroup of the token will be set to "group1"
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -3588,7 +3584,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # The count window of the token will be set to 123
+        # The application of the token will be set to "offline"
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -3632,7 +3628,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -3667,7 +3662,6 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
