@@ -61,7 +61,6 @@ import unittest
 from copy import copy
 
 from mock import patch
-
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.error import PolicyError, ParameterError, EnrollmentError
