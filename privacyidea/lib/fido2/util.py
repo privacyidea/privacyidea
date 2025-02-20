@@ -87,7 +87,7 @@ def get_credential_ids_for_user(user: User) -> list:
     return credential_ids
 
 
-def hash_credential_id(credential_id: str | bytes) -> str:
+def hash_credential_id(credential_id: Union[str, bytes]) -> str:
     """
     Hash a credential_id with SHA256 and return the hexdigest.
 
