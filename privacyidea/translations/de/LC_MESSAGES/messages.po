@@ -2,7 +2,7 @@
 # Copyright (C) 2017 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-# Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
+# Paul Lettich <paul.lettich@netknights.it>, 2023, 2024, 2025.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
 # Nils Behlen <nils.behlen@netknights.it>, 2024.
 # samir-at-netknights <samir.nasher_taher@netknights.it>, 2024.
@@ -11,8 +11,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-02-17 13:28+0100\n"
-"PO-Revision-Date: 2024-11-22 15:00+0000\n"
-"Last-Translator: samir-at-netknights <samir.nasher_taher@netknights.it>\n"
+"PO-Revision-Date: 2025-02-21 12:55+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10.1-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: privacyidea/api/auth.py:231
@@ -34,10 +34,8 @@ msgid "Authentication failure. The passkey is not registered."
 msgstr "Authentifizierungsfehler. Fehlender Benutzername"
 
 #: privacyidea/api/auth.py:239
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Token has no user."
-msgstr "Authentifizierungsfehler. Der Token ist abgelaufen: {0!s}"
+msgstr "Authentifizierungsfehler. Der Token ist keinem Benutzer zugewiesen."
 
 #: privacyidea/api/auth.py:250
 #, fuzzy
