@@ -97,3 +97,24 @@ def hash_credential_id(credential_id: Union[str, bytes]) -> str:
     if isinstance(credential_id, str):
         credential_id = base64url_to_bytes(credential_id)
     return hashlib.sha256(credential_id).hexdigest()
+
+
+def save_credential_id_hash(credentials_id_hash: str, token_id: int) -> None:
+    """
+    Save a credential_id hash for a token in the database.
+
+    :param credentials_id_hash: The hash of the credential_id
+    :param token_id: The id of the token
+    """
+    # Check if an entry with that hash already exists
+    tcih = TokenCredentialIdHash.query.filter(TokenCredentialIdHash.credential_id_hash == credentials_id_hash).first()
+    if tcih:
+        token = Token.query.filter(Token.id == tcih.token_id).first()
+        if token.id == token_id:
+            return
+        else:
+            # if the token is different, we need to delete the old entry
+            log.warning(f"Existing entry in TokenCredentialIdHash for credential_id_hash {credentials_id_hash} and "
+                        f"token_id {token.id}. Overwriting it with token_id {token_id}.")
+            tcih.delete()
+    TokenCredentialIdHash(token_id=token_id, credential_id_hash=credentials_id_hash).save()

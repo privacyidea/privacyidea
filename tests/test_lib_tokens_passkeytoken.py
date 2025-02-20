@@ -29,12 +29,13 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.token import (init_token, remove_token, unassign_token)
-from privacyidea.lib.fido2.util import get_credential_ids_for_user
+from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.user import User
+from privacyidea.models import TokenCredentialIdHash
 from tests.base import MyTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -167,6 +168,11 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(token.token.description, "Yubico U2F EE Serial 2109467376")
         # The token key is the credential id
         self.assertEqual(token.token.get_otpkey().getKey().decode('utf-8'), self.credential_id)
+        # Verify that the credential_id hash has been written to the database
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == token_info["credential_id_hash"]).one()
+        self.assertEqual(tcih.token_id, token.token.id)
+        # Kep the token for the next test
 
     def test_03_init_custom_settings(self):
         """
@@ -211,11 +217,18 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         # The type is always 'public-key'
         self.assertEqual(passkey_registration["excludeCredentials"][0]["id"], registered_credential_ids[0])
         remove_token(serial=token.get_serial())
+        # Remove the token from the previous test
+        token = get_fido2_token_by_credential_id(registered_credential_ids[0])
+        remove_token(serial=token.get_serial())
+        # Verify that the hashed credential has been removed
+        credential_id_hash = hash_credential_id(registered_credential_ids[0])
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).first()
+        self.assertFalse(tcih)
 
     def test_04_init_fail_wrong_data(self):
         registration_request = self._initialize_registration()
         token = registration_request.token
-        init_detail = registration_request.init_detail
 
         # Complete the registration with tampered data
         with self.assertRaises(EnrollmentError):

@@ -35,7 +35,7 @@ from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, 
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.util import hash_credential_id
+from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.token import get_tokens
@@ -805,7 +805,6 @@ class WebAuthnTokenClass(TokenClass):
         transaction_id = get_optional(param, "transaction_id")
         reg_data = get_optional(param, "regdata")
         client_data = get_optional(param, "clientdata")
-        automatic_description = DEFAULT_DESCRIPTION
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
@@ -867,8 +866,7 @@ class WebAuthnTokenClass(TokenClass):
 
             # Save the credential_id hash to an extra table to be able to find the token faster
             credential_id_hash = hash_credential_id(webauthn_b64_decode(webauthn_credential.credential_id))
-            token_cred_id_hash = TokenCredentialIdHash(token_id=self.token.id, credential_id_hash=credential_id_hash)
-            token_cred_id_hash.save()
+            save_credential_id_hash(credential_id_hash, self.token.id)
 
             token_info_dict = {
                 FIDO2TokenInfo.PUB_KEY: hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)),
@@ -877,20 +875,17 @@ class WebAuthnTokenClass(TokenClass):
                 FIDO2TokenInfo.AAGUID: hexlify_and_unicode(webauthn_credential.aaguid),
                 FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash
             }
+            automatic_description = DEFAULT_DESCRIPTION
             # Add attestation info optionally
             if webauthn_credential.attestation_cert:
+                cert = webauthn_credential.attestation_cert
                 token_info_dict.update({
-                    FIDO2TokenInfo.ATTESTATION_ISSUER:
-                        webauthn_credential.attestation_cert.issuer.rfc4514_string(),
-                    FIDO2TokenInfo.ATTESTATION_SUBJECT:
-                        webauthn_credential.attestation_cert.subject.rfc4514_string(),
-                    FIDO2TokenInfo.ATTESTATION_SERIAL:
-                        webauthn_credential.attestation_cert.serial_number
+                    FIDO2TokenInfo.ATTESTATION_ISSUER: cert.issuer.rfc4514_string(),
+                    FIDO2TokenInfo.ATTESTATION_SUBJECT: cert.subject.rfc4514_string(),
+                    FIDO2TokenInfo.ATTESTATION_SERIAL: cert.serial_number
                 })
+                automatic_description = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
             self.add_tokeninfo_dict(token_info_dict)
-
-            cn = webauthn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-            automatic_description = cn[0].value if len(cn) else None
 
             # If no description has already been set, set the automatic description or the
             # description given in the 2nd request

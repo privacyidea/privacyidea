@@ -18,7 +18,6 @@
 #
 import json
 import logging
-from hashlib import sha256
 
 import cryptography.x509
 from cryptography.hazmat._oid import NameOID
@@ -39,20 +38,19 @@ from webauthn.registration.verify_registration_response import VerifiedRegistrat
 
 from privacyidea.api.lib.utils import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib import _
+from privacyidea.lib import fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import get_rand_digit_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
-from privacyidea.lib import fido2
-from privacyidea.lib.fido2.util import hash_credential_id
+from privacyidea.lib.fido2.config import FIDO2ConfigOptions
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
+from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
-from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.models import Challenge, TokenCredentialIdHash
+from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -300,8 +298,7 @@ class PasskeyTokenClass(TokenClass):
                 FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash
             }
             # Save the credential_id hash to an extra table to be able to find the token faster
-            token_cred_id_hash = TokenCredentialIdHash(token_id=self.token.id, credential_id_hash=credential_id_hash)
-            token_cred_id_hash.save()
+            save_credential_id_hash(credential_id_hash, self.token.id)
 
             # If the attestation object contains a x5c certificate, save it in the token info
             # and set the description to the CN if it is not already set
