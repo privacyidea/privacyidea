@@ -1,0 +1,37 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <span class="radius-warning">To ease the enrolling of RADIUS tokens you can set default values in the
+    <a href="#">RADIUS Token Config</a>.</span>
+  <mat-checkbox [(ngModel)]="checkPinLocally">
+    Check the PIN locally
+  </mat-checkbox>
+  <div class="flex-row gap-1">
+    <mat-form-field class="width-66">
+      <mat-label>RADIUS server configuration</mat-label>
+      <mat-hint> Select a predefined <a href="#">RADIUS server configuration</a>. The RADIUS request
+        will be forwarded to this RADIUS server.
+      </mat-hint>
+      <mat-select [(ngModel)]="radiusServerConfiguration">
+        @for (option of radiusServerConfigurationOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="otp-input-form">
+      <mat-label>RADIUS User</mat-label>
+      <input [(ngModel)]="radiusUser"
+             matInput />
+    </mat-form-field>
+  </div>
+  <mat-form-field class="width-66 margin-top-2">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

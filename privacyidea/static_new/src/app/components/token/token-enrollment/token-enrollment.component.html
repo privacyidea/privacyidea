@@ -85,6 +85,12 @@
       <app-enroll-yubico [yubikeyIdentifier]="yubikeyIdentifier"
                          [description]="description" />
     }
+    @case ("radius") {
+      <app-enroll-radius [checkPinLocally]="checkPinLocally"
+                         [radiusServerConfiguration]="radiusServerConfiguration"
+                         [radiusUser]="radiusUser"
+                         [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

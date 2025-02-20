@@ -40,12 +40,14 @@ export class EnrollRemoteComponent {
     this.privacyideaServerService
       .getRemoteServerOptions()
       .subscribe((response) => {
-        const options = Object.values(response.result.value).map(
-          (option: any) => ({
-            url: option.url,
-            id: option.id,
-          }),
-        );
+        const rawValue = response?.result?.value;
+        const options =
+          rawValue && typeof rawValue === 'object'
+            ? Object.values(rawValue).map((option: any) => ({
+                url: option.url,
+                id: option.id,
+              }))
+            : [];
         this.remoteServerOptions.set(options);
       });
   }

@@ -29,6 +29,8 @@ export interface EnrollmentOptions {
   remoteResolver?: string;
   checkPinLocally?: boolean;
   yubicoIdentifier?: string;
+  radiusServerConfiguration?: string;
+  radiusUser?: string;
 }
 
 @Injectable({
@@ -352,6 +354,11 @@ export class TokenService {
 
     if (options.type === 'yubico') {
       payload['yubico.tokenid'] = options.yubicoIdentifier;
+    }
+
+    if (options.type === 'radius') {
+      payload['radius.identifier'] = options.radiusServerConfiguration;
+      payload['radius.user'] = options.radiusUser;
     }
 
     if (options.type === 'remote') {
