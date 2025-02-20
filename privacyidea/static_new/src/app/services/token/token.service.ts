@@ -7,7 +7,6 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
 
 export interface EnrollmentOptions {
-  sshPublicKey: string;
   type: TokenType;
   description: string;
   tokenSerial: string;
@@ -28,9 +27,13 @@ export interface EnrollmentOptions {
   remoteRealm?: string;
   remoteResolver?: string;
   checkPinLocally?: boolean;
+  sshPublicKey?: string;
   yubicoIdentifier?: string;
   radiusServerConfiguration?: string;
   radiusUser?: string;
+  smsGateway?: string;
+  phoneNumber?: string;
+  readNumberDynamically?: boolean;
 }
 
 @Injectable({
@@ -368,6 +371,14 @@ export class TokenService {
       payload['remote.realm'] = options.remoteRealm;
       payload['remote.resolver'] = options.remoteResolver;
       payload['remote.local_checkpin'] = options.checkPinLocally;
+    }
+
+    if (options.type === 'sms') {
+      payload['sms.identifier'] = options.smsGateway;
+      payload['phone'] = options.readNumberDynamically
+        ? null
+        : options.phoneNumber;
+      payload['dynamic_phone'] = options.readNumberDynamically;
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });

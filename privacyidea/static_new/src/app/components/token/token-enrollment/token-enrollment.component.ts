@@ -56,6 +56,7 @@ import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.componen
 import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
 import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
+import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -133,6 +134,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollRemoteComponent,
     EnrollYubicoComponent,
     EnrollRadiusComponent,
+    EnrollSmsComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -188,6 +190,9 @@ export class TokenEnrollmentComponent {
   yubikeyIdentifier = signal('');
   radiusServerConfiguration = signal('');
   radiusUser = signal('');
+  readNumberDynamically = signal(false);
+  smsGateway = signal('');
+  phoneNumber = signal('');
 
   constructor(
     private containerService: ContainerService,
@@ -332,6 +337,8 @@ export class TokenEnrollmentComponent {
       yubicoIdentifier: this.yubikeyIdentifier(),
       radiusServerConfiguration: this.radiusServerConfiguration(),
       radiusUser: this.radiusUser(),
+      smsGateway: this.smsGateway(),
+      phoneNumber: this.phoneNumber(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

@@ -20,3 +20,17 @@
 .enroll-h4 {
   margin: 0 0 1rem 8px;
 }
+
+.inline-hint {
+  margin-bottom: 1rem;
+  background: #D9EDF7;
+  padding: 8px;
+  border-radius: var(--border-radius);
+}
+
+.inline-warning {
+  margin-bottom: 1rem;
+  background: #F2DEDE;
+  padding: 8px;
+  border-radius: var(--border-radius);
+}

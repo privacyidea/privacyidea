@@ -39,13 +39,10 @@ export class EnrollRadiusComponent {
     this.radiusServerService
       .getRadiusServerConfigurationOptions()
       .subscribe((response) => {
-        console.log(response);
         const options = response.result.value
           ? Object.keys(response.result.value)
           : [];
-        console.log(options);
         this.radiusServerConfigurationOptions.set(options);
-        console.log(this.radiusServerConfigurationOptions());
       });
   }
 }

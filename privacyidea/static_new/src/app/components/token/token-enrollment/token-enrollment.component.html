@@ -91,6 +91,12 @@
                          [radiusUser]="radiusUser"
                          [description]="description" />
     }
+    @case ("sms") {
+      <app-enroll-sms [phoneNumber]="phoneNumber"
+                      [smsGateway]="smsGateway"
+                      [description]="description"
+                      [readNumberDynamically]="readNumberDynamically" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

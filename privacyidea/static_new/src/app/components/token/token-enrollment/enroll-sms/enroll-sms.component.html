@@ -1,0 +1,37 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <span class="inline-hint">For SMS tokens to work properly you need to set the
+    <a href="#">SMS Token Config</a>!</span>
+  <mat-checkbox [(ngModel)]="readNumberDynamically">
+    Read number dynamically from user source on each request.
+  </mat-checkbox>
+  <div class="flex-row gap-1">
+    <mat-form-field class="otp-input-form">
+      <mat-label>Phone number</mat-label>
+      <input [(ngModel)]="phoneNumber"
+             matInput />
+    </mat-form-field>
+    <mat-form-field class="width-66">
+      <mat-label> A token specific SMS gateway</mat-label>
+      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS
+        gateway, you can select the gateway here.
+      </mat-hint>
+      <mat-select [(ngModel)]="smsGateway">
+        @for (option of smsGatewayOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <mat-form-field class="width-66 margin-top-2">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>
