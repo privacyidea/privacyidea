@@ -426,7 +426,7 @@ def check():
             log.info(f"No token found for the given credential id {credential_id}. "
                      f"Trying to get the token by transaction id...")
             # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
-            token = get_fido2_token_by_transaction_id(transaction_id)
+            token = get_fido2_token_by_transaction_id(transaction_id, credential_id)
             if not token:
                 log.info(f"No token found for the given transaction id {transaction_id}.")
                 return send_result(False, rid=2, details={

@@ -78,23 +78,23 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
     """
-    db_challenge = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
-    if not db_challenge:
+    db_challenges = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+    if not db_challenges:
         raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
 
-    if not db_challenge.is_valid():
-        log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
-        raise AuthError(f"The challenge {transaction_id} has timed out.")
-
-    # If the challenge has been triggered via /validate/check, it is supposed to be answered by a designated token.
-    # Challenges triggered via /validate/initialize are not bound to a token.
-    # Check if the challenge contains a serial and if so, if it matches the token
-    if db_challenge.serial and db_challenge.serial != token.get_serial():
+    challenge = next((db_challenge for db_challenge in db_challenges if
+                      (db_challenge.serial == token.get_serial() or not db_challenge.serial)),
+                     None)
+    if not challenge:
         log.error(f"Challenge with transaction_id {transaction_id} is not meant for token {token.get_serial()}.")
         raise AuthError(f"The challenge {transaction_id} is not meant for the token {token.get_serial()}.")
 
+    if not challenge.is_valid():
+        log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
+        raise AuthError(f"The challenge {transaction_id} has timed out.")
+
     # Get the user_verification requirement from the challenge data
-    uv_string = db_challenge.get_data()
+    uv_string = challenge.get_data()
     parts = uv_string.split("=")
     if len(parts) != 2 or parts[0] != "user_verification":
         log.error(f"Invalid user_verification data in challenge with transaction_id {transaction_id}.")
@@ -107,7 +107,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         raise AuthError(f"Invalid user_verification value {user_verification} in challenge {transaction_id}.")
 
     options = {
-        "challenge": db_challenge.challenge,
+        "challenge": challenge.challenge,
         "authenticatorData": get_required_one_of(params, ["authenticatorData", "authenticatordata"]),
         "clientDataJSON": get_required_one_of(params, ["clientDataJSON", "clientdata"]),
         "signature": get_required_one_of(params, ["signature", "signaturedata"]),
@@ -120,7 +120,8 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
-    # On success, remove the challenge
+    # On success, remove all challenges with the transaction_id
     if ret > 0:
-        db_challenge.delete()
+        for db_challenge in db_challenges:
+            db_challenge.delete()
     return ret
