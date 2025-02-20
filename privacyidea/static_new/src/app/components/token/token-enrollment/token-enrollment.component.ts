@@ -54,6 +54,7 @@ import { NgClass } from '@angular/common';
 import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
 import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
+import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -129,6 +130,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollSshkeyComponent,
     EnrollYubikeyComponent,
     EnrollRemoteComponent,
+    EnrollYubicoComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -181,6 +183,7 @@ export class TokenEnrollmentComponent {
   remoteResolver = signal('');
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
+  yubikeyIdentifier = signal('');
 
   constructor(
     private containerService: ContainerService,
@@ -322,6 +325,7 @@ export class TokenEnrollmentComponent {
       remoteRealm: this.remoteRealm(),
       remoteResolver: this.remoteResolver(),
       checkPinLocally: this.checkPinLocally(),
+      yubicoIdentifier: this.yubikeyIdentifier(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

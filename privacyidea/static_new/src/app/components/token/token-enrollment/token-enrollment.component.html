@@ -81,6 +81,10 @@
                          [checkPinLocally]="checkPinLocally"
                          [description]="description" />
     }
+    @case ("yubico") {
+      <app-enroll-yubico [yubikeyIdentifier]="yubikeyIdentifier"
+                         [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

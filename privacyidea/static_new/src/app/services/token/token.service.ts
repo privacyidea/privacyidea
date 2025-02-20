@@ -28,6 +28,7 @@ export interface EnrollmentOptions {
   remoteRealm?: string;
   remoteResolver?: string;
   checkPinLocally?: boolean;
+  yubicoIdentifier?: string;
 }
 
 @Injectable({
@@ -347,6 +348,10 @@ export class TokenService {
     if (options.type === 'yubikey') {
       payload.otplen = Number(options.otpLength);
       payload.otpkey = options.otpKey;
+    }
+
+    if (options.type === 'yubico') {
+      payload['yubico.tokenid'] = options.yubicoIdentifier;
     }
 
     if (options.type === 'remote') {
