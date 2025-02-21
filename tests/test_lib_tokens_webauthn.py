@@ -59,27 +59,27 @@ import os
 import struct
 import unittest
 from copy import copy
-from mock import patch
-from privacyidea.lib.user import User
 
+from mock import patch
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.error import PolicyError, ParameterError, EnrollmentError
+from privacyidea.lib.fido2.config import FIDO2ConfigOptions
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.token import init_token, check_user_pass, remove_token
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
                                              ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                             WebAuthnUser)
-from privacyidea.lib.utils import hexlify_and_unicode
-from .base import MyTestCase
+                                             WebAuthnUser, USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
-from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.token import init_token, check_user_pass, remove_token
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.error import PolicyError, ParameterError, EnrollmentError
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import hexlify_and_unicode
+from .base import MyTestCase
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
 REGISTRATION_RESPONSE_TMPL = {
@@ -400,7 +400,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
-        web_authn_registration_response = self.token.get_init_detail().get('webAuthnRegisterResponse')
+        self.token.get_init_detail().get('webAuthnRegisterResponse')
 
         self.assertEqual(NONE_ATTESTATION_CRED_ID, self.token.decrypt_otpkey())
         self.assertEqual(NONE_ATTESTATION_PUB_KEY, self.token.get_tokeninfo(FIDO2TokenInfo.PUB_KEY))
@@ -900,7 +900,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         remove_token(serial=self.serial2)
 
     # TODO: also test challenge-response with different tokens (webauthn + totp)
-    def test_01_mulitple_webauthntoken_auth(self):
+    def test_01_multiple_webauthntoken_auth(self):
         set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
         res, reply = check_user_pass(self.user, '', options=self.auth_options)
         self.assertFalse(res)

@@ -68,7 +68,7 @@ def _get_param(dictionary, key, default=None):
     ret = None
     if dictionary and key in dictionary:
         ret = dictionary[key]
-    elif default:
+    elif default is not None:
         ret = default
     return ret
 

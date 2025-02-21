@@ -1,10 +1,13 @@
 import logging
+
+from mock.mock import patch
 from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
@@ -16,7 +19,7 @@ from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, TokenCredentialIdHash, TokenInfo)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -3461,7 +3464,7 @@ class WebAuthn(MyApiTestCase):
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=example")
 
-    def test_01_enroll_token_cumstom_description(self):
+    def test_01_enroll_token_custom_description(self):
         client_data = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM" \
                       "dk9DUWMtUHByUHhPSmYzMEtlWm1UWFk5NCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZXhhbXBsZS5jb" \
                       "20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9"
@@ -3498,9 +3501,9 @@ class WebAuthn(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
-            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
-            transaction_id = webAuthnRequest.get("transaction_id")
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
+            transaction_id = webauthn_request.get("transaction_id")
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
@@ -3639,30 +3642,129 @@ class WebAuthn(MyApiTestCase):
 
         remove_token(self.serial)
 
-    def test_20_authenticate_with_token(self):
+    def test_12_authenticate_multiple_tokens(self):
+        delete_policy("wan1")
+        delete_policy("wan2")
+
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz.box")
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=totp hotp")
+
+        pin = "12"
+        user = User("hans", self.realm1)
+        hotp = init_token({"type": "hotp", "pin": pin, "genkey": "1"}, user=user)
+        totp = init_token({"type": "totp", "pin": pin, "genkey": "1"}, user=user)
+        headers = {"authorization": self.at,
+                   "Host": "pi.fritz.box:5000",
+                   "Origin": "https://pi.fritz.box:5000"}
+
+        # Enroll WebAuthn via the API
+        data = {
+            "2stepinit": False,
+            "genkey": True,
+            "realm": self.realm1,
+            "timeStep": 30,
+            "type": "webauthn",
+            "user": "hans",
+            "pin": "12"
+        }
+        with (patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce,
+              self.app.test_request_context('/token/init',
+                                            method='POST',
+                                            data=data,
+                                            headers=headers)):
+            mock_nonce.return_value = webauthn_b64_decode("RjCK6QlzmOpWN4BwE6xD5tx5P0czKCFemfqMBnAhch0")
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            data = res.json
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            transaction_id = webauthn_request.get("transaction_id")
+            webauthn_serial = data.get("detail").get("serial")
+
+        # 2nd enrollment step
+        data = {"user": "hans",
+                "realm": self.realm1,
+                "serial": webauthn_serial,
+                "type": "webauthn",
+                "transaction_id": transaction_id,
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUmpDSzZRbHptT3BXTjRCd0U2eEQ1dHg1UDBj"
+                              "ektDRmVtZnFNQm5BaGNoMCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+                "regdata": "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEcwRQIga75EjPA16t5Tck2dwpAE-PoalJVtpqVCauYvZz_FU3c"
+                           "CIQCrR-KSlaLQhuuAVkmx0KYkoQIgHDYeZX4Dxi98BW4itGN4NWOBWQLdMIIC2TCCAcGgAwIBAgIJAPDqu31oBEyKMA"
+                           "0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMTI1l1YmljbyBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0M"
+                           "DgwMTAwMDAwMFoYDzIwNTAwOTA0MDAwMDAwWjBvMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWXViaWNvIEFCMSIwIAYD"
+                           "VQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSgwJgYDVQQDDB9ZdWJpY28gVTJGIEVFIFNlcmlhbCAyMTA5ND"
+                           "Y3Mzc2MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5mfTO7qcRZuAnvzLaguuLFz8S9eB1XNIPZb96SUfZCzN5sIGV"
+                           "RTzM4JGrJlSgAAq0jivvANxttf6w7_LnnnSMKOBgTB_MBMGCisGAQQBgsQKDQEEBQQDBQQDMCIGCSsGAQQBgsQKAgQV"
+                           "MS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgEBBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEC_AV5-BE0f"
+                           "qsRa7Wo25ICowDAYDVR0TAQH_BAIwADANBgkqhkiG9w0BAQsFAAOCAQEAtjGoKNeTOK0pAIoNf3mjoD3PLgybH2L6z7"
+                           "SKnlWVd6dRbJWbZCsY8AxMdyKNGfnUQiJcEmi9IxigjGoXcwZPApnJm7JDike7Z7HQ2yUrlJZ-EgFamivp5C3UVCaIk"
+                           "GH-HyJW_vh23XOZMkaDcRqwbeq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfpc9YyANG49OQBOZolNF3MBKKrspOA"
+                           "I7RfW0JSQY0NUnWFYx9hxFbNuYsKFN4NblJ_Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12-WevjMufFW_qB4Er"
+                           "Y5Gjft3cbiZBELmbQ9QLUyLX78lHiLC9pJImhhdXRoRGF0YVjE1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-"
+                           "1pFAAAABC_AV5-BE0fqsRa7Wo25ICoAQIwkrRnq993po4HbKnUzQuq90bg6wFf8w0ulx8kSxw_5osFUpDm5Ct4B4JeL"
+                           "F1B4rpd3Cy4iAZT0msTxhwXVrAalAQIDJiABIVggwD4LMXnu6jGwvc-PwbT46HLfUFAp6flASQh4CuEsACIiWCDKyZP"
+                           "LKFfXGZa--6Gjbp0dmq_fDIYWYVapphWk6WodBA"}
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Trigger all 3 token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "hans", "pass": pin},
+                                           headers=headers), patch(
+            'privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("Z1osHXV_kbmE0Jg5S2zkBWUKI3ZO6UYO-hkzBv-YypA")
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            j = res.json
+            detail = j.get("detail")
+            multichallenge = detail.get("multi_challenge")
+            self.assertEqual(3, len(multichallenge))
+            transaction_id = detail.get("transaction_id")
+
+        # Remove the TokenCredentialIdHash and TokenInfo entries so the token has to be found via the transaction_id
+        # This simulates the case of webauthn token that are present pre 3.11. When they are used in 3.11, they will
+        # create these entries.
+        credential_id = "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg"
+        credential_id_hash = hash_credential_id(credential_id)
+        tcih = TokenCredentialIdHash.query.filter_by(credential_id_hash=credential_id_hash).one()
+        self.assertTrue(tcih)
+        tcih.delete()
+        token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
+                            .filter(TokenInfo.Value == credential_id_hash).first())
+        self.assertTrue(token_info_entry)
+        token_info_entry.delete()
+
+        data = {
+            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
+                          "aGt6QnYtWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+            "credentialid": credential_id,
+            "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
+                             "AVK_1kh",
+            "transaction_id": transaction_id,
+            "username": "hans"
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        j = res.json
+        self.assertTrue(j.get("result").get("status"))
+        self.assertTrue(j.get("result").get("value"))
+
+        delete_policy("challenge_response")
+        remove_token(hotp.get_serial())
+        remove_token(totp.get_serial())
+        remove_token(webauthn_serial)
+
+    def test_20_authenticate_other_token(self):
         # Ensure that a not readily enrolled WebAuthn token does not disturb the usage
         # of an HOTP token with challenge response.
-        client_data = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM" \
-                      "dk9DUWMtUHByUHhPSmYzMEtlWm1UWFk5NCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZXhhbXBsZS5jb" \
-                      "20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9"
-        regdata = """o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEgwRgIhANAt-cBR3mZglj13PZPXA3srJYxX
-↵J6v-LzxAhmxZM7AsAiEAxu4gi8AiKOfyhU68HcIBHuIwgjBWJUlt4cIETWFYdetjeDVjgVkCwDCC
-↵ArwwggGkoAMCAQICBAOt8BIwDQYJKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBS
-↵b290IENBIFNlcmlhbCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwMDAwMDBa
-↵MG0xCzAJBgNVBAYTAlNFMRIwEAYDVQQKDAlZdWJpY28gQUIxIjAgBgNVBAsMGUF1dGhlbnRpY2F0
-↵b3IgQXR0ZXN0YXRpb24xJjAkBgNVBAMMHVl1YmljbyBVMkYgRUUgU2VyaWFsIDYxNzMwODM0MFkw
-↵EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGZ6HnBYtt9w57kpCoEYWpbMJ_soJL3a-CUj5bW6VyuTM
-↵Zc1UoFnPvcfJsxsrHWwYRHnCwGH0GKqVS1lqLBz6F6NsMGowIgYJKwYBBAGCxAoCBBUxLjMuNi4x
-↵LjQuMS40MTQ4Mi4xLjcwEwYLKwYBBAGC5RwCAQEEBAMCBDAwIQYLKwYBBAGC5RwBAQQEEgQQ-iuZ
-↵3J45QlePkkow0jxBGDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAo67Nn_tHY8OKJ
-↵68qf9tgHV8YOmuV8sXKMmxw4yru9hNkjfagxrCGUnw8t_Awxa_2xdbNuY6Iru1gOrcpSgNB5hA5a
-↵HiVyYlo7-4dgM9v7IqlpyTi4nOFxNZQAoSUtlwKpEpPVRRnpYN0izoon6wXrfnm3UMAC_tkBa3Ee
-↵ya10UBvZFMu-jtlXEoG3T0TrB3zmHssGq4WpclUmfujjmCv0PwyyGjgtI1655M5tspjEBUJQQCMr
-↵K2HhDNcMYhW8A7fpQHG3DhLRxH-WZVou-Z1M5Vp_G0sf-RTuE22eYSBHFIhkaYiARDEWZTiJuGSG
-↵2cnJ_7yThUU1abNFdEuMoLQ3aGF1dGhEYXRhWMSjeab27q-5pV43jBGANOJ1Hmgvq58tMKsT0hJV
-↵hs4ZR0EAAAD4-iuZ3J45QlePkkow0jxBGABAkNhnmLSbmlUebUHbpXxU-zMfqtnIqT5y2E3sfQgW
-↵wE1FlUGvPg_c4zNcIucBnQAN8qTHJ8clzq7v5oQnnJz7T6UBAgMmIAEhWCBARZY9ak9nT6EI-dwL
-↵uj0TB5-XjlmAvivyWLi9WSI7pCJYIEJicw0LtP_hdy8yh6ANEUXBJsWtkGDci9DcN1rDG1tE"""
         # First enrollment step
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3677,13 +3779,12 @@ class WebAuthn(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
-            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
-            transaction_id = webAuthnRequest.get("transaction_id")
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
 
         # The token is now in the client_wait rollout state. We do not do the 2nd enrollment step
-        toks = get_tokens(serial=self.serial)
-        self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, toks[0].rollout_state)
+        tokens = get_tokens(serial=self.serial)
+        self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tokens[0].rollout_state)
 
         # Now we create the 2nd token of the user, an HOTP token
         with self.app.test_request_context('/token/init',
@@ -3765,7 +3866,7 @@ class WebAuthn(MyApiTestCase):
         remove_token(self.serial)
 
 
-class MultiChallege(MyApiTestCase):
+class MultiChallenge(MyApiTestCase):
     serial = "hotp1"
 
     """

@@ -421,14 +421,17 @@ def check():
     if credential_id:
         # Find the token that responded to the challenge
         transaction_id: str = get_required(request.all_data, "transaction_id")
-        token = get_fido2_token_by_credential_id(credential_id)
+        if serial:
+            token = get_one_token(serial=serial)
+        else:
+            token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            log.info(f"No token found for the given credential id {credential_id}. "
-                     f"Trying to get the token by transaction id...")
+            log.debug(f"No token found for the given credential id {credential_id}. "
+                      f"Trying to get the token by transaction id...")
             # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
-            token = get_fido2_token_by_transaction_id(transaction_id)
+            token = get_fido2_token_by_transaction_id(transaction_id, credential_id)
             if not token:
-                log.info(f"No token found for the given transaction id {transaction_id}.")
+                log.debug(f"No token found for the given transaction id {transaction_id}.")
                 return send_result(False, rid=2, details={
                     "message": "No token found for the given credential ID or transaction ID!"})
 
