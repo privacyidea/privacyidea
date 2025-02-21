@@ -4,6 +4,31 @@ import { forkJoin, Observable } from 'rxjs';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
+import { TokenType } from '../../components/token/token.component';
+
+export interface EnrollmentOptions {
+  sshPublicKey: string;
+  type: TokenType;
+  description: string;
+  tokenSerial: string;
+  user: string;
+  container_serial: string;
+  validity_period_start: string;
+  validity_period_end: string;
+  pin: string;
+  generateOnServer?: boolean;
+  otpLength?: number;
+  otpKey?: string;
+  hashAlgorithm?: string;
+  timeStep?: string;
+  motpPin?: string;
+  remoteServer?: { url: string; id: string };
+  remoteSerial?: string;
+  remoteUser?: string;
+  remoteRealm?: string;
+  remoteResolver?: string;
+  checkPinLocally?: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -284,73 +309,55 @@ export class TokenService {
     });
   }
 
-  enrollHotpToken(
-    generateOnServer: boolean,
-    otpLength: string,
-    otpKey: string,
-    hashAlgorithm: string,
-    description: string,
-    tokenSerial: string,
-    user: string,
-    container_serial: string,
-    validity_period_start: string,
-    validity_period_end: string,
-    pin: string,
-  ) {
+  enrollToken(options: EnrollmentOptions) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}init`,
-      {
-        type: 'hotp',
-        otpkey: generateOnServer ? null : otpKey,
-        genkey: generateOnServer ? 1 : 0,
-        otplen: Number(otpLength),
-        description: description,
-        hashlib: hashAlgorithm,
-        serial: tokenSerial,
-        user: user,
-        container_serial: container_serial,
-        validity_period_start: validity_period_start,
-        validity_period_end: validity_period_end,
-        pin: pin,
-      },
-      { headers },
-    );
-  }
 
-  enrollTotpToken(
-    generateOnServer: boolean,
-    otpLength: string,
-    otpKey: string,
-    hashAlgorithm: string,
-    description: string,
-    timeStep: string,
-    tokenSerial: string,
-    user: string,
-    container_serial: string,
-    validity_period_start: string,
-    validity_period_end: string,
-    pin: string,
-  ) {
-    const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}init`,
-      {
-        type: 'totp',
-        otpkey: generateOnServer ? null : otpKey,
-        genkey: generateOnServer ? 1 : 0,
-        otplen: Number(otpLength),
-        description: description,
-        hashlib: hashAlgorithm,
-        timeStep: Number(timeStep),
-        serial: tokenSerial,
-        user: user,
-        container_serial: container_serial,
-        validity_period_start: validity_period_start,
-        validity_period_end: validity_period_end,
-        pin: pin,
-      },
-      { headers },
-    );
+    const payload: any = {
+      type: options.type,
+      description: options.description,
+      user: options.user,
+      container_serial: options.container_serial,
+      validity_period_start: options.validity_period_start,
+      validity_period_end: options.validity_period_end,
+      pin: options.pin,
+    };
+
+    if (['hotp', 'totp', 'motp'].includes(options.type)) {
+      payload.otpkey = options.generateOnServer ? null : options.otpKey;
+      payload.genkey = options.generateOnServer ? 1 : 0;
+    }
+
+    if (['hotp', 'totp'].includes(options.type)) {
+      payload.otplen = Number(options.otpLength);
+      payload.hashlib = options.hashAlgorithm;
+    }
+
+    if (options.type === 'totp') {
+      payload.timeStep = Number(options.timeStep);
+    }
+
+    if (options.type === 'motp') {
+      payload.motppin = options.motpPin;
+    }
+
+    if (options.type === 'sshkey') {
+      payload.sshkey = options.sshPublicKey;
+    }
+
+    if (options.type === 'yubikey') {
+      payload.otplen = Number(options.otpLength);
+      payload.otpkey = options.otpKey;
+    }
+
+    if (options.type === 'remote') {
+      payload['remote.server_id'] = options.remoteServer;
+      payload['remote.serial'] = options.remoteSerial;
+      payload['remote.user'] = options.remoteUser;
+      payload['remote.realm'] = options.remoteRealm;
+      payload['remote.resolver'] = options.remoteResolver;
+      payload['remote.local_checkpin'] = options.checkPinLocally;
+    }
+
+    return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
   }
 }

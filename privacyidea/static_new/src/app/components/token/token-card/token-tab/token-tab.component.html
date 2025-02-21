@@ -113,6 +113,7 @@
             [ngClass]="{
               'card-button-delete': active(),
               'card-button-activate': !active(),
+              'disabled-button': revoked(),
             }">
             <mat-icon>{{ active() ? "auto_delete" : "play_circle" }}</mat-icon>
             {{ active() ? "Deactivate" : "Activate" }}

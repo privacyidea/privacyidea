@@ -1,0 +1,34 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <div class="otp-inputs-container">
+    <mat-form-field class="otp-input-form">
+      <mat-label>Test Yubikey</mat-label>
+      <input [(ngModel)]="testYubiKey"
+             matInput
+             placeholder="Push Yubikey button here" />
+    </mat-form-field>
+    <mat-form-field class="otp-input-form">
+      <mat-label>OTP Key</mat-label>
+      <input [(ngModel)]="otpKey"
+             matInput
+             placeholder="Enter OTP key" />
+    </mat-form-field>
+    <mat-form-field class="otp-input-form">
+      <mat-label>OTP length</mat-label>
+      <input [(ngModel)]="otpLength"
+             matInput
+             type="number" />
+    </mat-form-field>
+  </div>
+  <mat-form-field class="yubikey-description-form">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

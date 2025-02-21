@@ -1,24 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TokenEnrollmentComponent } from './token-enrollment.component';
+import { EnrollRemoteComponent } from './enroll-remote.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { signal } from '@angular/core';
 
-describe('TokenEnrollmentComponent', () => {
-  let component: TokenEnrollmentComponent;
-  let fixture: ComponentFixture<TokenEnrollmentComponent>;
+describe('EnrollRemoteComponent', () => {
+  let component: EnrollRemoteComponent;
+  let fixture: ComponentFixture<EnrollRemoteComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentComponent, BrowserAnimationsModule],
+      imports: [EnrollRemoteComponent, BrowserAnimationsModule],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenEnrollmentComponent);
+    fixture = TestBed.createComponent(EnrollRemoteComponent);
     component = fixture.componentInstance;
-    component.tokenSerial = signal('Mock serial');
     fixture.detectChanges();
   });
 

@@ -2,7 +2,7 @@
   <div class="token-type-paragraph">
     <p>{{ text }}</p>
   </div>
-  <h4>Token configuration:</h4>
+  <h4 class="enroll-h4">Token configuration</h4>
   <mat-checkbox [(ngModel)]="generateOnServer"
                 class="server-checkbox">
     Generate OTP key on the server
@@ -48,20 +48,20 @@
     </mat-form-field>
   </div>
   <div class="flex-row gap-1">
-  <mat-form-field class="description-form">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
-  <mat-form-field class="timestep-form">
-    <mat-label>Timestep</mat-label>
-    <mat-select [(ngModel)]="timeStep">
-      <mat-option value="30">30</mat-option>
-      <mat-option value="60">60</mat-option>
-    </mat-select>
-  </mat-form-field>
+    <mat-form-field class="description-form">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+    <mat-form-field class="timestep-form">
+      <mat-label>Timestep</mat-label>
+      <mat-select [(ngModel)]="timeStep">
+        <mat-option value="30">30</mat-option>
+        <mat-option value="60">60</mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 </div>

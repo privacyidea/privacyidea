@@ -26,6 +26,39 @@ import { MatSortModule } from '@angular/material/sort';
 import { TableUtilsService } from '../../services/table-utils/table-utils.service';
 import { TokenApplications } from './token-applications/token-applications';
 
+export type TokenType =
+  | 'hotp'
+  | 'totp'
+  | 'spass'
+  | 'motp'
+  | 'sshkey'
+  | 'yubikey'
+  | 'remote'
+  | 'yubico'
+  | 'radius'
+  | 'sms'
+  | '4eyes'
+  | 'ASP'
+  | 'cert'
+  | 'daypassword'
+  | 'email'
+  | 'indexsecret'
+  | 'paper'
+  | 'push'
+  | 'questionnaire'
+  | 'registration'
+  | 'tan'
+  | 'tiqr'
+  | 'u2f'
+  | 'vasco'
+  | 'webauthn';
+
+export interface TokenTypeOption {
+  key: TokenType;
+  info: string;
+  text: string;
+}
+
 @Component({
   selector: 'app-token-grid',
   standalone: true,
@@ -60,7 +93,7 @@ import { TokenApplications } from './token-applications/token-applications';
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
-  static tokenTypes = [
+  static tokenTypes: TokenTypeOption[] = [
     {
       key: 'hotp',
       info: 'HOTP: Counter-based One Time Passwords',
@@ -78,7 +111,7 @@ export class TokenComponent {
     },
     {
       key: 'motp',
-      info: 'mOTP: classical mobile One Time Passwords',
+      info: 'mOTP: Classical mobile One Time Passwords',
       text: 'The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code.',
     },
     {
@@ -173,7 +206,7 @@ export class TokenComponent {
     },
     {
       key: 'tiqr',
-      info: 'TiQR: Enraoll a TiQR token.',
+      info: 'TiQR: Enroll a TiQR token.',
       text: 'The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process.',
     },
     {
@@ -188,7 +221,7 @@ export class TokenComponent {
     },
     {
       key: 'webauthn',
-      info: 'WebAuthn: Entoll a Web Authentication token.',
+      info: 'WebAuthn: Enroll a Web Authentication token.',
       text: 'The WebAuthn token is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.\n',
     },
   ];

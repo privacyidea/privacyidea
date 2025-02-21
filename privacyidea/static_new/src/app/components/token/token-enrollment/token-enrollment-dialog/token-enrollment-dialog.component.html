@@ -11,35 +11,50 @@
     }
   </p>
   <div class="flex-row gap-1">
-    <img alt="QR Code"
-         class="qr-code"
-         height="300px"
-         src="{{ data.response.detail.googleurl.img }}"
-         width="300px" />
+    @if (data.response.detail?.googleurl?.img) {
+      <img alt="QR Code"
+           class="qr-code"
+           height="300px"
+           src="{{ data.response.detail.googleurl.img }}"
+           width="300px" />
+    } @else if (data.response.detail?.motpurl?.img) {
+      <img alt="QR Code"
+           class="qr-code"
+           height="300px"
+           src="{{ data.response.detail.motpurl.img }}"
+           width="300px" />
+    }
     <div class="flex-column gap-1">
+      @let url = data.response.detail?.googleurl?.value ?? data.response.detail?.motpurl?.value;
+      @if (url) {
+        <p class="qr-code-text">
+          Click <a href="{{ url }}">here</a> or scan the QR Code, if you want to add the Token to
+          your smartphone authenticator app. The QR Code contains the secret key of your token. You
+          need to protect it. <strong> If you are in doubt, that someone else saw it, please
+          regenerate the QR Code, when no one else is watching. </strong>
+        </p>
 
-      <p class="qr-code-text">
-        Click <a href="{{ data.response.detail.googleurl.value }}">here</a> or scan the QR Code, if
-        you want to add the Token to your smartphone authenticator app. The QR Code contains the
-        secret key of your token. You need to protect it. <strong> If you are in doubt, that someone
-        else saw it, please regenerate the QR Code, when no one else is watching. </strong></p>
+        <button (click)="regenerateQRCode()"
+                class="card-button"
+                mat-flat-button>
+          <mat-icon>autorenew</mat-icon>
+          Regenerate QR Code
+        </button>
+      }
 
-      <button (click)="regenerateQRCode()"
-              class="card-button"
-              mat-flat-button>
-        <mat-icon>autorenew</mat-icon>
-        Regenerate QR Code
-      </button>
-
-      <mat-accordion class="otpkey-expension">
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title> The OTP key</mat-panel-title>
-          </mat-expansion-panel-header>
-          <p>Hex: {{ data.response.detail.otpkey.value }}</p>
-          <p>Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
-        </mat-expansion-panel>
-      </mat-accordion>
+      @if (data.response.detail?.otpkey?.value) {
+        <mat-accordion class="otpkey-expension">
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title> The OTP key</mat-panel-title>
+            </mat-expansion-panel-header>
+            <p>Hex: {{ data.response.detail.otpkey.value }}</p>
+            @if (data.response.detail.otpkey.value_b32) {
+              <p>Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
+            }
+          </mat-expansion-panel>
+        </mat-accordion>
+      }
     </div>
   </div>
 </mat-dialog-content>

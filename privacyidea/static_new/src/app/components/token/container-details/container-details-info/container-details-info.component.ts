@@ -18,7 +18,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatDivider } from '@angular/material/divider';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, switchMap } from 'rxjs';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { EditButtonsComponent } from '../../token-details/edit-buttons/edit-buttons.component';
 import { ContainerService } from '../../../../services/container/container.service';
@@ -115,29 +115,30 @@ export class ContainerDetailsInfoComponent {
   }
 
   deleteInfo(key: string): void {
-    // TODO Missing API endpoint
-    /*
-    this.containerService.deleteInfo(this.serial(), key).pipe(
-      switchMap(() => {
-        const info = this.detailData()
-          .find(detail => detail.keyMap.key === 'info');
-        if (info) {
-          this.isEditingInfo.set(true);
-        }
-        return new Observable<void>(observer => {
-          observer.next();
-          observer.complete();
-        });
-      })
-    ).subscribe({
-      next: () => {
-        this.refreshDetails.set(true);
-      },
-      error: error => {
-        console.error('Failed to delete info.', error);
-        this.notificationService.openSnackbar('Failed to delete info.')
-      }
-    });
-    */
+    this.containerService
+      .deleteInfo(this.containerSerial(), key)
+      .pipe(
+        switchMap(() => {
+          const info = this.detailData().find(
+            (detail) => detail.keyMap.key === 'info',
+          );
+          if (info) {
+            this.isEditingInfo.set(true);
+          }
+          return new Observable<void>((observer) => {
+            observer.next();
+            observer.complete();
+          });
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.refreshDetails.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to delete info.', error);
+          this.notificationService.openSnackBar('Failed to delete info.');
+        },
+      });
   }
 }

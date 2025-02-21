@@ -1,0 +1,28 @@
+@import "../../../../../styles/styles";
+
+.motp-pin-input {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0 1rem 0;
+}
+
+.motp-input {
+  display: flex;
+  width: 32%;
+  height: 48px;
+  border-radius: 3px;
+  outline: none;
+
+  &:focus {
+    outline: $focus-outline;
+  }
+}
+
+.motp-description-form {
+  width: 66%;
+}
+
+.motp-input-form {
+  width: 33%;
+  height: 76.5px;
+}

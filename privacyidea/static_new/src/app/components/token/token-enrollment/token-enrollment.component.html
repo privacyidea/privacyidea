@@ -29,19 +29,10 @@
             mat-icon-button>
       <mat-icon>qr_code_scanner</mat-icon>
     </button>
-    <button (click)="enrollToken(this.selectedType().key, generateOnServer(), otpLength(), otpKey(),
-   hashAlgorithm(), description(), timeStep(),'', selectedUsername(), selectedContainer(),
-             this.formatDateTimeOffset(
-            this.selectedStartDate(),
-            this.selectedStartTime(),
-            this.selectedTimezoneOffset()
-          ),
-          this.formatDateTimeOffset(
-            this.selectedEndDate(),
-            this.selectedEndTime(),
-            this.selectedTimezoneOffset()
-          ), setPinValue())"
-            class="card-button"
+    <button (click)="enrollToken()"
+            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
+            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+       'card-button': true}"
             mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
@@ -63,8 +54,35 @@
                        [description]="description"
                        [timeStep]="timeStep" />
     }
+    @case ("spass") {
+      <app-enroll-spass [description]="description" />
+    }
+    @case ("motp") {
+      <app-enroll-motp [motpPin]="motpPin"
+                       [repeatMotpPin]="repeatMotpPin"
+                       [generateOnServer]="generateOnServer"
+                       [description]="description" />
+    }
+    @case ("sshkey") {
+      <app-enroll-sshkey [description]="description"
+                         [sshPublicKey]="sshPublicKey" />
+    }
+    @case ("yubikey") {
+      <app-enroll-yubikey [otpKey]="otpKey"
+                          [otpLength]="otpLength"
+                          [description]="description" />
+    }
+    @case ("remote") {
+      <app-enroll-remote [remoteSerial]="remoteSerial"
+                         [remoteServer]="remoteServer"
+                         [remoteRealm]="remoteRealm"
+                         [remoteUser]="remoteUser"
+                         [remoteResolver]="remoteResolver"
+                         [checkPinLocally]="checkPinLocally"
+                         [description]="description" />
+    }
   }
-  <h4>Assign token to user:</h4>
+  <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
     <input style="display:none"
            type="text" />
@@ -94,7 +112,7 @@
     </mat-form-field>
 
     <div class="flex-column">
-      <h5>Pin / Password:</h5>
+      <h5>Pin / Password</h5>
       <div class="user-pin-input">
         <input [(ngModel)]="setPinValue"
                [type]="'password'"
@@ -109,7 +127,7 @@
     </div>
   </div>
 
-  <h4>Assign token to a container:</h4>
+  <h4 class="enroll-h4">Assign token to a container</h4>
   <mat-form-field class="enroll-input-form">
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="selectedContainer"
@@ -125,7 +143,7 @@
   <mat-accordion>
     <mat-expansion-panel class="expension-panel">
       <mat-expansion-panel-header>
-        <mat-panel-title> Extended Attributes:</mat-panel-title>
+        <mat-panel-title> Extended Attributes</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="flex-row">
         <mat-form-field class="date-picker">

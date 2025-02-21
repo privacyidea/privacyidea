@@ -1,0 +1,55 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <mat-checkbox [(ngModel)]="generateOnServer"
+                class="server-checkbox">
+    Generate OTP key on the server
+    @if (generateOnServer()) {
+      <span class="dot">.</span><span>
+      <br />
+      The server will create the OTP key and a QR Code will be displayed to you to be
+      scanned.
+    </span>
+    }
+  </mat-checkbox>
+  <div class="otp-inputs-container">
+    @if (!generateOnServer()) {
+      <mat-form-field class="motp-input-form">
+        <mat-label>OTP Key</mat-label>
+        <input matInput
+               [(ngModel)]="otpKey"
+               placeholder="Enter OTP key" />
+      </mat-form-field>
+    } @else {
+      <span class="otp-input-form"></span>
+    }
+    <mat-form-field class="motp-description-form">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+  </div>
+</div>
+<div class="flex-column">
+  <input style="display:none"
+         type="text" /> <input style="display:none"
+                               type="password" />
+  <h4 class="enroll-h4">mOTP PIN</h4>
+  <span>The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>
+  <div class="motp-pin-input">
+    <input [(ngModel)]="motpPin"
+           [type]="'password'"
+           class="motp-input"
+           placeholder="Enter Password">
+
+    <input [(ngModel)]="repeatMotpPin"
+           [type]="'password'"
+           class="motp-input"
+           placeholder="Repeat Password">
+  </div>
+</div>

@@ -1,0 +1,21 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <mat-form-field class="sshkey-description-form">
+    <mat-label>SSH public key</mat-label>
+    <textarea [(ngModel)]="sshPublicKey"
+              matInput
+              placeholder="Paste the PUBLIC ssh key here"
+              rows="5"></textarea>
+  </mat-form-field>
+  <mat-form-field class="sshkey-description-form">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

@@ -41,11 +41,19 @@ import {
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  EnrollmentOptions,
+  TokenService,
+} from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
-import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-enrollment-dialog.component';
+import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
+import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
+import { NgClass } from '@angular/common';
+import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
+import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
+import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -115,6 +123,12 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatIcon,
     EnrollTotpComponent,
     MatIconButton,
+    EnrollSpassComponent,
+    EnrollMotpComponent,
+    NgClass,
+    EnrollSshkeyComponent,
+    EnrollYubikeyComponent,
+    EnrollRemoteComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -126,8 +140,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
-  protected readonly TokenEnrollmentDialogComponent =
-    TokenEnrollmentDialogComponent;
   tokenTypesOptions = TokenComponent.tokenTypes;
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
@@ -146,7 +158,7 @@ export class TokenEnrollmentComponent {
   realmOptions = signal<string[]>([]);
   userOptions = signal<string[]>([]);
   generateOnServer = signal(true);
-  otpLength = signal('6');
+  otpLength = signal(6);
   otpKey = signal('');
   hashAlgorithm = signal('sha1');
   description = signal('');
@@ -158,6 +170,17 @@ export class TokenEnrollmentComponent {
   timeStep = signal('30');
   response: WritableSignal<any> = signal(null);
   regenerateToken = signal(false);
+  motpPin = signal('');
+  repeatMotpPin = signal('');
+  sshPublicKey = signal('');
+  checkPinLocally = signal(false);
+  remoteServer = signal({ url: '', id: '' });
+  remoteSerial = signal('');
+  remoteUser = signal('');
+  remoteRealm = signal('');
+  remoteResolver = signal('');
+  protected readonly TokenEnrollmentDialogComponent =
+    TokenEnrollmentDialogComponent;
 
   constructor(
     private containerService: ContainerService,
@@ -175,6 +198,13 @@ export class TokenEnrollmentComponent {
 
     effect(() => {
       this.getContainerOptions();
+    });
+
+    effect(() => {
+      if (this.selectedType()) {
+        this.response.set(null);
+        this.tokenSerial.set('');
+      }
     });
 
     effect(() => {
@@ -203,29 +233,7 @@ export class TokenEnrollmentComponent {
 
     effect(() => {
       if (this.regenerateToken()) {
-        this.enrollToken(
-          this.selectedType().key,
-          this.generateOnServer(),
-          this.otpLength(),
-          this.otpKey(),
-          this.hashAlgorithm(),
-          this.description(),
-          this.timeStep(),
-          this.tokenSerial(),
-          this.selectedUsername(),
-          this.selectedContainer(),
-          this.formatDateTimeOffset(
-            this.selectedStartDate(),
-            this.selectedStartTime(),
-            this.selectedTimezoneOffset(),
-          ),
-          this.formatDateTimeOffset(
-            this.selectedEndDate(),
-            this.selectedEndTime(),
-            this.selectedTimezoneOffset(),
-          ),
-          this.setPinValue(),
-        );
+        this.enrollToken();
       }
     });
   }
@@ -283,60 +291,44 @@ export class TokenEnrollmentComponent {
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
 
-  enrollToken(
-    type: string,
-    generateOnServer: boolean,
-    otpLength: string,
-    otpKey: string,
-    hashAlgorithm: string,
-    description: string,
-    timeStep: string,
-    tokenSerial: string,
-    user: string,
-    container_serial: string,
-    validity_period_start: string,
-    validity_period_end: string,
-    pin: string,
-  ) {
-    let response = new Observable();
-    switch (type) {
-      case 'hotp':
-        response = this.tokenService.enrollHotpToken(
-          generateOnServer,
-          otpLength,
-          otpKey,
-          hashAlgorithm,
-          description,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-        );
-        break;
-      case 'totp':
-        response = this.tokenService.enrollTotpToken(
-          generateOnServer,
-          otpLength,
-          otpKey,
-          hashAlgorithm,
-          description,
-          timeStep,
-          tokenSerial,
-          user,
-          container_serial,
-          validity_period_start,
-          validity_period_end,
-          pin,
-        );
-        break;
-    }
-    response.subscribe({
+  enrollToken() {
+    const enrollmentOptions: EnrollmentOptions = {
+      type: this.selectedType().key,
+      generateOnServer: this.generateOnServer(),
+      otpLength: this.otpLength(),
+      otpKey: this.otpKey(),
+      hashAlgorithm: this.hashAlgorithm(),
+      timeStep: this.timeStep(),
+      description: this.description(),
+      tokenSerial: this.tokenSerial(),
+      user: this.selectedUsername(),
+      container_serial: this.selectedContainer(),
+      validity_period_start: this.formatDateTimeOffset(
+        this.selectedStartDate(),
+        this.selectedStartTime(),
+        this.selectedTimezoneOffset(),
+      ),
+      validity_period_end: this.formatDateTimeOffset(
+        this.selectedEndDate(),
+        this.selectedEndTime(),
+        this.selectedTimezoneOffset(),
+      ),
+      pin: this.setPinValue(),
+      motpPin: this.motpPin(),
+      sshPublicKey: this.sshPublicKey(),
+      remoteServer: this.remoteServer(),
+      remoteSerial: this.remoteSerial(),
+      remoteUser: this.remoteUser(),
+      remoteRealm: this.remoteRealm(),
+      remoteResolver: this.remoteResolver(),
+      checkPinLocally: this.checkPinLocally(),
+    };
+
+    this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
         if (!this.regenerateToken()) {
           this.notificationService.openSnackBar(
-            'Token ' + response.detail.serial + ' enrolled successfully.',
+            `Token ${response.detail.serial} enrolled successfully.`,
           );
         }
         this.response.set(response);
