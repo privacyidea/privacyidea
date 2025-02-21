@@ -4864,16 +4864,27 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
+        def check_result(result):
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            self.assertEqual("hotp", tokens[0].get_type())
+            # result contains enroll info for one token
+            self.assertEqual(1, len(result["result"]["value"]["tokens"]))
+            container_template = container.template
+            self.assertEqual(template_params["name"], container_template.name)
+
+        # create container by passing the complete template dictionary
         request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        check_result(result)
+
+        # create container by passing only the template name
         result = self.request_assert_success('/container/init',
-                                             request_params,
+                                             {"type": "smartphone", "template_name": template_params["name"]},
                                              self.at, 'POST')
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
-        container_template = container.template
-        self.assertEqual(template_params["name"], container_template.name)
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
@@ -4883,15 +4894,32 @@ class APIContainerTemplate(APIContainerTest):
         template_params = {"name": "test",
                            "container_type": "smartphone",
                            "template_options": {}}
+        create_container_template(container_type=template_params["container_type"],
+                                  template_name=template_params["name"],
+                                  options=template_params["template_options"])
 
+        def check_result(result):
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(0, len(tokens))
+            self.assertIsNone(result["result"]["value"].get("tokens"))
+            self.assertEqual(template_params["name"], container.template.name)
+
+        # with template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(0, len(tokens))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
+
+        # with template from db
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success("/container/init",
+                                             {"type": "smartphone", "template_name": template_params["name"]},
+                                             self.at, "POST")
+        check_result(result)
+
+        template = get_template_obj(template_params["name"])
+        template.delete()
 
         # Create a template without template options
         template_params = {"name": "test",
@@ -4916,21 +4944,29 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
+        def check_result(result):
+            # only hotp token is created, push require policy that is not set
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+
+        # Create a container from the template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # only hotp token is created, push require policy that is not set
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        check_result(result)
+
+        # Create a container from the db template
+        result = self.request_assert_success("/container/init",
+                                             {"type": "smartphone", "template_name": template_params["name"]}, self.at,
+                                             "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
 
     def test_09_create_container_with_template_all_tokens_success(self):
+        self.setUp_user_realm3()
         # Policies
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only",
                                                        PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push",
@@ -4974,56 +5010,64 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
-        self.setUp_user_realm3()
+        def check_result(result):
+            # check tokens that were created
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(15, len(tokens))
+            self.assertEqual(15, len(result["result"]["value"]["tokens"]))
+
+            # check tokens and init details
+            owner = User(login="cornelius", realm=self.realm3)
+            init_details = result["result"]["value"]["tokens"]
+            for token in tokens:
+                token_type = token.get_type()
+
+                # check user assignment
+                if token_type in ["hotp", "indexedsecret", "push", "sms", "email", "tiqr"]:
+                    self.assertEqual(owner, token.user)
+                    if token_type == "hotp":
+                        # check default hashlib
+                        self.assertEqual("sha256", token.hashlib)
+                else:
+                    self.assertIsNone(token.user)
+
+                # check init details
+                if token_type in ["hotp", "totp", "daypassword"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
+                elif token_type in ["paper", "tan"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
+                elif token_type == "push":
+                    serial = token.get_serial()
+                    push_url = init_details[serial].get("pushurl")
+                    self.assertTrue(isinstance(push_url, dict))
+                    self.assertIn(f"issuer={self.realm3}", push_url["value"])
+                    self.assertIn(f"serial_{serial}", push_url["value"])
+                elif token_type == "applspec":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
+                elif token_type == "registration":
+                    self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
+                elif token_type == "tiqr":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+
+            [token.delete_token() for token in tokens]
+            container.delete()
+
+        # Create a container from the template dict
         request_params = json.dumps(
             {"type": "generic", "template": template_params, "user": "cornelius", "realm": self.realm3})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # check tokens that were created
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(15, len(tokens))
-        self.assertEqual(15, len(result["result"]["value"]["tokens"]))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
 
-        # check tokens and init details
-        owner = User(login="cornelius", realm=self.realm3)
-        init_details = result["result"]["value"]["tokens"]
-        for token in tokens:
-            token_type = token.get_type()
-
-            # check user assignment
-            if token_type in ["hotp", "indexedsecret", "push", "sms", "email", "tiqr"]:
-                self.assertEqual(owner, token.user)
-                if token_type == "hotp":
-                    # check default hashlib
-                    self.assertEqual("sha256", token.hashlib)
-            else:
-                self.assertIsNone(token.user)
-
-            # check init details
-            if token_type in ["hotp", "totp", "daypassword"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
-            elif token_type in ["paper", "tan"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
-            elif token_type == "push":
-                serial = token.get_serial()
-                push_url = init_details[serial].get("pushurl")
-                self.assertTrue(isinstance(push_url, dict))
-                self.assertIn(f"issuer={self.realm3}", push_url["value"])
-                self.assertIn(f"serial_{serial}", push_url["value"])
-            elif token_type == "applspec":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
-            elif token_type == "registration":
-                self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
-            elif token_type == "tiqr":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+        # Create a container from the template name
+        result = self.request_assert_success("/container/init",
+                                             {"type": "generic", "template_name": template_params["name"],
+                                              "user": "cornelius", "realm": self.realm3}, self.at, "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
-        [token.delete_token() for token in tokens]
 
         delete_policy("push")
         delete_policy("admin")
@@ -5071,50 +5115,59 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
+        def check_result(result):
+            # check tokens that were created
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            all_token_types = [token.get_type() for token in tokens]
+            self.assertNotIn("push", all_token_types)
+            self.assertNotIn("tiqr", all_token_types)
+            self.assertEqual(13, len(tokens))
+            self.assertEqual(13, len(result["result"]["value"]["tokens"]))
+
+            # check tokens and init details
+            init_details = result["result"]["value"]["tokens"]
+            for token in tokens:
+                token_type = token.get_type()
+
+                # check user assignment
+                self.assertIsNone(token.user)
+
+                if token_type == "hotp":
+                    # check default hashlib
+                    self.assertEqual("sha256", token.hashlib)
+
+                # check init details
+                if token_type in ["hotp", "totp", "daypassword"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
+                elif token_type in ["paper", "tan"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
+                elif token_type == "applspec":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
+                elif token_type == "registration":
+                    self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
+                elif token_type == "tiqr":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+
+            [token.delete_token() for token in tokens]
+            container.delete()
+
+        # Create a container from the template dict
         self.setUp_user_realm3()
         request_params = json.dumps(
             {"type": "generic", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # check tokens that were created
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        all_token_types = [token.get_type() for token in tokens]
-        self.assertNotIn("push", all_token_types)
-        self.assertNotIn("tiqr", all_token_types)
-        self.assertEqual(13, len(tokens))
-        self.assertEqual(13, len(result["result"]["value"]["tokens"]))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
 
-        # check tokens and init details
-        init_details = result["result"]["value"]["tokens"]
-        for token in tokens:
-            token_type = token.get_type()
-
-            # check user assignment
-            self.assertIsNone(token.user)
-
-            if token_type == "hotp":
-                # check default hashlib
-                self.assertEqual("sha256", token.hashlib)
-
-            # check init details
-            if token_type in ["hotp", "totp", "daypassword"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
-            elif token_type in ["paper", "tan"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
-            elif token_type == "applspec":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
-            elif token_type == "registration":
-                self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
-            elif token_type == "tiqr":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+        # Create container from the db template
+        result = self.request_assert_success("/container/init",
+                                             {"type": "generic", "template_name": template_params["name"]}, self.at,
+                                             "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
-        [token.delete_token() for token in tokens]
 
         delete_policy("admin")
         delete_policy("pw_length")
