@@ -308,3 +308,33 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(success, -1)
         remove_token(serial=token.get_serial())
+
+    def test_08_no_tokencredentialidhash_entry(self):
+        _ = self._create_token()
+        # Remove the tokencredentialidhash entry
+        credential_id_hash = hash_credential_id(self.credential_id)
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
+        self.assertTrue(tcih)
+        tcih.delete()
+        # Try to get the token by credential id
+        token = get_fido2_token_by_credential_id(self.credential_id)
+        # Check that the credential id hash has been added again
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
+        self.assertTrue(tcih)
+
+    def test_09_duplicate_tokencredentialidhash_entry(self):
+        token1 = self._create_token()
+        # Get the tokencredentialidhash entry
+        credential_id_hash = hash_credential_id(self.credential_id)
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
+        self.assertTrue(tcih)
+        self.assertEqual(tcih.token_id, token1.token.id)
+        # Create a new token with the same credential id, which will overwrite the existing TCIH entry
+        token2 = self._create_token()
+        tcih = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
+        self.assertTrue(tcih)
+        self.assertEqual(tcih.token_id, token2.token.id)

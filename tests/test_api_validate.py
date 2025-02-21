@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
@@ -18,7 +19,7 @@ from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, TokenCredentialIdHash, TokenInfo)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -3726,11 +3727,24 @@ class WebAuthn(MyApiTestCase):
             self.assertEqual(3, len(multichallenge))
             transaction_id = detail.get("transaction_id")
 
+        # Remove the TokenCredentialIdHash and TokenInfo entries so the token has to be found via the transaction_id
+        # This simulates the case of webauthn token that are present pre 3.11. When they are used in 3.11, they will
+        # create these entries.
+        credential_id = "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg"
+        credential_id_hash = hash_credential_id(credential_id)
+        tcih = TokenCredentialIdHash.query.filter_by(credential_id_hash=credential_id_hash).one()
+        self.assertTrue(tcih)
+        tcih.delete()
+        token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
+                            .filter(TokenInfo.Value == credential_id_hash).first())
+        self.assertTrue(token_info_entry)
+        token_info_entry.delete()
+
         data = {
             "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
             "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
                           "aGt6QnYtWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
-            "credentialid": "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg",
+            "credentialid": credential_id,
             "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
                              "AVK_1kh",
             "transaction_id": transaction_id,
@@ -3738,10 +3752,10 @@ class WebAuthn(MyApiTestCase):
         }
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
             res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            j = res.json
-            self.assertTrue(j.get("result").get("status"))
-            self.assertTrue(j.get("result").get("value"))
+        self.assertEqual(200, res.status_code, res)
+        j = res.json
+        self.assertTrue(j.get("result").get("status"))
+        self.assertTrue(j.get("result").get("value"))
 
         delete_policy("challenge_response")
         remove_token(hotp.get_serial())
