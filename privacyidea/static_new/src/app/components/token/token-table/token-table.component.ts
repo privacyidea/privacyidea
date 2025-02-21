@@ -1,27 +1,20 @@
-import {
-  Component,
-  Input,
-  signal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
+import { Component, Input, WritableSignal } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  MatPaginator,
-  MatPaginatorModule,
-  PageEvent,
-} from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { AuthService } from '../../../services/auth/auth.service';
-import { Router } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { MatSortModule } from '@angular/material/sort';
 import { TokenService } from '../../../services/token/token.service';
-import { MatIcon } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
+import {
+  CellClickHandlerMap,
+  FetchDataHandler,
+  FetchResponseHandler,
+  FilterKeywordHandlerMap,
+  FilterTable,
+} from '../../universals/filter-table/filter-table.component';
+import { Observable } from 'rxjs/internal/Observable';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -47,163 +40,52 @@ const columnsKeyMap = [
     MatPaginatorModule,
     MatTableModule,
     MatSortModule,
-    NgClass,
-    MatIcon,
-    MatFabButton,
+    FilterTable,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableComponent {
-  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
-  length = 0;
-  pageSize = 10;
-  pageIndex = 0;
-  pageSizeOptions = [5, 10, 15];
-  filterValue = '';
   apiFilter = this.tokenService.apiFilter;
   advancedApiFilter = this.tokenService.advancedApiFilter;
-  sortby_sortdir:
-    | { active: string; direction: 'asc' | 'desc' | '' }
-    | undefined;
-  dataSource = signal(
-    new MatTableDataSource(
-      Array.from({ length: this.pageSize }, () => {
-        const emptyRow: any = {};
-        columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = '';
-        });
-        return emptyRow;
-      }),
-    ),
-  );
-  showAdvancedFilter = signal(false);
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedContent!: WritableSignal<string>;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+
+  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
+  @Input({ required: true }) containerSerial!: WritableSignal<string>;
+  @Input({ required: true }) isProgrammaticChange!: WritableSignal<boolean>;
+  @Input({ required: true }) selectedContent!: WritableSignal<string>;
+
   protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(
-    private router: Router,
-    private authService: AuthService,
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     private notificationService: NotificationService,
-  ) {
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchTokenData();
-    }
-  }
+  ) {}
 
-  ngAfterViewInit() {
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
-  }
-
-  handlePageEvent(event: PageEvent) {
-    this.pageSize = event.pageSize;
-    this.pageIndex = event.pageIndex;
-    this.fetchTokenData();
-  }
-
-  handleSortEvent() {
-    this.sortby_sortdir = this.sort
-      ? {
-          active: this.sort.active,
-          direction: this.sort.direction,
-        }
-      : undefined;
-    this.pageIndex = 0;
-    this.fetchTokenData();
-  }
-
-  handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.pageIndex = 0;
-    this.fetchTokenData();
-  }
-
-  toggleKeywordInFilter(
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-  ): void {
-    if (filterKeyword === 'active') {
-      inputElement.value = this.tableUtilsService.toggleActiveInFilter(
-        inputElement.value,
-      );
-      this.handleFilterInput({
-        target: inputElement,
-      } as unknown as KeyboardEvent);
-      inputElement.focus();
-      return;
-    }
-
-    if (filterKeyword === 'infokey & infovalue') {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'infokey',
-      );
-      this.handleFilterInput({
-        target: inputElement,
-      } as unknown as KeyboardEvent);
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'infovalue',
-      );
-      this.handleFilterInput({
-        target: inputElement,
-      } as unknown as KeyboardEvent);
-      inputElement.focus();
-    } else {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        filterKeyword,
-      );
-      this.handleFilterInput({
-        target: inputElement,
-      } as unknown as KeyboardEvent);
-      inputElement.focus();
-    }
-  }
-
-  toggleActive(element: any): void {
-    this.tokenService.toggleActive(element.serial, element.active).subscribe({
-      next: () => {
-        this.fetchTokenData();
-      },
+  toggleActive(element: any): Observable<any> {
+    var handler = this.tokenService.toggleActive(
+      element.serial,
+      element.active,
+    );
+    handler.subscribe({
       error: (error) => {
         console.error('Failed to toggle active.', error);
         this.notificationService.openSnackBar('Failed to toggle active.');
       },
     });
+    return handler;
   }
 
-  resetFailCount(element: any): void {
-    this.tokenService.resetFailCount(element.serial).subscribe({
-      next: () => {
-        this.fetchTokenData();
-      },
+  resetFailCount(element: any): Observable<any> {
+    console.log('Resetting fail count for token:', element.serial);
+    var handler = this.tokenService.resetFailCount(element.serial);
+    handler.subscribe({
       error: (error) => {
         console.error('Failed to reset fail counter.', error);
         this.notificationService.openSnackBar('Failed to reset fail counter.');
       },
     });
-  }
-
-  handleColumnClick(columnKey: string, element: any): void {
-    if (columnKey === 'active') {
-      this.toggleActive(element);
-    } else if (columnKey === 'failcount') {
-      this.resetFailCount(element);
-    }
+    return handler;
   }
 
   tokenSelected(serial: string) {
@@ -217,25 +99,81 @@ export class TokenTableComponent {
     this.selectedContent.set('container_details');
   }
 
-  private fetchTokenData() {
-    this.tokenService
-      .getTokenData(
-        this.pageIndex + 1,
-        this.pageSize,
-        this.sortby_sortdir,
-        this.filterValue,
-      )
-      .subscribe({
-        next: (response) => {
-          this.length = response.result.value.count;
-          this.dataSource.set(
-            new MatTableDataSource(response.result.value.tokens),
-          );
-        },
-        error: (error) => {
-          console.error('Failed to get token data.', error);
-          this.notificationService.openSnackBar('Failed to get token data.');
-        },
-      });
-  }
+  fetchDataHandler: FetchDataHandler = (
+    pageIndex: number,
+    pageSize: number,
+    sortby_sortdir: any,
+    filterValue: string,
+  ) =>
+    this.tokenService.getTokenData(
+      pageIndex + 1,
+      pageSize,
+      sortby_sortdir,
+      filterValue,
+    );
+
+  fetchResponseHandler: FetchResponseHandler = (response: any) => {
+    const numItems = response.result.value.count;
+    const dataSource = new MatTableDataSource(response.result.value.tokens);
+    return [numItems, dataSource];
+  };
+
+  filterKeywordHandlerMap: FilterKeywordHandlerMap = [
+    {
+      key: 'active',
+      handler: (filterValue: string) => {
+        return this.tableUtilsService.toggleActiveInFilter(filterValue);
+      },
+    },
+    {
+      key: 'infokey & infovalue',
+      handler: (filterValue: string) => {
+        const result = this.tableUtilsService.toggleKeywordInFilter(
+          filterValue,
+          'infokey',
+        );
+        return this.tableUtilsService.toggleKeywordInFilter(
+          result,
+          'infovalue',
+        );
+      },
+    },
+  ];
+
+  cellClickHandlerMap: CellClickHandlerMap = [
+    {
+      key: 'active',
+      handler: (element: any) => {
+        return this.toggleActive(element);
+      },
+    },
+    {
+      key: 'failcount',
+      handler: (element: any) => {
+        return this.resetFailCount(element);
+      },
+    },
+    {
+      key: 'serial',
+      handler: (element: any) => {
+        var observable: Observable<any> = new Observable((observer) => {
+          this.tokenSelected(element.serial);
+          observer.next();
+          observer.complete();
+        });
+        return observable;
+      },
+    },
+    {
+      key: 'container_serial',
+      handler: (element: any) => {
+        var observable: Observable<any> = new Observable((observer) => {
+          this.containerSelected(element.container_serial);
+          observer.next();
+          observer.complete();
+        });
+        return observable;
+      },
+    },
+  ];
 }

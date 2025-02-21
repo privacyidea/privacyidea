@@ -1,6 +1,6 @@
 import { Component, effect, signal, ViewChild } from '@angular/core';
 import { TokenTableComponent } from './token-table/token-table.component';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass, NgTemplateOutlet } from '@angular/common';
 import { ContainerTableComponent } from './container-table/container-table.component';
 import { TokenDetailsComponent } from './token-details/token-details.component';
 import { ContainerDetailsComponent } from './container-details/container-details.component';
@@ -16,12 +16,31 @@ import { TokenCardComponent } from './token-card/token-card.component';
 import { NotificationService } from '../../services/notification/notification.service';
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
+import { FilterTable } from '../universals/filter-table/filter-table.component';
+import { Observable } from 'rxjs';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSortModule } from '@angular/material/sort';
+import { TableUtilsService } from '../../services/table-utils/table-utils.service';
+import { TokenApplications } from './token-applications/token-applications';
 
 @Component({
   selector: 'app-token-grid',
   standalone: true,
   imports: [
     CommonModule,
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatSortModule,
+    NgClass,
+    MatIcon,
+    MatFabButton,
     TokenTableComponent,
     TokenCardComponent,
     TokenDetailsComponent,
@@ -34,6 +53,8 @@ import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.co
     MatIcon,
     MatFabButton,
     TokenEnrollmentComponent,
+    FilterTable,
+    TokenApplications,
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.scss',
@@ -190,6 +211,7 @@ export class TokenComponent {
   constructor(
     protected overflowService: OverflowService,
     private notificationService: NotificationService,
+    protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
       if (this.refreshTokenDetails()) {
@@ -244,4 +266,21 @@ export class TokenComponent {
       );
     }
   }
+
+  fetchDataHandler(): Observable<any> {
+    return Observable.create(() => {});
+  }
+
+  fetchResponseHandler(
+    response: any,
+  ): [number, MatTableDataSource<any, MatPaginator>] {
+    return [0, new MatTableDataSource()];
+  }
+
+  columnsKeyMap = [
+    { key: 'serial', label: 'Serial' },
+    { key: 'service_id', label: 'Service ID' },
+    { key: 'user', label: 'SSH user' },
+  ];
+  handleColumnClick(key: string, element: any) {}
 }

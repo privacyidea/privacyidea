@@ -1,6 +1,6 @@
 @import "../../../../styles/styles";
 
-.token-table-container {
+.filter-table {
   @include table-container-styles;
   @include base-table-structure(
     ".token-table",
