@@ -19,7 +19,7 @@ export interface EnrollmentOptions {
   otpLength?: number;
   otpKey?: string;
   hashAlgorithm?: string;
-  timeStep?: string;
+  timeStep?: number;
   motpPin?: string;
   remoteServer?: { url: string; id: string };
   remoteSerial?: string;
@@ -34,6 +34,9 @@ export interface EnrollmentOptions {
   smsGateway?: string;
   phoneNumber?: string;
   readNumberDynamically?: boolean;
+  separator?: string;
+  requiredTokenOfRealms?: { realm: string; tokens: number }[];
+  serviceId?: string;
 }
 
 @Injectable({
@@ -328,17 +331,19 @@ export class TokenService {
       pin: options.pin,
     };
 
-    if (['hotp', 'totp', 'motp'].includes(options.type)) {
+    if (
+      ['hotp', 'totp', 'motp', 'applspec', 'daypassword'].includes(options.type)
+    ) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
       payload.genkey = options.generateOnServer ? 1 : 0;
     }
 
-    if (['hotp', 'totp'].includes(options.type)) {
+    if (['hotp', 'totp', 'daypassword'].includes(options.type)) {
       payload.otplen = Number(options.otpLength);
       payload.hashlib = options.hashAlgorithm;
     }
 
-    if (options.type === 'totp') {
+    if (['totp', 'daypassword'].includes(options.type)) {
       payload.timeStep = Number(options.timeStep);
     }
 
@@ -381,6 +386,23 @@ export class TokenService {
       payload['dynamic_phone'] = options.readNumberDynamically;
     }
 
+    if (options.type === '4eyes') {
+      payload.separator = options.separator;
+      payload['4eyes'] = options.requiredTokenOfRealms?.reduce(
+        (acc, curr) => {
+          acc[curr.realm] = {
+            count: curr.tokens,
+            selected: true,
+          };
+          return acc;
+        },
+        {} as Record<string, { count: number; selected: boolean }>,
+      );
+    }
+
+    if (options.type === 'applspec') {
+      payload.service_id = options.serviceId;
+    }
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
   }
 }

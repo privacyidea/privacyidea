@@ -29,7 +29,7 @@ export type TokenType =
   | 'radius'
   | 'sms'
   | '4eyes'
-  | 'ASP'
+  | 'applspec'
   | 'cert'
   | 'daypassword'
   | 'email'
@@ -129,7 +129,7 @@ export class TokenComponent {
       text: 'The 4 Eyes token will only authenticate if two or more users are present at once. You can define how many existing tokens of the given realms need to be present to perform a successful authentication.',
     },
     {
-      key: 'ASP',
+      key: 'applspec',
       info: 'Application Specific Password: A token with a fixed password. Can be used for certain applications or services.',
       text: 'The Application Specific Password Token is a static password, that can be bound to certain services. This static password then can only be used to authenticate at this service.',
     },

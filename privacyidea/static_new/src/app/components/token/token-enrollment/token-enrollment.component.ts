@@ -57,6 +57,9 @@ import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
 import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
 import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
+import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
+import { EnrollAspComponent } from './enroll-asp/enroll-asp.component';
+import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -135,6 +138,9 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollYubicoComponent,
     EnrollRadiusComponent,
     EnrollSmsComponent,
+    EnrollFoureyesComponent,
+    EnrollAspComponent,
+    EnrollDaypasswordComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -173,7 +179,7 @@ export class TokenEnrollmentComponent {
   selectedEndTime = signal('');
   selectedStartDate = signal(new Date());
   selectedEndDate = signal(new Date());
-  timeStep = signal('30');
+  timeStep = signal(30);
   response: WritableSignal<any> = signal(null);
   regenerateToken = signal(false);
   motpPin = signal('');
@@ -193,6 +199,9 @@ export class TokenEnrollmentComponent {
   readNumberDynamically = signal(false);
   smsGateway = signal('');
   phoneNumber = signal('');
+  seperator = signal('');
+  requiredTokenOfRealm = signal<{ realm: string; tokens: number }[]>([]);
+  serviceId = signal('');
 
   constructor(
     private containerService: ContainerService,
@@ -339,6 +348,9 @@ export class TokenEnrollmentComponent {
       radiusUser: this.radiusUser(),
       smsGateway: this.smsGateway(),
       phoneNumber: this.phoneNumber(),
+      separator: this.seperator(),
+      requiredTokenOfRealms: this.requiredTokenOfRealm(),
+      serviceId: this.serviceId(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

@@ -23,6 +23,12 @@
            height="300px"
            src="{{ data.response.detail.motpurl.img }}"
            width="300px" />
+    } @else if (data.response.detail?.otpkey?.img) {
+      <img alt="QR Code"
+           class="qr-code"
+           height="300px"
+           src="{{ data.response.detail.otpkey.img }}"
+           width="300px" />
     }
     <div class="flex-column gap-1">
       @let url = data.response.detail?.googleurl?.value ?? data.response.detail?.motpurl?.value;
@@ -42,15 +48,22 @@
         </button>
       }
 
+      @if (data.response.detail?.password) {
+        <p>
+          Your Password: <strong>{{ data.response.detail.password }}</strong>.
+        </p>
+
+      }
+
       @if (data.response.detail?.otpkey?.value) {
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>
               <mat-panel-title> The OTP key</mat-panel-title>
             </mat-expansion-panel-header>
-            <p>Hex: {{ data.response.detail.otpkey.value }}</p>
+            <p class="otpkey-p">Hex: {{ data.response.detail.otpkey.value }}</p>
             @if (data.response.detail.otpkey.value_b32) {
-              <p>Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
+              <p class="otpkey-p">Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
             }
           </mat-expansion-panel>
         </mat-accordion>

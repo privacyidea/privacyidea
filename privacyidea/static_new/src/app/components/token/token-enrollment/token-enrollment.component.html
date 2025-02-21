@@ -97,6 +97,24 @@
                       [description]="description"
                       [readNumberDynamically]="readNumberDynamically" />
     }
+    @case ("4eyes") {
+      <app-enroll-foureyes [seperator]="seperator"
+                           [description]="description"
+                           [requiredTokensOfRealm]="requiredTokenOfRealm" />
+    }
+    @case ("applspec") {
+      <app-enroll-asp [serviceId]="serviceId"
+                      [generateOnServer]="generateOnServer"
+                      [otpKey]="otpKey"
+                      [description]="description" />
+    }
+    @case ("daypassword") {
+      <app-enroll-daypassword [otpKey]="otpKey"
+                              [otpLength]="otpLength"
+                              [hashAlgorithm]="hashAlgorithm"
+                              [description]="description"
+                              [timeStep]="timeStep"/>
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

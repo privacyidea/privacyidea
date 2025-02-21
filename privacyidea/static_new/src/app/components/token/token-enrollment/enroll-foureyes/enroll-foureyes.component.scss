@@ -1,0 +1,30 @@
+@import "../../../../../styles/styles";
+
+.seperator-input-form {
+  width: 121px;
+  height: 76.5px;
+}
+
+.required-realms-hint {
+  margin-bottom: 1rem;
+}
+
+.required-realms-option {
+  width: 100%;
+  border-radius: var(--border-radius);
+}
+
+.required-realms-input{
+  width: 40px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.required-realms-div{
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
