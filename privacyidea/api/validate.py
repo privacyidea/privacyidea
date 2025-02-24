@@ -257,7 +257,10 @@ def offlinerefill():
 @event("validate_check", request, g)
 def check():
     """
-    check the authentication for a user or a serial number.
+    .. important::
+        The ``/validate/samlcheck`` endpoint will be deprecated in v3.12
+
+    Check the authentication for a user or a serial number.
     Either a ``serial`` or a ``user`` is required to authenticate.
     The PIN and OTP value is sent in the parameter ``pass``.
     In case of successful authentication it returns ``result->value: true``.
