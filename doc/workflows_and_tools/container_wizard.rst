@@ -41,13 +41,13 @@ Customization
 The container wizard only shows required information without further text and instructions. To customize the view, you
 can configure html templates that are included on top and at the bottom of each view.
 
-On the creation page you can add your custom text in these two files::
+For the creation page, add the following files to add your custom text::
 
     static/customize/views/includes/token.containercreate.pre.top.html
     static/customize/views/includes/token.containercreate.pre.bottom.html
 
 When the container is created and the user needs to do something (e.g. scanning the QR code), you can add your own text
-in these two files::
+by adding these two files::
 
     static/customize/views/includes/token.containercreate.post.top.html
     static/customize/views/includes/token.containercreate.post.bottom.html
