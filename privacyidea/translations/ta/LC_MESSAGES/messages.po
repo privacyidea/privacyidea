@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
 # தமிழ்நேரம் <anishprabu.t@gmail.com>, 2025.
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-02-17 13:28+0100\n"
-"PO-Revision-Date: 2025-01-28 20:02+0000\n"
-"Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
+"PO-Revision-Date: 2025-02-24 12:11+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ta/>\n"
 "Language: ta\n"
@@ -17,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.10.1-dev\n"
 "Generated-By: Babel 2.13.1\n"
 
 #: privacyidea/api/auth.py:231
@@ -31,9 +32,8 @@ msgid "Authentication failure. The passkey is not registered."
 msgstr "அங்கீகார தோல்வி. பயனர்பெயர் காணவில்லை"
 
 #: privacyidea/api/auth.py:239
-#, fuzzy
 msgid "Authentication failure. Token has no user."
-msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கு காலாவதியானது: {0! S}"
+msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கு காலாவதியானது."
 
 #: privacyidea/api/auth.py:250
 #, fuzzy
@@ -42,9 +42,8 @@ msgid "Authentication failure using passkey."
 msgstr "அங்கீகார தோல்வி. பயனர்பெயர் காணவில்லை"
 
 #: privacyidea/api/auth.py:255
-#, fuzzy
 msgid "Authentication failure. Unknown realm:"
-msgstr "அங்கீகார தோல்வி. அறியப்படாத சாம்ராச்யம்: {0! S}."
+msgstr "அங்கீகார தோல்வி. அறியப்படாத சாம்ராச்யம்:"
 
 #: privacyidea/api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -87,9 +86,8 @@ msgstr ""
 " சந்தாக்கள்: {subscriptions}\n"
 
 #: privacyidea/api/lib/prepolicy.py:2468
-#, fuzzy
 msgid "Missing description for {} token."
-msgstr "}} டோக்கனுக்கான விளக்கம்."
+msgstr "{} டோக்கனுக்கான விளக்கம்."
 
 #: privacyidea/api/lib/prepolicy.py:2469
 msgid "Description required for {} token."
@@ -100,34 +98,31 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "அங்கீகார தோல்வி. அங்கீகார தலைப்பு இல்லை."
 
 #: privacyidea/api/lib/utils.py:405 privacyidea/api/lib/utils.py:436
-#, fuzzy
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கை டிகோடிங் செய்யும் போது பிழை: {0! S}"
+msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கை டிகோடிங் செய்யும் போது பிழை:"
 
 #: privacyidea/api/lib/utils.py:429 privacyidea/api/lib/utils.py:439
-#, fuzzy
 msgid "Authentication failure. Your token has expired:"
-msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கு காலாவதியானது: {0! S}"
+msgstr "அங்கீகார தோல்வி. உங்கள் கிள்ளாக்கு காலாவதியானது:"
 
 #: privacyidea/api/lib/utils.py:443
-#, fuzzy
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"அங்கீகார தோல்வி. {0! கள் பயனர்பெயர் JWT வழியாக ஆள்மாறாட்டம் செய்ய அனுமதிக்கப்படவில்லை."
+"அங்கீகார தோல்வி. {wrong_username} கள் பயனர்பெயர் JWT வழியாக ஆள்மாறாட்டம் செய்ய "
+"அனுமதிக்கப்படவில்லை."
 
 #: privacyidea/api/lib/utils.py:448
-#, fuzzy
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
-msgstr "அங்கீகார தோல்வி. இந்த வளத்தை அணுக உங்களுக்கு தேவையான பங்கு ({0! S}) இல்லை!"
+msgstr ""
+"அங்கீகார தோல்வி. இந்த வளத்தை அணுக உங்களுக்கு தேவையான பங்கு ({required_role}) இல்லை!"
 
 #: privacyidea/api/lib/utils.py:464
-#, fuzzy
 msgid "Invalid policy name:"
-msgstr "'{0! S}' என்பது தவறான கொள்கை பெயர்."
+msgstr "என்பது தவறான கொள்கை பெயர்:"
 
 #: privacyidea/api/lib/utils.py:467
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
@@ -928,13 +923,14 @@ msgstr ""
 "{givenname} </code> மற்றும் <code> {surname} </code>."
 
 #: privacyidea/lib/policy.py:2430
-#, fuzzy
 msgid ""
 "The issuer label for new enrolled Smartphone token.Possible tags are "
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
-"புதிய பதிவுசெய்யப்பட்ட ச்மார்ட்போன் கிள்ளாக்கு. } </code> மற்றும் <code> {user} </code>."
+"புதிய பதிவுசெய்யப்பட்ட ச்மார்ட்போன் கிள்ளாக்கு. மற்றும் <code> {user} </code>, "
+"<code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</code>, "
+"<code>{surname}</code>."
 
 #: privacyidea/lib/policy.py:2437
 msgid ""
@@ -1159,12 +1155,11 @@ msgstr ""
 "செயல்படும்."
 
 #: privacyidea/lib/policy.py:2620
-#, fuzzy
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"அங்கீகரிக்க பயனரை அனுமதிக்கவும் (இயல்புநிலை). '{0! S}' என அமைக்கப்பட்டால், பயனரின் ஏற்பு "
+"அங்கீகரிக்க பயனரை அனுமதிக்கவும் (இயல்புநிலை). '{0!s}' என அமைக்கப்பட்டால், பயனரின் ஏற்பு "
 "மறுக்கப்படும்."
 
 #: privacyidea/lib/policy.py:2627
@@ -1597,9 +1592,8 @@ msgid "My subscription has expired."
 msgstr "எனது சந்தா காலாவதியானது."
 
 #: privacyidea/lib/token.py:163
-#, fuzzy
 msgid "create_tokenclass_object failed:  {0!r}"
-msgstr "create_tokenclass_object தோல்வியுற்றது: {0! r}"
+msgstr "create_tokenclass_object தோல்வியுற்றது: {0!r}"
 
 #: privacyidea/lib/token.py:329
 msgid "I can only create SQL filters from tokeninfo of length 1."
@@ -1624,9 +1618,8 @@ msgid "multiple tokens are matching this OTP value!"
 msgstr "பல டோக்கன்கள் இந்த OTP மதிப்புடன் பொருந்துகின்றன!"
 
 #: privacyidea/lib/token.py:1232
-#, fuzzy
 msgid "init token failed. Unknown token type:"
-msgstr "INIT கிள்ளாக்கு தோல்வியுற்றது: தெரியாத கிள்ளாக்கு வகை {0! R}"
+msgstr "INIT கிள்ளாக்கு தோல்வியுற்றது: தெரியாத கிள்ளாக்கு வகை:"
 
 #: privacyidea/lib/token.py:1252
 msgid ""
@@ -1635,51 +1628,44 @@ msgid ""
 msgstr ""
 
 #: privacyidea/lib/token.py:1256
-#, fuzzy
 msgid "init token failed:"
-msgstr "inittoken தோல்வியுற்றது: {0! S}"
+msgstr "inittoken தோல்வியுற்றது:"
 
 #: privacyidea/lib/token.py:1432
-#, fuzzy
 msgid "Token already assigned to user {old_user!r}"
-msgstr "கிள்ளாக்கு ஏற்கனவே பயனருக்கு ஒதுக்கப்பட்டுள்ளது {0! R}"
+msgstr "கிள்ளாக்கு ஏற்கனவே பயனருக்கு ஒதுக்கப்பட்டுள்ளது {old_user!r}"
 
 #: privacyidea/lib/token.py:1446
-#, fuzzy
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
-msgstr "கிள்ளாக்கு பணி {0! R}/{1! S}: {2! R} க்கு தோல்வியுற்றது"
+msgstr "கிள்ளாக்கு பணி {0!r}/{1!s}: {2!r} க்கு தோல்வியுற்றது"
 
 #: privacyidea/lib/token.py:1474
-#, fuzzy
 msgid "Token unassign failed for"
-msgstr "{0! R}/{1! R}: {2! R}"
+msgstr ""
 
 #: privacyidea/lib/token.py:1554
-#, fuzzy
 msgid "Parameter user must not be a string:"
-msgstr "அளவுரு பயனர் ஒரு சரமாக இருக்கக்கூடாது: {0! R}"
+msgstr "அளவுரு பயனர் ஒரு சரமாக இருக்கக்கூடாது:"
 
 #: privacyidea/lib/token.py:2110
 msgid "You can only define a lost token for an assigned token."
 msgstr "ஒதுக்கப்பட்ட டோக்கனுக்கு இழந்த கிள்ளாக்கை மட்டுமே நீங்கள் வரையறுக்க முடியும்."
 
 #: privacyidea/lib/token.py:2136
-#, fuzzy
 msgid "temporary replacement for {0!s}"
-msgstr "{0! S க்கு க்கு தற்காலிக மாற்றீடு"
+msgstr "{0!s} க்கு க்கு தற்காலிக மாற்றீடு"
 
 #: privacyidea/lib/token.py:2192
 msgid "There is no active and assigned token in this realm"
 msgstr "இந்த உலகில் செயலில் மற்றும் ஒதுக்கப்பட்ட கிள்ளாக்கு இல்லை"
 
 #: privacyidea/lib/token.py:2204
-#, fuzzy
 msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
 "இந்த உலகில் செயலில் மற்றும் ஒதுக்கப்பட்ட கிள்ளாக்கு எதுவும் இல்லை, சேர்க்கப்பட்டுள்ளது வகைகள்: "
-"{0! கள்}, விலக்கப்பட்ட வகைகள்: {1! S}"
+"{0!s}, விலக்கப்பட்ட வகைகள்: {1!s}"
 
 #: privacyidea/lib/token.py:2257
 msgid "OTP verification failed."
@@ -1702,9 +1688,8 @@ msgid "Response did not match the challenge."
 msgstr "பதில் சவாலுடன் பொருந்தவில்லை."
 
 #: privacyidea/lib/token.py:2611
-#, fuzzy
 msgid "Response did not match for {0!s} tokens."
-msgstr "பதில் {0! S} டோக்கன்களுக்கு பொருந்தவில்லை."
+msgstr "பதில் {0!s} டோக்கன்களுக்கு பொருந்தவில்லை."
 
 #: privacyidea/lib/token.py:2618
 msgid "No active challenge response token found"
@@ -1727,33 +1712,28 @@ msgid "No suitable token found for authentication."
 msgstr "அங்கீகாரத்திற்கு பொருத்தமான கிள்ளாக்கு எதுவும் கிடைக்கவில்லை."
 
 #: privacyidea/lib/token.py:2688
-#, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
-msgstr "நிர்வாகி {0! S} டோக்கன்களைத் தொடங்க அனுமதிக்கப்படுகிறது."
+msgstr "நிர்வாகி {0!s} டோக்கன்களைத் தொடங்க அனுமதிக்கப்படுகிறது."
 
 #: privacyidea/lib/token.py:2696
-#, fuzzy
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr "பயனர் ஒரு {0! S} கிள்ளாக்கை சேர்க்க அனுமதிக்கப்படுகிறார்."
+msgstr "பயனர் ஒரு {0!s} கிள்ளாக்கை சேர்க்க அனுமதிக்கப்படுகிறார்."
 
 #: privacyidea/lib/token.py:2727
-#, fuzzy
 msgid "Set the maximum allowed PIN length of the {0!s} token."
-msgstr "{0! S} டோக்கனின் அதிகபட்ச அனுமதிக்கப்பட்ட முள் நீளத்தை அமைக்கவும்."
+msgstr "{0!s} டோக்கனின் அதிகபட்ச அனுமதிக்கப்பட்ட முள் நீளத்தை அமைக்கவும்."
 
 #: privacyidea/lib/token.py:2734
-#, fuzzy
 msgid "Set the minimum required PIN length of the {0!s} token."
-msgstr "{0! S} டோக்கனின் குறைந்தபட்ச தேவையான முள் நீளத்தை அமைக்கவும்."
+msgstr "{0!s} டோக்கனின் குறைந்தபட்ச தேவையான முள் நீளத்தை அமைக்கவும்."
 
 #: privacyidea/lib/token.py:2740
-#, fuzzy
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"{0! S} டோக்கனின் தேவையான முள் உள்ளடக்கங்களைக் குறிப்பிடவும். (இ) எழுத்து, (எண், "
-"(சிறப்பு, (ஓ) தேர்கள். [+/-]!"
+"{0!s} டோக்கனின் தேவையான முள் உள்ளடக்கங்களைக் குறிப்பிடவும். (இ) எழுத்து, (எண், (சிறப்பு, "
+"(ஓ) தேர்கள். [+/-]!"
 
 #: privacyidea/lib/token.py:2785 privacyidea/lib/token.py:2801
 msgid "The tokengroup does not exist."
@@ -2499,14 +2479,13 @@ msgid ""
 msgstr ""
 
 #: privacyidea/lib/eventhandler/usernotification.py:266
-#, fuzzy
 msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
 "tag {random}."
 msgstr ""
 "அறிவிப்பின் கோப்பு பெயர். தற்போதுள்ள கோப்புகள் மேலெழுதப்படுகின்றன. ஆவணத்தில் "
-"குறிப்பிடப்பட்டுள்ளபடி இந்த பெயரில் குறிச்சொற்கள் இருக்கலாம் மற்றும் {சீரற்ற the "
+"குறிப்பிடப்பட்டுள்ளபடி இந்த பெயரில் குறிச்சொற்கள் இருக்கலாம் மற்றும் {random} "
 "குறிச்சொல்லையும் கொண்டிருக்கலாம்."
 
 #: privacyidea/lib/eventhandler/webhookeventhandler.py:82
@@ -2536,18 +2515,17 @@ msgstr ""
 "காணப்படுகின்றன."
 
 #: privacyidea/lib/resolvers/LDAPIdResolver.py:1147
-#, fuzzy
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
 msgstr ""
-"உங்கள் LDAP கட்டமைப்பு {0! S} பயனர் பொருள்களைக் கண்டறிந்தது, ஆனால் குறிப்பிட்ட UIDTYPE "
-"உடன் {1! S} மட்டுமே"
+"உங்கள் LDAP கட்டமைப்பு {0!s} பயனர் பொருள்களைக் கண்டறிந்தது, ஆனால் குறிப்பிட்ட UIDTYPE உடன்"
+" {1!s} மட்டுமே ({2:.4f})"
 
 #: privacyidea/lib/resolvers/LDAPIdResolver.py:1151
-#, fuzzy
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
-msgstr "உங்கள் LDAP கட்டமைப்பு சரியாக இருப்பதாக தெரிகிறது, {0! S} பயனர் பொருள்கள்."
+msgstr ""
+"உங்கள் LDAP கட்டமைப்பு சரியாக இருப்பதாக தெரிகிறது, {0!s} பயனர் பொருள்கள். {1:.4f}."
 
 #: privacyidea/lib/smsprovider/FirebaseProvider.py:199
 msgid ""
@@ -2985,9 +2963,8 @@ msgid "Please scan the QR code and enter the OTP value!"
 msgstr "தயவுசெய்து QR குறியீட்டை ச்கேன் செய்து OTP மதிப்பை உள்ளிடவும்!"
 
 #: privacyidea/lib/tokens/indexedsecrettoken.py:50
-#, fuzzy
 msgid "Please enter the positions {0!s} from your secret."
-msgstr "உங்கள் ரகசியத்திலிருந்து {0! கள்} நிலைகளை உள்ளிடவும்."
+msgstr "உங்கள் ரகசியத்திலிருந்து {0!s} நிலைகளை உள்ளிடவும்."
 
 #: privacyidea/lib/tokens/indexedsecrettoken.py:99
 msgid "Indexed Secret Token"
@@ -3523,9 +3500,8 @@ msgid "You need to define the appId in the token config!"
 msgstr "கிள்ளாக்கு உள்ளமைவில் Appid ஐ நீங்கள் வரையறுக்க வேண்டும்!"
 
 #: privacyidea/lib/tokens/u2ftoken.py:444
-#, fuzzy
 msgid "Please confirm with your U2F token ({0!s})"
-msgstr "உங்கள் U2F கிள்ளாக்கு ({0! S}) உடன் உறுதிப்படுத்தவும்"
+msgstr "உங்கள் U2F கிள்ளாக்கு ({0!s}) உடன் உறுதிப்படுத்தவும்"
 
 #: privacyidea/lib/tokens/vascotoken.py:99
 msgid "VASCO Token: Authentication using VASCO tokens"
@@ -3546,9 +3522,8 @@ msgid "Generic WebAuthn Token"
 msgstr "பொதுவான வெபாஅ்ன் கிள்ளாக்கு"
 
 #: privacyidea/lib/tokens/webauthntoken.py:471
-#, fuzzy
 msgid "Please confirm with your WebAuthn token ({0!s})"
-msgstr "உங்கள் WebAuthn கிள்ளாக்கு ({0! S}) உடன் உறுதிப்படுத்தவும்"
+msgstr "உங்கள் WebAuthn கிள்ளாக்கு ({0!s}) உடன் உறுதிப்படுத்தவும்"
 
 #: privacyidea/lib/tokens/webauthntoken.py:472
 msgid "Please confirm with your WebAuthn token"
@@ -3662,13 +3637,12 @@ msgstr ""
 "இயல்புநிலை: விரும்பப்படுகிறது (டோக்கனால் ஆதரிக்கப்பட்டால் பயனரை சரிபார்க்கவும்)"
 
 #: privacyidea/lib/tokens/webauthntoken.py:660
-#, fuzzy
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
 msgstr ""
 "WebAuthn டோக்கன்களுக்கான பொது முக்கிய சான்றுகளை உருவாக்க எந்த வழிமுறை "
-"பயன்படுத்தப்படுகிறது. (இயல்புநிலை: [{0! S}], ஆர்டர்: [{1! S}])"
+"பயன்படுத்தப்படுகிறது. (இயல்புநிலை: [{0!s}], ஆர்டர்: [{1!s}])"
 
 #: privacyidea/lib/tokens/webauthntoken.py:667
 msgid ""
