@@ -53,7 +53,8 @@ by adding these two files::
     static/customize/views/includes/token.containercreate.post.bottom.html
 
 You can also include the enrollment data in the html files. The available data depends on the configuration you used
-for the container creation. However, at least the variable ``containerSerial`` is available.
+for the container creation. However, at least the variable ``containerSerial`` is available. To use the variable, write
+``{{ containerSerial }}``.
 
 If the registration was enabled, the following variables are available:
 
