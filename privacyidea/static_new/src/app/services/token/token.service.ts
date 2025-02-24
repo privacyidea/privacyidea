@@ -37,6 +37,11 @@ export interface EnrollmentOptions {
   separator?: string;
   requiredTokenOfRealms?: { realm: string; tokens: number }[];
   serviceId?: string;
+  caConnector?: string;
+  certTemplate?: string;
+  pem?: string;
+  emailAddress?: string;
+  readEmailDynamically?: boolean;
 }
 
 @Injectable({
@@ -403,6 +408,18 @@ export class TokenService {
     if (options.type === 'applspec') {
       payload.service_id = options.serviceId;
     }
+
+    if (options.type === 'certificate') {
+      payload.ca = options.caConnector;
+      payload.template = options.certTemplate;
+      payload.pem = options.pem;
+    }
+
+    if (options.type === 'email') {
+      payload.email = options.emailAddress;
+      payload.dynamic_email = options.readEmailDynamically;
+    }
+
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
   }
 }

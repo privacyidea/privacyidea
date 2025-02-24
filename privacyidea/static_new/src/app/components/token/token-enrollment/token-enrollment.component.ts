@@ -60,6 +60,8 @@ import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
 import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
 import { EnrollAspComponent } from './enroll-asp/enroll-asp.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
+import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
+import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -141,6 +143,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollFoureyesComponent,
     EnrollAspComponent,
     EnrollDaypasswordComponent,
+    EnrollCertificateComponent,
+    EnrollEmailComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -202,6 +206,11 @@ export class TokenEnrollmentComponent {
   seperator = signal('');
   requiredTokenOfRealm = signal<{ realm: string; tokens: number }[]>([]);
   serviceId = signal('');
+  caConnector = signal('');
+  certTemplate = signal('');
+  pem = signal('');
+  emailAddress = signal('');
+  readEmailDynamically = signal(false);
 
   constructor(
     private containerService: ContainerService,
@@ -351,6 +360,11 @@ export class TokenEnrollmentComponent {
       separator: this.seperator(),
       requiredTokenOfRealms: this.requiredTokenOfRealm(),
       serviceId: this.serviceId(),
+      caConnector: this.caConnector(),
+      certTemplate: this.certTemplate(),
+      pem: this.pem(),
+      emailAddress: this.emailAddress(),
+      readEmailDynamically: this.readEmailDynamically(),
     };
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

@@ -30,7 +30,7 @@ export type TokenType =
   | 'sms'
   | '4eyes'
   | 'applspec'
-  | 'cert'
+  | 'certificate'
   | 'daypassword'
   | 'email'
   | 'indexsecret'
@@ -134,7 +134,7 @@ export class TokenComponent {
       text: 'The Application Specific Password Token is a static password, that can be bound to certain services. This static password then can only be used to authenticate at this service.',
     },
     {
-      key: 'cert',
+      key: 'certificate',
       info: 'Certificate: Enroll an x509 Certificate Token.',
       text: 'The Certificate Token lets you enroll an x509 ceritificate by the given CA.',
     },
