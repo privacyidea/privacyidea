@@ -126,6 +126,13 @@
                         [readEmailDynamically]="readEmailDynamically"
                         [description]="description" />
     }
+    @case ("indexedsecret") {
+      <app-enroll-indexedsecret [otpKey]="otpKey"
+                              [description]="description" />
+    }
+    @case ("paper") {
+      <app-enroll-paper [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">

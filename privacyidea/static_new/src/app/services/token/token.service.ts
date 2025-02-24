@@ -336,11 +336,13 @@ export class TokenService {
       pin: options.pin,
     };
 
-    if (
-      ['hotp', 'totp', 'motp', 'applspec', 'daypassword'].includes(options.type)
-    ) {
+    if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
       payload.genkey = options.generateOnServer ? 1 : 0;
+    }
+
+    if (['daypassword', 'indexedsecret'].includes(options.type)) {
+      payload.otpkey = options.otpKey;
     }
 
     if (['hotp', 'totp', 'daypassword'].includes(options.type)) {

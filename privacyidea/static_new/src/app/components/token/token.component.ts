@@ -33,7 +33,7 @@ export type TokenType =
   | 'certificate'
   | 'daypassword'
   | 'email'
-  | 'indexsecret'
+  | 'indexedsecret'
   | 'paper'
   | 'push'
   | 'questionnaire'
@@ -149,7 +149,7 @@ export class TokenComponent {
       text: 'The Email Token sends the OTP value to the users email address.',
     },
     {
-      key: 'indexsecret',
+      key: 'indexedsecret',
       info: 'Indexed Secret: Request certain positions of a shared secret from the user.',
       text: 'The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication the user is asked for random positions from this known secret.',
     },

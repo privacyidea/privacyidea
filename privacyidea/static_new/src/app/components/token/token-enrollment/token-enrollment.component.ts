@@ -62,6 +62,8 @@ import { EnrollAspComponent } from './enroll-asp/enroll-asp.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
 import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
+import { EnrollIndexedsecretComponent } from './enroll-indexsecret/enroll-indexedsecret.component';
+import { EnrollPaperComponent } from './enroll-paper/enroll-paper.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -145,6 +147,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollDaypasswordComponent,
     EnrollCertificateComponent,
     EnrollEmailComponent,
+    EnrollIndexedsecretComponent,
+    EnrollPaperComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
