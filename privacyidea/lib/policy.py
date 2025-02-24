@@ -205,6 +205,7 @@ DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
 comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
                                  "need to escape it with a backslash.")
 
+
 class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
     policy definitions.
@@ -425,6 +426,9 @@ class ACTION(object):
     DEFAULT_CONTAINER_TYPE = "default_container_type"
     RSS_FEEDS = "rss_feeds"
     RSS_AGE = "rss_age"
+    CONTAINER_WIZARD_TYPE = "container_wizard_type"
+    CONTAINER_WIZARD_TEMPLATE = "container_wizard_template"
+    CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
 
 
 class TYPE(object):
@@ -457,6 +461,7 @@ class GROUP(object):
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
+    WIZARD = "wizard"
 
 
 class MAIN_MENU(object):
@@ -1623,7 +1628,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
-    from .container import get_container_token_types
+    from .container import get_container_token_types, get_all_templates_with_type
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2714,7 +2719,6 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.SETTING_ACTIONS,
             }
         },
-
         SCOPE.WEBUI: {
             ACTION.ADMIN_DASHBOARD: {
                 'type': 'bool',
@@ -2810,12 +2814,14 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENWIZARD: {
                 'type': 'bool',
                 'desc': _("As long as a user has no token, he will only see"
-                          " a token wizard in the UI.")
+                          " a token wizard in the UI."),
+                'group': GROUP.WIZARD
             },
             ACTION.TOKENWIZARD2ND: {
                 'type': 'bool',
                 'desc': _("The tokenwizard will be displayed in the token "
-                          "menu, even if the user already has a token.")
+                          "menu, even if the user already has a token."),
+                'group': GROUP.WIZARD
             },
             ACTION.TOKENROLLOVER: {
                 'type': 'str',
@@ -2895,7 +2901,26 @@ def get_static_policy_definitions(scope=None):
                                          "<code>'Title':'URL'-'Title':'URL'</code> ")},
             ACTION.RSS_AGE: {'type': 'int',
                              'desc': _('The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
-                                       'feed. For admins the default is 180 days and for users 0 days.')}
+                                       'feed. For admins the default is 180 days and for users 0 days.')},
+            ACTION.CONTAINER_WIZARD_TYPE: {'type': 'str',
+                                           'value': list(get_container_token_types().keys()),
+                                           'desc': _('Container type to be created with the container wizard. It is '
+                                                     'required to set at least this option to enable the container '
+                                                     'wizard. As long as the user has no container assigned he will '
+                                                     'only see the container wizard in the UI.'),
+                                           'group': GROUP.WIZARD},
+            ACTION.CONTAINER_WIZARD_TEMPLATE: {'type': 'str',
+                                               'value': get_all_templates_with_type(),
+                                               'desc': _('Name of the container template to be used to create a '
+                                                         'container in the container wizard (optional). Note that the '
+                                                         'template must be of the same type as selected in the '
+                                                         'container_wizard_type.'),
+                                               'group': GROUP.WIZARD},
+            ACTION.CONTAINER_WIZARD_REGISTRATION: {'type': 'bool',
+                                                   'desc': _('In the container wizard, a QR code will be generated '
+                                                             'to register the new container on the smartphone. '
+                                                             '(Only applicable for smartphone containers)'),
+                                                   'group': GROUP.WIZARD}
         },
         SCOPE.CONTAINER: {
             ACTION.PI_SERVER_URL: {
@@ -2952,6 +2977,7 @@ def get_static_policy_definitions(scope=None):
         }
 
     }
+
     if scope:
         ret = pol.get(scope, {})
     else:

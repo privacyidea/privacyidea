@@ -769,6 +769,9 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 // Allow the controller to also call this function
                 scope.functionObj.saveOpenProperties = scope.saveOpenProperties;
 
+                // Available SMS gateways. We do this here to avoid javascript loops
+                scope.smsGateways = AuthFactory.getRightsValue('sms_gateways', '').split(' ');
+
                 scope.editTokenProperties = function (index) {
                     scope.saveOpenProperties();
 

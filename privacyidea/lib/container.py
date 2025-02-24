@@ -362,6 +362,7 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
                 "user": ..., Name of the user (optional)
                 "realm": ..., Name of the realm (optional)
                 "template": {...}, Template as dictionary (optional)
+                "template_name": ..., Name of the template (optional)
             }
 
         To assign a user to the container, the user and realm are required.
@@ -382,6 +383,11 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
     if ctype.lower() not in get_container_classes().keys():
         raise EnrollmentError(f"Type '{ctype}' is not a valid type!")
 
+    template_dict = params.get("template")
+    template_name = params.get("template_name")
+    if template_dict and template_name:
+        raise ParameterError("Both template and template_name are given. Choose only one!")
+
     desc = params.get("description") or ""
     serial = params.get("container_serial")
     if serial:
@@ -397,20 +403,38 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
     container = create_container_from_db_object(db_container)
 
     # Template handling
-    template = params.get("template") or {}
     template_tokens = []
-    # Check if a template of a valid type is used
-    if template.get("container_type") == ctype:
-        # check if the template was modified, otherwise save the template name
-        stored_templates = get_templates_by_query(name=template["name"])["templates"]
-        if len(stored_templates) > 0:
-            original_template = stored_templates[0]
-            original_template_used = compare_template_dicts(template, original_template)
-            if original_template_used:
-                container.template = original_template["name"]
-        template_options = template.get("template_options", {})
-        # tokens from template
-        template_tokens = template_options.get("tokens", [])
+    if template_name:
+        # Use template from db
+        try:
+            template = get_template_obj(template_name)
+        except ResourceNotFoundError as ex:
+            template = None
+            log.warning(f"Template {template_name} does not exists, create container without template: {ex}")
+
+        if template:
+            if template.container_type == ctype:
+                template_options = template.get_template_options_as_dict()
+                template_tokens = template_options.get("tokens", [])
+                container.template = template_name
+            else:
+                log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+    elif template_dict:
+        # Use template dictionary
+        if template_dict.get("container_type") == ctype:
+            # check if the template was modified, otherwise save the template name
+            stored_templates = get_templates_by_query(name=template_dict["name"])["templates"]
+            if len(stored_templates) > 0:
+                original_template = stored_templates[0]
+                original_template_used = compare_template_dicts(template_dict, original_template)
+                if original_template_used:
+                    container.template = original_template["name"]
+            template_options = template_dict.get("template_options", {})
+            # tokens from template
+            template_tokens = template_options.get("tokens", [])
+        else:
+            log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+
 
     user = params.get("user")
     realm = params.get("realm")
@@ -1228,6 +1252,17 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
                 return None
             return template
     return None
+
+
+def get_all_templates_with_type():
+    """
+    Returns a list of display strings containing the name and type of all templates.
+    """
+    templates = TokenContainerTemplate.query.all()
+    template_list = []
+    for template in templates:
+        template_list.append(f"{template.name}({template.container_type})")
+    return template_list
 
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,

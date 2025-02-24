@@ -1,4 +1,4 @@
-.. _synchronization:
+.. _container_synchronization:
 
 Synchronization
 ................
