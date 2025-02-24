@@ -541,7 +541,7 @@ msgstr "Assegna un nuovo token {{ newToken.serial }}"
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Assegnare un nuovo token {{ newTokenObject.serial }}"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:48
+#: privacyidea/static/components/token/views/token.containercreate.html:54
 #, fuzzy
 #| msgid "Assign token to user"
 msgid "Assign the Container to a User"
@@ -555,7 +555,7 @@ msgstr ""
 "Assegna il nuovo container a {{ userName }} in\n"
 "                realm {{ userRealm }}"
 
-#: privacyidea/static/components/token/views/token.enroll.html:76
+#: privacyidea/static/components/token/views/token.enroll.html:77
 #, fuzzy
 #| msgid "Assign token to user"
 msgid "Assign the token to a container"
@@ -596,7 +596,7 @@ msgstr "Collegare a una nuova macchina"
 msgid "Attribute mapping"
 msgstr "Mappatura degli attributi"
 
-#: privacyidea/static/templates/menu.html:94
+#: privacyidea/static/templates/menu.html:85
 msgid "Audit"
 msgstr "Audit"
 
@@ -920,7 +920,7 @@ msgstr "Comparatore"
 msgid "Compare"
 msgstr "Comparatore"
 
-#: privacyidea/static/templates/menu.html:102
+#: privacyidea/static/templates/menu.html:93
 msgid "Components"
 msgstr "Componenti"
 
@@ -935,7 +935,7 @@ msgstr "Condizione"
 msgid "Conditions"
 msgstr "Condizioni"
 
-#: privacyidea/static/templates/menu.html:86
+#: privacyidea/static/templates/menu.html:77
 msgid "Config"
 msgstr "Configurazione"
 
@@ -952,7 +952,7 @@ msgstr "Nome del connettore"
 msgid "Contained Tokens:"
 msgstr "Token caricati:"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:142
+#: privacyidea/static/components/token/views/token.containercreate.html:160
 #, fuzzy
 #| msgid "Remote Realm"
 msgid "Container Created"
@@ -984,7 +984,7 @@ msgid "Container Templates"
 msgstr "Tipo di Bind"
 
 #: privacyidea/static/components/audit/views/audit.log.html:89
-#: privacyidea/static/components/token/views/token.containercreate.html:25
+#: privacyidea/static/components/token/views/token.containercreate.html:30
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:36
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:22
 #, fuzzy
@@ -1025,7 +1025,7 @@ msgstr ""
 "Finestra di conteggio dei\n"
 "                    nuovi token registrati"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:133
+#: privacyidea/static/components/token/views/token.containercreate.html:142
 #, fuzzy
 #| msgid "Create realm"
 msgid "Create"
@@ -1067,7 +1067,7 @@ msgstr "Crea Realm per il nodo {{ selectedNode.name }}"
 msgid "Create Template"
 msgstr "Modello di certificato"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:20
+#: privacyidea/static/components/token/views/token.containercreate.html:25
 #, fuzzy
 #| msgid "Create new Event Handler"
 msgid "Create a New Container"
@@ -1179,6 +1179,12 @@ msgstr "Crea una nuova Policy"
 #: privacyidea/static/components/config/views/config.system.html:119
 msgid "Create new SMS Gateway definition"
 msgstr "Crea una nuova definizione di gateway SMS"
+
+#: privacyidea/static/components/token/views/token.enroll.html:227
+#, fuzzy
+#| msgid "Create new Event Handler"
+msgid "Create new container"
+msgstr "Crea un nuovo gestore di eventi"
 
 #: privacyidea/static/components/user/views/user.details.html:99
 msgid "Custom attribute name"
@@ -1329,7 +1335,7 @@ msgstr "Elimina utente"
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
-#: privacyidea/static/components/token/views/token.containercreate.html:38
+#: privacyidea/static/components/token/views/token.containercreate.html:44
 #: privacyidea/static/components/token/views/token.containerdetails.html:458
 #: privacyidea/static/components/token/views/token.containerdetails.html:90
 #: privacyidea/static/components/token/views/token.containerlist.html:68
@@ -1497,7 +1503,7 @@ msgstr "Impostazioni del token EMail"
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:41
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:57
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
-#: privacyidea/static/components/token/views/token.containercreate.html:75
+#: privacyidea/static/components/token/views/token.containercreate.html:82
 #: privacyidea/static/components/token/views/token.containerdetails.html:125
 #: privacyidea/static/components/token/views/token.containerdetails.html:200
 #: privacyidea/static/components/token/views/token.details.html:306
@@ -1601,7 +1607,7 @@ msgstr "Modifica resolver SQL {{ resolvername }}"
 msgid "Edit Service ID {{ servicename }}"
 msgstr "Modifica resolver {{ resolvername }}"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:110
+#: privacyidea/static/components/token/views/token.containercreate.html:119
 #, fuzzy
 #| msgid "Edit Options"
 msgid "Edit Settings"
@@ -1680,7 +1686,7 @@ msgstr "Endpoint (URL)"
 msgid "Enroll New Token"
 msgstr "Registra un nuovo token"
 
-#: privacyidea/static/components/token/views/token.enroll.html:159
+#: privacyidea/static/components/token/views/token.enroll.html:160
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1691,7 +1697,7 @@ msgstr "Registra token"
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:146
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:222
+#: privacyidea/static/components/token/views/token.enroll.html:223
 msgid "Enroll a new token"
 msgstr "Registra un nuovo token"
 
@@ -1791,7 +1797,7 @@ msgstr "Esempi"
 msgid "Expiration"
 msgstr "Scadenza"
 
-#: privacyidea/static/components/token/views/token.enroll.html:93
+#: privacyidea/static/components/token/views/token.enroll.html:94
 #, fuzzy
 msgid "Extended Attributes"
 msgstr "Attributi estesi"
@@ -1925,7 +1931,7 @@ msgstr "Generare la chiave OTP sul server"
 msgid "Generate Request"
 msgstr "Genera richiesta"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:107
+#: privacyidea/static/components/token/views/token.containercreate.html:116
 msgid ""
 "Generate a QR code to register the container on a\n"
 "                smartphone."
@@ -1961,15 +1967,15 @@ msgstr "Ottieni la documentazione di sistema"
 msgid "Get available CAs"
 msgstr "Ottieni le CA disponibili"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:479
+#: privacyidea/static/components/login/controllers/loginControllers.js:480
 msgid "Get the Authenticator App for Android."
 msgstr "Ottieni l'applicazione Authenticator per Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:486
+#: privacyidea/static/components/login/controllers/loginControllers.js:487
 msgid "Get the Authenticator App for iOS."
 msgstr "Ottieni l'applicazione Authenticator per iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:493
+#: privacyidea/static/components/login/controllers/loginControllers.js:494
 msgid "Get the Authenticator App."
 msgstr "Ottieni l'applicazione Authenticator."
 
@@ -2185,7 +2191,7 @@ msgstr ""
 msgid "Here you may register a new user account"
 msgstr "Qui puoi registrare un nuovo account utente"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:80
+#: privacyidea/static/components/token/views/token.containercreate.html:88
 #: privacyidea/static/components/token/views/token.containerdetails.html:170
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:51
 msgid "Hide"
@@ -2207,7 +2213,7 @@ msgstr "Dettaglio"
 msgid "Hide Policy templates"
 msgstr "Nascondi i modelli di policy"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:116
+#: privacyidea/static/components/token/views/token.containercreate.html:125
 #, fuzzy
 #| msgid "HOTP Token settings"
 msgid "Hide Settings"
@@ -2528,7 +2534,8 @@ msgstr ""
 msgid "Login with credentials"
 msgstr "Accedi con le credenziali"
 
-#: privacyidea/static/components/token/views/token.enroll.html:226
+#: privacyidea/static/components/token/views/token.containercreate.html:243
+#: privacyidea/static/components/token/views/token.enroll.html:231
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "Disconnessione"
@@ -2556,7 +2563,7 @@ msgid "Machine Resolver"
 msgstr "Resolver di macchine"
 
 #: privacyidea/static/components/config/views/config.html:54
-#: privacyidea/static/templates/menu.html:79
+#: privacyidea/static/templates/menu.html:70
 msgid "Machines"
 msgstr "Macchine"
 
@@ -2684,7 +2691,7 @@ msgstr "Nuovo {{ mResolvertype | uppercase }} Resolver"
 msgid "New {{ resolvertype }}"
 msgstr "Nuovo {{ resolvertype }}"
 
-#: privacyidea/static/templates/menu.html:47
+#: privacyidea/static/templates/menu.html:102
 msgid "News"
 msgstr ""
 
@@ -2748,7 +2755,7 @@ msgstr "Nessun utente trovato"
 msgid "Node-specific Resolver Configuration"
 msgstr "Configurazione CRL"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:96
+#: privacyidea/static/components/token/views/token.containercreate.html:104
 msgid ""
 "Note: Changes will only be applied to this container and not to the template."
 msgstr ""
@@ -2934,7 +2941,7 @@ msgstr "Sovrascrivere i client di autorizzazione"
 msgid "PGP Key"
 msgstr "Chiave PGP"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:717
+#: privacyidea/static/components/login/controllers/loginControllers.js:720
 msgid "PIN changed successfully."
 msgstr "Il PIN è stato modificato con successo."
 
@@ -3053,7 +3060,7 @@ msgstr ""
 msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Indicare l'URL di base del server privacyIDEA."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:158
+#: privacyidea/static/components/token/views/token.containercreate.html:177
 #: privacyidea/static/components/token/views/token.containerdetails.html:291
 #, fuzzy
 #| msgid ""
@@ -3317,7 +3324,7 @@ msgstr "Realm"
 msgid "Realm Name"
 msgstr "Nome del realm"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:681
+#: privacyidea/static/components/login/controllers/loginControllers.js:684
 msgid "Realm defrealm created."
 msgstr "Realm derealm creato."
 
@@ -3368,8 +3375,8 @@ msgstr "Registra"
 msgid "Register Container on Device"
 msgstr "Configurazione CRL"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:104
-#: privacyidea/static/components/token/views/token.containercreate.html:150
+#: privacyidea/static/components/token/views/token.containercreate.html:112
+#: privacyidea/static/components/token/views/token.containercreate.html:169
 #, fuzzy
 #| msgid "Registration Code"
 msgid "Registration"
@@ -3384,6 +3391,12 @@ msgstr "Codice di registrazione"
 #| msgid "Registration Code"
 msgid "Registration Configuration"
 msgstr "Codice di registrazione"
+
+#: privacyidea/static/components/token/views/token.containercreate.html:239
+#, fuzzy
+#| msgid "User deleted successfully."
+msgid "Registration completed successfully"
+msgstr "Utente cancellato con successo."
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:44
 msgid "Remote Realm"
@@ -3558,7 +3571,7 @@ msgstr "Stato del Rollout"
 msgid "Rollover"
 msgstr "Rollover"
 
-#: privacyidea/static/components/token/views/token.enroll.html:160
+#: privacyidea/static/components/token/views/token.enroll.html:161
 msgid "Rollover Token"
 msgstr "Token Rollover"
 
@@ -4014,7 +4027,7 @@ msgid "Some Authenticator Apps only support the SHA1 algorithm."
 msgstr "Google Authenticator supporta solo l'algoritmo SHA1."
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:47
-#: privacyidea/static/components/token/views/token.containercreate.html:41
+#: privacyidea/static/components/token/views/token.containercreate.html:47
 #: privacyidea/static/components/token/views/token.enroll.html:40
 msgid "Some nice words..."
 msgstr "Alcune belle parole..."
@@ -4070,7 +4083,7 @@ msgid "Support"
 msgstr "Supporto"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:41
-#: privacyidea/static/components/token/views/token.containercreate.html:33
+#: privacyidea/static/components/token/views/token.containercreate.html:39
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:44
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:25
 #, fuzzy
@@ -4149,7 +4162,7 @@ msgstr "Modulo task"
 msgid "Template"
 msgstr "Modelli di policy"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:66
+#: privacyidea/static/components/token/views/token.containercreate.html:72
 #, fuzzy
 msgid "Template Name and Contained Token Types"
 msgstr "Configurazione CRL"
@@ -4748,7 +4761,7 @@ msgstr ""
 "Il file contenente il certificato della CA che ha firmato il\n"
 "                    certificato LDAP TLS."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:172
+#: privacyidea/static/components/token/views/token.containercreate.html:191
 msgid ""
 "The following tokens were successfully enrolled in the container using the "
 "template"
@@ -4996,7 +5009,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr "Il server creerà una password statica."
 
-#: privacyidea/static/components/token/views/token.enroll.html:142
+#: privacyidea/static/components/token/views/token.enroll.html:143
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -5021,7 +5034,7 @@ msgstr ""
 "Tempo per il quale sarà possibile utilizzare la password, ad esempio '1d' o "
 "'12h'."
 
-#: privacyidea/static/components/token/views/token.enroll.html:190
+#: privacyidea/static/components/token/views/token.enroll.html:191
 #, fuzzy
 #| msgid ""
 #| "The token was successfully enrolled with serial number\n"
@@ -5085,7 +5098,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "Il token è stato contrassegnato con successo come perso."
 
-#: privacyidea/static/components/token/views/token.enroll.html:175
+#: privacyidea/static/components/token/views/token.enroll.html:176
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5105,7 +5118,7 @@ msgstr ""
 "newUser.realm})\">{{ newUser.user }}</a> nel realm\n"
 "            {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:184
+#: privacyidea/static/components/token/views/token.enroll.html:185
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5574,7 +5587,7 @@ msgstr "Resync token fallito."
 msgid "Token resync successful."
 msgstr "Resync del token riuscita."
 
-#: privacyidea/static/components/directives/controllers/directives.js:918
+#: privacyidea/static/components/directives/controllers/directives.js:921
 #: privacyidea/static/components/token/controllers/tokenControllers.js:644
 msgid "Token successfully verified"
 msgstr "Token verificato con successo"
@@ -5596,9 +5609,9 @@ msgstr "Tokengroup"
 #: privacyidea/static/components/dashboard/views/dashboard.html:10
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:18
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:26
-#: privacyidea/static/components/token/views/token.containercreate.html:170
+#: privacyidea/static/components/token/views/token.containercreate.html:189
 #: privacyidea/static/components/token/views/token.html:25
-#: privacyidea/static/templates/menu.html:55
+#: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
 msgstr "Token"
 
@@ -5764,7 +5777,7 @@ msgstr "Usa STARTTLS su una connessione LDAP, di solito sulla porta 389."
 msgid "Use StartTLS"
 msgstr "Usa StartTLS"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:64
+#: privacyidea/static/components/token/views/token.containercreate.html:70
 #, fuzzy
 #| msgid "Certificate Template"
 msgid "Use a Template"
@@ -5787,7 +5800,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.containerdetails.html:462
 #: privacyidea/static/components/token/views/token.containerlist.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:90
-#: privacyidea/static/templates/menu.html:71
+#: privacyidea/static/templates/menu.html:62
 msgid "User"
 msgstr "Utente"
 
@@ -5854,7 +5867,7 @@ msgstr "Username case-insensitive."
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
 #: privacyidea/static/components/config/views/config.html:62
-#: privacyidea/static/templates/menu.html:63
+#: privacyidea/static/templates/menu.html:54
 msgid "Users"
 msgstr "Utenti"
 
@@ -5871,7 +5884,7 @@ msgid "Valid time"
 msgstr "Tempo valido"
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:122
+#: privacyidea/static/components/token/views/token.enroll.html:123
 msgid "Validity End"
 msgstr "Fine validità"
 
@@ -5880,7 +5893,7 @@ msgid "Validity Period"
 msgstr "Periodo di validità"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:101
+#: privacyidea/static/components/token/views/token.enroll.html:102
 msgid "Validity Start"
 msgstr "Inizio validità"
 
@@ -6007,7 +6020,7 @@ msgstr ""
 msgid "You are not allowed to enroll this token type! It will be skipped!"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:577
+#: privacyidea/static/components/login/controllers/loginControllers.js:580
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6128,7 +6141,7 @@ msgstr ""
 "La tua richiesta di certificato è presa in carico e in attesa\n"
 "    approvazione amministrativa."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:144
+#: privacyidea/static/components/token/views/token.containercreate.html:162
 msgid "Your container was successfully created with the serial:"
 msgstr ""
 
@@ -6158,7 +6171,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "La tua frase segreta."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:584
+#: privacyidea/static/components/login/controllers/loginControllers.js:587
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "L'abbonamento a privacyIDEA Authenticator è scaduto."
 
