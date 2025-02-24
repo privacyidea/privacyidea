@@ -17,7 +17,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
-                                    get_allowed_custom_attributes)
+                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -1625,6 +1625,38 @@ class PolicyTestCase(MyTestCase):
         delete_policy("scopeA_r_resolverB")
         delete_policy("scopeA_r_realmA_userA_resolverA")
         delete_policy("scopeA_r_realmA_userA_resolverB")
+
+    def test_42_convert_action_dict_to_python_dict_success(self):
+        action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        correct_dict = {"Key1": "Value1", "Community News": "https://community.privacyidea.org/c/news.rss",
+                        "Key2": "Value2"}
+        self.assertDictEqual(correct_dict, python_dict)
+
+        # single entry
+        action_dict = "'Key1':'Value1'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertDictEqual({"Key1": "Value1"}, python_dict)
+
+        # empty string
+        python_dict = convert_action_dict_to_python_dict("")
+        self.assertEqual({}, python_dict)
+
+    def test_43_convert_action_dict_to_python_dict_fail(self):
+        # invalid separator between key-value pairs
+        action_dict = "'Key1':'Value1'- 'Community News':'https://community.privacyidea.org/c/news.rss','Key2':'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
+
+        # keys and values not set in single quotes
+        action_dict = "Key1:Value1-Community News:https://community.privacyidea.org/c/news.rss-Key2:Value2"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
+
+        # invalid separator between key and value
+        action_dict = "'Key1' 'Value1'-'Community News': 'https://community.privacyidea.org/c/news.rss'-'Key2'-'Value2'"
+        python_dict = convert_action_dict_to_python_dict(action_dict)
+        self.assertEqual({}, python_dict)
 
 
 class PolicyMatchTestCase(MyTestCase):

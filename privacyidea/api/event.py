@@ -213,7 +213,7 @@ def delete_eventid(eid=None):
     :return: json with success or fail
     """
     res = delete_event(eid)
-    g.audit_object.log({"success": res,
+    g.audit_object.log({"success": True,
                         "info": eid})
 
     return send_result(res)

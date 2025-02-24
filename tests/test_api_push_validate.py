@@ -428,6 +428,9 @@ class PushAPITestCase(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(CLIENTMODE.POLL, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://pipush"))
             serial = detail.get("serial")
 
         # The Application starts polling, if the token is enrolled

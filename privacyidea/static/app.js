@@ -27,6 +27,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.tokenStates',
         //'privacyideaApp.containerStates',
         'privacyideaApp.dashboardStates',
+        'privacyideaApp.infoStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.registerStates',
@@ -51,11 +52,11 @@ myApp.config(['KeepaliveProvider', 'IdleProvider',
         KeepaliveProvider.interval(3);
     }]);
 
-var instance = window.location.pathname;
+let instance = window.location.pathname;
 if (instance === "/") {
     instance = "";
 }
-var backendUrl = "";
+let backendUrl = "";
 myApp.constant("instanceUrl", instance);
 myApp.constant("authUrl", backendUrl + instance + "/auth");
 myApp.constant("tokenUrl", backendUrl + instance + "/token");
@@ -66,6 +67,7 @@ myApp.constant("machineResolverUrl", backendUrl + instance + "/machineresolver")
 myApp.constant("machineUrl", backendUrl + instance + "/machine");
 myApp.constant("applicationUrl", backendUrl + instance + "/application");
 myApp.constant("realmUrl", backendUrl + instance + "/realm");
+myApp.constant("infoUrl", backendUrl + instance + "/info");
 myApp.constant("eventUrl", backendUrl + instance + "/event");
 myApp.constant("periodicTaskUrl", backendUrl + instance + "/periodictask");
 myApp.constant("smsgatewayUrl", backendUrl + instance + "/smsgateway");
@@ -151,8 +153,7 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
                         //debug: console.log("user canceled");
                     } else {
                         // The API is offline, not reachable
-                        inform.add(gettext("The privacyIDEA system seems to be" +
-                                " offline. The API is not reachable!"),
+                        inform.add(gettext("The privacyIDEA system seems to be offline. The API is not reachable!"),
                             {type: "danger", ttl: 10000});
                     }
                     return;
@@ -167,8 +168,9 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
-        // allow only links to our readthedocs documentation, netknights homepage and "otpauth:" links
-        let url_re = /^\s*(https:\/\/(privacyidea.readthedocs.io|netknights.it)\/|otpauth:|mailto:|file:|blob:)/;
+        // allow only links to our readthedocs documentation, netknights homepage, community privacyidea and
+        // "otpauth:" and pia scheme links
+        let url_re = /^\s*(https:\/\/(privacyidea\.readthedocs\.io|netknights\.it|community\.privacyidea\.org|www\.privacyidea\.org)\/|otpauth:|pia:|mailto:|file:|blob:)/;
         $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
     }]);
 

@@ -24,23 +24,27 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
-import os
 
-import logging
-from importlib import import_module
-import binascii
 import base64
-import sqlalchemy
-import string
+import binascii
+import hashlib
+import logging
 import re
+import string
+import threading
+import traceback
+from datetime import time as dt_time, timezone
 from datetime import timedelta, datetime
-from datetime import time as dt_time
+from importlib import import_module
+from typing import Union
+
+import sqlalchemy
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-import hashlib
-import traceback
-import threading
+
+from privacyidea.lib.framework import get_app_config_value
+
 try:
     from importlib import metadata
 except ImportError:
@@ -60,8 +64,8 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
-                          "n": string.digits,         # numbers
-                          "s": string.punctuation}    # special
+                          "n": string.digits,  # numbers
+                          "s": string.punctuation}  # special
 
 
 class AUTH_RESPONSE(object):
@@ -785,7 +789,7 @@ def reduce_realms(all_realms, policies):
 
 def is_true(value):
     """
-    Returns True is the value is 1, "1", True or "true"
+    Returns True if the value is 1, "1", True,"True", "true" or "TRUE"
 
     :param value: string or integer
     :return: Boolean
@@ -884,12 +888,12 @@ def compare_generic_condition(cond, key_method, warning):
     Compares a condition like "tokeninfoattribute == value".
     It uses the "key_method" to determine the value of "tokeninfoattribute".
 
-    If the value does not match, it returns False.
+    If the value does not match or the key does not exist, it returns False.
 
     :param cond: A condition containing a comparator like "==", ">", "<"
     :param key_method: A function call, that get the value from the key
-    :param warning: A warning message to be written to the log file.
-    :return: True of False
+    :param warning: A warning message to be written to the log file in case the condition is not parsable.
+    :return: True or False
     """
     key = value = None
     for comparator in ["==", ">", "<"]:
@@ -897,13 +901,39 @@ def compare_generic_condition(cond, key_method, warning):
             key, value = [x.strip() for x in cond.split(comparator)]
             break
     if value:
-        res = compare_value_value(key_method(key), comparator, value)
-        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
-        return res
+        if key_method(key) is not None:
+            res = compare_value_value(key_method(key), comparator, value)
+            log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+            return res
+        else:
+            log.debug(f"Key {key} not found.")
+            return False
     else:
         # There is a condition, but we do not know it!
         log.warning(warning.format(cond))
         raise Exception("Condition not parsable.")
+
+
+def compare_time(cond: str, time_value: datetime) -> bool:
+    """
+    Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
+
+    :param cond: The maximum time difference the time value may have to now, e.g. "5d", "2h", "30m"
+                 The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param time_value: The timestamp to be compared to now
+    :return: True if the time difference between the time stamp and now is less than the condition value,
+             False otherwise
+    """
+    # parse condition value to timedelta format
+    cond_time_delta = parse_timedelta(cond)
+
+    # calculate the true time difference between the time stamp and now
+    now = datetime.now(timezone.utc)
+    true_time_delta = now - time_value
+
+    # compare the true time value with the condition time value
+    res = compare_value_value(true_time_delta, "<", cond_time_delta)
+    return res
 
 
 def int_to_hex(serial):
@@ -1301,9 +1331,11 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
-        if obj:
+        if obj and obj != AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.ACCEPT
-        elif not obj and details.get("multi_challenge"):
+        elif obj and obj == AUTH_RESPONSE.CHALLENGE:
+            r_authentication = AUTH_RESPONSE.CHALLENGE
+        elif not obj and details.get("multi_challenge") or details.get("passkey"):
             # We have a challenge authentication
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
@@ -1351,7 +1383,10 @@ def create_tag_dict(logged_in_user=None,
                     client_ip=None,
                     pin=None,
                     challenge=None,
-                    escape_html=False):
+                    escape_html=False,
+                    container_serial=None,
+                    container_url_value=None,
+                    container_url_img=None):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1374,6 +1409,9 @@ def create_tag_dict(logged_in_user=None,
     :param pin: The PIN of a token
     :param challenge: The challenge data
     :param escape_html: Whether the values for the tags should be html escaped
+    :param container_serial: The serial number of the container
+    :param container_url_value: The URL for the container registration
+    :param container_url_img: The URL as QR code for the container registration
     :return: The tag dictionary
     """
     time = datetime.now().strftime("%H:%M:%S")
@@ -1404,7 +1442,10 @@ def create_tag_dict(logged_in_user=None,
                 pin=pin,
                 ua_browser=request.user_agent.browser if request else "",
                 ua_string=request.user_agent.string if request else "",
-                challenge=challenge if challenge else "")
+                challenge=challenge if challenge else "",
+                container_serial=container_serial,
+                container_url_value=container_url_value,
+                container_url_img=container_url_img)
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
@@ -1550,20 +1591,33 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent):
+def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
     """
     Searches for entries in the user agent that could identify the machine.
-    It is expected that the string following the key does not contain whitespaces.
     Example: ComputerName/Laptop-3324231
-
+    The following keys are by default searched for in the user agent:
+    ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    The list can be extended with custom keys in pi.cfg with the entry OFFLINE_MACHINE_KEYS = ["CustomKey1", ...]
     :param user_agent: The user agent string
-    :type user_agent: str
-    :return: The computer name or None if nothing is found
+    :type user_agent: str or None
+    :return: The computer name or a generated computer name if no matching key was found in the user agent
     :rtype: str or None
     """
-    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
-    if user_agent:
-        for key in keys:
-            if key in user_agent:
+    if not user_agent:
+        log.warning("No user agent provided to extract computer name from.")
+        return None
+    # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
+    # Do not convert to set as the order of the keys should be preserved and iteration should be deterministic
+    keys: list = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    config_keys: list = get_app_config_value("OFFLINE_MACHINE_KEYS", [])
+    keys.extend([key for key in config_keys if key not in keys])
+    log.debug(f"Keys to search for machine name in user agent: {keys}")
+    for key in keys:
+        if key in user_agent:
+            try:
                 return user_agent.split(key + "/")[1].split(" ")[0]
+            except Exception as ex:
+                # This exception is likely to happen, because words/parts like "Mac" are common
+                #log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
+                pass
     return None

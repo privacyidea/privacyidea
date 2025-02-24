@@ -129,7 +129,13 @@ angular.module("privacyideaApp")
                 }, function (data) {
                     $scope.tokendata = data.result.value;
                     //debug: console.log("Token for user " + $scope.username);
-                    $scope.enableAddTokenToContainer = $scope.tokendata.tokens.length > 0;
+                    $scope.tokenWithoutContainer = [];
+                    for (let token of $scope.tokendata.tokens) {
+                        if (!token.container_serial) {
+                            $scope.tokenWithoutContainer.push(token);
+                        }
+                    }
+                    $scope.enableAddTokenToContainer = $scope.tokenWithoutContainer.length > 0;
                 });
             };
 
@@ -355,16 +361,6 @@ angular.module("privacyideaApp")
             }, true); // true = deep watch
 
             // Button actions
-            $scope.addTokensToContainerMode = function () {
-                $scope.showTokenOfUser = false;
-                $scope.tokenWithoutContainer = [];
-                for (let token of $scope.tokendata.tokens) {
-                    if (!token.container_serial) {
-                        $scope.tokenWithoutContainer.push(token);
-                    }
-                }
-            };
-
             $scope.cancelAddTokensToContainerMode = function () {
                 $scope.showTokenOfUser = true;
                 $scope.tokenSelection = {};
@@ -379,11 +375,13 @@ angular.module("privacyideaApp")
                     }
                     selectedSerials += key;
                 }
-                let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
-                ContainerFactory.addTokenToContainer(params, function (data) {
-                    // Reload the token to show the container
-                    $scope._getUserToken();
-                });
+                if (selectedSerials.length > 0) {
+                    let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
+                    ContainerFactory.addTokenToContainer(params, function (data) {
+                        // Reload the token to show the container
+                        $scope._getUserToken();
+                    });
+                }
                 $scope.showTokenOfUser = true;
                 $scope.containerSerial = null;
             };

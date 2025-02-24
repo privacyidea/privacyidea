@@ -35,3 +35,4 @@ __pycache__/
 dist/
 *.swp
 /.vscode/
+/ca/

@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-09-02 17:05+0200\n"
-"PO-Revision-Date: 2023-03-29 12:41+0000\n"
-"Last-Translator: Dan Marina <dan.marina@yahoo.com>\n"
+"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Romanian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ro/>\n"
 "Language: ro\n"
@@ -18,6 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
 "20)) ? 1 : 2;\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:227
@@ -1407,6 +1408,7 @@ msgid "No suitable token found for authentication."
 msgstr ""
 
 #: lib/token.py:2627
+#, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Administratorul are permisiunea să resincronizeze token-uri."
 

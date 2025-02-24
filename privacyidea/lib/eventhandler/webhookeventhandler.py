@@ -39,7 +39,7 @@ class CONTENT_TYPE(object):
     Allowed type off content
     """
     JSON = "json"
-    URLENCODED = "urlendcode"
+    URLENCODED = "urlencoded"
 
 
 class ACTION_TYPE(object):

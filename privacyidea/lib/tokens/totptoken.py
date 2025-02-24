@@ -32,18 +32,18 @@ This file contains the definition of the TOTP token class
 It depends on the DB model, and the lib.tokenclass.
 TOTP is defined in https://tools.ietf.org/html/rfc6238
 """
+import datetime
 import logging
 import time
-import datetime
-from privacyidea.lib.tokens.HMAC import HmacOtp
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
-from privacyidea.lib.utils import determine_logged_in_userparams
+
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.config import get_from_config
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.HMAC import HmacOtp
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
 optional = True
 required = False
@@ -52,7 +52,6 @@ log = logging.getLogger(__name__)
 
 
 class TotpTokenClass(HotpTokenClass):
-
     # In contrast to the HOTP the counter does not contain the next OTP value,
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
@@ -460,7 +459,8 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        log.debug("timestep: {0!r}, syncWindow: {1!r}, timeShift: {2!r}".format(self.timestep, self.timewindow, self.timeshift))
+        log.debug("timestep: {0!r}, syncWindow: {1!r}, timeShift: {2!r}".format(self.timestep, self.timewindow,
+                                                                                self.timeshift))
 
         initTime = int(options.get('initTime', -1))
         if initTime != -1:
@@ -618,7 +618,7 @@ class TotpTokenClass(HotpTokenClass):
                                            inc_counter=False)
                 timeCounter = ((counter + i) * self.timestep) + self.timeshift
 
-                val_time = datetime.datetime.\
+                val_time = datetime.datetime. \
                     fromtimestamp(timeCounter).strftime("%Y-%m-%d %H:%M:%S")
                 otp_dict["otp"][counter + i] = {'otpval': otpval,
                                                 'time': val_time}
@@ -671,7 +671,6 @@ class TotpTokenClass(HotpTokenClass):
             ret["otplen"] = list(otplen_pol)[0]
 
         return ret
-
 
     @staticmethod
     def get_import_csv(l):

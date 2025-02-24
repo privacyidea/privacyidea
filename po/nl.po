@@ -1,11 +1,11 @@
 # Koen Roggemans <koen@roggemans.net>, 2024.
 # Cornelius Kölbel <cornelius.koelbel@netknights.it>, 2024.
-# Paul Lettich <paul.lettich@netknights.it>, 2024.
+# Paul Lettich <paul.lettich@netknights.it>, 2024, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"PO-Revision-Date: 2025-02-07 18:01+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/nl/>\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1315,7 +1315,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
-msgstr "Wil je echt het token { tokenSerial }} verwijderen?"
+msgstr "Wil je echt het token {{ tokenSerial }} verwijderen?"
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
@@ -3250,7 +3250,7 @@ msgstr "Overgangstoken"
 
 #: privacyidea/static/components/token/views/token.enroll.html:7
 msgid "Rollover token {{ form.serial }}"
-msgstr "Roteer token {{ newToken.serial }}"
+msgstr "Roteer token {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:46
 msgid "Rounds"

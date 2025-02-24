@@ -186,7 +186,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
 import re
@@ -202,6 +202,8 @@ DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netk
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
 
+comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
+                                 "need to escape it with a backslash.")
 
 class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
@@ -215,6 +217,7 @@ class SCOPE(object):
     ENROLL = "enrollment"
     WEBUI = "webui"
     REGISTER = "register"
+    CONTAINER = "container"
 
 
 class ACTION(object):
@@ -404,7 +407,24 @@ class ACTION(object):
     CONTAINER_UNASSIGN_USER = "container_unassign_user"
     CONTAINER_REALMS = "container_realms"
     CONTAINER_LIST = "container_list"
+    CONTAINER_REGISTER = "container_register"
+    CONTAINER_UNREGISTER = "container_unregister"
+    CONTAINER_ROLLOVER = "container_rollover"
+    PI_SERVER_URL = "privacyIDEA_server_url"
+    CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
+    CONTAINER_CHALLENGE_TTL = "container_challenge_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
+    CONTAINER_SSL_VERIFY = "container_ssl_verify"
+    CONTAINER_TEMPLATE_CREATE = "container_template_create"
+    CONTAINER_TEMPLATE_DELETE = "container_template_delete"
+    CONTAINER_TEMPLATE_LIST = "container_template_list"
+    CONTAINER_CLIENT_ROLLOVER = "container_client_rollover"
+    INITIALLY_ADD_TOKENS_TO_CONTAINER = "initially_add_tokens_to_container"
+    DISABLE_CLIENT_TOKEN_DELETION = "disable_client_token_deletion"
+    DISABLE_CLIENT_CONTAINER_UNREGISTER = "disable_client_container_unregister"
+    DEFAULT_CONTAINER_TYPE = "default_container_type"
+    RSS_FEEDS = "rss_feeds"
+    RSS_AGE = "rss_age"
 
 
 class TYPE(object):
@@ -435,6 +455,8 @@ class GROUP(object):
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
     CONTAINER = "container"
+    REGISTRATION = "registration and synchronization"
+    SMARTPHONE = "smartphone"
 
 
 class MAIN_MENU(object):
@@ -1313,19 +1335,18 @@ class PolicyClass(object):
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
             if role in tokenclass.get_class_info("ui_enroll"):
-                enroll_types[tokenclass.get_class_type()] = \
-                    tokenclass.get_class_info("description")
+                enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         else:
             extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         if pols:
-            # admin policies or user policies are set, so we need to
+            # Admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
-                # determine, if there is a enrollment policy for this very type
+                # determine, if there is an enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
                                                user=username,
                                                realm=userrealm,
@@ -1349,7 +1370,6 @@ class PolicyClass(object):
 #  NEW STUFF
 #
 #
-
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
@@ -1603,6 +1623,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
+    from .container import get_container_token_types
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2117,7 +2138,32 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Admin is allowed to list containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REGISTER: {'type': 'bool',
+                                        'desc': _('Admin is allowed to register containers for synchronization.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
+                                          'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
+                                        'desc': _('Admin is allowed to perform a container rollover including a'
+                                                  'rollover of all contained tokens.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
+                                               'desc': _('Admin is allowed to create and edit container templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
+                                               'desc': _('Admin is allowed to delete templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
+                                             'desc': _('Admin is allowed to list templates and view their details.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2292,7 +2338,34 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_LIST: {'type': 'bool',
                                     'desc': _('Users are allowed to list their own containers.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER}
+                                    'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_REGISTER: {'type': 'bool',
+                                        'desc': _(
+                                            'Users are allowed to register their own containers for synchronization.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
+                                          'desc': _('Users are allowed to unregister containers from synchronization.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
+                                        'desc': _('Users are allowed to perform a container rollover of their own '
+                                                  'containers. This includes a rollover of all contained tokens even '
+                                                  'if the user is not the owner of a contained token.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
+                                               'desc': _('Users are allowed to create and edit container templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
+                                               'desc': _('Users are allowed to delete templates.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
+                                             'desc': _('Users are allowed to list templates and view their details.'),
+                                             'mainmenu': [MAIN_MENU.TOKENS],
+                                             'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -2448,7 +2521,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Use an alternative challenge text for telling the '
                           'user to enter an OTP value. You can also use '
                           'tags for automated replacement. Check out the '
-                          'documentation for more details.')
+                          'documentation for more details.') + " " + comma_escape_text
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',
@@ -2761,6 +2834,11 @@ def get_static_policy_definitions(scope=None):
                           "enrollment dialog."),
                 'value': get_token_types()
             },
+            ACTION.DEFAULT_CONTAINER_TYPE: {
+                'type': 'str',
+                'desc': _("This is the default container type in the container create dialog."),
+                'value': list(get_container_token_types().keys())
+            },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
                 'desc': _("A list of realm names, which are "
@@ -2811,6 +2889,65 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
+            },
+            ACTION.RSS_FEEDS: {'type': 'str',
+                               'desc': _("The RSS feeds fetched for the user defined in the format: "
+                                         "<code>'Title':'URL'-'Title':'URL'</code> ")},
+            ACTION.RSS_AGE: {'type': 'int',
+                             'desc': _('The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
+                                       'feed. For admins the default is 180 days and for users 0 days.')}
+        },
+        SCOPE.CONTAINER: {
+            ACTION.PI_SERVER_URL: {
+                'type': 'str',
+                'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
+                          'It is used to build URLs the container can contact for registration and synchronization.'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_REGISTRATION_TTL: {
+                'type': 'int',
+                'desc': _('The time in minutes the client has to do the second step of the registration. '
+                          'The default is ten minutes.'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_CHALLENGE_TTL: {
+                'type': 'int',
+                'desc': _('After the client (a registered container) has challenged an action such as synchronization '
+                          'or unregistration, this defines the time in minutes the client has to complete the '
+                          'action. '
+                          'The default is two minutes.'),
+                'group': GROUP.REGISTRATION
+            },
+            ACTION.CONTAINER_SSL_VERIFY: {
+                'type': 'str',
+                'desc': _(
+                    'The container needs to verify the SSL certificate of the privacyIDEA server during registration '
+                    'and synchronization. (default True)'),
+                'group': GROUP.REGISTRATION,
+                'value': ['True', 'False']
+            },
+            ACTION.CONTAINER_CLIENT_ROLLOVER: {
+                'type': 'bool',
+                'desc': _('The client is allowed to perform a rollover of the container and the included tokens.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER: {
+                'type': 'bool',
+                'desc': _('During the first synchronization, the server automatically adds the clients tokens existing '
+                          'in privacyIDEA to the container. This allows to register devices with existing tokens as '
+                          'container without having to manually add the tokens on the device to the container.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.DISABLE_CLIENT_TOKEN_DELETION: {
+                'type': 'bool',
+                'desc': _('The user is not allowed to delete tokens locally on the smartphone.'),
+                'group': GROUP.SMARTPHONE
+            },
+            ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER: {
+                'type': 'bool',
+                'desc': _('The client is not allowed to unregister the container. The user can not delete the '
+                          'container locally on the smartphone.'),
+                'group': GROUP.SMARTPHONE
             }
         }
 
@@ -2876,6 +3013,30 @@ def get_policy_condition_comparators():
     """
     return {comparator: {"description": description}
             for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
+
+
+def convert_action_dict_to_python_dict(action: str) -> dict[str, str]:
+    """
+    Policy actions can not contain commas. Hence, the format 'key1':'value2'-'key2':'value2' is used.
+    This function takes such a string as input and converts it into a dictionary.
+
+    :param action: Action value of a policy
+    :return: Action value formatted as python dictionary
+    """
+    action_list = action.split("'-'")
+    action_dict = {}
+    for key_value_pair in action_list:
+        dict_components = key_value_pair.split("':'")
+        if len(dict_components) == 2:
+            # the first character of the key and the last character of the value could be single quotes which needs to
+            # be removed
+            key = dict_components[0][1:] if dict_components[0].startswith("'") else dict_components[0]
+            value = dict_components[1][:-1] if dict_components[1].endswith("'") else dict_components[1]
+            action_dict[key] = value
+        else:
+            log.debug(f"Invalid action format. The key-value pair is not separated by ':': {key_value_pair}")
+
+    return action_dict
 
 
 class MatchingError(ServerError):
@@ -3075,7 +3236,7 @@ class Match(object):
         The client IP is matched implicitly.
         From the token object we try to determine the user as the owner.
         If the token has no owner, we try to determine the tokenrealm.
-        We fallback to realm=None
+        We fall back to realm=None
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``

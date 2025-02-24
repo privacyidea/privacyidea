@@ -1,0 +1,80 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2015 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+SPDX-FileCopyrightText: 2020 Paul Lettich <paul.lettich@netknights.it>
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div>
+    <uib-accordion close-others="oneAtATime">
+        <div uib-accordion-group
+             class="panel-default"
+             is-open="isOpen">
+            <uib-accordion-heading ng-click="isOpen=!isOpen">
+                <div>{{ 'The OTP values'|translate }}
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                </div>
+            </uib-accordion-heading>
+            <div id="otpTable{{ enrolledToken.serial }}">
+                <div ng-include="instanceUrl+'/'+piCustomization+'/views/includes/token.enrolled.' + enrolledToken.type + '.top.html'"></div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped
+                                  tantoken">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>OTP</th>
+                            <th>#</th>
+                            <th>OTP</th>
+                            <th>#</th>
+                            <th>OTP</th>
+                            <th>#</th>
+                            <th>OTP</th>
+                            <th>#</th>
+                            <th>OTP</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="key in otpRows">
+                            <td>{{ $index }}</td>
+                            <td>{{ enrolledToken.otps[$index] }}</td>
+                            <td>{{ $index+(1*otpRowCount) }}</td>
+                            <td>{{ enrolledToken.otps[$index+
+                                    (1*otpRowCount)] }}</td>
+                            <td>{{ $index+(2*otpRowCount) }}</td>
+                            <td>{{ enrolledToken.otps[$index+
+                                    (2*otpRowCount)] }}</td>
+                            <td>{{ $index+(3*otpRowCount) }}</td>
+                            <td>{{ enrolledToken.otps[$index+
+                                    (3*otpRowCount)] }}</td>
+                            <td>{{ $index+(4*otpRowCount) }}</td>
+                            <td>{{ enrolledToken.otps[$index+
+                                    (4*otpRowCount)] }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div ng-include="instanceUrl+'/'+piCustomization+'/views/includes/token.enrolled.' + enrolledToken.type + '.bottom.html'"></div>
+            </div>
+        </div>
+    </uib-accordion>
+    <button class="btn-default btn"
+            ng-click="printOtp()">
+        <span class="glyphicon glyphicon-print"></span>
+        <span translate>Print the OTP list</span>
+    </button>
+</div>

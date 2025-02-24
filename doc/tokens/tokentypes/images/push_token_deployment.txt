@@ -1,0 +1,42 @@
+@startuml
+  rectangle "On Prem" {
+    card SAML {
+      node "Service Provider" as SP
+      node "Identity Provider" as IDP
+    }
+    card "1st Factor" {
+      database LDAP
+    }
+    card "2nd Factor" {
+      node privacyIDEA as PI
+      file "User Resolver" as Users
+    }
+  }
+  together {
+    actor User
+    node iPhone
+    node Client
+  }
+
+  cloud Cloud {
+    node Firebase
+    node APN
+  }
+
+  User ~~> iPhone
+  User ~~> Client
+
+  Client -- SP
+  SP -- IDP
+  SP ..> Client : Require Auth
+
+  Client --> IDP : Request Auth
+  IDP -- LDAP
+  IDP -- PI
+  PI -- Users
+
+  PI --> Firebase : Push Token
+  Firebase --> APN
+  APN --> iPhone
+  iPhone --> PI : Confirm Token
+@enduml
