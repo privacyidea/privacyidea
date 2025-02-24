@@ -1254,6 +1254,17 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
     return None
 
 
+def get_all_templates_with_type():
+    """
+    Returns a list of display strings containing the name and type of all templates.
+    """
+    templates = TokenContainerTemplate.query.all()
+    template_list = []
+    for template in templates:
+        template_list.append(f"{template.name}({template.container_type})")
+    return template_list
+
+
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
                            pagesize: int = 0, sortdir: str = "asc",
                            sortby: str = "name") -> dict[str, Union[int, list[dict], None]]:
