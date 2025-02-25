@@ -1070,7 +1070,7 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, counter: int = None) -> list[str]:
+def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, counter: int = None) -> list:
     """
     Returns a list of serials for a given list of OTP values
     The tokenobject_list would be created by get_tokens()

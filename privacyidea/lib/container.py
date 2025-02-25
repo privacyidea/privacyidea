@@ -159,7 +159,7 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
 
 
 def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                            realms: list[str] = None, template: str = None, sortby: str = 'serial',
+                            realms: list = None, template: str = None, sortby: str = 'serial',
                             sortdir: str = 'asc') -> Query:
     """
     Generates a sql query to filter containers by the given parameters.
@@ -211,8 +211,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                       realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc', template: str = None,
-                       page: int = 0, pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
+                       realms: list = None, sortby: str = 'serial', sortdir: str = 'asc', template: str = None,
+                       page: int = 0, pagesize: int = 0) -> dict:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -249,7 +249,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Query,
-                      object_list_key: str) -> dict[str, Union[int, None, list[any]]]:
+                      object_list_key: str) -> dict:
     """
         Creates the pagination of a sql query.
 
@@ -303,7 +303,7 @@ def find_container_for_token(serial: str) -> TokenContainerClass:
     return container
 
 
-def get_container_classes() -> dict[str, type[TokenContainerClass]]:
+def get_container_classes() -> dict:
     """
     Returns a dictionary of all available container classes in the format: { type: class }.
     New container types have to be added here.
@@ -347,7 +347,7 @@ def get_container_policy_info(container_type: Union[str, None] = None):
         return ret
 
 
-def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
+def init_container(params: dict) -> dict:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -458,7 +458,7 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
 
 
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
-                                          user_role: str) -> dict[str, dict]:
+                                          user_role: str) -> dict:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
@@ -618,7 +618,7 @@ def add_token_to_container(container_serial: str, token_serial: str) -> bool:
     return res
 
 
-def add_multiple_tokens_to_container(container_serial: str, token_serials: list) -> dict[str, bool]:
+def add_multiple_tokens_to_container(container_serial: str, token_serials: list) -> dict:
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
@@ -643,7 +643,7 @@ def add_multiple_tokens_to_container(container_serial: str, token_serials: list)
     return ret
 
 
-def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list) -> dict[str, bool]:
+def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list) -> dict:
     """
     Add the result False for all tokens the user is not authorized to manage.
 
@@ -657,7 +657,7 @@ def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list)
     return result
 
 
-def get_container_classes_descriptions() -> dict[str, str]:
+def get_container_classes_descriptions() -> dict:
     """
     Returns a dictionary of {"type": "Type: description"} entries for all container types.
     Used to list the container types.
@@ -669,7 +669,7 @@ def get_container_classes_descriptions() -> dict[str, str]:
     return ret
 
 
-def get_container_token_types() -> dict[str, list[str]]:
+def get_container_token_types() -> dict:
     """
     Returns a dictionary of {"type": ["tokentype0", "tokentype1", ...]} entries for all container types.
     Used to list the supported token types for each container type.
@@ -696,7 +696,7 @@ def remove_token_from_container(container_serial: str, token_serial: str) -> boo
     return res
 
 
-def remove_multiple_tokens_from_container(container_serial: str, token_serials: str) -> dict[str, bool]:
+def remove_multiple_tokens_from_container(container_serial: str, token_serials: str) -> dict:
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
@@ -744,7 +744,7 @@ def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     return True
 
 
-def set_container_info(serial, info: dict) -> dict[str, bool]:
+def set_container_info(serial, info: dict) -> dict:
     """
     Set the given info to the container with the given serial.
     Keys of type PI_INTERNAL can not be modified and will be ignored.
@@ -771,7 +771,7 @@ def set_container_info(serial, info: dict) -> dict[str, bool]:
     return result
 
 
-def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[str, None]]:
+def get_container_info_dict(serial: str, ikey: str = None) -> dict:
     """
     Returns the info of the given key or all infos if no key is given for the container with the given serial.
 
@@ -791,7 +791,7 @@ def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[st
     return container_info
 
 
-def delete_container_info(serial: str, ikey: str = None) -> dict[str, bool]:
+def delete_container_info(serial: str, ikey: str = None) -> dict:
     """
     Delete the info of the given key or all infos if no key is given.
     Internal infos are not deleted
@@ -846,7 +846,7 @@ def set_container_description(serial: str, description: str):
     container.description = description
 
 
-def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
+def set_container_states(serial: str, states: list) -> dict:
     """
     Set the states of a container.
 
@@ -860,7 +860,7 @@ def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     return res
 
 
-def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
+def add_container_states(serial: str, states: list) -> dict:
     """
     Add the states to a container.
 
@@ -874,8 +874,8 @@ def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     return res
 
 
-def set_container_realms(serial: str, realms: list[str],
-                         allowed_realms: Union[list[str], None] = []) -> dict[str, bool]:
+def set_container_realms(serial: str, realms: list,
+                         allowed_realms: Union[list, None] = []) -> dict:
     """
     Set the realms of a container.
 
@@ -909,7 +909,7 @@ def set_container_realms(serial: str, realms: list[str],
     return res
 
 
-def add_container_realms(serial: str, realms: list[str], allowed_realms: Union[list[str], None]) -> dict[str, bool]:
+def add_container_realms(serial: str, realms: list, allowed_realms: Union[list, None]) -> dict:
     """
     Add the realms to the container realms.
 
@@ -937,7 +937,7 @@ def add_container_realms(serial: str, realms: list[str], allowed_realms: Union[l
     return res
 
 
-def get_container_realms(serial: str) -> list[str]:
+def get_container_realms(serial: str) -> list:
     """
     Get the realms of the container.
 
@@ -948,9 +948,9 @@ def get_container_realms(serial: str) -> list[str]:
     return [realm.name for realm in container.realms]
 
 
-def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
-                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
-                          hide_token_info: list[str] = None) -> list[dict]:
+def create_container_dict(container_list: list, no_token: bool = False, user: User = None,
+                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list, None] = [],
+                          hide_token_info: list = None) -> list:
     """
     Create a dictionary for each container in the list.
     It contains the container properties, owners, realms, tokens and info.
@@ -1174,7 +1174,7 @@ def set_options(serial: str, options: dict):
     container.add_options(options)
 
 
-def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
+def get_container_template_classes() -> dict:
     """
     Returns a dictionary of all available container template classes in the format: { type: class }.
     New container template types have to be added here.
@@ -1267,7 +1267,7 @@ def get_all_templates_with_type():
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
                            pagesize: int = 0, sortdir: str = "asc",
-                           sortby: str = "name") -> dict[str, Union[int, list[dict], None]]:
+                           sortby: str = "name") -> dict:
     """
     Returns a list of all templates or a list filtered by the given parameters.
 
@@ -1438,7 +1438,7 @@ def compare_template_with_container(template: ContainerTemplateBase, container: 
     return result
 
 
-def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
+def get_offline_token_serials(container: TokenContainerClass) -> list:
     """
     Returns a list of serials of offline tokens in the container.
 

@@ -35,7 +35,7 @@ RSS_NEWS = {}
 FETCH_DAYS = 180
 
 
-def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = FETCH_DAYS) -> dict:
+def get_news(rss_feeds: dict = None, channel: str = None, days: int = FETCH_DAYS) -> dict:
     """
     Fetch news from the given RSS feeds
 

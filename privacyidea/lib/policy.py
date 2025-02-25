@@ -3020,7 +3020,7 @@ def get_policy_condition_comparators():
             for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
 
 
-def convert_action_dict_to_python_dict(action: str) -> dict[str, str]:
+def convert_action_dict_to_python_dict(action: str) -> dict:
     """
     Policy actions can not contain commas. Hence, the format 'key1':'value2'-'key2':'value2' is used.
     This function takes such a string as input and converts it into a dictionary.
