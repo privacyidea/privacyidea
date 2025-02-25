@@ -11,8 +11,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-02-25 13:55+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2025-02-25 14:25+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -677,7 +677,9 @@ msgstr "Administratoren dürfen Container-Vorlagen löschen."
 
 #: lib/policy.py:2169
 msgid "Admin is allowed to list templates and view their details."
-msgstr "Der Administrator kann Templates auflisten und deren Details einsehen."
+msgstr ""
+"Der Administrator kann Container-Vorlagen auflisten und deren Details "
+"einsehen."
 
 #: lib/policy.py:2176
 msgid ""
@@ -865,15 +867,16 @@ msgstr ""
 
 #: lib/policy.py:2342
 msgid "Users are allowed to create and edit container templates."
-msgstr "Benutzer dürfen Container Templates erstellen und bearbeiten."
+msgstr "Benutzer dürfen Container-Vorlagen erstellen und bearbeiten."
 
 #: lib/policy.py:2346
 msgid "Users are allowed to delete templates."
-msgstr "Benutzer dürfen Templates löschen."
+msgstr "Benutzer dürfen Container-Vorlagen löschen."
 
 #: lib/policy.py:2350
 msgid "Users are allowed to list templates and view their details."
-msgstr "Benutzer dürfen Templates auflisten und deren Details einsehen."
+msgstr ""
+"Benutzer dürfen Container-Vorlagen auflisten und deren Details einsehen."
 
 #: lib/policy.py:2357
 msgid "Limit the number of allowed tokens in a realm."
@@ -1423,7 +1426,7 @@ msgid ""
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
 "templates/)"
 msgstr ""
-"Die URL der Policy-Templates. (Default https: //raw.githubusercontent.com/ "
+"Die URL der Policy-Vorlagen. (Default https: //raw.githubusercontent.com/ "
 "privacyidea/policy-templates /master/templates/)"
 
 #: lib/policy.py:2790
@@ -1577,8 +1580,8 @@ msgid ""
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
-"Der Name des Container Templates für das Erstellen eines Containers im "
-"Wizard. Dies ist optional. Das Template muss vom Typ dem Wert in "
+"Der Name der Container-Vorlage für das Erstellen eines Containers im Wizard. "
+"Dies ist optional. Die Container-Vorlage muss vom Typ dem Wert in "
 "container_wizard_type entsprechen."
 
 #: lib/policy.py:2899
