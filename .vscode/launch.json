@@ -5,26 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            //"preLaunchTask": "npm: build - privacyidea/static_new",
-            "name": "Python Debugger: Flask",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "flask",
-            "env": {
-                "FLASK_APP": "privacyidea/app.py",
-                "FLASK_DEBUG": "1"
-            },
-            "args": [
-                "run",
-                "--no-debugger",
-                "--no-reload",
-                "--host=0.0.0.0",
-                "--port=5000"
-            ],
-            "jinja": true,
-            "autoStartBrowser": false
-        },
-        {
             "preLaunchTask": "npm: build - privacyidea/static_new",
             "name": "Python Debugger: static_new",
             "type": "debugpy",
@@ -40,6 +20,26 @@
                 "--no-reload",
                 "--host=0.0.0.0",
                 "--port=5001"
+            ],
+            "jinja": true,
+            "autoStartBrowser": false
+        },
+        {
+            //"preLaunchTask": "npm: build - privacyidea/static_new",
+            "name": "Python Debugger: Flask",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "privacyidea/app.py",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "--no-reload",
+                "--host=0.0.0.0",
+                "--port=5000"
             ],
             "jinja": true,
             "autoStartBrowser": false

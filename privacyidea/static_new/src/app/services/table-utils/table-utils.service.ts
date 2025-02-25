@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { KeywordFilter } from '../keyword_filter';
 
 interface FilterPair {
   label: string;
@@ -71,35 +72,6 @@ export class TableUtilsService {
     }
 
     return { filterPairs, remainingFilterText: remainingFilterText.trim() };
-  }
-
-  toggleKeywordInFilter(currentValue: string, keyword: string): string {
-    const keywordPattern = new RegExp(
-      `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
-      'i',
-    );
-    if (keywordPattern.test(currentValue)) {
-      return currentValue
-        .replace(keywordPattern, '')
-        .trim()
-        .replace(/\s{2,}/g, ' ');
-    } else {
-      if (currentValue.length > 0) {
-        return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
-      } else {
-        return `${keyword}: `;
-      }
-    }
-  }
-
-  isFilterSelected(filter: string, inputValue: string): boolean {
-    if (filter === 'infokey & infovalue') {
-      const regexKey = new RegExp(`\\binfokey:`, 'i');
-      const regexValue = new RegExp(`\\binfovalue:`, 'i');
-      return regexKey.test(inputValue) || regexValue.test(inputValue);
-    }
-    const regex = new RegExp(`\\b${filter}:`, 'i');
-    return regex.test(inputValue);
   }
 
   isLink(columnKey: string) {
@@ -275,27 +247,6 @@ export class TableUtilsService {
       } else {
         return currentValue.replace(activeRegex, 'active: true');
       }
-    }
-  }
-
-  public getFilterIconName(keyword: string, currentValue: string): string {
-    if (keyword === 'active') {
-      const activeMatch = currentValue.match(/active:\s*(\S+)/i);
-      if (!activeMatch) {
-        return 'add_circle';
-      }
-
-      const activeValue = activeMatch[1].toLowerCase();
-      if (activeValue === 'true') {
-        return 'change_circle';
-      } else if (activeValue === 'false') {
-        return 'remove_circle';
-      } else {
-        return 'add_circle';
-      }
-    } else {
-      const isSelected = this.isFilterSelected(keyword, currentValue);
-      return isSelected ? 'remove_circle' : 'add_circle';
     }
   }
 }

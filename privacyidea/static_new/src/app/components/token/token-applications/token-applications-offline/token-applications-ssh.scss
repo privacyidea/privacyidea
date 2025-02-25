@@ -1,0 +1,12 @@
+@import "../../../../../styles/styles";
+
+.token-table-container {
+  @include table-container-styles;
+  @include base-table-structure(
+    ".token-table",
+    ".token-table-filter",
+    ".table-scrollable-container"
+  );
+  margin-left: 1rem;
+  overflow: auto;
+}

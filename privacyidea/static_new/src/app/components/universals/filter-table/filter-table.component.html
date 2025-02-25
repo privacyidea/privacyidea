@@ -24,13 +24,13 @@
       Filter by:&nbsp;
     </div>
     @for (
-      filterKeyword of showAdvancedFilter() ? allApiFilter : apiFilter;
-      track filterKeyword
+      filter of showAdvancedFilter() ? filters : basicFilters;
+      track filter
     ) {
       <button
         mat-fab
         extended
-        (click)="toggleKeywordInFilter(filterKeyword, input)"
+        (click)="filter.toggleKeyword(input.value)"
         class="keyword-button">
         <mat-icon
           class="keyword-button-icon"
@@ -39,14 +39,14 @@
               change_circle: 'change-keyword',
               remove_circle: 'remove-keyword',
               add_circle: 'add-keyword',
-            }[tableUtilsService.getFilterIconName(filterKeyword, input.value)]
+            }[filter.getIconName(input.value)]
           ">
-          {{ tableUtilsService.getFilterIconName(filterKeyword, input.value) }}
+          {{ filter.getIconName(input.value) }}
         </mat-icon>
-        {{ filterKeyword }}
+        {{ filter.label }}
       </button>
     }
-    @if (advancedApiFilter.length !== 0) {
+    @if (advancedFilters.length !== 0) {
       <button
         (click)="showAdvancedFilter.set(!showAdvancedFilter())"
         class="more-keyword-button"
@@ -65,7 +65,7 @@
     class="token-table"
     mat-table
     matSort>
-    @for (column of columnsKeyMap; track column) {
+    @for (column of columns; track column) {
       <ng-container [matColumnDef]="column.key">
         <th
           *matHeaderCellDef
@@ -80,94 +80,44 @@
           mat-cell
           [ngClass]="{ 'width-18': column.key === 'description' }">
           <ng-container>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @if (isArray(element[column.key])) {
-                @if (tableUtilsService.isLink(column.key)) {
-                  <div
-                    [ngClass]="
-                      element[column.key].length > 1 ? 'realm-list' : 'realm'
-                    ">
-                    @for (
-                      realm of element[column.key];
-                      track realm;
-                      let idx = $index
-                    ) {
-                      <a attr.aria-label="{{ column.label }} Link" href="#">
-                        {{ realm }} </a
-                      ><br style="margin-top: 3px" />
-                    }
-                  </div>
-                } @else if (onClickHandlerOf(column.key) !== null) {
-                  <div
-                    [ngClass]="
-                      element[column.key].length > 1 ? 'realm-list' : 'realm'
-                    ">
-                    @for (
-                      realm of element[column.key];
-                      track realm;
-                      let idx = $index
-                    ) {
-                      <a
-                        attr.aria-label="{{ column.label }} Link"
-                        (click)="onClickHandlerOf(column.key)?.(element)">
-                        {{ realm }} </a
-                      ><br style="margin-top: 3px" />
-                    }
-                  </div>
-                } @else {
-                  <div
-                    [ngClass]="
-                      element[column.key].length > 1 ? 'realm-list' : 'realm'
-                    ">
-                    @for (
-                      realm of element[column.key];
-                      track realm;
-                      let idx = $index
-                    ) {
-                      <span
-                        [ngClass]="
-                          tableUtilsService.getClassForColumn(
-                            column.key,
-                            element
-                          )
-                        ">
-                        {{
-                          tableUtilsService.getDisplayText(column.key, element)
-                        }}
-                      </span>
-                      ><br style="margin-top: 3px" />
-                    }
-                  </div>
-                }
-              } @else {
-                @if (tableUtilsService.isLink(column.key)) {
-                  <a
-                    [ngClass]="
-                      tableUtilsService.getClassForColumn(column.key, element)
-                    "
-                    attr.aria-label="{{ column.label }} Link"
-                    href="#">
-                    {{ element[column.key] }}
-                  </a>
-                } @else if (onClickHandlerOf(column.key) !== null) {
-                  <a
-                    [ngClass]="
-                      tableUtilsService.getClassForColumn(column.key, element)
-                    "
-                    attr.aria-label="{{ column.label }} Link"
-                    (click)="onClickHandlerOf(column.key)?.(element)">
-                    {{ element[column.key] }}
-                  </a>
-                } @else {
-                  <span
-                    [ngClass]="
-                      tableUtilsService.getClassForColumn(column.key, element)
-                    ">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
-                  </span>
-                }
+            @switch (column.type) {
+              @case ("OnClickTableColumn".toString()) {
+                <div [ngClass]="column.getNgClass(element)">
+                  @for (
+                    item of column.getItems(element);
+                    track item;
+                    let idx = $index
+                  ) {
+                    <a
+                      attr.aria-label="{{ column.label }} Link"
+                      (click)="handleOnClick(element, column)">
+                      {{ item }}</a
+                    ><br style="margin-top: 3px" />
+                  }
+                </div>
               }
-            </div>
+              @case ("RouterTableColumn".toString()) {
+                <div [ngClass]="column.getNgClass(element)">
+                  @for (item of column.getItems(element); track item) {
+                    <a attr.aria-label="{{ column.label }} Link" href="#">
+                      {{ item }} </a
+                    ><br style="margin-top: 3px" />
+                  }
+                </div>
+              }
+              @default {
+                <div [ngClass]="column.getNgClass(element)">
+                  @for (
+                    item of column.getItems(element);
+                    track item;
+                    let idx = $index
+                  ) {
+                    {{ item }}
+                    <br style="margin-top: 3px" />
+                  }
+                </div>
+              }
+            }
           </ng-container>
         </td>
       </ng-container>

@@ -16,22 +16,21 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { AuthService } from '../../../services/auth/auth.service';
 import { Router } from '@angular/router';
-import { NgClass } from '@angular/common';
 import { ContainerService } from '../../../services/container/container.service';
-import { MatIcon } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
-
-const columnsKeyMap = [
-  { key: 'serial', label: 'Serial' },
-  { key: 'type', label: 'Type' },
-  { key: 'states', label: 'Status' },
-  { key: 'description', label: 'Description' },
-  { key: 'users', label: 'User' },
-  { key: 'user_realm', label: 'Realm' },
-  { key: 'realms', label: 'Container Realms' },
-];
+import {
+  FetchDataHandler,
+  FetchResponseHandler,
+  FilterTable,
+  SortDir,
+} from '../../universals/filter-table/filter-table.component';
+import {
+  OnClickTableColumn,
+  SimpleTableColumn,
+  TableColumn,
+} from '../../../services/table-utils/table-column';
+import { KeywordFilter } from '../../../services/keyword_filter';
 
 @Component({
   selector: 'app-container-table',
@@ -42,42 +41,88 @@ const columnsKeyMap = [
     MatInputModule,
     MatPaginatorModule,
     MatSortModule,
-    NgClass,
-    MatIcon,
-    MatFabButton,
+    FilterTable,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
-  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
+  columns: TableColumn<any>[] = [
+    new OnClickTableColumn<string>({
+      key: 'serial',
+      label: 'Serial',
+      getItems: (value) => [value],
+      onClick: (value) => this.containerSelected(value),
+    }),
+    new SimpleTableColumn<string>({
+      key: 'type',
+      label: 'Type',
+      getItems: (value) => [value],
+    }),
+    new SimpleTableColumn<string>({
+      key: 'states',
+      label: 'Status',
+      getItems: (value) => [value],
+    }),
+    new SimpleTableColumn<string>({
+      key: 'description',
+      label: 'Description',
+      getItems: (value) => [value],
+    }),
+    new SimpleTableColumn<string>({
+      key: 'users',
+      label: 'User',
+      getItems: (value) => [value],
+    }),
+    new SimpleTableColumn<string>({
+      key: 'user_realm',
+      label: 'Realm',
+      getItems: (value) => [value],
+    }),
+    new SimpleTableColumn<string>({
+      key: 'realms',
+      label: 'Container Realms',
+      getItems: (value) => [value],
+    }),
+  ];
   length = 0;
   pageSize = 10;
   pageIndex = 0;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
-  apiFilter = this.containerService.apiFilter;
-  advancedApiFilter = this.containerService.advancedApiFilter;
-  sortby_sortdir:
-    | { active: string; direction: 'asc' | 'desc' | '' }
-    | undefined;
+
+  basicFilters: KeywordFilter[] = [
+    new KeywordFilter({ key: 'container_serial', label: 'Serial' }),
+    new KeywordFilter({ key: 'type', label: 'Type' }),
+    new KeywordFilter({ key: 'user', label: 'User' }),
+  ];
+  advancedFilters: KeywordFilter[] = [
+    new KeywordFilter({ key: 'token_serial', label: 'Token Serial' }),
+  ];
+  fetchDataHandler: FetchDataHandler = ({
+    pageIndex,
+    pageSize,
+    sortby_sortdir,
+    filterValue,
+  }) => {
+    return this.containerService.getContainerData(
+      pageIndex,
+      pageSize,
+      sortby_sortdir,
+      filterValue,
+    );
+  };
+  fetchResponseHandler: FetchResponseHandler = (response: any) => {
+    return [response.result.value.count, response.result.value.containers];
+  };
+
+  sortby_sortdir: SortDir;
   @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
-  dataSource = signal(
-    new MatTableDataSource(
-      Array.from({ length: this.pageSize }, () => {
-        const emptyRow: any = {};
-        columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = '';
-        });
-        return emptyRow;
-      }),
-    ),
-  );
+  dataSource = signal(new MatTableDataSource<any>());
   showAdvancedFilter = signal(false);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(
     private router: Router,
@@ -97,6 +142,17 @@ export class ContainerTableComponent {
   }
 
   ngAfterViewInit() {
+    this.dataSource.set(
+      new MatTableDataSource(
+        Array.from({ length: this.pageSize }, () => {
+          const emptyRow: any = {};
+          this.columns.forEach((column) => {
+            emptyRow[column.key] = '';
+          });
+          return emptyRow;
+        }),
+      ),
+    );
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
   }
@@ -124,16 +180,16 @@ export class ContainerTableComponent {
     this.fetchContainerData();
   }
 
-  toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
-    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-      inputElement.value.trim(),
-      keyword,
-    );
-    this.handleFilterInput({
-      target: inputElement,
-    } as unknown as KeyboardEvent);
-    inputElement.focus();
-  }
+  // toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
+  //   inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
+  //     inputElement.value.trim(),
+  //     keyword,
+  //   );
+  //   this.handleFilterInput({
+  //     target: inputElement,
+  //   } as unknown as KeyboardEvent);
+  //   inputElement.focus();
+  // }
 
   handleStateClick(element: any) {
     this.containerService
