@@ -2145,15 +2145,15 @@ def get_static_policy_definitions(scope=None):
                                     'mainmenu': [MAIN_MENU.TOKENS],
                                     'group': GROUP.CONTAINER},
             ACTION.CONTAINER_REGISTER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to register containers for synchronization.'),
+                                        'desc': _('Admin is allowed to register containers.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                          'desc': _('Admin is allowed to unregister containers.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to perform a container rollover including a'
+                                        'desc': _('Admin is allowed to perform a container rollover including a '
                                                   'rollover of all contained tokens.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
@@ -2179,46 +2179,35 @@ def get_static_policy_definitions(scope=None):
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
             ACTION.DISABLE: {'type': 'bool',
-                             'desc': _(
-                                 'The user is allowed to disable his own '
-                                 'tokens.'),
+                             'desc': _('The user is allowed to disable his own tokens.'),
                              'mainmenu': [MAIN_MENU.TOKENS],
                              'group': GROUP.TOKEN},
             ACTION.ENABLE: {'type': 'bool',
-                            'desc': _(
-                                "The user is allowed to enable his own "
-                                "tokens."),
+                            'desc': _('The user is allowed to enable his own tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.DELETE: {'type': 'bool',
-                            "desc": _(
-                                "The user is allowed to delete his own "
-                                "tokens."),
+                            "desc": _('The user is allowed to delete his own tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.UNASSIGN: {'type': 'bool',
-                              "desc": _("The user is allowed to unassign his "
-                                        "own tokens."),
+                              'desc': _('The user is allowed to unassign his own tokens.'),
                               'mainmenu': [MAIN_MENU.TOKENS],
                               'group': GROUP.TOKEN},
             ACTION.RESYNC: {'type': 'bool',
-                            "desc": _("The user is allowed to resyncronize his "
-                                      "tokens."),
+                            "desc": _('The user is allowed to resynchronize his tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.REVOKE: {'type': 'bool',
-                            'desc': _("The user is allowed to revoke a "
-                                      "token"),
+                            'desc': _('The user is allowed to revoke a token'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.RESET: {'type': 'bool',
-                           'desc': _('The user is allowed to reset the '
-                                     'failcounter of his tokens.'),
+                           'desc': _('The user is allowed to reset the failcounter of his tokens.'),
                            'mainmenu': [MAIN_MENU.TOKENS],
                            'group': GROUP.TOKEN},
             ACTION.SETPIN: {'type': 'bool',
-                            "desc": _("The user is allowed to set the OTP "
-                                      "PIN of his tokens."),
+                            'desc': _('The user is allowed to set the OTP PIN of his tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
             ACTION.SETRANDOMPIN: {'type': 'bool',
@@ -2227,66 +2216,56 @@ def get_static_policy_definitions(scope=None):
                                   'group': GROUP.PIN},
             ACTION.OTPPINSETRANDOM: {'type': 'int',
                                      'value': list(range(1, 32)),
-                                     'desc': _("The length of a random PIN set by the user."),
+                                     'desc': _('The length of a random PIN set by the user.'),
                                      'group': GROUP.PIN},
             ACTION.SETDESCRIPTION: {'type': 'bool',
                                     'desc': _('The user is allowed to set the token description.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
                                     'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
-                               "desc": _("The user is allowed to set the OTP "
-                                         "PIN during enrollment."),
+                               'desc': _('The user is allowed to set the OTP PIN during enrollment.'),
                                'group': GROUP.PIN},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
-                                  "desc": _("Set the maximum allowed length "
-                                            "of the OTP PIN."),
+                                  'desc': _('Set the maximum allowed length of the OTP PIN.'),
                                   'group': GROUP.PIN},
             ACTION.OTPPINMINLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
-                                  "desc": _("Set the minimum required length "
-                                            "of the OTP PIN."),
+                                  'desc': _('Set the minimum required length of the OTP PIN.'),
                                   'group': GROUP.PIN},
             ACTION.OTPPINCONTENTS: {'type': 'str',
-                                    "desc": _("Specifiy the required "
-                                              "contents of the OTP PIN. "
-                                              "(c)haracters, (n)umeric, "
-                                              "(s)pecial. Use modifiers +/- or a list "
-                                              "of allowed characters [1234567890]"),
+                                    'desc': _('Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, '
+                                              '(s)pecial. Use modifiers +/- or a list of allowed '
+                                              'characters [1234567890]'),
                                     'group': GROUP.PIN},
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.'),
                 'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.AUDIT_AGE: {'type': 'str',
-                               "desc": _("The user will only see audit "
-                                         "entries of the last 10d, 3m or 2y."),
+                               'desc': _('The user will only see audit entries of the last 10d, 3m or 2y.'),
                                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        "desc": _("The user will not see the specified columns "
-                                                  "in the audit."),
-                                        "group": GROUP.SYSTEM,
+                                        'desc': _('The user will not see the specified columns in the audit.'),
+                                        'group': GROUP.SYSTEM,
                                         'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',
-                              'desc': _("The user is allowed to view his "
-                                        "own user information."),
+                              'desc': _('The user is allowed to view his own user information.'),
                               'mainmenu': [MAIN_MENU.USERS]},
             ACTION.UPDATEUSER: {'type': 'bool',
-                                'desc': _("The user is allowed to update his "
-                                          "own user information, like changing "
-                                          "his password."),
+                                'desc': _('The user is allowed to update his own user information, like changing '
+                                          'his password.'),
                                 'mainmenu': [MAIN_MENU.USERS]},
             ACTION.PASSWORDRESET: {'type': 'bool',
-                                   'desc': _("The user is allowed to do a "
-                                             "password reset in an editable "
-                                             "UserIdResolver."),
+                                   'desc': _(
+                                       'The user is allowed to do a password reset in an editable UserIdResolver.'),
                                    'mainmenu': []},
             ACTION.SET_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The user is allowed to set certain custom user "
-                          "attributes. If the user should be allowed to set any "
-                          "attribute, set this to '*:*'. Use '*' with CAUTION! "
-                          "For more details, check the documentation."),
+                'desc': _(
+                    "The user is allowed to set certain custom user attributes. If the user should be allowed to set "
+                    "any attribute, set this to '*:*'. Use '*' with CAUTION! For more details, check the "
+                    "documentation."),
                 'mainmenu': [],
                 'group': GROUP.USER},
             ACTION.DELETE_USER_ATTRIBUTES: {
@@ -2346,11 +2325,11 @@ def get_static_policy_definitions(scope=None):
                                     'group': GROUP.CONTAINER},
             ACTION.CONTAINER_REGISTER: {'type': 'bool',
                                         'desc': _(
-                                            'Users are allowed to register their own containers for synchronization.'),
+                                            'Users are allowed to register their own containers.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Users are allowed to unregister containers from synchronization.'),
+                                          'desc': _('Users are allowed to unregister containers.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
