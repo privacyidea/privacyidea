@@ -64,6 +64,7 @@ import { EnrollCertificateComponent } from './enroll-certificate/enroll-certific
 import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
 import { EnrollIndexedsecretComponent } from './enroll-indexsecret/enroll-indexedsecret.component';
 import { EnrollPaperComponent } from './enroll-paper/enroll-paper.component';
+import { EnrollPushComponent } from './enroll-push/enroll-push.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -149,6 +150,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollEmailComponent,
     EnrollIndexedsecretComponent,
     EnrollPaperComponent,
+    EnrollPushComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -215,6 +217,7 @@ export class TokenEnrollmentComponent {
   pem = signal('');
   emailAddress = signal('');
   readEmailDynamically = signal(false);
+  pushEnrolled = signal(false);
 
   constructor(
     private containerService: ContainerService,
@@ -370,10 +373,13 @@ export class TokenEnrollmentComponent {
       emailAddress: this.emailAddress(),
       readEmailDynamically: this.readEmailDynamically(),
     };
-
+    this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
-        if (!this.regenerateToken()) {
+        if (
+          !this.regenerateToken() &&
+          response.detail.rollout_state !== 'clientwait'
+        ) {
           this.notificationService.openSnackBar(
             `Token ${response.detail.serial} enrolled successfully.`,
           );
@@ -388,8 +394,14 @@ export class TokenEnrollmentComponent {
             selectedContent: this.selectedContent,
             regenerateToken: this.regenerateToken,
             isProgrammaticChange: this.isProgrammaticChange,
+            pushEnrolled: this.pushEnrolled,
           },
         });
+
+        if (response.detail.rollout_state === 'clientwait') {
+          this.pollTokenEnrollment(response.detail.serial, 5000);
+        }
+
         if (this.regenerateToken()) {
           this.regenerateToken.set(false);
         }
@@ -397,6 +409,24 @@ export class TokenEnrollmentComponent {
       error: (error) => {
         console.error('Failed to enroll token.', error);
         this.notificationService.openSnackBar('Failed to enroll token.');
+      },
+    });
+  }
+
+  private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
+    this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
+      next: (pollResponse: any) => {
+        const currentState = pollResponse.result.value.tokens[0].rollout_state;
+        if (currentState === 'enrolled') {
+          this.pushEnrolled.set(true);
+          this.notificationService.openSnackBar(
+            `Token ${tokenSerial} enrolled successfully.`,
+          );
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to poll token state.', error);
+        this.notificationService.openSnackBar('Failed to poll token state.');
       },
     });
   }
@@ -425,5 +455,25 @@ export class TokenEnrollmentComponent {
         this.notificationService.openSnackBar('Failed to get default realm.');
       },
     });
+  }
+
+  reopenQRCode() {
+    this.dialog.open(TokenEnrollmentDialogComponent, {
+      data: {
+        response: this.response(),
+        tokenSerial: this.tokenSerial,
+        containerSerial: this.containerSerial,
+        selectedContent: this.selectedContent,
+        regenerateToken: this.regenerateToken,
+        isProgrammaticChange: this.isProgrammaticChange,
+        pushEnrolled: this.pushEnrolled,
+      },
+    });
+    if (
+      this.response().detail.rollout_state === 'clientwait' &&
+      !this.pushEnrolled()
+    ) {
+      this.pollTokenEnrollment(this.tokenSerial(), 2000);
+    }
   }
 }

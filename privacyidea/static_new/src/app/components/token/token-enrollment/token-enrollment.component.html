@@ -17,14 +17,7 @@
     </mat-hint>
   </mat-form-field>
   <div class="enroll-button-container">
-    <button (click)="this.dialog.open(TokenEnrollmentDialogComponent, {
-          data: {
-            response: this.response(),
-            tokenSerial: this.tokenSerial,
-            selectedContent: this.selectedContent
-
-          },
-        });"
+    <button (click)="this.reopenQRCode()"
             [disabled]="this.response() === null"
             mat-icon-button>
       <mat-icon>qr_code_scanner</mat-icon>
@@ -113,13 +106,13 @@
                               [otpLength]="otpLength"
                               [hashAlgorithm]="hashAlgorithm"
                               [description]="description"
-                              [timeStep]="timeStep"/>
+                              [timeStep]="timeStep" />
     }
     @case ("certificate") {
       <app-enroll-certificate [caConnector]="caConnector"
-                       [certTemplate]="certTemplate"
-                       [pem]="pem"
-                       [description]="description" />
+                              [certTemplate]="certTemplate"
+                              [pem]="pem"
+                              [description]="description" />
     }
     @case ("email") {
       <app-enroll-email [emailAddress]="emailAddress"
@@ -128,10 +121,13 @@
     }
     @case ("indexedsecret") {
       <app-enroll-indexedsecret [otpKey]="otpKey"
-                              [description]="description" />
+                                [description]="description" />
     }
     @case ("paper") {
       <app-enroll-paper [description]="description" />
+    }
+    @case ("push") {
+      <app-enroll-push [description]="description" />
     }
   }
   <h4 class="enroll-h4">Assign token to user</h4>

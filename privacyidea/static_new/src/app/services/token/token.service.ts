@@ -1,6 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { forkJoin, Observable } from 'rxjs';
+import {
+  forkJoin,
+  Observable,
+  Subject,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  timer,
+} from 'rxjs';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
@@ -60,6 +68,7 @@ export class TokenService {
   ];
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
   private tokenBaseUrl = '/token/';
+  private stopPolling$ = new Subject<void>();
 
   constructor(
     private http: HttpClient,
@@ -341,6 +350,10 @@ export class TokenService {
       payload.genkey = options.generateOnServer ? 1 : 0;
     }
 
+    if (options.type === 'push') {
+      payload.genkey = 1;
+    }
+
     if (['daypassword', 'indexedsecret'].includes(options.type)) {
       payload.otpkey = options.otpKey;
     }
@@ -423,5 +436,21 @@ export class TokenService {
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
+  }
+
+  pollTokenState(tokenSerial: string, startTime: number): Observable<any> {
+    return timer(startTime, 2000).pipe(
+      takeUntil(this.stopPolling$),
+      switchMap(() => this.getTokenDetails(tokenSerial)),
+      takeWhile(
+        (response: any) =>
+          response.result.value.tokens[0].rollout_state === 'clientwait',
+        true,
+      ),
+    );
+  }
+
+  stopPolling() {
+    this.stopPolling$.next();
   }
 }

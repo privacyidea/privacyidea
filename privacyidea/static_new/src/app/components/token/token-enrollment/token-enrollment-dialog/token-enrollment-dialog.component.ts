@@ -16,6 +16,7 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-token-enrollment-dialog',
@@ -38,6 +39,7 @@ export class TokenEnrollmentDialogComponent {
   @Input() regenerateToken!: WritableSignal<boolean>;
 
   constructor(
+    protected tokenService: TokenService,
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
@@ -47,8 +49,13 @@ export class TokenEnrollmentDialogComponent {
       selectedContent: WritableSignal<string>;
       regenerateToken: WritableSignal<boolean>;
       isProgrammaticChange: WritableSignal<boolean>;
+      pushEnrolled: WritableSignal<boolean>;
     },
-  ) {}
+  ) {
+    this.dialogRef.afterClosed().subscribe(() => {
+      this.tokenService.stopPolling();
+    });
+  }
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
