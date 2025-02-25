@@ -1,4 +1,4 @@
-"""empty message
+"""v3.11: Add table tokencredentialidhash
 
 Revision ID: 903a6ed6f6c4
 Revises: c128c01a5520
@@ -17,17 +17,18 @@ down_revision = 'c128c01a5520'
 def upgrade():
     try:
         op.create_table('tokencredentialidhash',
-                        sa.Column('credential_id_hash', sa.String(length=1024), nullable=False),
+                        sa.Column('id', sa.Integer(), primary_key=True),
+                        sa.Column('credential_id_hash', sa.String(length=256), nullable=False),
                         sa.Column('token_id', sa.Integer(), nullable=False),
                         sa.ForeignKeyConstraint(['token_id'], ['token.id'], ),
-                        sa.PrimaryKeyConstraint('credential_id_hash')
-                        )
+                        sa.Index('ix_tokencredentialidhash_credentialidhash',
+                                 'credential_id_hash', unique=True))
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
             print("Table 'tokencredentialidhash' already exists.")
         else:
             print("Could not add table 'tokencredentialidhash' to database.")
-            print(ex)
+            raise
 
 
 def downgrade():
@@ -39,4 +40,4 @@ def downgrade():
             print("Table 'tokencredentialidhash' already removed.")
         else:
             print("Could not remove table 'tokencredentialidhash'.")
-            print(exx)
+            raise
