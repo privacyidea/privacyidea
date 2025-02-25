@@ -10,8 +10,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-02-25 13:20+0000\n"
+"PO-Revision-Date: 2025-02-25 14:15+0000\n"
 "Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
@@ -255,7 +256,7 @@ msgstr "Ein Token-spezifisches SMS-Gateway"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:24
 msgid "A unique name for this template"
-msgstr "Ein eindeutiger Name für dieses Template"
+msgstr "Ein eindeutiger Name für diese Vorlage"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -907,7 +908,7 @@ msgstr "Container"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:43
 msgid "Containers Created With This Template"
-msgstr "Container die mit diesem Template erstellt wurden"
+msgstr "Container die mit dieser Vorlage erstellt wurden"
 
 #: privacyidea/static/components/user/views/user.details.html:325
 msgid "Containers for user {{ username }}"
@@ -1262,7 +1263,7 @@ msgstr "Wörterbuch"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:99
 msgid "Differences to the template"
-msgstr "Unterschiede zum Template"
+msgstr "Unterschiede zur Vorlage"
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
@@ -2562,8 +2563,8 @@ msgstr "Knoten-Spezifische Resolver Konfiguration"
 msgid ""
 "Note: Changes will only be applied to this container and not to the template."
 msgstr ""
-"Achtung: Änderungen werden auf diesen Container angewandt, nicht auf das "
-"Template."
+"Achtung: Änderungen werden auf diesen Container angewandt, nicht auf die "
+"Vorlage."
 
 #: privacyidea/static/components/config/views/config.token.question.html:11
 msgid "Number of answers"
@@ -3923,7 +3924,7 @@ msgstr "Vorlagen-Name und enthaltene Tokentypen"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:19
 msgid "Template {{ template.name }}"
-msgstr "Template {{ template.name }}"
+msgstr "Vorlage {{ template.name }}"
 
 #: privacyidea/static/components/token/views/token.html:195
 msgid "Templates"
@@ -4477,7 +4478,7 @@ msgstr ""
 msgid ""
 "The following tokens were successfully enrolled in the container using the "
 "template"
-msgstr "Die folgenden Token wurden im Container durch das Template ausgerollt"
+msgstr "Die folgenden Token wurden im Container durch die Vorlage ausgerollt"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:114
 msgid ""
