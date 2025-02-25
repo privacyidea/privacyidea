@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-02-24 16:18+0100\n"
-"PO-Revision-Date: 2025-02-21 12:55+0000\n"
+"PO-Revision-Date: 2025-02-25 09:41+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10.1-dev\n"
+"X-Generator: Weblate 5.10.2-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: privacyidea/api/auth.py:231
@@ -28,26 +28,20 @@ msgid "Authentication with passkey disabled."
 msgstr ""
 
 #: privacyidea/api/auth.py:236
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Authentifizierungsfehler. Fehlender Benutzername"
+msgstr "Authentifizierungsfehler. Der Passkey ist nicht registriert."
 
 #: privacyidea/api/auth.py:239
 msgid "Authentication failure. Token has no user."
 msgstr "Authentifizierungsfehler. Der Token ist keinem Benutzer zugewiesen."
 
 #: privacyidea/api/auth.py:250
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure using passkey."
-msgstr "Authentifizierungsfehler. Fehlender Benutzername"
+msgstr "Authentifizierungsfehler mit Passkey."
 
 #: privacyidea/api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "Authentifizierungsfehler. Unbekannter Realm: {0!s}."
+msgstr "Authentifizierungsfehler. Unbekannter Realm:"
 
 #: privacyidea/api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -103,46 +97,32 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "Authentifizierungsfehler. Fehlender Authentifizierungsheader."
 
 #: privacyidea/api/lib/utils.py:405 privacyidea/api/lib/utils.py:436
-#, fuzzy
-#| msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "Authentifizierungsfehler. Fehler beim Dekodieren des Tokens: {0!s}"
+msgstr "Authentifizierungsfehler. Fehler beim Entschlüsseln des Tokens:"
 
 #: privacyidea/api/lib/utils.py:429 privacyidea/api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "Authentifizierungsfehler. Der Token ist abgelaufen: {0!s}"
+msgstr "Authentifizierungsfehler. Der Token ist abgelaufen:"
 
 #: privacyidea/api/lib/utils.py:442
-#, fuzzy
-#| msgid ""
-#| "Authentication failure. The username {0!s} is not allowed to impersonate "
-#| "via JWT."
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Fehler bei der Authentifizierung. Der Benutzername {0!s} ist nicht "
-"berechtigt mittels JWT zuzugreifen."
+"Fehler bei der Authentifizierung. Der Benutzername {wrong_username} ist "
+"nicht berechtigt mittels JWT zuzugreifen."
 
 #: privacyidea/api/lib/utils.py:447
-#, fuzzy
-#| msgid ""
-#| "Authentication failure. You do not have the necessary role ({0!s}) to "
-#| "access this resource!"
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({0!s}), um auf "
-"die Ressource zuzugreifen!"
+"Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({required_role})"
+", um auf die Ressource zuzugreifen!"
 
 #: privacyidea/api/lib/utils.py:464
-#, fuzzy
-#| msgid "'{0!s}' is an invalid policy name."
 msgid "Invalid policy name:"
-msgstr "'{0!s}' ist ein ungültiger Name für eine Richtlinie."
+msgstr "Ungültiger Name für eine Richtlinie:"
 
 #: privacyidea/api/lib/utils.py:467
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
@@ -181,7 +161,8 @@ msgstr "Sie müssen entweder eine Seriennummer oder einen Benutzer angeben"
 #, fuzzy
 #| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
-msgstr "Sie müssen eine Seriennummer oder einen Benutzer angeben."
+msgstr ""
+"Sie müssen eine Seriennummer, einen Benutzer oder eine Credential-ID angeben."
 
 #: privacyidea/lib/decorators.py:116
 msgid "Invalid serial number."
@@ -671,40 +652,28 @@ msgid "Admin is allowed to list containers."
 msgstr "Administratoren können Container auflisten."
 
 #: privacyidea/lib/policy.py:2148
-#, fuzzy
-#| msgid "Admin is allowed to edit the container description."
 msgid "Admin is allowed to register containers for synchronization."
-msgstr "Administratoren können die Container Beschreibung bearbeiten."
+msgstr "Administratoren dürfen Container zur Synchronisation registrieren."
 
 #: privacyidea/lib/policy.py:2152
-#, fuzzy
-#| msgid "Admin is allowed to edit the container description."
 msgid "Admin is allowed to unregister containers from synchronization."
-msgstr "Administratoren können die Container Beschreibung bearbeiten."
+msgstr "Administratoren dürfen Container von der Synchronisation ausnehmen."
 
 #: privacyidea/lib/policy.py:2156
-#, fuzzy
-#| msgid ""
-#| "Admin is allowed to export a documentation of the complete configuration "
-#| "including resolvers and realm."
 msgid ""
 "Admin is allowed to perform a container rollover including arollover of all "
 "contained tokens."
 msgstr ""
-"Der Administrator kann eine Dokumentation der kompletten Konfiguration "
-"exportieren. Dies beinhaltet auch die Konfiguration von Resolvern und Realms."
+"Administratoren dürfen Container-Rollover durchführen gemeinsam mit einem "
+"Rollover der enthaltenen Token."
 
 #: privacyidea/lib/policy.py:2161
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to create and edit container templates."
-msgstr "Administratoren können Container erstellen."
+msgstr "Administratoren dürfen Container-Vorlagen erstellen und bearbeiten."
 
 #: privacyidea/lib/policy.py:2165
-#, fuzzy
-#| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete templates."
-msgstr "Der Administrator kann Richtlinien löschen."
+msgstr "Administratoren dürfen Container-Vorlagen löschen."
 
 #: privacyidea/lib/policy.py:2169
 #, fuzzy
