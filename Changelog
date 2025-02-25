@@ -33,6 +33,7 @@ Version 3.11dev3, 2025-02-17
   * `check_base_action` pre-policy only evaluates the first realm of a token (#4011)
   * Fix that deleting a policy results in a 'failed' audit log entry (#1720)
   * Max token policy ignored with enroll via multi challenge (#4146)
+  * Better error checking in ScriptEventHandler (#4250)
 
 
 Version 3.10.2, 2024-11-26
