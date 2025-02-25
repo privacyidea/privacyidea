@@ -4,15 +4,15 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024, 2025.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
-# Nils Behlen <nils.behlen@netknights.it>, 2024.
+# Nils Behlen <nils.behlen@netknights.it>, 2024, 2025.
 # samir-at-netknights <samir.nasher_taher@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-02-24 16:18+0100\n"
-"PO-Revision-Date: 2025-02-25 09:41+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-02-25 13:20+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -25,7 +25,7 @@ msgstr ""
 
 #: privacyidea/api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Authentisierung mit Passkey ist deaktiviert."
 
 #: privacyidea/api/auth.py:236
 msgid "Authentication failure. The passkey is not registered."
@@ -158,8 +158,6 @@ msgid "You either need to provide user or serial"
 msgstr "Sie müssen entweder eine Seriennummer oder einen Benutzer angeben"
 
 #: privacyidea/lib/decorators.py:114
-#, fuzzy
-#| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
 msgstr ""
 "Sie müssen eine Seriennummer, einen Benutzer oder eine Credential-ID angeben."
@@ -177,6 +175,8 @@ msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
+"Wenn Sie ein Komma in der Nachricht benutzen wollen, müssen Sie einen "
+"Rückstrich \\ voranstellen."
 
 #: privacyidea/lib/policy.py:1454
 msgid "Invalid client definition!"
@@ -676,10 +676,8 @@ msgid "Admin is allowed to delete templates."
 msgstr "Administratoren dürfen Container-Vorlagen löschen."
 
 #: privacyidea/lib/policy.py:2169
-#, fuzzy
-#| msgid "Admin is allowed to delete resolvers and realms."
 msgid "Admin is allowed to list templates and view their details."
-msgstr "Der Administrator kann Resolver und Realms löschen."
+msgstr "Der Administrator kann Templates auflisten und deren Details einsehen."
 
 #: privacyidea/lib/policy.py:2176
 msgid ""
@@ -839,16 +837,12 @@ msgid "Users are allowed to list their own containers."
 msgstr "Benutzer können ihre eigenen Container auflisten."
 
 #: privacyidea/lib/policy.py:2348
-#, fuzzy
-#| msgid "Users are allowed to list their own containers."
 msgid "Users are allowed to register their own containers for synchronization."
-msgstr "Benutzer können ihre eigenen Container auflisten."
+msgstr "Benutzer dürfen selbst Container registrieren."
 
 #: privacyidea/lib/policy.py:2353
-#, fuzzy
-#| msgid "Users are allowed to create containers."
 msgid "Users are allowed to unregister containers from synchronization."
-msgstr "Benutzer können Container erstellen."
+msgstr "Benutzer dürfen ihre eigenen Container entfernen."
 
 #: privacyidea/lib/policy.py:2357
 msgid ""
@@ -856,24 +850,21 @@ msgid ""
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
+"Es ist Nutzern erlaubt, einen Rollover für ihre eigenen Container zu "
+"starten. Dies gilt auch für Token in dem Container die nicht dem Nutzer "
+"zugeordnet sind."
 
 #: privacyidea/lib/policy.py:2363
-#, fuzzy
-#| msgid "Users are allowed to create containers."
 msgid "Users are allowed to create and edit container templates."
-msgstr "Benutzer können Container erstellen."
+msgstr "Benutzer dürfen Container Templates erstellen und bearbeiten."
 
 #: privacyidea/lib/policy.py:2367
-#, fuzzy
-#| msgid "Users are allowed to delete their own containers."
 msgid "Users are allowed to delete templates."
-msgstr "Benutzer können ihre eigenen Container löschen."
+msgstr "Benutzer dürfen Templates löschen."
 
 #: privacyidea/lib/policy.py:2371
-#, fuzzy
-#| msgid "Users are allowed to edit the state of their own containers."
 msgid "Users are allowed to list templates and view their details."
-msgstr "Benutzer können den Status ihrer eigenen Container bearbeiten."
+msgstr "Benutzer dürfen Templates auflisten und deren Details einsehen."
 
 #: privacyidea/lib/policy.py:2378
 msgid "Limit the number of allowed tokens in a realm."
@@ -1467,10 +1458,8 @@ msgid "This is the default token type in the token enrollment dialog."
 msgstr "Die Voreinstellung des Tokentyps im Rollout-Dialog."
 
 #: privacyidea/lib/policy.py:2845
-#, fuzzy
-#| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
-msgstr "Die Voreinstellung des Tokentyps im Rollout-Dialog."
+msgstr "Die Voreinstellung des Containertyps im Rollout-Dialog."
 
 #: privacyidea/lib/policy.py:2850
 msgid ""
@@ -1551,12 +1540,17 @@ msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
+"Die RSS feeds welche abgefragt werden sollen, im Format: "
+"<code>'Titel':'URL'-'Titel':'URL'</code> "
 
 #: privacyidea/lib/policy.py:2903
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
+"Das Alter der RSS Feed Beiträge in Tagen. Bei <code>0</code> wird der News "
+"Feed nicht angezeigt. Standard sind 180 Tage für Administratoren und 0 Tage "
+"für Benutzer."
 
 #: privacyidea/lib/policy.py:2907
 msgid ""
@@ -1564,6 +1558,9 @@ msgid ""
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
+"Der Typ des Container der mit dem Container Wizard erstellt wird. Es muss "
+"mindestens diese Option ausgewählt werden, damit der Wizard aktiviert ist. "
+"Wenn der Benutzer keinen Container hat, wird der Wizard angezeigt."
 
 #: privacyidea/lib/policy.py:2914
 msgid ""
@@ -1571,12 +1568,17 @@ msgid ""
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
+"Der Name des Container Templates für das Erstellen eines Containers im "
+"Wizard. Dies ist optional. Das Template muss vom Typ dem Wert in "
+"container_wizard_type entsprechen."
 
 #: privacyidea/lib/policy.py:2920
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
 msgstr ""
+"Im Container Wizard wird ein QR Code generiert, der mit einem Smartphone "
+"gescannt werden muss. (Gilt nur für Smartphone Container)"
 
 #: privacyidea/lib/policy.py:2928
 msgid ""
@@ -1584,12 +1586,17 @@ msgid ""
 "used to build URLs the container can contact for registration and "
 "synchronization."
 msgstr ""
+"Die URL des privacyIDEA Servers, zum Beispiel: <code>https://pi/</code>. Die "
+"URL wird vom Container verwendet um die Registrierung und Synchronisation "
+"durchzuführen."
 
 #: privacyidea/lib/policy.py:2934
 msgid ""
 "The time in minutes the client has to do the second step of the "
 "registration. The default is ten minutes."
 msgstr ""
+"Die Zeit, in Minuten, innerhalt welcher der Client die Registrierung "
+"abschließen muss. Standard sind 10 Minuten."
 
 #: privacyidea/lib/policy.py:2940
 msgid ""
@@ -1597,20 +1604,24 @@ msgid ""
 "synchronization or unregistration, this defines the time in minutes the "
 "client has to complete the action. The default is two minutes."
 msgstr ""
+"Die Zeit, in Minuten, innerhalb welcher der Client eine Aktion (zum Beispiel "
+"Synchronisation) durchführen muss. Standard sind 2 Minuten."
 
 #: privacyidea/lib/policy.py:2948
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
 msgstr ""
+"Der Container muss das SSL Zertifikat des privacyIDEA Servers während der "
+"Registrierung und Synchronisation überprüfen. (Standardmäßig aktiviert)"
 
 #: privacyidea/lib/policy.py:2956
-#, fuzzy
-#| msgid "The user is allowed to reset the failcounter of his tokens."
 msgid ""
 "The client is allowed to perform a rollover of the container and the "
 "included tokens."
-msgstr "Der Benutzer darf den Fehlerzähler seiner eigenen Token zurücksetzen."
+msgstr ""
+"Der Client darf einen Rollover seines Containers und der darin enhaltenen "
+"Token durchführen."
 
 #: privacyidea/lib/policy.py:2961
 msgid ""
@@ -1619,18 +1630,21 @@ msgid ""
 "devices with existing tokens as container without having to manually add the "
 "tokens on the device to the container."
 msgstr ""
+"Bei der ersten Synchonisation werden Token die sich bereits im Container "
+"befinden in privacyIDEA automatisch zugeordnet. Dadurch müssen bereits "
+"bestehende Token nicht manuell den Containern zugeordnet werden."
 
 #: privacyidea/lib/policy.py:2968
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "The user is not allowed to delete tokens locally on the smartphone."
-msgstr "Der Benutzer darf seine eigenen Token löschen."
+msgstr "Der Benutzer darf seine Token nicht vom Smartphone löschen."
 
 #: privacyidea/lib/policy.py:2973
 msgid ""
 "The client is not allowed to unregister the container. The user can not "
 "delete the container locally on the smartphone."
 msgstr ""
+"Der Client darf den Container nicht entfernen. Der Container kann nicht vom "
+"Smartphone gelöscht werden."
 
 #: privacyidea/lib/policy.py:3018
 msgid ""
@@ -1688,7 +1702,7 @@ msgstr "Es können nur SQL-Filter aus einem Tokeninfo Eintrag erstellt werden."
 
 #: privacyidea/lib/token.py:343
 msgid "No container with the serial {container_serial} exists."
-msgstr ""
+msgstr "Der Container mit der Seriennummer {container_serial} existiert nicht."
 
 #: privacyidea/lib/token.py:734
 msgid "The requested token could not be found."
@@ -1703,44 +1717,36 @@ msgid "multiple tokens are matching this OTP value!"
 msgstr "Dieser OTP-Wert passt zu mehreren Token!"
 
 #: privacyidea/lib/token.py:1233
-#, fuzzy
-#| msgid "init token failed: unknown token type {0!r}"
 msgid "init token failed. Unknown token type:"
-msgstr "init_token fehlgeschlagen: unbekannter Token-Typ {0!r}"
+msgstr "init_token fehlgeschlagen: unbekannter Token-Typ:"
 
 #: privacyidea/lib/token.py:1253
 msgid ""
 "Token {serial} already exists with type {old_type}. Can not initialize token "
 "with new type {token_type}"
 msgstr ""
+"Der Token {serial} existiert bereits mit dem Typ {old_type}. Der Token kann "
+"nicht mit dem neuen Typ {token_type} initialisiert werden"
 
 #: privacyidea/lib/token.py:1257
-#, fuzzy
-#| msgid "initToken failed: {0!s}"
 msgid "init token failed:"
-msgstr "init_token fehlgeschlagen: {0!s}"
+msgstr "init_token fehlgeschlagen:"
 
 #: privacyidea/lib/token.py:1433
-#, fuzzy
-#| msgid "Token already assigned to user {0!r}"
 msgid "Token already assigned to user {old_user!r}"
-msgstr "Der Token wurde schon dem Benutzer {0!r} zugewiesen"
+msgstr "Der Token wurde schon dem Benutzer {old_user!r} zugewiesen"
 
 #: privacyidea/lib/token.py:1447
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr "Tokenzuweisung fehlgeschlagen für {0!r}/{1!s} : {2!r}"
 
 #: privacyidea/lib/token.py:1475
-#, fuzzy
-#| msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
 msgid "Token unassign failed for"
-msgstr "Fehler beim Aufheben der Tokenzuweisung für {0!r}/{1!r}: {2!r}"
+msgstr "Fehler beim Aufheben der Tokenzuweisung für"
 
 #: privacyidea/lib/token.py:1555
-#, fuzzy
-#| msgid "Parameter user must not be a string: {0!r}"
 msgid "Parameter user must not be a string:"
-msgstr "Parameter \"user\" darf kein String sein: {0!r}"
+msgstr "Parameter \"user\" darf kein String sein:"
 
 #: privacyidea/lib/token.py:2111
 msgid "You can only define a lost token for an assigned token."
@@ -1840,7 +1846,7 @@ msgstr "Die Token-Gruppe existiert nicht."
 
 #: privacyidea/lib/token.py:2939
 msgid " Please press: {presence_answer}"
-msgstr ""
+msgstr " Bitte drücken Sie: {presence_answer}"
 
 #: privacyidea/lib/tokenclass.py:1692
 msgid "please enter otp: "
@@ -1860,18 +1866,18 @@ msgstr ""
 
 #: privacyidea/lib/containers/smartphone.py:123
 msgid "A smartphone that uses an authenticator app."
-msgstr ""
+msgstr "Ein Smartphone mit einer Authenticator App."
 
 #: privacyidea/lib/containers/smartphone.py:224
-#, fuzzy
-#| msgid "URL for privacyIDEA Push Token"
 msgid "URL for privacyIDEA Container Registration"
-msgstr "URL des privacyIDEA Push Tokens"
+msgstr "URL des privacyIDEA Container Registrierung"
 
 #: privacyidea/lib/containers/yubikey.py:62
 msgid ""
 "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
 msgstr ""
+"Yubikey Sicherheitsschlüssel der HOTP, Zertifikate und WebAuthn token "
+"enthalten kann"
 
 #: privacyidea/lib/eventhandler/base.py:175
 msgid ""
@@ -1963,13 +1969,12 @@ msgid "The token is in a container."
 msgstr "Der Token ist in einem Container."
 
 #: privacyidea/lib/eventhandler/base.py:308
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
-"Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
+"Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens "
+"besitzt. > und < können verwendet werden. Zum Beispiel <8."
 
 #: privacyidea/lib/eventhandler/base.py:315
 msgid ""
@@ -2106,6 +2111,10 @@ msgid ""
 "realm of the list. The condition is not checked if the container has no "
 "realm, hence the action would be triggered."
 msgstr ""
+"Der Container ist in diesem oder gar keinem Realm. Wenn mehrere Realms "
+"ausgewählt sind, wird die Bedingung erfüllt, wenn der Container in "
+"wenigstens einem davon ist. Wenn der Container in keinem Realm ist, gilt die "
+"Bedingung als erfüllt."
 
 #: privacyidea/lib/eventhandler/base.py:456
 msgid ""
@@ -2114,21 +2123,20 @@ msgid ""
 "resolver. The condition is not checked if the container has no owner, hence "
 "the action would be triggered."
 msgstr ""
+"Der Besitzer des Containers ist in diesem Resolver. Wenn mehrere Resolver "
+"ausgewählt sind, gilt die Bedingung als erfüllt, wenn der Besitzer in "
+"wenigstens einem dieser Resolver ist. Wenn der Container keinen Besitzer "
+"hat, gilt die Bedingung als erfüllt."
 
 #: privacyidea/lib/eventhandler/base.py:465
-#, fuzzy
-#| msgid ""
-#| "This condition can check any arbitrary tokeninfo field. You need to enter "
-#| "something like '<fieldname> == <fieldvalue>', '<fieldname> > "
-#| "<fieldvalue>' or '<fieldname> < <fieldvalue>'."
 msgid ""
 "This condition can check any arbitrary container info field. You need to "
 "enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
 "'fieldname < fieldvalue'."
 msgstr ""
-"Diese Bedingung prüft beliebige Werte in der Tokeninfo. Zulässige Vergleiche "
-"sind: '<Feldname> == <Feldinhalt>', '<Feldname> > <Feldinhalt>' oder "
-"'<Feldname> < <Feldinhalt>'."
+"Diese Bedingung prüft beliebige Werte in der Container Info. Zulässige "
+"Vergleiche sind: '<Feldname> == <Feldinhalt>', '<Feldname> > <Feldinhalt>' "
+"oder '<Feldname> < <Feldinhalt>'."
 
 #: privacyidea/lib/eventhandler/base.py:473
 msgid ""
@@ -2138,6 +2146,11 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"Die Aktion wird ausgeführt, wenn die letzte Authentisierung mit dem "
+"Container länger zurück liegt als die angegebene Zeit. Die Zeitangabe muss "
+"eine Zahl gefolgt von einer Einheit sein. Mögliche Einheiten sind 'y' (Jahre)"
+", 'd' (Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es ist nur eine "
+"Einzeit erlaubt. Beispielsweise '8h' oder '7d'"
 
 #: privacyidea/lib/eventhandler/base.py:484
 msgid ""
@@ -2147,10 +2160,15 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"Die Aktion wird ausgeführt, wenn die letzte Synchronisation des Containers "
+"länger zurück liegt als die angegebene Zeit. Die Zeitangabe muss eine Zahl "
+"gefolgt von einer Einheit sein. Mögliche Einheiten sind 'y' (Jahre), 'd' "
+"(Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es ist nur eine "
+"Einzeit erlaubt. Beispielsweise '8h' oder '7d'"
 
 #: privacyidea/lib/eventhandler/containerhandler.py:89
 msgid "Set the state {state}"
-msgstr ""
+msgstr "Setze den Status {state}"
 
 #: privacyidea/lib/eventhandler/containerhandler.py:96
 msgid "Container type to create"
@@ -2165,11 +2183,11 @@ msgstr "Beschreibung des Containers"
 msgid "Assign container to user in request or to token/container owner"
 msgstr ""
 "Container dem Benutzer aus dem Request oder dem Token-/Containerbesitzer "
-"zuweisen."
+"zuweisen"
 
 #: privacyidea/lib/eventhandler/containerhandler.py:112
 msgid "Add token from request to container"
-msgstr "Token aus dem Request zum Container hinzufügen."
+msgstr "Token aus dem Request zum Container hinzufügen"
 
 #: privacyidea/lib/eventhandler/containerhandler.py:132
 msgid "Set this container info key (deletes all existing keys)."
@@ -2294,6 +2312,8 @@ msgid ""
 "If the parameter is 'username', 'user' or 'realm', the user will be reset. "
 "This can have an effect on any further actions on the user!"
 msgstr ""
+"Wenn der Parameter 'username', 'user' oder 'realm' ist, wird der Benutzer "
+"neu gesetzt. Dies kann Einfluss auf weitere Aktionen haben!"
 
 #: privacyidea/lib/eventhandler/responsemangler.py:79
 msgid ""
@@ -2575,6 +2595,13 @@ msgid ""
 "{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
 "{pin}.</code>"
 msgstr ""
+"Der Text der Email die versendet wird. Die folgenden Tags können verwendet "
+"werden: <code>{admin}, {realm}, {action}, {serial}, {url}, {user}, "
+"{givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: privacyidea/lib/eventhandler/usernotification.py:203
 #: privacyidea/lib/eventhandler/usernotification.py:248
@@ -2595,6 +2622,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Der Text der SMS die versendet wird. Es können folgende Tags verwendet "
+"werden: <code>{admin}, {realm}, {action}, {serial}, {url}, {user}, "
+"{givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: privacyidea/lib/eventhandler/usernotification.py:255
 msgid ""
@@ -2606,6 +2640,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Der Inhalt der neuen Datei. Es können folgende Tags verwendet werden: "
+"<code>{admin}, {realm}, {action}, {serial}, {url}, {user}, {givenname}, "
+"{surname}, {username}, {userrealm}, {tokentype}, {tokendescription}, "
+"{registrationcode}, {recipient_givenname}, {recipient_surname}, "
+"{googleurl_value}, {googleurl_img}, {pushurl_value}, {pushurl_img}, "
+"{container_url_value}, {container_url_img}, {time}, {date}, {client_ip}, "
+"{ua_browser}, {ua_string}, {pin}.</code>"
 
 #: privacyidea/lib/eventhandler/usernotification.py:266
 msgid ""
@@ -2631,6 +2672,9 @@ msgid ""
 "{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
 "availability is depending on the endpoint."
 msgstr ""
+"Sie können die folgenden Platzhalter verwenden: {logged_in_user}, {realm}, "
+"{surname}, {token_owner}, {user_realm}, {token_serial}. Die Verfügbarkeit "
+"der Werte für die Platzhalter hängt von der Aktion ab."
 
 #: privacyidea/lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
@@ -2644,24 +2688,18 @@ msgstr ""
 "Objekte gefunden."
 
 #: privacyidea/lib/resolvers/LDAPIdResolver.py:1147
-#, fuzzy
-#| msgid ""
-#| "Your LDAP config found {0!s} user objects, but only {1!s} with the "
-#| "specified uidtype"
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
 msgstr ""
-"Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte gefunden, aber "
-"lediglich {1!s} mit dem angegebenen UID Typ"
+"Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte in {2:.4f}s "
+"gefunden, aber lediglich {1!s} mit dem angegebenen UID Typ."
 
 #: privacyidea/lib/resolvers/LDAPIdResolver.py:1151
-#, fuzzy
-#| msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} "
-"Benutzerobjekte gefunden."
+"Benutzerobjekte in {1:.4f}s gefunden."
 
 #: privacyidea/lib/smsprovider/FirebaseProvider.py:199
 msgid ""
@@ -3239,20 +3277,16 @@ msgstr ""
 #: privacyidea/lib/tokens/passkeytoken.py:95
 msgid "Passkey: A secret stored on a device, unlocked with biometrics."
 msgstr ""
+"Passkey: Ein geheimer Schlüssel auf einem Gerät, gesichert mit Biometrie "
+"oder PIN."
 
 #: privacyidea/lib/tokens/passkeytoken.py:104
-#, fuzzy
-#| msgid ""
-#| "Use an alternative challenge text for telling the user to enter an OTP "
-#| "value. You can also use tags for automated replacement. Check out the "
-#| "documentation for more details."
 msgid ""
 "Alternative challenge message to use when authenticating with a passkey.You "
 "can also use tags for replacement, check the documentation for more details."
 msgstr ""
-"Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus "
-"der Email einzugeben. Es können tags (siehe Dokumentation) zur Textersetzung "
-"verwendet werden."
+"Ein alternativer Challenge-Text für die Authentisierung mit Passkeys. Es "
+"können tags (siehe Dokumentation) zur Textersetzung verwendet werden."
 
 #: privacyidea/lib/tokens/passkeytoken.py:112
 msgid ""
@@ -3260,16 +3294,17 @@ msgid ""
 "attestation certificate will be saved in the token info. The default value "
 "is 'none'."
 msgstr ""
+"Fragt eine Beglaubigung bei der Registrierung vom Authenticator an. Das "
+"Beglaubigungszertifikat wird in den Token Informationen gespeichert. Der "
+"Standard ist 'none'."
 
 #: privacyidea/lib/tokens/passkeytoken.py:391
 msgid "Please authenticate with your passkey!"
-msgstr ""
+msgstr "Bitte authentisieren Sie sich mit Ihrem Passkey!"
 
 #: privacyidea/lib/tokens/passkeytoken.py:395
-#, fuzzy
-#| msgid "Please confirm the authentication on your mobile device!"
 msgid "Please confirm the registration with your passkey!"
-msgstr "Bitte bestätigen Sie die Anmeldung auf Ihrem Mobilgerät!"
+msgstr "Bitte bestätigen Sie die Anmeldung mit Ihrem Passkey!"
 
 #: privacyidea/lib/tokens/passwordtoken.py:113
 msgid ""
