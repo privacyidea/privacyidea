@@ -9,9 +9,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-02-25 13:20+0000\n"
+"PO-Revision-Date: 2025-02-25 13:55+0000\n"
 "Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -652,22 +652,14 @@ msgid "Admin is allowed to list containers."
 msgstr "Administratoren können Container auflisten."
 
 #: lib/policy.py:2148
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to register containers."
-msgstr "Administratoren können Container erstellen."
+msgstr "Administratoren dürfen Container erstellen."
 
 #: lib/policy.py:2152
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to unregister containers."
-msgstr "Administratoren können Container erstellen."
+msgstr "Administratoren dürfen die Registrierung von Containern aufheben."
 
 #: lib/policy.py:2156
-#, fuzzy
-#| msgid ""
-#| "Admin is allowed to perform a container rollover including arollover of "
-#| "all contained tokens."
 msgid ""
 "Admin is allowed to perform a container rollover including a rollover of all "
 "contained tokens."
@@ -712,8 +704,6 @@ msgid "The user is allowed to unassign his own tokens."
 msgstr "Der Benutzer darf die eigene Zuweisung zu seinen Token aufheben."
 
 #: lib/policy.py:2198
-#, fuzzy
-#| msgid "The user is allowed to resyncronize his tokens."
 msgid "The user is allowed to resynchronize his tokens."
 msgstr "Der Benutzer kann seine eigenen Token resynchronisieren."
 
@@ -747,10 +737,6 @@ msgid "The user is allowed to set the OTP PIN during enrollment."
 msgstr "Der Benutzer kann die OTP PIN während des Rollouts setzen."
 
 #: lib/policy.py:2237
-#, fuzzy
-#| msgid ""
-#| "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
-#| "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
@@ -860,16 +846,12 @@ msgid "Users are allowed to list their own containers."
 msgstr "Benutzer können ihre eigenen Container auflisten."
 
 #: lib/policy.py:2327
-#, fuzzy
-#| msgid "Users are allowed to list their own containers."
 msgid "Users are allowed to register their own containers."
-msgstr "Benutzer können ihre eigenen Container auflisten."
+msgstr "Benutzer dürfen ihre eigenen Container registrieren."
 
 #: lib/policy.py:2332
-#, fuzzy
-#| msgid "Users are allowed to create containers."
 msgid "Users are allowed to unregister containers."
-msgstr "Benutzer können Container erstellen."
+msgstr "Benutzer dürfen die Registrierung ihrer Container aufheben."
 
 #: lib/policy.py:2336
 msgid ""
@@ -3441,27 +3423,16 @@ msgstr ""
 "machen."
 
 #: lib/tokens/pushtoken.py:447
-#, fuzzy
-#| msgid ""
-#| "The options that can be presented to the user to confirm the login. "
-#| "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
-#| "code>: user defined. "
 msgid ""
 "The options that can be presented to the user to confirm the login. "
 "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
 "code>: user defined. Does only apply if <em>{0!s}</em> is set."
 msgstr ""
 "Die Art der Optionen, welche dem Nutzer zum Präsenz-Check angezeigt werden. "
-"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
-"code>: user defined. "
+"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, "
+"<code>CUSTOM</code>: user defined. Gilt nur wenn <em>{0!s}</em> gesetzt ist."
 
 #: lib/tokens/pushtoken.py:457
-#, fuzzy
-#| msgid ""
-#| "Custom options that can be presented to the user to confirm the login. "
-#| "The string must contain at least 2 options and should be unique. The "
-#| "options are separated by <code>:</code>. e.g.: <code>01:02:03:1A:1B:1C</"
-#| "code>. to <code>CUSTOM</code>."
 msgid ""
 "Custom options that can be presented to the user to confirm the login. The "
 "string must contain at least 2 options and should be unique. The options are "
@@ -3470,18 +3441,16 @@ msgid ""
 msgstr ""
 "Angepasste Optionen welche dem Nutzer beim Präsenz-Check angezeigt werden. "
 "Es müssen mindestens zwei einzigartige Optionen sein. Die Optionen werden "
-"separiert durch <code>:</code>, bspw. <code>01:02:03:1A:1B:1C</code>."
+"separiert durch <code>:</code>, bspw. <code>01:02:03:1A:1B:1C</code>. Gilt "
+"nur wenn <em>{0!s}</em> auf <code>CUSTOM</code> gesetzt ist."
 
 #: lib/tokens/pushtoken.py:467
-#, fuzzy
-#| msgid ""
-#| "The number of options the user is presented with to confirm the login. "
 msgid ""
 "The number of options the user is presented with to confirm the login. Does "
 "only apply if <em>{0!s}</em> is set."
 msgstr ""
 "Die Anzahl der Optionen, welche dem Nutzer beim Präsenz-Check angezeigt "
-"werden. "
+"werden. Gilt nur wenn <em>{0!s}</em> gesetzt ist."
 
 #: lib/tokens/pushtoken.py:475
 msgid ""
