@@ -76,7 +76,7 @@
         </span>
       }
 
-      @if (data.response.detail?.otpkey?.value) {
+      @if (data.response.detail?.otpkey?.value && !data.response.detail?.otps) {
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>
@@ -86,6 +86,31 @@
             @if (data.response.detail.otpkey.value_b32) {
               <p class="otpkey-p">Base32: {{ data.response.detail.otpkey.value_b32 }}</p>
             }
+          </mat-expansion-panel>
+        </mat-accordion>
+      }
+
+      @if (data.response.detail?.otps) {
+        <mat-accordion class="otpkey-expension">
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title> The OTP values
+                @if (data.response.detail?.otps) {
+                  <button (click)="printOtps()"
+                          mat-icon-button
+                          class="margin-left-1">
+                    <mat-icon>print</mat-icon>
+                  </button>
+                }
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div id="otp-values">
+              <div class="otp-values">
+                @for (otp of Object.entries(data.response.detail.otps); track otp) {
+                  <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
+                }
+              </div>
+            </div>
           </mat-expansion-panel>
         </mat-accordion>
       }

@@ -50,6 +50,7 @@ export interface EnrollmentOptions {
   pem?: string;
   emailAddress?: string;
   readEmailDynamically?: boolean;
+  answers?: Record<string, string>;
 }
 
 @Injectable({
@@ -433,6 +434,10 @@ export class TokenService {
     if (options.type === 'email') {
       payload.email = options.emailAddress;
       payload.dynamic_email = options.readEmailDynamically;
+    }
+
+    if (options.type === 'question') {
+      payload.questions = options.answers;
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });

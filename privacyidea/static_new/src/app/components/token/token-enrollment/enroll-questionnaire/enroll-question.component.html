@@ -1,0 +1,27 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <span>Please answer at least {{ configMinNumberOfAnswers }} of the following questions.</span>
+
+  <div class="margin-top-1 form-group">
+    @for (question of configQuestions; track question) {
+      <mat-form-field class="width-31">
+        <mat-label>{{ question }}</mat-label>
+        <input type="text"
+               [ngModel]="answers()?.[question]"
+               (ngModelChange)="onAnswerChange($event, question)"
+               matInput>
+      </mat-form-field>
+    }
+    <mat-form-field class="width-66">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+  </div>
+</div>

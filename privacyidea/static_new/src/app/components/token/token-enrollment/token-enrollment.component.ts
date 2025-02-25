@@ -65,6 +65,9 @@ import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
 import { EnrollIndexedsecretComponent } from './enroll-indexsecret/enroll-indexedsecret.component';
 import { EnrollPaperComponent } from './enroll-paper/enroll-paper.component';
 import { EnrollPushComponent } from './enroll-push/enroll-push.component';
+import { EnrollQuestionComponent } from './enroll-questionnaire/enroll-question.component';
+import { EnrollRegistrationComponent } from './enroll-registration/enroll-registration.component';
+import { EnrollTanComponent } from './enroll-tan/enroll-tan.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -151,6 +154,9 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollIndexedsecretComponent,
     EnrollPaperComponent,
     EnrollPushComponent,
+    EnrollQuestionComponent,
+    EnrollRegistrationComponent,
+    EnrollTanComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -218,6 +224,7 @@ export class TokenEnrollmentComponent {
   emailAddress = signal('');
   readEmailDynamically = signal(false);
   pushEnrolled = signal(false);
+  answers = signal<Record<string, string>>({});
 
   constructor(
     private containerService: ContainerService,
@@ -372,6 +379,7 @@ export class TokenEnrollmentComponent {
       pem: this.pem(),
       emailAddress: this.emailAddress(),
       readEmailDynamically: this.readEmailDynamically(),
+      answers: this.answers(),
     };
     this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({

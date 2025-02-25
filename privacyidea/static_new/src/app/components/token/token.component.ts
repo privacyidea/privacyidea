@@ -36,7 +36,7 @@ export type TokenType =
   | 'indexedsecret'
   | 'paper'
   | 'push'
-  | 'questionnaire'
+  | 'question'
   | 'registration'
   | 'tan'
   | 'tiqr'
@@ -164,7 +164,7 @@ export class TokenComponent {
       text: 'With the PUSH token privacyIDEA sends a notification to your registered smartphone asking if you want to approve the authentication step. You can accept or deny the authentication on your smartphone. For the enrollment process and for the authentication process your smartphone needs an internet connection to privacyIDEA.',
     },
     {
-      key: 'questionnaire',
+      key: 'question',
       info: 'Questionnaire: Enroll Questions for the user.',
       text: 'The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.',
     },
@@ -172,11 +172,6 @@ export class TokenComponent {
       key: 'registration',
       info: 'Registration: A token that creates sa registration code that can be used as a second factor once.',
       text: 'The registration token is a code, that the user can use to authenticate once! After using this code to login, the registration token is deleted and can not be used anymore. This is used, so that the user can enroll a token on his own, after logging in for the first time.',
-    },
-    {
-      key: 'remote',
-      info: 'Remote Token: Forward authentication request to another server.',
-      text: 'The remote token forwards the authentication request to another privacyIDEA server. You can choose if the PIN should be stripped and checked locally.',
     },
     {
       key: 'tan',
