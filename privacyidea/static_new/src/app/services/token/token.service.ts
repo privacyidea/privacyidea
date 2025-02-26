@@ -51,6 +51,8 @@ export interface EnrollmentOptions {
   emailAddress?: string;
   readEmailDynamically?: boolean;
   answers?: Record<string, string>;
+  vascoSerial?: string;
+  useVascoSerial?: boolean;
 }
 
 @Injectable({
@@ -438,6 +440,14 @@ export class TokenService {
 
     if (options.type === 'question') {
       payload.questions = options.answers;
+    }
+
+    if (options.type === 'vasco') {
+      if (options.useVascoSerial) {
+        payload.serial = options.vascoSerial;
+      }
+      payload.otpkey = options.otpKey;
+      payload.genkey = 0;
     }
 
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });

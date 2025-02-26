@@ -52,6 +52,8 @@ export class TokenEnrollmentDialogComponent {
       regenerateToken: WritableSignal<boolean>;
       isProgrammaticChange: WritableSignal<boolean>;
       pushEnrolled: WritableSignal<boolean>;
+      username: string;
+      userRealm: string;
     },
   ) {
     this.dialogRef.afterClosed().subscribe(() => {

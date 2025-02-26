@@ -1,0 +1,36 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <mat-form-field class="width-100">
+    <mat-label>VASCO Token blob</mat-label>
+    <textarea [(ngModel)]="otpKey"
+              matInput
+              placeholder="Enter blob"
+              rows="6"></textarea>
+  </mat-form-field>
+  <div class="flex-row gap-1">
+    <mat-checkbox [(ngModel)]="useVascoSerial"
+                  class="server-checkbox">
+      use VASCO Serial
+    </mat-checkbox>
+    <mat-form-field class="width-33">
+      <mat-label>Vasco Serial</mat-label>
+      <input [(ngModel)]="vascoSerial"
+             [disabled]="true"
+             matInput>
+    </mat-form-field>
+  </div>
+  <span class="margin-button-1">The VASCO serial is read from the VASCO blob.
+    If you want to use this VASCO serial number within privacyIDEA, activate the checkbox.
+    Otherwise privacyIDEA will create a new unique serial number.</span>
+  <mat-form-field class="width-66">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

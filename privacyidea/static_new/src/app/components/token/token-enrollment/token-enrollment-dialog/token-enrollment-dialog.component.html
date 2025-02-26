@@ -4,11 +4,19 @@
     <p>
       The token was successfully enrolled with serial number
       <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.
+      <br>
       @if (data.response.detail.container_serial) {
-        The token has been enrolled in the container
+        It has been enrolled in the container
         <a (click)="containerSelected(data.response.detail.container_serial)"> {{
             data.response.detail.container_serial
           }} </a>.
+      }
+      <br>
+      @if (data.username != '' && data.userRealm != '') {
+        <span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
+            data.userRealm
+          }}</a> was assigned to the token.
+        </span>
       }
     </p>
   }
@@ -37,10 +45,16 @@
            height="300px"
            src="{{ data.response.detail.pushurl.img }}"
            width="300px" />
+    } @else if (data.response.detail?.tiqrenroll?.img) {
+      <img alt="QR Code"
+           class="qr-code"
+           height="300px"
+           src="{{ data.response.detail.tiqrenroll.img }}"
+           width="300px" />
     }
     <div class="flex-column gap-1">
       @let url = data.response.detail?.googleurl?.value ?? data.response.detail?.motpurl?.value
-        ?? data.response.detail?.otpkey?.value;
+        ?? data.response.detail?.otpkey?.value ?? data.response.detail?.tiqrenroll?.value;
       @if (url) {
         <p class="qr-code-text">
           Click <a href="{{ url }}">here</a> or scan the QR Code, if you want to add the Token to
@@ -114,8 +128,23 @@
           </mat-expansion-panel>
         </mat-accordion>
       }
+
+      @if (data.response.detail?.u2fRegisterRequest) {
+        Take action on your token:
+        <br> You need to confirm the registration with your token either by pushing the blinking button or by religging your token. This depends on the actual token model.
+      }
     </div>
   </div>
+  @if (data.response.detail?.webAuthnRegisterRequest) {
+    <span>Take action on your authenticator</span>
+    <p class="webauthn-p">You need to confirm the registration with your authenticator.
+      For an external authenticator, this usually means pushing the button on the authenticator,
+      or replugging it (if there is no button on the authenticator).
+      If you want to use an authenticator that is integrated into your device,
+      look for a dialog box from your operating system.
+      If you do not see anything, please make sure that your authenticator supports WebAuthn.
+    </p>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions>

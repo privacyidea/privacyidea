@@ -68,6 +68,10 @@ import { EnrollPushComponent } from './enroll-push/enroll-push.component';
 import { EnrollQuestionComponent } from './enroll-questionnaire/enroll-question.component';
 import { EnrollRegistrationComponent } from './enroll-registration/enroll-registration.component';
 import { EnrollTanComponent } from './enroll-tan/enroll-tan.component';
+import { EnrollTiqrComponent } from './enroll-tiqr/enroll-tiqr.component';
+import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
+import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
+import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -157,6 +161,10 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollQuestionComponent,
     EnrollRegistrationComponent,
     EnrollTanComponent,
+    EnrollTiqrComponent,
+    EnrollU2fComponent,
+    EnrollVascoComponent,
+    EnrollWebauthnComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -225,6 +233,8 @@ export class TokenEnrollmentComponent {
   readEmailDynamically = signal(false);
   pushEnrolled = signal(false);
   answers = signal<Record<string, string>>({});
+  vascoSerial = signal('');
+  useVascoSerial = signal(false);
 
   constructor(
     private containerService: ContainerService,
@@ -380,6 +390,8 @@ export class TokenEnrollmentComponent {
       emailAddress: this.emailAddress(),
       readEmailDynamically: this.readEmailDynamically(),
       answers: this.answers(),
+      vascoSerial: this.vascoSerial(),
+      useVascoSerial: this.useVascoSerial(),
     };
     this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
@@ -403,6 +415,8 @@ export class TokenEnrollmentComponent {
             regenerateToken: this.regenerateToken,
             isProgrammaticChange: this.isProgrammaticChange,
             pushEnrolled: this.pushEnrolled,
+            username: this.selectedUsername(),
+            userRealm: this.selectedUserRealm(),
           },
         });
 
@@ -475,6 +489,8 @@ export class TokenEnrollmentComponent {
         regenerateToken: this.regenerateToken,
         isProgrammaticChange: this.isProgrammaticChange,
         pushEnrolled: this.pushEnrolled,
+        username: this.selectedUsername(),
+        userRealm: this.selectedUserRealm(),
       },
     });
     if (

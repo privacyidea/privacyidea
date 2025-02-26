@@ -139,6 +139,21 @@
     @case ("tan") {
       <app-enroll-tan [description]="description" />
     }
+    @case ("tiqr") {
+      <app-enroll-tiqr [description]="description" />
+    }
+    @case ("u2f") {
+      <app-enroll-u2f [description]="description" />
+    }
+    @case ("vasco") {
+      <app-enroll-vasco [vascoSerial]="vascoSerial"
+                        [useVascoSerial]="useVascoSerial"
+                        [otpKey]="otpKey"
+                        [description]="description" />
+    }
+    @case ("webauthn") {
+      <app-enroll-webauthn [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
