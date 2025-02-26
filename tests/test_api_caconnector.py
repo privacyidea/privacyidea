@@ -3,8 +3,7 @@ This testcase is used to test the REST API  in api/caconnector.py
 to create, update, delete CA connectors.
 """
 from .base import MyApiTestCase
-import json
-from privacyidea.lib.caconnector import get_caconnector_list, save_caconnector
+from privacyidea.lib.caconnector import get_caconnector_list
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION
 from privacyidea.lib.error import ERROR
 
@@ -178,4 +177,3 @@ class CAConnectorTestCase(MyApiTestCase):
             self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
-

@@ -1,7 +1,10 @@
 """
 This test file tests the lib.tokens.certificatetoken
 """
+
 from cryptography import x509
+import pytest
+
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
@@ -12,7 +15,7 @@ from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
                                                      verify_certificate_path,
                                                      CertificateTokenClass)
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
-import os
+
 import unittest
 import mock
 from OpenSSL import crypto
@@ -61,10 +64,6 @@ S/IreZ58alclwJJRIGTuOTKSCd+uE7QMALztDty7cjtpMANGrz1k/uUWg9T+UgQs
 czZ68tF258iaWLPbsdRWqO160iy7eDSKWFFMR4HnfLHX/UPRSpBNGSHmvT1hbkUr
 -----END CERTIFICATE-----"""
 
-CAKEY = "cakey.pem"
-CACERT = "cacert.pem"
-OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
 REQUEST = """-----BEGIN CERTIFICATE REQUEST-----
 MIICmTCCAYECAQAwVDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
 A1UECgwLcHJpdmFjeWlkZWExHjAcBgNVBAMMFXJlcXVlc3Rlci5sb2NhbGRvbWFp
@@ -298,14 +297,15 @@ WYx05kOaYFFvb1u8ub+qSExyHGX9Lh6w32RCoM8kJP7F6YCepKJRboka1/BY3GbF
 -----END CERTIFICATE-----"""
 
 
-CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
-        MS_ATTR.PORT: 50061,
-        MS_ATTR.HTTP_PROXY: "0",
-        MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
+CONF = {
+    MS_ATTR.HOSTNAME: MY_CA_NAME,
+    MS_ATTR.PORT: 50061,
+    MS_ATTR.HTTP_PROXY: "0",
+    MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA",
+}
 
 
 class CertificateTokenTestCase(MyTestCase):
-
     serial1 = "CRT0001"
     serial2 = "CRT0002"
     serial3 = "CRT0003"
@@ -346,18 +346,8 @@ class CertificateTokenTestCase(MyTestCase):
         detail = token.get_init_detail()
         self.assertEqual(detail.get("certificate"), CERT)
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_02_create_token_from_request(self):
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
         token = CertificateTokenClass(db_token)
@@ -397,18 +387,8 @@ class CertificateTokenTestCase(MyTestCase):
                          "/O=privacyidea/CN=requester.localdomain'>")
         remove_token(self.serial2)
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_02a_fail_request_with_attestation(self):
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
         token = CertificateTokenClass(db_token)
@@ -421,18 +401,8 @@ class CertificateTokenTestCase(MyTestCase):
                            "request": REQUEST})
         remove_token(self.serial2)
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_02b_success_request_with_attestation(self):
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
         token = CertificateTokenClass(db_token)
@@ -467,19 +437,9 @@ class CertificateTokenTestCase(MyTestCase):
         info = token.get_class_info("title")
         self.assertTrue(info == "Certificate Token", info)
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_04_create_token_on_server(self):
         self.setUp_user_realms()
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         db_token = Token(self.serial3, tokentype="certificate")
         db_token.save()
         token = CertificateTokenClass(db_token)

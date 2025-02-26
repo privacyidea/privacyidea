@@ -1,4 +1,24 @@
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+# SPDX-FileCopyrightText: (C) 2025 Paul Lettich <paul.lettich@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
+# This code is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation, either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial)
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -26,7 +46,6 @@ from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
 from privacyidea.lib import _
-import os
 import unittest
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
@@ -136,10 +155,6 @@ YUBICOFILE = "tests/testdata/yubico-oath.csv"
 YUBICOFILE_LONG = "tests/testdata/yubico-oath-long.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
-CAKEY = "cakey.pem"
-CACERT = "cacert.pem"
-OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
 REQUEST = """-----BEGIN CERTIFICATE REQUEST-----
 MIICmTCCAYECAQAwVDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
 A1UECgwLcHJpdmFjeWlkZWExHjAcBgNVBAMMFXJlcXVlc3Rlci5sb2NhbGRvbWFp
@@ -543,22 +558,9 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
 
 class APIAttestationTestCase(MyApiTestCase):
-
-    def test_00_realms_and_ca(self):
-        # Setup realms and CA
-        self.setUp_user_realms()
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_01_enroll_certificate(self):
+        self.setUp_user_realms()
         # Enroll a certificate without a policy
         from .test_lib_tokens_certificate import YUBIKEY_CSR, BOGUS_ATTESTATION, YUBIKEY_ATTEST
 
@@ -1910,19 +1912,9 @@ class APITokenTestCase(MyApiTestCase):
             token = get_tokens(serial="totp{0!s}".format(timestep))[0]
             self.assertEqual(token.timestep, int(timestep))
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_17_enroll_certificate(self):
         self.setUp_user_realms()
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         # Enroll a certificate token with a CSR
         with self.app.test_request_context('/token/init',
                                            data={"type": "certificate",

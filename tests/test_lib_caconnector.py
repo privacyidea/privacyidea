@@ -8,11 +8,11 @@ import OpenSSL.crypto
 
 from .base import MyTestCase
 import os
-import glob
 import shutil
 import mock
 from io import StringIO
 from mock import patch
+import tempfile
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
 from OpenSSL import crypto
@@ -28,7 +28,6 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from .mscamock import CAServiceMock
-
 
 
 CAKEY = "cakey.pem"
@@ -212,42 +211,13 @@ class LocalCATestCase(MyTestCase):
     def setUpClass(cls):
         # call parent
         super().setUpClass()
-
-        # Backup the original index and serial
-        shutil.copyfile("{0!s}/serial".format(WORKINGDIR),
-                        "{0!s}/serial.orig".format(WORKINGDIR))
-        shutil.copyfile("{0!s}/index.txt".format(WORKINGDIR),
-                        "{0!s}/index.txt.orig".format(WORKINGDIR))
+        ca_path = tempfile.mkdtemp()
+        shutil.copytree(WORKINGDIR, ca_path, dirs_exist_ok=True)
+        cls.ca_path = ca_path
 
     @classmethod
     def tearDownClass(cls):
-        filelist = glob.glob("{0!s}/100*.pem".format(WORKINGDIR))
-        for f in filelist:
-            os.remove(f)
-
-        FILES = ["DE_Hessen_privacyidea_requester.localdomain.req",
-                 "DE_Hessen_privacyidea_requester.localdomain.pem",
-                 "DE_Hessen_privacyidea_usercert.pem",
-                 "DE_Hessen_privacyidea_usercert.req",
-                 "index.txt.attr.old",
-                 "index.txt.old",
-                 "serial.old",
-                 "crl.pem",
-                 "Steve_Test.der",
-                 "Steve_Test.txt"]
-        for f in FILES:
-            try:
-                os.remove("{0!s}/{1!s}".format(WORKINGDIR, f))
-            except OSError:
-                print("File {0!s} could not be deleted.".format(f))
-
-        # restore backup of index.txt and serial
-        shutil.copyfile("{0!s}/serial.orig".format(WORKINGDIR),
-                        "{0!s}/serial".format(WORKINGDIR))
-        shutil.copyfile("{0!s}/index.txt.orig".format(WORKINGDIR),
-                        "{0!s}/index.txt".format(WORKINGDIR))
-        os.remove("{0!s}/serial.orig".format(WORKINGDIR))
-        os.remove("{0!s}/index.txt.orig".format(WORKINGDIR))
+        shutil.rmtree(cls.ca_path)
         # call parent
         super().tearDownClass()
 
@@ -268,15 +238,14 @@ class LocalCATestCase(MyTestCase):
         cacon = LocalCAConnector("localCA", {"cacert": "...",
                                              "cakey": "..."})
         # set the parameters:
-        cwd = os.getcwd()
         cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
                           "openssl.cnf": OPENSSLCNF,
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
+                          "WorkingDir": self.ca_path})
 
         _r, cert = cacon.sign_request(REQUEST,
                                       {"CSRDir": "",
                                        "CertificateDir": "",
-                                       "WorkingDir": cwd + "/" + WORKINGDIR})
+                                       "WorkingDir": self.ca_path})
         serial = cert.get_serial_number()
 
         self.assertEqual("{0!r}".format(cert.get_issuer()),
@@ -299,10 +268,11 @@ class LocalCATestCase(MyTestCase):
         r = cacon.create_crl()
         self.assertEqual(r, "crl.pem")
         # Check if the serial number is contained in the CRL!
-        filename = os.path.join(cwd, WORKINGDIR, "crl.pem")
+        filename = os.path.join(self.ca_path, "crl.pem")
         f = open(filename)
         buff = f.read()
         f.close()
+        # TODO: deprecated, use cryptography
         crl = crypto.load_crl(crypto.FILETYPE_PEM, buff)
         revoked_certs = crl.get_revoked()
         found_revoked_cert = False
@@ -321,18 +291,17 @@ class LocalCATestCase(MyTestCase):
         # Now we overlap at any cost!
         cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
                           "openssl.cnf": OPENSSLCNF,
-                          "WorkingDir": cwd + "/" + WORKINGDIR,
+                          "WorkingDir": self.ca_path,
                           ATTR.CRL_OVERLAP_PERIOD: 1000})
         r = cacon.create_crl(check_validity=True)
         self.assertEqual(r, "crl.pem")
 
     def test_03_sign_user_cert(self):
-        cwd = os.getcwd()
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
                                   "cacert": CACERT,
                                   "openssl.cnf": OPENSSLCNF,
-                                  "WorkingDir": cwd + "/" + WORKINGDIR})
+                                  "WorkingDir": self.ca_path})
 
         _, cert = cacon.sign_request(REQUEST_USER)
         self.assertEqual("{0!r}".format(cert.get_issuer()),
@@ -343,12 +312,11 @@ class LocalCATestCase(MyTestCase):
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=usercert'>")
 
     def test_04_sign_SPKAC_request(self):
-        cwd = os.getcwd()
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
                                   "cacert": CACERT,
                                   "openssl.cnf": OPENSSLCNF,
-                                  "WorkingDir": cwd + "/" + WORKINGDIR})
+                                  "WorkingDir": self.ca_path})
 
         _, cert = cacon.sign_request(SPKAC, options={"spkac": 1})
         self.assertEqual("{0!r}".format(cert.get_issuer()),
@@ -359,12 +327,11 @@ class LocalCATestCase(MyTestCase):
                          "/emailAddress=steve@openssl.org'>")
 
     def test_05_templates(self):
-        cwd = os.getcwd()
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
                                   "cacert": CACERT,
                                   "openssl.cnf": OPENSSLCNF,
-                                  "WorkingDir": cwd + "/" + WORKINGDIR,
+                                  "WorkingDir": self.ca_path,
                                   ATTR.TEMPLATE_FILE: "templates.yaml"})
         templates = cacon.get_templates()
         self.assertTrue("user" in templates)
@@ -609,21 +576,17 @@ class CreateLocalCATestCase(MyTestCase):
     """
 
     @classmethod
+    def setUpClass(cls):
+        super(CreateLocalCATestCase, cls).setUpClass()
+        cls.workdir = tempfile.mkdtemp()
+
+    @classmethod
     def tearDownClass(cls):
-        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
-        for f in filelist:
-            try:
-                os.remove(f)
-            except OSError:
-                print("Error deleting file {0!s}.".format(f))
-        os.rmdir("{0!s}2".format(WORKINGDIR))
+        shutil.rmtree(cls.workdir)
         super().tearDownClass()
 
     def test_01_create_ca(self):
-        cwd = os.getcwd()
-        workdir = os.path.join(cwd, WORKINGDIR + '2')
-        if os.path.exists(workdir):
-            shutil.rmtree(workdir)
+        workdir = self.workdir
         inputstr = str(workdir + '\n\n\n\n\n\ny\n')
         with patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')

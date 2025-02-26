@@ -33,8 +33,15 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 import pathlib
-
+from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
+                               load_pem_x509_certificates, DNSName)
+from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import pkcs12, BestAvailableEncryption
+from OpenSSL import crypto
+import traceback
 
 from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_string
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
@@ -43,17 +50,10 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import determine_logged_in_userparams
-from OpenSSL import crypto
-from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
-                               load_pem_x509_certificates, DNSName)
-from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import padding
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
 from privacyidea.lib.error import privacyIDEAError, CSRError, CSRPending
-import traceback
 
 optional = True
 required = False
@@ -107,9 +107,9 @@ def verify_certificate_path(certificate, trusted_ca_paths):
                         cert_chain = verifier.verify(certificate, [])
                         log.debug(f"Successfully validated certificate with chain {cert_chain}")
                         return True
-                    except VerificationError as exx:
-                        log.debug(f"Can not verify attestation certificate against chain in {chainfile}.")
-                        log.debug(exx)
+                    except VerificationError as e:
+                        log.info(f"Can not verify attestation certificate against chain in {chainfile}: {e}")
+                        log.debug(e)
         else:
             log.warning(f"The configured attestation CA directory {p} does not exist.")
     return False
@@ -477,8 +477,9 @@ class CertificateTokenClass(TokenClass):
                     try:
                         verified = verify_certificate_path(attestation_cert,
                                                            param.get(ACTION.TRUSTED_CA_PATH))
-                    except Exception as exx:
+                    except Exception as e:
                         # We could have file system errors during verification.
+                        log.debug(f"An error occurred while verifying the certificate path: {e}")
                         log.debug("{0!s}".format(traceback.format_exc()))
                         verified = False
 
@@ -486,7 +487,6 @@ class CertificateTokenClass(TokenClass):
                         log.warning("Failed to verify certificate chain of attestation certificate.")
                         if verify_attestation:
                             raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
-
 
             # During the initialization process, we need to create the certificate
             request_id, x509object = cacon.sign_request(request,
@@ -522,7 +522,7 @@ class CertificateTokenClass(TokenClass):
             req.get_subject().organizationName = 'xxx'
             """
             req.set_pubkey(key)
-            r = req.sign(key, "sha256")
+            req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
             try:
                 request_id, x509object = cacon.sign_request(csr, options={"template": template_name})
@@ -566,8 +566,8 @@ class CertificateTokenClass(TokenClass):
         if privatekey:
             try:
                 response_detail["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
-            except Exception:
-                log.warning("Can not create PKCS12 for token {0!s}.".format(self.token.serial))
+            except Exception as e:
+                log.warning(f"Can not create PKCS12 for token {self.token.serial}: {e}")
 
         return response_detail
 
@@ -579,17 +579,22 @@ class CertificateTokenClass(TokenClass):
         """
         certificate = self.get_tokeninfo("certificate")
         privatekey = self.get_tokeninfo("privatekey")
-        pkcs12 = crypto.PKCS12()
-        pkcs12.set_certificate(crypto.load_certificate(
-            crypto.FILETYPE_PEM, certificate))
-        pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
-                                                     privatekey))
-        # TODO define a random passphrase and hand it to the user
+
+        cert = load_pem_x509_certificate(certificate.encode())
+        key = serialization.load_pem_private_key(privatekey.encode(), None)
         passphrase = self.token.get_pin()
+        # TODO: define a random passphrase and hand it to the user
         if passphrase == -1:
+            # TODO: this fails since an empty password is not allowd.
             passphrase = ""  # nosec B105 # defaults to empty passphrase
-        pkcs12_bin = pkcs12.export(passphrase=passphrase.encode('utf8'))
-        return pkcs12_bin
+        # See https://cryptography.io/en/latest/hazmat/primitives/asymmetric/serialization/#cryptography.hazmat.primitives.serialization.pkcs12.serialize_key_and_certificates
+        # for more details on PKCS12 export
+        # TODO: replace "friendlyname" with something more appropriate (username? privacyIDEA?)
+        p12 = pkcs12.serialize_key_and_certificates(
+            b"friendlyname", key, cert, None,
+            BestAvailableEncryption(passphrase.encode()))
+
+        return p12
 
     def get_as_dict(self):
         """
@@ -607,8 +612,8 @@ class CertificateTokenClass(TokenClass):
         if "privatekey" in token_dict.get("info"):
             try:
                 token_dict["info"]["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
-            except Exception:
-                log.warning("Can not create PKCS12 for token {0!s}.".format(self.token.serial))
+            except Exception as e:
+                log.warning(f"Can not create PKCS12 for token {self.token.serial}: {e}")
 
         return token_dict
 
