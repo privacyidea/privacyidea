@@ -62,7 +62,7 @@ class TokenContainerClass:
         self.options = {}
 
     @classmethod
-    def get_class_options(cls, only_selectable=False) -> dict[str, list[str]]:
+    def get_class_options(cls, only_selectable=False) -> dict:
         """
         Returns the options for the container class.
 
@@ -182,10 +182,10 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def realms(self) -> list[Realm]:
+    def realms(self) -> list:
         return self._db_container.realms
 
-    def set_realms(self, realms, add=False) -> dict[str, bool]:
+    def set_realms(self, realms, add=False) -> dict:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
@@ -237,7 +237,7 @@ class TokenContainerClass:
 
         return result
 
-    def _get_user_realms(self) -> list[str]:
+    def _get_user_realms(self) -> list:
         """
         Returns a list of the realm names of the users that are assigned to the container.
         """
@@ -282,13 +282,13 @@ class TokenContainerClass:
             return True
         return False
 
-    def get_tokens(self) -> list[TokenClass]:
+    def get_tokens(self) -> list:
         """
         Returns the tokens of the container as a list of TokenClass objects.
         """
         return self.tokens
 
-    def get_tokens_for_synchronization(self) -> list[TokenClass]:
+    def get_tokens_for_synchronization(self) -> list:
         """
         Returns the tokens of the container that can be synchronized with a client as a list of TokenClass objects.
         """
@@ -338,7 +338,7 @@ class TokenContainerClass:
         db.session.commit()
         return count > 0
 
-    def get_users(self) -> list[User]:
+    def get_users(self) -> list:
         """
         Returns a list of users that are assigned to the container.
         """
@@ -353,7 +353,7 @@ class TokenContainerClass:
 
         return users
 
-    def get_states(self) -> list[str]:
+    def get_states(self) -> list:
         """
         Returns the states of the container as a list of strings.
         """
@@ -377,7 +377,7 @@ class TokenContainerClass:
                     return True
         return False
 
-    def set_states(self, state_list: list[str]) -> dict[str, bool]:
+    def set_states(self, state_list: list) -> dict:
         """
         Set the states of the container. Previous states will be removed.
         Raises a ParameterError if the state list contains exclusive states.
@@ -409,7 +409,7 @@ class TokenContainerClass:
                 res[state] = True
         return res
 
-    def add_states(self, state_list: list[str]) -> dict[str, bool]:
+    def add_states(self, state_list: list) -> dict:
         """
         Add states to the container. Previous states are only removed if a new state excludes them.
         Raises a ParameterError if the state list contains exclusive states.
@@ -446,7 +446,7 @@ class TokenContainerClass:
         return res
 
     @classmethod
-    def get_state_types(cls) -> dict[str, list[str]]:
+    def get_state_types(cls) -> dict:
         """
         Returns the state types that are supported by this container class and the states that are exclusive
         to each of these states.
@@ -471,7 +471,7 @@ class TokenContainerClass:
         if info:
             self._db_container.set_info(info)
 
-    def update_container_info(self, info: list[TokenContainerInfoData]):
+    def update_container_info(self, info: list):
         """
         Updates the container info for the passed list of container info. Non-existing keys are added and the values
         for existing keys are updated.
@@ -483,7 +483,7 @@ class TokenContainerClass:
                 persistent=False)
         db.session.commit()
 
-    def get_container_info(self) -> list[TokenContainerInfo]:
+    def get_container_info(self) -> list:
         """
         Return the tokencontainerinfo from the DB
 
@@ -491,13 +491,13 @@ class TokenContainerClass:
         """
         return self._db_container.info_list
 
-    def get_internal_info_keys(self) -> list[str]:
+    def get_internal_info_keys(self) -> list:
         """
         Returns the keys of the internal container info.
         """
         return [info.key for info in self.get_container_info() if info.type == PI_INTERNAL]
 
-    def get_container_info_dict(self) -> dict[str, str]:
+    def get_container_info_dict(self) -> dict:
         """
         Return the tokencontainerinfo from the DB as dictionary
 
@@ -507,7 +507,7 @@ class TokenContainerClass:
         container_info_dict = {info.key: info.value for info in container_info_list}
         return container_info_dict
 
-    def delete_container_info(self, key=None, keep_internal: bool = True) -> dict[str, bool]:
+    def delete_container_info(self, key=None, keep_internal: bool = True) -> dict:
         """
         Delete the tokencontainerinfo from the DB
 
@@ -692,7 +692,7 @@ class TokenContainerClass:
         return verify_res["valid"]
 
     def get_as_dict(self, include_tokens: bool = True, public_info: bool = True,
-                    additional_hide_info: list = None) -> dict[str, any]:
+                    additional_hide_info: list = None) -> dict:
         """
         Returns a dictionary containing all properties, contained tokens, and owners
 
@@ -779,7 +779,7 @@ class TokenContainerClass:
         return "generic"
 
     @classmethod
-    def get_supported_token_types(cls) -> list[str]:
+    def get_supported_token_types(cls) -> list:
         """
         Returns the token types that are supported by the container class.
         """
@@ -809,7 +809,7 @@ class TokenContainerClass:
         raise NotImplementedError("Encryption is not implemented for this container type.")
 
     def synchronize_container_details(self, container_client: dict,
-                                      initial_transfer_allowed: bool = False) -> dict[str, dict[str, any]]:
+                                      initial_transfer_allowed: bool = False) -> dict:
         """
         Compares the container from the client with the server and returns the differences.
         The container dictionary from the client contains information about the container itself and the tokens.

@@ -163,7 +163,7 @@ def _compare_before(given_value: datetime) -> Callable[[str], bool]:
     return comparator
 
 
-def build_filter(filter_string: str, allowed_keys: list[str] = None) -> tuple[str, Callable]:
+def build_filter(filter_string: str, allowed_keys: list = None) -> tuple:
     """
     Build and return a filter closure, which is based on the given filter_string.
     The filter closure takes a value and returns True if the user-defined criterion matches.
@@ -218,7 +218,7 @@ filter_funcs = {"=": _compare_regex_or_equal,
                 "!": _compare_not}
 
 
-def build_token_attribute_filter(tokenattribute: str) -> tuple[str, Callable]:
+def build_token_attribute_filter(tokenattribute: str) -> tuple:
     """
     Build and return a token attribute filter.
     The tokenattribute is separated into its components and the appropriate
@@ -243,7 +243,7 @@ def build_token_attribute_filter(tokenattribute: str) -> tuple[str, Callable]:
 
 
 def export_token_data(token_list: list, token_attributes: list = None,
-                      user_attributes: list = None) -> list[dict]:
+                      user_attributes: list = None) -> list:
     """
     Returns a list of tokens. Each token again is a dictionary of the requested
     token attributes, tokeninfo and user attributes
@@ -329,7 +329,7 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
 
 
 def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
-                   tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
+                   tokeninfo_filter, tokenattribute_filter: list,
                    tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
                    orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
                    orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:

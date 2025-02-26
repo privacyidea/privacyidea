@@ -3668,18 +3668,18 @@ class WebAuthn(MyApiTestCase):
             "user": "hans",
             "pin": "12"
         }
-        with (patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce,
-              self.app.test_request_context('/token/init',
-                                            method='POST',
-                                            data=data,
-                                            headers=headers)):
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
             mock_nonce.return_value = webauthn_b64_decode("RjCK6QlzmOpWN4BwE6xD5tx5P0czKCFemfqMBnAhch0")
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            data = res.json
-            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
-            transaction_id = webauthn_request.get("transaction_id")
-            webauthn_serial = data.get("detail").get("serial")
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data=data,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                data = res.json
+                webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+                transaction_id = webauthn_request.get("transaction_id")
+                webauthn_serial = data.get("detail").get("serial")
 
         # 2nd enrollment step
         data = {"user": "hans",

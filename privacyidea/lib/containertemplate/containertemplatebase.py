@@ -36,7 +36,7 @@ class ContainerTemplateBase:
         return "generic"
 
     @classmethod
-    def get_supported_token_types(cls) -> list[str]:
+    def get_supported_token_types(cls) -> list:
         """
         Returns the supported token types for this container template.
         """
@@ -58,7 +58,7 @@ class ContainerTemplateBase:
         return cls.template_option_values
 
     @classmethod
-    def get_template_option_keys(cls) -> list[str]:
+    def get_template_option_keys(cls) -> list:
         return cls.template_option_values.keys()
 
     @property
@@ -102,7 +102,7 @@ class ContainerTemplateBase:
         self._db_template.save()
 
     @property
-    def containers(self) -> list[TokenContainer]:
+    def containers(self) -> list:
         return self._db_template.containers
 
     def delete(self):
