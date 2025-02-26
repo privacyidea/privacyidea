@@ -39,7 +39,7 @@ class YubikeyContainer(TokenContainerClass):
         return "yubikey"
 
     @classmethod
-    def get_supported_token_types(cls) -> list:
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """

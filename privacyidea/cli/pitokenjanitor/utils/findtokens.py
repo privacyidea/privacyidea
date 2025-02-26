@@ -163,7 +163,7 @@ def _compare_before(given_value: datetime) -> Callable[[str], bool]:
     return comparator
 
 
-def build_filter(filter_string: str, allowed_keys: list = None) -> tuple:
+def build_filter(filter_string: str, allowed_keys: list[str] = None) -> tuple[str, Callable]:
     """
     Build and return a filter closure, which is based on the given filter_string.
     The filter closure takes a value and returns True if the user-defined criterion matches.
@@ -218,7 +218,7 @@ filter_funcs = {"=": _compare_regex_or_equal,
                 "!": _compare_not}
 
 
-def build_token_attribute_filter(tokenattribute: str) -> tuple:
+def build_token_attribute_filter(tokenattribute: str) -> tuple[str, Callable]:
     """
     Build and return a token attribute filter.
     The tokenattribute is separated into its components and the appropriate
@@ -243,7 +243,7 @@ def build_token_attribute_filter(tokenattribute: str) -> tuple:
 
 
 def export_token_data(token_list: list, token_attributes: list = None,
-                      user_attributes: list = None) -> list:
+                      user_attributes: list = None) -> list[dict]:
     """
     Returns a list of tokens. Each token again is a dictionary of the requested
     token attributes, tokeninfo and user attributes
@@ -329,7 +329,7 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
 
 
 def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
-                   tokeninfo_filter, tokenattribute_filter: list,
+                   tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
                    tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
                    orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
                    orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
@@ -581,8 +581,8 @@ def export(ctx, export_format, b32):
             key, token_num, soup = export_pskc(tlist)
             sys.stderr.write(f"\n{token_num} tokens exported.\n")
             sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
-                             "You need this key to import the "
-                             "tokens again:\n\n\t{key}\n\n")
+                             f"You need this key to import the "
+                             f"tokens again:\n\n\t{key}\n\n")
             click.echo(f"{soup}")
 
 
