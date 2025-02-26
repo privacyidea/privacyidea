@@ -201,7 +201,6 @@ def _get_crl_next_update(filename):
 
 
 class CONFIG(object):
-
     def __init__(self, name):
         self.directory = "./ca"
         self.keysize = 4096
@@ -298,8 +297,7 @@ class LocalCAConnector(BaseCAConnector):
     def _check_attributes(self):
         for req_key in [ATTR.CAKEY, ATTR.CACERT]:
             if req_key not in self.config:
-                raise CAError("required argument '{0!s}' is missing.".format(
-                    req_key))
+                raise CAError("required argument '{0!s}' is missing.".format(req_key))
 
     def set_config(self, config=None):
         self.config = config or {}
@@ -329,7 +327,7 @@ class LocalCAConnector(BaseCAConnector):
         """
         name_components = x509_name.get_components()
         filename = "_".join([to_unicode(value) for (key, value) in name_components])
-        return '.'.join([filename, file_extension])
+        return ".".join([filename, file_extension])
 
     def sign_request(self, csr, options=None):
         """
@@ -380,7 +378,7 @@ class LocalCAConnector(BaseCAConnector):
 
         # Determine filename from the CN of the request
         if spkac:
-            common_name = re.search("CN=(.*)", csr).group(0).split('=')[1]
+            common_name = re.search("CN=(.*)", csr).group(0).split("=")[1]
             csr_filename = common_name + ".txt"
             certificate_filename = common_name + ".der"
         else:
@@ -418,7 +416,9 @@ class LocalCAConnector(BaseCAConnector):
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
-            raise CAError(error)
+            log.warning(f"An error occurred during signing of the certificate: {error}")
+            log.debug(f"Command that lead to the error: {cmd}")
+            raise CAError("An error occurred during signing of the certificate")
 
         with open(os.path.join(certificatedir, certificate_filename), "rb") as f:
             certificate = f.read()
@@ -464,8 +464,8 @@ class LocalCAConnector(BaseCAConnector):
             an error is raised.
         """
         if isinstance(certificate, str):
-            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
-        elif type(certificate) == crypto.X509:
+            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate.encode())
+        elif isinstance(certificate, crypto.X509):
             cert_obj = certificate
         else:
             raise CAError("Certificate in unsupported format")
@@ -590,10 +590,10 @@ class LocalCAConnector(BaseCAConnector):
             config.dn = dn or config.dn
             # At the moment we do not use this. This would be written to the
             # templates file.
-            #validity_cert = raw_input(
+            # validity_cert = raw_input(
             #    "What should be the validity period of enrolled certificates in days [{0!s}]: ".format(
             #    config.validity_cert))
-            #config.validity_cert = validity_cert or config.validity_cert
+            # config.validity_cert = validity_cert or config.validity_cert
             crl_days = input("How many days should the CRL be valid "
                              "[{0!s}]: ".format(config.crl_days))
             config.crl_days = crl_days or config.crl_days
@@ -601,7 +601,7 @@ class LocalCAConnector(BaseCAConnector):
                                 "[{0!s}]: ".format(config.crl_overlap))
             config.crl_overlap = crl_overlap or config.crl_overlap
 
-            print("="*60)
+            print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
@@ -700,7 +700,7 @@ def _init_ca(config):
         # Some error occurred
         raise CAError(error)
 
-    print("!"*60)
+    print("!" * 60)
     print("Please check the ownership of the private key")
     print("{0!s}/cakey.pem".format(config.directory))
     print("!" * 60)
