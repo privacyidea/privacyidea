@@ -41,7 +41,7 @@ class YubikeyContainerTemplate(ContainerTemplateBase):
         return "yubikey"
 
     @classmethod
-    def get_supported_token_types(cls) -> list:
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the supported token types for this container template.
         """

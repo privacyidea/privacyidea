@@ -569,12 +569,11 @@ class PolicyClass(object):
             if value and value[0] in ["!", "-"] and \
                     searchvalue == value[1:]:
                 value_excluded = True
-            elif type(searchvalue) == list and value in \
-                    searchvalue + ["*"]:
+            elif isinstance(searchvalue, list) and value in searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
-            elif type(searchvalue) != list:
+            elif not isinstance(searchvalue, list):
                 # Do not do this search style for resolvers, which come as a list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
@@ -860,7 +859,7 @@ class PolicyClass(object):
         if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
             reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                   serial, extended_condition_check)
-            log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
+            log.debug("Policies after matching conditions: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -1423,7 +1422,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         raise ParameterError("Priority must be at least 1")
     check_all_resolvers = is_true(check_all_resolvers)
     user_case_insensitive = is_true(user_case_insensitive)
-    if type(action) == dict:
+    if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
             if v is not True:
@@ -1433,26 +1432,26 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                 # simple boolean value
                 action_list.append(k)
         action = ", ".join(action_list)
-    if type(action) == list:
+    if isinstance(action, list):
         action = ", ".join(action)
-    if type(realm) == list:
+    if isinstance(realm, list):
         realm = ", ".join(realm)
-    if type(adminrealm) == list:
+    if isinstance(adminrealm, list):
         adminrealm = ", ".join(adminrealm)
-    if type(user) == list:
+    if isinstance(user, list):
         user = ", ".join(user)
-    if type(adminuser) == list:
+    if isinstance(adminuser, list):
         adminuser = ", ".join(adminuser)
-    if type(resolver) == list:
+    if isinstance(resolver, list):
         resolver = ", ".join(resolver)
-    if type(client) == list:
+    if isinstance(client,  list):
         client = ", ".join(client)
     if client is not None:
         try:
             check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
         except AddrFormatError:
             raise privacyIDEAError(_("Invalid client definition!"), id=302)
-    if type(pinode) == list:
+    if isinstance(pinode, list):
         pinode = ", ".join(pinode)
     # validate conditions parameter
     if conditions is not None:
@@ -2832,7 +2831,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.HIDE_WELCOME: {
                 'type': 'bool',
-                'desc': _("If this checked, the administrator will not see "
+                'desc': _("If this is checked, the administrator will not see "
                           "the welcome dialog anymore.")
             },
             ACTION.HIDE_BUTTONS: {
@@ -3020,7 +3019,7 @@ def get_policy_condition_comparators():
             for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
 
 
-def convert_action_dict_to_python_dict(action: str) -> dict:
+def convert_action_dict_to_python_dict(action: str) -> dict[str, str]:
     """
     Policy actions can not contain commas. Hence, the format 'key1':'value2'-'key2':'value2' is used.
     This function takes such a string as input and converts it into a dictionary.

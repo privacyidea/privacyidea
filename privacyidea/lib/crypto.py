@@ -1034,7 +1034,7 @@ def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: 
     return ecc_keys
 
 
-def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None) -> HashAlgorithm:
+def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None) -> type[HashAlgorithm]:
     """
     Returns the HashAlgorithm object for the given algorithm name.
 
@@ -1061,7 +1061,7 @@ def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None
     return hash_algorithm
 
 
-def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str) -> dict:
+def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str) -> dict[str, Union[bytes, str]]:
     """
     Signs a message with the given ecc private key.
 
@@ -1085,7 +1085,7 @@ def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_nam
 
 
 def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublicKey,
-               algorithm_name: str) -> dict:
+               algorithm_name: str) -> dict[str, Union[bool, str]]:
     """
     Verifies a signature with the given public key.
     Raises InvalidSignature if the signature is invalid.
@@ -1130,7 +1130,7 @@ def ecdh_key_exchange(private_key: X25519PrivateKey, public_key: X25519PublicKey
     return derived_key
 
 
-def encrypt_aes(message: bytes, shared_key: bytes) -> dict:
+def encrypt_aes(message: bytes, shared_key: bytes) -> dict[str, str]:
     """
     Encrypts a message with the given shared key using AES (Advanced Encryption Standard) and GCM (Galois Counter Mode).
 

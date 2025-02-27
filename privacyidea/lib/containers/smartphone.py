@@ -100,7 +100,7 @@ class SmartphoneContainer(TokenContainerClass):
         return "smartphone"
 
     @classmethod
-    def get_supported_token_types(cls) -> list:
+    def get_supported_token_types(cls) -> list[str]:
         """
         Returns the token types that are supported by the container class.
         """
@@ -122,7 +122,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return _("A smartphone that uses an authenticator app.")
 
-    def get_tokens_for_synchronization(self) -> list:
+    def get_tokens_for_synchronization(self) -> list[TokenClass]:
         """
         Returns the tokens of the container that can be synchronized with a client as a list of TokenClass objects.
         """
@@ -235,7 +235,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         return response_detail
 
-    def finalize_registration(self, params: dict) -> dict:
+    def finalize_registration(self, params: dict) -> dict[str, bool]:
         """
         Finalize the registration of a container.
         Validates whether the smartphone is authorized to register. If successful, the registration state is set as
@@ -334,7 +334,7 @@ class SmartphoneContainer(TokenContainerClass):
         self.delete_container_info("challenge_ttl", keep_internal=False)
         self.delete_container_info("initially_synchronized", keep_internal=False)
 
-    def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict:
+    def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:
         """
         Create a challenge for the container.
 
