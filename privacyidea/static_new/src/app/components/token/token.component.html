@@ -116,7 +116,9 @@
                   [isProgrammaticChange]="isProgrammaticChange" />
               }
               @case ("token_applications") {
-                <app-token-applications />
+                <app-token-applications
+                  [tokenSerial]="tokenSerial"
+                  [selectedContent]="selectedContent" />
               }
             }
           </div>

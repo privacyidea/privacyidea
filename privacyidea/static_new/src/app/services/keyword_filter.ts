@@ -2,6 +2,8 @@ export class KeywordFilter {
   keyword: string;
   label: string;
   isSelected: (value: string) => boolean;
+
+  /// Allowed return values: 'remove_circle' | 'add_circle' | change_circle
   getIconName: (value: string) => string;
   toggleKeyword: (filterValue: string) => string;
   constructor(named: {
@@ -24,6 +26,7 @@ export class KeywordFilter {
       named.iconName ??
       ((filterValue: string) =>
         KeywordFilter.defaultIconName({
+          isSelected: this.isSelected,
           keyword: this.keyword,
           filterValue: filterValue,
         }));
@@ -41,13 +44,19 @@ export class KeywordFilter {
     return regex.test(filterValue);
   }
 
-  static defaultIconName(named: { keyword: string; filterValue: string }) {
-    const { keyword, filterValue } = named;
-    const isSelected = KeywordFilter.defaultIsSelected({
-      keyword: keyword,
-      filterValue: filterValue,
-    });
-    return isSelected ? 'remove_circle' : 'add_circle';
+  static defaultIconName(named: {
+    isSelected?: (filterValue: string) => boolean;
+    keyword: string;
+    filterValue: string;
+  }) {
+    const { isSelected, keyword, filterValue } = named;
+    const filterIsSelected = isSelected
+      ? isSelected(filterValue)
+      : KeywordFilter.defaultIsSelected({
+          keyword: keyword,
+          filterValue: filterValue,
+        });
+    return filterIsSelected ? 'remove_circle' : 'add_circle';
   }
 
   static defaultToggler(named: {
@@ -70,6 +79,24 @@ export class KeywordFilter {
       } else {
         return `${keyword}: `;
       }
+    }
+  }
+
+  static getValue(named: {
+    keyword: string;
+    filterValue: string;
+  }): string | null {
+    const { keyword, filterValue } = named;
+    const keywordPattern = new RegExp(
+      `(?<=${keyword}:)\\s*[\\w\\d]*(?=\\s|$)`,
+      'i',
+    );
+    const match = filterValue.match(keywordPattern);
+    if (match) {
+      console.log('Match:', match[0].trim());
+      return match[0].trim();
+    } else {
+      return null;
     }
   }
 

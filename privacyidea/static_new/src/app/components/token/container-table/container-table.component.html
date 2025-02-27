@@ -1,8 +1,6 @@
-<div aria-label="Container Table" class="container-table-container">
-  <app-filter-table
-    [columns]="columns"
-    [basicFilters]="basicFilters"
-    [advancedFilters]="advancedFilters"
-    [fetchDataHandler]="fetchDataHandler"
-    [fetchResponseHandler]="fetchResponseHandler" />
-</div>
+<app-filter-table
+  [columns]="columns"
+  [basicFilters]="basicFilters"
+  [advancedFilters]="advancedFilters"
+  [fetchDataHandler]="fetchDataHandler"
+  [processDataSource]="processDataSource" />

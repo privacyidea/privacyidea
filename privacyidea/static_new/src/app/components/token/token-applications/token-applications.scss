@@ -1,12 +1,10 @@
 @import "../../../../styles/styles";
 
-.token-table-container {
+.token-applications {
   @include table-container-styles;
-  @include base-table-structure(
-    ".token-table",
-    ".token-table-filter",
-    ".table-scrollable-container"
-  );
   margin-left: 1rem;
   overflow: auto;
+}
+mat-form-field {
+  width:  500px;
 }

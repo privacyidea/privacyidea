@@ -1,9 +1,8 @@
-<div aria-label="Filter Table" class="filter-table">
+<div aria-label="Token Applications SSH" class="token-applications-ssh">
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 class="margin-left-1">SSH Tokens attached to services</h3>
     </div>
-
     <p
       >SSH Tokens can be attached to a service ID with a user. The user is the
       user on the SSH server and may differ from the token owner. To attach the
@@ -18,5 +17,5 @@
     [columns]="columns"
     [basicFilters]="basicFilters"
     [fetchDataHandler]="fetchDataHandler"
-    [fetchResponseHandler]="fetchResponseHandler" />
+    [processDataSource]="processDataSource" />
 </div>

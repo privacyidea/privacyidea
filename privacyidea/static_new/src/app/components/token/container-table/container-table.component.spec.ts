@@ -10,6 +10,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
+import { KeywordFilter } from '../../../services/keyword_filter';
 
 describe('ContainerTableComponent', () => {
   let component: ContainerTableComponent;
@@ -19,6 +20,7 @@ describe('ContainerTableComponent', () => {
   let containerServiceSpy: jasmine.SpyObj<ContainerService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
   let tableUtilsServiceSpy: jasmine.SpyObj<TableUtilsService>;
+  let keywordFilterSpy: jasmine.SpyObj<KeywordFilter>;
   let routerSpy: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
@@ -45,6 +47,10 @@ describe('ContainerTableComponent', () => {
       'getDisplayText',
       'getSpanClassForState',
       'getDisplayTextForState',
+    ]);
+    keywordFilterSpy = jasmine.createSpyObj('KeywordFilter', [
+      'toggleKeyword',
+      'keyword',
     ]);
 
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
@@ -81,13 +87,11 @@ describe('ContainerTableComponent', () => {
     containerServiceSpy.toggleActive.and.returnValue(of({}));
 
     routerSpy.navigate.and.returnValue(Promise.resolve(true));
-    tableUtilsServiceSpy.toggleKeywordInFilter.and.callFake(
-      (currentFilter: string, keyword: string) => {
-        return currentFilter.includes(keyword)
-          ? currentFilter.replace(keyword, '')
-          : currentFilter.concat(` ${keyword}`);
-      },
-    );
+    keywordFilterSpy.toggleKeyword.and.callFake((currentFilter: string) => {
+      return currentFilter.includes(keywordFilterSpy.keyword)
+        ? currentFilter.replace(keywordFilterSpy.keyword, '')
+        : currentFilter.concat(` ${keywordFilterSpy.keyword}`);
+    });
 
     await TestBed.configureTestingModule({
       imports: [ContainerTableComponent, BrowserAnimationsModule],
@@ -133,30 +137,6 @@ describe('ContainerTableComponent', () => {
     });
   });
 
-  describe('fetchContainerData()', () => {
-    it('should call containerService.getContainerData', () => {
-      containerServiceSpy.getContainerData.calls.reset();
-      component['fetchContainerData']();
-      expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith(
-        component.pageIndex + 1,
-        component.pageSize,
-        component.sortby_sortdir,
-        component.filterValue,
-      );
-    });
-
-    it('should handle error response from getContainerData', () => {
-      containerServiceSpy.getContainerData.and.returnValue(
-        throwError(() => new Error('Some error')),
-      );
-
-      component['fetchContainerData']();
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to get container data.',
-      );
-    });
-  });
-
   describe('processDataSource()', () => {
     it('should transform users array to "users" and "user_realm" fields', () => {
       const mockData = [
@@ -185,89 +165,9 @@ describe('ContainerTableComponent', () => {
     });
   });
 
-  describe('handlePageEvent()', () => {
-    it('should set pageSize, pageIndex and call fetchContainerData', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      component.handlePageEvent({ pageIndex: 2, pageSize: 15 } as any);
-      expect(component.pageIndex).toBe(2);
-      expect(component.pageSize).toBe(15);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleSortEvent()', () => {
-    it('should set sortby_sortdir and reset pageIndex to 0 and fetch data', () => {
-      component.sort = { active: 'type', direction: 'asc' } as any;
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-
-      component.handleSortEvent();
-      expect(component.sortby_sortdir).toEqual({
-        active: 'type',
-        direction: 'asc',
-      });
-      expect(component.pageIndex).toBe(0);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleFilterInput()', () => {
-    it('should set filterValue, reset pageIndex, and call fetchContainerData', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      const mockEvent = {
-        target: { value: ' filterValue ' },
-      } as unknown as Event;
-
-      component.handleFilterInput(mockEvent);
-      expect(component.filterValue).toBe('filterValue');
-      expect(component.pageIndex).toBe(0);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-  });
-
-  describe('toggleKeywordInFilter()', () => {
-    it('should use tableUtilsService to toggle keyword and re-fetch data', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      const inputEl = document.createElement('input');
-      inputEl.value = 'status';
-
-      component.toggleKeywordInFilter('type', inputEl);
-
-      expect(inputEl.value).toContain('type');
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleStateClick()', () => {
-    it('should call toggleActive() and refetch data on success', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      const mockElement = { serial: 'Mock serial', states: ['active'] };
-
-      component.handleStateClick(mockElement);
-
-      expect(containerServiceSpy.toggleActive).toHaveBeenCalledWith(
-        'Mock serial',
-        ['active'],
-      );
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-
-    it('should call openSnackBar on error', () => {
-      containerServiceSpy.toggleActive.and.returnValue(
-        throwError(() => new Error('Toggle error')),
-      );
-      const mockElement = { serial: 'Mock serial', states: ['active'] };
-
-      component.handleStateClick(mockElement);
-
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active.',
-      );
-    });
-  });
-
   describe('containerSelected()', () => {
     it('should set containerSerial and selectedContent', () => {
-      component.containerSelected('new serial');
+      component.selectContainer('new serial');
       expect(component.containerSerial()).toBe('new serial');
       expect(component.selectedContent()).toBe('container_details');
     });

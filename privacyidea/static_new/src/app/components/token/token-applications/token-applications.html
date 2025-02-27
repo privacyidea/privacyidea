@@ -1,1 +1,26 @@
-<app-token-applications-ssh />
+<div  aria-label="Token Applications" class="token-applications">
+  <mat-form-field appearance="fill">
+    <mat-label>Select Application Type</mat-label>
+    <mat-select [(value)]="selectedApplicationType">
+      <mat-option value="ssh">SSH: Attaching ssh keys to services.</mat-option>
+      <mat-option value="offline">Offline: Use HOTP token for offline login to notebooks.</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  @switch (selectedApplicationType()) { @case ("ssh"){
+  <app-token-applications-ssh
+    [tokenSerial]="tokenSerial"
+    [selectedContent]="selectedContent">
+  </app-token-applications-ssh>
+  } @case ("offline"){
+  <app-token-applications-offline
+    [tokenSerial]="tokenSerial"
+    [selectedContent]="selectedContent">
+  </app-token-applications-offline>
+
+  } @default {
+  <div>
+    <h3>Application Type Not Found</h3>
+  </div>
+  } }
+</div>

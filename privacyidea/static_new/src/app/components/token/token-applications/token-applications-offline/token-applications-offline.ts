@@ -15,16 +15,15 @@ import {
 } from '../../../../services/table-utils/table-column';
 import { MatTableDataSource } from '@angular/material/table';
 import { MachineTokenData } from '../../../../model/machine/machine-token-data';
-import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
-  selector: 'app-token-applications-ssh',
+  selector: 'app-token-applications-offline',
   standalone: true,
   imports: [MatTabsModule, FilterTable],
-  templateUrl: './token-applications-ssh.html',
-  styleUrls: ['./token-applications-ssh.scss'],
+  templateUrl: './token-applications-offline.html',
+  styleUrls: ['./token-applications-offline.scss'],
 })
-export class TokenApplicationsSsh {
+export class TokenApplicationsOffline {
   @Input({ required: true }) tokenSerial!: WritableSignal<string>;
   @Input({ required: true }) selectedContent!: WritableSignal<string>;
 
@@ -56,45 +55,43 @@ export class TokenApplicationsSsh {
   ];
 
   columns: TableColumn<MachineTokenData>[] = [
-    // new SimpleTableColumn({
-    //   key: 'application',
-    //   label: 'Application',
-    //   getItems: (sshToken) =>
-    //     sshToken.application ? [sshToken.application] : [],
-    // }),
     new SimpleTableColumn({
       key: 'id',
       label: 'ID',
-      getItems: (sshToken) => (sshToken.id ? [sshToken.id.toString()] : []),
+      getItems: (offlineToken) =>
+        offlineToken.id ? [offlineToken.id.toString()] : [],
     }),
     new SimpleTableColumn({
       key: 'machine_id',
       label: 'Machine ID',
-      getItems: (sshToken) =>
-        sshToken.machine_id ? [sshToken.machine_id] : [],
+      getItems: (offlineToken) =>
+        offlineToken.machine_id ? [offlineToken.machine_id] : [],
     }),
     new SimpleTableColumn({
       key: 'options',
       label: 'Options',
-      getItems: (sshToken) =>
-        sshToken.options ? this.getObjectStrings(sshToken.options) : [],
+      getItems: (offlineToken) =>
+        offlineToken.options ? this.getObjectStrings(offlineToken.options) : [],
     }),
     new SimpleTableColumn({
       key: 'resolver',
       label: 'Resolver',
-      getItems: (sshToken) => (sshToken.resolver ? [sshToken.resolver] : []),
+      getItems: (offlineToken) =>
+        offlineToken.resolver ? [offlineToken.resolver] : [],
     }),
     new OnClickTableColumn({
       key: 'serial',
       label: 'Serial',
-      getItems: (sshToken) => (sshToken.serial ? [sshToken.serial] : []),
-      onClick: (sshToken) =>
-        sshToken.serial ? this.selectToken(sshToken.serial) : () => {},
+      getItems: (offlineToken) =>
+        offlineToken.serial ? [offlineToken.serial] : [],
+      onClick: (offlineToken) =>
+        offlineToken.serial ? this.selectToken(offlineToken.serial) : () => {},
     }),
     new SimpleTableColumn({
       key: 'type',
       label: 'Type',
-      getItems: (sshToken) => (sshToken.type ? [sshToken.type] : []),
+      getItems: (offlineToken) =>
+        offlineToken.type ? [offlineToken.type] : [],
     }),
   ];
 
@@ -109,6 +106,21 @@ export class TokenApplicationsSsh {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
   }
 
+  splitFilters(filterValue: string) {
+    var filterMap: { [key: string]: string } = {};
+    var regexp = new RegExp(/\w+:\s\w+((?=\s)|$)/, 'g');
+    var matches = filterValue.match(regexp);
+    console.log('matches', matches);
+    if (matches) {
+      matches.forEach((match) => {
+        var [key, value] = match.split(': ');
+        filterMap[key] = value;
+      });
+    }
+
+    return filterMap;
+  }
+
   fetchDataHandler: FetchDataHandler = ({
     pageIndex,
     pageSize,
@@ -121,7 +133,7 @@ export class TokenApplicationsSsh {
       page: pageIndex,
       pageSize: pageSize,
       currentFilter: currentFilter,
-      application: 'ssh',
+      application: 'offline',
     });
 
   processDataSource: ProcessDataSource<MachineTokenData> = (response: any) => [

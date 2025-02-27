@@ -7,23 +7,16 @@ import {
 } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  MatPaginator,
-  MatPaginatorModule,
-  PageEvent,
-} from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
-import { AuthService } from '../../../services/auth/auth.service';
-import { Router } from '@angular/router';
-import { ContainerService } from '../../../services/container/container.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import {
   FetchDataHandler,
-  FetchResponseHandler,
   FilterTable,
   SortDir,
+  ProcessDataSource as ProcessDataSource,
 } from '../../universals/filter-table/filter-table.component';
 import {
   OnClickTableColumn,
@@ -31,6 +24,8 @@ import {
   TableColumn,
 } from '../../../services/table-utils/table-column';
 import { KeywordFilter } from '../../../services/keyword_filter';
+import { ContainerService } from '../../../services/container/container.service';
+import { ContainerData } from '../../../model/container/container-data';
 
 @Component({
   selector: 'app-container-table',
@@ -47,49 +42,64 @@ import { KeywordFilter } from '../../../services/keyword_filter';
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
-  columns: TableColumn<any>[] = [
-    new OnClickTableColumn<string>({
-      key: 'serial',
-      label: 'Serial',
-      getItems: (value) => [value],
-      onClick: (value) => this.containerSelected(value),
-    }),
-    new SimpleTableColumn<string>({
-      key: 'type',
-      label: 'Type',
-      getItems: (value) => [value],
-    }),
-    new SimpleTableColumn<string>({
-      key: 'states',
-      label: 'Status',
-      getItems: (value) => [value],
-    }),
-    new SimpleTableColumn<string>({
-      key: 'description',
-      label: 'Description',
-      getItems: (value) => [value],
-    }),
-    new SimpleTableColumn<string>({
-      key: 'users',
-      label: 'User',
-      getItems: (value) => [value],
-    }),
-    new SimpleTableColumn<string>({
-      key: 'user_realm',
-      label: 'Realm',
-      getItems: (value) => [value],
-    }),
-    new SimpleTableColumn<string>({
-      key: 'realms',
-      label: 'Container Realms',
-      getItems: (value) => [value],
-    }),
-  ];
+  sortby_sortdir: SortDir;
+  @Input() selectedContent!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
+  dataSource = signal(new MatTableDataSource<any>());
+  showAdvancedFilter = signal(false);
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
   length = 0;
   pageSize = 10;
   pageIndex = 0;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
+
+  columns: TableColumn<ContainerData>[] = [
+    new OnClickTableColumn({
+      key: 'serial',
+      label: 'Serial',
+      getItems: (container) => (container.serial ? [container.serial] : []),
+      onClick: (container) =>
+        container.serial ? this.selectContainer(container.serial) : () => {},
+    }),
+    new SimpleTableColumn({
+      key: 'type',
+      label: 'Type',
+      getItems: (container) => (container.type ? [container.type] : []),
+    }),
+    new OnClickTableColumn({
+      key: 'states',
+      label: 'Status',
+      getItems: (container) => (container.states ? container.states : []),
+      onClick: (container) =>
+        container.serial ? this.onClickToggleActive(container) : () => {},
+      getNgClass: (container) => this.getStatesNgClass(container.states || []),
+    }),
+    new SimpleTableColumn({
+      key: 'description',
+      label: 'Description',
+      getItems: (container) =>
+        container.description ? [container.description] : [],
+    }),
+    new SimpleTableColumn({
+      key: 'users',
+      label: 'User',
+      getItems: (container) =>
+        container.users ? container.users.map((user) => user.user_name) : [],
+    }),
+    new SimpleTableColumn({
+      key: 'user_realm',
+      label: 'Realm',
+      getItems: (container) =>
+        container.user_realm ? [container.user_realm] : [],
+    }),
+    new SimpleTableColumn({
+      key: 'realms',
+      label: 'Container Realms',
+      getItems: (container) => (container.realms ? [container.realms] : []),
+    }),
+  ];
 
   basicFilters: KeywordFilter[] = [
     new KeywordFilter({ key: 'container_serial', label: 'Serial' }),
@@ -99,47 +109,38 @@ export class ContainerTableComponent {
   advancedFilters: KeywordFilter[] = [
     new KeywordFilter({ key: 'token_serial', label: 'Token Serial' }),
   ];
+  containerService: ContainerService;
+
+  constructor(
+    containerService: ContainerService,
+    protected tableUtilsService: TableUtilsService,
+    private notificationService: NotificationService,
+  ) {
+    this.containerService = containerService;
+  }
+
   fetchDataHandler: FetchDataHandler = ({
     pageIndex,
     pageSize,
     sortby_sortdir,
-    filterValue,
-  }) => {
-    return this.containerService.getContainerData(
+    currentFilter,
+  }) =>
+    this.containerService.getContainerData(
       pageIndex,
       pageSize,
       sortby_sortdir,
-      filterValue,
+      currentFilter,
     );
-  };
-  fetchResponseHandler: FetchResponseHandler = (response: any) => {
-    return [response.result.value.count, response.result.value.containers];
-  };
 
-  sortby_sortdir: SortDir;
-  @Input() selectedContent!: WritableSignal<string>;
-  @Input() containerSerial!: WritableSignal<string>;
-  dataSource = signal(new MatTableDataSource<any>());
-  showAdvancedFilter = signal(false);
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-
-  constructor(
-    private router: Router,
-    private authService: AuthService,
-    private containerService: ContainerService,
-    private notificationService: NotificationService,
-    protected tableUtilsService: TableUtilsService,
-  ) {
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchContainerData();
-    }
-  }
+  processDataSource: ProcessDataSource<ContainerData> = (response: any) => {
+    console.log('getContainerData response:', response);
+    return [
+      response.result.value.containers.length,
+      new MatTableDataSource(
+        ContainerData.parseList(response.result.value.containers),
+      ),
+    ];
+  };
 
   ngAfterViewInit() {
     this.dataSource.set(
@@ -157,47 +158,28 @@ export class ContainerTableComponent {
     this.dataSource().sort = this.sort;
   }
 
-  handlePageEvent(event: PageEvent) {
-    this.pageSize = event.pageSize;
-    this.pageIndex = event.pageIndex;
-    this.fetchContainerData();
+  getStatesNgClass(states: string[]): string {
+    if (states.length === 0) {
+      return '';
+    }
+    const state = states[0];
+    switch (state) {
+      case 'active':
+        return 'highlight-true-clickable';
+      case 'disabled':
+        return 'highlight-false-clickable';
+      default:
+        return '';
+    }
   }
-
-  handleSortEvent() {
-    this.sortby_sortdir = this.sort
-      ? {
-          active: this.sort.active,
-          direction: this.sort.direction,
-        }
-      : undefined;
-    this.pageIndex = 0;
-    this.fetchContainerData();
-  }
-
-  handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.pageIndex = 0;
-    this.fetchContainerData();
-  }
-
-  // toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
-  //   inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-  //     inputElement.value.trim(),
-  //     keyword,
-  //   );
-  //   this.handleFilterInput({
-  //     target: inputElement,
-  //   } as unknown as KeyboardEvent);
-  //   inputElement.focus();
-  // }
-
-  handleStateClick(element: any) {
+  onClickToggleActive(element: ContainerData) {
+    if (typeof element.serial !== 'string' || !Array.isArray(element.states)) {
+      console.error('Failed to toggle active. Missing serial or states.');
+      return;
+    }
     this.containerService
       .toggleActive(element.serial, element.states)
       .subscribe({
-        next: () => {
-          this.fetchContainerData();
-        },
         error: (error) => {
           console.error('Failed to toggle active.', error);
           this.notificationService.openSnackBar('Failed to toggle active.');
@@ -205,41 +187,8 @@ export class ContainerTableComponent {
       });
   }
 
-  containerSelected(containerSerial: string) {
+  selectContainer(containerSerial: string) {
     this.containerSerial.set(containerSerial);
     this.selectedContent.set('container_details');
-  }
-
-  private fetchContainerData() {
-    this.containerService
-      .getContainerData(
-        this.pageIndex + 1,
-        this.pageSize,
-        this.sortby_sortdir,
-        this.filterValue,
-      )
-      .subscribe({
-        next: (response) => {
-          this.length = response.result.value.count;
-          this.processDataSource(response.result.value.containers);
-        },
-        error: (error) => {
-          console.error('Failed to get container data.', error);
-          this.notificationService.openSnackBar(
-            'Failed to get container data.',
-          );
-        },
-      });
-  }
-
-  private processDataSource(data: any[]) {
-    const processedData = data.map((item) => ({
-      ...item,
-      users:
-        item.users && item.users.length > 0 ? item.users[0]['user_name'] : '',
-      user_realm:
-        item.users && item.users.length > 0 ? item.users[0]['user_realm'] : '',
-    }));
-    this.dataSource.set(new MatTableDataSource(processedData));
   }
 }

@@ -5,6 +5,7 @@
       <input
         #input
         (keyup)="handleFilterInput($event)"
+        [value]="filterValue"
         aria-label="Filter Input"
         matInput
         placeholder="Example query: 'type: hotp userid: 1000'" />
@@ -30,7 +31,7 @@
       <button
         mat-fab
         extended
-        (click)="filter.toggleKeyword(input.value)"
+        (click)="toggleKeyword(filter, input)"
         class="keyword-button">
         <mat-icon
           class="keyword-button-icon"

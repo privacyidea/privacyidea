@@ -18,18 +18,6 @@ export abstract class TableColumn<T> {
     this.getItems = named.getItems;
     this.getNgClass = named.getNgClass ?? (() => '');
   }
-
-  isSimpleColumn(): boolean {
-    return this instanceof SimpleTableColumn;
-  }
-
-  isOnClickColumn(): boolean {
-    return this instanceof OnClickTableColumn;
-  }
-
-  isRouterColumn(): boolean {
-    return this instanceof RouterTableColumn;
-  }
 }
 
 export class SimpleTableColumn<T> extends TableColumn<T> {

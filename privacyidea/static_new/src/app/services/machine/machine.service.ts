@@ -161,22 +161,46 @@ export class MachineService {
   //         ‘resolver’: None, ‘serial’: ‘SSHKEY1’, ‘type’: ‘sshkey’},
   //             … ]
 
-  getToken(getTokenParams: GetTokenParams): Observable<any> {
+  splitFilters(filterValue: string) {
+    var filterMap: { [key: string]: string } = {};
+    var regexp = new RegExp(/\w+:\s\w+((?=\s)|$)/, 'g');
+    var matches = filterValue.match(regexp);
+    console.log('matches', matches);
+    if (matches) {
+      matches.forEach((match) => {
+        var [key, value] = match.split(': ');
+        filterMap[key] = value;
+      });
+    }
+
+    return filterMap;
+  }
+
+  getToken(named: {
+    sortby?: string;
+    sortdir?: string;
+    page?: number;
+    pageSize: number;
+    currentFilter: string;
+    application: 'ssh' | 'offline';
+  }): Observable<any> {
+    const { sortby, sortdir, currentFilter, page, pageSize, application } =
+      named;
+    var filterMap: { [key: string]: string } = {};
+    if (currentFilter) {
+      filterMap = this.splitFilters(currentFilter);
+    }
     const {
       serial,
       hostname,
       machineid,
       resolver,
-      page,
-      pageSize,
-      sortby,
-      sortdir,
-      application,
       service_id,
       user,
       count,
       rounds,
-    } = getTokenParams;
+    } = filterMap;
+
     const headers = this.localService.getHeaders();
     let params = new HttpParams();
     if (serial) params = params.set('serial', `*${serial}*`);

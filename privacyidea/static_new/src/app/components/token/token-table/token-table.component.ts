@@ -9,8 +9,9 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { NotificationService } from '../../../services/notification/notification.service';
 import {
   FetchDataHandler,
-  FetchResponseHandler,
   FilterTable,
+  SortDir,
+  ProcessDataSource,
 } from '../../universals/filter-table/filter-table.component';
 import { Observable } from 'rxjs/internal/Observable';
 import { KeywordFilter } from '../../../services/keyword_filter';
@@ -19,7 +20,7 @@ import {
   SimpleTableColumn,
   TableColumn,
 } from '../../../services/table-utils/table-column';
-
+import { TokenData } from '../../../model/token/token-data';
 @Component({
   selector: 'app-token-table',
   standalone: true,
@@ -43,8 +44,15 @@ export class TokenTableComponent {
     new KeywordFilter({
       key: 'active',
       label: 'Active',
-      toggle: (filterValue: string) => {
-        return KeywordFilter.toggleActive(filterValue);
+      toggle: (filterValue: string) => KeywordFilter.toggleActive(filterValue),
+      iconName: (filterValue: string) => {
+        const value = KeywordFilter.getValue({
+          keyword: 'active',
+          filterValue,
+        });
+        if (value === 'true') return 'change_circle';
+        if (value === 'false') return 'remove_circle';
+        return 'add_circle';
       },
     }),
     new KeywordFilter({ key: 'description', label: 'Description' }),
@@ -53,21 +61,24 @@ export class TokenTableComponent {
     new KeywordFilter({ key: 'tokenrealm', label: 'Token Realm' }),
     new KeywordFilter({ key: 'container_serial', label: 'Container' }),
   ];
-
   advancedFilters: KeywordFilter[] = [
     new KeywordFilter({
       key: 'infokey & infovalue',
       label: 'Infokey & Infovalue',
       isSelected: (filterValue) => {
-        const regexKey = new RegExp(`\\binfokey:`, 'i');
-        const regexValue = new RegExp(`\\binfovalue:`, 'i');
+        console.log('Checking if infokey & infovalue is selected');
+        const regexKey = new RegExp(/\binfokey:/, 'i');
+        const regexValue = new RegExp(/\binfovalue:/, 'i');
         return regexKey.test(filterValue) || regexValue.test(filterValue);
       },
       toggle: (filterValue: string) => {
+        console.log('Toggling infokey & infovalue');
+        console.log('Filter value:', filterValue);
         const result = KeywordFilter.defaultToggler({
           filterValue: filterValue,
           keyword: 'infokey',
         });
+        console.log('Result:', result);
         return KeywordFilter.defaultToggler({
           filterValue: result,
           keyword: 'infovalue',
@@ -78,20 +89,17 @@ export class TokenTableComponent {
     new KeywordFilter({ key: 'resolver', label: 'Resolver' }),
     new KeywordFilter({ key: 'assigned', label: 'Assigned' }),
   ];
-
   @Input({ required: true }) tokenSerial!: WritableSignal<string>;
   @Input({ required: true }) containerSerial!: WritableSignal<string>;
   @Input({ required: true }) isProgrammaticChange!: WritableSignal<boolean>;
   @Input({ required: true }) selectedContent!: WritableSignal<string>;
-
   columns: TableColumn<TokenData>[] = [
     new OnClickTableColumn({
       key: 'serial',
       label: 'Serial',
       getItems: (token) => (token.serial ? [token.serial] : []),
-
       onClick: (token) =>
-        token.serial ? this.tokenSelected(token.serial) : null,
+        token.serial ? this.selectToken(token.serial) : null,
     }),
     new SimpleTableColumn({
       key: 'tokentype',
@@ -102,75 +110,45 @@ export class TokenTableComponent {
     new OnClickTableColumn({
       key: 'active',
       label: 'Active',
+      getItems: (token) =>
+        typeof token.active !== 'boolean'
+          ? []
+          : token.revoked
+            ? ['revoked']
+            : token.locked
+              ? ['locked']
+              : token.active
+                ? ['active']
+                : ['deactivated'],
+      getNgClass: (token) =>
+        typeof token.active !== 'boolean'
+          ? ''
+          : token.active
+            ? 'highlight-true-clickable'
+            : 'highlight-false-clickable',
 
-      getItems: (token) => {
-        if (token.active === undefined || token.active === null) {
-          return [];
-        }
-        if (token.revoked) {
-          return ['revoked'];
-        } else if (token.locked) {
-          return ['locked'];
-        } else if (token.active) {
-          return ['active'];
-        } else {
-          return ['deactivated'];
-        }
-      },
-      //       if (element['active'] === '') {
-      //   return '';
-      // }
-      // if (element['locked']) {
-      //   return 'highlight-false-clickable';
-      // } else if (element['revoked']) {
-      //   return 'highlight-false-clickable';
-      // } else if (element['active'] === false) {
-      //   return 'highlight-false-clickable';
-      // } else {
-      //   return 'highlight-true-clickable';
-      // }
-      getNgClass: (token) => {
-        if (token.active === undefined || token.active === null) {
-          return '';
-        }
-        return token.active
-          ? 'highlight-true-clickable'
-          : 'highlight-false-clickable';
-      },
-      onClick: (token) => {
-        return this.toggleActive(token);
-      },
+      onClick: (token) => this.toggleActive(token),
     }),
     new SimpleTableColumn({
       key: 'description',
       label: 'Description',
-      getItems: (token) => {
-        return token.description ? [token.description] : [];
-      },
+      getItems: (token) => (token.description ? [token.description] : []),
     }),
-
     new OnClickTableColumn({
       key: 'failcount',
       label: 'Fail Counter',
-      getItems: (token) => {
-        return token.failcount ? [token.failcount.toString()] : ['0'];
-      },
-      getNgClass: (token) => {
-        if (token.failcount === undefined) {
-          return '';
-        } else if (token.failcount === 0) {
-          return 'highlight-true';
-        } else if (token.failcount >= 1 && token.failcount < 3) {
-          return 'highlight-warning-clickable';
-        } else {
-          return 'highlight-false-clickable';
-        }
-      },
-      onClick: (token) => {
-        return this.resetFailCount(token);
-      },
+      getItems: (token) =>
+        typeof token.failcount !== 'number' ? [] : [token.failcount.toString()],
+      getNgClass: (token) =>
+        typeof token.failcount !== 'number'
+          ? ''
+          : token.failcount === 0
+            ? 'highlight-true'
+            : token.failcount >= 1 && token.failcount < 3
+              ? 'highlight-warning-clickable'
+              : 'highlight-false-clickable',
+      onClick: (token) => this.resetFailCount(token),
     }),
-
     new SimpleTableColumn({
       key: 'rollout_state',
       label: 'Rollout State',
@@ -227,7 +205,6 @@ export class TokenTableComponent {
     });
     return handler;
   }
-
   resetFailCount(element: any): Observable<any> {
     console.log('Resetting fail count for token:', element.serial);
     var handler = this.tokenService.resetFailCount(element.serial);
@@ -239,12 +216,10 @@ export class TokenTableComponent {
     });
     return handler;
   }
-
-  tokenSelected(serial: string) {
+  selectToken(serial: string) {
     this.tokenSerial.set(serial);
     this.selectedContent.set('token_details');
   }
-
   containerSelected(containerSerial: string) {
     this.isProgrammaticChange.set(true);
     this.containerSerial.set(containerSerial);
@@ -255,56 +230,17 @@ export class TokenTableComponent {
     pageIndex,
     pageSize,
     sortby_sortdir,
-    filterValue,
-  }) =>
+    currentFilter,
+  }): Observable<any> =>
     this.tokenService.getTokenData(
       pageIndex + 1,
       pageSize,
       sortby_sortdir,
-      filterValue,
+      currentFilter,
     );
 
-  fetchResponseHandler: FetchResponseHandler = (response: any) => {
-    const numItems = response.result.value.count;
-    const dataSource = new MatTableDataSource<TokenData>(
-      TokenData.parseList(response.result.value.tokens),
-    );
-    return [numItems, dataSource];
-  };
-}
-
-class TokenData {
-  serial?: string;
-  tokentype?: string;
-  active?: boolean;
-  description?: string;
-  failcount?: number;
-  rollout_state?: string;
-  username?: string;
-  user_realm?: string;
-  realms?: string;
-  container_serial?: string;
-  revoked?: boolean;
-  locked?: boolean;
-
-  constructor(data: any) {
-    this.serial = data.serial;
-    this.tokentype = data.tokentype;
-    this.active = data.active;
-    this.description = data.description;
-    this.failcount = data.failcount;
-    this.rollout_state = data.rollout_state;
-    this.username = data.username;
-    this.user_realm = data.user_realm;
-    this.realms = data.realms;
-    this.container_serial = data.container_serial;
-    this.revoked = data.revoked;
-    this.locked = data.locked;
-  }
-
-  static parseList(tokens: any[]): TokenData[] {
-    return tokens.map((token) => {
-      return new TokenData(token);
-    });
-  }
+  processDataSource: ProcessDataSource<TokenData> = (response: any) => [
+    response.result.value.count,
+    new MatTableDataSource(TokenData.parseList(response.result.value.tokens)),
+  ];
 }

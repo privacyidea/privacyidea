@@ -86,7 +86,6 @@ export interface TokenTypeOption {
     MatIcon,
     MatFabButton,
     TokenEnrollmentComponent,
-    FilterTable,
     TokenApplications,
   ],
   templateUrl: './token.component.html',
@@ -304,7 +303,7 @@ export class TokenComponent {
     return Observable.create(() => {});
   }
 
-  fetchResponseHandler(
+  processDataSource(
     response: any,
   ): [number, MatTableDataSource<any, MatPaginator>] {
     return [0, new MatTableDataSource()];

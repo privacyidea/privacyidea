@@ -9,32 +9,31 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
-import { observable, Observable } from 'rxjs';
+
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { AuthService } from '../../../services/auth/auth.service';
 import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { TokenService } from '../../../services/token/token.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { KeywordFilter } from '../../../services/keyword_filter';
 import {
   OnClickTableColumn,
   TableColumn,
 } from '../../../services/table-utils/table-column';
+import { Observable } from 'rxjs';
 
 export type FetchDataHandler = (named: {
   pageIndex: number;
   pageSize: number;
   sortby_sortdir: SortDir;
-  filterValue: string;
+  currentFilter: string;
 }) => Observable<any>;
 
-export type FetchResponseHandler = (
+export type ProcessDataSource<T> = (
   response: any,
-) => [number, MatTableDataSource<any>];
+) => [number, MatTableDataSource<T>];
 
 export type FetchErrorHandler = (error: any) => void;
 
@@ -60,16 +59,16 @@ export type SortDir =
   templateUrl: './filter-table.component.html',
   styleUrls: ['./filter-table.component.scss'],
 })
-export class FilterTable {
+export class FilterTable<T> {
   @Input({ required: true }) columns!: TableColumn<any>[];
   @Input({ required: true }) basicFilters!: KeywordFilter[];
   @Input({ required: true }) fetchDataHandler!: FetchDataHandler;
-  @Input({ required: true }) fetchResponseHandler!: FetchResponseHandler;
+  @Input({ required: true }) processDataSource!: ProcessDataSource<T>;
   @Input() advancedFilters: KeywordFilter[] = [];
 
   // Uses the handler to toggle the keyword in the filter, when no handler is found, the default handler is used. (add/remove the keyword)
   @Input() pageSizeOptions = [10, 25, 50, 100];
-  @Input() fetchErrorHandler: FetchErrorHandler = (error) => {
+  @Input() fetchErrorHandler: (error: any) => void = (error) => {
     console.error(error);
   };
 
@@ -83,6 +82,18 @@ export class FilterTable {
   filters!: KeywordFilter[];
   displayedColumns!: string[];
   dataSource!: WritableSignal<MatTableDataSource<any>>;
+
+  sortby_sortdir:
+    | { active: string; direction: 'asc' | 'desc' | '' }
+    | undefined;
+
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notificationService: NotificationService,
+  ) {}
 
   ngOnInit(): void {
     this.filters = this.basicFilters.concat(this.advancedFilters);
@@ -108,49 +119,11 @@ export class FilterTable {
     }
   }
 
-  sortby_sortdir:
-    | { active: string; direction: 'asc' | 'desc' | '' }
-    | undefined;
-
-  @ViewChild(MatSort) sort!: MatSort;
-
-  constructor(
-    private router: Router,
-    private authService: AuthService,
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    private notificationService: NotificationService,
-  ) {}
-
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
     this.pageIndex = 0;
     this.fetchData();
   }
-
-  // toggleKeywordInFilter(
-  //   filterKeyword: string,
-  //   inputElement: HTMLInputElement,
-  // ): void {
-  //   var result: string | null = null;
-  //   this.filters.forEach((apiFilter) => {
-  //     if (apiFilter.keyword === filterKeyword) {
-  //       result = apiFilter.handler(inputElement.value.trim());
-  //     }
-  //   });
-  //   if (result === null) {
-  //     result = this.tableUtilsService.toggleKeywordInFilter(
-  //       inputElement.value.trim(),
-  //       filterKeyword,
-  //     );
-  //   }
-
-  //   inputElement.value = result;
-  //   this.handleFilterInput({
-  //     target: inputElement,
-  //   } as unknown as KeyboardEvent);
-  //   inputElement.focus();
-  // }
 
   handlePageEvent(event: PageEvent) {
     this.pageSize = event.pageSize;
@@ -175,10 +148,10 @@ export class FilterTable {
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortby_sortdir: this.sortby_sortdir,
-      filterValue: this.filterValue,
+      currentFilter: this.filterValue,
     }).subscribe({
       next: (response) => {
-        const [numItems, dataSource] = this.fetchResponseHandler(response);
+        const [numItems, dataSource] = this.processDataSource(response);
         this.numItems = numItems;
         this.dataSource.set(dataSource);
       },
@@ -200,58 +173,9 @@ export class FilterTable {
     }
   }
 
-  // arrayOf(obj: any): any[] | null {
-  //   if (!obj || typeof obj === 'string') {
-  //     return null;
-  //   }
-  //   if (Array.isArray(obj)) {
-  //     return obj;
-  //   }
-
-  //   var arr: any[] = [];
-  //   Object.keys(obj).forEach((key) => {
-  //     arr.push(key + ': ' + obj[key]);
-  //   });
-  //   console.log('arr', arr);
-
-  //   var TableColumn: SimpleTableColumn<boolean> = {
-  //     key: 'key',
-  //     label: 'label',
-  //     value: true,
-  //     displayGetter: (value: boolean) => {
-  //       return value ? 'active' : 'inactive';
-  //     },
-  //   };
-
-  //   return arr;
-  // }
+  toggleKeyword(keywordFilter: KeywordFilter, htmlElement: HTMLElement): void {
+    htmlElement.focus();
+    this.filterValue = keywordFilter.toggleKeyword(this.filterValue);
+    this.fetchData();
+  }
 }
-
-// abstract class MultiLineTableColumn<
-//   T extends Iterable<R>,
-//   R,
-// > extends TableColumn<R> {
-//   constructor(named: TableColumnParams<R>) {
-//     super(named);
-//   }
-// }
-
-// class MultiLineSimpleTableColumn<
-//   T extends Iterable<R>,
-//   R,
-// > extends MultiLineTableColumn<T, R> {
-//   constructor(named: TableColumnParams<R>) {
-//     super(named);
-//   }
-// }
-
-// class MultiLineOnClickTableColumn<
-//   T extends Iterable<R>,
-//   R,
-// > extends MultiLineTableColumn<T, R> {
-//   onClick: (value: R) => void;
-//   constructor(named: OnClickTableColumnParams<R>) {
-//     super(named);
-//     this.onClick = named.onClick;
-//   }
-// }
