@@ -6,7 +6,11 @@
   column-gap: 1rem;
 }
 
-.width-31 {
-  width: 31%;
+.question-input-width {
+  width: calc((100% - 2rem) / 3);
   height: 76.5px;
+}
+
+.question-description {
+  width: calc((100% - 0.5rem) * 2/3)
 }

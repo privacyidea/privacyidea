@@ -30,6 +30,8 @@
         }
       </mat-select>
     </mat-form-field>
+
+    <span class="width-33"></span>
   </div>
 
   @switch (this.intentionToggle()) {
@@ -38,7 +40,7 @@
         database. <br> You can later download the PKCS#12 file.</span>
     }
     @case ('uploadRequest') {
-      <mat-form-field class="cert-description">
+      <mat-form-field class="width-66">
         <mat-label> Certificate Signing Request (PEM)</mat-label>
         <textarea [(ngModel)]="pem"
                   matInput
@@ -47,7 +49,7 @@
       </mat-form-field>
     }
     @case ('uploadCert') {
-      <mat-form-field class="cert-description">
+      <mat-form-field class="width-66">
         <mat-label> Certificate (PEM)</mat-label>
         <textarea [(ngModel)]="pem"
                   matInput
@@ -57,7 +59,7 @@
     }
   }
 
-  <mat-form-field class="cert-description">
+  <mat-form-field class="width-66">
     <mat-label>Description</mat-label>
     <textarea [(ngModel)]="description"
               [maxlength]="80"

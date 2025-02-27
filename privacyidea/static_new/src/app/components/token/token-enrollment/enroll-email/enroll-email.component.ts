@@ -1,9 +1,10 @@
-import { Component, Input, WritableSignal } from '@angular/core';
+import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
+import { SystemService } from '../../../../services/system/system.service';
 
 @Component({
   selector: 'app-enroll-email',
@@ -23,4 +24,16 @@ export class EnrollEmailComponent {
   @Input() description!: WritableSignal<string>;
   @Input() emailAddress!: WritableSignal<string>;
   @Input() readEmailDynamically!: WritableSignal<boolean>;
+  defaultSMTPisSet = signal(false);
+
+  constructor(private systemService: SystemService) {}
+
+  ngOnInit(): void {
+    this.systemService.getSystemConfig().subscribe((response) => {
+      const config = response?.result?.value;
+      if (config && config['email.identifier']) {
+        this.defaultSMTPisSet.set(true);
+      }
+    });
+  }
 }

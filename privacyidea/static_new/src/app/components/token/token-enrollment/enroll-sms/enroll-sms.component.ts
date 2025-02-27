@@ -7,6 +7,7 @@ import { MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
 import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
+import { SystemService } from '../../../../services/system/system.service';
 
 @Component({
   selector: 'app-enroll-sms',
@@ -31,8 +32,12 @@ export class EnrollSmsComponent {
   @Input() phoneNumber!: WritableSignal<string>;
   @Input() readNumberDynamically!: WritableSignal<boolean>;
   smsGatewayOptions = signal<string[]>([]);
+  defaultSMSGatewayIsSet = signal(false);
 
-  constructor(private smsGatewayService: SmsGatewayService) {}
+  constructor(
+    private smsGatewayService: SmsGatewayService,
+    private systemService: SystemService,
+  ) {}
 
   ngOnInit(): void {
     this.smsGatewayService.getSmsGatewayOptions().subscribe((response) => {
@@ -40,6 +45,14 @@ export class EnrollSmsComponent {
         ? Object.values(response.result.value).map((item: any) => item.name)
         : [];
       this.smsGatewayOptions.set(options);
+
+      this.systemService.getSystemConfig().subscribe((response) => {
+        const config = response?.result?.value;
+        if (config && config['sms.identifier']) {
+          this.defaultSMSGatewayIsSet.set(true);
+          this.smsGateway.set(config['sms.identifier']);
+        }
+      });
     });
   }
 }

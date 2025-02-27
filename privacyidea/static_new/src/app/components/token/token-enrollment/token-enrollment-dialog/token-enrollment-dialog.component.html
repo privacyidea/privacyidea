@@ -2,17 +2,18 @@
 <mat-dialog-content>
   @if (!data.response.detail?.pushurl || data.pushEnrolled()) {
     <p>
-      The token was successfully enrolled with serial number
-      <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.
-      <br>
+      <span>The token was successfully enrolled with serial number
+      <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }}
+      </a>.</span>
       @if (data.response.detail.container_serial) {
-        It has been enrolled in the container
+        <br>
+        <span>It has been enrolled in the container
         <a (click)="containerSelected(data.response.detail.container_serial)"> {{
             data.response.detail.container_serial
-          }} </a>.
+          }} </a>.</span>
       }
-      <br>
       @if (data.username != '' && data.userRealm != '') {
+        <br>
         <span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
             data.userRealm
           }}</a> was assigned to the token.
@@ -136,14 +137,12 @@
     </div>
   </div>
   @if (data.response.detail?.webAuthnRegisterRequest) {
-    <span>Take action on your authenticator</span>
-    <p class="webauthn-p">You need to confirm the registration with your authenticator.
-      For an external authenticator, this usually means pushing the button on the authenticator,
-      or replugging it (if there is no button on the authenticator).
-      If you want to use an authenticator that is integrated into your device,
-      look for a dialog box from your operating system.
-      If you do not see anything, please make sure that your authenticator supports WebAuthn.
-    </p>
+    <span>Take action on your authenticator</span><p class="webauthn-p">You need to confirm the
+      registration with your authenticator. For an external authenticator, this usually means
+      pushing the button on the authenticator, or replugging it (if there is no button on the
+      authenticator). If you want to use an authenticator that is integrated into your device, look
+      for a dialog box from your operating system. If you do not see anything, please make sure that
+      your authenticator supports WebAuthn. </p>
   }
 </mat-dialog-content>
 

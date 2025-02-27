@@ -3,8 +3,10 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token configuration</h4>
-  <span class="inline-warning">For Yubico tokens to work properly you need to set the
+  @if (!yubicoIsConfigured()) {
+    <span class="inline-warning">For Yubico tokens to work properly you need to set the
     <a href="#">Yubico Token Config</a>!</span>
+  }
   <div class="flex-row gap-1">
     <mat-form-field class="otp-input-form">
       <mat-label>Yubikey Identifier</mat-label>

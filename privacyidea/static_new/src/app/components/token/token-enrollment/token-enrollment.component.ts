@@ -58,7 +58,7 @@ import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
 import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
 import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
-import { EnrollAspComponent } from './enroll-asp/enroll-asp.component';
+import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
 import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
@@ -151,7 +151,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollRadiusComponent,
     EnrollSmsComponent,
     EnrollFoureyesComponent,
-    EnrollAspComponent,
+    EnrollApplspecComponent,
     EnrollDaypasswordComponent,
     EnrollCertificateComponent,
     EnrollEmailComponent,
@@ -355,8 +355,8 @@ export class TokenEnrollmentComponent {
       timeStep: this.timeStep(),
       description: this.description(),
       tokenSerial: this.tokenSerial(),
-      user: this.selectedUsername(),
-      container_serial: this.selectedContainer(),
+      user: this.selectedUsername().trim(),
+      container_serial: this.selectedContainer().trim(),
       validity_period_start: this.formatDateTimeOffset(
         this.selectedStartDate(),
         this.selectedStartTime(),
@@ -372,13 +372,13 @@ export class TokenEnrollmentComponent {
       sshPublicKey: this.sshPublicKey(),
       remoteServer: this.remoteServer(),
       remoteSerial: this.remoteSerial(),
-      remoteUser: this.remoteUser(),
-      remoteRealm: this.remoteRealm(),
-      remoteResolver: this.remoteResolver(),
+      remoteUser: this.remoteUser().trim(),
+      remoteRealm: this.remoteRealm().trim(),
+      remoteResolver: this.remoteResolver().trim(),
       checkPinLocally: this.checkPinLocally(),
       yubicoIdentifier: this.yubikeyIdentifier(),
       radiusServerConfiguration: this.radiusServerConfiguration(),
-      radiusUser: this.radiusUser(),
+      radiusUser: this.radiusUser().trim(),
       smsGateway: this.smsGateway(),
       phoneNumber: this.phoneNumber(),
       separator: this.seperator(),
@@ -387,7 +387,7 @@ export class TokenEnrollmentComponent {
       caConnector: this.caConnector(),
       certTemplate: this.certTemplate(),
       pem: this.pem(),
-      emailAddress: this.emailAddress(),
+      emailAddress: this.emailAddress().trim(),
       readEmailDynamically: this.readEmailDynamically(),
       answers: this.answers(),
       vascoSerial: this.vascoSerial(),

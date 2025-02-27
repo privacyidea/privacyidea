@@ -9,7 +9,7 @@ import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
 
 @Component({
-  selector: 'app-enroll-asp',
+  selector: 'app-enroll-applspec',
   imports: [
     MatFormField,
     MatInput,
@@ -20,10 +20,10 @@ import { MatSelect } from '@angular/material/select';
     MatOption,
     MatSelect,
   ],
-  templateUrl: './enroll-asp.component.html',
-  styleUrl: './enroll-asp.component.scss',
+  templateUrl: './enroll-applspec.component.html',
+  styleUrl: './enroll-applspec.component.scss',
 })
-export class EnrollAspComponent {
+export class EnrollApplspecComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'applspec')
     ?.text;
   @Input() description!: WritableSignal<string>;
