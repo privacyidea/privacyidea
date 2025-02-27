@@ -31,7 +31,7 @@ import { MatSelect } from '@angular/material/select';
 export class EnrollFoureyesComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === '4eyes')?.text;
   @Input() description!: WritableSignal<string>;
-  @Input() seperator!: WritableSignal<string>;
+  @Input() separator!: WritableSignal<string>;
   @Input() requiredTokensOfRealm!: WritableSignal<
     { realm: string; tokens: number }[]
   >;

@@ -215,15 +215,13 @@ export class TokenEnrollmentComponent {
   remoteUser = signal('');
   remoteRealm = signal('');
   remoteResolver = signal('');
-  protected readonly TokenEnrollmentDialogComponent =
-    TokenEnrollmentDialogComponent;
   yubikeyIdentifier = signal('');
   radiusServerConfiguration = signal('');
   radiusUser = signal('');
   readNumberDynamically = signal(false);
   smsGateway = signal('');
   phoneNumber = signal('');
-  seperator = signal('');
+  separator = signal('');
   requiredTokenOfRealm = signal<{ realm: string; tokens: number }[]>([]);
   serviceId = signal('');
   caConnector = signal('');
@@ -235,6 +233,8 @@ export class TokenEnrollmentComponent {
   answers = signal<Record<string, string>>({});
   vascoSerial = signal('');
   useVascoSerial = signal(false);
+  protected readonly TokenEnrollmentDialogComponent =
+    TokenEnrollmentDialogComponent;
 
   constructor(
     private containerService: ContainerService,
@@ -258,6 +258,55 @@ export class TokenEnrollmentComponent {
       if (this.selectedType()) {
         this.response.set(null);
         this.tokenSerial.set('');
+        this.description.set('');
+        this.setPinValue.set('');
+        this.repeatPinValue.set('');
+        this.selectedUserRealm.set('');
+        this.selectedUsername.set('');
+        this.filteredContainerOptions.set([]);
+        this.filteredUserOptions.set([]);
+        this.selectedContainer.set('');
+        this.containerOptions.set([]);
+        this.realmOptions.set([]);
+        this.userOptions.set([]);
+        this.generateOnServer.set(true);
+        this.otpLength.set(6);
+        this.otpKey.set('');
+        this.hashAlgorithm.set('sha1');
+        this.selectedTimezoneOffset.set('+01:00');
+        this.selectedStartTime.set('');
+        this.selectedEndTime.set('');
+        this.selectedStartDate.set(new Date());
+        this.selectedEndDate.set(new Date());
+        this.timeStep.set(30);
+        this.regenerateToken.set(false);
+        this.motpPin.set('');
+        this.repeatMotpPin.set('');
+        this.sshPublicKey.set('');
+        this.checkPinLocally.set(false);
+        this.remoteServer.set({ url: '', id: '' });
+        this.remoteSerial.set('');
+        this.remoteUser.set('');
+        this.remoteRealm.set('');
+        this.remoteResolver.set('');
+        this.yubikeyIdentifier.set('');
+        this.radiusServerConfiguration.set('');
+        this.radiusUser.set('');
+        this.readNumberDynamically.set(false);
+        this.smsGateway.set('');
+        this.phoneNumber.set('');
+        this.separator.set('');
+        this.requiredTokenOfRealm.set([]);
+        this.serviceId.set('');
+        this.caConnector.set('');
+        this.certTemplate.set('');
+        this.pem.set('');
+        this.emailAddress.set('');
+        this.readEmailDynamically.set(false);
+        this.pushEnrolled.set(false);
+        this.answers.set({});
+        this.vascoSerial.set('');
+        this.useVascoSerial.set(false);
       }
     });
 
@@ -381,7 +430,7 @@ export class TokenEnrollmentComponent {
       radiusUser: this.radiusUser().trim(),
       smsGateway: this.smsGateway(),
       phoneNumber: this.phoneNumber(),
-      separator: this.seperator(),
+      separator: this.separator(),
       requiredTokenOfRealms: this.requiredTokenOfRealm(),
       serviceId: this.serviceId(),
       caConnector: this.caConnector(),
@@ -435,6 +484,28 @@ export class TokenEnrollmentComponent {
     });
   }
 
+  reopenQRCode() {
+    this.dialog.open(TokenEnrollmentDialogComponent, {
+      data: {
+        response: this.response(),
+        tokenSerial: this.tokenSerial,
+        containerSerial: this.containerSerial,
+        selectedContent: this.selectedContent,
+        regenerateToken: this.regenerateToken,
+        isProgrammaticChange: this.isProgrammaticChange,
+        pushEnrolled: this.pushEnrolled,
+        username: this.selectedUsername(),
+        userRealm: this.selectedUserRealm(),
+      },
+    });
+    if (
+      this.response().detail.rollout_state === 'clientwait' &&
+      !this.pushEnrolled()
+    ) {
+      this.pollTokenEnrollment(this.tokenSerial(), 2000);
+    }
+  }
+
   private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
     this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
       next: (pollResponse: any) => {
@@ -477,27 +548,5 @@ export class TokenEnrollmentComponent {
         this.notificationService.openSnackBar('Failed to get default realm.');
       },
     });
-  }
-
-  reopenQRCode() {
-    this.dialog.open(TokenEnrollmentDialogComponent, {
-      data: {
-        response: this.response(),
-        tokenSerial: this.tokenSerial,
-        containerSerial: this.containerSerial,
-        selectedContent: this.selectedContent,
-        regenerateToken: this.regenerateToken,
-        isProgrammaticChange: this.isProgrammaticChange,
-        pushEnrolled: this.pushEnrolled,
-        username: this.selectedUsername(),
-        userRealm: this.selectedUserRealm(),
-      },
-    });
-    if (
-      this.response().detail.rollout_state === 'clientwait' &&
-      !this.pushEnrolled()
-    ) {
-      this.pollTokenEnrollment(this.tokenSerial(), 2000);
-    }
   }
 }
