@@ -1053,31 +1053,23 @@ class PolicyClass(object):
                 try:
                     return compare_values(info[key], comparator, value)
                 except Exception as exx:
-                    log.warning("Error during handling the condition on {!s} {!r} of policy {!r}: {!r}".format(
-                        type, key, policy['name'], exx
-                    ))
-                    raise PolicyError(
-                        "Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
+                    log.warning(f"Error during handling the condition on {type} {key} of policy {policy['name']}: {exx}")
+                    raise PolicyError(f"Invalid comparison in the {type} conditions of policy {policy['name']}")
             else:
-                log.warning("Unknown {!s} key referenced in a condition of policy {!r}: {!r}".format(
-                    type, policy['name'], key
-                ))
+                log.warning(f"Unknown {type} key referenced in a condition of policy {policy['name']}: {key}")
                 # If we do have an user or token object, but the conditions of policies reference
                 # an unknown userinfo or tokeninfo key, we have a misconfiguration and raise an error.
-                raise PolicyError("Unknown key in the {!s} conditions of policy {!r}".format(
-                    type, policy['name']
-                ))
+                raise PolicyError(f"Unknown key in the {type} conditions of policy {policy['name']}")
         else:
-            log.error("Policy {!r} has condition on {!s}, but the according object"
-                      " is not available - possible programming error "
-                      "{!s}.".format(policy['name'], type, ''.join(traceback.format_stack())))
-            # If the policy specifies a userinfo or tokeninfo condition, but no object is available,
+            log.error(f"Policy {policy['name']} has condition on {type}, but the according object"
+                      f" is not available - possible a configuration issue. Please ensure that the"
+                      f" required information is included in the request. Stacktrace: {traceback.format_stack()}.")
+            # If the policy specifies an userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
             raise PolicyError(
-                "Policy {!r} has condition on {!s}, but an according object is not available".format(
-                    policy['name'], type
-                ))
+                f"Policy {policy['name']} has condition on {type}, but an according object is not available"
+                )
 
     @staticmethod
     def check_for_conflicts(policies, action):
