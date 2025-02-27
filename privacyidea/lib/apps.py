@@ -81,14 +81,14 @@ def create_motp_url(key, user=None, realm=None, serial=""):
     # For Token2 the OTPKEY is hexencoded, not base32!
     otpkey = key
     # TODO: Migration: Policy
-    #Policy = PolicyClass(request, config, c,
+    # Policy = PolicyClass(request, config, c,
     #                     get_privacyidea_config())
     # label = Policy.get_tokenlabel(user, realm, serial)
     label = "mylabel"
     allowed_label_len = 20
     label = label[0:allowed_label_len]
     url_label = quote(label)
-    
+
     return "motp://privacyidea:{0!s}?secret={1!s}".format(url_label, otpkey)
 
 
@@ -128,7 +128,7 @@ def create_google_authenticator_url(key=None, user=None,
     base_len = len("otpauth://{0!s}/?secret={1!s}&counter=1".format(tokentype, otpkey))
     allowed_label_len = MAX_QRCODE_LEN - base_len
     log.debug("we have got {0!s} characters left for the token label".format(
-              str(allowed_label_len)))
+        str(allowed_label_len)))
     # Deprecated
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
@@ -144,6 +144,7 @@ def create_google_authenticator_url(key=None, user=None,
     label = label[0:allowed_label_len]
     url_label = quote(label.encode("utf-8"))
     url_issuer = quote(issuer.encode("utf-8"))
+    url_serial = quote(serial.encode("utf-8"))
 
     if hash_algo.lower() != "sha1":
         hash_algo = "algorithm={0!s}&".format(hash_algo.upper())
@@ -153,22 +154,21 @@ def create_google_authenticator_url(key=None, user=None,
         hash_algo = ""
 
     if tokentype == "totp":
-        period = "period={0!s}&".format(period)
+        period = f"period={period}&"
     elif tokentype == "daypassword":
-        period = "period={0!s}&".format(parse_time_sec_int(period))
+        period = f"period={parse_time_sec_int(period)}&"
     else:
         period = ""
 
-    return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
-            "{counter!s}{hash!s}{period!s}"
-            "digits={digits!s}&"
-            "creator={creator}&"
-            "issuer={issuer!s}{extra}".format(tokentype=tokentype,
-                                       label=url_label, secret=otpkey,
-                                       hash=hash_algo, period=period,
-                                       digits=digits, issuer=url_issuer,
-                                       counter=counter, creator=creator,
-                                       extra=_construct_extra_parameters(extra_data)))
+    url = (f"otpauth://{tokentype}/{url_label}?secret={otpkey}&"
+           f"{counter}{hash_algo}{period}"
+           f"digits={digits}&"
+           f"creator={creator}&"
+           f"issuer={url_issuer}&"
+           f"serial={url_serial}{_construct_extra_parameters(extra_data)}")
+
+    return url
+
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,
@@ -188,11 +188,6 @@ def create_oathtoken_url(otpkey=None, user=None, realm=None,
     url_label = quote(label)
 
     extra_parameters = _construct_extra_parameters(extra_data)
-    url = "oathtoken:///addToken?name={0!s}&lockdown=true&key={1!s}{2!s}{3!s}".format(
-                                                                  url_label,
-                                                                  otpkey,
-                                                                  timebased,
-                                                                  extra_parameters
-                                                                  )
-    return url
+    url = f"oathtoken:///addToken?name={url_label}&lockdown=true&key={otpkey}{timebased}{extra_parameters}"
 
+    return url

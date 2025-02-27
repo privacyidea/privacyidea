@@ -14,7 +14,7 @@ getToken....
 """
 import logging
 from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -135,10 +135,9 @@ class TokenTestCase(MyTestCase):
         # get unassigned tokens
         tokenobject_list = get_tokens(assigned=False)
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
-        # pass the wrong parameter
-        # This will ignore the filter!
+        # This will interpret the value as true as the functions expects a bool
         tokenobject_list = get_tokens(assigned="True")
-        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
+        self.assertEqual(len(tokenobject_list), 0, tokenobject_list)
 
         # get tokens of type HOTP
         tokenobject_list = get_tokens(tokentype="hotp")
@@ -441,15 +440,16 @@ class TokenTestCase(MyTestCase):
         remove_token(serial)
 
     def test_18_assign_token(self):
+        self.setUp_user_realm2()
         serial = "ASSTOKEN"
-        user = User("cornelius", resolver=self.resolvername1,
-                    realm=self.realm1)
-        tokenobject = init_token({"serial": serial,
-                                  "otpkey": "1234567890123456"})
+        user = User("cornelius", resolver=self.resolvername1, realm=self.realm1)
+        token = init_token({"serial": serial, "otpkey": "1234567890123456"}, tokenrealms=[self.realm2])
+        self.assertSetEqual({self.realm2}, set(token.get_realms()))
 
         r = assign_token(serial, user, pin="1234")
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.first_owner.user_id, "1000")
+        self.assertEqual(token.token.first_owner.user_id, "1000")
+        self.assertSetEqual({self.realm2, self.realm1}, set(token.get_realms()))
 
         # token already assigned...
         self.assertRaises(TokenAdminError, assign_token, serial,
@@ -458,7 +458,7 @@ class TokenTestCase(MyTestCase):
         # unassign token
         r = unassign_token(serial)
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.first_owner, None)
+        self.assertEqual(token.token.first_owner, None)
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -954,7 +954,7 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")), token_count-1)
+        self.assertTrue(len(tokens.get("tokens")), token_count - 1)
         self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
@@ -1003,9 +1003,9 @@ class TokenTestCase(MyTestCase):
             self.assertIn(token["tokentype"], ["totp"])
 
         # Filter by container_serial
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         token = init_token({"type": "hotp", "genkey": 1})
-        add_token_to_container(container_serial, token.get_serial(), user_role="admin")
+        add_token_to_container(container_serial, token.get_serial())
         tokens_pag = get_tokens_paginate(container_serial=container_serial)
         self.assertEqual(1, len(tokens_pag["tokens"]))
 
@@ -1016,6 +1016,17 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn(token.get_serial(), token_serials)
         for token in tokens_pag["tokens"]:
             self.assertEqual("", token["container_serial"])
+
+        # filter for container serial in lower cases
+        container_serial = init_container({"type": "generic", "container_serial": "CONT0001"})["container_serial"]
+        token_in_container = init_token({"genkey": True, "type": "hotp"})
+        container = find_container_by_serial(container_serial)
+        container.add_token(token_in_container)
+        tokens = get_tokens_paginate(container_serial="cont0001")["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
+        container.delete()
+        token_in_container.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination
@@ -1339,6 +1350,8 @@ class TokenTestCase(MyTestCase):
         # All challenges of the transaction_id have been deleted on
         # successful authentication
         r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
@@ -1669,11 +1682,30 @@ class TokenTestCase(MyTestCase):
         class dummy_token(object):
             def __init__(self, type):
                 self.type = type
+
         self.assertEqual(1000, weigh_token_type(dummy_token("push")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("hotp")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
         self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
 
+    def test_60_get_enroll_url(self):
+        hotp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True,
+                       'rollover': False, 'timeStep': 30, 'type': 'hotp', 'validity_period_end': '',
+                       'validity_period_start': ''}
+        hotp = init_token(hotp_params)
+        totp_params = {'container_serial': None, 'genkey': True, 'hashlib': 'sha1', 'otplen': 6,
+                       'radius.system_settings': True, 'rollover': False, 'timeStep': 30, 'type': 'totp',
+                       'validity_period_end': '', 'validity_period_start': ''}
+        totp = init_token(totp_params)
+
+        hotp_init = hotp.get_init_detail(hotp_params, User())
+        hotp_enroll_url = hotp.get_enroll_url(User(), {})
+        self.assertEqual(hotp_init["googleurl"]["value"], hotp_enroll_url)
+
+        totp_init = totp.get_init_detail(totp_params, User())
+        totp_enroll_url = totp.get_enroll_url(User(), {})
+        self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
 
 class TokenOutOfBandTestCase(MyTestCase):
 

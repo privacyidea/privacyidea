@@ -6,4 +6,27 @@
 
 .otpkey-expension {
   margin-bottom: 1rem;
+  max-width: 576px;
+}
+
+.otpkey-p {
+  word-wrap: anywhere;
+}
+
+.otp-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.otp-value {
+  min-width: 6rem;
+  border: 1px solid #e2e2e2;
+  padding: 6px;
+  border-radius: var(--border-radius);
+  background: #F3F3F3;
+}
+
+.webauthn-p {
+  width: 600px;
 }

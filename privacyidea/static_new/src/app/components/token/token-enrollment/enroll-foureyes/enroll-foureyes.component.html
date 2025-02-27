@@ -1,0 +1,53 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <div class="flex-row gap-1">
+    <mat-form-field class="seperator-input-form">
+      <mat-label>Seperator</mat-label>
+      <input [(ngModel)]="seperator"
+             class="seperator-input"
+             matInput
+             placeholder="|">
+    </mat-form-field>
+    <span class="margin-top-1">The separator that is used to separate the passwords of the
+    different tokens.</span>
+  </div>
+  <h4 class="enroll-h4">Required Realms</h4>
+  <span class="required-realms-hint">Here you can select how many tokens of which realm are required
+    to perform a successful authentication.</span>
+  <div class="flex-row gap-1">
+    <mat-form-field class="width-18 otp-input-form">
+      <mat-label>Select Realms</mat-label>
+      <mat-select [(ngModel)]="requiredRealms"
+                  multiple>
+        @for (realm of realmOptions(); track realm; ) {
+          <div class="required-realms-div">
+            <mat-option class="required-realms-option"
+                        [value]="realm"
+                        (onSelectionChange)="onRealmSelectionChange($event, realm)">
+              <span>{{ realm }}</span>
+            </mat-option>
+            <input type="number"
+                   class="required-realms-input"
+                   [ngModel]="tokenCountMapping()[realm] || 0"
+                   (ngModelChange)="updateTokenCount(realm, $event)"
+                   placeholder="Tokens"
+                   min="1"
+                   max="9" />
+          </div>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="width-66">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+  </div>
+</div>

@@ -91,8 +91,10 @@ class DaplugTokenClass(HotpTokenClass):
     """
     daplug token class implementation
     """
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = False
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return False
 
     @staticmethod
     def get_class_type():

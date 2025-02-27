@@ -1,13 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { forkJoin, Observable } from 'rxjs';
+import {
+  forkJoin,
+  Observable,
+  Subject,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  timer,
+} from 'rxjs';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
 
 export interface EnrollmentOptions {
-  sshPublicKey: string;
   type: TokenType;
   description: string;
   tokenSerial: string;
@@ -20,7 +27,7 @@ export interface EnrollmentOptions {
   otpLength?: number;
   otpKey?: string;
   hashAlgorithm?: string;
-  timeStep?: string;
+  timeStep?: number;
   motpPin?: string;
   remoteServer?: { url: string; id: string };
   remoteSerial?: string;
@@ -28,6 +35,24 @@ export interface EnrollmentOptions {
   remoteRealm?: string;
   remoteResolver?: string;
   checkPinLocally?: boolean;
+  sshPublicKey?: string;
+  yubicoIdentifier?: string;
+  radiusServerConfiguration?: string;
+  radiusUser?: string;
+  smsGateway?: string;
+  phoneNumber?: string;
+  readNumberDynamically?: boolean;
+  separator?: string;
+  requiredTokenOfRealms?: { realm: string; tokens: number }[];
+  serviceId?: string;
+  caConnector?: string;
+  certTemplate?: string;
+  pem?: string;
+  emailAddress?: string;
+  readEmailDynamically?: boolean;
+  answers?: Record<string, string>;
+  vascoSerial?: string;
+  useVascoSerial?: boolean;
 }
 
 @Injectable({
@@ -46,6 +71,7 @@ export class TokenService {
   ];
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
   private tokenBaseUrl = '/token/';
+  private stopPolling$ = new Subject<void>();
 
   constructor(
     private http: HttpClient,
@@ -322,17 +348,25 @@ export class TokenService {
       pin: options.pin,
     };
 
-    if (['hotp', 'totp', 'motp'].includes(options.type)) {
+    if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
       payload.genkey = options.generateOnServer ? 1 : 0;
     }
 
-    if (['hotp', 'totp'].includes(options.type)) {
+    if (options.type === 'push') {
+      payload.genkey = 1;
+    }
+
+    if (['daypassword', 'indexedsecret'].includes(options.type)) {
+      payload.otpkey = options.otpKey;
+    }
+
+    if (['hotp', 'totp', 'daypassword'].includes(options.type)) {
       payload.otplen = Number(options.otpLength);
       payload.hashlib = options.hashAlgorithm;
     }
 
-    if (options.type === 'totp') {
+    if (['totp', 'daypassword'].includes(options.type)) {
       payload.timeStep = Number(options.timeStep);
     }
 
@@ -349,6 +383,15 @@ export class TokenService {
       payload.otpkey = options.otpKey;
     }
 
+    if (options.type === 'yubico') {
+      payload['yubico.tokenid'] = options.yubicoIdentifier;
+    }
+
+    if (options.type === 'radius') {
+      payload['radius.identifier'] = options.radiusServerConfiguration;
+      payload['radius.user'] = options.radiusUser;
+    }
+
     if (options.type === 'remote') {
       payload['remote.server_id'] = options.remoteServer;
       payload['remote.serial'] = options.remoteSerial;
@@ -358,6 +401,71 @@ export class TokenService {
       payload['remote.local_checkpin'] = options.checkPinLocally;
     }
 
+    if (options.type === 'sms') {
+      payload['sms.identifier'] = options.smsGateway;
+      payload['phone'] = options.readNumberDynamically
+        ? null
+        : options.phoneNumber;
+      payload['dynamic_phone'] = options.readNumberDynamically;
+    }
+
+    if (options.type === '4eyes') {
+      payload.separator = options.separator;
+      payload['4eyes'] = options.requiredTokenOfRealms?.reduce(
+        (acc, curr) => {
+          acc[curr.realm] = {
+            count: curr.tokens,
+            selected: true,
+          };
+          return acc;
+        },
+        {} as Record<string, { count: number; selected: boolean }>,
+      );
+    }
+
+    if (options.type === 'applspec') {
+      payload.service_id = options.serviceId;
+    }
+
+    if (options.type === 'certificate') {
+      payload.ca = options.caConnector;
+      payload.template = options.certTemplate;
+      payload.pem = options.pem;
+    }
+
+    if (options.type === 'email') {
+      payload.email = options.emailAddress;
+      payload.dynamic_email = options.readEmailDynamically;
+    }
+
+    if (options.type === 'question') {
+      payload.questions = options.answers;
+    }
+
+    if (options.type === 'vasco') {
+      if (options.useVascoSerial) {
+        payload.serial = options.vascoSerial;
+      }
+      payload.otpkey = options.otpKey;
+      payload.genkey = 0;
+    }
+
     return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
+  }
+
+  pollTokenState(tokenSerial: string, startTime: number): Observable<any> {
+    return timer(startTime, 2000).pipe(
+      takeUntil(this.stopPolling$),
+      switchMap(() => this.getTokenDetails(tokenSerial)),
+      takeWhile(
+        (response: any) =>
+          response.result.value.tokens[0].rollout_state === 'clientwait',
+        true,
+      ),
+    );
+  }
+
+  stopPolling() {
+    this.stopPolling$.next();
   }
 }

@@ -1,5 +1,5 @@
 .. use the docstring from the module file
-.. automodule:: privacyidea.api.auth
+.. automodule:: privacyidea.api.audit
 
 .. _rest_audit:
 

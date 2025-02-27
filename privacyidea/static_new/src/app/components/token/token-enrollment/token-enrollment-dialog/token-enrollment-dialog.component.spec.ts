@@ -8,6 +8,8 @@ import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog.compon
 import { of } from 'rxjs';
 import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('TokenEnrollmentDialogComponent', () => {
   let component: TokenEnrollmentDialogComponent;
@@ -17,8 +19,12 @@ describe('TokenEnrollmentDialogComponent', () => {
     MatDialogRef<ConfirmationDialogComponent>
   >;
 
-  matDialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+  matDialogRefSpy = jasmine.createSpyObj('MatDialogRef', [
+    'close',
+    'afterClosed',
+  ]);
   matDialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
+  matDialogRefSpy.afterClosed.and.returnValue(of(true));
 
   beforeEach(async () => {
     matDialogSpy.open.and.returnValue({
@@ -28,6 +34,8 @@ describe('TokenEnrollmentDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentDialogComponent, BrowserAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialog, useValue: matDialogSpy },
         {
           provide: MAT_DIALOG_DATA,

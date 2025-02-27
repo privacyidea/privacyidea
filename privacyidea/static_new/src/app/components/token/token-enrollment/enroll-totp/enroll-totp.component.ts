@@ -28,6 +28,6 @@ export class EnrollTotpComponent {
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() hashAlgorithm!: WritableSignal<string>;
-  @Input() timeStep!: WritableSignal<string>;
+  @Input() timeStep!: WritableSignal<number>;
   @Input() description!: WritableSignal<string>;
 }

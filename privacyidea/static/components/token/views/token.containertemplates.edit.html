@@ -1,0 +1,147 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="form-group">
+    <h3 translate>Template {{ template.name }}</h3>
+
+    <div class="form-group">
+        <span translate>Container Type</span>: {{ template.container_type | capitalize }}
+    </div>
+    <div class="form-group">
+        <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
+    </div>
+
+    <div class="form-group">
+        <div container-template-details
+             selection="selection"
+             form-init="tokenSettings"
+             allowed-token-types="allowedTokenTypes"
+             function-obj="functionObject"
+             mark-add-remove="true"
+             show-default-selection="true"
+             edit="checkRight('container_template_create')"
+             hide-buttons="hide_buttons"
+        ></div>
+    </div>
+
+    <hr class="horizontal-line-invisible">
+    <div class="form-group" ng-show="checkRight('container_list')">
+        <h4 translate>Containers Created With This Template</h4>
+        <div class="form-group">
+            <button class="btn btn-default btn-capitalize"
+                    ng-hide="showContainers"
+                    ng-click="showContainers=true"
+                    translate>
+                Show
+            </button>
+            <button class="btn btn-default btn-capitalize"
+                    ng-show="showContainers"
+                    ng-click="showContainers=false"
+                    translate>
+                Hide
+            </button>
+            <button class="btn btn-default btn-capitalize"
+                    ng-show="showContainers"
+                    ng-click="compareContainersWithTemplate()"
+                    translate>
+                Compare
+            </button>
+        </div>
+
+        <div ng-show="showContainers">
+            <div uib-pagination ng-show="containerData.count > containersPerPage"
+                 total-items="containerData.count" ng-model="params.page"
+                 previous-text="{{ 'Previous'|translate }}"
+                 next-text="{{ 'Next'|translate }}"
+                 last-text="{{ 'Last'|translate }}"
+                 first-text="{{ 'First'|translate }}"
+                 items-per-page="{{ containersPerPage }}"
+                 max-size="5"
+                 boundary-links="true" ng-change="pageChanged()">
+            </div>
+
+            <div translate>Total Containers: {{ containerData.count }}</div>
+            <table class="table table-bordered table-striped table-capitalize-header">
+                <thead>
+                <tr>
+                    <th class="pifilter">
+                        <button class="btn btn-default unsorted"
+                                pi-sort-by="serial"
+                                translate>Serial
+                        </button>
+                    </th>
+                    <th translate>
+                        Description
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        User
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        Realm
+                    </th>
+                    <th ng-show="loggedInUser.role == 'admin'" translate>
+                        Container Realms
+                    </th>
+                    <th ng-show="showDiff" translate>
+                        Differences to the template
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="container in containerData.containers track by $index">
+                    <td>
+                        <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
+                    </td>
+                    <td>
+                        {{ container.description }}
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
+                        <a ui-sref="user.details({username: container.users[0].user_name,
+                            realmname: container.users[0].user_realm,
+                            resolvername: token.resolver,
+                            editable: false})">
+                            {{ container.users[0].user_name }}</a>
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
+                        <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
+                    </td>
+                    <td ng-show="loggedInUser.role == 'admin'">
+                <span ng-repeat="c_realm in container.realms">
+                    <a ui-sref="config.realms.list">
+                    {{ c_realm }}</a><span ng-show="!$last ">,</span>
+                </span>
+                    </td>
+                    <td ng-show="showDiff && templateContainerDiff[container.serial]">
+                        <div container-template-diff
+                             diff="templateContainerDiff"
+                             container-serial="container.serial">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="form-group text-center" ng-hide="!checkRight('container_template_create') && hide_buttons">
+        <button class="btn btn-capitalize btn-primary"
+                ng-click="saveTemplate()"
+                ng-disabled="!checkRight('container_template_create')">
+            <span class="glyphicon glyphicon-floppy-disk"></span>
+            <translate>Save</translate>
+        </button>
+    </div>
+</div>

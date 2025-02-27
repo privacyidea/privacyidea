@@ -1,0 +1,70 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <mat-button-toggle-group [(ngModel)]="intentionToggle"
+                           [hideSingleSelectionIndicator]="true"
+                           aria-label="Intention select"
+                           class="button-toggle-group">
+    <mat-button-toggle value="generate">Generate Request</mat-button-toggle>
+    <mat-button-toggle value="uploadRequest">Upload Request</mat-button-toggle>
+    <mat-button-toggle value="uploadCert">Upload Certificate</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <div class="flex-row gap-1">
+    <mat-form-field class="width-33">
+      <mat-label>CA Connector</mat-label>
+      <mat-select [(ngModel)]="caConnector">
+        @for (option of caConnectorOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="width-33">
+      <mat-label>Certificate Template</mat-label>
+      <mat-select [(ngModel)]="certTemplate">
+        @for (option of certTemplateOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <span class="width-33"></span>
+  </div>
+
+  @switch (this.intentionToggle()) {
+    @case ('generate') {
+      <span class="margin-button-1">The server will create the private RSA key and store it in the
+        database. <br> You can later download the PKCS#12 file.</span>
+    }
+    @case ('uploadRequest') {
+      <mat-form-field class="width-66">
+        <mat-label> Certificate Signing Request (PEM)</mat-label>
+        <textarea [(ngModel)]="pem"
+                  matInput
+                  placeholder="Paste the Certificate Signing Request here"
+                  rows="3"></textarea>
+      </mat-form-field>
+    }
+    @case ('uploadCert') {
+      <mat-form-field class="width-66">
+        <mat-label> Certificate (PEM)</mat-label>
+        <textarea [(ngModel)]="pem"
+                  matInput
+                  placeholder="Paste the Certificate Signing Request here"
+                  rows="3"></textarea>
+      </mat-form-field>
+    }
+  }
+
+  <mat-form-field class="width-66">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

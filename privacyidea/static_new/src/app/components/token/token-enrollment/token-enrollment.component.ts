@@ -54,6 +54,24 @@ import { NgClass } from '@angular/common';
 import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
 import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
+import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
+import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
+import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
+import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
+import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
+import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
+import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
+import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
+import { EnrollIndexedsecretComponent } from './enroll-indexsecret/enroll-indexedsecret.component';
+import { EnrollPaperComponent } from './enroll-paper/enroll-paper.component';
+import { EnrollPushComponent } from './enroll-push/enroll-push.component';
+import { EnrollQuestionComponent } from './enroll-questionnaire/enroll-question.component';
+import { EnrollRegistrationComponent } from './enroll-registration/enroll-registration.component';
+import { EnrollTanComponent } from './enroll-tan/enroll-tan.component';
+import { EnrollTiqrComponent } from './enroll-tiqr/enroll-tiqr.component';
+import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
+import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
+import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -129,6 +147,24 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollSshkeyComponent,
     EnrollYubikeyComponent,
     EnrollRemoteComponent,
+    EnrollYubicoComponent,
+    EnrollRadiusComponent,
+    EnrollSmsComponent,
+    EnrollFoureyesComponent,
+    EnrollApplspecComponent,
+    EnrollDaypasswordComponent,
+    EnrollCertificateComponent,
+    EnrollEmailComponent,
+    EnrollIndexedsecretComponent,
+    EnrollPaperComponent,
+    EnrollPushComponent,
+    EnrollQuestionComponent,
+    EnrollRegistrationComponent,
+    EnrollTanComponent,
+    EnrollTiqrComponent,
+    EnrollU2fComponent,
+    EnrollVascoComponent,
+    EnrollWebauthnComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -167,7 +203,7 @@ export class TokenEnrollmentComponent {
   selectedEndTime = signal('');
   selectedStartDate = signal(new Date());
   selectedEndDate = signal(new Date());
-  timeStep = signal('30');
+  timeStep = signal(30);
   response: WritableSignal<any> = signal(null);
   regenerateToken = signal(false);
   motpPin = signal('');
@@ -181,6 +217,24 @@ export class TokenEnrollmentComponent {
   remoteResolver = signal('');
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
+  yubikeyIdentifier = signal('');
+  radiusServerConfiguration = signal('');
+  radiusUser = signal('');
+  readNumberDynamically = signal(false);
+  smsGateway = signal('');
+  phoneNumber = signal('');
+  seperator = signal('');
+  requiredTokenOfRealm = signal<{ realm: string; tokens: number }[]>([]);
+  serviceId = signal('');
+  caConnector = signal('');
+  certTemplate = signal('');
+  pem = signal('');
+  emailAddress = signal('');
+  readEmailDynamically = signal(false);
+  pushEnrolled = signal(false);
+  answers = signal<Record<string, string>>({});
+  vascoSerial = signal('');
+  useVascoSerial = signal(false);
 
   constructor(
     private containerService: ContainerService,
@@ -301,8 +355,8 @@ export class TokenEnrollmentComponent {
       timeStep: this.timeStep(),
       description: this.description(),
       tokenSerial: this.tokenSerial(),
-      user: this.selectedUsername(),
-      container_serial: this.selectedContainer(),
+      user: this.selectedUsername().trim(),
+      container_serial: this.selectedContainer().trim(),
       validity_period_start: this.formatDateTimeOffset(
         this.selectedStartDate(),
         this.selectedStartTime(),
@@ -318,15 +372,34 @@ export class TokenEnrollmentComponent {
       sshPublicKey: this.sshPublicKey(),
       remoteServer: this.remoteServer(),
       remoteSerial: this.remoteSerial(),
-      remoteUser: this.remoteUser(),
-      remoteRealm: this.remoteRealm(),
-      remoteResolver: this.remoteResolver(),
+      remoteUser: this.remoteUser().trim(),
+      remoteRealm: this.remoteRealm().trim(),
+      remoteResolver: this.remoteResolver().trim(),
       checkPinLocally: this.checkPinLocally(),
+      yubicoIdentifier: this.yubikeyIdentifier(),
+      radiusServerConfiguration: this.radiusServerConfiguration(),
+      radiusUser: this.radiusUser().trim(),
+      smsGateway: this.smsGateway(),
+      phoneNumber: this.phoneNumber(),
+      separator: this.seperator(),
+      requiredTokenOfRealms: this.requiredTokenOfRealm(),
+      serviceId: this.serviceId(),
+      caConnector: this.caConnector(),
+      certTemplate: this.certTemplate(),
+      pem: this.pem(),
+      emailAddress: this.emailAddress().trim(),
+      readEmailDynamically: this.readEmailDynamically(),
+      answers: this.answers(),
+      vascoSerial: this.vascoSerial(),
+      useVascoSerial: this.useVascoSerial(),
     };
-
+    this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
-        if (!this.regenerateToken()) {
+        if (
+          !this.regenerateToken() &&
+          response.detail.rollout_state !== 'clientwait'
+        ) {
           this.notificationService.openSnackBar(
             `Token ${response.detail.serial} enrolled successfully.`,
           );
@@ -341,8 +414,16 @@ export class TokenEnrollmentComponent {
             selectedContent: this.selectedContent,
             regenerateToken: this.regenerateToken,
             isProgrammaticChange: this.isProgrammaticChange,
+            pushEnrolled: this.pushEnrolled,
+            username: this.selectedUsername(),
+            userRealm: this.selectedUserRealm(),
           },
         });
+
+        if (response.detail.rollout_state === 'clientwait') {
+          this.pollTokenEnrollment(response.detail.serial, 5000);
+        }
+
         if (this.regenerateToken()) {
           this.regenerateToken.set(false);
         }
@@ -350,6 +431,24 @@ export class TokenEnrollmentComponent {
       error: (error) => {
         console.error('Failed to enroll token.', error);
         this.notificationService.openSnackBar('Failed to enroll token.');
+      },
+    });
+  }
+
+  private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
+    this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
+      next: (pollResponse: any) => {
+        const currentState = pollResponse.result.value.tokens[0].rollout_state;
+        if (currentState === 'enrolled') {
+          this.pushEnrolled.set(true);
+          this.notificationService.openSnackBar(
+            `Token ${tokenSerial} enrolled successfully.`,
+          );
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to poll token state.', error);
+        this.notificationService.openSnackBar('Failed to poll token state.');
       },
     });
   }
@@ -378,5 +477,27 @@ export class TokenEnrollmentComponent {
         this.notificationService.openSnackBar('Failed to get default realm.');
       },
     });
+  }
+
+  reopenQRCode() {
+    this.dialog.open(TokenEnrollmentDialogComponent, {
+      data: {
+        response: this.response(),
+        tokenSerial: this.tokenSerial,
+        containerSerial: this.containerSerial,
+        selectedContent: this.selectedContent,
+        regenerateToken: this.regenerateToken,
+        isProgrammaticChange: this.isProgrammaticChange,
+        pushEnrolled: this.pushEnrolled,
+        username: this.selectedUsername(),
+        userRealm: this.selectedUserRealm(),
+      },
+    });
+    if (
+      this.response().detail.rollout_state === 'clientwait' &&
+      !this.pushEnrolled()
+    ) {
+      this.pollTokenEnrollment(this.tokenSerial(), 2000);
+    }
   }
 }

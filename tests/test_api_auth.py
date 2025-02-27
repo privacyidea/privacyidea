@@ -590,7 +590,8 @@ class AuthApiTestCase(MyApiTestCase):
                 # role should be 'admin'
                 self.assertEqual('admin', result['value']['role'], result)
                 mock_log.assert_called_once_with("Problem resolving user testadmin in "
-                                                 "realm ldap1: LDAP request failed.")
+                                                 "realm ldap1: ERR907: Error performing "
+                                                 "bind operation: LDAP request failed.")
 
         delete_realm("ldap1")
         delete_resolver("ldap1")

@@ -17,14 +17,7 @@
     </mat-hint>
   </mat-form-field>
   <div class="enroll-button-container">
-    <button (click)="this.dialog.open(TokenEnrollmentDialogComponent, {
-          data: {
-            response: this.response(),
-            tokenSerial: this.tokenSerial,
-            selectedContent: this.selectedContent
-
-          },
-        });"
+    <button (click)="this.reopenQRCode()"
             [disabled]="this.response() === null"
             mat-icon-button>
       <mat-icon>qr_code_scanner</mat-icon>
@@ -81,6 +74,86 @@
                          [checkPinLocally]="checkPinLocally"
                          [description]="description" />
     }
+    @case ("yubico") {
+      <app-enroll-yubico [yubikeyIdentifier]="yubikeyIdentifier"
+                         [description]="description" />
+    }
+    @case ("radius") {
+      <app-enroll-radius [checkPinLocally]="checkPinLocally"
+                         [radiusServerConfiguration]="radiusServerConfiguration"
+                         [radiusUser]="radiusUser"
+                         [description]="description" />
+    }
+    @case ("sms") {
+      <app-enroll-sms [phoneNumber]="phoneNumber"
+                      [smsGateway]="smsGateway"
+                      [description]="description"
+                      [readNumberDynamically]="readNumberDynamically" />
+    }
+    @case ("4eyes") {
+      <app-enroll-foureyes [seperator]="seperator"
+                           [description]="description"
+                           [requiredTokensOfRealm]="requiredTokenOfRealm" />
+    }
+    @case ("applspec") {
+      <app-enroll-applspec [serviceId]="serviceId"
+                      [generateOnServer]="generateOnServer"
+                      [otpKey]="otpKey"
+                      [description]="description" />
+    }
+    @case ("daypassword") {
+      <app-enroll-daypassword [otpKey]="otpKey"
+                              [otpLength]="otpLength"
+                              [hashAlgorithm]="hashAlgorithm"
+                              [description]="description"
+                              [timeStep]="timeStep" />
+    }
+    @case ("certificate") {
+      <app-enroll-certificate [caConnector]="caConnector"
+                              [certTemplate]="certTemplate"
+                              [pem]="pem"
+                              [description]="description" />
+    }
+    @case ("email") {
+      <app-enroll-email [emailAddress]="emailAddress"
+                        [readEmailDynamically]="readEmailDynamically"
+                        [description]="description" />
+    }
+    @case ("indexedsecret") {
+      <app-enroll-indexedsecret [otpKey]="otpKey"
+                                [description]="description" />
+    }
+    @case ("paper") {
+      <app-enroll-paper [description]="description" />
+    }
+    @case ("push") {
+      <app-enroll-push [description]="description" />
+    }
+    @case ("question") {
+      <app-enroll-question [answers]="answers"
+                           [description]="description" />
+    }
+    @case ("registration") {
+      <app-enroll-registration [description]="description" />
+    }
+    @case ("tan") {
+      <app-enroll-tan [description]="description" />
+    }
+    @case ("tiqr") {
+      <app-enroll-tiqr [description]="description" />
+    }
+    @case ("u2f") {
+      <app-enroll-u2f [description]="description" />
+    }
+    @case ("vasco") {
+      <app-enroll-vasco [vascoSerial]="vascoSerial"
+                        [useVascoSerial]="useVascoSerial"
+                        [otpKey]="otpKey"
+                        [description]="description" />
+    }
+    @case ("webauthn") {
+      <app-enroll-webauthn [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
@@ -90,7 +163,7 @@
     <input style="display:none"
            type="password" />
 
-    <mat-form-field class="enroll-input-form">
+    <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Select Realm of User</mat-label>
       <mat-select [(ngModel)]="selectedUserRealm">
         @for (option of realmOptions(); track option; ) {
@@ -99,7 +172,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field class="enroll-input-form">
+    <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Enter User</mat-label>
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
@@ -111,7 +184,7 @@
       </mat-autocomplete>
     </mat-form-field>
 
-    <div class="flex-column">
+    <div class="flex-column width-33">
       <h5>Pin / Password</h5>
       <div class="user-pin-input">
         <input [(ngModel)]="setPinValue"
@@ -128,7 +201,7 @@
   </div>
 
   <h4 class="enroll-h4">Assign token to a container</h4>
-  <mat-form-field class="enroll-input-form">
+  <mat-form-field class="width-32 height-76-5">
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="selectedContainer"
            [matAutocomplete]="containerAuto"

@@ -38,14 +38,14 @@ export type TokenType =
   | 'radius'
   | 'sms'
   | '4eyes'
-  | 'ASP'
-  | 'cert'
+  | 'applspec'
+  | 'certificate'
   | 'daypassword'
   | 'email'
-  | 'indexsecret'
+  | 'indexedsecret'
   | 'paper'
   | 'push'
-  | 'questionnaire'
+  | 'question'
   | 'registration'
   | 'tan'
   | 'tiqr'
@@ -149,12 +149,12 @@ export class TokenComponent {
       text: 'The 4 Eyes token will only authenticate if two or more users are present at once. You can define how many existing tokens of the given realms need to be present to perform a successful authentication.',
     },
     {
-      key: 'ASP',
+      key: 'applspec',
       info: 'Application Specific Password: A token with a fixed password. Can be used for certain applications or services.',
       text: 'The Application Specific Password Token is a static password, that can be bound to certain services. This static password then can only be used to authenticate at this service.',
     },
     {
-      key: 'cert',
+      key: 'certificate',
       info: 'Certificate: Enroll an x509 Certificate Token.',
       text: 'The Certificate Token lets you enroll an x509 ceritificate by the given CA.',
     },
@@ -169,7 +169,7 @@ export class TokenComponent {
       text: 'The Email Token sends the OTP value to the users email address.',
     },
     {
-      key: 'indexsecret',
+      key: 'indexedsecret',
       info: 'Indexed Secret: Request certain positions of a shared secret from the user.',
       text: 'The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication the user is asked for random positions from this known secret.',
     },
@@ -184,7 +184,7 @@ export class TokenComponent {
       text: 'With the PUSH token privacyIDEA sends a notification to your registered smartphone asking if you want to approve the authentication step. You can accept or deny the authentication on your smartphone. For the enrollment process and for the authentication process your smartphone needs an internet connection to privacyIDEA.',
     },
     {
-      key: 'questionnaire',
+      key: 'question',
       info: 'Questionnaire: Enroll Questions for the user.',
       text: 'The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.',
     },
@@ -192,11 +192,6 @@ export class TokenComponent {
       key: 'registration',
       info: 'Registration: A token that creates sa registration code that can be used as a second factor once.',
       text: 'The registration token is a code, that the user can use to authenticate once! After using this code to login, the registration token is deleted and can not be used anymore. This is used, so that the user can enroll a token on his own, after logging in for the first time.',
-    },
-    {
-      key: 'remote',
-      info: 'Remote Token: Forward authentication request to another server.',
-      text: 'The remote token forwards the authentication request to another privacyIDEA server. You can choose if the PIN should be stripped and checked locally.',
     },
     {
       key: 'tan',

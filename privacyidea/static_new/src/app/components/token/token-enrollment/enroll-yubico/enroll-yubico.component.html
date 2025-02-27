@@ -1,0 +1,26 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  @if (!yubicoIsConfigured()) {
+    <span class="inline-warning">For Yubico tokens to work properly you need to set the
+    <a href="#">Yubico Token Config</a>!</span>
+  }
+  <div class="flex-row gap-1">
+    <mat-form-field class="otp-input-form">
+      <mat-label>Yubikey Identifier</mat-label>
+      <input [(ngModel)]="yubikeyIdentifier"
+             matInput
+             placeholder="Enter the 12 digit identifier">
+    </mat-form-field>
+    <mat-form-field class="width-66">
+      <mat-label>Description</mat-label>
+      <textarea [(ngModel)]="description"
+                [maxlength]="80"
+                matInput
+                placeholder="Enter description"
+                rows="3"></textarea>
+    </mat-form-field>
+  </div>
+</div>

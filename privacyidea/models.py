@@ -36,6 +36,7 @@
 
 import binascii
 import logging
+import re
 import traceback
 from datetime import datetime, timedelta, timezone
 
@@ -96,10 +97,12 @@ class MethodsMixin(object):
     def save(self):
         db.session.add(self)
         db.session.commit()
-        return self.id
+        if hasattr(self, 'id'):
+            return self.id
+        return None
 
     def delete(self):
-        ret = self.id
+        ret = self.id if hasattr(self, 'id') else None
         db.session.delete(self)
         db.session.commit()
         return ret
@@ -303,6 +306,8 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenTokengroup) \
             .filter(TokenTokengroup.token_id == self.id) \
             .delete()
+        db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
+
         db.session.delete(self)
         db.session.commit()
         return ret
@@ -312,7 +317,7 @@ class Token(MethodsMixin, db.Model):
         """
         On MS SQL server empty fields ("") like the info
         are returned as a string with a space (" ").
-        This functions helps fixing this.
+        This functions helps to fix this.
         Also avoids running into errors, if the data is a None Type.
 
         :param data: a string from the database
@@ -395,15 +400,14 @@ class Token(MethodsMixin, db.Model):
                          f"(realm: {self.first_owner.realm.name})")
         for realm in set(realms):
             # Get the id of the realm to add
-            r = Realm.query.filter_by(name=realm).first()
-            if r:
+            realm_db = Realm.query.filter_by(name=realm).first()
+            if realm_db:
                 # Check if tokenrealm already exists
-                tr = TokenRealm.query.filter_by(token_id=self.id,
-                                                realm_id=r.id).first()
-                if not tr:
+                token_realm_db = TokenRealm.query.filter_by(token_id=self.id, realm_id=realm_db.id).first()
+                if not token_realm_db:
                     # If the realm is not yet attached to the token
-                    Tr = TokenRealm(token_id=self.id, realm_id=r.id)
-                    db.session.add(Tr)
+                    token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
+                    db.session.add(token_realm)
         db.session.commit()
 
     def get_realms(self):
@@ -419,9 +423,9 @@ class Token(MethodsMixin, db.Model):
         return realms
 
     @log_with(log)
-    def set_user_pin(self, userPin):
+    def set_user_pin(self, user_pin):
         iv = geturandom(16)
-        self.user_pin = encrypt(userPin, iv)
+        self.user_pin = encrypt(user_pin, iv)
         self.user_pin_iv = hexlify_and_unicode(iv)
 
     @log_with(log)
@@ -434,13 +438,13 @@ class Token(MethodsMixin, db.Model):
     @log_with(log)
     def get_user_pin(self):
         """
-        return the userPin
+        return the user_pin
         :rtype : the PIN as a secretObject
         """
-        pu = self.user_pin or ''
-        puiv = self.user_pin_iv or ''
-        key = binascii.unhexlify(pu)
-        iv = binascii.unhexlify(puiv)
+        user_pin = self.user_pin or ''
+        user_pin_iv = self.user_pin_iv or ''
+        key = binascii.unhexlify(user_pin)
+        iv = binascii.unhexlify(user_pin_iv)
         secret = SecretObj(key, iv)
         return secret
 
@@ -458,7 +462,7 @@ class Token(MethodsMixin, db.Model):
 
     def get_hashed_pin(self, pin):
         """
-        calculate a hash from a pin
+        Calculate a hash from a pin
         Fix for working with MS SQL servers
         MS SQL servers sometimes return a '<space>' when the
         column is empty: ''
@@ -470,10 +474,9 @@ class Token(MethodsMixin, db.Model):
         """
         seed_str = self._fix_spaces(self.pin_seed)
         seed = binascii.unhexlify(seed_str)
-        hPin = hash(pin, seed)
-        log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(hPin, pin,
-                                                                self.pin_seed))
-        return hPin
+        hashed_pin = hash(pin, seed)
+        log.debug(f"hashed_pin: {hashed_pin}, pin: {pin!r}, seed: {self.pin_seed}")
+        return hashed_pin
 
     @log_with(log)
     def set_description(self, desc):
@@ -487,17 +490,15 @@ class Token(MethodsMixin, db.Model):
 
     def set_pin(self, pin, hashed=True):
         """
-        set the OTP pin in a hashed way
+        Set the OTP pin in a hashed way
         """
-        upin = ""
-        if pin != "" and pin is not None:
-            upin = pin
+        real_pin = pin or ""
         if hashed is True:
-            self.set_hashed_pin(upin)
-            log.debug("setPin(HASH:{0!r})".format(self.pin_hash))
+            self.set_hashed_pin(real_pin)
+            log.debug(f"set_pin hash: {self.pin_hash!r}")
         else:
-            self.pin_hash = "@@" + encryptPin(upin)
-            log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
+            self.pin_hash = "@@" + encryptPin(real_pin)
+            log.debug(f"set_pin encrypted: {self.pin_hash!r}")
         return self.pin_hash
 
     def check_pin(self, pin):
@@ -506,9 +507,9 @@ class Token(MethodsMixin, db.Model):
         if pin is not None:
             if self.is_pin_encrypted() is True:
                 log.debug("we got an encrypted PIN!")
-                tokenPin = self.pin_hash[2:]
-                decryptTokenPin = decryptPin(tokenPin)
-                if (decryptTokenPin == pin):
+                token_pin = self.pin_hash[2:]
+                decrypted_token_pin = decryptPin(token_pin)
+                if decrypted_token_pin == pin:
                     res = True
             else:
                 log.debug("we got a hashed PIN!")
@@ -518,10 +519,10 @@ class Token(MethodsMixin, db.Model):
                         return verify_pass_hash(pin, self.pin_hash)
                     except ValueError as _e:
                         # old PIN verification
-                        mypHash = self.get_hashed_pin(pin)
+                        pin_hash = self.get_hashed_pin(pin)
                 else:
-                    mypHash = pin
-                if mypHash == (self.pin_hash or ""):
+                    pin_hash = pin
+                if pin_hash == (self.pin_hash or ""):
                     res = True
         return res
 
@@ -536,18 +537,18 @@ class Token(MethodsMixin, db.Model):
     def get_pin(self):
         ret = -1
         if self.is_pin_encrypted() is True:
-            tokenPin = self.pin_hash[2:]
-            ret = decryptPin(tokenPin)
+            token_pin = self.pin_hash[2:]
+            ret = decryptPin(token_pin)
         return ret
 
-    def set_so_pin(self, soPin):
+    def set_so_pin(self, security_officer_pin):
         """
         For smartcards this sets the security officer pin of the token
 
         :rtype : None
         """
         iv = geturandom(16)
-        self.so_pin = encrypt(soPin, iv)
+        self.so_pin = encrypt(security_officer_pin, iv)
         self.so_pin_iv = hexlify_and_unicode(iv)
         return self.so_pin, self.so_pin_iv
 
@@ -638,8 +639,7 @@ class Token(MethodsMixin, db.Model):
         :type info: dict
         """
         if not self.id:
-            # If there is no ID to reference the token, we need to save the
-            # token
+            # If there is no ID to reference the token, we need to save the token
             self.save()
         types = {}
         for k, v in info.items():
@@ -647,8 +647,7 @@ class Token(MethodsMixin, db.Model):
                 types[".".join(k.split(".")[:-1])] = v
         for k, v in info.items():
             if not k.endswith(".type"):
-                TokenInfo(self.id, k, v,
-                          Type=types.get(k)).save(persistent=False)
+                TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)
         db.session.commit()
 
     def del_info(self, key=None):
@@ -684,11 +683,11 @@ class Token(MethodsMixin, db.Model):
                 raise Exception("tokengroup does not exist")
             tokengroup_id = t.id
         if tokengroup_id:
-            tgs = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
+            tokengroups = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
         else:
-            tgs = TokenTokengroup.query.filter_by(token_id=self.id)
-        for tg in tgs:
-            tg.delete()
+            tokengroups = TokenTokengroup.query.filter_by(token_id=self.id)
+        for tokengroup in tokengroups:
+            tokengroup.delete()
 
     def get_info(self):
         """
@@ -696,10 +695,10 @@ class Token(MethodsMixin, db.Model):
         :return: The token info as dictionary
         """
         ret = {}
-        for ti in self.info_list:
-            if ti.Type:
-                ret[ti.Key + ".type"] = ti.Type
-            ret[ti.Key] = ti.Value
+        for tokeninfo in self.info_list:
+            if tokeninfo.Type:
+                ret[tokeninfo.Key + ".type"] = tokeninfo.Type
+            ret[tokeninfo.Key] = tokeninfo.Value
         return ret
 
     def update_type(self, typ):
@@ -720,8 +719,8 @@ class Token(MethodsMixin, db.Model):
         in case of a new hOtpKey we have to do some more things
         """
         if otpkey is not None:
-            secretObj = self.get_otpkey()
-            if secretObj.compare(otpkey) is False:
+            otp_key_secret = self.get_otpkey()
+            if otp_key_secret.compare(otpkey) is False:
                 log.debug('update token OtpKey - counter reset')
                 self.set_otpkey(otpkey)
 
@@ -758,9 +757,7 @@ class TokenInfo(MethodsMixin, db.Model):
                                           name='tiix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
 
-    def __init__(self, token_id, Key, Value,
-                 Type=None,
-                 Description=None):
+    def __init__(self, token_id, Key, Value, Type=None, Description=None):
         """
         Create a new tokeninfo for a given token_id
         """
@@ -771,8 +768,7 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Description = Description
 
     def save(self, persistent=True):
-        ti_func = TokenInfo.query.filter_by(token_id=self.token_id,
-                                            Key=self.Key).first
+        ti_func = TokenInfo.query.filter_by(token_id=self.token_id, Key=self.Key).first
         ti = ti_func()
         if ti is None:
             # create a new one
@@ -806,7 +802,7 @@ class CustomUserAttribute(MethodsMixin, db.Model):
     The Type can hold extra information like e.g. an encrypted value / password.
 
     Note: Since the users are external, i.e. no objects in this database,
-          there is not logic reference on a database level.
+          there is no logic reference on a database level.
           Since users could be deleted from user stores
           without privacyIDEA realizing that, this table could pile up
           with remnants of attributes.
@@ -1572,7 +1568,6 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
     def __init__(self, object_id, name="", object_type="", description=""):
-
         self.name = name
         self.object_type = object_type
         self.object_id = object_id
@@ -1725,8 +1720,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority,
              "description": self.get_policy_description()}
-        action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
-            ",")]
+        action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
         action_dict = {}
         for a in action_list:
             if len(a) > 1:
@@ -3412,13 +3406,15 @@ class TokenContainer(MethodsMixin, db.Model):
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
-    last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    last_seen = db.Column(db.DateTime, default=None)
+    last_updated = db.Column(db.DateTime, default=None)
     states = db.relationship('TokenContainerStates', lazy='dynamic', back_populates='container',
                              cascade="all, delete-orphan")
     info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
                                 cascade="all, delete-orphan")
     realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
+    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id', name="tokencontainertemplate_id"))
+    template = db.relationship('TokenContainerTemplate', back_populates='containers')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
@@ -3545,12 +3541,9 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     value = db.Column(db.UnicodeText(), default='')
     type = db.Column(db.Unicode(100), default='')
     description = db.Column(db.Unicode(2000), default='')
-    container_id = db.Column(db.Integer(),
-                             db.ForeignKey('tokencontainer.id'), index=True)
+    container_id = db.Column(db.Integer(), db.ForeignKey('tokencontainer.id'), index=True)
     container = db.relationship('TokenContainer', back_populates='info_list')
-    __table_args__ = (db.UniqueConstraint('container_id',
-                                          'key',
-                                          name='container_id_constraint'),
+    __table_args__ = (db.UniqueConstraint('container_id', 'key', name='container_id_constraint'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, container_id, key, value,
@@ -3601,3 +3594,30 @@ class TokenContainerRealm(MethodsMixin, db.Model):
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
 
     __table_args__ = ({'mysql_row_format': 'DYNAMIC'})
+
+
+class TokenContainerTemplate(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainertemplate'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    options = db.Column(db.Unicode(2000), default='')
+    name = db.Column(db.Unicode(200), default='')
+    container_type = db.Column(db.Unicode(100), default='generic', nullable=False)
+    default = db.Column(db.Boolean, default=False, nullable=False)
+    containers = db.relationship('TokenContainer', back_populates='template')
+
+    def __init__(self, name, container_type="generic", options='', default=False):
+        self.name = name
+        self.container_type = container_type
+        self.options = options
+        self.default = default
+
+
+class TokenCredentialIdHash(MethodsMixin, db.Model):
+    __tablename__ = "tokencredentialidhash"
+    credential_id_hash = db.Column(db.String(1024), primary_key=True)
+    token_id = db.Column(db.Integer(), db.ForeignKey("token.id"), nullable=False)
+
+    def __init__(self, credential_id_hash, token_id):
+        self.credential_id_hash = credential_id_hash
+        self.token_id = token_id

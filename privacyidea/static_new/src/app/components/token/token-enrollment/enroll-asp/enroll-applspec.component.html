@@ -1,0 +1,44 @@
+<div class="flex-column">
+  <div class="token-type-paragraph">
+    <p>{{ text }}</p>
+  </div>
+  <h4 class="enroll-h4">Token configuration</h4>
+  <mat-checkbox [(ngModel)]="generateOnServer"
+                class="server-checkbox">
+    Generate the static password on the Server
+    @if (generateOnServer()) {
+      <span class="dot">.</span><span>
+      <br />
+      The server will create the static password.
+    </span>
+    }
+  </mat-checkbox>
+
+  <div class="flex-row gap-1">
+  <mat-form-field class="serviceid-form">
+    <mat-label>Service ID</mat-label>
+    <mat-select [(ngModel)]="serviceId">
+      @for (option of serviceIdOptions(); track option) {
+        <mat-option [value]="option">{{ option }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @if (!generateOnServer()) {
+    <mat-form-field class="serviceid-input-form">
+      <mat-label>Application Specific Password</mat-label>
+      <input matInput
+             [(ngModel)]="otpKey"
+             placeholder="Enter static password" />
+    </mat-form-field>
+  }
+  </div>
+    <mat-form-field class="width-66">
+    <mat-label>Description</mat-label>
+    <textarea [(ngModel)]="description"
+              [maxlength]="80"
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+  </mat-form-field>
+</div>

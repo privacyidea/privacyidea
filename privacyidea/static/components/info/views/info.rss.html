@@ -1,0 +1,45 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="well">
+    <div class="row">  <!-- upper row -->
+        <div class="col-lg-12" ui-view class="slide panel">
+            <translate>Viewing the RSS feeds for the last {{ rss_age }} days.</translate>
+           <span ng-repeat="(source, feed) in rss">
+               <h1>{{ source }}</h1>
+               <span ng-repeat="item in feed">
+                   <h3>{{ item.title }}</h3>
+                   <p>{{ item.pub_date}}</p>
+                   <p><a href="{{ item.link }}" target="news_window"><translate>Read more in new window...</translate></a></p>
+                   <uib-accordion close-others="false">
+                         <div uib-accordion-group
+                                 class="panel-default">
+                                <uib-accordion-heading>
+                                    <div translate>Summary</div>
+                                </uib-accordion-heading>
+                                <!-- <p>{{ item.summary  }}</p> -->
+                                <!-- do we want to display the HTML in safe way? -->
+                                <p ng-bind-html="item.summary"></p>
+                         </div>
+                   </uib-accordion>
+               </span>
+            </span>
+           </div>
+       </div>
+</div>
+
+

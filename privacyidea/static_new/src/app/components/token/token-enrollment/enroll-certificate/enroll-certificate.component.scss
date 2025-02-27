@@ -1,0 +1,11 @@
+@import "../../../../../styles/styles";
+
+.button-toggle-group {
+  width: fit-content;
+  margin-bottom: 1rem;
+}
+
+.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
+  color: white;
+  background-color: #217fa8;
+}

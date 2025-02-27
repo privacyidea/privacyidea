@@ -152,31 +152,27 @@ def attach_token_api():
 
     """
     hostname = getParam(request.all_data, "hostname")
-    machineid = getParam(request.all_data, "machineid")
+    machine_id = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial", optional=False)
     application = getParam(request.all_data, "application", optional=False)
     if resolver == "":
         resolver = None
-        machineid = None
+        machine_id = None
 
     # get additional options:
     options = {}
     for key in request.all_data.keys():
-        if key not in ["hostname", "machineid", "resolver", "serial",
-                       "application"]:
+        if key not in ["hostname", "machineid", "resolver", "serial", "application"]:
             # We use the key as additional option
             options[key] = request.all_data.get(key)
 
-    mt_object = attach_token(serial, application, hostname=hostname,
-                             machine_id=machineid, resolver_name=resolver,
+    machine_token = attach_token(serial, application, hostname=hostname, machine_id=machine_id, resolver_name=resolver,
                              options=options)
 
-    g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+    g.audit_object.log({"success": True, "info": f"serial: {serial}, application: {application}"})
 
-    return send_result(mt_object.id)
+    return send_result(machine_token.id)
 
 
 @machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
@@ -210,7 +206,7 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
 
     """
     r = detach_token(serial, application,
-                     machine_id=machineid, resolver_name=resolver, mtid=mtid)
+                     machine_id=machineid, resolver_name=resolver, machine_token_id=mtid)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
@@ -327,7 +323,7 @@ def set_option_api():
             options_del.append(key)
 
     if mtid:
-        o_add = add_option(machinetoken_id=mtid, options=options_add)
+        o_add = add_option(machine_token_id=mtid, options=options_add)
     else:
         o_add = add_option(serial=serial, application=application,
                            hostname=hostname,
@@ -336,7 +332,7 @@ def set_option_api():
     o_del = len(options_del)
     for k in options_del:
         if mtid:
-            delete_option(machinetoken_id=mtid, key=k)
+            delete_option(machine_token_id=mtid, key=k)
         else:
             delete_option(serial=serial, application=application,
                           hostname=hostname,
@@ -403,8 +399,7 @@ def get_auth_items_api(application=None):
         if key in filter_param:
             del (filter_param[key])
 
-    ret = get_auth_items(hostname, ip=g.client_ip,
-                         application=application, challenge=challenge,
+    ret = get_auth_items(hostname, application=application, challenge=challenge,
                          filter_param=filter_param)
     g.audit_object.log({'success': True,
                         'info': "host: {0!s}, application: {1!s}".format(hostname,
