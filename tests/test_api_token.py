@@ -1473,7 +1473,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(token.get("realms") == ["realm1"], token)
 
     def test_11_load_tokens(self):
-        # Set dummy policy to verify faulty behaviour with #2209
+        # Set dummy policy to check if token upload still works (see #2209)
         set_policy("dumm01", scope=SCOPE.USER, action=ACTION.DISABLE)
         # Load OATH CSV
         with self.app.test_request_context('/token/load/import.oath',
@@ -1542,6 +1542,9 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.json["result"]["error"]["message"],
+                             "ERR905: Error loading token file. File empty!",
+                             res.json)
         # check for a failed audit entry
         entry = self.find_most_recent_audit_entry(action='*/token/load/*')
         self.assertEqual(entry['success'], 0, entry)
@@ -1554,7 +1557,9 @@ class APITokenTestCase(MyApiTestCase):
                                                           "import.oath")},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 400, res)
+            self.assertTrue(res.json["result"]["error"]["message"].startswith("ERR301: Unknown file type: 'unknown'"),
+                            res.json)
 
         # Load PSKC file, encrypted PSK
         with self.app.test_request_context('/token/load/pskc-aes.xml',
