@@ -17,6 +17,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-token-tab',
@@ -65,33 +66,71 @@ export class TokenTabComponent {
   }
 
   revokeToken(): void {
-    this.tokenService
-      .revokeToken(this.tokenSerial())
-      .pipe(
-        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
-      )
-      .subscribe({
-        next: () => {
-          this.refreshTokenDetails.set(true);
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: [this.tokenSerial()],
+          title: 'Revoke Token',
+          type: 'token',
+          action: 'revoke',
         },
-        error: (error) => {
-          console.error('Failed to revoke token.', error);
-          this.notificationService.openSnackBar('Failed to revoke token.');
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService
+              .revokeToken(this.tokenSerial())
+              .pipe(
+                switchMap(() =>
+                  this.tokenService.getTokenDetails(this.tokenSerial()),
+                ),
+              )
+              .subscribe({
+                next: () => {
+                  this.refreshTokenDetails.set(true);
+                },
+                error: (error) => {
+                  console.error('Failed to revoke token.', error);
+                  this.notificationService.openSnackBar(
+                    'Failed to revoke token.',
+                  );
+                },
+              });
+          }
         },
       });
   }
 
   deleteToken(): void {
-    this.tokenService.deleteToken(this.tokenSerial()).subscribe({
-      next: () => {
-        this.selectedContent.set('token_overview');
-        this.tokenSerial.set('');
-      },
-      error: (error) => {
-        console.error('Failed to delete token.', error);
-        this.notificationService.openSnackBar('Failed to delete token.');
-      },
-    });
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: [this.tokenSerial()],
+          title: 'Delete Token',
+          type: 'token',
+          action: 'delete',
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
+              next: () => {
+                this.selectedContent.set('token_overview');
+                this.tokenSerial.set('');
+              },
+              error: (error) => {
+                console.error('Failed to delete token.', error);
+                this.notificationService.openSnackBar(
+                  'Failed to delete token.',
+                );
+              },
+            });
+          }
+        },
+      });
   }
 
   openLostTokenDialog() {

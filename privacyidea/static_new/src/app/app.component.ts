@@ -14,6 +14,7 @@ import { SessionTimerService } from './services/session-timer/session-timer.serv
 })
 export class AppComponent {
   title = 'privacyidea-webui';
+  lastSessionReset = 0;
 
   constructor(
     private authService: AuthService,
@@ -33,7 +34,11 @@ export class AppComponent {
   @HostListener('document:mousemove')
   @HostListener('document:scroll')
   resetSessionTimer() {
-    this.sessionTimerService.resetTimer();
-    this.sessionTimerService.startTimer();
+    const now = Date.now();
+    if (now - this.lastSessionReset >= 1000) {
+      this.lastSessionReset = now;
+      this.sessionTimerService.resetTimer();
+      this.sessionTimerService.startTimer();
+    }
   }
 }

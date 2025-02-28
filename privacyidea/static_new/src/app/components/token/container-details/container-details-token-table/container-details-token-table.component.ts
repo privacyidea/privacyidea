@@ -22,7 +22,7 @@ import { ContainerService } from '../../../../services/container/container.servi
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -141,7 +141,7 @@ export class ContainerDetailsTokenTableComponent {
     });
   }
 
-  toggleAll(action: string) {
+  toggleAll(action: 'activate' | 'deactivate') {
     this.containerService.toggleAll(this.containerSerial(), action).subscribe({
       next: () => {
         this.refreshContainerDetails.set(true);
@@ -153,6 +153,37 @@ export class ContainerDetailsTokenTableComponent {
     });
   }
 
+  removeAll() {
+    const serial_list = this.dataSource()
+      .data.map((token: any) => token.serial)
+      .join(',');
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: serial_list.split(','),
+          title: 'Remove Token',
+          type: 'token',
+          action: 'remove',
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.containerService.removeAll(this.containerSerial()).subscribe({
+              next: () => {
+                this.refreshContainerDetails.set(true);
+              },
+              error: (error) => {
+                console.error('Failed to remove all.', error);
+                this.notificationService.openSnackBar('Failed to remove all.');
+              },
+            });
+          }
+        },
+      });
+  }
+
   deleteAllTokens() {
     const serial_list = this.dataSource()
       .data.map((token: any) => token.serial)
@@ -161,6 +192,9 @@ export class ContainerDetailsTokenTableComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: serial_list.split(','),
+          title: 'Delete All Tokens',
+          type: 'token',
+          action: 'delete',
         },
       })
       .afterClosed()

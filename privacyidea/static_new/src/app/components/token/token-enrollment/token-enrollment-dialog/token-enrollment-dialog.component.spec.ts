@@ -6,7 +6,7 @@ import {
 } from '@angular/material/dialog';
 import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog.component';
 import { of } from 'rxjs';
-import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';

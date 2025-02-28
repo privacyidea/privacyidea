@@ -3,13 +3,14 @@ import { TokenTabComponent } from './token-tab.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
 import { TokenService } from '../../../../services/token/token.service';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { of, throwError } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -130,6 +131,10 @@ describe('TokenTabComponent', () => {
 
   describe('revokeToken()', () => {
     it('calls tokenService.revokeToken and refreshes token details on success', () => {
+      matDialogSpy.open.and.returnValue({
+        afterClosed: () => of(true),
+      } as MatDialogRef<ConfirmationDialogComponent>);
+
       const refreshSpy = spyOn(component.refreshTokenDetails, 'set');
 
       component.revokeToken();
@@ -142,6 +147,10 @@ describe('TokenTabComponent', () => {
     });
 
     it('opens a snackBar on error', () => {
+      matDialogSpy.open.and.returnValue({
+        afterClosed: () => of(true),
+      } as MatDialogRef<ConfirmationDialogComponent>);
+
       tokenServiceSpy.revokeToken.and.returnValue(
         throwError(() => new Error('Revoke error')),
       );
@@ -156,6 +165,10 @@ describe('TokenTabComponent', () => {
 
   describe('deleteToken()', () => {
     it('calls tokenService.deleteToken and clears tokenSerial and redirects to overview', () => {
+      matDialogSpy.open.and.returnValue({
+        afterClosed: () => of(true),
+      } as MatDialogRef<ConfirmationDialogComponent>);
+
       component.deleteToken();
 
       expect(tokenServiceSpy.deleteToken).toHaveBeenCalledWith('Mock serial');
@@ -164,6 +177,10 @@ describe('TokenTabComponent', () => {
     });
 
     it('opens a snackBar on error', () => {
+      matDialogSpy.open.and.returnValue({
+        afterClosed: () => of(true),
+      } as MatDialogRef<ConfirmationDialogComponent>);
+
       tokenServiceSpy.deleteToken.and.returnValue(
         throwError(() => new Error('Delete error')),
       );

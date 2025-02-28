@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
-import { ConfirmationDialogComponent } from '../../token-card/container-tab/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 import { MatTableDataSource } from '@angular/material/table';
 
 describe('ContainerDetailsTokenTableComponent', () => {
@@ -248,6 +248,9 @@ describe('ContainerDetailsTokenTableComponent', () => {
         {
           data: {
             serial_list: ['Mock serial', 'Another serial'],
+            title: 'Delete All Tokens',
+            type: 'token',
+            action: 'delete',
           },
         },
       );

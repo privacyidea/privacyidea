@@ -238,7 +238,10 @@ export class ContainerService {
     );
   }
 
-  toggleAll(containerSerial: string, action: string): Observable<any> {
+  toggleAll(
+    containerSerial: string,
+    action: 'activate' | 'deactivate',
+  ): Observable<any> {
     return this.getContainerDetails(containerSerial).pipe(
       map((data) => {
         if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
@@ -252,53 +255,65 @@ export class ContainerService {
           return data.result.value.containers[0].tokens.filter(
             (token: any) => !token.active,
           );
-        } else if (action === 'deactivate') {
+        } else {
           return data.result.value.containers[0].tokens.filter(
             (token: any) => token.active,
           );
-        } else {
-          return data.result.value.containers[0].tokens.map(
-            (token: any) => token.serial,
-          );
         }
       }),
-
       switchMap((tokensForAction) => {
         if (tokensForAction.length === 0) {
           console.error('No tokens for action. Returning []');
           this.notificationService.openSnackBar('No tokens for action.');
           return of([]);
         }
-        if (action === 'activate' || action === 'deactivate') {
-          return forkJoin(
-            tokensForAction.map(
-              (token: {
-                serial: string;
-                active: boolean;
-                revoked: boolean;
-              }) => {
-                if (!token.revoked) {
-                  return this.tokenService.toggleActive(
-                    token.serial,
-                    token.active,
-                  );
-                } else {
-                  return of(null);
-                }
-              },
-            ),
-          );
-        } else if (action === 'remove') {
-          const headers = this.localService.getHeaders();
-          return this.http.post(
-            `${this.containerBaseUrl}${containerSerial}/removeall`,
-            {
-              serial: tokensForAction.join(','),
+        return forkJoin(
+          tokensForAction.map(
+            (token: { serial: string; active: boolean; revoked: boolean }) => {
+              if (!token.revoked) {
+                return this.tokenService.toggleActive(
+                  token.serial,
+                  token.active,
+                );
+              } else {
+                return of(null);
+              }
             },
-            { headers },
+          ),
+        );
+      }),
+    );
+  }
+
+  removeAll(containerSerial: string): Observable<any> {
+    return this.getContainerDetails(containerSerial).pipe(
+      map((data) => {
+        if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+          console.error('No valid tokens array found in data.', data);
+          this.notificationService.openSnackBar(
+            'No valid tokens array found in data.',
           );
+          return [];
         }
-        throw new Error(`Unsupported action: ${action}`);
+        return data.result.value.containers[0].tokens.map(
+          (token: any) => token.serial,
+        );
+      }),
+
+      switchMap((tokensForAction) => {
+        if (tokensForAction.length === 0) {
+          console.error('No tokens to remove. Returning []');
+          this.notificationService.openSnackBar('No tokens to remove.');
+          return of([]);
+        }
+        const headers = this.localService.getHeaders();
+        return this.http.post(
+          `${this.containerBaseUrl}${containerSerial}/removeall`,
+          {
+            serial: tokensForAction.join(','),
+          },
+          { headers },
+        );
       }),
     );
   }

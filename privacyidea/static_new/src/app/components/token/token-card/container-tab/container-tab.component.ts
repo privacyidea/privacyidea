@@ -9,6 +9,8 @@ import { switchMap } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
+import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-container-tab',
@@ -30,6 +32,7 @@ export class ContainerTabComponent {
     private containerService: ContainerService,
     private versioningService: VersionService,
     private notificationService: NotificationService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -56,16 +59,36 @@ export class ContainerTabComponent {
   }
 
   deleteContainer() {
-    this.containerService.deleteContainer(this.containerSerial()).subscribe({
-      next: () => {
-        this.selectedContent.set('container_overview');
-        this.containerSerial.set('');
-      },
-      error: (error) => {
-        console.error('Failed to delete container.', error);
-        this.notificationService.openSnackBar('Failed to delete container.');
-      },
-    });
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: [this.containerSerial()],
+          title: 'Delete Container',
+          type: 'container',
+          action: 'delete',
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.containerService
+              .deleteContainer(this.containerSerial())
+              .subscribe({
+                next: () => {
+                  this.selectedContent.set('container_overview');
+                  this.containerSerial.set('');
+                },
+                error: (error) => {
+                  console.error('Failed to delete container.', error);
+                  this.notificationService.openSnackBar(
+                    'Failed to delete container.',
+                  );
+                },
+              });
+          }
+        },
+      });
   }
 
   lostContainer() {
