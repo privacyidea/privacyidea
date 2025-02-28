@@ -13,6 +13,7 @@ import { TokenComponent } from '../../token.component';
 import { RealmService } from '../../../../services/realm/realm.service';
 import { MatOption, MatOptionSelectionChange } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
+import { MatCheckbox } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-enroll-foureyes',
@@ -24,6 +25,7 @@ import { MatSelect } from '@angular/material/select';
     FormsModule,
     MatOption,
     MatSelect,
+    MatCheckbox,
   ],
   templateUrl: './enroll-foureyes.component.html',
   styleUrl: './enroll-foureyes.component.scss',
@@ -35,6 +37,8 @@ export class EnrollFoureyesComponent {
   @Input() requiredTokensOfRealm!: WritableSignal<
     { realm: string; tokens: number }[]
   >;
+  @Input() onlyAddToRealm!: WritableSignal<boolean>;
+
   requiredRealms = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   tokenCountMapping: Signal<Record<string, number>> = computed(() => {

@@ -11,7 +11,7 @@
             data.response.detail.container_serial
           }} </a>.</span>
       }
-      @if (data.username != '' && data.userRealm != '') {
+      @if (data.username != '' && data.userRealm != '' && !data.onlyAddToRealm) {
         <br><span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
             data.userRealm
           }}</a> was assigned to the token.

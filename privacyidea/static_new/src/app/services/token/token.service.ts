@@ -53,6 +53,8 @@ export interface EnrollmentOptions {
   answers?: Record<string, string>;
   vascoSerial?: string;
   useVascoSerial?: boolean;
+  onlyAddToRealm?: boolean;
+  userRealm?: string;
 }
 
 @Injectable({
@@ -341,12 +343,15 @@ export class TokenService {
     const payload: any = {
       type: options.type,
       description: options.description,
-      user: options.user,
       container_serial: options.container_serial,
       validity_period_start: options.validity_period_start,
       validity_period_end: options.validity_period_end,
       pin: options.pin,
     };
+
+    if (!options.onlyAddToRealm) {
+      payload.user = options.user;
+    }
 
     if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
@@ -421,6 +426,10 @@ export class TokenService {
         },
         {} as Record<string, { count: number; selected: boolean }>,
       );
+
+      if (options.onlyAddToRealm) {
+        payload.realm = options.userRealm;
+      }
     }
 
     if (options.type === 'applspec') {

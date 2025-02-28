@@ -54,6 +54,7 @@ export class TokenEnrollmentDialogComponent {
       pushEnrolled: WritableSignal<boolean>;
       username: string;
       userRealm: string;
+      onlyAddToRealm: WritableSignal<boolean>;
     },
   ) {
     this.dialogRef.afterClosed().subscribe(() => {

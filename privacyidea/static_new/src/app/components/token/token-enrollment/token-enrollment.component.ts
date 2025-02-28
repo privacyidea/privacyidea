@@ -233,6 +233,7 @@ export class TokenEnrollmentComponent {
   answers = signal<Record<string, string>>({});
   vascoSerial = signal('');
   useVascoSerial = signal(false);
+  onlyAddToRealm = signal(false);
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
 
@@ -307,6 +308,7 @@ export class TokenEnrollmentComponent {
         this.answers.set({});
         this.vascoSerial.set('');
         this.useVascoSerial.set(false);
+        this.onlyAddToRealm.set(false);
       }
     });
 
@@ -441,6 +443,8 @@ export class TokenEnrollmentComponent {
       answers: this.answers(),
       vascoSerial: this.vascoSerial(),
       useVascoSerial: this.useVascoSerial(),
+      onlyAddToRealm: this.onlyAddToRealm(),
+      userRealm: this.selectedUserRealm(),
     };
     this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
@@ -466,6 +470,7 @@ export class TokenEnrollmentComponent {
             pushEnrolled: this.pushEnrolled,
             username: this.selectedUsername(),
             userRealm: this.selectedUserRealm(),
+            onlyAddToRealm: this.onlyAddToRealm(),
           },
         });
 
@@ -496,6 +501,7 @@ export class TokenEnrollmentComponent {
         pushEnrolled: this.pushEnrolled,
         username: this.selectedUsername(),
         userRealm: this.selectedUserRealm(),
+        onlyAddToRealm: this.onlyAddToRealm(),
       },
     });
     if (
