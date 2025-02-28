@@ -40,7 +40,7 @@ configobj==5.0.9
     # via privacyIDEA (setup.py)
 croniter==3.0.3
     # via privacyIDEA (setup.py)
-cryptography==42.0.8
+cryptography==44.0.1
     # via
     #   privacyIDEA (setup.py)
     #   pyopenssl
