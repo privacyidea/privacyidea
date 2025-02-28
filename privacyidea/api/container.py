@@ -173,12 +173,17 @@ def init():
     Create a new container.
     Raises an EnrollmentError if an invalid type or an already existing serial is provided.
 
+    To create a container from a template, the template can either be passed as a dictionary, containing all necessary
+    information for all tokens or only the name of an already existing template in the db. If both are given, a
+    ParameterError is raised.
+
     :jsonparam description: Description for the container
     :jsonparam type: Type of the container. If the type is unknown, an error will be returned
     :jsonparam container_serial: Optional unique serial (not case-sensitive)
     :jsonparam user: Optional username to assign the container to. Requires realm param to be present as well.
     :jsonparam realm: Optional realm to assign the container to. Requires user param to be present as well.
     :jsonparam template: The template to create the container from (dictionary), optional
+    :jsonparam template_name: The name of the template to create the container from, optional
     :jsonparam options: Options for the container if no template is used (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")

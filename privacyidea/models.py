@@ -306,7 +306,8 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenTokengroup) \
             .filter(TokenTokengroup.token_id == self.id) \
             .delete()
-        db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
+        if self.tokentype.lower() in ["webauthn", "passkey"]:
+            db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
 
         db.session.delete(self)
         db.session.commit()
@@ -3615,8 +3616,11 @@ class TokenContainerTemplate(MethodsMixin, db.Model):
 
 class TokenCredentialIdHash(MethodsMixin, db.Model):
     __tablename__ = "tokencredentialidhash"
-    credential_id_hash = db.Column(db.String(1024), primary_key=True)
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    credential_id_hash = db.Column(db.String(256), nullable=False)
     token_id = db.Column(db.Integer(), db.ForeignKey("token.id"), nullable=False)
+    __table_args__ = (db.Index('ix_tokencredentialidhash_credentialidhash',
+                               'credential_id_hash', unique=True),)
 
     def __init__(self, credential_id_hash, token_id):
         self.credential_id_hash = credential_id_hash

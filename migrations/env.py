@@ -99,6 +99,8 @@ def run_migrations_online():
     try:
         with context.begin_transaction():
             context.run_migrations()
+    except Exception as e:
+        print(f"Exception occurred during database upgrade: {e}")
     finally:
         connection.close()
 

@@ -29,7 +29,7 @@
         </button>
 
         <div class="navbar-collapse collapse myMainNavbar">
-            <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard">
+            <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard || container_wizard['enabled']">
 
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">

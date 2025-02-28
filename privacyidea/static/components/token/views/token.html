@@ -1,5 +1,5 @@
 <div class="well">
-    <nav class="navbar navbar-default" ng-show="checkRight('container_list')">
+    <nav class="navbar navbar-default" ng-show="checkRight('container_list') && !token_wizard && !container_wizard['enabled']">
         <div class="container">
             <!-- Hide menu bar on small screens, show button to toggle instead -->
             <button type="button" class="navbar-toggle"
@@ -163,7 +163,7 @@
         </div>
 
         <!-- Container sidebar panel -->
-        <div class="col-lg-3 sticky" ng-show="!tokenMenu">
+        <div class="col-lg-3 sticky" ng-show="!tokenMenu && !container_wizard['enabled']">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked nav-capitalize">
                     <li role="presentation"
@@ -266,7 +266,8 @@
             </div>
         </div>
 
-        <div ng-class="{'col-lg-9': !token_wizard || !tokenMenu, 'col-lg-12': token_wizard && tokenMenu}"
+        <div ng-class="{'col-lg-9': !token_wizard && !container_wizard['enabled'],
+                        'col-lg-12': token_wizard || container_wizard['enabled']}"
              ui-view class="slide panel">
         </div>
     </div>
