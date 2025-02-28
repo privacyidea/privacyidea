@@ -1632,7 +1632,15 @@ class TokenClass(object):
                         otp_counter = 0
                     else:
                         # Now see if the OTP matches:
-                        otp_counter = self.check_otp(passw, options=options)
+                        try:
+                            otp_counter = self.check_otp(passw, options=options)
+                        except ParameterError as e:
+                            # ParameterError can be expected because options does not contain the data for every token
+                            # type to do a successful check. This is the case if the user has multiple token, e.g.
+                            # push and passkey, and uses push. In the final call with the push token, there is obviously
+                            # no data for the passkey in the options
+                            log.debug(e)
+                            otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
                             # successful result and delete the challenge object.
