@@ -72,17 +72,16 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token,
+                         set_validity_period_end, set_validity_period_start,
+                         add_tokeninfo, delete_tokeninfo, import_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups)
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError, ERROR)
+from privacyidea.lib.error import (ParameterError, TokenAdminError,
+                                   ResourceNotFoundError, PolicyError, ERROR)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
@@ -936,7 +935,7 @@ def tokenrealm_api(serial=None):
     :rtype: bool
     """
     realms = getParam(request.all_data, "realms", required)
-    if type(realms) == list:
+    if isinstance(realms, list):
         realm_list = realms
     else:
         realm_list = [r.strip() for r in realms.split(",")]
@@ -989,73 +988,65 @@ def loadtokens_api(filename=None):
         tokenrealms = trealms.split(",")
 
     not_imported_serials = []
-    TOKENS = {}
     token_file = request.files['file']
-    file_contents = ""
-    # In case of form post requests, it is a "instance" of FieldStorage
-    # i.e. the Filename is selected in the browser and the data is
-    # transferred
-    # in an iframe. see: http://jquery.malsup.com/form/#sample4
-    #
-    if type(token_file) == FieldStorage:  # pragma: no cover
-        log.debug("Field storage file: %s", token_file)
-        file_contents = token_file.value
-    elif type(token_file) == FileStorage:
-        log.debug("Werkzeug File storage file: %s", token_file)
+    if isinstance(token_file, FileStorage):
+        log.debug(f"Werkzeug File storage file: {token_file}")
         file_contents = token_file.read()
     else:  # pragma: no cover
+        # TODO: is that even possible? We might just throw an error here
         file_contents = token_file
 
-    file_contents = to_unicode(file_contents)
+    try:
+        if isinstance(file_contents, bytes):
+            file_contents = file_contents.decode()
+    except UnicodeDecodeError as e:
+        log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
+        raise ParameterError("Unable to convert file contents. Binary data is not supported")
 
     if file_contents == "":
-        log.error("Error loading/importing token file. file {0!s} empty!".format(
-            filename))
+        log.error(f"Error loading/importing token file. File {filename} is empty!")
         raise ParameterError("Error loading token file. File empty!")
 
     if file_type not in known_types:
-        log.error(
-            "Unknown file type: >>{0!s}<<. We only know the types: {1!s}".format(file_type, ', '.join(known_types)))
-        raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
-                              "types: %s" % (file_type,
-                                             ', '.join(known_types)))
+        log.error(f"Unknown file type: '{file_type}'. Supported types are: "
+                  f"{', '.join(known_types)}")
+        raise TokenAdminError(f"Unknown file type: '{file_type}'. Supported "
+                              f"types are: {', '.join(known_types)}")
 
     # Decrypt file, if necessary
     if file_contents.startswith("-----BEGIN PGP MESSAGE-----"):
-        GPG = GPGImport(current_app.config)
-        file_contents = GPG.decrypt(file_contents)
+        gpg = GPGImport(current_app.config)
+        file_contents = gpg.decrypt(file_contents)
 
     # Parse the tokens from file and get dictionary
     if file_type == "aladdin-xml":
-        TOKENS = parseSafeNetXML(file_contents)
+        import_tokens = parseSafeNetXML(file_contents)
     elif file_type in ["oathcsv", "OATH CSV"]:
-        TOKENS = parseOATHcsv(file_contents)
+        import_tokens = parseOATHcsv(file_contents)
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
-        TOKENS = parseYubicoCSV(file_contents)
+        import_tokens = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                                                     password=aes_password, validate_mac=aes_validate_mac)
+        import_tokens, not_imported_serials = parsePSKCdata(
+            file_contents,
+            preshared_key_hex=aes_psk,
+            password=aes_password,
+            validate_mac=aes_validate_mac)
+    else:
+        import_tokens = {}
 
     # Now import the Tokens from the dictionary
-    ret = ""
-    for serial in TOKENS:
-        log.debug("importing token {0!s}".format(TOKENS[serial]))
-
-        log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
-                                                                        tokenrealms))
-
+    for serial in import_tokens:
+        log.debug(f"importing token {import_tokens[serial]}")
+        log.info(f"initialize token. serial: {serial}, realm: {tokenrealms}")
         import_token(serial,
-                     TOKENS[serial],
+                     import_tokens[serial],
                      tokenrealms=tokenrealms)
 
-    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
-                                                                        token_file,
-                                                                        len(TOKENS)),
-                        'serial': ', '.join(TOKENS),
+    g.audit_object.log({'info': f"{file_type}, {token_file} (imported: {len(import_tokens)})",
+                        'serial': ', '.join(import_tokens),
                         'success': True})
-    # logTokenNum()
 
-    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_serials)})
+    return send_result({'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])
@@ -1266,7 +1257,7 @@ def assign_tokengroup_api(serial, groupname=None):
         assign_tokengroup(serial, tokengroup=groupname)
     else:
         groups = getParam(request.all_data, "groups", required)
-        if type(groups) == list:
+        if isinstance(groups, list):
             group_list = groups
         else:
             group_list = [r.strip() for r in groups.split(",")]

@@ -103,7 +103,7 @@ def getTagName(elem):
 
 @log_with(log)
 def parseOATHcsv(csv):
-    '''
+    """
     (#653)
     This function parses CSV data for oath token.
     The file format is
@@ -135,8 +135,8 @@ def parseOATHcsv(csv):
                         'otplen' : xxx,
                         'ocrasuite' : xxx  }
         }
-    '''
-    TOKENS = {}
+    """
+    parsed_tokens = {}
     version = 0
 
     csv_array = csv.split('\n')
@@ -152,46 +152,46 @@ def parseOATHcsv(csv):
         if line.startswith("#"):
             continue
 
-        l = line.split(',')
+        values = line.split(',')
         # Do not parse emtpy lines, it could be [] or ['']
-        if len(l) <= 1:
+        if len(values) <= 1:
             continue
 
         # Import the user
         user = {}
         if version == "2":
             # extract the user from the first three columns
-            user["username"] = l.pop(0).strip()
-            user["resolver"] = l.pop(0).strip()
-            user["realm"] = l.pop(0).strip()
+            user["username"] = values.pop(0).strip()
+            user["resolver"] = values.pop(0).strip()
+            user["realm"] = values.pop(0).strip()
 
         # check for empty serial
-        serial = l[0].strip()
+        serial = values[0].strip()
         if len(serial) > 0:
-            if len(l) < 2:
+            if len(values) < 2:
                 log.error("the line {0!s} did not contain a hotp key".format(line))
                 continue
 
             # ttype
-            if len(l) == 2:
+            if len(values) == 2:
                 # No tokentype, take the default "hotp"
-                l.append("hotp")
+                values.append("hotp")
 
-            ttype = l[2].strip().lower()
+            ttype = values[2].strip().lower()
 
             tok_class = get_token_class(ttype)
-            params = tok_class.get_import_csv(l)
+            params = tok_class.get_import_csv(values)
             log.debug("read the line {0!s}".format(params))
 
             params["user"] = user
-            TOKENS[serial] = params
+            parsed_tokens[serial] = params
 
-    return TOKENS
+    return parsed_tokens
 
 
 @log_with(log)
 def parseYubicoCSV(csv):
-    '''
+    """
     This function reads the CSV data as created by the Yubico personalization
     GUI.
 
@@ -233,28 +233,24 @@ def parseYubicoCSV(csv):
                         'description' : xxx
                          }
         }
-    '''
-    TOKENS = {}
+    """
+    parsed_tokens = {}
     csv_array = csv.split('\n')
 
     log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
     for line in csv_array:
-        l = line.split(',')
-        serial = ""
-        key = ""
-        otplen = 32
+        values = line.split(',')
         public_id = ""
-        slot = ""
-        if len(l) >= 6:
-            first_column = l[0].strip()
+        if len(values) >= 6:
+            first_column = values[0].strip()
             if first_column.lower() in ["yubico otp",
                                         "oath-hotp",
                                         "static password"]:
                 # traditional format
-                typ = l[0].strip()
-                slot = l[2].strip()
-                public_id = l[3].strip()
-                key = l[5].strip()
+                typ = values[0].strip()
+                slot = values[2].strip()
+                public_id = values[3].strip()
+                key = values[5].strip()
 
                 if public_id == "":
                     # Usually a "static password" does not have a public ID!
@@ -269,11 +265,11 @@ def parseYubicoCSV(csv):
                     ttype = "yubikey"
                     otplen = 32 + len(public_id)
                     serial = "UBAM{0:08d}_{1!s}".format(serial_int, slot)
-                    TOKENS[serial] = {'type': ttype,
-                                      'otpkey': key,
-                                      'otplen': otplen,
-                                      'description': public_id
-                                      }
+                    parsed_tokens[serial] = {'type': ttype,
+                                             'otpkey': key,
+                                             'otplen': otplen,
+                                             'description': public_id
+                                             }
                 elif typ.lower() == "oath-hotp":
                     '''
                     WARNING: this does not work out at the moment, since the
@@ -286,11 +282,11 @@ def parseYubicoCSV(csv):
                     ttype = "hotp"
                     otplen = 6
                     serial = "UBOM{0:08d}_{1!s}".format(serial_int, slot)
-                    TOKENS[serial] = {'type': ttype,
-                                      'otpkey': key,
-                                      'otplen': otplen,
-                                      'description': public_id
-                                      }
+                    parsed_tokens[serial] = {'type': ttype,
+                                             'otpkey': key,
+                                             'otplen': otplen,
+                                             'description': public_id
+                                             }
                 else:
                     log.warning("at the moment we do only support Yubico OTP"
                                 " and HOTP: %r" % line)
@@ -301,13 +297,13 @@ def parseYubicoCSV(csv):
                 serial = first_column
                 # the yubico format does not specify a slot
                 slot = "X"
-                key = l[3].strip()
-                if l[2].strip() == "0":
+                key = values[3].strip()
+                if values[2].strip() == "0":
                     # HOTP
                     typ = "hotp"
                     serial = "UBOM{0!s}_{1!s}".format(serial, slot)
                     otplen = 6
-                elif l[2].strip() == "":
+                elif values[2].strip() == "":
                     # Static
                     typ = "pw"
                     serial = "UBSM{0!s}_{1!s}".format(serial, slot)
@@ -321,18 +317,18 @@ def parseYubicoCSV(csv):
                     # Yubico
                     typ = "yubikey"
                     serial = "UBAM{0!s}_{1!s}".format(serial, slot)
-                    public_id = l[1].strip()
+                    public_id = values[1].strip()
                     otplen = 32 + len(public_id)
-                TOKENS[serial] = {'type': typ,
-                                  'otpkey': key,
-                                  'otplen': otplen,
-                                  'description': public_id
-                                  }
+                parsed_tokens[serial] = {'type': typ,
+                                         'otpkey': key,
+                                         'otplen': otplen,
+                                         'description': public_id
+                                         }
         else:
             log.warning("the line {0!r} did not contain a enough values".format(line))
             continue
 
-    return TOKENS
+    return parsed_tokens
 
 
 @log_with(log)
@@ -657,9 +653,8 @@ class GPGImport(object):
         decrypted = self.gpg.decrypt(message=input_data)
 
         if not decrypted.ok:
-            log.error("Decrpytion failed: {0!s}. {1!s}".format(
-                decrypted.status, decrypted.stderr))
-            raise Exception(decrypted.stderr)
+            log.error(f"GPG Decryption failed: {decrypted.status} ({decrypted.stderr})")
+            raise TokenImportException(f"GPG decryption failed: {decrypted.stderr}")
 
         return to_unicode(decrypted.data)
 
