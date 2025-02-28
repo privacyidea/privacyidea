@@ -30,7 +30,7 @@ export class AppComponent {
 
   @HostListener('document:click')
   @HostListener('document:keydown')
-  @HostListener('document:mousemove')
+  // @HostListener('document:mousemove')
   @HostListener('document:scroll')
   resetSessionTimer() {
     this.sessionTimerService.resetTimer();

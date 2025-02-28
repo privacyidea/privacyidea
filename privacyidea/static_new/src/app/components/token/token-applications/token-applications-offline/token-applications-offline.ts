@@ -15,6 +15,7 @@ import {
 } from '../../../../services/table-utils/table-column';
 import { MatTableDataSource } from '@angular/material/table';
 import { MachineTokenData } from '../../../../model/machine/machine-token-data';
+import { TokenSelectedContent } from '../../token.component';
 
 @Component({
   selector: 'app-token-applications-offline',
@@ -25,7 +26,8 @@ import { MachineTokenData } from '../../../../model/machine/machine-token-data';
 })
 export class TokenApplicationsOffline {
   @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true }) selectedContent!: WritableSignal<string>;
+  @Input({ required: true })
+  selectedContent!: WritableSignal<TokenSelectedContent>;
 
   basicFilters: KeywordFilter[] = [
     new KeywordFilter({
@@ -125,7 +127,7 @@ export class TokenApplicationsOffline {
     pageIndex,
     pageSize,
     sortby_sortdir,
-    currentFilter,
+    filterValue: currentFilter,
   }) =>
     this.machineService.getToken({
       sortby: sortby_sortdir?.active,

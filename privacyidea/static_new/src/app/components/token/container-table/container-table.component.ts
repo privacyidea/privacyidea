@@ -123,7 +123,7 @@ export class ContainerTableComponent {
     pageIndex,
     pageSize,
     sortby_sortdir,
-    currentFilter,
+    filterValue: currentFilter,
   }) =>
     this.containerService.getContainerData(
       pageIndex,

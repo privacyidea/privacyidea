@@ -97,9 +97,7 @@
                   [selectedContent]="selectedContent"
                   [isProgrammaticChange]="isProgrammaticChange" />
               }
-              @case ("token_get_serial") {
-                <app-token-get-serial />
-              }
+
               @case ("container_overview") {
                 <app-container-table
                   [containerSerial]="containerSerial"
@@ -115,10 +113,18 @@
                   [selectedContent]="selectedContent"
                   [isProgrammaticChange]="isProgrammaticChange" />
               }
+              @case ("show_challenges") {
+                <app-challenges-table
+                  [selectedContent]="selectedContent"
+                  [tokenSerial]="tokenSerial" />
+              }
               @case ("token_applications") {
                 <app-token-applications
                   [tokenSerial]="tokenSerial"
                   [selectedContent]="selectedContent" />
+              }
+              @case ("token_get_serial") {
+                <app-token-get-serial />
               }
             }
           </div>

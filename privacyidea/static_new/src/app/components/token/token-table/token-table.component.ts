@@ -10,7 +10,6 @@ import { NotificationService } from '../../../services/notification/notification
 import {
   FetchDataHandler,
   FilterTable,
-  SortDir,
   ProcessDataSource,
 } from '../../universals/filter-table/filter-table.component';
 import { Observable } from 'rxjs/internal/Observable';
@@ -21,6 +20,7 @@ import {
   TableColumn,
 } from '../../../services/table-utils/table-column';
 import { TokenData } from '../../../model/token/token-data';
+import { TokenSelectedContent } from '../token.component';
 @Component({
   selector: 'app-token-table',
   standalone: true,
@@ -66,7 +66,6 @@ export class TokenTableComponent {
       key: 'infokey & infovalue',
       label: 'Infokey & Infovalue',
       isSelected: (filterValue) => {
-        console.log('Checking if infokey & infovalue is selected');
         const regexKey = new RegExp(/\binfokey:/, 'i');
         const regexValue = new RegExp(/\binfovalue:/, 'i');
         return regexKey.test(filterValue) || regexValue.test(filterValue);
@@ -92,7 +91,8 @@ export class TokenTableComponent {
   @Input({ required: true }) tokenSerial!: WritableSignal<string>;
   @Input({ required: true }) containerSerial!: WritableSignal<string>;
   @Input({ required: true }) isProgrammaticChange!: WritableSignal<boolean>;
-  @Input({ required: true }) selectedContent!: WritableSignal<string>;
+  @Input({ required: true })
+  selectedContent!: WritableSignal<TokenSelectedContent>;
   columns: TableColumn<TokenData>[] = [
     new OnClickTableColumn({
       key: 'serial',
@@ -230,7 +230,7 @@ export class TokenTableComponent {
     pageIndex,
     pageSize,
     sortby_sortdir,
-    currentFilter,
+    filterValue: currentFilter,
   }): Observable<any> =>
     this.tokenService.getTokenData(
       pageIndex + 1,

@@ -16,7 +16,6 @@ import { TokenCardComponent } from './token-card/token-card.component';
 import { NotificationService } from '../../services/notification/notification.service';
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
-import { FilterTable } from '../universals/filter-table/filter-table.component';
 import { Observable } from 'rxjs';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -24,7 +23,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSortModule } from '@angular/material/sort';
 import { TableUtilsService } from '../../services/table-utils/table-utils.service';
-import { TokenApplications } from './token-applications/token-applications';
+import { TokenApplications as TokenApplicationsComponent } from './token-applications/token-applications';
+import { ChallengesTableComponent } from './challenges-table/challenges-table';
 
 export type TokenType =
   | 'hotp'
@@ -52,6 +52,16 @@ export type TokenType =
   | 'u2f'
   | 'vasco'
   | 'webauthn';
+
+export type TokenSelectedContent =
+  | 'token_overview'
+  | 'token_details'
+  | 'container_overview'
+  | 'container_details'
+  | 'token_enrollment'
+  | 'show_challenges'
+  | 'token_applications'
+  | 'token_get_serial';
 
 export interface TokenTypeOption {
   key: TokenType;
@@ -86,7 +96,8 @@ export interface TokenTypeOption {
     MatIcon,
     MatFabButton,
     TokenEnrollmentComponent,
-    TokenApplications,
+    TokenApplicationsComponent,
+    ChallengesTableComponent,
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.scss',
@@ -219,7 +230,7 @@ export class TokenComponent {
       text: 'The WebAuthn token is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.\n',
     },
   ];
-  selectedContent = signal('token_overview');
+  selectedContent = signal<TokenSelectedContent>('token_overview');
   tokenSerial = signal('');
   containerSerial = signal('');
   tokenIsActive = signal(true);

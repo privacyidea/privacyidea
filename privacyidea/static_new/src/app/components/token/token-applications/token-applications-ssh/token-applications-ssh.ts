@@ -3,7 +3,6 @@ import { MatTabsModule } from '@angular/material/tabs';
 import {
   FetchDataHandler,
   FilterTable,
-  SortDir,
   ProcessDataSource,
 } from '../../../universals/filter-table/filter-table.component';
 import { MachineService } from '../../../../services/machine/machine.service';
@@ -15,7 +14,7 @@ import {
 } from '../../../../services/table-utils/table-column';
 import { MatTableDataSource } from '@angular/material/table';
 import { MachineTokenData } from '../../../../model/machine/machine-token-data';
-import { TokenService } from '../../../../services/token/token.service';
+import { TokenSelectedContent } from '../../token.component';
 
 @Component({
   selector: 'app-token-applications-ssh',
@@ -26,7 +25,8 @@ import { TokenService } from '../../../../services/token/token.service';
 })
 export class TokenApplicationsSsh {
   @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true }) selectedContent!: WritableSignal<string>;
+  @Input({ required: true })
+  selectedContent!: WritableSignal<TokenSelectedContent>;
 
   basicFilters: KeywordFilter[] = [
     new KeywordFilter({
@@ -56,12 +56,6 @@ export class TokenApplicationsSsh {
   ];
 
   columns: TableColumn<MachineTokenData>[] = [
-    // new SimpleTableColumn({
-    //   key: 'application',
-    //   label: 'Application',
-    //   getItems: (sshToken) =>
-    //     sshToken.application ? [sshToken.application] : [],
-    // }),
     new SimpleTableColumn({
       key: 'id',
       label: 'ID',
@@ -113,7 +107,7 @@ export class TokenApplicationsSsh {
     pageIndex,
     pageSize,
     sortby_sortdir,
-    currentFilter,
+    filterValue: currentFilter,
   }) =>
     this.machineService.getToken({
       sortby: sortby_sortdir?.active,

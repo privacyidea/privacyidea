@@ -1,68 +1,85 @@
-<div aria-label="Details"
-     class="details-container">
+<div aria-label="Details" class="details-container">
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
       <h3 style="color: var(--blue-base)"> {{ tokenSerial() }} </h3>
     </div>
-    <div [ngClass]="[
-       overflowService.isWidthOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
-         class="details-flex-layout">
+    <div
+      [ngClass]="[
+        overflowService.isWidthOverflowing('.token-layout', 1310)
+          ? 'flex-column'
+          : 'flex-row',
+      ]"
+      class="details-flex-layout">
       <div>
-        <table [dataSource]="tokenDetailData()"
-               aria-label="Token Detail Data Table"
-               class="details-table"
-               mat-table>
+        <table
+          [dataSource]="tokenDetailData()"
+          aria-label="Token Detail Data Table"
+          class="details-table"
+          mat-table>
           <ng-container matColumnDef="key">
-            <td *matCellDef="let element"
-                class="details-key-row"
-                mat-cell>{{ element.keyMap.label }}
+            <td *matCellDef="let element" class="details-key-row" mat-cell
+              >{{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element"
-                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
-                mat-cell>
+            <td
+              *matCellDef="let element"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18 container-form-field">
                       <mat-label>Enter Container</mat-label>
-                      <input matInput
-                             [(ngModel)]="selectedContainer"
-                             [matAutocomplete]="containerAuto">
+                      <input
+                        matInput
+                        [(ngModel)]="selectedContainer"
+                        [matAutocomplete]="containerAuto" />
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of filteredContainerOptions(); track option) {
+                        @for (
+                          option of filteredContainerOptions();
+                          track option
+                        ) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <a attr.aria-label="{{ element.keyMap.label }} Link"
-                       (click)="containerSelected(element.value)"> {{ element.value }} </a>
+                    <a
+                      attr.aria-label="{{ element.keyMap.label }} Link"
+                      (click)="containerSelected(element.value)">
+                      {{ element.value }}
+                    </a>
                   }
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18">
                       <mat-label>Select Realms</mat-label>
-                      <mat-select [(ngModel)]="selectedRealms"
-                                  multiple>
-                        @for (option of realmOptions(); track option; ) {
+                      <mat-select [(ngModel)]="selectedRealms" multiple>
+                        @for (option of realmOptions(); track option) {
                           @if (option === userRealm) {
-                            <mat-option value="{{ option }}"
-                                        disabled>{{ option }}
+                            <mat-option value="{{ option }}" disabled
+                              >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                            <mat-option value="{{ option }}">{{
+                              option
+                            }}</mat-option>
                           }
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div class="details-scrollable-container"
-                         [ngClass]="{'details-list': element.value.length > 2}">
-                      @for (realm of element.value; track realm; let idx = $index) {
+                    <div
+                      class="details-scrollable-container"
+                      [ngClass]="{ 'details-list': element.value.length > 2 }">
+                      @for (
+                        realm of element.value;
+                        track realm;
+                        let idx = $index
+                      ) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
@@ -74,23 +91,31 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18">
                       <mat-label>Select Token Group</mat-label>
-                      <mat-select [(ngModel)]="selectedTokengroup"
-                                  multiple>
-                        @for (option of tokengroupOptions(); track option; ) {
+                      <mat-select [(ngModel)]="selectedTokengroup" multiple>
+                        @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
-                            <mat-option value="{{ option }}"
-                                        disabled>{{ option }}
+                            <mat-option value="{{ option }}" disabled
+                              >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                            <mat-option value="{{ option }}">{{
+                              option
+                            }}</mat-option>
                           }
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="{'details-scrollable-container': true,
-                  'details-list': element.value.length > 2}">
-                      @for (tokengroup of element.value; track tokengroup; let idx = $index) {
+                    <div
+                      [ngClass]="{
+                        'details-scrollable-container': true,
+                        'details-list': element.value.length > 2,
+                      }">
+                      @for (
+                        tokengroup of element.value;
+                        track tokengroup;
+                        let idx = $index
+                      ) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ tokengroup }}</span>
                         </mat-list-item>
@@ -101,42 +126,59 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18 description">
-                      <textarea matInput
-                                rows="4"
-                                [maxlength]="80"
-                                [(ngModel)]="element.value"
-                                placeholder="Enter description"></textarea>
+                      <textarea
+                        matInput
+                        rows="4"
+                        [maxlength]="80"
+                        [(ngModel)]="element.value"
+                        placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                <span class="details-table-item">
-                  {{ element.value }}
-                </span>
+                      <span class="details-table-item">
+                        {{ element.value }}
+                      </span>
                     </div>
                   }
                 }
                 @default {
-                  @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
+                  @if (
+                    element.isEditing() && isNumberElement(element.keyMap.key)
+                  ) {
                     <mat-form-field class="width-18">
-                      <input type="number"
-                             matInput
-                             [(ngModel)]="element.value" />
+                      <input
+                        type="number"
+                        matInput
+                        [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18">
-                      <textarea matInput
-                                rows="1"
-                                [(ngModel)]="element.value"></textarea>
+                      <textarea
+                        matInput
+                        rows="1"
+                        [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
-                          element.value, maxfail)]">
-                  {{
-                    tableUtilsService.getDisplayTextForKeyAndRevoked(element.keyMap.key, element.value,
-                      revoked())
-                  }}
-                </span>
+                    <div
+                      [ngClass]="[
+                        tableUtilsService.getDivClassForKey(element.keyMap.key),
+                      ]">
+                      <span
+                        [ngClass]="[
+                          tableUtilsService.getSpanClassForKey(
+                            element.keyMap.key,
+                            element.value,
+                            maxfail
+                          ),
+                        ]">
+                        {{
+                          tableUtilsService.getDisplayTextForKeyAndRevoked(
+                            element.keyMap.key,
+                            element.value,
+                            revoked()
+                          )
+                        }}
+                      </span>
                     </div>
                   }
                 }
@@ -144,71 +186,83 @@
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
-            <td *matCellDef="let element"
-                class="edit-column-cell"
-                mat-cell>
+            <td *matCellDef="let element" class="edit-column-cell" mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                @if (
+                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()
+                ) {
                   <div class="edit-button-container">
-                    <button mat-icon-button
-                            class="black"
-                            (click)="resetFailCount()">
-                      <mat-icon>
-                        lock_reset
-                      </mat-icon>
+                    <button
+                      mat-icon-button
+                      class="black"
+                      (click)="resetFailCount()">
+                      <mat-icon> lock_reset </mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
-                element.value) {
+                } @else if (
+                  element.keyMap.key === "container_serial" &&
+                  !isAnyEditingOrRevoked() &&
+                  element.value
+                ) {
                   <div class="edit-button-container">
-                    <button mat-icon-button
-                            class="red"
-                            (click)="deleteContainer()">
+                    <button
+                      mat-icon-button
+                      class="red"
+                      (click)="deleteContainer()">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
-                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
-                                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                                    [isEditingUser]="isEditingUser"
-                                    [isEditingInfo]="isEditingInfo"
-                                    [element]="element"></app-edit-buttons>
+                  <app-edit-buttons
+                    [toggleEditMode]="toggleEditMode.bind(this)"
+                    [shouldHideEdit]="isAnyEditingOrRevoked"
+                    [isEditingUser]="isEditingUser"
+                    [isEditingInfo]="isEditingInfo"
+                    [element]="element"></app-edit-buttons>
                 }
               </div>
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];"
-              class="height-52"
-              mat-row></tr>
+          <tr
+            *matRowDef="let row; columns: ['key', 'value', 'edit']"
+            class="height-52"
+            mat-row></tr>
         </table>
       </div>
-      @if (overflowService.isWidthOverflowing('.token-layout', 1310)) {
+      @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
         <br style="margin: 10px" />
         <mat-divider /><br style="margin: 10px" />
       }
       <div class="details-flex-layout flex-column">
-        <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-                                [isEditingInfo]="isEditingInfo"
-                                [isEditingUser]="isEditingUser"
-                                [realmOptions]="realmOptions"
-                                [refreshTokenDetails]="refreshTokenDetails"
-                                [repeatPinValue]="repeatPinValue"
-                                [setPinValue]="setPinValue"
-                                [tokenSerial]="tokenSerial"
-                                [userData]="userData"
-                                class="flex"></app-token-details-user>
-        <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580)
-        ? 'flex-column ali-center' : 'flex-row']"
-             class="details-flex-layout">
-          <app-token-details-info [detailData]="tokenDetailData"
-                                  [infoData]="infoData"
-                                  [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-                                  [isEditingInfo]="isEditingInfo"
-                                  [isEditingUser]="isEditingUser"
-                                  [refreshDetails]="refreshTokenDetails"
-                                  [tokenSerial]="tokenSerial"></app-token-details-info>
-          <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
-                                     [tokenSerial]="tokenSerial"></app-token-details-actions>
+        <app-token-details-user
+          [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+          [isEditingInfo]="isEditingInfo"
+          [isEditingUser]="isEditingUser"
+          [realmOptions]="realmOptions"
+          [refreshTokenDetails]="refreshTokenDetails"
+          [repeatPinValue]="repeatPinValue"
+          [setPinValue]="setPinValue"
+          [tokenSerial]="tokenSerial"
+          [userData]="userData"
+          class="flex"></app-token-details-user>
+        <div
+          [ngClass]="[
+            overflowService.isWidthOverflowing('.token-layout', 1580)
+              ? 'flex-column ali-center'
+              : 'flex-row',
+          ]"
+          class="details-flex-layout">
+          <app-token-details-info
+            [detailData]="tokenDetailData"
+            [infoData]="infoData"
+            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+            [isEditingInfo]="isEditingInfo"
+            [isEditingUser]="isEditingUser"
+            [refreshDetails]="refreshTokenDetails"
+            [tokenSerial]="tokenSerial"></app-token-details-info>
+          <app-token-details-actions
+            [refreshTokenDetails]="refreshTokenDetails"
+            [tokenSerial]="tokenSerial"></app-token-details-actions>
         </div>
       </div>
     </div>

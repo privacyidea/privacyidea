@@ -13,6 +13,7 @@ import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
+import { SortDir } from '../../components/universals/filter-table/filter-table.component';
 
 export interface EnrollmentOptions {
   type: TokenType;
@@ -467,5 +468,40 @@ export class TokenService {
 
   stopPolling() {
     this.stopPolling$.next();
+  }
+
+  getChallenges(named: {
+    pageIndex: number;
+    pageSize: number;
+    sort: SortDir;
+    filterValue: string;
+  }): Observable<any> {
+    const { pageIndex, pageSize, sort, filterValue } = named;
+    const headers = this.localService.getHeaders();
+    console.log('getChallenges', pageIndex, pageSize, sort, filterValue);
+    let params = new HttpParams()
+      .set('page', pageIndex.toString())
+      .set('pagesize', pageSize.toString());
+
+    if (sort) {
+      params = params.set('sortby', sort.active).set('sortdir', sort.direction);
+    }
+
+    if (filterValue) {
+      const { filterPairs, remainingFilterText } =
+        this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+      filterPairs.forEach(({ label, value }) => {
+        params = params.set(label, `*${value}*`);
+      });
+
+      if (remainingFilterText) {
+        params = params.set('globalfilter', `*${remainingFilterText}*`);
+      }
+    }
+
+    return this.http.get<any>(this.tokenBaseUrl + 'challenges', {
+      headers,
+      params,
+    });
   }
 }

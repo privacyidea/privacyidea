@@ -93,7 +93,6 @@ export class KeywordFilter {
     );
     const match = filterValue.match(keywordPattern);
     if (match) {
-      console.log('Match:', match[0].trim());
       return match[0].trim();
     } else {
       return null;

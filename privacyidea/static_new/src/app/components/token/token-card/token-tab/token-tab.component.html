@@ -35,7 +35,14 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button class="card-button" mat-flat-button>
+          <button
+            [ngClass]="[
+              selectedContent() === 'show_challenges'
+                ? 'card-button-active'
+                : 'card-button',
+            ]"
+            mat-flat-button
+            (click)="onClickShowChallenges()">
             <mat-icon>cached</mat-icon>
             Show Challenges
           </button>

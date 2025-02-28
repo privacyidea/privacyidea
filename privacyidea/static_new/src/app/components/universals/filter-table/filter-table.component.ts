@@ -28,7 +28,7 @@ export type FetchDataHandler = (named: {
   pageIndex: number;
   pageSize: number;
   sortby_sortdir: SortDir;
-  currentFilter: string;
+  filterValue: string;
 }) => Observable<any>;
 
 export type ProcessDataSource<T> = (
@@ -148,7 +148,7 @@ export class FilterTable<T> {
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortby_sortdir: this.sortby_sortdir,
-      currentFilter: this.filterValue,
+      filterValue: this.filterValue,
     }).subscribe({
       next: (response) => {
         const [numItems, dataSource] = this.processDataSource(response);
