@@ -9,7 +9,6 @@ SCRIPTS = [
     'privacyidea-create-ad-users',
     'privacyidea-create-certificate',
     'privacyidea-create-pwidresolver-user',
-    'privacyidea-create-sqlidresolver-user',
     'privacyidea-export-linotp-counter.py',
     'privacyidea-export-privacyidea-counter.py',
     'privacyidea-fix-access-rights',
