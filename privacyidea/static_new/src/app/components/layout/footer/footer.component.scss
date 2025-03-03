@@ -1,0 +1,48 @@
+@import '../../../../styles/styles.scss';
+
+$footer-bg: #3f3f3f;
+$footer-text-color: white;
+$link-color: #c8c8c8;
+$btn-bg: var(--background-green-brand);
+$box-shadow: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+// Mixin for Flexbox
+@mixin flex-center($justify: space-between, $align: center) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+.footer-container {
+  @include flex-center(space-between, center);
+  background: $footer-bg;
+  color: $footer-text-color;
+  padding: 10px;
+  box-shadow: $box-shadow;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1;
+
+  .footer-right {
+    @include flex-center;
+    margin-left: auto;
+    margin-right: 80px;
+    gap: 20px;
+  }
+
+  a {
+    text-decoration: none;
+    color: $link-color;
+
+    &:hover {
+      color: lighten($link-color, 10%);
+    }
+  }
+
+  span {
+    margin-left: 20px;
+    color: $link-color;
+  }
+}
