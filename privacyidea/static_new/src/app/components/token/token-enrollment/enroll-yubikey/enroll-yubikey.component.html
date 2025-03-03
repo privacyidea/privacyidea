@@ -14,7 +14,12 @@
       <mat-label>OTP Key</mat-label>
       <input [(ngModel)]="otpKey"
              matInput
-             placeholder="Enter OTP key" />
+             placeholder="Enter OTP key"
+             required />
+      <mat-error>OTP key is <strong>required</strong></mat-error>
+      @if (otpKey().length !== 32) {
+        <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode</mat-hint>
+      }
     </mat-form-field>
     <mat-form-field class="otp-input-form">
       <mat-label>OTP length</mat-label>
@@ -23,7 +28,7 @@
              type="number" />
     </mat-form-field>
   </div>
-  <mat-form-field class="yubikey-description-form">
+  <mat-form-field class="width-66 margin-top-2">
     <mat-label>Description</mat-label>
     <textarea [(ngModel)]="description"
               [maxlength]="80"

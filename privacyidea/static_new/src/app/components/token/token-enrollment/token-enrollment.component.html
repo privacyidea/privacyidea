@@ -98,9 +98,9 @@
     }
     @case ("applspec") {
       <app-enroll-applspec [serviceId]="serviceId"
-                      [generateOnServer]="generateOnServer"
-                      [otpKey]="otpKey"
-                      [description]="description" />
+                           [generateOnServer]="generateOnServer"
+                           [otpKey]="otpKey"
+                           [description]="description" />
     }
     @case ("daypassword") {
       <app-enroll-daypassword [otpKey]="otpKey"
@@ -177,7 +177,9 @@
       <mat-label>Enter User</mat-label>
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
+             [required]="['tiqr', 'webauthn'].includes(selectedType().key)"
              matInput>
+      <mat-error>User is <strong>required</strong></mat-error>
       <mat-autocomplete #userAuto="matAutocomplete">
         @for (option of filteredUserOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

@@ -78,5 +78,16 @@ h5 {
     max-height: unset;
     column-gap: 0;
     background: #dedcdf;
+    padding: 6px 4px 6px 4px
+  }
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+    background-color: #217fa8;
+  }
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text{
+    color: white;
+  }
+  .mat-pseudo-checkbox-checked::after {
+    color: white !important;
   }
 }
+

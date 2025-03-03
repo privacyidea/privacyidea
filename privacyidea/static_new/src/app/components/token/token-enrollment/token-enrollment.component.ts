@@ -7,6 +7,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import {
+  MatError,
   MatFormField,
   MatHint,
   MatLabel,
@@ -165,6 +166,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollU2fComponent,
     EnrollVascoComponent,
     EnrollWebauthnComponent,
+    MatError,
   ],
   providers: [
     provideNativeDateAdapter(),

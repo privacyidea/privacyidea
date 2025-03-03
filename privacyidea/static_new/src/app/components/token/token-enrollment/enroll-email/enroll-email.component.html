@@ -15,7 +15,9 @@
       <mat-form-field class="otp-input-form">
         <mat-label>Email Address</mat-label>
         <input [(ngModel)]="emailAddress"
-               matInput />
+               matInput
+               required />
+        <mat-error>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
       <span class="width-33"></span>=

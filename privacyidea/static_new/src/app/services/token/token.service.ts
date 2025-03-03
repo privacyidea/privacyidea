@@ -372,7 +372,7 @@ export class TokenService {
     }
 
     if (['totp', 'daypassword'].includes(options.type)) {
-      payload.timeStep = Number(options.timeStep);
+      payload.timeStep = options.timeStep;
     }
 
     if (options.type === 'motp') {

@@ -1,6 +1,6 @@
 import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
@@ -15,6 +15,7 @@ import { SystemService } from '../../../../services/system/system.service';
     MatLabel,
     ReactiveFormsModule,
     FormsModule,
+    MatError,
   ],
   templateUrl: './enroll-email.component.html',
   styleUrl: './enroll-email.component.scss',

@@ -21,7 +21,9 @@
     <mat-form-field class="width-18 otp-input-form">
       <mat-label>Select Realms</mat-label>
       <mat-select [(ngModel)]="requiredRealms"
-                  multiple>
+                  [errorStateMatcher]="requiredRealmsErrorStateMatcher"
+                  multiple
+                  required>
         @for (realm of realmOptions(); track realm; ) {
           <div class="required-realms-div">
             <mat-option class="required-realms-option"
@@ -39,6 +41,7 @@
           </div>
         }
       </mat-select>
+      <mat-error>At least one realm is <strong>required</strong></mat-error>
     </mat-form-field>
 
     <mat-form-field class="width-66">

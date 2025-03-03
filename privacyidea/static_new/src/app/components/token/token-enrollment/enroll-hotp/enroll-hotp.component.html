@@ -20,7 +20,9 @@
         <mat-label>OTP Key</mat-label>
         <input matInput
                [(ngModel)]="otpKey"
-               placeholder="Enter OTP key" />
+               placeholder="Enter OTP key"
+               required />
+        <mat-error>OTP key is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
       <span class="otp-input-form"></span>

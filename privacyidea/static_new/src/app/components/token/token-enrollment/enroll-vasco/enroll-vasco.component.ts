@@ -1,9 +1,18 @@
 import { Component, effect, Input, WritableSignal } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { ErrorStateMatcher } from '@angular/material/core';
+
+export class VascoErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null): boolean {
+    const invalid =
+      control && control.value ? control.value.length !== 496 : true;
+    return !!(control && invalid && (control.dirty || control.touched));
+  }
+}
 
 @Component({
   selector: 'app-enroll-vasco',
@@ -14,6 +23,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
     ReactiveFormsModule,
     FormsModule,
     MatCheckbox,
+    MatError,
   ],
   templateUrl: './enroll-vasco.component.html',
   styleUrl: './enroll-vasco.component.scss',
@@ -24,6 +34,7 @@ export class EnrollVascoComponent {
   @Input() otpKey!: WritableSignal<string>;
   @Input() useVascoSerial!: WritableSignal<boolean>;
   @Input() vascoSerial!: WritableSignal<string>;
+  vascoErrorStatematcher = new VascoErrorStateMatcher();
 
   constructor() {
     effect(() => {

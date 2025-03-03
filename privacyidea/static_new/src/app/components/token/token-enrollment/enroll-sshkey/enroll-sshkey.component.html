@@ -8,9 +8,11 @@
     <textarea [(ngModel)]="sshPublicKey"
               matInput
               placeholder="Paste the PUBLIC ssh key here"
+              required
               rows="5"></textarea>
+    <mat-error>SSH public key is <strong>required</strong></mat-error>
   </mat-form-field>
-  <mat-form-field class="sshkey-description-form">
+  <mat-form-field class="sshkey-description-form margin-top-1">
     <mat-label>Description</mat-label>
     <textarea [(ngModel)]="description"
               [maxlength]="80"

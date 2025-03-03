@@ -3,6 +3,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
 import {
+  MatError,
   MatFormField,
   MatHint,
   MatLabel,
@@ -22,6 +23,7 @@ import { MatInput } from '@angular/material/input';
     MatFormField,
     MatInput,
     MatHint,
+    MatError,
   ],
   templateUrl: './enroll-hotp.component.html',
   styleUrl: './enroll-hotp.component.scss',

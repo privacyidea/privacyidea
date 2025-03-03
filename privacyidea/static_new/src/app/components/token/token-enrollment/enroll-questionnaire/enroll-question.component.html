@@ -11,7 +11,9 @@
         <input type="text"
                [ngModel]="answers()?.[question]"
                (ngModelChange)="onAnswerChange($event, question)"
-               matInput>
+               matInput
+               [required]="isRequired(question)" />
+        <mat-error>At least {{ configMinNumberOfAnswers }} are <strong>required</strong></mat-error>
       </mat-form-field>
     }
     <mat-form-field class="question-description">

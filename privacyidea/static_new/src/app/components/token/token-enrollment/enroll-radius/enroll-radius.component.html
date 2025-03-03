@@ -25,7 +25,8 @@
     <mat-form-field class="otp-input-form">
       <mat-label>RADIUS User</mat-label>
       <input [(ngModel)]="radiusUser"
-             matInput />
+             matInput required/>
+      <mat-error>RADIUS User is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
   <mat-form-field class="width-66 margin-top-2">
