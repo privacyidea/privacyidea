@@ -3,7 +3,7 @@
   <h3 class="margin-left-1">Token Enrollment</h3>
   <mat-form-field class="select-token-type">
     <mat-select [(ngModel)]="selectedType"
-                [panelClass]="'multi-column-panel'">
+                [panelClass]="'multi-column-panel token-enrollment-panel'">
       @for (type of tokenTypesOptions; track type) {
         <mat-option class="token-type-option"
                     [value]="type">{{ type.info.split(':')[0] }}
@@ -20,7 +20,7 @@
     <button (click)="this.reopenQRCode()"
             [disabled]="this.response() === null"
             mat-icon-button>
-      <mat-icon>qr_code_scanner</mat-icon>
+      <mat-icon>comment</mat-icon>
     </button>
     <button (click)="enrollToken()"
             [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
@@ -155,6 +155,9 @@
     @case ("webauthn") {
       <app-enroll-webauthn [description]="description" />
     }
+    @case ("passkey") {
+      <app-enroll-passkey [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
@@ -177,7 +180,7 @@
       <mat-label>Enter User</mat-label>
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
-             [required]="['tiqr', 'webauthn'].includes(selectedType().key)"
+             [required]="['tiqr', 'webauthn', 'passkey'].includes(selectedType().key)"
              matInput>
       <mat-error>User is <strong>required</strong></mat-error>
       <mat-autocomplete #userAuto="matAutocomplete">

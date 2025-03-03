@@ -12,10 +12,10 @@
 }
 
 .token-type-option {
-  border: 1px solid #dedcdf;
+  box-shadow: 4px 4px var(--blur) var(--shadow);
   background: #EFEDF0;
   border-radius: var(--border-radius);
-  margin: 0 2px 2px;
+  margin: 0 3px 5px;
 }
 
 .token-type-hint {
@@ -73,21 +73,27 @@ h5 {
 }
 
 ::ng-deep {
-  .multi-column-panel.mat-mdc-select-panel {
+  .token-enrollment-panel.multi-column-panel.mat-mdc-select-panel {
     column-count: 3;
     max-height: unset;
     column-gap: 0;
     background: #dedcdf;
     padding: 6px 4px 6px 4px
   }
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
     background-color: #217fa8;
   }
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text{
+
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
     color: white;
   }
-  .mat-pseudo-checkbox-checked::after {
+
+  .token-type-option.mat-mdc-option:hover:not(.mdc-list-item--disabled) {
+    background-color: #f2f9fd;
+  }
+
+  .token-type-option.mat-pseudo-checkbox-checked::after {
     color: white !important;
   }
 }
-

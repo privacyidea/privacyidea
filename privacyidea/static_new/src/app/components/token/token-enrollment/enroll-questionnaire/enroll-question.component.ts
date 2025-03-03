@@ -19,6 +19,7 @@ import { TokenComponent } from '../../token.component';
 })
 export class EnrollQuestionComponent {
   configQuestions = [
+    // TODO get this from system endpoint
     'What is your favorite color?',
     'What is your favorite animal?',
     'What is your favorite food?',

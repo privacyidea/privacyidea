@@ -73,6 +73,7 @@ import { EnrollTiqrComponent } from './enroll-tiqr/enroll-tiqr.component';
 import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
 import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
+import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -167,6 +168,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollVascoComponent,
     EnrollWebauthnComponent,
     MatError,
+    EnrollPasskeyComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
