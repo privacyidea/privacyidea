@@ -81,9 +81,9 @@
           mat-cell
           [ngClass]="{ 'width-18': column.key === 'description' }">
           <ng-container>
-            @switch (column.type) {
-              @case ("OnClickTableColumn".toString()) {
-                <div [ngClass]="column.getNgClass(element)">
+            <div [ngClass]="column.getNgClass(element)">
+              @switch (column.type) {
+                @case ("OnClickTableColumn".toString()) {
                   @for (
                     item of column.getItems(element);
                     track item;
@@ -95,19 +95,15 @@
                       {{ item }}</a
                     ><br style="margin-top: 3px" />
                   }
-                </div>
-              }
-              @case ("RouterTableColumn".toString()) {
-                <div [ngClass]="column.getNgClass(element)">
+                }
+                @case ("RouterTableColumn".toString()) {
                   @for (item of column.getItems(element); track item) {
                     <a attr.aria-label="{{ column.label }} Link" href="#">
                       {{ item }} </a
                     ><br style="margin-top: 3px" />
                   }
-                </div>
-              }
-              @default {
-                <div [ngClass]="column.getNgClass(element)">
+                }
+                @default {
                   @for (
                     item of column.getItems(element);
                     track item;
@@ -116,9 +112,9 @@
                     {{ item }}
                     <br style="margin-top: 3px" />
                   }
-                </div>
+                }
               }
-            }
+            </div>
           </ng-container>
         </td>
       </ng-container>

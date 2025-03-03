@@ -13,7 +13,7 @@
         <input
           #otpValueInput
           matInput
-          (keyup.enter)="onPressEnter(otpValueInput)"
+          (keydown.enter)="onPressEnter(otpValueInput)"
           [(ngModel)]="otpValue"
           id="otpValue"
           name="otpValue"
@@ -32,7 +32,7 @@
     <h4 class="enroll-h4" translate>Token Type</h4>
     <mat-form-field class="width-100">
       <mat-select
-        (keyup.enter)="onPressEnter(otpValueInput)"
+        (keydown.enter)="onPressEnter(otpValueInput)"
         [(ngModel)]="tokenType"
         appearance="outline"
         matInput
@@ -45,7 +45,7 @@
     <h4 class="enroll-h4" translate>Assignment State</h4>
     <mat-form-field class="width-100">
       <mat-select
-        (keyup.enter)="onPressEnter(otpValueInput)"
+        (keydown.enter)="onPressEnter(otpValueInput)"
         [(ngModel)]="assignmentState"
         appearance="outline"
         matInput
@@ -62,7 +62,7 @@
         <h4 class="enroll-h4" translate>Serial Substring</h4>
         <mat-form-field class="width-100">
           <input
-            (keyup.enter)="onPressEnter(otpValueInput)"
+            (keydown.enter)="onPressEnter(otpValueInput)"
             [(ngModel)]="serialSubstring"
             id="serialSubstring"
             matInput
@@ -74,7 +74,7 @@
         <h4 class="enroll-h4" translate>Count Window</h4>
         <mat-form-field>
           <input
-            (keyup.enter)="onPressEnter(otpValueInput)"
+            (keydown.enter)="onPressEnter(otpValueInput)"
             [(ngModel)]="countWindow"
             id="countWindow"
             matInput
@@ -86,54 +86,5 @@
       </div>
     </div>
   </div>
-  @switch (currentStep()) {
-    @case ("counting") {
-      <div class="token-get-serial-footer">
-        @if (countIsLarge()) {
-          <span translate>
-            Your search would include {{ tokenCount() }} tokens. This can take a
-            lot of time and could even timeout. Do you want to run the search?
-            You might also cancel this and narrow down the search!</span
-          ><br />
-          <button
-            class="card-button"
-            mat-flat-button
-            (click)="onPressEnter(otpValueInput)">
-            Run Search
-          </button>
-          <button class="card-button" mat-flat-button (click)="reset()">
-            Abort
-          </button>
-        }
-      </div>
-    }
-    @case ("found") {
-      <div class="token-get-serial-footer">
-        @if (foundSerial()) {
-          <div class="alert alert-success">
-            <span translate>
-              The Serial number for the OTP value {{ otpValue() }} is
-              <a ui-sref="token.details({tokenSerial:serial})">{{
-                foundSerial()
-              }}</a
-              >.
-            </span>
-          </div>
-        } @else {
-          <div class="alert alert-warning">
-            <span translate>
-              No Serial number could be found for OTP value {{ otpValue() }}.
-            </span>
-          </div>
-        }
-        <br />
-        <button class="card-button" mat-flat-button (click)="reset()"
-          >OK
-        </button>
-      </div>
-    }
-    @default {
-      <div class="token-get-serial-footer"></div>
-    }
-  }
+  <div class="token-get-serial-footer"></div>
 </div>

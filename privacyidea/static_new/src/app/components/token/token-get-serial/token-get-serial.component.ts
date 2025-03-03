@@ -1,4 +1,10 @@
-import { Component, effect, signal } from '@angular/core';
+import {
+  Component,
+  effect,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { MatError, MatFormField, MatHint } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
@@ -9,12 +15,13 @@ import { NotificationService } from '../../../services/notification/notification
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
-import { TokenComponent } from '../token.component';
+import { TokenComponent, TokenSelectedContent } from '../token.component';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { LoadingService } from '../../../services/loading/loading-service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmGetSerialDialogComponent } from './confirm-get-serial-dialog/confirm-get-serial-dialog.component';
+import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -35,6 +42,9 @@ import { ConfirmGetSerialDialogComponent } from './confirm-get-serial-dialog/con
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+
   otpValue = signal<string>('');
   tokenType = signal<string>('');
   assignmentState = signal<string>('');
@@ -88,22 +98,15 @@ export class TokenGetSerial {
   }
 
   onPressEnter(inputElement: HTMLInputElement): void {
-    if (this.otpValue() === '') {
-      inputElement.focus();
-      if (inputElement instanceof MatInput) {
-        inputElement.updateErrorState();
-      }
-      return;
-    }
+    console.log('onPressEnter');
+    console.log('currentStep: ' + this.currentStep());
     switch (this.currentStep()) {
       case 'init':
       case 'found':
       case 'error':
-        this.countTokens();
+        this.countTokens(inputElement);
         break;
       case 'countDone':
-        this.findSerial();
-        break;
       case 'counting':
       case 'searching':
         break;
@@ -111,6 +114,7 @@ export class TokenGetSerial {
   }
 
   getParams(): HttpParams {
+    console.log('getParams');
     let params = new HttpParams();
     params = params.set('window', this.countWindow());
 
@@ -130,9 +134,19 @@ export class TokenGetSerial {
     return params;
   }
 
-  countTokens(): void {
+  countTokens(inputElement: HTMLInputElement): void {
+    console.log('countTokens');
     if (this.currentStep() !== 'init' && this.currentStep() !== 'found') {
       this.notificationService.openSnackBar('Invalid action.');
+      return;
+    }
+    console.log('otpValue: ' + this.otpValue());
+    if (this.otpValue() === '') {
+      console.log('otpValue is empty');
+      inputElement.focus();
+      if (inputElement instanceof MatInput) {
+        inputElement.updateErrorState();
+      }
       return;
     }
     let params = this.getParams();
@@ -174,6 +188,20 @@ export class TokenGetSerial {
     this.loadingService.addLoading('token-get-serial');
     this.fetchSerial(params).subscribe({
       next: (response) => {
+        this.dialog.open(GetSerialResultDialogComponent, {
+          data: {
+            foundSerial: response.result.value.serial,
+            otpValue: this.otpValue(),
+            onClickSerial: () => {
+              this.tokenSerial.set(response.result.value.serial);
+              this.selectedContent.set('token_details');
+              this.dialog.closeAll();
+            },
+            reset: () => {
+              this.reset();
+            },
+          },
+        });
         this.foundSerial.set(response.result.value.serial);
         this.currentStep.set('found');
         this.loadingService.removeLoading('token-get-serial');
