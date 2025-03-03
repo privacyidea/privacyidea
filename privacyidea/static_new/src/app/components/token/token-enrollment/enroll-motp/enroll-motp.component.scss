@@ -1,4 +1,4 @@
-@import "../../../../../styles/styles";
+@use "../../../../../styles";
 
 .motp-pin-input {
   display: flex;
@@ -14,7 +14,7 @@
   outline: none;
 
   &:focus {
-    outline: $focus-outline;
+    outline: styles.$focus-outline;
   }
 }
 

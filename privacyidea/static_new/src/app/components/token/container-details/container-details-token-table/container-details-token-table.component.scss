@@ -1,7 +1,11 @@
-@import '../../../../../styles/styles';
+@use "../../../../../styles";
 
 .container-details-token-table-container {
-  @include base-table-structure(".container-details-token-table", ".container-details-token-table-filter", ".table-scrollable-container");
+  @include styles.base-table-structure(
+    ".container-details-token-table",
+    ".container-details-token-table-filter",
+    ".table-scrollable-container"
+  );
 
   .container-details-token-table-filter {
     width: 36rem;

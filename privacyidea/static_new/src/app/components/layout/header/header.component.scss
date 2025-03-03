@@ -1,4 +1,4 @@
-@import '../../../../styles/styles.scss';
+@use "../../../../styles";
 
 $header-bg: white;
 $header-shadow: var(--box-shadow);
@@ -59,7 +59,9 @@ $border-radius: var(--border-radius);
         background: $hover-bg;
         color: white;
         transform: translateX(-2px);
-        transition: transform 200ms, box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
       }
 
       &.active {
@@ -68,7 +70,9 @@ $border-radius: var(--border-radius);
         background: $active-bg;
         color: white;
         transform: translateX(-2px);
-        transition: transform 200ms, box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
       }
     }
   }

@@ -1,4 +1,4 @@
-@import '../../../styles/styles.scss';
+@use "../../../styles";
 
 $login-bg: white;
 $btn-bg: var(--background-blue);
@@ -39,7 +39,7 @@ $border-radius: var(--border-radius);
   .login-form {
     display: flex;
     flex-direction: column;
-    margin-top: 4rem;;
+    margin-top: 4rem;
     width: 300px;
 
     mat-form-field {

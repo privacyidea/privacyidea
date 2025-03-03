@@ -1,4 +1,4 @@
-@import "../../../../../styles/styles";
+@use "../../../../../styles";
 
 .qr-code-text {
   width: 36rem;
@@ -24,7 +24,7 @@
   border: 1px solid #e2e2e2;
   padding: 6px;
   border-radius: var(--border-radius);
-  background: #F3F3F3;
+  background: #f3f3f3;
 }
 
 .webauthn-p {

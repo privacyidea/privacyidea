@@ -1,7 +1,7 @@
-@import '../../../../styles/styles';
+@use "../../../../styles";
 
 $gap-small: 8px;
-$table-border-color: #E0E2EC;
+$table-border-color: #e0e2ec;
 
 .details-container {
   display: flex;
@@ -50,7 +50,7 @@ $table-border-color: #E0E2EC;
 
 .token-option {
   border: 1px solid #dedcdf;
-  background: #EFEDF0;
+  background: #efedf0;
   margin: 0 1px;
   border-radius: var(--border-radius);
 }

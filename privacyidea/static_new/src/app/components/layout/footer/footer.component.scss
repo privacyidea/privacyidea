@@ -1,4 +1,5 @@
-@import "../../../../styles/styles.scss";
+@use "../../../../styles";
+@use "sass:color";
 
 $footer-bg: #3f3f3f;
 $footer-text-color: white;
@@ -50,7 +51,7 @@ $border-radius: var(--border-radius);
     color: $link-color;
 
     &:hover {
-      color: lighten($link-color, 10%);
+      color: color.adjust($link-color, $lightness: 10%);
     }
   }
 

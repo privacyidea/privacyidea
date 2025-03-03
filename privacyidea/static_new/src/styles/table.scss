@@ -1,4 +1,4 @@
-$table-border-color: #E0E2EC;
+$table-border-color: #e0e2ec;
 $td-max-width: 18rem;
 $filter-width: 54.5rem;
 $scrollable-height: 60px;
@@ -15,11 +15,11 @@ $paginator-bg: var(--table-color);
 $highlight-padding: 2px 6px;
 $border-radius: 4px;
 $font-color-white: white;
-$divider-color: #E0E2EC;
+$divider-color: #e0e2ec;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
-$table-border-color: #E0E2EC;
+$table-border-color: #e0e2ec;
 $table-max-width: 20rem;
 $gap-small: 8px;
 $margin-left-small: 10px;
@@ -33,12 +33,17 @@ $description-width: 18rem;
   background-color: var(--table-color);
 }
 
-@mixin base-table-structure($table-class: ".table", $filter-class: ".table-filter", $scroll-container: ".table-scrollable-container") {
+@mixin base-table-structure(
+  $table-class: ".table",
+  $filter-class: ".table-filter",
+  $scroll-container: ".table-scrollable-container"
+) {
   #{$table-class} {
     border-collapse: collapse;
     width: 100%;
 
-    td, th {
+    td,
+    th {
       border: 1px solid $table-border-color;
     }
 

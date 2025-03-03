@@ -1,7 +1,7 @@
-@import "../../../../styles/styles";
+@use "../../../../styles";
 
 .token-enrollment-container {
-  @include table-container-styles;
+  @include styles.table-container-styles;
   margin-left: 1rem;
   overflow: auto;
   width: 785px;
@@ -13,7 +13,7 @@
 
 .token-type-option {
   border: 1px solid #dedcdf;
-  background: #EFEDF0;
+  background: #efedf0;
   border-radius: var(--border-radius);
   margin: 0 2px 2px;
 }

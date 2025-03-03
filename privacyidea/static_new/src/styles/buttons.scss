@@ -1,8 +1,10 @@
+@use "table";
+
 $button-height: 40px;
 $button-width: 240px;
 $keyword-height: 28px;
 $keyword-padding: 2px 8px;
-$gap-small: 10px;
+$button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
@@ -79,55 +81,57 @@ $header-bg: white;
 }
 
 .disabled-button {
-  color: var(--mdc-filled-button-disabled-label-text-color,
-    color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)) !important;
+  color: var(
+    --mdc-filled-button-disabled-label-text-color,
+    color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)
+  ) !important;
 }
 
 .card-button {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue),
-      var(--box-shadow-blue)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
   );
   @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
 .card-button-reset {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-green),
-      var(--box-shadow-green)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
   );
 }
 
 .card-button-active {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
 .card-button-delete {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-red),
-      var(--box-shadow-red)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-red),
+    var(--box-shadow-red)
   );
 
   &.active,
@@ -141,11 +145,11 @@ $header-bg: white;
 .card-button-activate {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-green),
-      var(--box-shadow-green)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
   );
 
   &.active,
@@ -160,15 +164,15 @@ $header-bg: white;
   min-width: 240px;
   color: white;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue),
-      var(--box-shadow-blue)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
   );
   @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
@@ -181,7 +185,7 @@ $header-bg: white;
 .delete-buttons-container {
   display: flex;
   flex-direction: column;
-  gap: $gap-small;
+  gap: $button-gap-small;
   padding: 0 $padding-horizontal;
 }
 

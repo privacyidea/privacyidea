@@ -1,127 +1,145 @@
-<div aria-label="Token Enrollment"
-     class="token-enrollment-container">
+<div aria-label="Token Enrollment" class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
   <mat-form-field class="select-token-type">
-    <mat-select [(ngModel)]="selectedType"
-                [panelClass]="'multi-column-panel'">
+    <mat-select [(ngModel)]="selectedType" [panelClass]="'multi-column-panel'">
       @for (type of tokenTypesOptions; track type) {
-        <mat-option class="token-type-option"
-                    [value]="type">{{ type.info.split(':')[0] }}
+        <mat-option class="token-type-option" [value]="type"
+          >{{ type.info.split(":")[0] }}
         </mat-option>
       }
     </mat-select>
     <mat-hint class="token-type-hint">
-      @if (selectedType()?.info) {
-        {{ selectedType().info.split(':')[1] }}
+      @if (selectedType().info) {
+        {{ selectedType().info.split(":")[1] }}
       }
     </mat-hint>
   </mat-form-field>
   <div class="enroll-button-container">
-    <button (click)="this.reopenQRCode()"
-            [disabled]="this.response() === null"
-            mat-icon-button>
+    <button
+      (click)="this.reopenQRCode()"
+      [disabled]="this.response() === null"
+      mat-icon-button>
       <mat-icon>qr_code_scanner</mat-icon>
     </button>
-    <button (click)="enrollToken()"
-            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
-            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
-       'card-button': true}"
-            mat-flat-button>
+    <button
+      (click)="enrollToken()"
+      [disabled]="
+        motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()
+      "
+      [ngClass]="{
+        'disabled-button':
+          motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+        'card-button': true,
+      }"
+      mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
     </button>
   </div>
   @switch (selectedType().key) {
     @case ("hotp") {
-      <app-enroll-hotp [generateOnServer]="generateOnServer"
-                       [otpLength]="otpLength"
-                       [otpKey]="otpKey"
-                       [hashAlgorithm]="hashAlgorithm"
-                       [description]="description" />
+      <app-enroll-hotp
+        [generateOnServer]="generateOnServer"
+        [otpLength]="otpLength"
+        [otpKey]="otpKey"
+        [hashAlgorithm]="hashAlgorithm"
+        [description]="description" />
     }
     @case ("totp") {
-      <app-enroll-totp [generateOnServer]="generateOnServer"
-                       [otpLength]="otpLength"
-                       [otpKey]="otpKey"
-                       [hashAlgorithm]="hashAlgorithm"
-                       [description]="description"
-                       [timeStep]="timeStep" />
+      <app-enroll-totp
+        [generateOnServer]="generateOnServer"
+        [otpLength]="otpLength"
+        [otpKey]="otpKey"
+        [hashAlgorithm]="hashAlgorithm"
+        [description]="description"
+        [timeStep]="timeStep" />
     }
     @case ("spass") {
       <app-enroll-spass [description]="description" />
     }
     @case ("motp") {
-      <app-enroll-motp [motpPin]="motpPin"
-                       [repeatMotpPin]="repeatMotpPin"
-                       [generateOnServer]="generateOnServer"
-                       [description]="description" />
+      <app-enroll-motp
+        [motpPin]="motpPin"
+        [repeatMotpPin]="repeatMotpPin"
+        [generateOnServer]="generateOnServer"
+        [description]="description" />
     }
     @case ("sshkey") {
-      <app-enroll-sshkey [description]="description"
-                         [sshPublicKey]="sshPublicKey" />
+      <app-enroll-sshkey
+        [description]="description"
+        [sshPublicKey]="sshPublicKey" />
     }
     @case ("yubikey") {
-      <app-enroll-yubikey [otpKey]="otpKey"
-                          [otpLength]="otpLength"
-                          [description]="description" />
+      <app-enroll-yubikey
+        [otpKey]="otpKey"
+        [otpLength]="otpLength"
+        [description]="description" />
     }
     @case ("remote") {
-      <app-enroll-remote [remoteSerial]="remoteSerial"
-                         [remoteServer]="remoteServer"
-                         [remoteRealm]="remoteRealm"
-                         [remoteUser]="remoteUser"
-                         [remoteResolver]="remoteResolver"
-                         [checkPinLocally]="checkPinLocally"
-                         [description]="description" />
+      <app-enroll-remote
+        [remoteSerial]="remoteSerial"
+        [remoteServer]="remoteServer"
+        [remoteRealm]="remoteRealm"
+        [remoteUser]="remoteUser"
+        [remoteResolver]="remoteResolver"
+        [checkPinLocally]="checkPinLocally"
+        [description]="description" />
     }
     @case ("yubico") {
-      <app-enroll-yubico [yubikeyIdentifier]="yubikeyIdentifier"
-                         [description]="description" />
+      <app-enroll-yubico
+        [yubikeyIdentifier]="yubikeyIdentifier"
+        [description]="description" />
     }
     @case ("radius") {
-      <app-enroll-radius [checkPinLocally]="checkPinLocally"
-                         [radiusServerConfiguration]="radiusServerConfiguration"
-                         [radiusUser]="radiusUser"
-                         [description]="description" />
+      <app-enroll-radius
+        [checkPinLocally]="checkPinLocally"
+        [radiusServerConfiguration]="radiusServerConfiguration"
+        [radiusUser]="radiusUser"
+        [description]="description" />
     }
     @case ("sms") {
-      <app-enroll-sms [phoneNumber]="phoneNumber"
-                      [smsGateway]="smsGateway"
-                      [description]="description"
-                      [readNumberDynamically]="readNumberDynamically" />
+      <app-enroll-sms
+        [phoneNumber]="phoneNumber"
+        [smsGateway]="smsGateway"
+        [description]="description"
+        [readNumberDynamically]="readNumberDynamically" />
     }
     @case ("4eyes") {
-      <app-enroll-foureyes [seperator]="seperator"
-                           [description]="description"
-                           [requiredTokensOfRealm]="requiredTokenOfRealm" />
+      <app-enroll-foureyes
+        [seperator]="seperator"
+        [description]="description"
+        [requiredTokensOfRealm]="requiredTokenOfRealm" />
     }
     @case ("applspec") {
-      <app-enroll-applspec [serviceId]="serviceId"
-                      [generateOnServer]="generateOnServer"
-                      [otpKey]="otpKey"
-                      [description]="description" />
+      <app-enroll-applspec
+        [serviceId]="serviceId"
+        [generateOnServer]="generateOnServer"
+        [otpKey]="otpKey"
+        [description]="description" />
     }
     @case ("daypassword") {
-      <app-enroll-daypassword [otpKey]="otpKey"
-                              [otpLength]="otpLength"
-                              [hashAlgorithm]="hashAlgorithm"
-                              [description]="description"
-                              [timeStep]="timeStep" />
+      <app-enroll-daypassword
+        [otpKey]="otpKey"
+        [otpLength]="otpLength"
+        [hashAlgorithm]="hashAlgorithm"
+        [description]="description"
+        [timeStep]="timeStep" />
     }
     @case ("certificate") {
-      <app-enroll-certificate [caConnector]="caConnector"
-                              [certTemplate]="certTemplate"
-                              [pem]="pem"
-                              [description]="description" />
+      <app-enroll-certificate
+        [caConnector]="caConnector"
+        [certTemplate]="certTemplate"
+        [pem]="pem"
+        [description]="description" />
     }
     @case ("email") {
-      <app-enroll-email [emailAddress]="emailAddress"
-                        [readEmailDynamically]="readEmailDynamically"
-                        [description]="description" />
+      <app-enroll-email
+        [emailAddress]="emailAddress"
+        [readEmailDynamically]="readEmailDynamically"
+        [description]="description" />
     }
     @case ("indexedsecret") {
-      <app-enroll-indexedsecret [otpKey]="otpKey"
-                                [description]="description" />
+      <app-enroll-indexedsecret [otpKey]="otpKey" [description]="description" />
     }
     @case ("paper") {
       <app-enroll-paper [description]="description" />
@@ -130,8 +148,7 @@
       <app-enroll-push [description]="description" />
     }
     @case ("question") {
-      <app-enroll-question [answers]="answers"
-                           [description]="description" />
+      <app-enroll-question [answers]="answers" [description]="description" />
     }
     @case ("registration") {
       <app-enroll-registration [description]="description" />
@@ -146,10 +163,11 @@
       <app-enroll-u2f [description]="description" />
     }
     @case ("vasco") {
-      <app-enroll-vasco [vascoSerial]="vascoSerial"
-                        [useVascoSerial]="useVascoSerial"
-                        [otpKey]="otpKey"
-                        [description]="description" />
+      <app-enroll-vasco
+        [vascoSerial]="vascoSerial"
+        [useVascoSerial]="useVascoSerial"
+        [otpKey]="otpKey"
+        [description]="description" />
     }
     @case ("webauthn") {
       <app-enroll-webauthn [description]="description" />
@@ -157,16 +175,14 @@
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
-    <input style="display:none"
-           type="text" />
+    <input style="display: none" type="text" />
 
-    <input style="display:none"
-           type="password" />
+    <input style="display: none" type="password" />
 
     <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Select Realm of User</mat-label>
       <mat-select [(ngModel)]="selectedUserRealm">
-        @for (option of realmOptions(); track option; ) {
+        @for (option of realmOptions(); track option) {
           <mat-option value="{{ option }}">{{ option }}</mat-option>
         }
       </mat-select>
@@ -174,9 +190,10 @@
 
     <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Enter User</mat-label>
-      <input [(ngModel)]="selectedUsername"
-             [matAutocomplete]="userAuto"
-             matInput>
+      <input
+        [(ngModel)]="selectedUsername"
+        [matAutocomplete]="userAuto"
+        matInput />
       <mat-autocomplete #userAuto="matAutocomplete">
         @for (option of filteredUserOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
@@ -187,15 +204,17 @@
     <div class="flex-column width-33">
       <h5>Pin / Password</h5>
       <div class="user-pin-input">
-        <input [(ngModel)]="setPinValue"
-               [type]="'password'"
-               class="input"
-               placeholder="Pin">
+        <input
+          [(ngModel)]="setPinValue"
+          [type]="'password'"
+          class="input"
+          placeholder="Pin" />
 
-        <input [(ngModel)]="repeatPinValue"
-               [type]="'password'"
-               class="input"
-               placeholder="Repeat Pin">
+        <input
+          [(ngModel)]="repeatPinValue"
+          [type]="'password'"
+          class="input"
+          placeholder="Repeat Pin" />
       </div>
     </div>
   </div>
@@ -203,9 +222,10 @@
   <h4 class="enroll-h4">Assign token to a container</h4>
   <mat-form-field class="width-32 height-76-5">
     <mat-label>Enter Container</mat-label>
-    <input [(ngModel)]="selectedContainer"
-           [matAutocomplete]="containerAuto"
-           matInput>
+    <input
+      [(ngModel)]="selectedContainer"
+      [matAutocomplete]="containerAuto"
+      matInput />
     <mat-autocomplete #containerAuto="matAutocomplete">
       @for (option of filteredContainerOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
@@ -221,24 +241,27 @@
       <div class="flex-row">
         <mat-form-field class="date-picker">
           <mat-label>Choose a start date</mat-label>
-          <input [(ngModel)]="selectedStartDate"
-                 [matDatepicker]="startPicker"
-                 matInput
-                 placeholder="Start date">
+          <input
+            [(ngModel)]="selectedStartDate"
+            [matDatepicker]="startPicker"
+            matInput
+            placeholder="Start date" />
           <mat-hint>Date format: YYYY-MM-DD</mat-hint>
-          <mat-datepicker-toggle [for]="startPicker"
-                                 matIconSuffix></mat-datepicker-toggle>
+          <mat-datepicker-toggle
+            [for]="startPicker"
+            matIconSuffix></mat-datepicker-toggle>
           <mat-datepicker #startPicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field class="time-picker">
           <mat-label>Enter start time</mat-label>
-          <input [(ngModel)]="selectedStartTime"
-                 matInput
-                 max="23"
-                 min="0"
-                 placeholder="HH"
-                 type="time" />
+          <input
+            [(ngModel)]="selectedStartTime"
+            matInput
+            max="23"
+            min="0"
+            placeholder="HH"
+            type="time" />
         </mat-form-field>
 
         <mat-form-field class="zone-picker">
@@ -253,23 +276,26 @@
       <div class="flex-row">
         <mat-form-field class="date-picker">
           <mat-label>Choose a end date</mat-label>
-          <input [(ngModel)]="selectedEndDate"
-                 [matDatepicker]="endPicker"
-                 matInput
-                 placeholder="End date">
+          <input
+            [(ngModel)]="selectedEndDate"
+            [matDatepicker]="endPicker"
+            matInput
+            placeholder="End date" />
           <mat-hint>Date format: YYYY-MM-DD</mat-hint>
-          <mat-datepicker-toggle [for]="endPicker"
-                                 matIconSuffix></mat-datepicker-toggle>
+          <mat-datepicker-toggle
+            [for]="endPicker"
+            matIconSuffix></mat-datepicker-toggle>
           <mat-datepicker #endPicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field class="time-picker">
           <mat-label>Enter end time</mat-label>
-          <input [(ngModel)]="selectedEndTime"
-                 matInput
-                 max="23"
-                 min="0"
-                 type="time" />
+          <input
+            [(ngModel)]="selectedEndTime"
+            matInput
+            max="23"
+            min="0"
+            type="time" />
         </mat-form-field>
       </div>
     </mat-expansion-panel>

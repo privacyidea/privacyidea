@@ -1,7 +1,7 @@
-@import "../../../../styles/styles";
+@use "../../../../styles";
 
 .token-get-serial {
-  @include table-container-styles;
+  @include styles.table-container-styles;
   margin-left: 1rem;
   overflow: auto;
   width: 785px;

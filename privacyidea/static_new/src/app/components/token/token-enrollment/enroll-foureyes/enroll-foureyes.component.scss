@@ -1,4 +1,4 @@
-@import "../../../../../styles/styles";
+@use "../../../../../styles";
 
 .seperator-input-form {
   width: 105px;
@@ -19,17 +19,15 @@
   border-radius: var(--border-radius);
 }
 
-.required-realms-input{
+.required-realms-input {
   width: 40px;
   height: 24px;
   margin-right: 8px;
 }
 
-.required-realms-div{
+.required-realms-div {
   flex-direction: row;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-
