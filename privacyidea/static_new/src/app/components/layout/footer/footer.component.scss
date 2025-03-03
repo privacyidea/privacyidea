@@ -1,4 +1,4 @@
-@import '../../../../styles/styles.scss';
+@import "../../../../styles/styles.scss";
 
 $footer-bg: #3f3f3f;
 $footer-text-color: white;
@@ -15,15 +15,28 @@ $border-radius: var(--border-radius);
 }
 
 .footer-container {
-  @include flex-center(space-between, center);
-  background: $footer-bg;
-  color: $footer-text-color;
-  padding: 10px;
-  box-shadow: $box-shadow;
+  display: block;
+  justify-content: space-between;
+  align-items: center;
   position: fixed;
   bottom: 0;
   width: 100%;
   z-index: 1;
+
+  .progress-bar {
+    @include flex-center;
+    width: 100%;
+  }
+
+  .footer-bottom {
+    @include flex-center;
+    background: $footer-bg;
+    color: $footer-text-color;
+    box-shadow: $box-shadow;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    gap: 20px;
+  }
 
   .footer-right {
     @include flex-center;

@@ -1,12 +1,9 @@
-@import '../../../styles/styles.scss';
+@import "../../../styles/styles.scss";
 
 $grid-template-rows: auto 1fr auto;
 
 .layout {
   grid-template-rows: $grid-template-rows;
-
-  header {
-  }
 
   main {
     display: flex;

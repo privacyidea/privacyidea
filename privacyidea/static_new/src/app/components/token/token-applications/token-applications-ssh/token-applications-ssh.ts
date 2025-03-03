@@ -30,20 +30,22 @@ export class TokenApplicationsSsh {
 
   basicFilters: KeywordFilter[] = [
     new KeywordFilter({
-      key: 'serial',
-      label: 'Serial',
-    }),
-    new KeywordFilter({
-      key: 'hostname',
-      label: 'Hostname',
-    }),
-    new KeywordFilter({
       key: 'machineid',
       label: 'Machine ID',
     }),
     new KeywordFilter({
       key: 'resolver',
       label: 'Resolver',
+    }),
+    new KeywordFilter({
+      key: 'serial',
+      label: 'Serial',
+    }),
+  ];
+  advancedFilters: KeywordFilter[] = [
+    new KeywordFilter({
+      key: 'hostname',
+      label: 'Hostname',
     }),
     new KeywordFilter({
       key: 'service_id',

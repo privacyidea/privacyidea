@@ -38,7 +38,7 @@ describe('TokenGetSerial', () => {
     expect(component.currentStep).toBe('init');
     component.onPressEnter();
     expect(component.currentStep).toBe('found');
-    expect(component.count).toBe('42');
+    expect(component.tokenCount).toBe('42');
     expect(component.foundSerial).toBe('OAUTH0001A2B');
   });
 
@@ -59,7 +59,7 @@ describe('TokenGetSerial', () => {
     expect(component.currentStep).toBe('init');
     component.onPressEnter();
     expect(component.currentStep).toBe('counting');
-    expect(component.count).toBe('9001');
+    expect(component.tokenCount).toBe('9001');
     expect(component.foundSerial).toBe('');
     component.onPressEnter();
     expect(component.currentStep).toBe('found');

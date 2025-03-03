@@ -1,144 +1,134 @@
-<div aria-label="Token Get Serial"
-     class="token-get-serial">
+<div aria-label="Token Get Serial" class="token-get-serial">
   <div class="token-get-serial-container">
     <h3 class="margin-left-1">Get Serial Number</h3>
-    <p class="help-block"
-       translate>
-      By entering an OTP value you can get the serial number of the token. You can also enter
-      additional optional parameters, to narrow down the search for the token. So you can only
-      search within certain token types or in assigned or unassigned tokens. </p>
-    <h4 class="enroll-h4"
-        translate>OTP Value</h4>
+    <p class="help-block" translate>
+      By entering an OTP value you can get the serial number of the token. You
+      can also enter additional optional parameters, to narrow down the search
+      for the token. So you can only search within certain token types or in
+      assigned or unassigned tokens.
+    </p>
+    <h4 class="enroll-h4" translate>OTP Value</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-100">
-        <input (keyup.enter)="onPressEnter()"
-               [(ngModel)]="otpValue"
-               id="otpValue"
-               matInput
-               name="otpValue"
-               placeholder="Enter some OTP value"
-               required />
+        <input
+          #otpValueInput
+          matInput
+          (keyup.enter)="onPressEnter(otpValueInput)"
+          [(ngModel)]="otpValue"
+          id="otpValue"
+          name="otpValue"
+          placeholder="Enter some OTP value"
+          required />
+        <mat-error>OTP value must not be empty!</mat-error>
       </mat-form-field>
-      <button (click)="onPressEnter()"
-              [disabled]="otpValue() === ''"
-              [ngClass]="{'disabled-button': otpValue() === ''}"
-              class="card-button"
-              mat-flat-button>
+      <button
+        (click)="onPressEnter(otpValueInput)"
+        class="card-button"
+        mat-flat-button>
         <mat-icon>play_arrow</mat-icon>
         Run Search
       </button>
     </div>
-    <h4 class="enroll-h4"
-        translate>Token Type</h4>
+    <h4 class="enroll-h4" translate>Token Type</h4>
     <mat-form-field class="width-100">
-      <mat-select (keyup.enter)="onPressEnter()"
-                  [(ngModel)]="tokenType"
-                  appearance="outline"
-                  matInput
-                  placeholder="Select token type">
+      <mat-select
+        (keyup.enter)="onPressEnter(otpValueInput)"
+        [(ngModel)]="tokenType"
+        appearance="outline"
+        matInput
+        placeholder="Select token type">
         @for (type of tokenTypes; track type) {
-          <mat-option [value]="type['key']">{{ type['info'] }}</mat-option>
+          <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
-    <h4 class="enroll-h4"
-        translate>Assignment State</h4>
+    <h4 class="enroll-h4" translate>Assignment State</h4>
     <mat-form-field class="width-100">
-      <mat-select (keyup.enter)="onPressEnter()"
-                  [(ngModel)]="assignmentState"
-                  appearance="outline"
-                  matInput
-                  placeholder="Specify assignment state">
+      <mat-select
+        (keyup.enter)="onPressEnter(otpValueInput)"
+        [(ngModel)]="assignmentState"
+        appearance="outline"
+        matInput
+        placeholder="Specify assignment state">
         @for (assignment of assignmentStates; track assignment) {
-          <mat-option [value]="assignment.key"
-                      translate>{{ assignment.info }}
+          <mat-option [value]="assignment.key" translate
+            >{{ assignment.info }}
           </mat-option>
         }
       </mat-select>
     </mat-form-field>
     <div class="flex-row gap-1">
       <div class="flex-column width-66">
-        <h4 class="enroll-h4"
-            translate>Serial Substring</h4>
+        <h4 class="enroll-h4" translate>Serial Substring</h4>
         <mat-form-field class="width-100">
-          <input (keyup.enter)="onPressEnter()"
-                 [(ngModel)]="serialSubstring"
-                 id="serialSubstring"
-                 matInput
-                 name="serialSubstring"
-                 placeholder="Enter optional serial substring" />
+          <input
+            (keyup.enter)="onPressEnter(otpValueInput)"
+            [(ngModel)]="serialSubstring"
+            id="serialSubstring"
+            matInput
+            name="serialSubstring"
+            placeholder="Enter optional serial substring" />
         </mat-form-field>
       </div>
       <div class="flex-column width-33">
-        <h4 class="enroll-h4"
-            translate>Count Window</h4>
+        <h4 class="enroll-h4" translate>Count Window</h4>
         <mat-form-field>
-          <input (keyup.enter)="onPressEnter()"
-                 [(ngModel)]="countWindow"
-                 id="countWindow"
-                 matInput
-                 name="countWindow"
-                 placeholder="Lookahead OTP values"
-                 type="number" />
+          <input
+            (keyup.enter)="onPressEnter(otpValueInput)"
+            [(ngModel)]="countWindow"
+            id="countWindow"
+            matInput
+            name="countWindow"
+            placeholder="Lookahead OTP values"
+            type="number" />
           <mat-hint>Set number of lookahead OTP values (default 10).</mat-hint>
         </mat-form-field>
       </div>
     </div>
   </div>
-  @switch (currentStep) {
-    @case ('counting') {
+  @switch (currentStep()) {
+    @case ("counting") {
       <div class="token-get-serial-footer">
         @if (countIsLarge()) {
           <span translate>
-      Your search would include {{ count }} tokens. This can take a lot of time
-      and could even timeout. Do you want to run the search? You might also
-      cancel this and narrow down the search!</span><br />
-          <button class="card-button"
-                  mat-flat-button
-                  (click)="onPressEnter()">
+            Your search would include {{ tokenCount() }} tokens. This can take a
+            lot of time and could even timeout. Do you want to run the search?
+            You might also cancel this and narrow down the search!</span
+          ><br />
+          <button
+            class="card-button"
+            mat-flat-button
+            (click)="onPressEnter(otpValueInput)">
             Run Search
           </button>
-          <button class="card-button"
-                  mat-flat-button
-                  (click)="reset()">
+          <button class="card-button" mat-flat-button (click)="reset()">
             Abort
           </button>
-        } @else {
-          <mat-progress-bar mode="indeterminate"
-                            translate>
-            Counting tokens...
-          </mat-progress-bar>
         }
       </div>
     }
-    @case ('searching') {
+    @case ("found") {
       <div class="token-get-serial-footer">
-        <mat-progress-bar mode="indeterminate"
-                          translate>
-          Searching token...
-        </mat-progress-bar>
-      </div>
-    }
-    @case ('found') {
-      <div class="token-get-serial-footer">
-        @if (foundSerial) {
+        @if (foundSerial()) {
           <div class="alert alert-success">
-      <span translate>
-        The Serial number for the OTP value {{ otpValue() }} is
-        <a ui-sref="token.details({tokenSerial:serial})">{{ foundSerial }}</a>.
-      </span>
+            <span translate>
+              The Serial number for the OTP value {{ otpValue() }} is
+              <a ui-sref="token.details({tokenSerial:serial})">{{
+                foundSerial()
+              }}</a
+              >.
+            </span>
           </div>
         } @else {
           <div class="alert alert-warning">
-      <span translate>
-        No Serial number could be found for OTP value {{ otpValue() }}.
-      </span>
+            <span translate>
+              No Serial number could be found for OTP value {{ otpValue() }}.
+            </span>
           </div>
         }
         <br />
-        <button class="card-button"
-                mat-flat-button
-                (click)="reset()">OK
+        <button class="card-button" mat-flat-button (click)="reset()"
+          >OK
         </button>
       </div>
     }

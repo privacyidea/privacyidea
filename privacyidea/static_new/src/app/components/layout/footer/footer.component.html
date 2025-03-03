@@ -1,19 +1,33 @@
-<div aria-label="Footer Container"
-     class="footer-container">
-  <span> privacyIDEA {{ version }} </span>
-  <div class="footer-right">
-    <a aria-label="Online Documentation"
-       href="https://privacyidea.readthedocs.io"
-       target="_blank">Online Documentation</a> <a aria-label="privacyIDEA Forum"
-                                                   href="https://community.privacyidea.org/"
-                                                   target="_blank">privacyIDEA Forum</a>
-    <button aria-label="Support"
-            class="support-btn"
-            extended
-            href="https://netknights.it/support_link_admin"
-            mat-fab>
-      <mat-icon>support_agent</mat-icon>
-      <h4>Support</h4>
-    </button>
+<div aria-label="Footer Container" class="footer-container">
+  <div class="progress-bar">
+    @if (showProgressBar()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </div>
+  <div class="footer-bottom">
+    <span> privacyIDEA {{ version }} </span>
+    <div class="footer-right">
+      <a
+        aria-label="Online Documentation"
+        href="https://privacyidea.readthedocs.io"
+        target="_blank"
+        >Online Documentation</a
+      >
+      <a
+        aria-label="privacyIDEA Forum"
+        href="https://community.privacyidea.org/"
+        target="_blank"
+        >privacyIDEA Forum</a
+      >
+      <button
+        aria-label="Support"
+        class="support-btn"
+        extended
+        href="https://netknights.it/support_link_admin"
+        mat-fab>
+        <mat-icon>support_agent</mat-icon>
+        <h4>Support</h4>
+      </button>
+    </div>
   </div>
 </div>
