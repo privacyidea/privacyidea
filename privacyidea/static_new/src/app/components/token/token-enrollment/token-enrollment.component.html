@@ -180,7 +180,7 @@
       <mat-label>Enter User</mat-label>
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
-             [required]="['tiqr', 'webauthn', 'passkey'].includes(selectedType().key)"
+             [required]="userIsRequired()"
              matInput>
       <mat-error>User is <strong>required</strong></mat-error>
       <mat-autocomplete #userAuto="matAutocomplete">

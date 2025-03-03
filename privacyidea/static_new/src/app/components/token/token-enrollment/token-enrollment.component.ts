@@ -516,6 +516,12 @@ export class TokenEnrollmentComponent {
     }
   }
 
+  userIsRequired() {
+    return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
+      this.selectedType().key,
+    );
+  }
+
   private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
     this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
       next: (pollResponse: any) => {

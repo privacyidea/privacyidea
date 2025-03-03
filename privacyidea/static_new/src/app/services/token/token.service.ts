@@ -437,6 +437,7 @@ export class TokenService {
     }
 
     if (options.type === 'certificate') {
+      payload.genkey = 1;
       payload.ca = options.caConnector;
       payload.template = options.certTemplate;
       payload.pem = options.pem;
