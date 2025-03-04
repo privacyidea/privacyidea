@@ -13,6 +13,7 @@ import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
+import { environment } from '../../../environments/environment';
 
 export interface EnrollmentOptions {
   type: TokenType;
@@ -72,7 +73,7 @@ export class TokenService {
     'container_serial',
   ];
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
-  private tokenBaseUrl = '/token/';
+  private tokenBaseUrl = environment.proxyUrl + '/token/';
   private stopPolling$ = new Subject<void>();
 
   constructor(

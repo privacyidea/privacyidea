@@ -73,7 +73,7 @@ h5 {
 }
 
 ::ng-deep {
-  .token-enrollment-panel.multi-column-panel.mat-mdc-select-panel {
+  .multi-column-panel.mat-mdc-select-panel {
     column-count: 3;
     max-height: unset;
     column-gap: 0;
@@ -93,7 +93,7 @@ h5 {
     background-color: #f2f9fd;
   }
 
-  .mat-pseudo-checkbox-checked::after {
+  .multi-column-panel .mat-pseudo-checkbox-checked::after {
     color: white !important;
   }
 }

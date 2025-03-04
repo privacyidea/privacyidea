@@ -7,6 +7,7 @@ import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenService } from '../token/token.service';
 import { NotificationService } from '../notification/notification.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +15,7 @@ import { NotificationService } from '../notification/notification.service';
 export class ContainerService {
   apiFilter = ['container_serial', 'type', 'user'];
   advancedApiFilter = ['token_serial'];
-  private containerBaseUrl = '/container/';
+  private containerBaseUrl = environment.proxyUrl + '/container/';
 
   constructor(
     private http: HttpClient,

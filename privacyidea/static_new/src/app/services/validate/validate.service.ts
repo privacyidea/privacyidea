@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ValidateService {
-  private baseUrl = '/validate/';
+  private baseUrl = environment.proxyUrl + '/validate/';
 
   constructor(
     private http: HttpClient,
