@@ -1,0 +1,20 @@
+@import '../../../styles/styles.scss';
+
+$grid-template-rows: auto 1fr auto;
+
+.layout {
+  grid-template-rows: $grid-template-rows;
+
+  header {
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  footer {
+    text-align: center;
+    flex-shrink: 0;
+  }
+}
