@@ -42,6 +42,10 @@
                 @if (column.key === 'serial') {
                   <a attr.aria-label="{{ column.label }} Link"
                      (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                  <button class="copy-button"
+                          [cdkCopyToClipboard]="element.serial">
+                    <mat-icon class="copy-icon">content_copy</mat-icon>
+                  </button>
                 } @else if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"
                      href="#"> {{ element[column.key] }} </a>

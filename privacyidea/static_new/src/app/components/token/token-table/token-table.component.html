@@ -96,9 +96,19 @@
               } @else if (column.key === 'serial') {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                <button class="copy-button"
+                        [cdkCopyToClipboard]="element.serial">
+                  <mat-icon class="copy-icon">content_copy</mat-icon>
+                </button>
               } @else if (column.key === 'container_serial') {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
+                @if (element.container_serial !== '') {
+                  <button class="copy-button"
+                          [cdkCopyToClipboard]="element.container_serial">
+                    <mat-icon class="copy-icon">content_copy</mat-icon>
+                  </button>
+                }
               } @else if (tableUtilsService.isLink(column.key)) {
                 <a attr.aria-label="{{ column.label }} Link"
                    href="#"> {{ element[column.key] }} </a>

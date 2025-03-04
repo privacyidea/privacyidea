@@ -40,6 +40,12 @@
                   } @else {
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
                        (click)="containerSelected(element.value)"> {{ element.value }} </a>
+                    @if (element.value !== '') {
+                      <button class="copy-button"
+                              [cdkCopyToClipboard]="element.value">
+                        <mat-icon class="copy-icon">content_copy</mat-icon>
+                      </button>
+                    }
                   }
                 }
                 @case ("realms") {

@@ -221,6 +221,21 @@ html, body {
   gap: 1rem;
 }
 
+.copy-button {
+  margin-left: auto;
+  background: unset;
+  border: unset;
+  cursor: pointer;
+}
+
+.copy-icon {
+  font-size: 16px;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  color: #d0d0d0;
+}
+
 ::ng-deep {
   .mdc-snackbar {
     margin-bottom: 76px !important;

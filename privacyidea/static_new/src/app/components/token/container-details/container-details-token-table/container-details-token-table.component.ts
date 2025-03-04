@@ -23,6 +23,7 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -51,6 +52,7 @@ const columnsKeyMap = [
     MatIcon,
     MatIconButton,
     MatButton,
+    CdkCopyToClipboard,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss',
