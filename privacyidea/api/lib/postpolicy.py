@@ -43,7 +43,6 @@ import datetime
 import functools
 import json
 import logging
-import netaddr
 import re
 import traceback
 from urllib.parse import quote
@@ -51,7 +50,7 @@ from urllib.parse import quote
 from flask import g, current_app, make_response
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -165,8 +164,8 @@ def sign_response(request, response):
     .. note:: This only works for JSON responses. So if we fail to decode the
        JSON, we just pass on.
 
-    The usual way to use it is, to wrap the after_request, so that we can also
-    sign errors, like this:
+    The usual way to use it is to wrap the after_request, so that we can also
+    sign errors, like this::
 
         @postrequest(sign_response, request=request)
         def after_request(response):
@@ -414,7 +413,7 @@ def add_user_detail_to_response(request, response):
         ui = request.User.info.copy()
         ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
-            if type(value) == datetime.datetime:
+            if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in policy])

@@ -7,9 +7,8 @@ Resolver endpoints
 .. automodule:: privacyidea.api.resolver
 
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: resolver_blueprint
 
    :include-empty-docstring:
-

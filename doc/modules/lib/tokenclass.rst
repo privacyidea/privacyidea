@@ -2,8 +2,8 @@
 Token Class
 ...........
 
-The following token types are known to privacyIDEA. All are inherited from
-the base tokenclass describe below.
+The following token types are known to privacyIDEA. All inherit from
+the base :class:`.TokenClass` describe below.
 
 .. toctree::
    :glob:
@@ -14,6 +14,3 @@ the base tokenclass describe below.
 .. autoclass:: privacyidea.lib.tokenclass.TokenClass
    :members:
    :undoc-members:
-
-
-

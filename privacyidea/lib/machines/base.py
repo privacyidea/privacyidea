@@ -120,7 +120,7 @@ class BaseMachineResolver(object):
         Return a list of all machine objects in this resolver
 
         :param substring: If set to true, it will also match search_hostnames,
-        that only are a subnet of the machines hostname.
+                          that only are a subnet of the machines hostname.
         :type substring: bool
         :param any: a substring that matches EITHER hostname, machineid or ip
         :type any: basestring
@@ -177,4 +177,3 @@ class BaseMachineResolver(object):
         :rtype: (bool, string)
         """
         return False, "Not Implemented"
-

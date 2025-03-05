@@ -7,9 +7,8 @@ Service ID endpoints
 .. automodule:: privacyidea.api.serviceid
 
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: serviceid_blueprint
 
    :include-empty-docstring:
-

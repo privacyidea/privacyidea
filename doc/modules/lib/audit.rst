@@ -20,6 +20,3 @@ SQL Audit module
 
 .. autoclass:: privacyidea.lib.auditmodules.sqlaudit.Audit
    :members:
-
-
-

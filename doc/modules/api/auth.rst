@@ -7,7 +7,7 @@ Authentication endpoints
 .. automodule:: privacyidea.api.auth
 
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: jwtauth
 
@@ -25,4 +25,3 @@ Authorization field in the header.
    Host: example.com
    Accept: application/json
    Authorization: eyJhbGciOiJIUz....jdpn9kIjuGRnGejmbFbM
-

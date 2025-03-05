@@ -54,7 +54,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass, is_true
+from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
 
 log = logging.getLogger(__name__)
 
@@ -65,14 +65,13 @@ class libpolicy(object):
     library call in contrast to prepolicy and postpolicy, which are to be
     called in API Calls.
 
-    The decorator expects a named parameter "options". In this options dict
-    it will look for the flask global "g".
+    The decorator expects a named parameter ``options``. In this options
+    dictionary it will look for the flask global object ``g``.
     """
 
     def __init__(self, decorator_function):
         """
-        :param decorator_function: This is the policy function that is to be
-        called
+        :param decorator_function: This is the policy function that is to be called
         :type decorator_function: function
         """
         self.decorator_function = decorator_function

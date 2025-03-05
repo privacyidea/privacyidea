@@ -5,7 +5,7 @@ Container endpoints
 
 .. automodule:: privacyidea.api.container
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: container_blueprint
 

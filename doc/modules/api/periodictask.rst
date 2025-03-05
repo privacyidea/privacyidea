@@ -5,7 +5,7 @@ Periodic Task endpoints
 
 .. automodule:: privacyidea.api.periodictask
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: periodictask_blueprint
 

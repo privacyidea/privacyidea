@@ -70,7 +70,7 @@ You can also do this::
 
 This will add the QR Code as an inline data image into the HTML email.
 
-Alternatively, if this event is triggered by enrolling a :ref:`push-token`, the
+Alternatively, if this event is triggered by enrolling a :ref:`push_token`, the
 tags are called ``pushurl_value`` and ``pushurl_img``.
 
 If the event is triggered by registering or rolling over a container, the tags are called ``container_url_value`` and

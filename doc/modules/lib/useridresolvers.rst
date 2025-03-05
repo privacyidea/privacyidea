@@ -6,6 +6,7 @@ UserIdResolvers
 .. index:: useridresolvers
 
 .. automodule:: privacyidea.lib.resolvers
+   :members:
 
 Base class
 ..........
@@ -24,5 +25,3 @@ LDAPResolver
 
 .. autoclass:: privacyidea.lib.resolvers.LDAPIdResolver.IdResolver
    :members:
-
-

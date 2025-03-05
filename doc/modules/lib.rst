@@ -12,16 +12,7 @@ library functions
 For further details see the following modules:
 
 .. toctree::
+   :maxdepth: 1
+   :glob:
 
-   lib/users
-   lib/tokenclass
-   lib/tokenfunction
-   lib/containerclass
-   lib/containerfunction
-   lib/applicationclass
-   lib/policy
-   lib/jobqueue
-   lib/apipolicy
-   lib/policydecorator
-   lib/eventhandler
-   lib/smsprovider
+   lib/*

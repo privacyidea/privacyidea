@@ -35,7 +35,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = '''There are the library functions for user functions.
+__doc__ = '''These are the library functions for user functions.
 It depends on the lib.resolver and lib.realm.
 
 There are and must be no dependencies to the token functions (lib.token)
@@ -68,8 +68,8 @@ log = logging.getLogger(__name__)
 
 class User(object):
     """
-    The user has the attributes
-      login, realm and resolver.
+    The user has the attributes ``login``, ``realm`` and ``resolver``.
+
     Usually a user can be found via "login@realm".
 
     A user object with an empty login and realm should not exist,
@@ -286,6 +286,7 @@ class User(object):
         the resolvertype and the resolvername
         (former: getUserId)
         (former: getUserResolverId)
+
         :return: The userid, the resolver type and the resolver name
                  like (1000, "passwdresolver", "resolver1")
         :rtype: tuple

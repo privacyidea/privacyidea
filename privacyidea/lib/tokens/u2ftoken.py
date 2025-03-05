@@ -134,27 +134,27 @@ Get the challenge
 
    {
       "detail": {
-        "attributes": {
-                        "hideResponseInput": true,
-                        "img": ...imageUrl...
-                        "u2fSignRequest": {
-                            "challenge": "...",
-                            "appId": "...",
-                            "keyHandle": "...",
-                            "version": "U2F_V2"
-                        }
-                      },
-        "message": "Please confirm with your U2F token (Yubico U2F EE ...)"
-        "transaction_id": "02235076952647019161"
+         "attributes": {
+            "hideResponseInput": true,
+            "img": "...imageUrl..."
+            "u2fSignRequest": {
+               "challenge": "...",
+               "appId": "...",
+               "keyHandle": "...",
+               "version": "U2F_V2"
+               }
+            },
+         "message": "Please confirm with your U2F token (Yubico U2F EE ...)"
+         "transaction_id": "02235076952647019161"
       },
       "id": 1,
       "jsonrpc": "2.0",
       "result": {
-          "status": true,
-          "value": false,
+         "status": true,
+         "value": false,
       },
       "version": "privacyIDEA unknown"
-    }
+   }
 
 Send the Response
 ~~~~~~~~~~~~~~~~~

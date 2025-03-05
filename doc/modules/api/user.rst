@@ -6,9 +6,8 @@ User endpoints
 ~~~~~~~~~~~~~~
 The user endpoints is a subset of the system endpoint.
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: user_blueprint
 
    :include-empty-docstring:
-

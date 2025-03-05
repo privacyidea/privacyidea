@@ -6,9 +6,8 @@
 Info endpoint
 .............
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: info_blueprint
 
    :include-empty-docstring:
-
