@@ -16,7 +16,7 @@ html, body {
 
 :root {
   --blur: 4px;
-  --border-radius: 6px;
+  --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 2px;
   --global-padding: 1.25rem;
@@ -222,7 +222,6 @@ html, body {
 }
 
 .copy-button {
-  margin-left: auto;
   background: unset;
   border: unset;
   cursor: pointer;

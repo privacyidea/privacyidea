@@ -190,7 +190,7 @@ describe('TokenDetailsComponent', () => {
 
   it('should display token details correctly', () => {
     const detailHeader = fixture.nativeElement.querySelector(
-      '.details-header h3:last-child',
+      '.details-header h3:nth-child(2)',
     );
     expect(detailHeader.textContent).toContain('Mock serial');
   });

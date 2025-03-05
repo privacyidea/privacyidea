@@ -22,6 +22,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -45,6 +46,7 @@ const columnsKeyMap = [
     NgClass,
     MatIcon,
     MatFabButton,
+    CdkCopyToClipboard,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',

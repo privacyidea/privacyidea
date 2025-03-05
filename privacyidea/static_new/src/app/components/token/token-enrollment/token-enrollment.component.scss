@@ -16,6 +16,7 @@
   background: #EFEDF0;
   border-radius: var(--border-radius);
   margin: 0 3px 5px;
+  width: 208px;
 }
 
 .token-type-hint {
@@ -78,7 +79,7 @@ h5 {
     max-height: unset;
     column-gap: 0;
     background: #dedcdf;
-    padding: 6px 4px 6px 4px
+    padding: 8px 4px 8px 12px;
   }
 
   .token-type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {

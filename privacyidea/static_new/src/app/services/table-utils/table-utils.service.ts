@@ -119,9 +119,9 @@ export class TableUtilsService {
         return '';
       }
       if (element['locked']) {
-        return 'highlight-false-clickable';
+        return 'highlight-false';
       } else if (element['revoked']) {
-        return 'highlight-false-clickable';
+        return 'highlight-false';
       } else if (element['active'] === false) {
         return 'highlight-false-clickable';
       } else {

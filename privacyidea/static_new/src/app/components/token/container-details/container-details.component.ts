@@ -43,6 +43,7 @@ import { TokenService } from '../../../services/token/token.service';
 import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -92,6 +93,7 @@ interface TokenOption {
     MatPaginator,
     MatDivider,
     MatCheckbox,
+    CdkCopyToClipboard,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss',

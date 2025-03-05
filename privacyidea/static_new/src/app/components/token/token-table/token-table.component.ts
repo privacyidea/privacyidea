@@ -201,6 +201,9 @@ export class TokenTableComponent {
   }
 
   handleColumnClick(columnKey: string, element: any): void {
+    if (element.revoked || element.locked) {
+      return;
+    }
     if (columnKey === 'active') {
       this.toggleActive(element);
     } else if (columnKey === 'failcount') {
