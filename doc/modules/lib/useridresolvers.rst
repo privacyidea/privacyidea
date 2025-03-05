@@ -6,6 +6,7 @@ UserIdResolvers
 .. index:: useridresolvers
 
 .. automodule:: privacyidea.lib.resolvers
+   :members:
 
 Base class
 ..........

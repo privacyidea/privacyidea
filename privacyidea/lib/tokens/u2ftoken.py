@@ -150,11 +150,11 @@ Get the challenge
       "id": 1,
       "jsonrpc": "2.0",
       "result": {
-          "status": true,
-          "value": false,
+         "status": true,
+         "value": false,
       },
       "version": "privacyIDEA unknown"
-    }
+   }
 
 Send the Response
 ~~~~~~~~~~~~~~~~~

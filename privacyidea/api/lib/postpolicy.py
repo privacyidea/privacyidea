@@ -169,8 +169,8 @@ def sign_response(request, response):
     .. note:: This only works for JSON responses. So if we fail to decode the
        JSON, we just pass on.
 
-    The usual way to use it is, to wrap the after_request, so that we can also
-    sign errors, like this:
+    The usual way to use it is to wrap the after_request, so that we can also
+    sign errors, like this::
 
         @postrequest(sign_response, request=request)
         def after_request(response):

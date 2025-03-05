@@ -1184,7 +1184,7 @@ class IdResolver(UserIdResolver):
         :param attributes: Attributes according to the attribute mapping
         :type attributes: dict
         :return: The new UID of the user. The UserIdResolver needs to
-        determine the way how to create the UID.
+                 determine the way how to create the UID.
         """
         # TODO: We still have some utf8 issues creating users with special characters.
         attributes = attributes or {}

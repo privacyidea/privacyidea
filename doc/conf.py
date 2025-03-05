@@ -95,6 +95,7 @@ add_function_parentheses = True
 #modindex_common_prefix = []
 
 autoclass_content = 'both'
+toc_object_entries = False
 
 # -- Options for HTML output ---------------------------------------------------
 
