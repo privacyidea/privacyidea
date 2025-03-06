@@ -36,7 +36,7 @@ export abstract class TableColumn<T> {
     this.getItems = named.getItems;
     this.getNgClass = named.getNgClass ?? (() => '');
     this.isCopyable = named.isCopyable ?? false;
-    this.align = named.align ?? 'start';
+    this.align = named.align ?? 'left';
   }
 }
 

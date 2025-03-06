@@ -62,10 +62,11 @@ $description-width: 18rem;
 
   #{$scroll-container} {
     overflow-y: auto;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     height: $scrollable-height;
     margin-right: $scrollable-margin-right;
     padding-right: $scrollable-padding-right;
+    scrollbar-width: thin;
   }
 
   .failcount {
@@ -76,37 +77,37 @@ $description-width: 18rem;
 
   .td-start {
     text-align: start;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-end {
     text-align: end;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-left {
     text-align: left;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-right {
     text-align: right;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-center {
     text-align: center;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-justify {
     text-align: justify;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .td-match-parent {
     text-align: match-parent;
-    vertical-align: middle;
+    align-content: center;
   }
 
   .description {

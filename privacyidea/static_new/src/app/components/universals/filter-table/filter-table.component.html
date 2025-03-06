@@ -103,15 +103,18 @@
           mat-cell
           [ngClass]="{
             'width-18': column.key === 'description',
-            'td-start': column.align === 'start',
-            'td-end': column.align === 'end',
-            'td-left': column.align === 'left',
-            'td-right': column.align === 'right',
-            'td-center': column.align === 'center',
-            'td-justify': column.align === 'justify',
-            'td-match-parent': column.align === 'match-parent',
           }">
-          <div class="cell-content">
+          <div
+            class="table-scrollable-container"
+            [ngClass]="{
+              'td-start': column.align === 'start',
+              'td-end': column.align === 'end',
+              'td-left': column.align === 'left',
+              'td-right': column.align === 'right',
+              'td-center': column.align === 'center',
+              'td-justify': column.align === 'justify',
+              'td-match-parent': column.align === 'match-parent',
+            }">
             @switch (column.type) {
               @case ("OnClickTableColumn".toString()) {
                 @for (
@@ -119,34 +122,36 @@
                   track item;
                   let idx = $index
                 ) {
-                  <a
-                    [ngClass]="column.getNgClass(element)"
-                    attr.aria-label="{{ column.label }} Link"
-                    (click)="handleOnClick(element, column)">
-                    {{ item }}</a
-                  >
-                  @if (column.isCopyable) {
-                    <button class="copy-button" [cdkCopyToClipboard]="item">
-                      <mat-icon class="copy-icon">content_copy</mat-icon>
-                    </button>
-                  }
-                  <br style="margin-top: 3px" />
+                  <div class="asdasd">
+                    <a
+                      [ngClass]="column.getNgClass(element)"
+                      attr.aria-label="{{ column.label }} Link"
+                      (click)="handleOnClick(element, column)">
+                      {{ item }}</a
+                    >
+                    @if (column.isCopyable) {
+                      <button class="copy-button" [cdkCopyToClipboard]="item">
+                        <mat-icon class="copy-icon">content_copy</mat-icon>
+                      </button>
+                    }
+                  </div>
                 }
               }
               @case ("RouterTableColumn".toString()) {
                 @for (item of column.getItems(element); track item) {
-                  <a
-                    [ngClass]="column.getNgClass(element)"
-                    attr.aria-label="{{ column.label }} Link"
-                    href="column.getLink(element)">
-                    {{ item }}
-                  </a>
-                  @if (column.isCopyable) {
-                    <button class="copy-button" [cdkCopyToClipboard]="item">
-                      <mat-icon class="copy-icon">content_copy</mat-icon>
-                    </button>
-                  }
-                  <br style="margin-top: 3px" />
+                  <div class="overflow-wrap: normal">
+                    <a
+                      [ngClass]="column.getNgClass(element)"
+                      attr.aria-label="{{ column.label }} Link"
+                      href="column.getLink(element)">
+                      {{ item }}
+                    </a>
+                    @if (column.isCopyable) {
+                      <button class="copy-button" [cdkCopyToClipboard]="item">
+                        <mat-icon class="copy-icon">content_copy</mat-icon>
+                      </button>
+                    }
+                  </div>
                 }
               }
               @default {
@@ -164,7 +169,6 @@
                       <mat-icon class="copy-icon">content_copy</mat-icon>
                     </button>
                   }
-                  <br style="margin-top: 3px" />
                 }
               }
             }
