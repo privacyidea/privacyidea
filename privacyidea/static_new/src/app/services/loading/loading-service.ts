@@ -1,42 +1,46 @@
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LoadingService {
-  listeners: { [key: string]: () => void } = {};
-  addListener(id: string, listener: () => void): void {
-    console.log('Adding listener', id);
+  listeners: { [key: string]: (isLoading: boolean) => void } = {};
+  addListener(id: string, listener: (isLoading: boolean) => void): void {
     this.listeners[id] = listener;
   }
   removeListener(id: string): void {
-    console.log('Removing listener', id);
     delete this.listeners[id];
   }
   notifyListeners(): void {
-    console.log('Notifying listeners');
-    Object.values(this.listeners).forEach((l) => l());
+    Object.values(this.listeners).forEach((l) => l(this.isLoading()));
   }
 
-  loadings: string[] = [];
-  addLoading(id: string): void {
-    console.log('Adding loading', id);
-    this.loadings.push(id);
+  loadings: { key: string; observeable: Observable<any> }[] = [];
+  addLoading(loading: { key: string; observeable: Observable<any> }): void {
+    loading.observeable.subscribe({
+      complete: () => {
+        this.removeLoading(loading.key);
+      },
+      error: (_) => {
+        this.removeLoading(loading.key);
+      },
+    });
+    this.loadings.push(loading);
     this.notifyListeners();
   }
-  removeLoading(id: string): void {
-    console.log('Removing loading', id);
-    this.loadings = this.loadings.filter((l) => l !== id);
+
+  private removeLoading(key: string): void {
+    this.loadings = this.loadings.filter((l) => l.key !== key);
     this.notifyListeners();
   }
-  clean(): void {
-    console.log('Cleaning loadings');
+
+  clearAllLoadings(): void {
     this.loadings = [];
     this.notifyListeners();
   }
 
   isLoading(): boolean {
-    console.log('Checking if loading');
     return this.loadings.length > 0;
   }
 

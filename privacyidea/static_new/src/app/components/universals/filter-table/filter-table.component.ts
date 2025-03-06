@@ -31,8 +31,12 @@ export type FetchDataHandler = (named: {
   filterValue: string;
 }) => Observable<any>;
 
+export type FetchDataResponse = {
+  result: { value: any };
+};
+
 export type ProcessDataSource<T> = (
-  response: any,
+  response: FetchDataResponse,
 ) => [number, MatTableDataSource<T>];
 
 export type FetchErrorHandler = (error: any) => void;
@@ -120,7 +124,12 @@ export class FilterTable<T> {
   }
 
   handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      this.filterValue = target.value;
+    } else {
+      console.error('Unexpected event target:', target);
+    }
     this.pageIndex = 0;
     this.fetchData();
   }
@@ -143,7 +152,7 @@ export class FilterTable<T> {
     this.fetchData();
   }
 
-  private fetchData() {
+  fetchData() {
     this.fetchDataHandler({
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,

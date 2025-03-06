@@ -25,6 +25,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { TableUtilsService } from '../../services/table-utils/table-utils.service';
 import { TokenApplications as TokenApplicationsComponent } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table';
+import { FetchDataResponse } from '../universals/filter-table/filter-table.component';
 
 export type TokenType =
   | 'hotp'
@@ -310,7 +311,7 @@ export class TokenComponent {
   }
 
   processDataSource(
-    response: any,
+    response: FetchDataResponse,
   ): [number, MatTableDataSource<any, MatPaginator>] {
     return [0, new MatTableDataSource()];
   }

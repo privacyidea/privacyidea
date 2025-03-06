@@ -17,6 +17,7 @@ import {
   FilterTable,
   SortDir,
   ProcessDataSource as ProcessDataSource,
+  FetchDataResponse,
 } from '../../universals/filter-table/filter-table.component';
 import {
   OnClickTableColumn,
@@ -45,7 +46,6 @@ export class ContainerTableComponent {
   sortby_sortdir: SortDir;
   @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
-  dataSource = signal(new MatTableDataSource<any>());
   showAdvancedFilter = signal(false);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -132,31 +132,14 @@ export class ContainerTableComponent {
       currentFilter,
     );
 
-  processDataSource: ProcessDataSource<ContainerData> = (response: any) => {
-    console.log('getContainerData response:', response);
-    return [
-      response.result.value.containers.length,
-      new MatTableDataSource(
-        ContainerData.parseList(response.result.value.containers),
-      ),
-    ];
-  };
-
-  ngAfterViewInit() {
-    this.dataSource.set(
-      new MatTableDataSource(
-        Array.from({ length: this.pageSize }, () => {
-          const emptyRow: any = {};
-          this.columns.forEach((column) => {
-            emptyRow[column.key] = '';
-          });
-          return emptyRow;
-        }),
-      ),
-    );
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
-  }
+  processDataSource: ProcessDataSource<ContainerData> = (
+    response: FetchDataResponse,
+  ) => [
+    response.result.value.containers.length,
+    new MatTableDataSource(
+      ContainerData.parseList(response.result.value.containers),
+    ),
+  ];
 
   getStatesNgClass(states: string[]): string {
     if (states.length === 0) {

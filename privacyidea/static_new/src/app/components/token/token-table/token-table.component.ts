@@ -9,6 +9,7 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { NotificationService } from '../../../services/notification/notification.service';
 import {
   FetchDataHandler,
+  FetchDataResponse,
   FilterTable,
   ProcessDataSource,
 } from '../../universals/filter-table/filter-table.component';
@@ -71,13 +72,10 @@ export class TokenTableComponent {
         return regexKey.test(filterValue) || regexValue.test(filterValue);
       },
       toggle: (filterValue: string) => {
-        console.log('Toggling infokey & infovalue');
-        console.log('Filter value:', filterValue);
         const result = KeywordFilter.defaultToggler({
           filterValue: filterValue,
           keyword: 'infokey',
         });
-        console.log('Result:', result);
         return KeywordFilter.defaultToggler({
           filterValue: result,
           keyword: 'infovalue',
@@ -190,7 +188,6 @@ export class TokenTableComponent {
   ) {}
 
   toggleActive(element: TokenData): Observable<any> {
-    console.log('Toggling active for token:', element.serial);
     const { serial, active } = element;
     if (serial === undefined || active === undefined) {
       console.error('Failed to toggle active. Missing serial or active.');
@@ -206,7 +203,6 @@ export class TokenTableComponent {
     return handler;
   }
   resetFailCount(element: any): Observable<any> {
-    console.log('Resetting fail count for token:', element.serial);
     var handler = this.tokenService.resetFailCount(element.serial);
     handler.subscribe({
       error: (error) => {
@@ -239,7 +235,9 @@ export class TokenTableComponent {
       currentFilter,
     );
 
-  processDataSource: ProcessDataSource<TokenData> = (response: any) => [
+  processDataSource: ProcessDataSource<TokenData> = (
+    response: FetchDataResponse,
+  ) => [
     response.result.value.count,
     new MatTableDataSource(TokenData.parseList(response.result.value.tokens)),
   ];

@@ -1,6 +1,7 @@
 import { Component, Input, WritableSignal } from '@angular/core';
 import {
   FetchDataHandler,
+  FetchDataResponse,
   FilterTable,
   ProcessDataSource,
 } from '../../universals/filter-table/filter-table.component';
@@ -96,7 +97,9 @@ export class ChallengesTableComponent {
       sort: sortby_sortdir,
       filterValue: filterValue,
     });
-  processDataSource: ProcessDataSource<ChallengeData> = (response) => [
+  processDataSource: ProcessDataSource<ChallengeData> = (
+    response: FetchDataResponse,
+  ) => [
     response.result.value.challenges.length,
     new MatTableDataSource(
       ChallengeData.parseList(response.result.value.challenges),

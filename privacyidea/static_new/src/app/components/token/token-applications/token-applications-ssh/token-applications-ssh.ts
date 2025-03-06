@@ -2,6 +2,7 @@ import { Component, Input, WritableSignal } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import {
   FetchDataHandler,
+  FetchDataResponse,
   FilterTable,
   ProcessDataSource,
 } from '../../../universals/filter-table/filter-table.component';
@@ -120,7 +121,9 @@ export class TokenApplicationsSsh {
       application: 'ssh',
     });
 
-  processDataSource: ProcessDataSource<MachineTokenData> = (response: any) => [
+  processDataSource: ProcessDataSource<MachineTokenData> = (
+    response: FetchDataResponse,
+  ) => [
     response.result.value.length,
     new MatTableDataSource(MachineTokenData.parseList(response.result.value)),
   ];

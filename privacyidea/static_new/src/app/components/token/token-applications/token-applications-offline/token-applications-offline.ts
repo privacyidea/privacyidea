@@ -5,6 +5,7 @@ import {
   FilterTable,
   SortDir,
   ProcessDataSource,
+  FetchDataResponse,
 } from '../../../universals/filter-table/filter-table.component';
 import { MachineService } from '../../../../services/machine/machine.service';
 import { KeywordFilter } from '../../../../services/keyword_filter';
@@ -112,7 +113,6 @@ export class TokenApplicationsOffline {
     var filterMap: { [key: string]: string } = {};
     var regexp = new RegExp(/\w+:\s\w+((?=\s)|$)/, 'g');
     var matches = filterValue.match(regexp);
-    console.log('matches', matches);
     if (matches) {
       matches.forEach((match) => {
         var [key, value] = match.split(': ');
@@ -138,7 +138,9 @@ export class TokenApplicationsOffline {
       application: 'offline',
     });
 
-  processDataSource: ProcessDataSource<MachineTokenData> = (response: any) => [
+  processDataSource: ProcessDataSource<MachineTokenData> = (
+    response: FetchDataResponse,
+  ) => [
     response.result.value.length,
     new MatTableDataSource(MachineTokenData.parseList(response.result.value)),
   ];
