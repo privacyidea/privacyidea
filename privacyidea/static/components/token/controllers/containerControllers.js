@@ -106,6 +106,10 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
         $scope.containerRegister = false;
         $scope.initRegistration = $scope.form.containerType === "smartphone";
+        if ($scope.container_wizard["enabled"]) {
+            $scope.initRegistration = $scope.container_wizard["registration"];
+            $scope.form.containerType = $scope.container_wizard["type"];
+        }
         $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
@@ -137,18 +141,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 $scope.selectTemplate(true);
                 $scope.editTemplate = false;
 
-                if (newType === "smartphone") {
-                    $scope.initRegistration = true;
-                } else {
-                    $scope.initRegistration = false;
-                }
+                $scope.initRegistration = newType === "smartphone";
             }
         }, true);
 
         // Get the supported token types for each container type once
         $scope.getContainerTypes = function () {
             ContainerFactory.getTokenTypes(function (data) {
-                $scope.formData.containerTypes = data.result.value;
+                if ($scope.container_wizard["enabled"]) {
+                    // Container wizard only allows to create the defined container type
+                    $scope.formData.containerTypes[$scope.container_wizard["type"]] =
+                        data.result.value[$scope.container_wizard["type"]];
+                } else {
+                    $scope.formData.containerTypes = data.result.value;
+                }
 
                 // Create display string for supported token types of each container type
                 angular.forEach($scope.formData.containerTypes, function (_, containerType) {
@@ -262,12 +268,17 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         $scope.selectTemplate = function (defaultSelection) {
             // Sets all template options according to the selected template
             // optionally first selects the default template if defaultSelection is true
-            if (defaultSelection) {
+            if ($scope.container_wizard["enabled"]) {
+                if ($scope.container_wizard["template"]) {
+                    $scope.form.template = $scope.templates[$scope.form.containerType][$scope.container_wizard["template"]];
+                }
+            } else if (defaultSelection) {
                 // select default template if one exists or no template otherwise
                 $scope.form.template = $scope.defaultTemplates[$scope.form.containerType];
-                if (!$scope.form.template) {
-                    $scope.form.template = $scope.templates[$scope.form.containerType]["No Template"];
-                }
+            }
+
+            if (!$scope.form.template) {
+                $scope.form.template = $scope.templates[$scope.form.containerType]["No Template"];
             }
 
             if ($scope.form.template.name === "noTemplate") {
@@ -351,6 +362,10 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         }
                     });
                 }
+                if ($scope.container_wizard["enabled"]) {
+                    $scope.containerCreated = true;
+                    stay = true;
+                }
                 if (!stay) {
                     $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                 }
@@ -382,7 +397,12 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                         $timeout($scope.pollContainerDetails, 2500);
                     } else if (registrationState === "registered") {
                         // container successfully registered, move to details page
-                        $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                        if (!$scope.container_wizard["enabled"]) {
+                            $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
+                        } else {
+                            $scope.containerRegister = false;
+                            $scope.registeredSuccessfully = true;
+                        }
                     }
                 }
             });

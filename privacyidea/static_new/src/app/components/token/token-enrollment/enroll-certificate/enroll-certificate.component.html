@@ -15,11 +15,14 @@
   <div class="flex-row gap-1">
     <mat-form-field class="width-33">
       <mat-label>CA Connector</mat-label>
-      <mat-select [(ngModel)]="caConnector">
+      <mat-select [(ngModel)]="caConnector"
+                  [errorStateMatcher]="caConnectorErrorStateMatcher"
+                  required>
         @for (option of caConnectorOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
+      <mat-error>CA Connector is <strong>required</strong></mat-error>
     </mat-form-field>
 
     <mat-form-field class="width-33">

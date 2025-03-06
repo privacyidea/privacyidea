@@ -6,15 +6,13 @@
       <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }}
       </a>.</span>
       @if (data.response.detail.container_serial) {
-        <br>
-        <span>It has been enrolled in the container
+        <br><span>It has been enrolled in the container
         <a (click)="containerSelected(data.response.detail.container_serial)"> {{
             data.response.detail.container_serial
           }} </a>.</span>
       }
-      @if (data.username != '' && data.userRealm != '') {
-        <br>
-        <span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
+      @if (data.username != '' && data.userRealm != '' && !data.onlyAddToRealm) {
+        <br><span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
             data.userRealm
           }}</a> was assigned to the token.
         </span>
@@ -129,15 +127,16 @@
           </mat-expansion-panel>
         </mat-accordion>
       }
-
-      @if (data.response.detail?.u2fRegisterRequest) {
-        Take action on your token:
-        <br> You need to confirm the registration with your token either by pushing the blinking button or by religging your token. This depends on the actual token model.
-      }
     </div>
   </div>
+  @if (data.response.detail?.u2fRegisterRequest) {
+    <span>Take action on your token:</span><p class="max-width-600"> You need to confirm the
+      registration with your token either by pushing the blinking button or by religging your token.
+      This depends on the actual token model.</p>
+  }
+
   @if (data.response.detail?.webAuthnRegisterRequest) {
-    <span>Take action on your authenticator</span><p class="webauthn-p">You need to confirm the
+    <span>Take action on your authenticator:</span><p class="max-width-600">You need to confirm the
       registration with your authenticator. For an external authenticator, this usually means
       pushing the button on the authenticator, or replugging it (if there is no button on the
       authenticator). If you want to use an authenticator that is integrated into your device, look

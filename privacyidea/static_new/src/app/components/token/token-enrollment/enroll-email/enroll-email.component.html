@@ -8,17 +8,19 @@
     <a href="#">Email Token Config</a>!</span>
   }
   <mat-checkbox [(ngModel)]="readEmailDynamically">
-    Read number dynamically from user source on each request.
+    Read number dynamically from user source on each request
   </mat-checkbox>
   <div class="flex-row gap-1">
     @if (!this.readEmailDynamically()) {
       <mat-form-field class="otp-input-form">
         <mat-label>Email Address</mat-label>
         <input [(ngModel)]="emailAddress"
-               matInput />
+               matInput
+               required />
+        <mat-error>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
-      <span class="width-33"></span>=
+      <span class="width-33"></span>
     }
     <mat-form-field class="width-66">
       <mat-label>Description</mat-label>

@@ -52,7 +52,8 @@ export type TokenType =
   | 'tiqr'
   | 'u2f'
   | 'vasco'
-  | 'webauthn';
+  | 'webauthn'
+  | 'passkey';
 
 export type TokenSelectedContent =
   | 'token_overview'
@@ -229,6 +230,11 @@ export class TokenComponent {
       key: 'webauthn',
       info: 'WebAuthn: Enroll a Web Authentication token.',
       text: 'The WebAuthn token is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.\n',
+    },
+    {
+      key: 'passkey',
+      info: 'PassKey: A secret stored on a device, unlocked with biometrics.',
+      text: 'The Passkey is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.',
     },
   ];
   selectedContent = signal<TokenSelectedContent>('token_overview');

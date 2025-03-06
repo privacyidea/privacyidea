@@ -1,12 +1,19 @@
 import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TokenComponent } from '../../token.component';
-import { MatOption } from '@angular/material/core';
-import { MatSelect } from '@angular/material/select';
+import { ErrorStateMatcher, MatOption } from '@angular/material/core';
+import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { PrivacyideaServerService } from '../../../../services/privavyidea-server/privacyidea-server.service';
+
+export class RemoteErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null): boolean {
+    const invalid = control && control.value ? control.value.id === '' : true;
+    return !!(control && invalid && (control.dirty || control.touched));
+  }
+}
 
 @Component({
   selector: 'app-enroll-remote',
@@ -19,6 +26,7 @@ import { PrivacyideaServerService } from '../../../../services/privavyidea-serve
     MatOption,
     MatSelect,
     MatCheckbox,
+    MatError,
   ],
   templateUrl: './enroll-remote.component.html',
   styleUrl: './enroll-remote.component.scss',
@@ -33,6 +41,7 @@ export class EnrollRemoteComponent {
   @Input() remoteRealm!: WritableSignal<string>;
   @Input() remoteResolver!: WritableSignal<string>;
   remoteServerOptions = signal<{ url: string; id: string }[]>([]);
+  remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   constructor(private privacyideaServerService: PrivacyideaServerService) {}
 

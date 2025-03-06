@@ -12,7 +12,10 @@
       <mat-label>Yubikey Identifier</mat-label>
       <input [(ngModel)]="yubikeyIdentifier"
              matInput
-             placeholder="Enter the 12 digit identifier">
+             placeholder="Enter the 12 digit identifier"
+             [errorStateMatcher]="yubicoErrorStatematcher"
+             required />
+      <mat-error>Yubikey identifier with 12 digits is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field class="width-66">
       <mat-label>Description</mat-label>

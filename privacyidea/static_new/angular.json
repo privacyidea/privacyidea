@@ -51,9 +51,13 @@
               "outputHashing": "all"
             },
             "development": {
-              "optimization": false,
+              "optimization": true,
               "extractLicenses": false,
-              "sourceMap": true,
+              "sourceMap": false,
+              "aot": true,
+              "outputHashing": "none",
+              "namedChunks": true,
+              "subresourceIntegrity": false,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -62,9 +66,12 @@
               ]
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve": {
+          "options": {
+            "proxyConfig": "src/proxy.conf.json"
+          },
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {

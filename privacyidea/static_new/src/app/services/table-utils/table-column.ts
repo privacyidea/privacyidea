@@ -5,6 +5,8 @@ export abstract class TableColumn<T> {
   label: string;
   getItems: (value: T) => string[];
   getNgClass: (value: T) => string;
+  isCopyable: boolean;
+
   type: string = 'TableColumn';
 
   constructor(named: {
@@ -12,11 +14,13 @@ export abstract class TableColumn<T> {
     label: string;
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
+    isCopyable?: boolean;
   }) {
     this.key = named.key;
     this.label = named.label;
     this.getItems = named.getItems;
     this.getNgClass = named.getNgClass ?? (() => '');
+    this.isCopyable = named.isCopyable ?? false;
   }
 }
 
@@ -27,6 +31,7 @@ export class SimpleTableColumn<T> extends TableColumn<T> {
     label: string;
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
+    isCopyable?: boolean;
   }) {
     super(named);
   }
@@ -41,6 +46,7 @@ export class OnClickTableColumn<T> extends TableColumn<T> {
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
     onClick: (value: T) => void;
+    isCopyable?: boolean;
   }) {
     super(named);
     this.onClick = named.onClick;
@@ -55,6 +61,7 @@ export class RouterTableColumn<T> extends TableColumn<T> {
     label: string;
     getItems: (value: T) => string[];
     getNgClass: (value: T) => string;
+    isCopyable?: boolean;
     routerLink: string;
   }) {
     super(named);

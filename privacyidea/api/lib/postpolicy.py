@@ -72,6 +72,7 @@ from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, get_version
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
+from ...lib.container import get_all_containers
 
 log = logging.getLogger(__name__)
 
@@ -581,21 +582,43 @@ def get_webui_settings(request, response):
                                        user=username, realm=realm).action_values(unique=False)
         token_wizard = False
         dialog_no_token = False
+        container_wizard = {"enabled": False}
         if role == ROLE.USER:
-            user_obj = User(username, realm)
-            user_token_num = get_tokens(user=user_obj, count=True)
-            token_wizard_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD, user_object=user_obj).any()
+            user = User(username, realm)
+            user_token_num = get_tokens(user=user, count=True)
+            token_wizard_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD, user_object=user).any()
             # We also need to check, if the user has no tokens assigned.
             # If the user has no tokens, we run the wizard. If the user
             # already has tokens, we do not run the wizard.
             token_wizard = token_wizard_pol and (user_token_num == 0)
 
             dialog_no_token_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN,
-                                             user_object=user_obj).any()
+                                             user_object=user).any()
             dialog_no_token = dialog_no_token_pol and (user_token_num == 0)
             # This only works for users, because the value of the policy does not change while logged in.
-            if Match.user(g, SCOPE.USER, "indexedsecret_force_attribute", user_obj).action_values(unique=False):
+            if Match.user(g, SCOPE.USER, "indexedsecret_force_attribute", user).action_values(unique=False):
                 content["result"]["value"]["indexedsecret_force_attribute"] = 1
+
+            user_container = get_all_containers(user=user, page=1, pagesize=1)
+            if user_container["count"] == 0:
+                container_wizard_type_policy = Match.user(g, SCOPE.WEBUI, ACTION.CONTAINER_WIZARD_TYPE,
+                                                          user_object=user).action_values(unique=True)
+                if container_wizard_type_policy:
+                    container_wizard_type = list(container_wizard_type_policy.keys())[0]
+                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI, ACTION.CONTAINER_WIZARD_TEMPLATE,
+                                                                  user_object=user).action_values(unique=True)
+                    if container_wizard_template_policy:
+                        template = list(container_wizard_template_policy.keys())[0]
+                        # The template policy contains the name and the type: Extract only the name
+                        container_wizard_template = template.split(f"({container_wizard_type})")[0]
+                    else:
+                        container_wizard_template = None
+                    container_wizard_registration = Match.user(g, SCOPE.WEBUI,
+                                                               ACTION.CONTAINER_WIZARD_REGISTRATION,
+                                                               user_object=user).any()
+                    container_wizard = {"enabled": True, "type": container_wizard_type,
+                                        "template": container_wizard_template,
+                                        "registration": container_wizard_registration}
 
         user_details_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
                                          user=username, realm=realm).policies()
@@ -697,6 +720,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["require_description"] = require_description
         rss_age(request, None)
         content["result"]["value"]["rss_age"] = request.all_data.get("rss_age", FETCH_DAYS)
+        content["result"]["value"]["container_wizard"] = container_wizard
 
         if role == ROLE.ADMIN:
             # Add a support mailto, for administrators with systemwrite rights.

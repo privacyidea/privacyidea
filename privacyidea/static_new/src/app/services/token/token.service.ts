@@ -14,6 +14,7 @@ import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
 import { SortDir } from '../../components/universals/filter-table/filter-table.component';
+import { environment } from '../../../environments/environment';
 
 export interface EnrollmentOptions {
   type: TokenType;
@@ -54,6 +55,8 @@ export interface EnrollmentOptions {
   answers?: Record<string, string>;
   vascoSerial?: string;
   useVascoSerial?: boolean;
+  onlyAddToRealm?: boolean;
+  userRealm?: string;
 }
 
 @Injectable({
@@ -71,7 +74,7 @@ export class TokenService {
     'container_serial',
   ];
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
-  private tokenBaseUrl = '/token/';
+  private tokenBaseUrl = environment.proxyUrl + '/token/';
   private stopPolling$ = new Subject<void>();
 
   constructor(
@@ -342,12 +345,15 @@ export class TokenService {
     const payload: any = {
       type: options.type,
       description: options.description,
-      user: options.user,
       container_serial: options.container_serial,
       validity_period_start: options.validity_period_start,
       validity_period_end: options.validity_period_end,
       pin: options.pin,
     };
+
+    if (!options.onlyAddToRealm) {
+      payload.user = options.user;
+    }
 
     if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
@@ -368,7 +374,7 @@ export class TokenService {
     }
 
     if (['totp', 'daypassword'].includes(options.type)) {
-      payload.timeStep = Number(options.timeStep);
+      payload.timeStep = options.timeStep;
     }
 
     if (options.type === 'motp') {
@@ -422,6 +428,10 @@ export class TokenService {
         },
         {} as Record<string, { count: number; selected: boolean }>,
       );
+
+      if (options.onlyAddToRealm) {
+        payload.realm = options.userRealm;
+      }
     }
 
     if (options.type === 'applspec') {
@@ -429,6 +439,7 @@ export class TokenService {
     }
 
     if (options.type === 'certificate') {
+      payload.genkey = 1;
       payload.ca = options.caConnector;
       payload.template = options.certTemplate;
       payload.pem = options.pem;

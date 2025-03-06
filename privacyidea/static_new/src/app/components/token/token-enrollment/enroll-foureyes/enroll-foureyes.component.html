@@ -4,10 +4,10 @@
   </div>
   <h4 class="enroll-h4">Token configuration</h4>
   <div class="flex-row gap-1">
-    <mat-form-field class="seperator-input-form">
-      <mat-label>Seperator</mat-label>
-      <input [(ngModel)]="seperator"
-             class="seperator-input"
+    <mat-form-field class="separator-input-form">
+      <mat-label>Separator</mat-label>
+      <input [(ngModel)]="separator"
+             class="separator-input"
              matInput
              placeholder="|">
     </mat-form-field>
@@ -21,7 +21,9 @@
     <mat-form-field class="width-18 otp-input-form">
       <mat-label>Select Realms</mat-label>
       <mat-select [(ngModel)]="requiredRealms"
-                  multiple>
+                  [errorStateMatcher]="requiredRealmsErrorStateMatcher"
+                  multiple
+                  required>
         @for (realm of realmOptions(); track realm; ) {
           <div class="required-realms-div">
             <mat-option class="required-realms-option"
@@ -39,6 +41,7 @@
           </div>
         }
       </mat-select>
+      <mat-error>At least one realm is <strong>required</strong></mat-error>
     </mat-form-field>
 
     <mat-form-field class="width-66">
@@ -50,4 +53,7 @@
                 rows="3"></textarea>
     </mat-form-field>
   </div>
+  <mat-checkbox [(ngModel)]="onlyAddToRealm">
+    Only add to the realm (no user assignment)
+  </mat-checkbox>
 </div>

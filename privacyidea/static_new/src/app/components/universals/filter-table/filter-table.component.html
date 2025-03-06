@@ -24,10 +24,7 @@
       <mat-icon class="filter-icon">filter_alt</mat-icon>
       Filter by:&nbsp;
     </div>
-    @for (
-      filter of showAdvancedFilter() ? filters : basicFilters;
-      track filter
-    ) {
+    @for (filter of basicFilters; track basicFilters) {
       <button
         mat-fab
         extended
@@ -57,6 +54,29 @@
           {{ showAdvancedFilter() ? "remove" : "add" }}
         </mat-icon>
       </button>
+      @for (
+        filter of showAdvancedFilter() ? advancedFilters : [];
+        track showAdvancedFilter() ? advancedFilters : []
+      ) {
+        <button
+          mat-fab
+          extended
+          (click)="toggleKeyword(filter, input)"
+          class="keyword-button">
+          <mat-icon
+            class="keyword-button-icon"
+            [ngClass]="
+              {
+                change_circle: 'change-keyword',
+                remove_circle: 'remove-keyword',
+                add_circle: 'add-keyword',
+              }[filter.getIconName(input.value)]
+            ">
+            {{ filter.getIconName(input.value) }}
+          </mat-icon>
+          {{ filter.label }}
+        </button>
+      }
     }
   </div>
   <table
@@ -79,43 +99,65 @@
           *matCellDef="let element"
           attr.aria-label="{{ column.label }} Cell"
           mat-cell
-          [ngClass]="{ 'width-18': column.key === 'description' }">
-          <ng-container>
-            <div [ngClass]="column.getNgClass(element)">
-              @switch (column.type) {
-                @case ("OnClickTableColumn".toString()) {
-                  @for (
-                    item of column.getItems(element);
-                    track item;
-                    let idx = $index
-                  ) {
-                    <a
-                      attr.aria-label="{{ column.label }} Link"
-                      (click)="handleOnClick(element, column)">
-                      {{ item }}</a
-                    ><br style="margin-top: 3px" />
-                  }
+          [ngClass]="{
+            'width-18': column.key === 'description',
+          }">
+          @switch (column.type) {
+            @case ("OnClickTableColumn".toString()) {
+              @for (
+                item of column.getItems(element);
+                track item;
+                let idx = $index
+              ) {
+                <a
+                  [ngClass]="column.getNgClass(element)"
+                  attr.aria-label="{{ column.label }} Link"
+                  (click)="handleOnClick(element, column)">
+                  {{ item }}</a
+                >
+                @if (column.isCopyable) {
+                  <button class="copy-button" [cdkCopyToClipboard]="item">
+                    <mat-icon class="copy-icon">content_copy</mat-icon>
+                  </button>
                 }
-                @case ("RouterTableColumn".toString()) {
-                  @for (item of column.getItems(element); track item) {
-                    <a attr.aria-label="{{ column.label }} Link" href="#">
-                      {{ item }} </a
-                    ><br style="margin-top: 3px" />
-                  }
-                }
-                @default {
-                  @for (
-                    item of column.getItems(element);
-                    track item;
-                    let idx = $index
-                  ) {
-                    {{ item }}
-                    <br style="margin-top: 3px" />
-                  }
-                }
+                <br style="margin-top: 3px" />
               }
-            </div>
-          </ng-container>
+            }
+            @case ("RouterTableColumn".toString()) {
+              @for (item of column.getItems(element); track item) {
+                <a
+                  [ngClass]="column.getNgClass(element)"
+                  attr.aria-label="{{ column.label }} Link"
+                  href="column.getLink(element)">
+                  {{ item }}
+                </a>
+                @if (column.isCopyable) {
+                  <button class="copy-button" [cdkCopyToClipboard]="item">
+                    <mat-icon class="copy-icon">content_copy</mat-icon>
+                  </button>
+                }
+                <br style="margin-top: 3px" />
+              }
+            }
+            @default {
+              @for (
+                item of column.getItems(element);
+                track item;
+                let idx = $index
+              ) {
+                {{ item }}
+                @if (column.isCopyable) {
+                  <button
+                    [ngClass]="column.getNgClass(element)"
+                    class="copy-button"
+                    [cdkCopyToClipboard]="item">
+                    <mat-icon class="copy-icon">content_copy</mat-icon>
+                  </button>
+                }
+                <br style="margin-top: 3px" />
+              }
+            }
+          }
         </td>
       </ng-container>
     }

@@ -6,13 +6,14 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { TokenComponent } from '../../token.component';
+import { MatError } from '@angular/material/select';
 
 @Component({
   selector: 'app-enroll-yubikey',
-  imports: [FormsModule, MatFormField, MatInput, MatLabel],
+  imports: [FormsModule, MatFormField, MatInput, MatLabel, MatHint, MatError],
   templateUrl: './enroll-yubikey.component.html',
   styleUrl: './enroll-yubikey.component.scss',
 })

@@ -19,7 +19,7 @@
       (click)="this.reopenQRCode()"
       [disabled]="this.response() === null"
       mat-icon-button>
-      <mat-icon>qr_code_scanner</mat-icon>
+      <mat-icon>comment</mat-icon>
     </button>
     <button
       (click)="enrollToken()"
@@ -105,8 +105,8 @@
         [readNumberDynamically]="readNumberDynamically" />
     }
     @case ("4eyes") {
+      <<<<<<< HEAD
       <app-enroll-foureyes
-        [seperator]="seperator"
         [description]="description"
         [requiredTokensOfRealm]="requiredTokenOfRealm" />
     }
@@ -116,6 +116,20 @@
         [generateOnServer]="generateOnServer"
         [otpKey]="otpKey"
         [description]="description" />
+      =======
+      <app-enroll-foureyes
+        [separator]="separator"
+        [description]="description"
+        [onlyAddToRealm]="onlyAddToRealm"
+        [requiredTokensOfRealm]="requiredTokenOfRealm" />
+    }
+    @case ("applspec") {
+      <app-enroll-applspec
+        [serviceId]="serviceId"
+        [generateOnServer]="generateOnServer"
+        [otpKey]="otpKey"
+        [description]="description" />
+      >>>>>>> webui-upgrade
     }
     @case ("daypassword") {
       <app-enroll-daypassword
@@ -172,6 +186,9 @@
     @case ("webauthn") {
       <app-enroll-webauthn [description]="description" />
     }
+    @case ("passkey") {
+      <app-enroll-passkey [description]="description" />
+    }
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
@@ -190,10 +207,19 @@
 
     <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Enter User</mat-label>
+      <<<<<<< HEAD
       <input
         [(ngModel)]="selectedUsername"
         [matAutocomplete]="userAuto"
         matInput />
+      =======
+      <input
+        [(ngModel)]="selectedUsername"
+        [matAutocomplete]="userAuto"
+        [required]="userIsRequired()"
+        matInput />
+      <mat-error>User is <strong>required</strong></mat-error>
+      >>>>>>> webui-upgrade
       <mat-autocomplete #userAuto="matAutocomplete">
         @for (option of filteredUserOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

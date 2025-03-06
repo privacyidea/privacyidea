@@ -108,7 +108,8 @@ The container can always be unregistered by clicking the `Unregister` button. Th
 with the server anymore. A window will appear asking if you want to disable all tokens. The window disappears
 automatically after a few seconds.
 
-.. note:: Not all synchronization features work for offline tokens. See :ref:`synchronization` for more information.
+.. note:: Not all synchronization features work for offline tokens. See :ref:`container_synchronization` for more
+    information.
 
 Tokens
 ......

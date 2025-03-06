@@ -3,8 +3,7 @@ import os
 import stat
 import sys
 
-#VERSION = "2.1dev4"
-VERSION = "3.11dev3"
+VERSION = "3.11"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -46,7 +45,6 @@ install_requires = [
     "grpcio",
     "huey[redis]",
     "ldap3<2.9",
-    "MarkupSafe",
     "netaddr",
     "passlib[bcrypt]",
     "protobuf",

@@ -62,6 +62,7 @@ export class ContainerTableComponent {
       getItems: (container) => (container.serial ? [container.serial] : []),
       onClick: (container) =>
         container.serial ? this.selectContainer(container.serial) : () => {},
+      isCopyable: true,
     }),
     new SimpleTableColumn({
       key: 'type',

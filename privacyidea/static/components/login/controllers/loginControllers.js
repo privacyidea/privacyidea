@@ -471,6 +471,7 @@ angular.module("privacyideaApp")
                 if ($scope.dialogNoToken) {
                     $('#dialogNoToken').modal("show");
                 }
+                $scope.container_wizard = data.result.value.container_wizard;
                 $scope.qr_images = [];
                 if (data.result.value.qr_image_android) {
                     $scope.qr_images.push({
@@ -507,6 +508,8 @@ angular.module("privacyideaApp")
                 $scope.admin_dashboard = data.result.value.admin_dashboard;
                 if ($scope.admin_dashboard) {
                     $scope.startRoute = "/dashboard";
+                } else if ($scope.container_wizard["enabled"] && !$scope.token_wizard) {
+                    $scope.startRoute = "/token/container";
                 } else {
                     $scope.startRoute = "/token";
                 }

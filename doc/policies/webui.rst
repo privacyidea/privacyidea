@@ -247,6 +247,42 @@ type: ``bool``
 
 The tokenwizard will be displayed in the token menu even if the user already has a token.
 
+.. _policy_container_wizard_type:
+
+container_wizard_type
+~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This policy defines the container type to be used in the container wizard. The container wizard is displayed in the ui
+when the user has no container assigned. It shows a simplified view to create the first container. To activate the
+container wizard, at least this policy has to be defined. Read :ref:`container_wizard` for more information.
+
+.. _policy_container_wizard_template:
+
+container_wizard_template
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This policy defines the template to be used in the container wizard. Note that the selected template must be of the
+same container type as defined in the action `container_wizard_type`. This policy is optional. If not set, no template
+will be used to create the container in the wizard.
+
+
+.. _policy_container_wizard_registration:
+
+container_wizard_registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+In the container wizard, a QR code to register the created container on a smartphone will be displayed. After
+registration, the smartphone can be synchronized with the server. See :ref:`container_synchronization` for more
+information.
+This policy is only applicable for smartphone containers and will be ignored for all other types.
+
+
 .. index:: Realm-box, Realm dropdown
 
 realm_dropdown
@@ -522,4 +558,4 @@ type: int
 
 This defines the age of the displayed news feeds. The default is 180 days. You can specify a different age in days.
 
-.. _note:: If you specify the age 0, then the UI tab "News" will be hidden.
+.. note:: If you specify the age 0, then the UI tab "News" will be hidden.

@@ -38,6 +38,7 @@ import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -89,6 +90,7 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     MatDivider,
+    CdkCopyToClipboard,
   ],
   templateUrl: './token-details.component.html',
   styleUrl: './token-details.component.scss',

@@ -581,8 +581,8 @@ def export(ctx, export_format, b32):
             key, token_num, soup = export_pskc(tlist)
             sys.stderr.write(f"\n{token_num} tokens exported.\n")
             sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
-                             "You need this key to import the "
-                             "tokens again:\n\n\t{key}\n\n")
+                             f"You need this key to import the "
+                             f"tokens again:\n\n\t{key}\n\n")
             click.echo(f"{soup}")
 
 

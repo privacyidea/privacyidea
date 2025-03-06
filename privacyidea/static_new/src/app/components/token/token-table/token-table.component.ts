@@ -22,6 +22,7 @@ import {
 } from '../../../services/table-utils/table-column';
 import { TokenData } from '../../../model/token/token-data';
 import { TokenSelectedContent } from '../token.component';
+
 @Component({
   selector: 'app-token-table',
   standalone: true,
@@ -98,6 +99,7 @@ export class TokenTableComponent {
       getItems: (token) => (token.serial ? [token.serial] : []),
       onClick: (token) =>
         token.serial ? this.selectToken(token.serial) : null,
+      isCopyable: true,
     }),
     new SimpleTableColumn({
       key: 'tokentype',
@@ -178,6 +180,7 @@ export class TokenTableComponent {
         token.container_serial
           ? this.containerSelected(token.container_serial)
           : null,
+      isCopyable: true,
     }),
   ];
 

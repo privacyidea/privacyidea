@@ -1,4 +1,4 @@
-.. _templates:
+.. _container_templates:
 
 Container Templates
 ...................

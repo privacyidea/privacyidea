@@ -16,6 +16,7 @@ describe('EnrollYubikeyComponent', () => {
     fixture = TestBed.createComponent(EnrollYubikeyComponent);
     component = fixture.componentInstance;
     component.otpLength = signal(44);
+    component.otpKey = signal('');
     fixture.detectChanges();
   });
 

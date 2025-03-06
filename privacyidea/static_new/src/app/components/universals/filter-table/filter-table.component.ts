@@ -23,6 +23,7 @@ import {
   TableColumn,
 } from '../../../services/table-utils/table-column';
 import { Observable } from 'rxjs';
+import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 
 export type FetchDataHandler = (named: {
   pageIndex: number;
@@ -59,6 +60,7 @@ export type SortDir =
     NgClass,
     MatIcon,
     MatFabButton,
+    CdkCopyToClipboard,
   ],
   templateUrl: './filter-table.component.html',
   styleUrls: ['./filter-table.component.scss'],
@@ -82,8 +84,6 @@ export class FilterTable<T> {
   filterValue: string = '';
   showAdvancedFilter: WritableSignal<boolean> = signal(false);
 
-  // Must be set in ngOnInit
-  filters!: KeywordFilter[];
   displayedColumns!: string[];
   dataSource!: WritableSignal<MatTableDataSource<any>>;
 
@@ -100,7 +100,6 @@ export class FilterTable<T> {
   ) {}
 
   ngOnInit(): void {
-    this.filters = this.basicFilters.concat(this.advancedFilters);
     this.displayedColumns = this.columns.map((column) => column.key);
     this.dataSource = signal(
       new MatTableDataSource(

@@ -18,7 +18,7 @@ body {
 
 :root {
   --blur: 4px;
-  --border-radius: 6px;
+  --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 2px;
   --global-padding: 1.25rem;
@@ -275,6 +275,20 @@ body {
 
 .gap-1 {
   gap: 1rem;
+}
+
+.copy-button {
+  background: unset;
+  border: unset;
+  cursor: pointer;
+}
+
+.copy-icon {
+  font-size: 16px;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  color: #d0d0d0;
 }
 
 ::ng-deep {

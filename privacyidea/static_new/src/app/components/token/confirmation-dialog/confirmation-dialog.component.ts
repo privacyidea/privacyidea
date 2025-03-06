@@ -24,7 +24,10 @@ export class ConfirmationDialogComponent {
   constructor(
     @Inject(MAT_DIALOG_DATA)
     public data: {
+      type: string;
       serial_list: any;
+      title: string;
+      action: string;
     },
   ) {}
 }
