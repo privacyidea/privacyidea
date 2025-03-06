@@ -23,11 +23,11 @@ angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versio
     ['$stateProvider', 'versioningSuffixProviderProvider',
         function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
-            var instance = window.location.pathname;
+            let instance = window.location.pathname;
             if (instance === "/") {
                instance = "";
             }
-            var userpath = instance + "/static/components/user/views/";
+            const userpath = instance + "/static/components/user/views/";
             $stateProvider
                 .state('user', {
                     url: "/user",
@@ -36,7 +36,8 @@ angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versio
                 })
                 .state('user.list', {
                     url: "/list",
-                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "userListController"
                 })
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",

@@ -138,7 +138,7 @@
          first-text="{{ 'First'|translate }}"
          items-per-page="{{ tokensPerPage }}"
          max-size="5"
-         boundary-links="true" ng-change="pageChanged()"></div>
+         boundary-links="true" ng-change="tokenPageChanged()"></div>
 
     <div class="table-responsive form-group" ng-show="showTokenOfUser">
         <table class="table table-bordered table-striped">
@@ -153,7 +153,7 @@
                 <th translate>Maxfail</th>
                 <th translate>Otplen</th>
                 <th>Container</th>
-                <th></th>
+                <th ng-if="checkRight('unassign') || checkRight('delete') || !hide_buttons"></th>
             </tr>
             </thead>
             <tbody>
@@ -198,7 +198,7 @@
                         {{ token.container_serial }}
                     </span>
                 </td>
-                <td>
+                <td ng-if="checkRight('unassign') || checkRight('delete') || !hide_buttons">
                     <fieldset ng-disabled="!token.tokentype">
                         <button class="btn btn-transparent btn-warning btn-sm"
                                 ng-hide="showDialog[token.serial]"
@@ -215,7 +215,7 @@
                         </button>
                         <button class="btn btn-danger btn-sm"
                                 ng-click="deleteToken(token.serial, false)"
-                                ng-show="(showDialog[token.serial] && checkRight('delete')) || !hide_buttons"
+                                ng-show="showDialog[token.serial] && (checkRight('delete') || !hide_buttons)"
                                 ng-disabled="!checkRight('delete')">
                             <span translate>Delete Token</span>
                         </button>
@@ -322,7 +322,7 @@
             src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
     </ng-include>
     <!-- ===================== Containers ===================== -->
-    <h3 ng-show="containerdata.length > 0" translate>Containers for user {{ username }}</h3>
+    <h3 ng-show="containerdata.count > 0" translate>Containers for user {{ username }}</h3>
 
     <div uib-pagination ng-show="containerdata.count > containersPerPage"
          total-items="containerdata.count" ng-model="containerParams.page"
@@ -332,10 +332,10 @@
          first-text="{{ 'First'|translate }}"
          items-per-page="{{ containersPerPage }}"
          max-size="5"
-         boundary-links="true" ng-change="pageChanged()">
+         boundary-links="true" ng-change="containerPageChanged()">
     </div>
 
-    <div class="table-responsive" ng-show="containerdata.length > 0">
+    <div class="table-responsive" ng-show="containerdata.count > 0">
         <div class="table-responsive">
             <table class="table table-bordered table-striped" id="tableContainerList">
                 <thead>
@@ -352,7 +352,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr ng-repeat="container in containerdata">
+                <tr ng-repeat="container in containerdata.containers">
                     <td>
                         <a ui-sref="token.containerdetails({containerSerial: container.serial})"
                            ng-show="checkRight('container_list')">
