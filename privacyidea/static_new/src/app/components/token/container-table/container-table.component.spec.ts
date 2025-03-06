@@ -11,6 +11,8 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { KeywordFilter } from '../../../services/keyword_filter';
+import { FetchDataResponse } from '../../universals/filter-table/filter-table.component';
+import { ContainerData } from '../../../model/container/container-data';
 
 describe('ContainerTableComponent', () => {
   let component: ContainerTableComponent;
@@ -139,29 +141,52 @@ describe('ContainerTableComponent', () => {
 
   describe('processDataSource()', () => {
     it('should transform users array to "users" and "user_realm" fields', () => {
-      const mockData = [
-        {
-          serial: 'Mock serial',
-          type: 'hotp',
-          states: 'active',
-          description: 'test description',
-          users: [{ user_name: 'admin_user', user_realm: 'realm1' }],
+      const mockResponse: FetchDataResponse = {
+        result: {
+          value: {
+            containers: [
+              {
+                serial: 'Mock serial',
+                type: 'hotp',
+                states: ['active'],
+                description: 'test description',
+                users: [
+                  {
+                    user_id: '1',
+                    user_name: 'admin_user',
+                    user_realm: 'realm1',
+                    user_resolver: 'resolver1',
+                  },
+                ],
+                user_realm: 'realm1',
+                realms: 'realm1',
+              },
+              {
+                serial: 'Mock serial 2',
+                type: 'hotp',
+                states: ['deactivated'],
+                description: 'test description',
+                users: [],
+                user_realm: 'realm1',
+                realms: 'realm1',
+              },
+            ],
+          },
         },
-        {
-          serial: 'Mock serial',
-          type: 'hotp',
-          states: ['deactivated'],
-          description: 'test description',
-          users: [],
-        },
-      ];
-      component['processDataSource'](mockData);
-
-      const tableData = component.dataSource().data;
-      expect(tableData[0].users).toBe('admin_user');
-      expect(tableData[0].user_realm).toBe('realm1');
-      expect(tableData[1].users).toBe('');
-      expect(tableData[1].user_realm).toBe('');
+      };
+      const [length, dataSource] = component.processDataSource(mockResponse);
+      const tableData = dataSource.data;
+      expect(tableData[0].serial).toBe('Mock serial');
+      expect(tableData[0].type).toBe('hotp');
+      expect(tableData[0].states).toEqual(['active']);
+      expect(tableData[0].description).toBe('test description');
+      expect(tableData[0].users![0].user_realm).toBe('realm1');
+      expect(tableData[0].users![0].user_name).toBe('admin_user');
+      expect(tableData[1].serial).toBe('Mock serial 2');
+      expect(tableData[1].type).toBe('hotp');
+      expect(tableData[1].states).toEqual(['deactivated']);
+      expect(tableData[1].description).toBe('test description');
+      expect(tableData[1].users).toEqual([]);
     });
   });
 

@@ -22,10 +22,30 @@ describe('ConfirmationDialogComponent', () => {
 
     fixture = TestBed.createComponent(ConfirmGetSerialDialogComponent);
     component = fixture.componentInstance;
+    component.data = {
+      numberOfTokens: 42,
+      onAbort: jasmine.createSpy(),
+      onConfirm: jasmine.createSpy(),
+    };
     fixture.detectChanges();
   });
-
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+  it('should display the correct number of tokens', () => {
+    const compiled = fixture.nativeElement;
+    expect(compiled.querySelector('.token-count').textContent).toContain(
+      component.data.numberOfTokens,
+    );
+  });
+  it('should call onAbort when abort button is clicked', () => {
+    const button = fixture.nativeElement.querySelector('.abort-button');
+    button.click();
+    expect(component.data.onAbort).toHaveBeenCalled();
+  });
+  it('should call onConfirm when confirm button is clicked', () => {
+    const button = fixture.nativeElement.querySelector('.confirm-button');
+    button.click();
+    expect(component.data.onConfirm).toHaveBeenCalled();
   });
 });

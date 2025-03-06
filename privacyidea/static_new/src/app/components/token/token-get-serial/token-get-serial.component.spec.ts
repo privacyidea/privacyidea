@@ -35,11 +35,11 @@ describe('TokenGetSerial', () => {
     fixture.detectChanges();
 
     component.otpValue.set('123456');
-    expect(component.currentStep).toBe('init');
+    expect(component.currentStep()).toBe('init');
     component.onPressEnter();
-    expect(component.currentStep).toBe('found');
-    expect(component.tokenCount).toBe('42');
-    expect(component.foundSerial).toBe('OAUTH0001A2B');
+    expect(component.currentStep()).toBe('found');
+    expect(component.tokenCount()).toBe('42');
+    expect(component.foundSerial()).toBe('OAUTH0001A2B');
   });
 
   it('get serial with under over 100 tokens', async () => {
@@ -54,16 +54,15 @@ describe('TokenGetSerial', () => {
     fixture = TestBed.createComponent(TokenGetSerial);
     component = fixture.componentInstance;
     fixture.detectChanges();
-
     component.otpValue.set('123456');
-    expect(component.currentStep).toBe('init');
+    expect(component.currentStep()).toBe('init');
     component.onPressEnter();
-    expect(component.currentStep).toBe('counting');
-    expect(component.tokenCount).toBe('9001');
-    expect(component.foundSerial).toBe('');
-    component.onPressEnter();
-    expect(component.currentStep).toBe('found');
-    expect(component.foundSerial).toBe('OAUTH0001A2B');
+    expect(component.currentStep()).toBe('countDone');
+    expect(component.tokenCount()).toBe('9001');
+    expect(component.foundSerial()).toBe('');
+    component.findSerial();
+    expect(component.currentStep()).toBe('found');
+    expect(component.foundSerial()).toBe('OAUTH0001A2B');
   });
 });
 
