@@ -24,6 +24,7 @@ import {
 } from '../../../services/table-utils/table-column';
 import { Observable } from 'rxjs';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { LoadingService } from '../../../services/loading/loading-service';
 
 export type FetchDataHandler = (named: {
   pageIndex: number;
@@ -97,6 +98,7 @@ export class FilterTable<T> {
     private authService: AuthService,
     private router: Router,
     private notificationService: NotificationService,
+    private loadingService: LoadingService,
   ) {}
 
   ngOnInit(): void {
@@ -170,6 +172,10 @@ export class FilterTable<T> {
     if (column instanceof OnClickTableColumn) {
       var observable = column.onClick(element);
       if (observable) {
+        this.loadingService.addLoading({
+          key: 'fetchData',
+          observable: observable,
+        });
         observable.subscribe({
           next: () => {
             this.fetchData();

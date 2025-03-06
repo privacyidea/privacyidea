@@ -16,9 +16,9 @@ export class LoadingService {
     Object.values(this.listeners).forEach((l) => l(this.isLoading()));
   }
 
-  loadings: { key: string; observeable: Observable<any> }[] = [];
-  addLoading(loading: { key: string; observeable: Observable<any> }): void {
-    loading.observeable.subscribe({
+  loadings: { key: string; observable: Observable<any> }[] = [];
+  addLoading(loading: { key: string; observable: Observable<any> }): void {
+    loading.observable.subscribe({
       complete: () => {
         this.removeLoading(loading.key);
       },

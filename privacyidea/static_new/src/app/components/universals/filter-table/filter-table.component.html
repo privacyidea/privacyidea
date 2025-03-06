@@ -19,45 +19,13 @@
       aria-label="Select page of tokens"
       showFirstLastButtons></mat-paginator>
   </div>
-  <div class="filter-keyword-container">
-    <div class="filter-keyword-title">
-      <mat-icon class="filter-icon">filter_alt</mat-icon>
-      Filter by:&nbsp;
-    </div>
-    @for (filter of basicFilters; track basicFilters) {
-      <button
-        mat-fab
-        extended
-        (click)="toggleKeyword(filter, input)"
-        class="keyword-button">
-        <mat-icon
-          class="keyword-button-icon"
-          [ngClass]="
-            {
-              change_circle: 'change-keyword',
-              remove_circle: 'remove-keyword',
-              add_circle: 'add-keyword',
-            }[filter.getIconName(input.value)]
-          ">
-          {{ filter.getIconName(input.value) }}
-        </mat-icon>
-        {{ filter.label }}
-      </button>
-    }
-    @if (advancedFilters.length !== 0) {
-      <button
-        (click)="showAdvancedFilter.set(!showAdvancedFilter())"
-        class="more-keyword-button"
-        extended
-        mat-fab>
-        <mat-icon class="keyword-button-icon">
-          {{ showAdvancedFilter() ? "remove" : "add" }}
-        </mat-icon>
-      </button>
-      @for (
-        filter of showAdvancedFilter() ? advancedFilters : [];
-        track showAdvancedFilter() ? advancedFilters : []
-      ) {
+  @if (basicFilters.length + advancedFilters.length > 0) {
+    <div class="filter-keyword-container">
+      <div class="filter-keyword-title">
+        <mat-icon class="filter-icon">filter_alt</mat-icon>
+        Filter by:&nbsp;
+      </div>
+      @for (filter of basicFilters; track basicFilters) {
         <button
           mat-fab
           extended
@@ -77,8 +45,42 @@
           {{ filter.label }}
         </button>
       }
-    }
-  </div>
+      @if (advancedFilters.length !== 0) {
+        <button
+          (click)="showAdvancedFilter.set(!showAdvancedFilter())"
+          class="more-keyword-button"
+          extended
+          mat-fab>
+          <mat-icon class="keyword-button-icon">
+            {{ showAdvancedFilter() ? "remove" : "add" }}
+          </mat-icon>
+        </button>
+        @for (
+          filter of showAdvancedFilter() ? advancedFilters : [];
+          track showAdvancedFilter() ? advancedFilters : []
+        ) {
+          <button
+            mat-fab
+            extended
+            (click)="toggleKeyword(filter, input)"
+            class="keyword-button">
+            <mat-icon
+              class="keyword-button-icon"
+              [ngClass]="
+                {
+                  change_circle: 'change-keyword',
+                  remove_circle: 'remove-keyword',
+                  add_circle: 'add-keyword',
+                }[filter.getIconName(input.value)]
+              ">
+              {{ filter.getIconName(input.value) }}
+            </mat-icon>
+            {{ filter.label }}
+          </button>
+        }
+      }
+    </div>
+  }
   <table
     (matSortChange)="handleSortEvent()"
     [dataSource]="dataSource()"
@@ -101,6 +103,13 @@
           mat-cell
           [ngClass]="{
             'width-18': column.key === 'description',
+            'td-start': column.align === 'start',
+            'td-end': column.align === 'end',
+            'td-left': column.align === 'left',
+            'td-right': column.align === 'right',
+            'td-center': column.align === 'center',
+            'td-justify': column.align === 'justify',
+            'td-match-parent': column.align === 'match-parent',
           }">
           @switch (column.type) {
             @case ("OnClickTableColumn".toString()) {

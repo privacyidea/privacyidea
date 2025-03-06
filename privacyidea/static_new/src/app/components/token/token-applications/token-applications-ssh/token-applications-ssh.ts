@@ -86,7 +86,7 @@ export class TokenApplicationsSsh {
       label: 'Serial',
       getItems: (sshToken) => (sshToken.serial ? [sshToken.serial] : []),
       onClick: (sshToken) =>
-        sshToken.serial ? this.selectToken(sshToken.serial) : () => {},
+        sshToken.serial ? this.selectToken(sshToken.serial) : undefined,
     }),
     new SimpleTableColumn({
       key: 'type',

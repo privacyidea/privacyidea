@@ -17,6 +17,7 @@ import { Observable } from 'rxjs/internal/Observable';
 import { KeywordFilter } from '../../../services/keyword_filter';
 import {
   OnClickTableColumn,
+  RouterTableColumn,
   SimpleTableColumn,
   TableColumn,
 } from '../../../services/table-utils/table-column';
@@ -98,7 +99,7 @@ export class TokenTableComponent {
       label: 'Serial',
       getItems: (token) => (token.serial ? [token.serial] : []),
       onClick: (token) =>
-        token.serial ? this.selectToken(token.serial) : null,
+        token.serial ? this.selectToken(token.serial) : undefined,
       isCopyable: true,
     }),
     new SimpleTableColumn({
@@ -148,28 +149,32 @@ export class TokenTableComponent {
               ? 'highlight-warning-clickable'
               : 'highlight-false-clickable',
       onClick: (token) => this.resetFailCount(token),
+      align: 'center',
     }),
     new SimpleTableColumn({
       key: 'rollout_state',
       label: 'Rollout State',
       getItems: (token) => (token.rollout_state ? [token.rollout_state] : []),
     }),
-    new SimpleTableColumn({
+    new RouterTableColumn({
       key: 'username',
       label: 'User',
       getItems: (token) => (token.username ? [token.username] : []),
+      routerLink: '#',
     }),
-    new SimpleTableColumn({
+    new RouterTableColumn({
       key: 'user_realm',
       label: 'User Realm',
       getItems: (token) => (token.user_realm ? [token.user_realm] : []),
+      routerLink: '#',
     }),
-    new SimpleTableColumn({
+    new RouterTableColumn({
       key: 'realms',
       label: 'Token Realm',
       getNgClass: (token) =>
         token.realms && token.realms.length > 1 ? 'realm-list' : 'realm',
       getItems: (token) => (token.realms ? [token.realms] : []),
+      routerLink: '#',
     }),
     new OnClickTableColumn({
       key: 'container_serial',
@@ -179,7 +184,7 @@ export class TokenTableComponent {
       onClick: (token) =>
         token.container_serial
           ? this.containerSelected(token.container_serial)
-          : null,
+          : undefined,
       isCopyable: true,
     }),
   ];

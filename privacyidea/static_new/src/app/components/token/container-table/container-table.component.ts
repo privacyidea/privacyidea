@@ -61,7 +61,7 @@ export class ContainerTableComponent {
       label: 'Serial',
       getItems: (container) => (container.serial ? [container.serial] : []),
       onClick: (container) =>
-        container.serial ? this.selectContainer(container.serial) : () => {},
+        container.serial ? this.selectContainer(container.serial) : undefined,
       isCopyable: true,
     }),
     new SimpleTableColumn({
@@ -74,7 +74,7 @@ export class ContainerTableComponent {
       label: 'Status',
       getItems: (container) => (container.states ? container.states : []),
       onClick: (container) =>
-        container.serial ? this.onClickToggleActive(container) : () => {},
+        container.serial ? this.onClickToggleActive(container) : undefined,
       getNgClass: (container) => this.getStatesNgClass(container.states || []),
     }),
     new SimpleTableColumn({

@@ -203,7 +203,7 @@ export class TokenGetSerial {
     let observable = this.tokenService.getSerial(this.otpValue(), params);
     this.loadingService.addLoading({
       key: 'token-get-serial',
-      observeable: observable,
+      observable: observable,
     });
     observable.subscribe({
       error: (error) => {

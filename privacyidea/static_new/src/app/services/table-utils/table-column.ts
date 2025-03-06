@@ -6,7 +6,14 @@ export abstract class TableColumn<T> {
   getItems: (value: T) => string[];
   getNgClass: (value: T) => string;
   isCopyable: boolean;
-
+  align:
+    | 'start'
+    | 'end'
+    | 'left'
+    | 'right'
+    | 'center'
+    | 'justify'
+    | 'match-parent';
   type: string = 'TableColumn';
 
   constructor(named: {
@@ -15,12 +22,21 @@ export abstract class TableColumn<T> {
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
     isCopyable?: boolean;
+    align?:
+      | 'start'
+      | 'end'
+      | 'left'
+      | 'right'
+      | 'center'
+      | 'justify'
+      | 'match-parent';
   }) {
     this.key = named.key;
     this.label = named.label;
     this.getItems = named.getItems;
     this.getNgClass = named.getNgClass ?? (() => '');
     this.isCopyable = named.isCopyable ?? false;
+    this.align = named.align ?? 'start';
   }
 }
 
@@ -32,6 +48,14 @@ export class SimpleTableColumn<T> extends TableColumn<T> {
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
     isCopyable?: boolean;
+    align?:
+      | 'start'
+      | 'end'
+      | 'left'
+      | 'right'
+      | 'center'
+      | 'justify'
+      | 'match-parent';
   }) {
     super(named);
   }
@@ -45,8 +69,16 @@ export class OnClickTableColumn<T> extends TableColumn<T> {
     label: string;
     getItems: (value: T) => string[];
     getNgClass?: (value: T) => string;
-    onClick: (value: T) => void;
+    onClick: (value: T) => Observable<any> | void;
     isCopyable?: boolean;
+    align?:
+      | 'start'
+      | 'end'
+      | 'left'
+      | 'right'
+      | 'center'
+      | 'justify'
+      | 'match-parent';
   }) {
     super(named);
     this.onClick = named.onClick;
@@ -60,9 +92,17 @@ export class RouterTableColumn<T> extends TableColumn<T> {
     key: string;
     label: string;
     getItems: (value: T) => string[];
-    getNgClass: (value: T) => string;
+    getNgClass?: (value: T) => string;
     isCopyable?: boolean;
     routerLink: string;
+    align?:
+      | 'start'
+      | 'end'
+      | 'left'
+      | 'right'
+      | 'center'
+      | 'justify'
+      | 'match-parent';
   }) {
     super(named);
     this.routerLink = named.routerLink;

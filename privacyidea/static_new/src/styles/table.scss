@@ -74,6 +74,41 @@ $description-width: 18rem;
     justify-content: center;
   }
 
+  .td-start {
+    text-align: start;
+    vertical-align: middle;
+  }
+
+  .td-end {
+    text-align: end;
+    vertical-align: middle;
+  }
+
+  .td-left {
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .td-right {
+    text-align: right;
+    vertical-align: middle;
+  }
+
+  .td-center {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .td-justify {
+    text-align: justify;
+    vertical-align: middle;
+  }
+
+  .td-match-parent {
+    text-align: match-parent;
+    vertical-align: middle;
+  }
+
   .description {
     align-items: flex-start;
   }

@@ -88,7 +88,7 @@ export class TokenApplicationsOffline {
       getItems: (offlineToken) =>
         offlineToken.serial ? [offlineToken.serial] : [],
       onClick: (offlineToken) =>
-        offlineToken.serial ? this.selectToken(offlineToken.serial) : () => {},
+        offlineToken.serial ? this.selectToken(offlineToken.serial) : undefined,
     }),
     new SimpleTableColumn({
       key: 'type',
