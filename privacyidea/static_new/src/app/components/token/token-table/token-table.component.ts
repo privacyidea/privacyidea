@@ -173,7 +173,7 @@ export class TokenTableComponent {
       label: 'Token Realm',
       getNgClass: (token) =>
         token.realms && token.realms.length > 1 ? 'realm-list' : 'realm',
-      getItems: (token) => (token.realms ? [token.realms] : []),
+      getItems: (token) => (token.realms ? token.realms : []),
       routerLink: '#',
     }),
     new OnClickTableColumn({

@@ -111,62 +111,64 @@
             'td-justify': column.align === 'justify',
             'td-match-parent': column.align === 'match-parent',
           }">
-          @switch (column.type) {
-            @case ("OnClickTableColumn".toString()) {
-              @for (
-                item of column.getItems(element);
-                track item;
-                let idx = $index
-              ) {
-                <a
-                  [ngClass]="column.getNgClass(element)"
-                  attr.aria-label="{{ column.label }} Link"
-                  (click)="handleOnClick(element, column)">
-                  {{ item }}</a
-                >
-                @if (column.isCopyable) {
-                  <button class="copy-button" [cdkCopyToClipboard]="item">
-                    <mat-icon class="copy-icon">content_copy</mat-icon>
-                  </button>
-                }
-                <br style="margin-top: 3px" />
-              }
-            }
-            @case ("RouterTableColumn".toString()) {
-              @for (item of column.getItems(element); track item) {
-                <a
-                  [ngClass]="column.getNgClass(element)"
-                  attr.aria-label="{{ column.label }} Link"
-                  href="column.getLink(element)">
-                  {{ item }}
-                </a>
-                @if (column.isCopyable) {
-                  <button class="copy-button" [cdkCopyToClipboard]="item">
-                    <mat-icon class="copy-icon">content_copy</mat-icon>
-                  </button>
-                }
-                <br style="margin-top: 3px" />
-              }
-            }
-            @default {
-              @for (
-                item of column.getItems(element);
-                track item;
-                let idx = $index
-              ) {
-                {{ item }}
-                @if (column.isCopyable) {
-                  <button
+          <div class="cell-content">
+            @switch (column.type) {
+              @case ("OnClickTableColumn".toString()) {
+                @for (
+                  item of column.getItems(element);
+                  track item;
+                  let idx = $index
+                ) {
+                  <a
                     [ngClass]="column.getNgClass(element)"
-                    class="copy-button"
-                    [cdkCopyToClipboard]="item">
-                    <mat-icon class="copy-icon">content_copy</mat-icon>
-                  </button>
+                    attr.aria-label="{{ column.label }} Link"
+                    (click)="handleOnClick(element, column)">
+                    {{ item }}</a
+                  >
+                  @if (column.isCopyable) {
+                    <button class="copy-button" [cdkCopyToClipboard]="item">
+                      <mat-icon class="copy-icon">content_copy</mat-icon>
+                    </button>
+                  }
+                  <br style="margin-top: 3px" />
                 }
-                <br style="margin-top: 3px" />
+              }
+              @case ("RouterTableColumn".toString()) {
+                @for (item of column.getItems(element); track item) {
+                  <a
+                    [ngClass]="column.getNgClass(element)"
+                    attr.aria-label="{{ column.label }} Link"
+                    href="column.getLink(element)">
+                    {{ item }}
+                  </a>
+                  @if (column.isCopyable) {
+                    <button class="copy-button" [cdkCopyToClipboard]="item">
+                      <mat-icon class="copy-icon">content_copy</mat-icon>
+                    </button>
+                  }
+                  <br style="margin-top: 3px" />
+                }
+              }
+              @default {
+                @for (
+                  item of column.getItems(element);
+                  track item;
+                  let idx = $index
+                ) {
+                  {{ item }}
+                  @if (column.isCopyable) {
+                    <button
+                      [ngClass]="column.getNgClass(element)"
+                      class="copy-button"
+                      [cdkCopyToClipboard]="item">
+                      <mat-icon class="copy-icon">content_copy</mat-icon>
+                    </button>
+                  }
+                  <br style="margin-top: 3px" />
+                }
               }
             }
-          }
+          </div>
         </td>
       </ng-container>
     }

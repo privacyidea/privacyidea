@@ -7,7 +7,7 @@ export class TokenData {
   rollout_state?: string;
   username?: string;
   user_realm?: string;
-  realms?: string;
+  realms?: string[];
   container_serial?: string;
   revoked?: boolean;
   locked?: boolean;
