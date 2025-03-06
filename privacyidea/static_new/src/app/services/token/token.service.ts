@@ -318,7 +318,7 @@ export class TokenService {
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http.get(`/tokengroup`, { headers });
+    return this.http.get(environment.proxyUrl + `/tokengroup/`, { headers });
   }
 
   lostToken(tokenSerial: string) {
