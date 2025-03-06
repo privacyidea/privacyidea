@@ -158,7 +158,10 @@ export class TokenGetSerial {
     observable.subscribe({
       error: (error) => {
         console.error('Failed to get serial.', error);
-        this.notificationService.openSnackBar('Failed to get serial.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get serial. ' + message,
+        );
       },
     });
     return observable;

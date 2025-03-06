@@ -60,7 +60,10 @@ export class TokenTabComponent {
         },
         error: (error) => {
           console.error('Failed to toggle active.', error);
-          this.notificationService.openSnackBar('Failed to toggle active.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
         },
       });
   }
@@ -92,8 +95,9 @@ export class TokenTabComponent {
                 },
                 error: (error) => {
                   console.error('Failed to revoke token.', error);
+                  const message = error.error?.result?.error?.message || '';
                   this.notificationService.openSnackBar(
-                    'Failed to revoke token.',
+                    'Failed to revoke token. ' + message,
                   );
                 },
               });
@@ -123,8 +127,9 @@ export class TokenTabComponent {
               },
               error: (error) => {
                 console.error('Failed to delete token.', error);
+                const message = error.error?.result?.error?.message || '';
                 this.notificationService.openSnackBar(
-                  'Failed to delete token.',
+                  'Failed to delete token. ' + message,
                 );
               },
             });

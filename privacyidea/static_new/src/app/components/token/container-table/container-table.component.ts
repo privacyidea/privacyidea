@@ -146,7 +146,10 @@ export class ContainerTableComponent {
         },
         error: (error) => {
           console.error('Failed to toggle active.', error);
-          this.notificationService.openSnackBar('Failed to toggle active.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
         },
       });
   }
@@ -171,8 +174,9 @@ export class ContainerTableComponent {
         },
         error: (error) => {
           console.error('Failed to get container data.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to get container data.',
+            'Failed to get container data. ' + message,
           );
         },
       });

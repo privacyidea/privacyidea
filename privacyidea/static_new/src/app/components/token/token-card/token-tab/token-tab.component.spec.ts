@@ -124,7 +124,7 @@ describe('TokenTabComponent', () => {
       component.toggleActive();
 
       expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active.',
+        'Failed to toggle active. ',
       );
     });
   });
@@ -158,7 +158,7 @@ describe('TokenTabComponent', () => {
       component.revokeToken();
 
       expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to revoke token.',
+        'Failed to revoke token. ',
       );
     });
   });
@@ -188,7 +188,7 @@ describe('TokenTabComponent', () => {
       component.deleteToken();
 
       expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to delete token.',
+        'Failed to delete token. ',
       );
     });
   });

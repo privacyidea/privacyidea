@@ -183,7 +183,10 @@ export class TokenTableComponent {
       },
       error: (error) => {
         console.error('Failed to toggle active.', error);
-        this.notificationService.openSnackBar('Failed to toggle active.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to toggle active. ' + message,
+        );
       },
     });
   }
@@ -195,7 +198,10 @@ export class TokenTableComponent {
       },
       error: (error) => {
         console.error('Failed to reset fail counter.', error);
-        this.notificationService.openSnackBar('Failed to reset fail counter.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to reset fail counter. ' + message,
+        );
       },
     });
   }
@@ -239,7 +245,10 @@ export class TokenTableComponent {
         },
         error: (error) => {
           console.error('Failed to get token data.', error);
-          this.notificationService.openSnackBar('Failed to get token data.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get token data. ' + message,
+          );
         },
       });
   }

@@ -242,7 +242,10 @@ export class TokenDetailsComponent {
       }),
       catchError((error) => {
         console.error('Failed to get token details.', error);
-        this.notificationService.openSnackBar('Failed to get token details.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get token details. ' + message,
+        );
         throw error;
       }),
     );
@@ -255,8 +258,9 @@ export class TokenDetailsComponent {
       .subscribe({
         error: (error) => {
           console.error('Failed to reset fail counter.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to reset fail counter.',
+            'Failed to reset fail counter. ' + message,
           );
         },
       });
@@ -297,7 +301,10 @@ export class TokenDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to save token detail.', error);
-          this.notificationService.openSnackBar('Failed to save token detail.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to save token detail. ' + message,
+          );
         },
       });
   }
@@ -309,7 +316,10 @@ export class TokenDetailsComponent {
       .subscribe({
         error: (error) => {
           console.error('Failed to assign container.', error);
-          this.notificationService.openSnackBar('Failed to assign container.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign container. ' + message,
+          );
         },
       });
   }
@@ -321,8 +331,9 @@ export class TokenDetailsComponent {
       .subscribe({
         error: (error) => {
           console.error('Failed to unassign container.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to unassign container.',
+            'Failed to unassign container. ' + message,
           );
         },
       });
@@ -373,7 +384,10 @@ export class TokenDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to get containers.', error);
-          this.notificationService.openSnackBar('Failed to get containers.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get containers. ' + message,
+          );
         },
       });
     }
@@ -396,7 +410,10 @@ export class TokenDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to get tokengroups.', error);
-          this.notificationService.openSnackBar('Failed to get tokengroups.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get tokengroups. ' + message,
+          );
         },
       });
     }
@@ -452,7 +469,10 @@ export class TokenDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to save token realms.', error);
-          this.notificationService.openSnackBar('Failed to save token realms.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to save token realms. ' + message,
+          );
         },
       });
   }
@@ -467,7 +487,10 @@ export class TokenDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to set token group.', error);
-          this.notificationService.openSnackBar('Failed to set token group.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set token group. ' + message,
+          );
         },
       });
   }

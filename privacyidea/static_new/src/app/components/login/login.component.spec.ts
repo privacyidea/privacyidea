@@ -170,7 +170,7 @@ describe('LoginComponent', () => {
       component.onSubmit();
 
       expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        'Login failed.',
+        'Login failed. ',
       );
       expect(localService.saveData).not.toHaveBeenCalled();
       expect(sessionTimerService.startTimer).not.toHaveBeenCalled();

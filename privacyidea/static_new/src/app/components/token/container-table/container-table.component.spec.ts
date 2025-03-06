@@ -152,7 +152,7 @@ describe('ContainerTableComponent', () => {
 
       component['fetchContainerData']();
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to get container data.',
+        'Failed to get container data. ',
       );
     });
   });
@@ -260,7 +260,7 @@ describe('ContainerTableComponent', () => {
       component.handleStateClick(mockElement);
 
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active.',
+        'Failed to toggle active. ',
       );
     });
   });

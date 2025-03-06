@@ -199,7 +199,10 @@ export class ContainerDetailsComponent {
           },
           error: (error) => {
             console.error('Failed to get users.', error);
-            this.notificationService.openSnackBar('Failed to get users.');
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to get users. ' + message,
+            );
           },
         });
       }
@@ -288,8 +291,9 @@ export class ContainerDetailsComponent {
       }),
       catchError((error) => {
         console.error('Failed to get container details.', error);
+        const message = error.error?.result?.error?.message || '';
         this.notificationService.openSnackBar(
-          'Failed to get container details.',
+          'Failed to get container details. ' + message,
         );
         throw error;
       }),
@@ -343,7 +347,10 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to assign user.', error);
-          this.notificationService.openSnackBar('Failed to assign user.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign user. ' + message,
+          );
         },
       });
   }
@@ -363,7 +370,10 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to unassign user.', error);
-          this.notificationService.openSnackBar('Failed to unassign user.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to unassign user. ' + message,
+          );
         },
       });
   }
@@ -398,8 +408,9 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to add token to container.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to add token to container.',
+            'Failed to add token to container. ' + message,
           );
         },
       });
@@ -431,7 +442,10 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to get token data.', error);
-          this.notificationService.openSnackBar('Failed to get token data.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get token data. ' + message,
+          );
         },
       });
   }
@@ -475,7 +489,10 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to save token realms.', error);
-          this.notificationService.openSnackBar('Failed to save token realms.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to save token realms. ' + message,
+          );
         },
       });
   }
@@ -493,8 +510,9 @@ export class ContainerDetailsComponent {
         },
         error: (error) => {
           console.error('Failed to save token description.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to save token description.',
+            'Failed to save token description. ' + message,
           );
         },
       });

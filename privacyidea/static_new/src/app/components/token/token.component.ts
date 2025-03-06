@@ -245,8 +245,9 @@ export class TokenComponent {
         },
         error: (error) => {
           console.error('Error refreshing token details.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Error refreshing token details.',
+            'Error refreshing token details. ' + message,
           );
         },
       });
@@ -266,8 +267,9 @@ export class TokenComponent {
         },
         error: (error) => {
           console.error('Error refreshing token details.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Error refreshing token details.',
+            'Error refreshing token details. ' + message,
           );
         },
       });

@@ -59,7 +59,10 @@ export class LostTokenComponent {
       },
       error: (error) => {
         console.error('Failed to mark token as lost.', error);
-        this.notificationService.openSnackBar('Failed to mark token as lost.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to mark token as lost. ' + message,
+        );
       },
     });
   }

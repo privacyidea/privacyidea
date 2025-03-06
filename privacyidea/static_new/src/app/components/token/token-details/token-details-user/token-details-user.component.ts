@@ -97,7 +97,10 @@ export class TokenDetailsUserComponent {
           },
           error: (error) => {
             console.error('Failed to get users.', error);
-            this.notificationService.openSnackBar('Failed to get users.');
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to get users. ' + message,
+            );
           },
         });
       }
@@ -117,7 +120,10 @@ export class TokenDetailsUserComponent {
       },
       error: (error) => {
         console.error('Failed to unassign user.', error);
-        this.notificationService.openSnackBar('Failed to unassign user.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to unassign user. ' + message,
+        );
       },
     });
   }
@@ -131,7 +137,8 @@ export class TokenDetailsUserComponent {
     this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
       error: (error) => {
         console.error('Failed to set PIN.', error);
-        this.notificationService.openSnackBar('Failed to set PIN.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar('Failed to set PIN. ' + message);
       },
     });
   }
@@ -140,7 +147,10 @@ export class TokenDetailsUserComponent {
     this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
       error: (error) => {
         console.error('Failed to set random PIN.', error);
-        this.notificationService.openSnackBar('Failed to set random PIN.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to set random PIN. ' + message,
+        );
       },
     });
   }
@@ -184,7 +194,10 @@ export class TokenDetailsUserComponent {
         },
         error: (error) => {
           console.error('Failed to assign user.', error);
-          this.notificationService.openSnackBar('Failed to assign user.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign user. ' + message,
+          );
         },
       });
   }
@@ -203,7 +216,10 @@ export class TokenDetailsUserComponent {
       },
       error: (error) => {
         console.error('Failed to get default realm.', error);
-        this.notificationService.openSnackBar('Failed to get default realm.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get default realm. ' + message,
+        );
       },
     });
   }

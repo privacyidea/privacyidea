@@ -167,7 +167,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
       component.removeTokenFromContainer('CONT-1', 'Mock serial');
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to remove token from container.',
+        'Failed to remove token from container. ',
       );
     });
   });
@@ -210,7 +210,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
       component.toggleActive({ serial: 'Mock serial', active: true });
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active.',
+        'Failed to toggle active. ',
       );
     });
   });
@@ -234,7 +234,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
       component.toggleAll('activate');
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle all.',
+        'Failed to toggle all. ',
       );
     });
   });
@@ -280,7 +280,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
       component.deleteAllTokens();
       expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to delete all tokens.',
+        'Failed to delete all tokens. ',
       );
     });
   });

@@ -107,8 +107,9 @@ export class ContainerDetailsInfoComponent {
       },
       error: (error) => {
         console.error('Failed to save container infos.', error);
+        const message = error.error?.result?.error?.message || '';
         this.notificationService.openSnackBar(
-          'Failed to save container infos.',
+          'Failed to save container infos. ' + message,
         );
       },
     });
@@ -137,7 +138,10 @@ export class ContainerDetailsInfoComponent {
         },
         error: (error) => {
           console.error('Failed to delete info.', error);
-          this.notificationService.openSnackBar('Failed to delete info.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete info. ' + message,
+          );
         },
       });
   }
