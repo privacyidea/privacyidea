@@ -120,7 +120,7 @@ export class ContainerTableComponent {
     filterValue: currentFilter,
   }) => {
     const observable = this.containerService.getContainerData(
-      pageIndex,
+      pageIndex + 1,
       pageSize,
       sortby_sortdir,
       currentFilter,
@@ -139,10 +139,15 @@ export class ContainerTableComponent {
 
   processDataSource: ProcessDataSource<ContainerData> = (
     response: FetchDataResponse,
-  ) =>
-    new MatTableDataSource(
-      ContainerData.parseList(response.result.value.containers),
-    );
+  ) => {
+    console.log(response);
+    return [
+      response.result.value.count,
+      new MatTableDataSource(
+        ContainerData.parseList(response.result.value.containers),
+      ),
+    ];
+  };
 
   getStatesNgClass(states: string[]): string {
     if (states.length === 0) {

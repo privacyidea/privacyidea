@@ -263,6 +263,8 @@ export class TokenTableComponent {
 
   processDataSource: ProcessDataSource<TokenData> = (
     response: FetchDataResponse,
-  ) =>
-    new MatTableDataSource(TokenData.parseList(response.result.value.tokens));
+  ) => [
+    response.result.value.count,
+    new MatTableDataSource(TokenData.parseList(response.result.value.tokens)),
+  ];
 }

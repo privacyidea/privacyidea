@@ -99,8 +99,10 @@ export class ChallengesTableComponent {
     });
   processDataSource: ProcessDataSource<ChallengeData> = (
     response: FetchDataResponse,
-  ) =>
+  ) => [
+    response.result.value.count,
     new MatTableDataSource(
       ChallengeData.parseList(response.result.value.challenges),
-    );
+    ),
+  ];
 }

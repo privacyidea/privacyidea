@@ -39,7 +39,7 @@ export type FetchDataResponse = {
 
 export type ProcessDataSource<T> = (
   response: FetchDataResponse,
-) => MatTableDataSource<T>;
+) => [number, MatTableDataSource<T>];
 
 export type fetchOnError = (error: any) => void;
 
@@ -100,6 +100,7 @@ export class FilterTable<T> {
 
   ngOnInit(): void {
     this.displayedColumns = this.columns.map((column) => column.key);
+    this.pageSize = this.pageSizeOptions[0];
     this.dataSource = signal(
       new MatTableDataSource(
         Array.from({ length: this.pageSize }, () => {
@@ -158,8 +159,8 @@ export class FilterTable<T> {
       filterValue: this.filterValue,
     }).subscribe({
       next: (response) => {
-        const dataSource = this.processDataSource(response);
-        this.numItems = dataSource.data.length;
+        const [numItems, dataSource] = this.processDataSource(response);
+        this.numItems = numItems;
         this.dataSource.set(dataSource);
       },
     });

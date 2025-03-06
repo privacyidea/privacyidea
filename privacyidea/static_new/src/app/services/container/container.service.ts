@@ -34,7 +34,7 @@ export class ContainerService {
     const headers = this.localService.getHeaders();
     let params = new HttpParams();
 
-    if (page && pageSize) {
+    if (typeof page === 'number' && typeof pageSize === 'number') {
       params = params
         .set('page', page.toString())
         .set('pagesize', pageSize.toString());

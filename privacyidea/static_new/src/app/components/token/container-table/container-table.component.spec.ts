@@ -208,7 +208,8 @@ describe('ContainerTableComponent', () => {
           },
         },
       };
-      const dataSource = component.processDataSource(mockResponse);
+      const [count, dataSource] = component.processDataSource(mockResponse);
+      expect(count).toBe(1);
       const tableData = dataSource.data;
       expect(tableData[0].serial).toBe('Mock serial');
       expect(tableData[0].type).toBe('hotp');
