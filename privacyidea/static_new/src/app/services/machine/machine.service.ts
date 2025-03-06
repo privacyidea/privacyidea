@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 import { LocalService } from '../local/local.service';
+import { environment } from '../../../environments/environment';
 
 interface GetTokenParams {
   serial?: string;
@@ -23,7 +24,7 @@ interface GetTokenParams {
   providedIn: 'root',
 })
 export class MachineService {
-  baseUrl: string = '/machine/';
+  baseUrl: string = environment.proxyUrl + '/machine/';
   constructor(
     private http: HttpClient,
     private localService: LocalService,
