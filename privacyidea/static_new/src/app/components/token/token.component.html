@@ -28,10 +28,7 @@
         #drawer
         [mode]="'over'"
         [ngClass]="[
-          this.overflowService.isHeightOverflowing(
-            '.mat-drawer-inner-container',
-            543
-          )
+          this.overflowService.isHeightOverflowing('.token-layout', 675)
             ? 'token-drawer-overflow'
             : 'token-drawer',
         ]">
@@ -44,7 +41,7 @@
           [tokenSerial]="tokenSerial"
           [containerSerial]="containerSerial"
           [isProgrammaticChange]="isProgrammaticChange"
-          [selectedContent]="selectedContent" />
+          [selectedContent]="selectedContent"></app-token-card>
       </mat-drawer>
     }
     <mat-drawer-content>

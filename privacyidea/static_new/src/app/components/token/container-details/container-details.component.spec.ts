@@ -201,7 +201,7 @@ describe('ContainerDetailsComponent', () => {
     component.showContainerDetail().subscribe({
       error: () => {
         expect(console.error).toHaveBeenCalledWith(
-          'Failed to get token details.',
+          'Failed to get token details. ',
           jasmine.any(Error),
         );
       },

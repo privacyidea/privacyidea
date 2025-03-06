@@ -71,7 +71,10 @@ export class ContainerService {
       map((response) => response),
       catchError((error) => {
         console.error('Failed to get container data.', error);
-        this.notificationService.openSnackBar('Failed to get container data.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get container data. ' + message,
+        );
         return throwError(error);
       }),
     );
@@ -91,7 +94,10 @@ export class ContainerService {
         map((response) => response),
         catchError((error) => {
           console.error('Failed to assign container.', error);
-          this.notificationService.openSnackBar('Failed to assign container.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign container. ' + message,
+          );
           return throwError(error);
         }),
       );
@@ -111,8 +117,9 @@ export class ContainerService {
         map((response) => response),
         catchError((error) => {
           console.error('Failed to unassign container.', error);
+          const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
-            'Failed to unassign container.',
+            'Failed to unassign container. ' + message,
           );
           return throwError(error);
         }),

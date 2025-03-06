@@ -51,7 +51,10 @@ export class TokenDetailsActionsComponent {
         },
         error: (error) => {
           console.error('Failed to resync OTP token.', error);
-          this.notificationService.openSnackBar('Failed to resync OTP token.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to resync OTP token. ' + message,
+          );
         },
       });
   }
@@ -65,7 +68,10 @@ export class TokenDetailsActionsComponent {
         },
         error: (error: any) => {
           console.error('Failed to test token.', error);
-          this.notificationService.openSnackBar('Failed to test token.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to test token. ' + message,
+          );
         },
       });
   }
@@ -79,7 +85,10 @@ export class TokenDetailsActionsComponent {
         },
         error: (error: any) => {
           console.error('Failed to verify OTP value.', error);
-          this.notificationService.openSnackBar('Failed to verify OTP value.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to verify OTP value. ' + message,
+          );
         },
       });
   }

@@ -1,10 +1,9 @@
 $tab-padding: 1rem;
 $list-width: 240px;
-$list-padding: var(--global-padding);
 
 .tab-list {
   .mdc-list {
-    padding: $list-padding 0;
+    padding-top: 0;
     width: $list-width;
     overflow: hidden;
   }

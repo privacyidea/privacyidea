@@ -110,17 +110,37 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
-    this.containerService
-      .removeTokenFromContainer(containerSerial, tokenSerial)
-      .subscribe({
-        next: () => {
-          this.refreshContainerDetails.set(true);
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: [tokenSerial],
+          title: 'Remove Token',
+          type: 'token',
+          action: 'remove',
         },
-        error: (error) => {
-          console.error('Failed to remove token from container.', error);
-          this.notificationService.openSnackBar(
-            'Failed to remove token from container.',
-          );
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.containerService
+              .removeTokenFromContainer(containerSerial, tokenSerial)
+              .subscribe({
+                next: () => {
+                  this.refreshContainerDetails.set(true);
+                },
+                error: (error) => {
+                  console.error(
+                    'Failed to remove token from container.',
+                    error,
+                  );
+                  const message = error.error?.result?.error?.message || '';
+                  this.notificationService.openSnackBar(
+                    'Failed to remove token from container. ' + message,
+                  );
+                },
+              });
+          }
         },
       });
   }
@@ -138,7 +158,10 @@ export class ContainerDetailsTokenTableComponent {
       },
       error: (error) => {
         console.error('Failed to toggle active.', error);
-        this.notificationService.openSnackBar('Failed to toggle active.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to toggle active. ' + message,
+        );
       },
     });
   }
@@ -150,7 +173,10 @@ export class ContainerDetailsTokenTableComponent {
       },
       error: (error) => {
         console.error('Failed to toggle all.', error);
-        this.notificationService.openSnackBar('Failed to toggle all.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to toggle all. ' + message,
+        );
       },
     });
   }
@@ -178,7 +204,10 @@ export class ContainerDetailsTokenTableComponent {
               },
               error: (error) => {
                 console.error('Failed to remove all.', error);
-                this.notificationService.openSnackBar('Failed to remove all.');
+                const message = error.error?.result?.error?.message || '';
+                this.notificationService.openSnackBar(
+                  'Failed to remove all. ' + message,
+                );
               },
             });
           }
@@ -211,8 +240,9 @@ export class ContainerDetailsTokenTableComponent {
                 },
                 error: (error) => {
                   console.error('Failed to delete all tokens.', error);
+                  const message = error.error?.result?.error?.message || '';
                   this.notificationService.openSnackBar(
-                    'Failed to delete all tokens.',
+                    'Failed to delete all tokens. ' + message,
                   );
                 },
               });

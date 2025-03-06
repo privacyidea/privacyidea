@@ -105,7 +105,10 @@ export class TokenDetailsInfoComponent {
       },
       error: (error) => {
         console.error('Failed to save token infos.', error);
-        this.notificationService.openSnackBar('Failed to save token infos.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to save token infos. ' + message,
+        );
       },
     });
   }
@@ -133,7 +136,10 @@ export class TokenDetailsInfoComponent {
         },
         error: (error) => {
           console.error('Failed to delete info.', error);
-          this.notificationService.openSnackBar('Failed to delete info.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete info. ' + message,
+          );
         },
       });
   }

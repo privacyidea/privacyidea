@@ -39,9 +39,9 @@ export type FetchDataResponse = {
 
 export type ProcessDataSource<T> = (
   response: FetchDataResponse,
-) => [number, MatTableDataSource<T>];
+) => MatTableDataSource<T>;
 
-export type FetchErrorHandler = (error: any) => void;
+export type fetchOnError = (error: any) => void;
 
 export type SortDir =
   | { active: string; direction: 'asc' | 'desc' | '' }
@@ -75,9 +75,6 @@ export class FilterTable<T> {
 
   // Uses the handler to toggle the keyword in the filter, when no handler is found, the default handler is used. (add/remove the keyword)
   @Input() pageSizeOptions = [10, 25, 50, 100];
-  @Input() fetchErrorHandler: (error: any) => void = (error) => {
-    console.error(error);
-  };
 
   numItems: number = 0;
   pageSize: number = 10;
@@ -161,11 +158,10 @@ export class FilterTable<T> {
       filterValue: this.filterValue,
     }).subscribe({
       next: (response) => {
-        const [numItems, dataSource] = this.processDataSource(response);
-        this.numItems = numItems;
+        const dataSource = this.processDataSource(response);
+        this.numItems = dataSource.data.length;
         this.dataSource.set(dataSource);
       },
-      error: this.fetchErrorHandler,
     });
   }
   handleOnClick(element: any, column: TableColumn<any>) {

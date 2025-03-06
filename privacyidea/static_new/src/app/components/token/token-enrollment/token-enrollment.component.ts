@@ -328,7 +328,10 @@ export class TokenEnrollmentComponent {
           },
           error: (error) => {
             console.error('Failed to get users.', error);
-            this.notificationService.openSnackBar('Failed to get users.');
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to get users. ' + message,
+            );
           },
         });
       }
@@ -354,7 +357,10 @@ export class TokenEnrollmentComponent {
       },
       error: (error) => {
         console.error('Failed to get realms.', error);
-        this.notificationService.openSnackBar('Failed to get realms.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get realms. ' + message,
+        );
       },
     });
   }
@@ -372,8 +378,9 @@ export class TokenEnrollmentComponent {
       },
       error: (error) => {
         console.error('Failed to get container options.', error);
+        const message = error.error?.result?.error?.message || '';
         this.notificationService.openSnackBar(
-          'Failed to get container options.',
+          'Failed to get container options. ' + message,
         );
       },
     });
@@ -488,7 +495,10 @@ export class TokenEnrollmentComponent {
       },
       error: (error) => {
         console.error('Failed to enroll token.', error);
-        this.notificationService.openSnackBar('Failed to enroll token.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to enroll token. ' + message,
+        );
       },
     });
   }
@@ -535,7 +545,10 @@ export class TokenEnrollmentComponent {
       },
       error: (error: any) => {
         console.error('Failed to poll token state.', error);
-        this.notificationService.openSnackBar('Failed to poll token state.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to poll token state. ' + message,
+        );
       },
     });
   }
@@ -561,7 +574,10 @@ export class TokenEnrollmentComponent {
       },
       error: (error) => {
         console.error('Failed to get default realm.', error);
-        this.notificationService.openSnackBar('Failed to get default realm.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get default realm. ' + message,
+        );
       },
     });
   }

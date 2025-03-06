@@ -53,7 +53,10 @@ export class ContainerTabComponent {
         },
         error: (error) => {
           console.error('Failed to toggle active.', error);
-          this.notificationService.openSnackBar('Failed to toggle active.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
         },
       });
   }
@@ -81,8 +84,9 @@ export class ContainerTabComponent {
                 },
                 error: (error) => {
                   console.error('Failed to delete container.', error);
+                  const message = error.error?.result?.error?.message || '';
                   this.notificationService.openSnackBar(
-                    'Failed to delete container.',
+                    'Failed to delete container. ' + message,
                   );
                 },
               });

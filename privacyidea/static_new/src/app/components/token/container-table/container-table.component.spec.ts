@@ -139,6 +139,40 @@ describe('ContainerTableComponent', () => {
     });
   });
 
+  describe('fetchDataHandler()', () => {
+    it('should call containerService.getContainerData', () => {
+      containerServiceSpy.getContainerData.calls.reset();
+      component.fetchDataHandler({
+        pageIndex: 0,
+        pageSize: 10,
+        sortby_sortdir: { active: 'serial', direction: 'asc' },
+        filterValue: '',
+      });
+      expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith(
+        0,
+        10,
+        { active: 'serial', direction: 'asc' },
+        '',
+      );
+    });
+
+    it('should handle error response from getContainerData', () => {
+      containerServiceSpy.getContainerData.and.returnValue(
+        throwError(() => new Error('Some error')),
+      );
+
+      component.fetchDataHandler({
+        pageIndex: 0,
+        pageSize: 10,
+        sortby_sortdir: { active: 'serial', direction: 'asc' },
+        filterValue: '',
+      });
+      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
+        'Failed to get container data. ',
+      );
+    });
+  });
+
   describe('processDataSource()', () => {
     it('should transform users array to "users" and "user_realm" fields', () => {
       const mockResponse: FetchDataResponse = {
@@ -174,7 +208,7 @@ describe('ContainerTableComponent', () => {
           },
         },
       };
-      const [length, dataSource] = component.processDataSource(mockResponse);
+      const dataSource = component.processDataSource(mockResponse);
       const tableData = dataSource.data;
       expect(tableData[0].serial).toBe('Mock serial');
       expect(tableData[0].type).toBe('hotp');
@@ -187,6 +221,19 @@ describe('ContainerTableComponent', () => {
       expect(tableData[1].states).toEqual(['deactivated']);
       expect(tableData[1].description).toBe('test description');
       expect(tableData[1].users).toEqual([]);
+    });
+
+    it('should call openSnackBar on error', () => {
+      containerServiceSpy.toggleActive.and.returnValue(
+        throwError(() => new Error('Toggle error')),
+      );
+      const mockElement = { serial: 'Mock serial', states: ['active'] };
+
+      component.onClickToggleActive(mockElement);
+
+      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
+        'Failed to toggle active. ',
+      );
     });
   });
 

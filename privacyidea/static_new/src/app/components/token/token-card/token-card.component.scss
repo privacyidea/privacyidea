@@ -2,7 +2,7 @@
 
 $card-bg: white;
 $card-border: white;
-$card-padding: var(--global-padding);
+$card-padding: 8px;
 $card-margin: 2rem;
 $tab-active-color: var(--blue-base);
 $h4-padding: 8px;
@@ -40,4 +40,10 @@ h4 {
 .tab-active {
   color: $tab-active-color;
   transition: $transition-duration;
+}
+
+::ng-deep {
+  .mat-mdc-tab-label-container {
+    border-bottom-style: none !important;
+  }
 }

@@ -123,8 +123,6 @@ export class TokenApplicationsSsh {
 
   processDataSource: ProcessDataSource<MachineTokenData> = (
     response: FetchDataResponse,
-  ) => [
-    response.result.value.length,
-    new MatTableDataSource(MachineTokenData.parseList(response.result.value)),
-  ];
+  ) =>
+    new MatTableDataSource(MachineTokenData.parseList(response.result.value));
 }

@@ -209,7 +209,10 @@ export class TokenGetSerial {
       error: (error) => {
         console.error('Failed to get serial.', error);
         this.currentStep.set('error');
-        this.notificationService.openSnackBar('Failed to get serial.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get serial. ' + message,
+        );
       },
     });
     return observable;

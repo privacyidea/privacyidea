@@ -73,8 +73,9 @@ export class LoginComponent {
         }
       },
       error: (error: any) => {
-        console.error('Login failed', error);
-        this.notificationService.openSnackBar('Login failed.');
+        console.error('Login failed.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar('Login failed. ' + message);
       },
     });
   }

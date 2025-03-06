@@ -102,10 +102,10 @@ describe('TokenApplicationsOffline', () => {
       },
     };
     const result = component.processDataSource(mockResponse);
-    expect(result[0]).toBe(1);
+    expect(result.data.length).toBe(1);
     const expectedDataSource = new MatTableDataSource(
       MachineTokenData.parseList(mockResponse.result.value),
     );
-    expect(result[1].data).toEqual(expectedDataSource.data);
+    expect(result.data).toEqual(expectedDataSource.data);
   });
 });

@@ -23,6 +23,7 @@ import {
 } from '../../../services/table-utils/table-column';
 import { TokenData } from '../../../model/token/token-data';
 import { TokenSelectedContent } from '../token.component';
+import { observable } from 'rxjs';
 
 @Component({
   selector: 'app-token-table',
@@ -205,7 +206,10 @@ export class TokenTableComponent {
     handler.subscribe({
       error: (error) => {
         console.error('Failed to toggle active.', error);
-        this.notificationService.openSnackBar('Failed to toggle active.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to toggle active. ' + message,
+        );
       },
     });
     return handler;
@@ -215,7 +219,10 @@ export class TokenTableComponent {
     handler.subscribe({
       error: (error) => {
         console.error('Failed to reset fail counter.', error);
-        this.notificationService.openSnackBar('Failed to reset fail counter.');
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to reset fail counter. ' + message,
+        );
       },
     });
     return handler;
@@ -235,18 +242,27 @@ export class TokenTableComponent {
     pageSize,
     sortby_sortdir,
     filterValue: currentFilter,
-  }): Observable<any> =>
-    this.tokenService.getTokenData(
+  }): Observable<any> => {
+    const observable = this.tokenService.getTokenData(
       pageIndex + 1,
       pageSize,
       sortby_sortdir,
       currentFilter,
     );
+    observable.subscribe({
+      error: (error: any): void => {
+        console.error('Failed to get token data.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get token data. ' + message,
+        );
+      },
+    });
+    return observable;
+  };
 
   processDataSource: ProcessDataSource<TokenData> = (
     response: FetchDataResponse,
-  ) => [
-    response.result.value.count,
-    new MatTableDataSource(TokenData.parseList(response.result.value.tokens)),
-  ];
+  ) =>
+    new MatTableDataSource(TokenData.parseList(response.result.value.tokens));
 }

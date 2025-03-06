@@ -43,17 +43,10 @@ import { ContainerData } from '../../../model/container/container-data';
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
-  sortby_sortdir: SortDir;
   @Input() selectedContent!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
-  showAdvancedFilter = signal(false);
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-  length = 0;
-  pageSize = 10;
-  pageIndex = 0;
+
   pageSizeOptions = [5, 10, 15];
-  filterValue = '';
 
   columns: TableColumn<ContainerData>[] = [
     new OnClickTableColumn({
@@ -125,22 +118,31 @@ export class ContainerTableComponent {
     pageSize,
     sortby_sortdir,
     filterValue: currentFilter,
-  }) =>
-    this.containerService.getContainerData(
+  }) => {
+    const observable = this.containerService.getContainerData(
       pageIndex,
       pageSize,
       sortby_sortdir,
       currentFilter,
     );
+    observable.subscribe({
+      error: (error: any) => {
+        console.error('Failed to get container data.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get container data. ' + message,
+        );
+      },
+    });
+    return observable;
+  };
 
   processDataSource: ProcessDataSource<ContainerData> = (
     response: FetchDataResponse,
-  ) => [
-    response.result.value.containers.length,
+  ) =>
     new MatTableDataSource(
       ContainerData.parseList(response.result.value.containers),
-    ),
-  ];
+    );
 
   getStatesNgClass(states: string[]): string {
     if (states.length === 0) {
@@ -166,7 +168,10 @@ export class ContainerTableComponent {
       .subscribe({
         error: (error) => {
           console.error('Failed to toggle active.', error);
-          this.notificationService.openSnackBar('Failed to toggle active.');
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
         },
       });
   }

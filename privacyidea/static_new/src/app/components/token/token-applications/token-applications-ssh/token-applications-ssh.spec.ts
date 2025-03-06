@@ -95,8 +95,14 @@ describe('TokenApplicationsSsh', () => {
       },
     };
     const result = component.processDataSource(mockResponse);
-    expect(result[0]).toBe(mockResponse.result.value.length);
-    expect(result[1] instanceof MatTableDataSource).toBeTrue();
+    expect(result instanceof MatTableDataSource).toBeTrue();
+    expect(result.data.length).toBe(1);
+    expect(result.data[0].id).toBe(1);
+    expect(result.data[0].machine_id).toBe('machine1');
+    expect(result.data[0].options).toEqual({});
+    expect(result.data[0].resolver).toBe('resolver1');
+    expect(result.data[0].serial).toBe('serial1');
+    expect(result.data[0].type).toBe('type1');
   });
 
   it('should return object strings correctly', () => {
