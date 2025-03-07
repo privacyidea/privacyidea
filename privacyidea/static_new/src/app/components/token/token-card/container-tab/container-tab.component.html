@@ -26,7 +26,7 @@
         <mat-divider /><br />
         <mat-list-item>
           <button class="card-button"
-                  (click)="openTheDocs()"
+                  (click)="versioningService.openDocumentation(selectedContent())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help
@@ -66,6 +66,14 @@
                   mat-flat-button>
             <mat-icon>broken_image</mat-icon>
             {{ "Damaged Container" }}
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button class="card-button"
+                  (click)="versioningService.openDocumentation(selectedContent())"
+                  mat-flat-button>
+            <mat-icon>info_outline</mat-icon>
+            Help
           </button>
         </mat-list-item><br />
         <mat-divider /><br />

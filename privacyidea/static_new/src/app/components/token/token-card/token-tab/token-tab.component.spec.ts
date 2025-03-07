@@ -11,6 +11,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { TokenSelectedContent } from '../../token.component';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -62,7 +63,7 @@ describe('TokenTabComponent', () => {
     component = fixture.componentInstance;
 
     component.tokenSerial = signal<string>('Mock serial');
-    component.selectedContent = signal<string>('token_overview');
+    component.selectedContent = signal<TokenSelectedContent>('token_overview');
     component.revoked = signal<boolean>(false);
     component.active = signal<boolean>(true);
     component.refreshTokenDetails = signal<boolean>(false);
@@ -208,18 +209,6 @@ describe('TokenTabComponent', () => {
 
       expect(config.data.tokenSerial()).toBe('Mock serial');
       expect(config.data.isLost()).toBe(false);
-    });
-  });
-
-  describe('openTheDocs()', () => {
-    it('should open the docs link in a new tab', () => {
-      const openSpy = spyOn(window, 'open');
-      component.openTheDocs();
-
-      expect(openSpy).toHaveBeenCalledWith(
-        jasmine.stringMatching(/readthedocs.*1.0.0.*tokens/),
-        '_blank',
-      );
     });
   });
 

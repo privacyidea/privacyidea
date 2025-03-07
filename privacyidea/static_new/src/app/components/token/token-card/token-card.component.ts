@@ -12,6 +12,7 @@ import { TokenTabComponent } from './token-tab/token-tab.component';
 import { ContainerTabComponent } from './container-tab/container-tab.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../services/overflow/overflow.service';
+import { TokenSelectedContent } from '../token.component';
 
 @Component({
   selector: 'app-token-card',
@@ -29,7 +30,7 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
   styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
@@ -42,9 +43,6 @@ export class TokenCardComponent {
 
   constructor(protected overflowService: OverflowService) {
     effect(() => {
-      if (this.selectedContent() === '') {
-        this.selectedContent.set('token_overview');
-      }
       if (this.selectedContent().startsWith('token')) {
         this.selectedTabIndex.set(0);
       }

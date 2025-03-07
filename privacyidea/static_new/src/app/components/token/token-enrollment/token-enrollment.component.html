@@ -9,6 +9,12 @@
                     [value]="type">{{ type.info.split(":")[0] }}
         </mat-option>
       }
+      <button (click)="versioningService.openDocumentation('tokentypes')"
+              class="card-button token-type-help"
+              mat-flat-button>
+        <mat-icon>info_outline</mat-icon>
+        Help About Tokentypes
+      </button>
     </mat-select>
     <mat-hint class="token-type-hint">
       @if (selectedType().info) {

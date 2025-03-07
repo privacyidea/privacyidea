@@ -53,7 +53,7 @@ export type TokenSelectedContent =
   | 'container_overview'
   | 'container_details'
   | 'token_enrollment'
-  | 'show_challenges'
+  | 'token_challenges'
   | 'token_applications'
   | 'token_get_serial';
 

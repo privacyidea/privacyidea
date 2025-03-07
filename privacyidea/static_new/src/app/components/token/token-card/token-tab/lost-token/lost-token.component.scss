@@ -19,6 +19,8 @@
   background: var(--green-light);
   color: white;
   font-weight: bold;
+  border-radius: var(--border-radius);
+  border: unset;
 }
 
 .lost-card-content {

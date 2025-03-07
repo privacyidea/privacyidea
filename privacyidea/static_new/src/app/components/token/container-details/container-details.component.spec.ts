@@ -163,7 +163,7 @@ describe('ContainerDetailsComponent', () => {
     ]);
     component.userOptions = signal(['admin_user']);
     component.realmOptions = signal(['realm1', 'realm2']);
-    component.selectedContent = signal('');
+    component.selectedContent = signal('token_details');
     tokenService = TestBed.inject(TokenService);
     containerService = TestBed.inject(ContainerService);
     validateService = TestBed.inject(ValidateService);

@@ -18,6 +18,7 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { TokenSelectedContent } from '../../token.component';
 
 @Component({
   selector: 'app-token-tab',
@@ -28,7 +29,7 @@ import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmat
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
@@ -40,7 +41,7 @@ export class TokenTabComponent {
   constructor(
     private tokenService: TokenService,
     private dialog: MatDialog,
-    private versioningService: VersionService,
+    protected versioningService: VersionService,
     private notificationService: NotificationService,
   ) {}
 
@@ -147,13 +148,6 @@ export class TokenTabComponent {
     });
   }
 
-  openTheDocs() {
-    window.open(
-      `https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#tokens`,
-      '_blank',
-    );
-  }
-
   onClickOverview() {
     this.selectedContent.set('token_overview');
     this.tokenSerial.set('');
@@ -165,7 +159,7 @@ export class TokenTabComponent {
   }
 
   onClickShowChallenges() {
-    this.selectedContent.set('show_challenges');
+    this.selectedContent.set('token_challenges');
     this.tokenSerial.set('');
   }
 

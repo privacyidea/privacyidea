@@ -23,6 +23,7 @@ import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { TokenSelectedContent } from '../token.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -63,7 +64,7 @@ export class ContainerTableComponent {
   sortby_sortdir:
     | { active: string; direction: 'asc' | 'desc' | '' }
     | undefined;
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(
     new MatTableDataSource(

@@ -44,6 +44,7 @@ import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { TokenSelectedContent } from '../token.component';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -99,7 +100,7 @@ interface TokenOption {
   styleUrl: './container-details.component.scss',
 })
 export class ContainerDetailsComponent {
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;

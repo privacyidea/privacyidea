@@ -11,6 +11,7 @@ import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { TokenSelectedContent } from '../../token.component';
 
 @Component({
   selector: 'app-container-tab',
@@ -21,7 +22,7 @@ import { MatDialog } from '@angular/material/dialog';
   animations: [tabToggleState],
 })
 export class ContainerTabComponent {
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
@@ -30,7 +31,7 @@ export class ContainerTabComponent {
 
   constructor(
     private containerService: ContainerService,
-    private versioningService: VersionService,
+    protected versioningService: VersionService,
     private notificationService: NotificationService,
     private dialog: MatDialog,
   ) {}
@@ -101,13 +102,6 @@ export class ContainerTabComponent {
 
   damagedContainer() {
     // TODO: Missing API endpoint
-  }
-
-  openTheDocs() {
-    window.open(
-      `https://privacyidea.readthedocs.io/en/v${this.version}/webui/index.html#containers`,
-      '_blank',
-    );
   }
 
   onClickContainerTab = () => this.onClickOverview();

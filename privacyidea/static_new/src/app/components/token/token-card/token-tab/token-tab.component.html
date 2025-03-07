@@ -67,7 +67,7 @@
         <mat-divider /><br />
         <mat-list-item>
           <button class="card-button"
-                  (click)="openTheDocs()"
+                  (click)="versioningService.openDocumentation(selectedContent())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help
@@ -99,6 +99,14 @@
                   (click)="openLostTokenDialog()">
             <mat-icon>remove_red_eye</mat-icon>
             Lost Token
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button class="card-button"
+                  (click)="versioningService.openDocumentation(selectedContent())"
+                  mat-flat-button>
+            <mat-icon>info_outline</mat-icon>
+            Help
           </button>
         </mat-list-item><br />
         <mat-divider /><br />

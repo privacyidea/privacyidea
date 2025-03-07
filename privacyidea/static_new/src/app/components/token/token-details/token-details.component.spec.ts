@@ -246,7 +246,7 @@ describe('TokenDetailsComponent', () => {
 
   it('should navigate to container details when containerSelected is called', () => {
     component.isProgrammaticChange = signal(false);
-    component.selectedContent = signal('');
+    component.selectedContent = signal('token_overview');
     component.containerSerial = signal('');
 
     component.containerSelected('testSerial');

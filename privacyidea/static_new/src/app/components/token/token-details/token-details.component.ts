@@ -39,6 +39,7 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { TokenSelectedContent } from '../token.component';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -100,7 +101,7 @@ export class TokenDetailsComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   isEditingUser = signal(false);

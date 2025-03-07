@@ -15,7 +15,7 @@ import {
 } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../token.component';
+import { TokenComponent, TokenSelectedContent } from '../token.component';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
 import {
@@ -74,6 +74,7 @@ import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
 import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
+import { VersionService } from '../../../services/version/version.service';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -184,7 +185,7 @@ export class TokenEnrollmentComponent {
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   selectedType = signal(this.tokenTypesOptions[0]);
   setPinValue = signal('');
@@ -248,6 +249,7 @@ export class TokenEnrollmentComponent {
     private userService: UserService,
     private tokenService: TokenService,
     protected dialog: MatDialog,
+    protected versioningService: VersionService,
   ) {
     effect(() => {
       const value = this.selectedContainer();

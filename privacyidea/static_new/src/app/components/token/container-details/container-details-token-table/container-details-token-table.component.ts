@@ -24,6 +24,7 @@ import { NotificationService } from '../../../../services/notification/notificat
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { TokenSelectedContent } from '../../token.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -70,7 +71,7 @@ export class ContainerDetailsTokenTableComponent {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedContent!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   protected readonly columnsKeyMap = columnsKeyMap;
