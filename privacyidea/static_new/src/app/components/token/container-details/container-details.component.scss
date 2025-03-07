@@ -1,0 +1,93 @@
+@use "../../../../styles";
+
+$gap-small: 8px;
+$table-border-color: #e0e2ec;
+
+.details-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+  padding: var(--global-padding);
+  margin-left: 1rem;
+  overflow: auto;
+
+  .details-table {
+    ::ng-deep .mat-mdc-form-field-infix {
+      margin-bottom: -8px !important;
+    }
+  }
+}
+
+.container-details-header {
+  flex-direction: row;
+  display: flex;
+  gap: $gap-small;
+  margin-left: 1rem;
+}
+
+.detail-table-wrapper {
+  display: flex;
+  gap: 20px;
+  width: auto;
+  max-width: fit-content;
+}
+
+.details-section {
+  width: auto;
+  max-width: fit-content;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.add-token {
+  margin-bottom: 1rem;
+  width: 36rem;
+}
+
+.token-option {
+  border: 1px solid #dedcdf;
+  background: #efedf0;
+  margin: 0 1px;
+  border-radius: var(--border-radius);
+}
+
+.token-option-span {
+  background: #fff;
+  padding: 6px;
+  border-radius: var(--border-radius);
+  margin-right: 8px;
+}
+
+.checkbox-paginator-container {
+  gap: 1rem;
+  height: 60px;
+}
+
+.pad-top-10 {
+  padding-top: 10px;
+}
+
+.width-36 {
+  width: 36rem;
+}
+
+::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
+  max-height: 516px;
+  background: #dedcdf;
+
+  &.user-selection-autocomplete {
+    max-height: 256px;
+  }
+
+  .mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    border-left: 2px solid #dedcdf;
+    padding: 10px;
+  }
+}

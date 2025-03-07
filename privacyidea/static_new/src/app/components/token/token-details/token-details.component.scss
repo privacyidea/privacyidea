@@ -1,0 +1,12 @@
+@use "../../../../styles";
+
+.details-container {
+  display: flex;
+  align-items: center;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
+  padding: var(--global-padding);
+  margin-left: 1rem;
+  overflow: auto;
+}

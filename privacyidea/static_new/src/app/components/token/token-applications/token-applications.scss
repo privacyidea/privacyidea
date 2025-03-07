@@ -1,0 +1,10 @@
+@use "../../../../styles";
+
+.token-applications {
+  margin-left: 1rem;
+  overflow: auto;
+
+  mat-form-field {
+    width: 500px;
+  }
+}

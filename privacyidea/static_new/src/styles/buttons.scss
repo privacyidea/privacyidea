@@ -1,0 +1,276 @@
+$button-height: 40px;
+$button-width: 240px;
+$keyword-height: 28px;
+$keyword-padding: 2px 8px;
+$button-gap-small: 10px;
+$padding-horizontal: 16px;
+$detail-icon-font-size: 18px;
+$margin-bottom-small: -6px;
+$keyword-bg: #f3f3f3;
+$keyword-font-size: 18px;
+$keyword-color: #999999;
+$button-border-radius: var(--border-radius);
+$profile-bg: var(--background-yellow);
+$profile-hover-bg: var(--background-yellow-inset);
+$shadow-white: var(--box-shadow-white);
+$header-bg: white;
+
+// Mixins for common button styles
+@mixin button-base(
+  $height,
+  $width,
+  $border-radius,
+  $background,
+  $box-shadow,
+  $cursor: pointer
+) {
+  color: white;
+  height: $height;
+  width: $width;
+  border: none;
+  justify-content: start;
+  border-radius: $border-radius;
+  background: $background;
+  box-shadow: $box-shadow;
+  cursor: $cursor;
+  transition: 0ms;
+}
+
+@mixin button-hover($background, $box-shadow) {
+  &:hover {
+    background: $background;
+    box-shadow: $box-shadow;
+    transition: 0ms;
+  }
+}
+
+.login-btn {
+  text-decoration: none;
+  color: white;
+  padding: 10px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: var(--background-blue);
+
+  &:hover {
+    box-shadow: none;
+    background: var(--background-blue-inset);
+    color: white;
+    transform: translateY(2px);
+  }
+}
+
+.support-btn {
+  height: 40px;
+  margin: 0 20px;
+  border: none;
+  border-radius: $button-border-radius;
+  background: var(--background-green-brand);
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.disabled-button {
+  color: var(
+      --mdc-filled-button-disabled-label-text-color,
+      color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)
+  ) !important;
+}
+
+.card-button {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue),
+      var(--box-shadow-blue)
+  );
+  @include button-hover(
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
+}
+
+.card-button-reset {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-green),
+      var(--box-shadow-green)
+  );
+}
+
+.card-button-active {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
+}
+
+.card-button-delete {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-red),
+      var(--box-shadow-red)
+  );
+
+  &.active,
+  &:hover {
+    background: var(--background-red-inset);
+    box-shadow: var(--box-shadow-red-inset);
+    transition: 0ms;
+  }
+}
+
+.card-button-activate {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-green),
+      var(--box-shadow-green)
+  );
+
+  &.active,
+  &:hover {
+    background: var(--background-green-inset);
+    box-shadow: var(--box-shadow-green-inset);
+    transition: 0ms;
+  }
+}
+
+.detail-button {
+  min-width: 240px;
+  color: white;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-blue),
+      var(--box-shadow-blue)
+  );
+  @include button-hover(
+      var(--background-blue-inset),
+      var(--box-shadow-blue-inset)
+  );
+}
+
+.detail-button-icon {
+  vertical-align: bottom;
+  margin-bottom: $margin-bottom-small;
+  font-size: $detail-icon-font-size;
+}
+
+.delete-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: $button-gap-small;
+  padding: 0 $padding-horizontal;
+}
+
+.dialog-button-delete {
+  color: var(--red-base);
+  background-color: white;
+}
+
+.cancel-button {
+  color: var(--red-base);
+  background-color: white;
+  cursor: pointer;
+}
+
+.keyword-button,
+.more-keyword-button {
+  background-color: $keyword-bg;
+  border-radius: $button-border-radius;
+  height: $keyword-height;
+  margin: 3px;
+  box-shadow: none;
+
+  &.keyword-button {
+    padding: $keyword-padding;
+
+    &:hover .add-keyword {
+      color: var(--green-light);
+    }
+  }
+
+  &.more-keyword-button {
+    padding: 0 0 0 8px;
+  }
+}
+
+.keyword-button-icon {
+  font-size: $keyword-font-size;
+  vertical-align: bottom;
+  margin-right: 0;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.add-keyword {
+  color: $keyword-color;
+}
+
+.remove-keyword {
+  color: var(--red-light);
+}
+
+.change-keyword {
+  color: var(--yellow-light);
+}
+
+.delete-info-button {
+  margin-top: 1rem;
+}
+
+.refresh-btn {
+  width: 100px;
+  height: 60px;
+  cursor: pointer;
+  border-radius: 0;
+  background: $header-bg;
+  box-shadow: none;
+}
+
+.profile-btn {
+  margin-left: 20px;
+  margin-right: 40px;
+  padding-left: 15px;
+  height: 40px;
+  width: 192px;
+  justify-content: start;
+  border: none;
+  border-radius: $button-border-radius;
+  background: $profile-bg;
+  box-shadow: $shadow-white;
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    box-shadow: none;
+    background: $profile-hover-bg;
+    color: white;
+    transform: translateX(2px);
+  }
+}

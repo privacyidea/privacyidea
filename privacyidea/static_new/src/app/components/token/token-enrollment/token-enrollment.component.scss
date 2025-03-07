@@ -1,0 +1,110 @@
+@use "../../../../styles";
+
+.token-enrollment-container {
+  @include styles.table-container-styles;
+  margin-left: 1rem;
+  overflow: auto;
+  width: 785px;
+}
+
+.select-token-type {
+  width: 100%;
+}
+
+.token-type-option {
+  box-shadow: 4px 4px var(--blur) var(--shadow);
+  background: #efedf0;
+  border-radius: var(--border-radius);
+  margin: 0 3px 5px;
+  width: 208px;
+}
+
+.token-type-hint {
+  width: 473px;
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.assign-user-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: end;
+}
+
+.user-pin-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.h4-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.date-picker {
+  width: 40%;
+  margin: 0 0 1rem 1rem;
+}
+
+.time-picker {
+  width: 20%;
+  margin: 0 0 1rem 1rem;
+}
+
+.zone-picker {
+  width: 30%;
+  margin: 0 0 1rem 2rem;
+}
+
+.expension-panel {
+  box-shadow: var(--box-shadow) !important;
+}
+
+h5 {
+  margin: 0 0 0 1rem;
+}
+
+.enroll-button-container {
+  display: flex;
+  flex-direction: row;
+  margin-left: 497px;
+  gap: 8px;
+}
+
+.token-type-help {
+  margin-left: 4px;
+  margin-top: 4px;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    column-count: 3;
+    max-height: unset;
+    column-gap: 0;
+    background: #dedcdf;
+    padding: 8px 4px 8px 12px;
+  }
+
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
+      .mdc-list-item--disabled
+    ):not(.mat-mdc-option-multiple) {
+    background-color: #217fa8;
+  }
+
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
+      .mdc-list-item--disabled
+    )
+  .mdc-list-item__primary-text {
+    color: white;
+  }
+
+  .token-type-option.mat-mdc-option:hover:not(.mdc-list-item--disabled) {
+    background-color: #f2f9fd;
+  }
+
+  .multi-column-panel .mat-pseudo-checkbox-checked::after {
+    color: white !important;
+  }
+}
