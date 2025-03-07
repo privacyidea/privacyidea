@@ -8,7 +8,7 @@
              (keyup)="handleFilterInput($event)"
              aria-label="Filter Input"
              matInput
-             placeholder="Example query: 'type: generic user: admin'">
+             placeholder="Example query: 'type: generic user: admin'" />
     </mat-form-field>
     <mat-paginator (page)="handlePageEvent($event)"
                    [length]="length"
@@ -26,14 +26,18 @@
     @for (filterKeyword of apiFilter; track filterKeyword) {
       <button mat-fab
               extended
-              (click)="toggleKeywordInFilter(filterKeyword , input)"
+              (click)="toggleKeywordInFilter(filterKeyword, input)"
               class="keyword-button">
         <mat-icon class="keyword-button-icon"
-                  [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
-                  ? 'remove-keyword' : 'add-keyword'">
+                  [ngClass]="
+            this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
+              ? 'remove-keyword'
+              : 'add-keyword'
+          ">
           {{
             this.tableUtilsService.isFilterSelected(filterKeyword, input.value)
-              ? 'remove_circle' : 'add_circle'
+              ? "remove_circle"
+              : "add_circle"
           }}
         </mat-icon>
         {{ filterKeyword }}
@@ -44,19 +48,32 @@
             extended
             mat-fab>
       <mat-icon class="keyword-button-icon">
-        {{ showAdvancedFilter() ? 'remove' : 'add' }}
+        {{ showAdvancedFilter() ? "remove" : "add" }}
       </mat-icon>
     </button>
     @if (showAdvancedFilter()) {
       @for (filterKeyword of advancedApiFilter; track filterKeyword) {
         <button mat-fab
                 extended
-                (click)="toggleKeywordInFilter(filterKeyword , input)"
+                (click)="toggleKeywordInFilter(filterKeyword, input)"
                 class="keyword-button">
           <mat-icon class="keyword-button-icon"
-                    [ngClass]="this.tableUtilsService.isFilterSelected(filterKeyword,
-                    input.value) ? 'remove-keyword' : 'add-keyword'">
-            {{ this.tableUtilsService.isFilterSelected(filterKeyword, input.value) ? 'remove_circle' : 'add_circle' }}
+                    [ngClass]="
+              this.tableUtilsService.isFilterSelected(
+                filterKeyword,
+                input.value
+              )
+                ? 'remove-keyword'
+                : 'add-keyword'
+            ">
+            {{
+              this.tableUtilsService.isFilterSelected(
+                filterKeyword,
+                input.value
+              )
+                ? "remove_circle"
+                : "add_circle"
+            }}
           </mat-icon>
           {{ filterKeyword }}
         </button>
@@ -80,20 +97,24 @@
         <td *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
-            [ngClass]="{'width-18': column.key === 'description'}">
+            [ngClass]="{ 'width-18': column.key === 'description' }">
           <ng-container>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @if (column.key === 'realms') {
-                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
-                  @for (realm of element[column.key]; track realm; let idx = $index) {
+              @if (column.key === "realms") {
+                <div [ngClass]="
+                    element[column.key].length > 1 ? 'realm-list' : 'realm'
+                  ">
+                  @for (realm of element[column.key];
+                    track realm;
+                    let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
                        href="#"> {{ realm }} </a><br style="margin-top: 3px" />
                   }
                 </div>
-              } @else if (column.key === 'serial') {
+              } @else if (column.key === "serial") {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="containerSelected(element.serial)"> {{ element[column.key] }} </a>
-                @if (element.serial !== '') {
+                @if (element.serial !== "") {
                   <button class="copy-button"
                           [cdkCopyToClipboard]="element.serial">
                     <mat-icon class="copy-icon">content_copy</mat-icon>
@@ -102,10 +123,18 @@
               } @else if (tableUtilsService.isLink(column.key)) {
                 <a attr.aria-label="{{ column.label }} Link"
                    href="#"> {{ element[column.key] }} </a>
-              } @else if (column.key === 'states') {
+              } @else if (column.key === "states") {
                 <span (click)="handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
-                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                      [ngClass]="
+                    tableUtilsService.getSpanClassForState(
+                      element[column.key][0]
+                    )
+                  ">
+                  {{
+                    tableUtilsService.getDisplayTextForState(
+                      element[column.key][0]
+                    )
+                  }}
                 </span>
               } @else {
                 {{ element[column.key] }}
@@ -118,7 +147,7 @@
     <tr *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"
         mat-header-row></tr>
-    <tr *matRowDef="let row; columns: displayedColumns;"
+    <tr *matRowDef="let row; columns: displayedColumns"
         aria-label="Data Row"
         mat-row></tr>
     <tr *matNoDataRow

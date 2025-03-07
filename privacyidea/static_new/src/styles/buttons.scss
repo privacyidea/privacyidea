@@ -2,7 +2,7 @@ $button-height: 40px;
 $button-width: 240px;
 $keyword-height: 28px;
 $keyword-padding: 2px 8px;
-$gap-small: 10px;
+$button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
@@ -79,8 +79,10 @@ $header-bg: white;
 }
 
 .disabled-button {
-  color: var(--mdc-filled-button-disabled-label-text-color,
-    color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)) !important;
+  color: var(
+      --mdc-filled-button-disabled-label-text-color,
+      color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)
+  ) !important;
 }
 
 .card-button {
@@ -181,7 +183,7 @@ $header-bg: white;
 .delete-buttons-container {
   display: flex;
   flex-direction: column;
-  gap: $gap-small;
+  gap: $button-gap-small;
   padding: 0 $padding-horizontal;
 }
 

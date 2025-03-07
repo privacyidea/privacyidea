@@ -3,13 +3,14 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token configuration</h4>
-  <span>Please answer at least {{ configMinNumberOfAnswers }} of the following questions.</span>
+  <span>Please answer at least {{ configMinNumberOfAnswers }} of the following
+    questions.</span>
   <div class="margin-top-1 form-group">
     @for (question of configQuestions; track question) {
       <mat-form-field class="question-input-width">
         <mat-label>{{ question }}</mat-label>
         <input type="text"
-               [ngModel]="answers()?.[question]"
+               [ngModel]="answers()[question]"
                (ngModelChange)="onAnswerChange($event, question)"
                matInput
                [required]="isRequired(question)" />

@@ -1,17 +1,21 @@
 <div class="tab-list">
   <mat-list>
-    <mat-divider /><br />
+    <mat-divider />
+    <br />
     <mat-list-item>
       <button (click)="onClickContainerTab()"
-              [ngClass]="[selectedContent() ===
-      'container_overview' ? 'card-button-active':  'card-button']"
+              [ngClass]="[
+          selectedContent() === 'container_overview'
+            ? 'card-button-active'
+            : 'card-button',
+        ]"
               mat-flat-button>
         <mat-icon class="mdi--folder-search" />
         Overview
       </button>
     </mat-list-item>
     <div [@toggleState]="containerIsSelected()">
-      @if (selectedContent() !== 'container_details') {
+      @if (selectedContent() !== "container_details") {
         <mat-list-item>
           <button class="card-button"
                   mat-flat-button>
@@ -30,8 +34,11 @@
         </mat-list-item>
       } @else {
         <mat-list-item>
-          <button [ngClass]="[selectedContent() ===
-      'container_details' ? 'card-button-active':  'card-button']"
+          <button [ngClass]="[
+              selectedContent() === 'container_details'
+                ? 'card-button-active'
+                : 'card-button',
+            ]"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Container Details
@@ -41,7 +48,7 @@
           <button class="card-button"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
-            {{ 'Enroll Token' }}
+            {{ "Enroll Token" }}
           </button>
         </mat-list-item><br />
         <mat-divider /><br />
@@ -50,7 +57,7 @@
                   class="card-button"
                   mat-flat-button>
             <mat-icon>remove_red_eye</mat-icon>
-            {{ 'Lost Container' }}
+            {{ "Lost Container" }}
           </button>
         </mat-list-item>
         <mat-list-item>
@@ -58,18 +65,20 @@
                   class="card-button"
                   mat-flat-button>
             <mat-icon>broken_image</mat-icon>
-            {{ 'Damaged Container' }}
+            {{ "Damaged Container" }}
           </button>
         </mat-list-item><br />
         <mat-divider /><br />
         <mat-list-item>
           <button (click)="toggleActive()"
-                  [ngClass]="{'card-button-delete':
-          states().includes('active'),
-          'card-button-activate': !states().includes('active')}"
+                  [ngClass]="{
+              'card-button-delete': states().includes('active'),
+              'card-button-activate': !states().includes('active'),
+            }"
                   mat-flat-button>
-            <mat-icon>{{ states().includes('active') ? 'auto_delete' : 'play_circle' }}</mat-icon>
-            {{ states().includes('active') ? 'Deactivate' : 'Activate' }}
+            <mat-icon>{{ states().includes("active") ? "auto_delete" : "play_circle" }}
+            </mat-icon>
+            {{ states().includes("active") ? "Deactivate" : "Activate" }}
           </button>
         </mat-list-item>
         <mat-list-item>
@@ -77,7 +86,7 @@
                   class="card-button-delete"
                   mat-flat-button>
             <mat-icon>delete_outlined</mat-icon>
-            {{ 'Delete' }}
+            {{ "Delete" }}
           </button>
         </mat-list-item>
       }

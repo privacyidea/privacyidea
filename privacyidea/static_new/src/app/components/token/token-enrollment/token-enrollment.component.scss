@@ -1,7 +1,7 @@
-@import "../../../../styles/styles";
+@use "../../../../styles";
 
 .token-enrollment-container {
-  @include table-container-styles;
+  @include styles.table-container-styles;
   margin-left: 1rem;
   overflow: auto;
   width: 785px;
@@ -13,7 +13,7 @@
 
 .token-type-option {
   box-shadow: 4px 4px var(--blur) var(--shadow);
-  background: #EFEDF0;
+  background: #efedf0;
   border-radius: var(--border-radius);
   margin: 0 3px 5px;
   width: 208px;
@@ -82,11 +82,16 @@ h5 {
     padding: 8px 4px 8px 12px;
   }
 
-  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
+      .mdc-list-item--disabled
+    ):not(.mat-mdc-option-multiple) {
     background-color: #217fa8;
   }
 
-  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
+      .mdc-list-item--disabled
+    )
+  .mdc-list-item__primary-text {
     color: white;
   }
 

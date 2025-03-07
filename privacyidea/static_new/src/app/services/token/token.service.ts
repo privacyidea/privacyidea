@@ -479,4 +479,38 @@ export class TokenService {
   stopPolling() {
     this.stopPolling$.next();
   }
+
+  getChallenges(named: {
+    pageIndex: number;
+    pageSize: number;
+    sort: Sort;
+    filterValue: string;
+  }): Observable<any> {
+    const { pageIndex, pageSize, sort, filterValue } = named;
+    const headers = this.localService.getHeaders();
+    let params = new HttpParams()
+      .set('page', pageIndex.toString())
+      .set('pagesize', pageSize.toString());
+
+    if (sort) {
+      params = params.set('sortby', sort.active).set('sortdir', sort.direction);
+    }
+
+    if (filterValue) {
+      const { filterPairs, remainingFilterText } =
+        this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+      filterPairs.forEach(({ label, value }) => {
+        params = params.set(label, `*${value}*`);
+      });
+
+      if (remainingFilterText) {
+        params = params.set('globalfilter', `*${remainingFilterText}*`);
+      }
+    }
+
+    return this.http.get<any>(this.tokenBaseUrl + 'challenges/', {
+      headers,
+      params,
+    });
+  }
 }

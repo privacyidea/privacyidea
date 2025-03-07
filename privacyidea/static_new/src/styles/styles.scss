@@ -1,16 +1,18 @@
-@use '@angular/material' as mat;
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
-@import 'table.scss';
-@import 'buttons.scss';
-@import 'inputs.scss';
-@import 'tab.scss';
-@import 'info.scss';
-@import 'dialog.scss';
-@import 'enroll.scss';
+@use "sass:meta";
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
 
-html, body {
+@include meta.load-css("table.scss");
+@include meta.load-css("buttons.scss");
+@include meta.load-css("inputs.scss");
+@include meta.load-css("tab.scss");
+@include meta.load-css("info.scss");
+@include meta.load-css("dialog.scss");
+@include meta.load-css("enroll.scss");
+
+html,
+body {
   background: var(--background);
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   margin: 0;
   overflow: hidden;
 }
@@ -30,7 +32,11 @@ html, body {
 
   --green-brand-base: hsl(72, 100%, 32%);
   --green-brand-light: hsl(72, 100%, 37%);
-  --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
+  --background-green-brand: linear-gradient(
+      145deg,
+      var(--green-brand-light),
+      var(--green-brand-base)
+  );
 
   --blue-dark: hsl(198, 66%, 25%);
   --blue-base: hsl(198, 66%, 30%);
@@ -59,29 +65,57 @@ html, body {
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
   inset var(--light-distance) var(--light-distance) var(--blur) white;
 
-  --background-blue: linear-gradient(145deg, var(--blue-base), var(--blue-light));
-  --background-blue-inset: linear-gradient(145deg, var(--blue-light-active), var(--blue-light));
+  --background-blue: linear-gradient(
+      145deg,
+      var(--blue-base),
+      var(--blue-light)
+  );
+  --background-blue-inset: linear-gradient(
+      145deg,
+      var(--blue-light-active),
+      var(--blue-light)
+  );
   --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-dark);
   --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-light-active);
 
-  --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
-  --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
+  --background-green: linear-gradient(
+      145deg,
+      var(--green-base),
+      var(--green-light)
+  );
+  --background-green-inset: linear-gradient(
+      145deg,
+      var(--green-light),
+      var(--green-base)
+  );
   --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
   --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
 
   --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
-  --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
+  --background-red-inset: linear-gradient(
+      145deg,
+      var(--red-light),
+      var(--red-base)
+  );
   --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
   --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
 
-  --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
-  --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
+  --background-yellow: linear-gradient(
+      145deg,
+      var(--yellow-base),
+      var(--yellow-light)
+  );
+  --background-yellow-inset: linear-gradient(
+      145deg,
+      var(--yellow-light),
+      var(--yellow-base)
+  );
 
   --box-shadow-header: 4px 2px var(--blur) var(--shadow);
   --box-shadow-hover: 2px 2px 32px #656668;
@@ -231,7 +265,7 @@ html, body {
 .copy-icon {
   font-size: 16px;
   align-items: center;
-  display: flex;
+  display: flex !important;
   justify-content: center;
   color: #d0d0d0;
 }

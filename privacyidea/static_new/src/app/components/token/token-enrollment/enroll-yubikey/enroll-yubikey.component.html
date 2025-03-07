@@ -18,7 +18,8 @@
              required />
       <mat-error>OTP key is <strong>required</strong></mat-error>
       @if (otpKey().length !== 32) {
-        <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode</mat-hint>
+        <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode
+        </mat-hint>
       }
     </mat-form-field>
     <mat-form-field class="otp-input-form">

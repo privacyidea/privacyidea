@@ -4,13 +4,16 @@
     <div class="details-header">
       <h3>Details for Token: </h3>
       <h3 style="color: var(--blue-base)"> {{ tokenSerial() }} </h3>
-      <button class="copy-button"
-              [cdkCopyToClipboard]="tokenSerial()">
+      <button [cdkCopyToClipboard]="tokenSerial()"
+              class="copy-button">
         <mat-icon class="copy-icon">content_copy</mat-icon>
       </button>
     </div>
     <div [ngClass]="[
-       overflowService.isWidthOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
+        overflowService.isWidthOverflowing('.token-layout', 1310)
+          ? 'flex-column'
+          : 'flex-row',
+      ]"
          class="details-flex-layout">
       <div>
         <table [dataSource]="tokenDetailData()"
@@ -34,9 +37,10 @@
                       <mat-label>Enter Container</mat-label>
                       <input matInput
                              [(ngModel)]="selectedContainer"
-                             [matAutocomplete]="containerAuto">
+                             [matAutocomplete]="containerAuto" />
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of filteredContainerOptions(); track option) {
+                        @for (option of filteredContainerOptions();
+                          track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
@@ -44,7 +48,7 @@
                   } @else {
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
                        (click)="containerSelected(element.value)"> {{ element.value }} </a>
-                    @if (element.value !== '') {
+                    @if (element.value !== "") {
                       <button class="copy-button"
                               [cdkCopyToClipboard]="element.value">
                         <mat-icon class="copy-icon">content_copy</mat-icon>
@@ -58,21 +62,24 @@
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="selectedRealms"
                                   multiple>
-                        @for (option of realmOptions(); track option; ) {
+                        @for (option of realmOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}"
                                         disabled>{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                            <mat-option value="{{ option }}">{{ option }}
+                            </mat-option>
                           }
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
                     <div class="details-scrollable-container"
-                         [ngClass]="{'details-list': element.value.length > 2}">
-                      @for (realm of element.value; track realm; let idx = $index) {
+                         [ngClass]="{ 'details-list': element.value.length > 2 }">
+                      @for (realm of element.value;
+                        track realm;
+                        let idx = $index) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
@@ -86,21 +93,26 @@
                       <mat-label>Select Token Group</mat-label>
                       <mat-select [(ngModel)]="selectedTokengroup"
                                   multiple>
-                        @for (option of tokengroupOptions(); track option; ) {
+                        @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}"
                                         disabled>{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                            <mat-option value="{{ option }}">{{ option }}
+                            </mat-option>
                           }
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="{'details-scrollable-container': true,
-                  'details-list': element.value.length > 2}">
-                      @for (tokengroup of element.value; track tokengroup; let idx = $index) {
+                    <div [ngClass]="{
+                        'details-scrollable-container': true,
+                        'details-list': element.value.length > 2,
+                      }">
+                      @for (tokengroup of element.value;
+                        track tokengroup;
+                        let idx = $index) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ tokengroup }}</span>
                         </mat-list-item>
@@ -119,9 +131,9 @@
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                <span class="details-table-item">
-                  {{ element.value }}
-                </span>
+                      <span class="details-table-item">
+                        {{ element.value }}
+                      </span>
                     </div>
                   }
                 }
@@ -139,14 +151,24 @@
                                 [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                <span [ngClass]="[tableUtilsService.getSpanClassForKey(element.keyMap.key,
-                          element.value, maxfail)]">
-                  {{
-                    tableUtilsService.getDisplayTextForKeyAndRevoked(element.keyMap.key, element.value,
-                      revoked())
-                  }}
-                </span>
+                    <div [ngClass]="[
+                        tableUtilsService.getDivClassForKey(element.keyMap.key),
+                      ]">
+                      <span [ngClass]="[
+                          tableUtilsService.getSpanClassForKey(
+                            element.keyMap.key,
+                            element.value,
+                            maxfail
+                          ),
+                        ]">
+                        {{
+                          tableUtilsService.getDisplayTextForKeyAndRevoked(
+                            element.keyMap.key,
+                            element.value,
+                            revoked()
+                          )
+                        }}
+                      </span>
                     </div>
                   }
                 }
@@ -163,12 +185,11 @@
                     <button mat-icon-button
                             class="black"
                             (click)="resetFailCount()">
-                      <mat-icon>
-                        lock_reset
-                      </mat-icon>
+                      <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
+                } @else if (element.keyMap.key === "container_serial" &&
+                !isAnyEditingOrRevoked() &&
                 element.value) {
                   <div class="edit-button-container">
                     <button mat-icon-button
@@ -187,12 +208,12 @@
               </div>
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];"
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
               class="height-52"
               mat-row></tr>
         </table>
       </div>
-      @if (overflowService.isWidthOverflowing('.token-layout', 1310)) {
+      @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
         <br style="margin: 10px" />
         <mat-divider /><br style="margin: 10px" />
       }
@@ -207,8 +228,11 @@
                                 [tokenSerial]="tokenSerial"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
-        <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580)
-        ? 'flex-column ali-center' : 'flex-row']"
+        <div [ngClass]="[
+            overflowService.isWidthOverflowing('.token-layout', 1580)
+              ? 'flex-column ali-center'
+              : 'flex-row',
+          ]"
              class="details-flex-layout">
           <app-token-details-info [detailData]="tokenDetailData"
                                   [infoData]="infoData"

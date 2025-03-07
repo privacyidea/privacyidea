@@ -1,14 +1,15 @@
 <div class="edit-button-container">
-  @let elementIsEditing = element.isEditing()
-    || (isEditingUser() && (element.keyMap.key === "username" || element.keyMap.key === "user_name"))
-    || (isEditingInfo() && element.keyMap.key === "info");
+  @let elementIsEditing =
+    element.isEditing() ||
+    (isEditingUser() &&
+      (element.keyMap.key === "username" ||
+        element.keyMap.key === "user_name")) ||
+    (isEditingInfo() && element.keyMap.key === "info");
   @if (!shouldHideEdit()) {
     <button mat-icon-button
             class="black flex"
             (click)="toggleEditMode(element, element.keyMap.key, 'edit')">
-      <mat-icon>
-        edit
-      </mat-icon>
+      <mat-icon> edit</mat-icon>
     </button>
   } @else if (elementIsEditing) {
     @let isTokenDetailsUser = element.keyMap.key === "username";

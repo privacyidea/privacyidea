@@ -1,4 +1,4 @@
-@import "../../../../../styles/styles";
+@use "../../../../../styles";
 
 .form-group {
   display: flex;
@@ -12,5 +12,5 @@
 }
 
 .question-description {
-  width: calc((100% - 0.5rem) * 2/3)
+  width: calc((100% - 0.5rem) * 2 / 3);
 }

@@ -4,13 +4,16 @@
     <div class="container-details-header">
       <h3>Details for Container: </h3>
       <h3 style="color: var(--blue-base)"> {{ containerSerial() }} </h3>
-        <button class="copy-button"
-                [cdkCopyToClipboard]="containerSerial()">
-          <mat-icon class="copy-icon">content_copy</mat-icon>
-        </button>
+      <button [cdkCopyToClipboard]="containerSerial()"
+              class="copy-button">
+        <mat-icon class="copy-icon">content_copy</mat-icon>
+      </button>
     </div>
     <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1310) ? 'flex-column' : 'flex-row']"
+        overflowService.isWidthOverflowing('.token-layout', 1310)
+          ? 'flex-column'
+          : 'flex-row',
+      ]"
          class="details-flex-layout">
       <div>
         <table [dataSource]="containerDetailData()"
@@ -33,9 +36,11 @@
                 @case ("states") {
                   @for (state of element.value; track state; let idx = $index) {
                     <span class="font-14"
-                          [ngClass]="[tableUtilsService.getSpanClassForState(state)]">
-                {{ tableUtilsService.getDisplayTextForState(state) }}
-              </span>
+                          [ngClass]="[
+                        tableUtilsService.getSpanClassForState(state),
+                      ]">
+                      {{ tableUtilsService.getDisplayTextForState(state) }}
+                    </span>
                   }
                 }
                 @case ("realms") {
@@ -44,21 +49,26 @@
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="selectedRealms"
                                   multiple>
-                        @for (option of realmOptions(); track option; ) {
+                        @for (option of realmOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}"
                                         disabled>{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
+                            <mat-option value="{{ option }}">{{
+                                option
+                              }}
+                            </mat-option>
                           }
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
                     <div class="details-scrollable-container"
-                         [ngClass]="{'details-list': element.value.length > 2}">
-                      @for (realm of element.value; track realm; let idx = $index) {
+                         [ngClass]="{ 'details-list': element.value.length > 2 }">
+                      @for (realm of element.value;
+                        track realm;
+                        let idx = $index) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
@@ -76,9 +86,9 @@
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
-                <span class="details-table-item details-scrollable-container scroll-margin-pad">
-                  {{ element.value }}
-                </span>
+                      <span class="details-table-item details-scrollable-container scroll-margin-pad">
+                        {{ element.value }}
+                      </span>
                     </div>
                   }
                 }
@@ -101,7 +111,7 @@
               }
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];"
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
               class="height-52"
               mat-row></tr>
         </table>
@@ -119,14 +129,14 @@
             <td *matCellDef="let element"
                 class="user-editable-row height-52 fix-width-20-padr-0"
                 mat-cell>
-              @if (isEditingUser()
-              && element.keyMap.key === "user_name"
-              && selectedUserRealm() !== '') {
+              @if (isEditingUser() &&
+              element.keyMap.key === "user_name" &&
+              selectedUserRealm() !== "") {
                 <mat-form-field class="width-18">
                   <mat-label>Enter User</mat-label>
                   <input matInput
                          [(ngModel)]="selectedUsername"
-                         [matAutocomplete]="userAuto">
+                         [matAutocomplete]="userAuto" />
                   <mat-autocomplete #userAuto="matAutocomplete"
                                     class="user-selection-autocomplete">
                     @for (option of filteredUserOptions(); track option) {
@@ -138,12 +148,13 @@
                 <mat-form-field class="width-18">
                   <mat-label>Select Realm of User</mat-label>
                   <mat-select [(ngModel)]="selectedUserRealm">
-                    @for (option of realmOptions(); track option; ) {
+                    @for (option of realmOptions(); track option) {
                       <mat-option value="{{ option }}">{{ option }}</mat-option>
                     }
                   </mat-select>
                 </mat-form-field>
-              } @else if (element.keyMap.key === "user_name" || element.keyMap.key === "user_realm") {
+              } @else if (element.keyMap.key === "user_name" ||
+              element.keyMap.key === "user_realm") {
                 <a href="#">{{ element.value }}</a>
               } @else {
                 {{ element.value }}
@@ -154,7 +165,8 @@
             <td *matCellDef="let element"
                 class="edit-column-cell"
                 mat-cell>
-              @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
+              @if (element.keyMap.key === "user_name" &&
+              !(isAnyEditing() && !isEditingUser())) {
                 @if (element.value) {
                   <div class="edit-button-container">
                     <button mat-icon-button
@@ -173,7 +185,7 @@
               }
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];"
+          <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
               mat-row></tr>
         </table>
         <div class="details-flex-layout">
@@ -183,24 +195,29 @@
                                       [isAnyEditingOrRevoked]="isAnyEditing"
                                       [isEditingInfo]="isEditingInfo"
                                       [isEditingUser]="isEditingUser"
-                                      [refreshDetails]="refreshContainerDetails"></app-container-details-info>
+                                      [refreshDetails]="
+              refreshContainerDetails
+            "></app-container-details-info>
         </div>
-        @if (overflowService.isWidthOverflowing('.token-layout', 1310)) {
+        @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
           <br />
           <mat-divider></mat-divider><br />
         }
       </div>
       <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1310) ? '' : 'margin-left-1']"
+          overflowService.isWidthOverflowing('.token-layout', 1310)
+            ? ''
+            : 'margin-left-1',
+        ]"
            class="flex-column">
         <div class="flex-row checkbox-paginator-container">
           <section>
             <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer"
-                          [ngClass]="{'pad-top-10': showOnlyTokenNotInContainer()}">
+                          [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br /><span> Note: Adding a token removes it from</span><br />
-                <span style="margin-left: 39px;"> its previous container. </span>
+                <span style="margin-left: 39px"> its previous container. </span>
               }
             </mat-checkbox>
           </section>
@@ -219,18 +236,22 @@
                  (keyup)="handleFilterInput($event)"
                  [matAutocomplete]="tokenAuto"
                  matInput
-                 placeholder="Example query: 'type: hotp serial: 123'">
+                 placeholder="Example query: 'type: hotp serial: 123'" />
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenOptions(); track option) {
               <mat-option class="token-option"
                           (click)="addTokenToContainer(option)">
-                <span class="token-option-span"> {{ option['serial'] }} </span>
-                <span class="token-option-span"> {{ option['tokentype'] }} </span>
-                <span class="token-option-span"
-                      [ngClass]="option['active'] ?
-                'highlight-true' : 'highlight-false'">
-                {{ option['active'] ? 'active' : 'deactivated' }} </span>
-                <span class="token-option-span"> {{ option['username'] }} </span>
+                <span class="token-option-span"> {{ option["serial"] }} </span>
+                <span class="token-option-span">
+                  {{ option["tokentype"] }}
+                </span> <span class="token-option-span"
+                              [ngClass]="
+                    option['active'] ? 'highlight-true' : 'highlight-false'
+                  ">
+                  {{ option["active"] ? "active" : "deactivated" }}
+                </span> <span class="token-option-span">
+                  {{ option["username"] }}
+                </span>
                 <mat-icon>add</mat-icon>
               </mat-option>
             }

@@ -1,8 +1,13 @@
-import { Component, effect, signal } from '@angular/core';
-import { MatOption } from '@angular/material/core';
-import { MatFormField, MatHint } from '@angular/material/form-field';
+import {
+  Component,
+  effect,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { MatError, MatFormField, MatHint } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { MatSelect } from '@angular/material/select';
+import { MatOption, MatSelect } from '@angular/material/select';
 import { HttpParams } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TokenService } from '../../../services/token/token.service';
@@ -10,9 +15,13 @@ import { NotificationService } from '../../../services/notification/notification
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
-import { TokenComponent } from '../token.component';
+import { TokenComponent, TokenSelectedContent } from '../token.component';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { LoadingService } from '../../../services/loading/loading-service';
+import { MatDialog } from '@angular/material/dialog';
+import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
+import { ConfirmGetSerialDialogComponent } from './confirm-get-serial-dialog/confirm-get-serial-dialog.component';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -22,26 +31,30 @@ import { MatIcon } from '@angular/material/icon';
     MatFormField,
     MatInput,
     MatSelect,
-    MatOption,
     CommonModule,
     MatIcon,
     MatButton,
     MatHint,
+    MatOption,
+    MatError,
   ],
   templateUrl: './token-get-serial.component.html',
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+
   otpValue = signal<string>('');
   tokenType = signal<string>('');
   assignmentState = signal<string>('');
   serialSubstring = signal<string>('');
   countWindow = signal<number>(10);
+  currentStep = signal('init');
   tokenTypes: { key: string; info: string }[] = [];
+  foundSerial = signal<string>('');
+  tokenCount = signal<string>('');
 
-  currentStep: string = 'init';
-  foundSerial: string = '';
-  count: string = '';
   assignmentStates = [
     { key: 'assigned', info: 'The token is assigned to a user' },
     { key: 'unassigned', info: 'The token is not assigned to a user' },
@@ -54,6 +67,8 @@ export class TokenGetSerial {
   constructor(
     private tokenService: TokenService,
     private notificationService: NotificationService,
+    private loadingService: LoadingService,
+    private dialog: MatDialog,
   ) {
     const tokenWithOTP = [
       'hotp',
@@ -80,20 +95,15 @@ export class TokenGetSerial {
     });
   }
 
-  onPressEnter(): void {
-    if (this.otpValue() === '') {
-      this.notificationService.openSnackBar('Please enter an OTP value.');
-      return;
-    }
-
-    switch (this.currentStep) {
+  onPressEnter(inputElement?: HTMLInputElement): void {
+    switch (this.currentStep()) {
       case 'init':
       case 'found':
-        this.countTokens();
+      case 'error':
+        this.countTokens(inputElement);
         break;
+      case 'countDone':
       case 'counting':
-        this.findSerial();
-        break;
       case 'searching':
         break;
     }
@@ -119,18 +129,40 @@ export class TokenGetSerial {
     return params;
   }
 
-  countTokens(): void {
-    if (this.currentStep !== 'init') {
+  countTokens(inputElement?: HTMLInputElement): void {
+    if (this.currentStep() !== 'init' && this.currentStep() !== 'found') {
       this.notificationService.openSnackBar('Invalid action.');
       return;
     }
+    /*
+    if (this.otpValue() === '') {
+      if (inputElement instanceof MatInput) {
+        inputElement.focus();
+        inputElement.updateErrorState();
+      }
+      return;
+    }
+    */
     let params = this.getParams();
     params = params.set('count', '1');
-    this.currentStep = 'counting';
+    this.currentStep.set('counting');
     this.fetchSerial(params).subscribe({
       next: (response) => {
-        this.count = response.result.value.count;
-        if (!this.countIsLarge()) {
+        this.tokenCount.set(response.result.value.count);
+        this.currentStep.set('countDone');
+        if (this.countIsLarge()) {
+          this.dialog.open(ConfirmGetSerialDialogComponent, {
+            data: {
+              numberOfTokens: this.tokenCount(),
+              onAbort: () => {
+                this.reset();
+              },
+              onConfirm: () => {
+                this.findSerial();
+              },
+            },
+          });
+        } else {
           this.findSerial();
         }
       },
@@ -138,26 +170,45 @@ export class TokenGetSerial {
   }
 
   findSerial(): void {
-    if (this.currentStep !== 'counting') {
+    if (this.currentStep() !== 'countDone') {
       this.notificationService.openSnackBar('Invalid action.');
       return;
     }
     let params = this.getParams();
     params = params.delete('count');
-    this.currentStep = 'searching';
+    this.currentStep.set('searching');
     this.fetchSerial(params).subscribe({
       next: (response) => {
-        this.foundSerial = response.result.value.serial;
-        this.currentStep = 'found';
+        this.dialog.open(GetSerialResultDialogComponent, {
+          data: {
+            foundSerial: response.result.value.serial,
+            otpValue: this.otpValue(),
+            onClickSerial: () => {
+              this.tokenSerial.set(response.result.value.serial);
+              this.selectedContent.set('token_details');
+              this.dialog.closeAll();
+            },
+            reset: () => {
+              this.reset();
+            },
+          },
+        });
+        this.foundSerial.set(response.result.value.serial);
+        this.currentStep.set('found');
       },
     });
   }
 
   fetchSerial(params: HttpParams): Observable<any> {
     let observable = this.tokenService.getSerial(this.otpValue(), params);
+    this.loadingService.addLoading({
+      key: 'token-get-serial',
+      observable: observable,
+    });
     observable.subscribe({
       error: (error) => {
         console.error('Failed to get serial.', error);
+        this.currentStep.set('error');
         const message = error.error?.result?.error?.message || '';
         this.notificationService.openSnackBar(
           'Failed to get serial. ' + message,
@@ -168,12 +219,12 @@ export class TokenGetSerial {
   }
 
   reset(): void {
-    this.currentStep = 'init';
-    this.foundSerial = '';
-    this.count = '';
+    this.currentStep.set('init');
+    this.foundSerial.set('');
+    this.tokenCount.set('');
   }
 
   countIsLarge(): boolean {
-    return parseInt(this.count) > 99;
+    return parseInt(this.tokenCount()) > 99;
   }
 }

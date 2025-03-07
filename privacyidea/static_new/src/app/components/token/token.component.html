@@ -1,6 +1,9 @@
 <div aria-label="Token Layout"
      class="token-layout">
-  @if (!overflowService.isWidthOverflowing('.token-layout', overflowService.getOverflowThreshold(selectedContent()))) {
+  @if (!overflowService.isWidthOverflowing(
+    ".token-layout",
+    overflowService.getOverflowThreshold(selectedContent())
+  )) {
     <app-token-card class="margin-right-1"
                     [active]="tokenIsActive"
                     [states]="states"
@@ -13,13 +16,17 @@
                     [selectedContent]="selectedContent"></app-token-card>
   }
   <mat-drawer-container>
-    @if (overflowService.isWidthOverflowing('.token-layout',
-      overflowService.getOverflowThreshold(selectedContent()))) {
+    @if (overflowService.isWidthOverflowing(
+      ".token-layout",
+      overflowService.getOverflowThreshold(selectedContent())
+    )) {
       <mat-drawer #drawer
                   [mode]="'over'"
-                  [ngClass]="[this.overflowService.isHeightOverflowing('.token-layout',  675) ?
-                  'token-drawer-overflow' :
-                  'token-drawer']">
+                  [ngClass]="[
+          this.overflowService.isHeightOverflowing('.token-layout', 675)
+            ? 'token-drawer-overflow'
+            : 'token-drawer',
+        ]">
         <app-token-card [active]="tokenIsActive"
                         [states]="states"
                         [refreshTokenDetails]="refreshTokenDetails"
@@ -33,8 +40,10 @@
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isWidthOverflowing('.token-layout',
-          overflowService.getOverflowThreshold(selectedContent()))) {
+        @if (overflowService.isWidthOverflowing(
+          ".token-layout",
+          overflowService.getOverflowThreshold(selectedContent())
+        )) {
           <div class="drawer-button-div">
             <button mat-fab
                     (click)="drawer.toggle()"
@@ -44,9 +53,14 @@
           </div>
         }
         <main>
-          <div [ngClass]="[(overflowService.isWidthOverflowing('.token-layout',
-          overflowService.getOverflowThreshold(selectedContent())))
-          ? 'main-margin' : 'main-margin-overflow']">
+          <div [ngClass]="[
+              overflowService.isWidthOverflowing(
+                '.token-layout',
+                overflowService.getOverflowThreshold(selectedContent())
+              )
+                ? 'main-margin'
+                : 'main-margin-overflow',
+            ]">
             @switch (selectedContent()) {
               @case ("token_overview") {
                 <app-token-table [isProgrammaticChange]="isProgrammaticChange"
@@ -68,7 +82,17 @@
                                    [refreshTokenDetails]="refreshTokenDetails"
                                    [containerSerial]="containerSerial"
                                    [selectedContent]="selectedContent"
-                                   [isProgrammaticChange]="isProgrammaticChange"></app-token-details>
+                                   [isProgrammaticChange]="
+                    isProgrammaticChange
+                  "></app-token-details>
+              }
+              @case ("show_challenges") {
+                <app-challenges-table [selectedContent]="selectedContent"
+                                      [tokenSerial]="tokenSerial" />
+              }
+              @case ("token_applications") {
+                <app-token-applications [tokenSerial]="tokenSerial"
+                                        [selectedContent]="selectedContent" />
               }
               @case ("token_get_serial") {
                 <app-token-get-serial />
@@ -84,7 +108,9 @@
                                        [states]="states"
                                        [refreshContainerDetails]="refreshContainerDetails"
                                        [selectedContent]="selectedContent"
-                                       [isProgrammaticChange]="isProgrammaticChange"></app-container-details>
+                                       [isProgrammaticChange]="
+                    isProgrammaticChange
+                  "></app-container-details>
               }
             }
           </div>

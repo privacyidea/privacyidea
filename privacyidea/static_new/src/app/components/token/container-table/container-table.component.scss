@@ -1,8 +1,8 @@
-@import "../../../../styles/styles";
+@use "../../../../styles";
 
 .container-table-container {
-  @include table-container-styles;
-  @include base-table-structure(
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
       ".container-table",
       ".container-table-filter",
       ".table-scrollable-container"

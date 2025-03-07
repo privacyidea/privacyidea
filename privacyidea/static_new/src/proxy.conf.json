@@ -4,6 +4,8 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
-    "pathRewrite": {"^/proxy" : ""}
+    "pathRewrite": {
+      "^/proxy": ""
+    }
   }
 }

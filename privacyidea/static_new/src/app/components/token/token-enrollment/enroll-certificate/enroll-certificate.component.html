@@ -38,11 +38,12 @@
   </div>
 
   @switch (this.intentionToggle()) {
-    @case ('generate') {
+    @case ("generate") {
       <span class="margin-button-1">The server will create the private RSA key and store it in the
-        database. <br> You can later download the PKCS#12 file.</span>
+        database. <br />
+        You can later download the PKCS#12 file.</span>
     }
-    @case ('uploadRequest') {
+    @case ("uploadRequest") {
       <mat-form-field class="width-66">
         <mat-label> Certificate Signing Request (PEM)</mat-label>
         <textarea [(ngModel)]="pem"
@@ -51,7 +52,7 @@
                   rows="3"></textarea>
       </mat-form-field>
     }
-    @case ('uploadCert') {
+    @case ("uploadCert") {
       <mat-form-field class="width-66">
         <mat-label> Certificate (PEM)</mat-label>
         <textarea [(ngModel)]="pem"

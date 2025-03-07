@@ -1,7 +1,9 @@
 <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row',
-        overflowService.isWidthOverflowing('.token-layout', 1310) ? 'pad-0' :
-        '']"
+    overflowService.isWidthOverflowing('.token-layout', 1580)
+      ? 'flex-column'
+      : 'flex-row',
+    overflowService.isWidthOverflowing('.token-layout', 1310) ? 'pad-0' : '',
+  ]"
      class="user-container ali-center">
   <table [dataSource]="userData()"
          aria-label="User Detail Data Table"
@@ -17,12 +19,14 @@
       <td *matCellDef="let element"
           class="user-editable-row height-52 fix-width-20-padr-0"
           mat-cell>
-        @if (isEditingUser() && element.keyMap.key === "username" && selectedUserRealm() !== '') {
+        @if (isEditingUser() &&
+        element.keyMap.key === "username" &&
+        selectedUserRealm() !== "") {
           <mat-form-field>
             <mat-label>Enter User</mat-label>
             <input matInput
                    [(ngModel)]="selectedUsername"
-                   [matAutocomplete]="userAuto">
+                   [matAutocomplete]="userAuto" />
             <mat-autocomplete #userAuto="matAutocomplete">
               @for (option of filteredUserOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
@@ -33,12 +37,13 @@
           <mat-form-field>
             <mat-label>Select Realm of User</mat-label>
             <mat-select [(ngModel)]="selectedUserRealm">
-              @for (option of realmOptions(); track option; ) {
+              @for (option of realmOptions(); track option) {
                 <mat-option value="{{ option }}">{{ option }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
-        } @else if (element.keyMap.key === "username" || element.keyMap.key === "user_realm") {
+        } @else if (element.keyMap.key === "username" ||
+        element.keyMap.key === "user_realm") {
           <a href="#">{{ element.value }}</a>
         } @else {
           {{ element.value }}
@@ -49,7 +54,8 @@
       <td *matCellDef="let element"
           class="edit-column-cell"
           mat-cell>
-        @if (element.keyMap.key === "username" && !(isAnyEditingOrRevoked() && !isEditingUser())) {
+        @if (element.keyMap.key === "username" &&
+        !(isAnyEditingOrRevoked() && !isEditingUser())) {
           @if (element.value) {
             <div class="edit-button-container">
               <button mat-icon-button
@@ -68,21 +74,21 @@
         }
       </td>
     </ng-container>
-    <tr *matRowDef="let row; columns: ['key', 'value', 'edit'];"
+    <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
         mat-row></tr>
   </table>
   <div class="user-pin-container">
     <div class="user-pin-input">
-      <input style="display:none"
-             type="text" /> <input style="display:none"
+      <input style="display: none"
+             type="text" /> <input style="display: none"
                                    type="password" /> <input [(ngModel)]="setPinValue"
                                                              [type]="'password'"
                                                              class="input"
-                                                             placeholder="Token Pin">
+                                                             placeholder="Token Pin" />
       <input [(ngModel)]="repeatPinValue"
              [type]="'password'"
              class="input"
-             placeholder="Repeat Pin">
+             placeholder="Repeat Pin" />
     </div>
     <div class="user-pin-button">
       @if (!isEditingUser()) {
@@ -107,7 +113,7 @@
                 (click)="toggleUserEditMode(null, '', 'save')">
           <mat-icon class="detail-button-icon">save</mat-icon>
           Assign User
-        </button><br style="margin-bottom: 40px">
+        </button><br style="margin-bottom: 40px" />
       }
     </div>
     <br />

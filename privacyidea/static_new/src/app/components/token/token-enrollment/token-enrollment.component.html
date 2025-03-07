@@ -6,13 +6,13 @@
                 [panelClass]="'multi-column-panel'">
       @for (type of tokenTypesOptions; track type) {
         <mat-option class="token-type-option"
-                    [value]="type">{{ type.info.split(':')[0] }}
+                    [value]="type">{{ type.info.split(":")[0] }}
         </mat-option>
       }
     </mat-select>
     <mat-hint class="token-type-hint">
-      @if (selectedType()?.info) {
-        {{ selectedType().info.split(':')[1] }}
+      @if (selectedType().info) {
+        {{ selectedType().info.split(":")[1] }}
       }
     </mat-hint>
   </mat-form-field>
@@ -23,9 +23,14 @@
       <mat-icon>comment</mat-icon>
     </button>
     <button (click)="enrollToken()"
-            [disabled]="motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
-            [ngClass]="{'disabled-button': motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
-       'card-button': true}"
+            [disabled]="
+        motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()
+      "
+            [ngClass]="{
+        'disabled-button':
+          motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+        'card-button': true,
+      }"
             mat-flat-button>
       <mat-icon>add</mat-icon>
       Enroll {{ selectedType().key }} token
@@ -161,16 +166,16 @@
   }
   <h4 class="enroll-h4">Assign token to user</h4>
   <div class="assign-user-container">
-    <input style="display:none"
+    <input style="display: none"
            type="text" />
 
-    <input style="display:none"
+    <input style="display: none"
            type="password" />
 
     <mat-form-field class="width-33 heigth-76-5">
       <mat-label>Select Realm of User</mat-label>
       <mat-select [(ngModel)]="selectedUserRealm">
-        @for (option of realmOptions(); track option; ) {
+        @for (option of realmOptions(); track option) {
           <mat-option value="{{ option }}">{{ option }}</mat-option>
         }
       </mat-select>
@@ -181,7 +186,7 @@
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
              [required]="userIsRequired()"
-             matInput>
+             matInput />
       <mat-error>User is <strong>required</strong></mat-error>
       <mat-autocomplete #userAuto="matAutocomplete">
         @for (option of filteredUserOptions(); track option) {
@@ -196,12 +201,12 @@
         <input [(ngModel)]="setPinValue"
                [type]="'password'"
                class="input"
-               placeholder="Pin">
+               placeholder="Pin" />
 
         <input [(ngModel)]="repeatPinValue"
                [type]="'password'"
                class="input"
-               placeholder="Repeat Pin">
+               placeholder="Repeat Pin" />
       </div>
     </div>
   </div>
@@ -211,7 +216,7 @@
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="selectedContainer"
            [matAutocomplete]="containerAuto"
-           matInput>
+           matInput />
     <mat-autocomplete #containerAuto="matAutocomplete">
       @for (option of filteredContainerOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
@@ -230,7 +235,7 @@
           <input [(ngModel)]="selectedStartDate"
                  [matDatepicker]="startPicker"
                  matInput
-                 placeholder="Start date">
+                 placeholder="Start date" />
           <mat-hint>Date format: YYYY-MM-DD</mat-hint>
           <mat-datepicker-toggle [for]="startPicker"
                                  matIconSuffix></mat-datepicker-toggle>
@@ -262,7 +267,7 @@
           <input [(ngModel)]="selectedEndDate"
                  [matDatepicker]="endPicker"
                  matInput
-                 placeholder="End date">
+                 placeholder="End date" />
           <mat-hint>Date format: YYYY-MM-DD</mat-hint>
           <mat-datepicker-toggle [for]="endPicker"
                                  matIconSuffix></mat-datepicker-toggle>

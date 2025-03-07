@@ -2,9 +2,8 @@
 <mat-dialog-content>
   <p>
     Are you sure you want to {{ data.action }}
-    @if (data.serial_list && data.serial_list.length > 1 && data.type === 'token') {
-      all ({{ data.serial_list.length }}) tokens {{ data.action === 'remove' ? 'from' : 'in' }}
-      this container?
+    @if (data.serial_list && data.serial_list.length > 1 && data.type === "token") {
+      all ({{ data.serial_list.length }}) tokens{{ data.action === "remove" ? "from" : "in" }}this container?
     } @else {
       this {{ data.type }}?
     }

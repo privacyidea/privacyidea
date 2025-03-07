@@ -8,10 +8,10 @@
     Generate OTP key on the server
     @if (generateOnServer()) {
       <span class="dot">.</span><span>
-      <br />
-      The server will create the OTP key and a QR Code will be displayed to you to be
-      scanned.
-    </span>
+        <br />
+        The server will create the OTP key and a QR Code will be displayed to
+        you to be scanned.
+      </span>
     }
   </mat-checkbox>
   <div class="otp-inputs-container">
@@ -30,11 +30,12 @@
     <mat-form-field class="otp-input-form">
       <mat-label>OTP length</mat-label>
       <mat-select [(ngModel)]="otpLength">
-        <mat-option [value]=6>6</mat-option>
-        <mat-option [value]=8>8</mat-option>
+        <mat-option [value]="6">6</mat-option>
+        <mat-option [value]="8">8</mat-option>
       </mat-select>
       @if (generateOnServer()) {
-        <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
+        <mat-hint>Some Authenticator Apps only support an OTP length of 6.
+        </mat-hint>
       }
     </mat-form-field>
     <mat-form-field class="otp-input-form">
@@ -45,7 +46,8 @@
         <mat-option value="sha512">sha512</mat-option>
       </mat-select>
       @if (generateOnServer()) {
-        <mat-hint>Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
+        <mat-hint>Some Authenticator Apps only support the SHA1 algorithm.
+        </mat-hint>
       }
     </mat-form-field>
   </div>
@@ -61,8 +63,8 @@
     <mat-form-field class="timestep-form margin-top-2">
       <mat-label>Timestep</mat-label>
       <mat-select [(ngModel)]="timeStep">
-        <mat-option [value]=30>30</mat-option>
-        <mat-option [value]=60>60</mat-option>
+        <mat-option [value]="30">30</mat-option>
+        <mat-option [value]="60">60</mat-option>
       </mat-select>
     </mat-form-field>
   </div>

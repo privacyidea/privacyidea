@@ -16,6 +16,8 @@ import { TokenCardComponent } from './token-card/token-card.component';
 import { NotificationService } from '../../services/notification/notification.service';
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
+import { TokenApplications } from './token-applications/token-applications';
+import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 
 export type TokenType =
   | 'hotp'
@@ -45,6 +47,16 @@ export type TokenType =
   | 'webauthn'
   | 'passkey';
 
+export type TokenSelectedContent =
+  | 'token_overview'
+  | 'token_details'
+  | 'container_overview'
+  | 'container_details'
+  | 'token_enrollment'
+  | 'show_challenges'
+  | 'token_applications'
+  | 'token_get_serial';
+
 export interface TokenTypeOption {
   key: TokenType;
   info: string;
@@ -68,6 +80,8 @@ export interface TokenTypeOption {
     MatIcon,
     MatFabButton,
     TokenEnrollmentComponent,
+    TokenApplications,
+    ChallengesTableComponent,
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.scss',
@@ -205,7 +219,7 @@ export class TokenComponent {
       text: 'The Passkey is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.',
     },
   ];
-  selectedContent = signal('token_overview');
+  selectedContent = signal<TokenSelectedContent>('token_overview');
   tokenSerial = signal('');
   containerSerial = signal('');
   tokenIsActive = signal(true);

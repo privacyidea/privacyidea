@@ -33,9 +33,7 @@
               } @else {
                 <mat-list-item class="height-auto info-row">
                   <div class="info-span">
-                    <span class="info-span-title">
-                      {{ key }}:
-                    </span> <span class="info-span-value">{{
+                    <span class="info-span-title"> {{ key }}: </span> <span class="info-span-value">{{
                       element.value[key]
                     }}</span>
                     <mat-divider class="info-divider" />
@@ -52,16 +50,17 @@
                 </mat-form-field>
                 :
                 <mat-form-field style="width: 47%">
-                            <textarea matInput
-                                      rows="1"
-                                      [(ngModel)]="newInfo().value"
-                                      style="width: 105%"
-                                      placeholder="Add new info"></textarea>
+                  <textarea matInput
+                            rows="1"
+                            [(ngModel)]="newInfo().value"
+                            style="width: 105%"
+                            placeholder="Add new info"></textarea>
                 </mat-form-field>
               </mat-list-item>
             }
           </mat-list>
         </div>
+      </td>
     </ng-container>
     <ng-container matColumnDef="edit">
       <td *matCellDef="let element"
@@ -74,7 +73,7 @@
                           [toggleEditMode]="toggleInfoEditMode.bind(this)"></app-edit-buttons>
       </td>
     </ng-container>
-    <tr *matRowDef="let row; columns: ['value', 'edit'];"
+    <tr *matRowDef="let row; columns: ['value', 'edit']"
         class="height-52"
         mat-row></tr>
   </table>

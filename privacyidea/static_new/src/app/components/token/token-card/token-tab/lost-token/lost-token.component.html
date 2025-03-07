@@ -26,7 +26,8 @@
               class="lost-card">
       <mat-card-content class="lost-card-content">Token was marked as lost successfully.
       </mat-card-content>
-    </mat-card><p> The serial of the new token is
+    </mat-card><p>
+      The serial of the new token is
       <a (click)="tokenSelected(response.result.value.serial)"> {{ response.result.value.serial }} </a>
       <br /> The password that needs to be combined with the OTP PIN: </p>
     <p class="lost-password"> {{ response.result.value.password }} </p><p style="font-weight: bold">

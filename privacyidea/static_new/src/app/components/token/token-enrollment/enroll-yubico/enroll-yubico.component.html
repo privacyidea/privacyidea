@@ -5,15 +5,15 @@
   <h4 class="enroll-h4">Token configuration</h4>
   @if (!yubicoIsConfigured()) {
     <span class="inline-warning">For Yubico tokens to work properly you need to set the
-    <a href="#">Yubico Token Config</a>!</span>
+      <a href="#">Yubico Token Config</a>!</span>
   }
   <div class="flex-row gap-1">
     <mat-form-field class="otp-input-form">
       <mat-label>Yubikey Identifier</mat-label>
       <input [(ngModel)]="yubikeyIdentifier"
+             [errorStateMatcher]="yubicoErrorStatematcher"
              matInput
              placeholder="Enter the 12 digit identifier"
-             [errorStateMatcher]="yubicoErrorStatematcher"
              required />
       <mat-error>Yubikey identifier with 12 digits is <strong>required</strong></mat-error>
     </mat-form-field>

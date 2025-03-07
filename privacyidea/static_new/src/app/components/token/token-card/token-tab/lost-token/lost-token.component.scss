@@ -1,4 +1,4 @@
-@import '../../../../../../styles/styles';
+@use "../../../../../../styles";
 
 .dialog-div {
   display: flex;
@@ -36,4 +36,3 @@
 .question-icon {
   margin-top: -3px;
 }
-

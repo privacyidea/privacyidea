@@ -36,16 +36,21 @@
     <h4>Components</h4></a>
   </nav>
 
-  <div [ngClass]="[(sessionTimerService.remainingTime() < 31000) ? 'red-light bold' :
-                    sessionTimerService.remainingTime() < 60000 ? 'yellow-light' : 'shadow']"
+  <div [ngClass]="[
+      sessionTimerService.remainingTime() < 31000
+        ? 'red-light bold'
+        : sessionTimerService.remainingTime() < 60000
+          ? 'yellow-light'
+          : 'shadow',
+    ]"
        class="session-timer">
     @if (sessionTimerService.remainingTime() < 60000) {
-      {{ sessionTimerService.remainingTime() | date:'mm:ss' }}
-    } @else if (sessionTimerService.remainingTime() >= 60000
-    && sessionTimerService.remainingTime() < 600000) {
-      {{ sessionTimerService.remainingTime() | date:'m' }}min
+      {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
+    } @else if (sessionTimerService.remainingTime() >= 60000 &&
+    sessionTimerService.remainingTime() < 600000) {
+      {{ sessionTimerService.remainingTime() | date: "m" }}min
     } @else {
-      {{ sessionTimerService.remainingTime() | date:'mm' }}min
+      {{ sessionTimerService.remainingTime() | date: "mm" }}min
     }
   </div>
 

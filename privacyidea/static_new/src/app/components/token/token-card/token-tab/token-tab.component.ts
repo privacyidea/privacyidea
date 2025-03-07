@@ -164,6 +164,16 @@ export class TokenTabComponent {
     this.tokenSerial.set('');
   }
 
+  onClickShowChallenges() {
+    this.selectedContent.set('show_challenges');
+    this.tokenSerial.set('');
+  }
+
+  onClickTokenApplications() {
+    this.selectedContent.set('token_applications');
+    this.tokenSerial.set('');
+  }
+
   onClickGetSerial() {
     this.selectedContent.set('token_get_serial');
     this.tokenSerial.set('');

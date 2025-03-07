@@ -3,18 +3,16 @@
   @if (!data.response.detail?.pushurl || data.pushEnrolled()) {
     <p>
       <span>The token was successfully enrolled with serial number
-      <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }}
-      </a>.</span>
+        <a (click)="tokenSelected(data.response.detail.serial)">
+          {{ data.response.detail.serial }} </a>.</span>
       @if (data.response.detail.container_serial) {
-        <br><span>It has been enrolled in the container
-        <a (click)="containerSelected(data.response.detail.container_serial)"> {{
-            data.response.detail.container_serial
-          }} </a>.</span>
+        <br /><span>It has been enrolled in the container
+          <a (click)="containerSelected(data.response.detail.container_serial)">
+            {{ data.response.detail.container_serial }} </a>.</span>
       }
-      @if (data.username != '' && data.userRealm != '' && !data.onlyAddToRealm) {
-        <br><span>The user <a href="#">{{ data.username }}</a> in the realm <a href="#">{{
-            data.userRealm
-          }}</a> was assigned to the token.
+      @if (data.username != "" && data.userRealm != "" && !data.onlyAddToRealm) {
+        <br /><span>The user <a href="#">{{ data.username }}</a> in the realm
+          <a href="#">{{ data.userRealm }}</a> was assigned to the token.
         </span>
       }
     </p>
@@ -52,8 +50,11 @@
            width="300px" />
     }
     <div class="flex-column gap-1">
-      @let url = data.response.detail?.googleurl?.value ?? data.response.detail?.motpurl?.value
-        ?? data.response.detail?.otpkey?.value ?? data.response.detail?.tiqrenroll?.value;
+      @let url =
+        data.response.detail?.googleurl?.value ??
+        data.response.detail?.motpurl?.value ??
+        data.response.detail?.otpkey?.value ??
+        data.response.detail?.tiqrenroll?.value;
       @if (url) {
         <p class="qr-code-text">
           Click <a href="{{ url }}">here</a> or scan the QR Code, if you want to add the Token to
@@ -77,15 +78,16 @@
 
       @if (data.response.detail?.pushurl && !data.pushEnrolled()) {
         <span>
-          Your token with serial number {{ data.response.detail.serial }} is not completely
-          enrolled, yet. <br>
-        </span><span>
+          Your token with serial number {{ data.response.detail.serial }} is not
+          completely enrolled, yet. <br /> </span><span>
           Please scan the QR code with the privacyIDEA Authenticator App
-          <br> or click <a href="{{data.response.detail.pushurl.value}}">this link</a>
-          on your smartphone. <br>
-          It will send the missing registration data to the configured endpoint.
-        </span><span>
-          Please note, that your smartphone needs internet access during the authentication process.
+          <br />
+          or click
+          <a href="{{ data.response.detail.pushurl.value }}">this link</a> on
+          your smartphone. <br />
+          It will send the missing registration data to the configured endpoint. </span><span>
+          Please note, that your smartphone needs internet access during the
+          authentication process.
         </span>
       }
 
@@ -107,7 +109,8 @@
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>
-              <mat-panel-title> The OTP values
+              <mat-panel-title>
+                The OTP values
                 @if (data.response.detail?.otps) {
                   <button (click)="printOtps()"
                           mat-icon-button
@@ -119,7 +122,8 @@
             </mat-expansion-panel-header>
             <div id="otp-values">
               <div class="otp-values">
-                @for (otp of Object.entries(data.response.detail.otps); track otp) {
+                @for (otp of Object.entries(data.response.detail.otps);
+                  track otp) {
                   <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
                 }
               </div>
@@ -130,9 +134,9 @@
     </div>
   </div>
   @if (data.response.detail?.u2fRegisterRequest) {
-    <span>Take action on your token:</span><p class="max-width-600"> You need to confirm the
-      registration with your token either by pushing the blinking button or by religging your token.
-      This depends on the actual token model.</p>
+    <span>Take action on your token:</span><p class="max-width-600">
+      You need to confirm the registration with your token either by pushing the blinking button or
+      by religging your token. This depends on the actual token model.</p>
   }
 
   @if (data.response.detail?.webAuthnRegisterRequest) {

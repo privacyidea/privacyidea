@@ -19,7 +19,8 @@
   <div [ngClass]="[
       overflowService.isWidthOverflowing('.token-layout', 1580)
         ? 'flex-column'
-        : 'flex-row']">
+        : 'flex-row',
+    ]">
     <table [dataSource]="dataSource()"
            aria-label="Token of Container Data Table"
            class="container-details-token-table"
@@ -39,7 +40,7 @@
               [ngClass]="{ 'width-18': column.key === 'description' }">
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-                @if (column.key === 'serial') {
+                @if (column.key === "serial") {
                   <a attr.aria-label="{{ column.label }} Link"
                      (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
                   <button class="copy-button"
@@ -52,10 +53,10 @@
                 } @else {
                   <span (click)="handleColumnClick(column.key, element)"
                         [ngClass]="
-                  tableUtilsService.getClassForColumn(column.key, element)
-                ">
-                {{ tableUtilsService.getDisplayText(column.key, element) }}
-              </span>
+                      tableUtilsService.getClassForColumn(column.key, element)
+                    ">
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
                 }
               </div>
             </ng-container>
@@ -96,7 +97,8 @@
     <div [ngClass]="[
         overflowService.isWidthOverflowing('.token-layout', 1580)
           ? 'container-details-action-column'
-          : 'container-details-action-row']">
+          : 'container-details-action-row',
+      ]">
       <button (click)="toggleAll('activate')"
               class="card-button-activate"
               mat-flat-button>
