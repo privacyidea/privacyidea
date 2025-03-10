@@ -250,7 +250,7 @@ class MSCAConnector(BaseCAConnector):
         self.ssl_client_key_password = self.config.get(ATTR.SSL_CLIENT_KEY_PASSWORD)
         self.templates = self.get_templates()
 
-    def sign_request(self, csr, options=None):
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Send a signing request to the Microsoft CA
 
@@ -272,7 +272,7 @@ class MSCAConnector(BaseCAConnector):
                 log.info("certificate with request ID {0!s} successfully rolled out".format(request_id))
                 certificate = self.connection.GetCertificate(GetCertificateRequest(id=request_id,
                                                                                    caName=self.ca)).cert
-                return request_id, crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+                return request_id, certificate
             if reply.disposition == 5:
                 log.info("cert still under submission")
                 raise CSRPending(requestId=reply.requestId)
@@ -408,7 +408,7 @@ class MSCAConnector(BaseCAConnector):
             print("Available CAs: \n")
             for c in cas:
                 print("     {0!s}".format(c))
-            config.ca = input("Choose CA: ".format(config.ca))
+            config.ca = input("Choose CA: ")
             print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")

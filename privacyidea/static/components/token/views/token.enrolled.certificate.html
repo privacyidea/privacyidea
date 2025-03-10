@@ -23,6 +23,18 @@
         <span class="glyphicon glyphicon-bookmark"
                           aria-hidden="true"></span>
         <span translate>Download the PKCS12 file</span></a>.
+    <div ng-show="enrolledToken.pkcs12_password">
+        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+            Show PKCS12 password
+        </button>
+        <button class="btn btn-transparent btn-sm"
+            ng-click="copyTokeninfoClipboard(enrolledToken.pkcs12_password)">
+            <span class="glyphicon glyphicon-copy"></span>
+        </button>
+        <div class="collapse" id="collapseExample">
+            {{ enrolledToken.pkcs12_password }}
+        </div>
+    </div>
 </p>
 <pre ng-show="enrolledToken.certificate">
 {{ enrolledToken.certificate }}

@@ -2,21 +2,20 @@
 This test file tests the lib.caconnector.py and
 lib.caconnectors.localca.py
 """
-import unittest
-
-import OpenSSL.crypto
-
-from .base import MyTestCase
+from cryptography import x509
+import datetime
+from io import StringIO
+import mock
 import os
 import shutil
-import mock
-from io import StringIO
-from mock import patch
 import tempfile
+import unittest
+
+from .base import MyTestCase
+from .mscamock import CAServiceMock
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
-from OpenSSL import crypto
-from privacyidea.lib.utils import int_to_hex, to_unicode
+from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.error import CAError, CSRError, CSRPending
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
@@ -27,7 +26,6 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from .mscamock import CAServiceMock
 
 
 CAKEY = "cakey.pem"
@@ -246,15 +244,14 @@ class LocalCATestCase(MyTestCase):
                                       {"CSRDir": "",
                                        "CertificateDir": "",
                                        "WorkingDir": self.ca_path})
-        serial = cert.get_serial_number()
+        cert_obj = x509.load_pem_x509_certificate(cert.encode())
+        serial = cert_obj.serial_number
 
-        self.assertEqual("{0!r}".format(cert.get_issuer()),
-                         "<X509Name object "
-                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("{0!r}".format(cert.get_subject()),
-                         "<X509Name object "
-                         "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
-                         ".localdomain'>")
+        self.assertEqual("{0!r}".format(cert_obj.issuer),
+                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+        self.assertEqual("{0!r}".format(cert_obj.subject),
+                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester"
+                         ".localdomain)>")
 
         # Fail to revoke certificate due to non-existing-reasing
         self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
@@ -269,19 +266,11 @@ class LocalCATestCase(MyTestCase):
         self.assertEqual(r, "crl.pem")
         # Check if the serial number is contained in the CRL!
         filename = os.path.join(self.ca_path, "crl.pem")
-        f = open(filename)
-        buff = f.read()
-        f.close()
-        # TODO: deprecated, use cryptography
-        crl = crypto.load_crl(crypto.FILETYPE_PEM, buff)
-        revoked_certs = crl.get_revoked()
-        found_revoked_cert = False
-        for revoked_cert in revoked_certs:
-            s = to_unicode(revoked_cert.get_serial())
-            if s == serial_hex:
-                found_revoked_cert = True
-                break
-        self.assertTrue(found_revoked_cert)
+        with open(filename) as f:
+            buff = f.read()
+        crl = x509.load_pem_x509_crl(buff.encode())
+        revoked_cert = crl.get_revoked_certificate_by_serial_number(serial)
+        self.assertIsNotNone(revoked_cert)
 
         # Create the CRL and check the overlap period. But no need to create
         # a new CRL.
@@ -304,14 +293,15 @@ class LocalCATestCase(MyTestCase):
                                   "WorkingDir": self.ca_path})
 
         _, cert = cacon.sign_request(REQUEST_USER)
-        self.assertEqual("{0!r}".format(cert.get_issuer()),
-                         "<X509Name object "
-                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("{0!r}".format(cert.get_subject()),
-                         "<X509Name object "
-                         "'/C=DE/ST=Hessen/O=privacyidea/CN=usercert'>")
+        cert_obj = x509.load_pem_x509_certificate(cert.encode())
+        self.assertEqual("{0!r}".format(cert_obj.issuer),
+                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+        self.assertEqual("{0!r}".format(cert_obj.subject),
+                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=usercert)>")
 
     def test_04_sign_SPKAC_request(self):
+        # Our example SPKAC uses MD5 as signature algorithm
+        os.environ["OPENSSL_ENABLE_MD5_VERIFY"] = "true"
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
                                   "cacert": CACERT,
@@ -319,14 +309,17 @@ class LocalCATestCase(MyTestCase):
                                   "WorkingDir": self.ca_path})
 
         _, cert = cacon.sign_request(SPKAC, options={"spkac": 1})
-        self.assertEqual("{0!r}".format(cert.get_issuer()),
-                         "<X509Name object "
-                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("{0!r}".format(cert.get_subject()),
-                         "<X509Name object '/CN=Steve Test"
-                         "/emailAddress=steve@openssl.org'>")
+        cert_obj = x509.load_pem_x509_certificate(cert.encode())
+        self.assertEqual("{0!r}".format(cert_obj.issuer),
+                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+        # Email address is given in dotted oid
+        self.assertEqual("{0!r}".format(cert_obj.subject),
+                         "<Name(CN=Steve Test,1.2.840.113549.1.9.1=steve@openssl.org)>")
+        del os.environ["OPENSSL_ENABLE_MD5_VERIFY"]
 
     def test_05_templates(self):
+        # Our example SPKAC uses MD5 as signature algorithm
+        os.environ["OPENSSL_ENABLE_MD5_VERIFY"] = "true"
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
                                   "cacert": CACERT,
@@ -339,10 +332,9 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue("template3" in templates)
         _, cert = cacon.sign_request(SPKAC, options={"spkac": 1,
                                                      "template": "webserver"})
-        expires = to_unicode(cert.get_notAfter())
-        import datetime
-        dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
-        ddiff = dt - datetime.datetime.now()
+        cert_obj = x509.load_pem_x509_certificate(cert.encode())
+        expires = cert_obj.not_valid_after_utc
+        ddiff = expires - datetime.datetime.now(tz=datetime.timezone.utc)
         # The certificate is signed for 750 days
         self.assertTrue(ddiff.days > 740, ddiff.days)
         self.assertTrue(ddiff.days < 760, ddiff.days)
@@ -351,6 +343,7 @@ class LocalCATestCase(MyTestCase):
         # but an empty value is returned
         cacon.template_file = "nonexistent"
         self.assertEqual(cacon.get_templates(), {})
+        del os.environ["OPENSSL_ENABLE_MD5_VERIFY"]
 
 
 # Mock
@@ -489,7 +482,8 @@ class MSCATestCase(MyTestCase):
                                                                "certificate": MOCK_USER_CERT})
             cacon = MSCAConnector("billsCA", CONF)
             request_id, cert = cacon.sign_request(REQUEST_USER, {"template": "User"})
-            self.assertIsInstance(cert, OpenSSL.crypto.X509)
+            self.assertIsInstance(cert, str)
+            self.assertEqual(cert, MOCK_USER_CERT)
             self.assertEqual(4711, request_id)
 
     def test_04_test_pending_request(self):
@@ -502,7 +496,7 @@ class MSCATestCase(MyTestCase):
                                                                "certificate": CERTIFICATE})
             cacon = MSCAConnector("billsCA", CONF_LAB)
             try:
-                r = cacon.sign_request(REQUEST, {"template": "ApprovalRequired"})
+                cacon.sign_request(REQUEST, {"template": "ApprovalRequired"})
             except CSRPending as e:
                 request_id = e.requestId
 
@@ -588,7 +582,7 @@ class CreateLocalCATestCase(MyTestCase):
     def test_01_create_ca(self):
         workdir = self.workdir
         inputstr = str(workdir + '\n\n\n\n\n\ny\n')
-        with patch('sys.stdin', StringIO(inputstr)):
+        with mock.patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')
             self.assertEqual(caconfig.get("WorkingDir"), workdir)
             cacon = LocalCAConnector('localCA2', caconfig)

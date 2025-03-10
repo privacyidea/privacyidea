@@ -29,6 +29,7 @@ from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from cryptography import x509
+from cryptography.hazmat.primitives.serialization import Encoding
 from OpenSSL import crypto
 from subprocess import Popen, PIPE  # nosec B404
 import yaml
@@ -186,9 +187,9 @@ authorityKeyIdentifier=keyid:always,issuer:always
 AvailableCAConnectors.append("privacyidea.lib.caconnectors.localca.LocalCAConnector")
 
 
-def _get_crl_next_update(filename):
+def _get_crl_next_update(filename: str) -> datetime.datetime:
     """
-    Read the CRL file and return the next update as datetime
+    Read the CRL file and return the next update as a timezone aware datetime
 
     :param filename: the name of the CRL file
     :type filename: str
@@ -197,7 +198,7 @@ def _get_crl_next_update(filename):
     with open(filename, 'r') as f:
         crl_buff = f.read()
         crl_obj = x509.load_pem_x509_crl(crl_buff.encode())
-        return crl_obj.next_update
+        return crl_obj.next_update_utc
 
 
 class CONFIG(object):
@@ -253,12 +254,14 @@ class LocalCAConnector(BaseCAConnector):
         Required attributes are:
          * cakey - the private key of the CA
          * cacert - the certificate of the CA
+
         Optional Attributes are:
          * List of CDPs
          * List of templates
          * Key directory
          * Default key size
          * ...
+
         :param config: A dictionary with all necessary attributes.
         :return:
         """
@@ -269,6 +272,7 @@ class LocalCAConnector(BaseCAConnector):
         self.template_file = None
         self.workingdir = None
         self.templates = {}
+        self.config = {}
         if config:
             self.set_config(config)
 
@@ -316,7 +320,7 @@ class LocalCAConnector(BaseCAConnector):
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
         """
-        return a filename from the subject from an x509 object
+        return a filename from the subject from a x509 object
 
         :param x509_name: The X509Name object
         :type x509_name: X509Name object
@@ -329,7 +333,7 @@ class LocalCAConnector(BaseCAConnector):
         filename = "_".join([to_unicode(value) for (key, value) in name_components])
         return ".".join([filename, file_extension])
 
-    def sign_request(self, csr, options=None):
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Signs a certificate request with the key of the CA.
 
@@ -341,13 +345,14 @@ class LocalCAConnector(BaseCAConnector):
         CertificateDir: The directory where to save the certificates. This is
         relative to the WorkingDir.
 
-        :param csr: Certificate signing request
-        :type csr: PEM string or SPKAC
+        :param csr: Certificate signing request (PEM string or SPKAC)
+        :type csr: str
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns a return value (0) and the certificate object
-        :rtype: (int, X509)
+        :return: A tuple containing a return value (0) and the certificate
+                 object in PEM encoded format
+        :rtype: tuple
         """
         # Sign the certificate for one year
         options = options or {}
@@ -382,12 +387,11 @@ class LocalCAConnector(BaseCAConnector):
             csr_filename = common_name + ".txt"
             certificate_filename = common_name + ".der"
         else:
-            csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
+            csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr.encode())
             csr_filename = self._filename_from_x509(csr_obj.get_subject(),
                                                     file_extension="req")
             certificate_filename = self._filename_from_x509(
                 csr_obj.get_subject(), file_extension="pem")
-            #csr_extensions = csr_obj.get_extensions()
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
@@ -425,11 +429,12 @@ class LocalCAConnector(BaseCAConnector):
 
         # We return the cert_obj.
         if spkac:
-            filetype = crypto.FILETYPE_ASN1
+            cert_obj = x509.load_der_x509_certificate(certificate)
+            cert_result = cert_obj.public_bytes(Encoding.PEM).decode()
         else:
-            filetype = crypto.FILETYPE_PEM
-        cert_obj = crypto.load_certificate(filetype, certificate)
-        return 0, cert_obj
+            # Already in PEM format
+            cert_result = certificate.decode()
+        return 0, cert_result
 
     def get_templates(self):
         """
@@ -450,29 +455,24 @@ class LocalCAConnector(BaseCAConnector):
                 log.debug('{0!s}'.format(traceback.format_exc()))
         return content
 
-    def revoke_cert(self, certificate, request_id=None, reason=CRL_REASONS[0]):
+    def revoke_cert(self, certificate: str, request_id=None, reason=CRL_REASONS[0]) -> str:
         """
         Revoke the specified certificate. At this point only the database
         index.txt is updated.
 
-        :param certificate: The certificate to revoke
-        :type certificate: Either takes X509 object or a PEM encoded
-            certificate (string)
+        :param certificate: The certificate to revoke in PEM format
+        :type certificate: str
         :param reason: One of the available reasons the certificate gets revoked
         :type reason: basestring
-        :return: Returns the serial number of the revoked certificate. Otherwise
-            an error is raised.
+        :return: Returns the serial number of the revoked certificate. Otherwise,
+                 an error is raised.
         """
-        if isinstance(certificate, str):
-            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate.encode())
-        elif isinstance(certificate, crypto.X509):
-            cert_obj = certificate
-        else:
-            raise CAError("Certificate in unsupported format")
+        cert_obj = x509.load_pem_x509_certificate(certificate.encode())
+
         if reason not in CRL_REASONS:
             raise CAError("Unsupported revoke reason")
 
-        serial = cert_obj.get_serial_number()
+        serial = cert_obj.serial_number
         serial_hex = int_to_hex(serial)
         filename = serial_hex + ".pem"
         cmd = CA_REVOKE.format(cakey=self.cakey, cacert=self.cacert,
@@ -491,7 +491,7 @@ class LocalCAConnector(BaseCAConnector):
 
         return serial_hex
 
-    def create_crl(self, publish=True, check_validity=False):
+    def create_crl(self, publish=True, check_validity=False) -> str:
         """
         Create and Publish the CRL.
 
@@ -513,7 +513,7 @@ class LocalCAConnector(BaseCAConnector):
             else:
                 full_path_crl = workingdir + "/" + crl
             next_update = _get_crl_next_update(full_path_crl)
-            if datetime.datetime.now() + \
+            if datetime.datetime.now(tz=datetime.timezone.utc) + \
                     datetime.timedelta(days=self.overlap) > next_update:
                 log.info("We checked the overlap period and we need to create "
                          "the new CRL.")
@@ -653,6 +653,7 @@ def _generate_openssl_cnf(config):
 def _init_ca(config):
     """
     Generate the CA certificate
+
     :param config:
     :return:
     """
@@ -678,7 +679,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    # The command is created by the root user at the command line anyways
+    # The command is created by the root user at the command line anyway
     p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  # nosec B603
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
@@ -689,7 +690,7 @@ def _init_ca(config):
     command = """openssl req -config openssl.cnf -key cakey.pem \
       -new -x509 -days {ca_days!s} -sha256 -extensions v3_ca \
       -out cacert.pem -subj {ca_dn!s}""".format(ca_days=config.validity_ca,
-                                                   ca_dn=config.dn)
+                                                ca_dn=config.dn)
     print("Running command...")
     print(command)
     args = shlex.split(command)

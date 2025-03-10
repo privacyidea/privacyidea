@@ -29,14 +29,13 @@ AvailableCAConnectors = []
 
 
 class BaseCAConnector(object):
-    def revoke_cert(self, certificate, request_id=None, reason=None):
+    def revoke_cert(self, certificate: str, request_id=None, reason=None):
         """
         Revoke the specified certificate. At this point only the database
         index.txt is updated.
 
-        :param certificate: The certificate to revoke
-        :type certificate: Either takes X509 object or a PEM encoded
-            certificate (string)
+        :param certificate: The certificate to revoke (PEM format)
+        :type certificate: str
         :param request_id: The Id of the certificate in the certificate authority
         :type request_id: int
         :param reason: One of the available reasons the certificate gets revoked
@@ -46,7 +45,7 @@ class BaseCAConnector(object):
         """
         pass
 
-    def sign_request(self, csr, options=None):
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Signs a certificate request with the key of the CA.
 
@@ -58,13 +57,13 @@ class BaseCAConnector(object):
         CertificateDir: The directory where to save the certificates. This is
         relative to the WorkingDir.
 
-        :param csr: Certificate signing request
-        :type csr: PEM string or SPKAC
+        :param csr: Certificate signing request (PEM format ot SPKAC)
+        :type csr: str
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns a return value and the certificate
-        :rtype: (int, x509)
+        :return: Returns a return value and the certificate in PEM format
+        :rtype: tuple
         """
         pass
 
