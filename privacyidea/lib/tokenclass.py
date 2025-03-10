@@ -82,7 +82,6 @@ from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
                     ParameterError)
-from .machineresolver import get_resolver_object
 
 from ..api.lib.utils import getParam
 from .log import log_with
@@ -641,11 +640,11 @@ class TokenClass(object):
 
         pin = getParam(param, "pin", optional)
         if pin is not None:
-            storeHashed = True
-            enc = getParam(param, "encryptpin", optional)
-            if enc is not None and (enc is True or enc.lower() == "true"):
-                storeHashed = False
-            self.token.set_pin(pin, storeHashed)
+            store_hashed = True
+            encrypt_pin = getParam(param, "encryptpin", optional)
+            if is_true(encrypt_pin):
+                store_hashed = False
+            self.token.set_pin(pin, store_hashed)
 
         otplen = getParam(param, 'otplen', optional)
         if otplen is not None:

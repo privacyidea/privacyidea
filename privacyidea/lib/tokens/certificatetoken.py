@@ -34,8 +34,7 @@ The code is tested in test_lib_tokens_certificate.py.
 import logging
 import pathlib
 from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
-                               load_pem_x509_certificates, DNSName)
-from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
+                               Certificate)
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
@@ -81,12 +80,12 @@ class REQUIRE_ACTIONS(object):
     REQUIRE_AND_VERIFY = "require_and_verify"
 
 
-def verify_certificate_path(certificate, trusted_ca_paths):
+def verify_certificate_path(certificate: Certificate, trusted_ca_paths: list):
     """
     Verify a certificate against the list of directories each containing files with
     a certificate chain.
 
-    :param certificate: The PEM certificate to verify
+    :param certificate: The certificate to verify
     :type certificate: cryptography.x509.Certificate
     :param trusted_ca_paths: A list of directories
     :type trusted_ca_paths: list
@@ -99,17 +98,13 @@ def verify_certificate_path(certificate, trusted_ca_paths):
         if p.is_dir():
             chainfiles = [f for f in p.iterdir() if f.is_file()]
             for chainfile in chainfiles:
-                with open(chainfile, 'rb') as cf:
-                    store = Store(load_pem_x509_certificates(cf.read()))
-                    try:
-                        builder = PolicyBuilder().store(store)
-                        verifier = builder.build_server_verifier(DNSName('privacyidea.org'))
-                        cert_chain = verifier.verify(certificate, [])
-                        log.debug(f"Successfully validated certificate with chain {cert_chain}")
-                        return True
-                    except VerificationError as e:
-                        log.info(f"Can not verify attestation certificate against chain in {chainfile}: {e}")
-                        log.debug(e)
+                chain = parse_chainfile(chainfile)
+                try:
+                    verify_certificate(certificate, chain)
+                    return True
+                except Exception as e:
+                    log.info(f"Can not verify attestation certificate against chain in {chainfile}: {e}")
+                    log.debug(e)
         else:
             log.warning(f"The configured attestation CA directory {p} does not exist.")
     return False
@@ -142,7 +137,7 @@ def parse_chainfile(chainfile):
     return cacerts
 
 
-def verify_certificate(certificate, chain):
+def verify_certificate(certificate: Certificate, chain: list):
     """
     Verify a certificate against the certificate chain, which can be of any length
 
@@ -150,7 +145,7 @@ def verify_certificate(certificate, chain):
     intermediate certificates
 
     :param certificate: The certificate in PEM encoded format
-    :type certificate: str
+    :type certificate: cryptography.x509.Certificate
     :param chain: A list of PEM encoded certificates
     :type chain: list
     :return: raises an exception
@@ -159,8 +154,7 @@ def verify_certificate(certificate, chain):
     chain = list(reversed(chain))
     if not chain:
         raise privacyIDEAError("Can not verify certificate against an empty chain.")
-    certificate = load_pem_x509_certificate(to_byte_string(certificate), default_backend())
-    chain = [load_pem_x509_certificate(to_byte_string(c), default_backend()) for c in chain]
+    chain = [load_pem_x509_certificate(c.encode(), default_backend()) for c in chain]
     # verify chain
     while chain:
         signer = chain.pop()
@@ -444,6 +438,7 @@ class CertificateTokenClass(TokenClass):
         template_name = getParam(param, "template", optional)
         subject_components = getParam(param, "subject_components", optional=optional, default=[])
         request_id = None
+        cacon = None
         if request or generate:
             # If we do not upload a user certificate, then we need a CA do
             # sign the uploaded request or generated certificate.
@@ -489,11 +484,9 @@ class CertificateTokenClass(TokenClass):
                             raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the certificate
-            request_id, x509object = cacon.sign_request(request,
-                                                        options={"spkac": spkac,
-                                                                 "template": template_name})
-            certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
-                                                  x509object)
+            request_id, certificate = cacon.sign_request(request,
+                                                         options={"spkac": spkac,
+                                                                  "template": template_name})
         elif generate:
             """
             Create the certificate on behalf of another user. Now we need to create
@@ -525,8 +518,7 @@ class CertificateTokenClass(TokenClass):
             req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
             try:
-                request_id, x509object = cacon.sign_request(csr, options={"template": template_name})
-                certificate = crypto.dump_certificate(crypto.FILETYPE_PEM, x509object)
+                request_id, certificate = cacon.sign_request(csr, options={"template": template_name})
             except CSRError:
                 # Mark the token as broken
                 self.token.rollout_state = ROLLOUTSTATE.FAILED

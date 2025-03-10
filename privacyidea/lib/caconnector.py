@@ -35,7 +35,6 @@ from ..models import (CAConnector,
                       CAConnectorConfig)
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
-from .error import CAError, CSRError, CSRPending
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
@@ -192,6 +191,7 @@ def delete_caconnector(connector_name):
 def get_caconnector_config(connector_name):
     """
     return the complete config of a given CA connector from the database
+
     :param connector_name: the name of the CA connector
     :type connector_name: basestring
     :return: the config of the CA connector
@@ -210,9 +210,10 @@ def get_caconnector_config_description(caconnector_type):
     :param caconnector_type: the type of the CA connector like "local"
     :type caconnector_type: basestring
     :return: configuration description dict
-             that looks like this:
-             {'local': {'attribute1': 'string',
-                        'attribute2': 'int'}}
+             that looks like this::
+
+                 {'local': {'attribute1': 'string',
+                            'attribute2': 'int'}}
 
     """
     descriptor = None
@@ -248,7 +249,7 @@ def get_caconnector_class(connector_type):
 #@cache.memoize(10)
 def get_caconnector_type(connector_name):
     """
-    return the type of a CA connector
+    return the type of CA connector
 
     :param connector_name: The name of the CA connector
     :return: The type of the CA connector

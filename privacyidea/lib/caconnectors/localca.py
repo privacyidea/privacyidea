@@ -34,7 +34,9 @@ from OpenSSL import crypto
 from subprocess import Popen, PIPE  # nosec B404
 import yaml
 import datetime
+from pathlib import Path
 import shlex
+from typing import Union
 import re
 import logging
 import os
@@ -333,7 +335,7 @@ class LocalCAConnector(BaseCAConnector):
         filename = "_".join([to_unicode(value) for (key, value) in name_components])
         return ".".join([filename, file_extension])
 
-    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
         """
         Signs a certificate request with the key of the CA.
 
@@ -555,8 +557,9 @@ class LocalCAConnector(BaseCAConnector):
         * Validity of CA certificate
         * DN of CA Certificate
         * Validity of enrolled certificates
-        * CRL: * default days
-               * overlap period
+        * CRL:
+           * default days
+           * overlap period
 
         Fixed values:
         * Hash: SHA256
@@ -609,12 +612,10 @@ class LocalCAConnector(BaseCAConnector):
 
         # Create the CA on the file system
         try:
-            os.mkdir(config.directory)
-        except OSError as exx:
-            if exx.errno != 17:
-                # If it is another error than the the file exist, we reraise
-                # the error.
-                raise exx
+            Path(config.directory).mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Unable to create local CA directory at {config.directory}: {e}")
+            raise
 
         _generate_openssl_cnf(config)
         _init_ca(config)
@@ -639,15 +640,14 @@ class LocalCAConnector(BaseCAConnector):
 def _generate_openssl_cnf(config):
     """
     Generate the openssl config file from the config object.
+
     :param config: Config object
     :return:
     """
     conf_file = OPENSSL_TEMPLATE.format(crl_days=config.crl_days,
                                         ca_days=config.validity_ca)
-
-    f = open("{0!s}/openssl.cnf".format(config.directory), "w")
-    f.write(conf_file)
-    f.close()
+    with open("{0!s}/openssl.cnf".format(config.directory), "w") as f:
+        f.write(conf_file)
 
 
 def _init_ca(config):
@@ -658,19 +658,16 @@ def _init_ca(config):
     :return:
     """
     # Write the database
-    f = open("{0!s}/index.txt".format(config.directory), "w")
-    f.write("")
-    f.close()
+    with open("{0!s}/index.txt".format(config.directory), "w") as f:
+        f.write("")
 
     # Write the serial file
-    f = open("{0!s}/serial".format(config.directory), "w")
-    f.write("1000")
-    f.close()
+    with open("{0!s}/serial".format(config.directory), "w") as f:
+        f.write("1000")
 
     # create the privacy key and set accesss rights
-    f = open("{0!s}/cakey.pem".format(config.directory), "w")
-    f.write("")
-    f.close()
+    with open("{0!s}/cakey.pem".format(config.directory), "w") as f:
+        f.write("")
     import stat
     os.chmod("{0!s}/cakey.pem".format(config.directory),
              stat.S_IRUSR | stat.S_IWUSR)

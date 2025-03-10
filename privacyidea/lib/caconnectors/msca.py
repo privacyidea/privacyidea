@@ -19,16 +19,17 @@ This implementation is for the Microsoft CA via our middleware.
 
 This module is tested in tests/test_lib_caconnector.py
 """
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+import logging
+import traceback
+from typing import Union
 
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
-from OpenSSL import crypto
-import logging
-import traceback
 from privacyidea.lib.utils import is_true, int_to_hex
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes
-from cryptography.hazmat.primitives import serialization
 
 log = logging.getLogger(__name__)
 try:
@@ -250,7 +251,7 @@ class MSCAConnector(BaseCAConnector):
         self.ssl_client_key_password = self.config.get(ATTR.SSL_CLIENT_KEY_PASSWORD)
         self.templates = self.get_templates()
 
-    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
         """
         Send a signing request to the Microsoft CA
 
@@ -285,9 +286,8 @@ class MSCAConnector(BaseCAConnector):
         Revoke the specified certificate. At this point only the database
         index.txt is updated.
 
-        :param certificate: The certificate to revoke
-        :type certificate: Either takes X509 object or a PEM encoded
-            certificate (string)
+        :param certificate: The certificate to revoke (PEM encodes)
+        :type certificate: str
         :param request_id: The id of the certificate in the certificate authority
         :type request_id: int
         :param reason: One of the available reasons the certificate gets revoked
@@ -295,13 +295,8 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise,
             an error is raised.
         """
-        if isinstance(certificate, str):
-            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate.encode("ascii"))
-        elif isinstance(certificate, crypto.X509):
-            cert_obj = certificate
-        else:
-            raise CAError("Certificate in unsupported format")
-        serial = cert_obj.get_serial_number()
+        cert_obj = x509.load_pem_x509_certificate(certificate.encode())
+        serial = cert_obj.serial_number
         serial_hex = int_to_hex(serial)
 
         revocation_reason = 0
