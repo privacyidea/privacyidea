@@ -1,5 +1,4 @@
 @use "sass:meta";
-@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
 
 @include meta.load-css("table.scss");
 @include meta.load-css("buttons.scss");
@@ -15,6 +14,20 @@ body {
   font-family: "Roboto", sans-serif;
   margin: 0;
   overflow: hidden;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('fonts/static/Roboto-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
 }
 
 :root {

@@ -25,6 +25,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/styles/fonts",
+                "output": "media"
               }
             ],
             "styles": [
@@ -48,7 +53,8 @@
                   "maximumError": "100MB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "deployUrl": "/static/dist/privacyidea-webui/browser/"
             },
             "development": {
               "optimization": true,
