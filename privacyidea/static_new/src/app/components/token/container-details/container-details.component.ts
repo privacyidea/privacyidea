@@ -22,7 +22,7 @@ import { forkJoin, Observable, switchMap } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { EditButtonsComponent } from '../token-details/edit-buttons/edit-buttons.component';
+import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { RealmService } from '../../../services/realm/realm.service';

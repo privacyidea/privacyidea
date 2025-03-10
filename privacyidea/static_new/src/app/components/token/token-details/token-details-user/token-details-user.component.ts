@@ -26,7 +26,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatDivider } from '@angular/material/divider';
 import { TokenService } from '../../../../services/token/token.service';
 import { RealmService } from '../../../../services/realm/realm.service';
-import { EditButtonsComponent } from '../edit-buttons/edit-buttons.component';
+import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { UserService } from '../../../../services/user/user.service';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';

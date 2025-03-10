@@ -10,31 +10,30 @@
     <h4 class="enroll-h4"
         translate>OTP Value</h4>
     <div class="flex-row gap-1">
-      <mat-form-field class="width-100">
+      <mat-form-field class="width-66">
         <input #otpValueInput
-               (keydown.enter)="onPressEnter(otpValueInput)"
                [(ngModel)]="otpValue"
+               [disabled]="currentStep() !== 'init'"
                id="otpValue"
                matInput
                name="otpValue"
                placeholder="Enter some OTP value"
                required />
-        <mat-error>OTP value must not be empty!</mat-error>
+        <mat-error>OTP value is <strong>required</strong></mat-error>
       </mat-form-field>
-      <button (click)="onPressEnter()"
+      <button (click)="onClickRunSearch()"
               [disabled]="otpValue() === ''"
               [ngClass]="{ 'disabled-button': otpValue() === '' }"
               class="card-button"
               mat-flat-button>
-        <mat-icon>play_arrow</mat-icon>
-        Run Search
+        <mat-icon>{{ currentStep() !== 'searching' ? "play_arrow" : "stop" }}</mat-icon>
+        {{ currentStep() !== 'searching' ? "Run" : "Stop" }} Search
       </button>
     </div>
     <h4 class="enroll-h4"
         translate>Token Type</h4>
-    <mat-form-field class="width-100">
-      <mat-select (keydown.enter)="onPressEnter(otpValueInput)"
-                  [(ngModel)]="tokenType"
+    <mat-form-field class="width-66">
+      <mat-select [(ngModel)]="tokenType"
                   placeholder="Select token type">
         @for (type of tokenTypes; track type) {
           <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
@@ -43,9 +42,8 @@
     </mat-form-field>
     <h4 class="enroll-h4"
         translate>Assignment State</h4>
-    <mat-form-field class="width-100">
-      <mat-select (keydown.enter)="onPressEnter(otpValueInput)"
-                  [(ngModel)]="assignmentState"
+    <mat-form-field class="width-66">
+      <mat-select [(ngModel)]="assignmentState"
                   placeholder="Specify assignment state">
         @for (assignment of assignmentStates; track assignment) {
           <mat-option [value]="assignment.key"
@@ -58,21 +56,19 @@
       <div class="flex-column width-66">
         <h4 class="enroll-h4"
             translate>Serial Substring</h4>
-        <mat-form-field class="width-100">
-          <input (keydown.enter)="onPressEnter(otpValueInput)"
-                 [(ngModel)]="serialSubstring"
+        <mat-form-field>
+          <input [(ngModel)]="serialSubstring"
                  id="serialSubstring"
                  matInput
                  name="serialSubstring"
                  placeholder="Enter optional serial substring" />
         </mat-form-field>
       </div>
-      <div class="flex-column width-33">
+      <div class="flex-column width-33 margin-button-1">
         <h4 class="enroll-h4"
             translate>Count Window</h4>
         <mat-form-field>
-          <input (keydown.enter)="onPressEnter(otpValueInput)"
-                 [(ngModel)]="countWindow"
+          <input [(ngModel)]="countWindow"
                  id="countWindow"
                  matInput
                  name="countWindow"

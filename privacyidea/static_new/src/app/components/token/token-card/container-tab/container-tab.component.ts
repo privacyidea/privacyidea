@@ -9,7 +9,7 @@ import { switchMap } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenSelectedContent } from '../../token.component';
 
@@ -70,6 +70,7 @@ export class ContainerTabComponent {
           title: 'Delete Container',
           type: 'container',
           action: 'delete',
+          numberOfTokens: 1,
         },
       })
       .afterClosed()

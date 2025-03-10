@@ -28,6 +28,7 @@ export class ConfirmationDialogComponent {
       serial_list: any;
       title: string;
       action: string;
+      numberOfTokens: number;
     },
   ) {}
 }

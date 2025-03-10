@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
-import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatTableDataSource } from '@angular/material/table';
 
 describe('ContainerDetailsTokenTableComponent', () => {
@@ -251,6 +251,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
             title: 'Delete All Tokens',
             type: 'token',
             action: 'delete',
+            numberOfTokens: 2,
           },
         },
       );

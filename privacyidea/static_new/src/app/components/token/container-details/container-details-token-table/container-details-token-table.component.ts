@@ -22,7 +22,7 @@ import { ContainerService } from '../../../../services/container/container.servi
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../../token.component';
 
@@ -118,6 +118,7 @@ export class ContainerDetailsTokenTableComponent {
           title: 'Remove Token',
           type: 'token',
           action: 'remove',
+          numberOfTokens: [tokenSerial].length,
         },
       })
       .afterClosed()
@@ -193,6 +194,7 @@ export class ContainerDetailsTokenTableComponent {
           title: 'Remove Token',
           type: 'token',
           action: 'remove',
+          numberOfTokens: serial_list.split(',').length,
         },
       })
       .afterClosed()
@@ -227,6 +229,7 @@ export class ContainerDetailsTokenTableComponent {
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
+          numberOfTokens: serial_list.split(',').length,
         },
       })
       .afterClosed()

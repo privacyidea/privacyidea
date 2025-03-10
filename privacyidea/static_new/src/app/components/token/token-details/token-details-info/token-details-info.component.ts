@@ -20,7 +20,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatDivider } from '@angular/material/divider';
 import { TokenService } from '../../../../services/token/token.service';
 import { Observable, switchMap } from 'rxjs';
-import { EditButtonsComponent } from '../edit-buttons/edit-buttons.component';
+import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';

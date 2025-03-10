@@ -95,7 +95,8 @@
                                         [selectedContent]="selectedContent" />
               }
               @case ("token_get_serial") {
-                <app-token-get-serial />
+                <app-token-get-serial [tokenSerial]="tokenSerial"
+                                      [selectedContent]="selectedContent"/>
               }
               @case ("container_overview") {
                 <app-container-table [containerSerial]="containerSerial"

@@ -34,7 +34,7 @@ import {
 } from '@angular/material/autocomplete';
 import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
 import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
-import { EditButtonsComponent } from './edit-buttons/edit-buttons.component';
+import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { NotificationService } from '../../../services/notification/notification.service';

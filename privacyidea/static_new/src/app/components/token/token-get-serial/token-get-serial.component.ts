@@ -14,14 +14,14 @@ import { TokenService } from '../../../services/token/token.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { TokenComponent, TokenSelectedContent } from '../token.component';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { LoadingService } from '../../../services/loading/loading-service';
 import { MatDialog } from '@angular/material/dialog';
 import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
-import { ConfirmGetSerialDialogComponent } from './confirm-get-serial-dialog/confirm-get-serial-dialog.component';
+import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -44,17 +44,16 @@ import { ConfirmGetSerialDialogComponent } from './confirm-get-serial-dialog/con
 export class TokenGetSerial {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-
   otpValue = signal<string>('');
   tokenType = signal<string>('');
   assignmentState = signal<string>('');
   serialSubstring = signal<string>('');
   countWindow = signal<number>(10);
   currentStep = signal('init');
-  tokenTypes: { key: string; info: string }[] = [];
   foundSerial = signal<string>('');
   tokenCount = signal<string>('');
-
+  serialSubscription: Subscription | null = null;
+  tokenTypes: { key: string; info: string }[] = [];
   assignmentStates = [
     { key: 'assigned', info: 'The token is assigned to a user' },
     { key: 'unassigned', info: 'The token is not assigned to a user' },
@@ -95,16 +94,17 @@ export class TokenGetSerial {
     });
   }
 
-  onPressEnter(inputElement?: HTMLInputElement): void {
+  onClickRunSearch(): void {
     switch (this.currentStep()) {
       case 'init':
       case 'found':
       case 'error':
-        this.countTokens(inputElement);
+        this.countTokens();
         break;
       case 'countDone':
       case 'counting':
       case 'searching':
+        this.reset();
         break;
     }
   }
@@ -129,20 +129,11 @@ export class TokenGetSerial {
     return params;
   }
 
-  countTokens(inputElement?: HTMLInputElement): void {
+  countTokens(): void {
     if (this.currentStep() !== 'init' && this.currentStep() !== 'found') {
       this.notificationService.openSnackBar('Invalid action.');
       return;
     }
-    /*
-    if (this.otpValue() === '') {
-      if (inputElement instanceof MatInput) {
-        inputElement.focus();
-        inputElement.updateErrorState();
-      }
-      return;
-    }
-    */
     let params = this.getParams();
     params = params.set('count', '1');
     this.currentStep.set('counting');
@@ -151,17 +142,24 @@ export class TokenGetSerial {
         this.tokenCount.set(response.result.value.count);
         this.currentStep.set('countDone');
         if (this.countIsLarge()) {
-          this.dialog.open(ConfirmGetSerialDialogComponent, {
-            data: {
-              numberOfTokens: this.tokenCount(),
-              onAbort: () => {
-                this.reset();
+          this.dialog
+            .open(ConfirmationDialogComponent, {
+              data: {
+                title: 'Search Serial',
+                action: 'search',
+                numberOfTokens: this.tokenCount(),
               },
-              onConfirm: () => {
-                this.findSerial();
+            })
+            .afterClosed()
+            .subscribe({
+              next: (result) => {
+                if (result) {
+                  this.findSerial();
+                } else {
+                  this.reset();
+                }
               },
-            },
-          });
+            });
         } else {
           this.findSerial();
         }
@@ -177,7 +175,7 @@ export class TokenGetSerial {
     let params = this.getParams();
     params = params.delete('count');
     this.currentStep.set('searching');
-    this.fetchSerial(params).subscribe({
+    this.serialSubscription = this.fetchSerial(params).subscribe({
       next: (response) => {
         this.dialog.open(GetSerialResultDialogComponent, {
           data: {
@@ -219,6 +217,9 @@ export class TokenGetSerial {
   }
 
   reset(): void {
+    this.serialSubscription?.unsubscribe();
+    this.loadingService.removeLoading('token-get-serial');
+    this.serialSubscription = null;
     this.currentStep.set('init');
     this.foundSerial.set('');
     this.tokenCount.set('');

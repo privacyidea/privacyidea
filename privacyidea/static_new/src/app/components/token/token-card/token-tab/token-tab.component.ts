@@ -17,7 +17,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { ConfirmationDialogComponent } from '../../confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContent } from '../../token.component';
 
 @Component({
@@ -77,6 +77,7 @@ export class TokenTabComponent {
           title: 'Revoke Token',
           type: 'token',
           action: 'revoke',
+          numberOfTokens: 1,
         },
       })
       .afterClosed()
@@ -115,6 +116,7 @@ export class TokenTabComponent {
           title: 'Delete Token',
           type: 'token',
           action: 'delete',
+          numberOfTokens: 1,
         },
       })
       .afterClosed()

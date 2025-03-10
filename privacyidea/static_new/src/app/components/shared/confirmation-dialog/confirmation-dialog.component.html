@@ -1,9 +1,11 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
 <mat-dialog-content>
+  @if (data.action === "remove" || data.action === "delete") {
   <p>
     Are you sure you want to {{ data.action }}
-    @if (data.serial_list && data.serial_list.length > 1 && data.type === "token") {
-      all ({{ data.serial_list.length }}) tokens{{ data.action === "remove" ? "from" : "in" }}this container?
+    @if (data.numberOfTokens > 1 && data.type === "token") {
+      all ({{ data.numberOfTokens }}) tokens
+      {{ data.action === "remove" ? "from" : "in" }} this container?
     } @else {
       this {{ data.type }}?
     }
@@ -13,6 +15,12 @@
       <li>{{ serial }}</li>
     }
   </ul>
+  } @else if (data.action === "search") {
+    <p>
+      This searchrequest will check {{ data.numberOfTokens }} in the system for the given OTP value.
+      <br /> This could take a lot of time and could even timeout. <br />
+    </p>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions>

@@ -44,7 +44,7 @@ export class LoadingService {
     return this.loadings.length > 0;
   }
 
-  private removeLoading(key: string): void {
+  removeLoading(key: string): void {
     this.loadings = this.loadings.filter((l) => l.key !== key);
     this.notifyListeners();
   }
