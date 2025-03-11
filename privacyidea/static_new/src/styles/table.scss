@@ -190,6 +190,7 @@ th:nth-child(even) {
   margin-right: -3px;
   margin-bottom: -3px;
   font-size: $icon-font-size !important;
+  transition: 400ms;
 }
 
 .edit-button-container {

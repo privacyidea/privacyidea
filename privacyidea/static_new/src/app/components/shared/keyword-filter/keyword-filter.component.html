@@ -1,6 +1,7 @@
 <div class="filter-keyword-container">
   <div class="filter-keyword-title">
-    <mat-icon class="filter-icon">filter_alt</mat-icon>
+    <mat-icon [ngClass]="{'filter-icon': true, 'blue-base': filterValue() !== ''}">filter_alt
+    </mat-icon>
     Filter by:&nbsp;
   </div>
   @for (filterKeyword of apiFilter; track filterKeyword) {
