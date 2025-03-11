@@ -110,9 +110,7 @@ export class TableUtilsService {
       if (element['active'] === '') {
         return '';
       }
-      if (element['locked']) {
-        return 'highlight-false';
-      } else if (element['revoked']) {
+      if (element['locked'] || element['revoked']) {
         return 'highlight-false';
       } else if (element['active'] === false) {
         return 'highlight-false-clickable';
@@ -129,9 +127,17 @@ export class TableUtilsService {
         element['failcount'] > 0 &&
         element['failcount'] < element['maxfail']
       ) {
-        return 'highlight-warning-clickable';
+        if (element['locked'] || element['revoked']) {
+          return 'highlight-warning';
+        } else {
+          return 'highlight-warning-clickable';
+        }
       } else {
-        return 'highlight-false-clickable';
+        if (element['locked'] || element['revoked']) {
+          return 'highlight-false';
+        } else {
+          return 'highlight-false-clickable';
+        }
       }
     }
     return '';
