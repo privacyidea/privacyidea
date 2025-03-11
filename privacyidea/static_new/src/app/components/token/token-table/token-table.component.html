@@ -5,83 +5,31 @@
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
       <input #input
-             (keyup)="handleFilterInput($event)"
+             (keyup)="tableUtilsService.handleFilterInput(
+                      $event, pageIndex, filterValue, fetchTokenData)"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'type: hotp userid: 1000'" />
     </mat-form-field>
-    <mat-paginator (page)="handlePageEvent($event)"
-                   [length]="length"
-                   [pageIndex]="pageIndex"
+    <mat-paginator (page)="tableUtilsService.handlePageEvent(
+                           $event, pageIndex, pageSize, fetchTokenData)"
+                   [length]="length()"
+                   [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"
-                   [pageSize]="pageSize"
-                   aria-label="Select page of tokens"
+                   [pageSize]="pageSize()"
                    showFirstLastButtons></mat-paginator>
   </div>
-  <div class="filter-keyword-container">
-    <div class="filter-keyword-title">
-      <mat-icon class="filter-icon">filter_alt</mat-icon>
-      Filter by:&nbsp;
-    </div>
-    @for (filterKeyword of apiFilter; track filterKeyword) {
-      <button mat-fab
-              extended
-              (click)="toggleKeywordInFilter(filterKeyword, input)"
-              class="keyword-button">
-        <mat-icon class="keyword-button-icon"
-                  [ngClass]="
-            {
-              change_circle: 'change-keyword',
-              remove_circle: 'remove-keyword',
-              add_circle: 'add-keyword',
-            }[tableUtilsService.getFilterIconName(filterKeyword, input.value)]
-          ">
-          {{ tableUtilsService.getFilterIconName(filterKeyword, input.value) }}
-        </mat-icon>
-        {{ filterKeyword }}
-      </button>
-    }
-    <button (click)="showAdvancedFilter.set(!showAdvancedFilter())"
-            class="more-keyword-button"
-            extended
-            mat-fab>
-      <mat-icon class="keyword-button-icon">
-        {{ showAdvancedFilter() ? "remove" : "add" }}
-      </mat-icon>
-    </button>
-    @if (showAdvancedFilter()) {
-      @for (filterKeyword of advancedApiFilter; track filterKeyword) {
-        <button mat-fab
-                extended
-                (click)="toggleKeywordInFilter(filterKeyword, input)"
-                class="keyword-button">
-          <mat-icon class="keyword-button-icon"
-                    [ngClass]="
-              this.tableUtilsService.isFilterSelected(
-                filterKeyword,
-                input.value
-              )
-                ? 'remove-keyword'
-                : 'add-keyword'
-            ">
-            {{
-              this.tableUtilsService.isFilterSelected(
-                filterKeyword,
-                input.value
-              )
-                ? "remove_circle"
-                : "add_circle"
-            }}
-          </mat-icon>
-          {{ filterKeyword }}
-        </button>
-      }
-    }
-  </div>
-  <table (matSortChange)="handleSortEvent()"
+  <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
+                      [apiFilter]="apiFilter"
+                      [filterValue]="filterValue"
+                      [keywordClick]="keywordClick"
+                      [tableUtilsService]="tableUtilsService"></app-keyword-filter>
+  <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
+  fetchTokenData)"
          [dataSource]="dataSource()"
          aria-label="Token Data Table"
          class="token-table"
+         [matSortDisableClear]="false"
          mat-table
          matSort>
     @for (column of columnsKeyMap; track column) {
@@ -96,27 +44,25 @@
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
             [ngClass]="{ 'width-18': column.key === 'description' }">
-          <ng-container>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @if (column.key === "realms") {
-                <div [ngClass]="
-                    element[column.key].length > 1 ? 'realm-list' : 'realm'
-                  ">
-                  @for (realm of element[column.key];
-                    track realm;
-                    let idx = $index) {
-                    <a attr.aria-label="{{ column.label }} Link"
-                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
-                  }
-                </div>
-              } @else if (column.key === "serial") {
+          <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+            @switch (column.key) {
+              @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
                 <button class="copy-button"
                         [cdkCopyToClipboard]="element.serial">
                   <mat-icon class="copy-icon">content_copy</mat-icon>
                 </button>
-              } @else if (column.key === "container_serial") {
+              }
+              @case ("realms") {
+                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
+                  @for (realm of element[column.key]; track realm; let idx = $index) {
+                    <a attr.aria-label="{{ column.label }} Link"
+                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
+                  }
+                </div>
+              }
+              @case ("container_serial") {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
                 @if (element.container_serial !== "") {
@@ -125,19 +71,20 @@
                     <mat-icon class="copy-icon">content_copy</mat-icon>
                   </button>
                 }
-              } @else if (tableUtilsService.isLink(column.key)) {
-                <a attr.aria-label="{{ column.label }} Link"
-                   href="#"> {{ element[column.key] }} </a>
-              } @else {
-                <span [ngClass]="
-                    tableUtilsService.getClassForColumn(column.key, element)
-                  "
-                      (click)="handleColumnClick(column.key, element)">
+              }
+              @default {
+                @if (tableUtilsService.isLink(column.key)) {
+                  <a attr.aria-label="{{ column.label }} Link"
+                     href="#"> {{ element[column.key] }} </a>
+                } @else {
+                  <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                        (click)="handleColumnClick(column.key, element)">
                   {{ tableUtilsService.getDisplayText(column.key, element) }}
                 </span>
+                }
               }
-            </div>
-          </ng-container>
+            }
+          </div>
         </td>
       </ng-container>
     }

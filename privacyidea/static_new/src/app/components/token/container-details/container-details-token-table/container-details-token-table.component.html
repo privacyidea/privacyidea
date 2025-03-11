@@ -13,7 +13,6 @@
     </mat-form-field>
     <mat-paginator [pageSizeOptions]="pageSizeOptions"
                    [pageSize]="pageSize"
-                   aria-label="Select page of tokens"
                    showFirstLastButtons></mat-paginator>
   </div>
   <div [ngClass]="[
@@ -40,23 +39,26 @@
               [ngClass]="{ 'width-18': column.key === 'description' }">
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-                @if (column.key === "serial") {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
-                  <button class="copy-button"
-                          [cdkCopyToClipboard]="element.serial">
-                    <mat-icon class="copy-icon">content_copy</mat-icon>
-                  </button>
-                } @else if (tableUtilsService.isLink(column.key)) {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
-                } @else {
-                  <span (click)="handleColumnClick(column.key, element)"
-                        [ngClass]="
-                      tableUtilsService.getClassForColumn(column.key, element)
-                    ">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
-                  </span>
+                @switch (column.key) {
+                  @case ("serial") {
+                    <a attr.aria-label="{{ column.label }} Link"
+                       (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                    <button class="copy-button"
+                            [cdkCopyToClipboard]="element.serial">
+                      <mat-icon class="copy-icon">content_copy</mat-icon>
+                    </button>
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a attr.aria-label="{{ column.label }} Link"
+                         href="#"> {{ element[column.key] }} </a>
+                    } @else {
+                      <span (click)="handleColumnClick(column.key, element)"
+                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    }
+                  }
                 }
               </div>
             </ng-container>
@@ -71,9 +73,7 @@
             aria-label="Remove Button Cell"
             mat-cell>
           <div class="flex just-center">
-            <button (click)="
-                removeTokenFromContainer(this.containerSerial(), element.serial)
-              "
+            <button (click)="removeTokenFromContainer(this.containerSerial(), element.serial)"
                     mat-icon-button>
               <mat-icon>delete_outlined</mat-icon>
             </button>

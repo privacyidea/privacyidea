@@ -1,5 +1,7 @@
 import {
   Component,
+  effect,
+  ElementRef,
   Input,
   signal,
   ViewChild,
@@ -7,23 +9,19 @@ import {
 } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  MatPaginator,
-  MatPaginatorModule,
-  PageEvent,
-} from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { AuthService } from '../../../services/auth/auth.service';
 import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ContainerService } from '../../../services/container/container.service';
 import { MatIcon } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../token.component';
+import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -46,29 +44,31 @@ const columnsKeyMap = [
     MatSortModule,
     NgClass,
     MatIcon,
-    MatFabButton,
     CdkCopyToClipboard,
+    KeywordFilterComponent,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
   displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
-  length = 0;
-  pageSize = 10;
-  pageIndex = 0;
   pageSizeOptions = [5, 10, 15];
-  filterValue = '';
   apiFilter = this.containerService.apiFilter;
   advancedApiFilter = this.containerService.advancedApiFilter;
-  sortby_sortdir:
-    | { active: string; direction: 'asc' | 'desc' | '' }
-    | undefined;
+  columnsKeyMap = columnsKeyMap;
+  sortby_sortdir: WritableSignal<Sort> = signal({
+    active: 'serial',
+    direction: 'asc',
+  });
+  length = signal(0);
+  pageSize = signal(10);
+  pageIndex = signal(0);
+  filterValue = signal('');
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(
     new MatTableDataSource(
-      Array.from({ length: this.pageSize }, () => {
+      Array.from({ length: this.pageSize() }, () => {
         const emptyRow: any = {};
         columnsKeyMap.forEach((column) => {
           emptyRow[column.key] = '';
@@ -77,10 +77,10 @@ export class ContainerTableComponent {
       }),
     ),
   );
-  showAdvancedFilter = signal(false);
+  keywordClick = signal<string>('');
+  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(
     private router: Router,
@@ -89,6 +89,15 @@ export class ContainerTableComponent {
     private notificationService: NotificationService,
     protected tableUtilsService: TableUtilsService,
   ) {
+    effect(() => {
+      if (this.keywordClick()) {
+        this.toggleKeywordInFilter(
+          this.keywordClick(),
+          this.inputElement.nativeElement,
+        );
+      }
+    });
+
     if (!this.authService.isAuthenticatedUser()) {
       this.router.navigate(['']).then((r) => {
         console.warn('Redirected to login page.', r);
@@ -104,37 +113,19 @@ export class ContainerTableComponent {
     this.dataSource().sort = this.sort;
   }
 
-  handlePageEvent(event: PageEvent) {
-    this.pageSize = event.pageSize;
-    this.pageIndex = event.pageIndex;
-    this.fetchContainerData();
-  }
-
-  handleSortEvent() {
-    this.sortby_sortdir = this.sort
-      ? {
-          active: this.sort.active,
-          direction: this.sort.direction,
-        }
-      : undefined;
-    this.pageIndex = 0;
-    this.fetchContainerData();
-  }
-
-  handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.pageIndex = 0;
-    this.fetchContainerData();
-  }
-
   toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
     inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
       inputElement.value.trim(),
       keyword,
     );
-    this.handleFilterInput({
-      target: inputElement,
-    } as unknown as KeyboardEvent);
+    this.tableUtilsService.handleFilterInput(
+      {
+        target: inputElement,
+      } as unknown as KeyboardEvent,
+      this.pageIndex,
+      this.filterValue,
+      this.fetchContainerData,
+    );
     inputElement.focus();
   }
 
@@ -160,17 +151,17 @@ export class ContainerTableComponent {
     this.selectedContent.set('container_details');
   }
 
-  private fetchContainerData() {
+  protected fetchContainerData = () => {
     this.containerService
       .getContainerData(
-        this.pageIndex + 1,
-        this.pageSize,
-        this.sortby_sortdir,
-        this.filterValue,
+        this.pageIndex() + 1,
+        this.pageSize(),
+        this.sortby_sortdir(),
+        this.filterValue(),
       )
       .subscribe({
         next: (response) => {
-          this.length = response.result.value.count;
+          this.length.set(response.result.value.count);
           this.processDataSource(response.result.value.containers);
         },
         error: (error) => {
@@ -181,7 +172,7 @@ export class ContainerTableComponent {
           );
         },
       });
-  }
+  };
 
   private processDataSource(data: any[]) {
     const processedData = data.map((item) => ({

@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, WritableSignal } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
+import { Sort } from '@angular/material/sort';
 
 interface FilterPair {
   label: string;
@@ -90,16 +92,6 @@ export class TableUtilsService {
         return `${keyword}: `;
       }
     }
-  }
-
-  isFilterSelected(filter: string, inputValue: string): boolean {
-    if (filter === 'infokey & infovalue') {
-      const regexKey = new RegExp(`\\binfokey:`, 'i');
-      const regexValue = new RegExp(`\\binfovalue:`, 'i');
-      return regexKey.test(inputValue) || regexValue.test(inputValue);
-    }
-    const regex = new RegExp(`\\b${filter}:`, 'i');
-    return regex.test(inputValue);
   }
 
   isLink(columnKey: string) {
@@ -278,24 +270,44 @@ export class TableUtilsService {
     }
   }
 
-  public getFilterIconName(keyword: string, currentValue: string): string {
-    if (keyword === 'active') {
-      const activeMatch = currentValue.match(/active:\s*(\S+)/i);
-      if (!activeMatch) {
-        return 'add_circle';
-      }
+  handlePageEvent(
+    event: PageEvent,
+    pageIndex: WritableSignal<number>,
+    pageSize: WritableSignal<number>,
+    fetchData: () => void,
+  ) {
+    pageSize.set(event.pageSize);
+    pageIndex.set(event.pageIndex);
+    fetchData();
+  }
 
-      const activeValue = activeMatch[1].toLowerCase();
-      if (activeValue === 'true') {
-        return 'change_circle';
-      } else if (activeValue === 'false') {
-        return 'remove_circle';
-      } else {
-        return 'add_circle';
-      }
-    } else {
-      const isSelected = this.isFilterSelected(keyword, currentValue);
-      return isSelected ? 'remove_circle' : 'add_circle';
+  handleSortEvent(
+    sort: Sort,
+    pageIndex: WritableSignal<number>,
+    sortby_sortdir: WritableSignal<Sort>,
+    fetchData: () => void,
+  ) {
+    let { active, direction } = sort;
+    if (!direction) {
+      active = '';
+      direction = '';
+    } else if (active === 'active') {
+      direction = direction === 'asc' ? 'desc' : 'asc';
     }
+
+    sortby_sortdir.set({ active, direction });
+    pageIndex.set(0);
+    fetchData();
+  }
+
+  handleFilterInput(
+    event: Event,
+    pageIndex: WritableSignal<number>,
+    filterValue: WritableSignal<string>,
+    fetchData: () => void,
+  ) {
+    filterValue.set((event.target as HTMLInputElement).value.trim());
+    pageIndex.set(0);
+    fetchData();
   }
 }

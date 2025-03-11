@@ -1,0 +1,50 @@
+<div class="filter-keyword-container">
+  <div class="filter-keyword-title">
+    <mat-icon class="filter-icon">filter_alt</mat-icon>
+    Filter by:&nbsp;
+  </div>
+  @for (filterKeyword of apiFilter; track filterKeyword) {
+    <button mat-fab
+            extended
+            (click)="onKeywordClick(filterKeyword)"
+            class="keyword-button">
+      <mat-icon class="keyword-button-icon"
+                [ngClass]="{
+          change_circle: 'change-keyword',
+          remove_circle: 'remove-keyword',
+          add_circle: 'add-keyword'
+        }[getFilterIconName(filterKeyword, filterValue())]">
+        {{ getFilterIconName(filterKeyword, filterValue()) }}
+      </mat-icon>
+      {{ filterKeyword }}
+    </button>
+  }
+  <button (click)="onToggleAdvancedFilter()"
+          class="more-keyword-button"
+          extended
+          mat-fab>
+    <mat-icon class="keyword-button-icon">
+      {{ showAdvancedFilter() ? 'remove' : 'add' }}
+    </mat-icon>
+  </button>
+  @if (showAdvancedFilter()) {
+    @for (filterKeyword of advancedApiFilter; track filterKeyword) {
+      <button mat-fab
+              extended
+              (click)="onKeywordClick(filterKeyword)"
+              class="keyword-button">
+        <mat-icon class="keyword-button-icon"
+                  [ngClass]="isFilterSelected(filterKeyword, filterValue())
+              ? 'remove-keyword'
+              : 'add-keyword'">
+          {{
+            isFilterSelected(filterKeyword, filterValue())
+              ? 'remove_circle'
+              : 'add_circle'
+          }}
+        </mat-icon>
+        {{ filterKeyword }}
+      </button>
+    }
+  }
+</div>
