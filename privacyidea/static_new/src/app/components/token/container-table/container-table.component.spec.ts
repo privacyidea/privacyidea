@@ -10,6 +10,9 @@ import { NotificationService } from '../../../services/notification/notification
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { Sort } from '@angular/material/sort';
+import { MatPaginator } from '@angular/material/paginator';
 
 describe('ContainerTableComponent', () => {
   let component: ContainerTableComponent;
@@ -45,6 +48,9 @@ describe('ContainerTableComponent', () => {
       'getDisplayText',
       'getSpanClassForState',
       'getDisplayTextForState',
+      'handleFilterInput',
+      'handlePageEvent',
+      'handleSortEvent',
     ]);
 
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
@@ -138,10 +144,10 @@ describe('ContainerTableComponent', () => {
       containerServiceSpy.getContainerData.calls.reset();
       component['fetchContainerData']();
       expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith(
-        component.pageIndex + 1,
-        component.pageSize,
-        component.sortby_sortdir,
-        component.filterValue,
+        component.pageIndex() + 1,
+        component.pageSize(),
+        component.sortby_sortdir(),
+        component.filterValue(),
       );
     });
 
@@ -185,55 +191,132 @@ describe('ContainerTableComponent', () => {
     });
   });
 
-  describe('handlePageEvent()', () => {
-    it('should set pageSize, pageIndex and call fetchContainerData', () => {
+  describe('Paginator (handlePageEvent)', () => {
+    it('should delegate page changes to tableUtilsService.handlePageEvent', () => {
+      const paginator = fixture.debugElement.query(
+        By.directive(MatPaginator),
+      ).componentInstance;
+      const testPageEvent = { pageIndex: 2, pageSize: 15 };
+
       spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      component.handlePageEvent({ pageIndex: 2, pageSize: 15 } as any);
-      expect(component.pageIndex).toBe(2);
-      expect(component.pageSize).toBe(15);
+
+      tableUtilsServiceSpy.handlePageEvent.and.callFake(
+        (event, pageIndexSignal, pageSizeSignal, fetchDataCb) => {
+          pageIndexSignal.set(event.pageIndex);
+          pageSizeSignal.set(event.pageSize);
+          fetchDataCb();
+        },
+      );
+
+      paginator.page.emit(testPageEvent);
+      fixture.detectChanges();
+
+      expect(tableUtilsServiceSpy.handlePageEvent).toHaveBeenCalledWith(
+        jasmine.objectContaining(testPageEvent),
+        component.pageIndex,
+        component.pageSize,
+        jasmine.any(Function),
+      );
+      expect(component.pageIndex()).toBe(2);
+      expect(component.pageSize()).toBe(15);
       expect(component['fetchContainerData']).toHaveBeenCalled();
     });
   });
 
-  describe('handleSortEvent()', () => {
-    it('should set sortby_sortdir and reset pageIndex to 0 and fetch data', () => {
-      component.sort = { active: 'type', direction: 'asc' } as any;
+  describe('Sort (handleSortEvent)', () => {
+    it('should delegate sort changes to tableUtilsService.handleSortEvent', () => {
+      const testSort: Sort = { active: 'type', direction: 'asc' };
       spyOn<any>(component, 'fetchContainerData').and.callThrough();
 
-      component.handleSortEvent();
-      expect(component.sortby_sortdir).toEqual({
-        active: 'type',
-        direction: 'asc',
-      });
-      expect(component.pageIndex).toBe(0);
+      tableUtilsServiceSpy.handleSortEvent.and.callFake(
+        (sort, pageIndexSignal, sortbySortDirSignal, fetchDataCb) => {
+          sortbySortDirSignal.set(sort);
+          pageIndexSignal.set(0);
+          fetchDataCb();
+        },
+      );
+
+      tableUtilsServiceSpy.handleSortEvent(
+        testSort,
+        component.pageIndex,
+        component.sortby_sortdir,
+        component['fetchContainerData'],
+      );
+      fixture.detectChanges();
+
+      expect(tableUtilsServiceSpy.handleSortEvent).toHaveBeenCalledWith(
+        testSort,
+        component.pageIndex,
+        component.sortby_sortdir,
+        jasmine.any(Function),
+      );
+      expect(component.sortby_sortdir().active).toBe('type');
+      expect(component.sortby_sortdir().direction).toBe('asc');
+      expect(component.pageIndex()).toBe(0);
       expect(component['fetchContainerData']).toHaveBeenCalled();
     });
   });
 
-  describe('handleFilterInput()', () => {
-    it('should set filterValue, reset pageIndex, and call fetchContainerData', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
+  describe('Filter (handleFilterInput)', () => {
+    it('should delegate filter changes to tableUtilsService.handleFilterInput', () => {
       const mockEvent = {
-        target: { value: ' filterValue ' },
+        target: { value: '  filterValue  ' },
       } as unknown as Event;
 
-      component.handleFilterInput(mockEvent);
-      expect(component.filterValue).toBe('filterValue');
-      expect(component.pageIndex).toBe(0);
+      spyOn<any>(component, 'fetchContainerData').and.callThrough();
+
+      tableUtilsServiceSpy.handleFilterInput.and.callFake(
+        (eventArg, pageIndexSignal, filterValueSignal, fetchDataCb) => {
+          const trimmed = (eventArg.target as HTMLInputElement).value.trim();
+          filterValueSignal.set(trimmed);
+          pageIndexSignal.set(0);
+          fetchDataCb();
+        },
+      );
+
+      tableUtilsServiceSpy.handleFilterInput(
+        mockEvent,
+        component.pageIndex,
+        component.filterValue,
+        component['fetchContainerData'],
+      );
+      fixture.detectChanges();
+
+      expect(tableUtilsServiceSpy.handleFilterInput).toHaveBeenCalledWith(
+        mockEvent,
+        component.pageIndex,
+        component.filterValue,
+        jasmine.any(Function),
+      );
+      expect(component.filterValue()).toBe('filterValue');
+      expect(component.pageIndex()).toBe(0);
       expect(component['fetchContainerData']).toHaveBeenCalled();
     });
   });
 
   describe('toggleKeywordInFilter()', () => {
     it('should use tableUtilsService to toggle keyword and re-fetch data', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
+      const fetchDataSpy = spyOn(
+        component as any,
+        'fetchContainerData',
+      ).and.callThrough();
       const inputEl = document.createElement('input');
       inputEl.value = 'status';
-
+      tableUtilsServiceSpy.handleFilterInput.and.callFake(
+        (event: Event, pageIndex, filterValue, fetchDataCb) => {
+          filterValue.set((event.target as HTMLInputElement).value.trim());
+          pageIndex.set(0);
+          fetchDataCb();
+        },
+      );
+      tableUtilsServiceSpy.toggleKeywordInFilter.and.callFake(
+        (curVal, keyword) => {
+          return curVal + ' ' + keyword;
+        },
+      );
       component.toggleKeywordInFilter('type', inputEl);
-
       expect(inputEl.value).toContain('type');
-      expect(component['fetchContainerData']).toHaveBeenCalled();
+      expect(fetchDataSpy).toHaveBeenCalled();
     });
   });
 

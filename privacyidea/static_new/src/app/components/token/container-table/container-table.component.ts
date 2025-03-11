@@ -90,11 +90,13 @@ export class ContainerTableComponent {
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      if (this.keywordClick()) {
+      const clickedKeyword = this.keywordClick();
+      if (clickedKeyword) {
         this.toggleKeywordInFilter(
-          this.keywordClick(),
+          clickedKeyword,
           this.inputElement.nativeElement,
         );
+        this.keywordClick.set('');
       }
     });
 
