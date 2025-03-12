@@ -12,13 +12,8 @@ export class MachineService {
   baseUrl: string = environment.proxyUrl + '/machine/';
   sshApiFilter = ['serial', 'service_id'];
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
-  offlineApiFilter = ['serial'];
-  offlineAdvancedApiFilter = [
-    'hostname',
-    'machineid & resolver',
-    'count',
-    'rounds',
-  ];
+  offlineApiFilter = ['serial', 'count', 'rounds'];
+  offlineAdvancedApiFilter = ['hostname', 'machineid & resolver'];
 
   constructor(
     private http: HttpClient,

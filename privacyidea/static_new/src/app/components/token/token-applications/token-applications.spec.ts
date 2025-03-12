@@ -47,6 +47,12 @@ describe('TokenApplications', () => {
     expect(component.selectedApplicationType()).toBe('ssh');
   });
 
+  it('should set token serial and selected content on tokenSelected', () => {
+    component.tokenSelected('testSerial');
+    expect(component.tokenSerial()).toBe('testSerial');
+    expect(component.selectedContent()).toBe('token_details');
+  });
+
   it('should update tokenSerial input', () => {
     component.tokenSerial.set('new-serial');
     expect(component.tokenSerial()).toBe('new-serial');

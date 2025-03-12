@@ -4,7 +4,93 @@
     <div class="details-header">
       <h4>Offline tokens attached to notebooks</h4>
     </div>
-    <p>HOTP tokens can be attached with offline to e.g. notebooks.</p>
-
+    <div class="application-p-div">
+      <p>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+    </div>
   </div>
+</div>
+<div class="application-table-container">
+  <div class="filter-paginator-container">
+    <mat-form-field class="application-table-filter"
+                    subscriptSizing="dynamic">
+      <mat-label>Enter Filter</mat-label>
+      <input #input
+             (keyup)="tableUtilsService.handleFilterInput(
+                      $event, pageIndex, filterValue, fetchApplicationOfflineData)"
+             aria-label="Filter Input"
+             matInput
+             placeholder="Example query: 'service_id: myService'" />
+    </mat-form-field>
+    <mat-paginator (page)="tableUtilsService.handlePageEvent(
+                           $event, pageIndex, pageSize, fetchApplicationOfflineData)"
+                   [length]="length()"
+                   [pageIndex]="pageIndex()"
+                   [pageSizeOptions]="pageSizeOptions"
+                   [pageSize]="pageSize()"
+                   showFirstLastButtons></mat-paginator>
+  </div>
+  <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
+                      [apiFilter]="apiFilter"
+                      [filterValue]="filterValue"
+                      [keywordClick]="keywordClick"
+                      [tableUtilsService]="tableUtilsService"></app-keyword-filter>
+  <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
+  fetchApplicationOfflineData)"
+         [dataSource]="dataSource()"
+         [matSortDisableClear]="false"
+         aria-label="Token Applications Table"
+         class="token-table"
+         mat-table
+         matSort>
+    @for (column of columnsKeyMap; track column) {
+      <ng-container [matColumnDef]="column.key">
+        <th *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
+            mat-sort-header>
+          {{ column.label }}
+        </th>
+        <td *matCellDef="let element"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell
+            [ngClass]="{ 'width-18': column.key === 'description' }">
+          <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+            @switch (column.key) {
+              @case ("serial") {
+                <a attr.aria-label="{{ column.label }} Link"
+                   (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                <button class="copy-button"
+                        [cdkCopyToClipboard]="element.serial">
+                  <mat-icon class="copy-icon">content_copy</mat-icon>
+                </button>
+              }
+              @default {
+                @if (tableUtilsService.isLink(column.key)) {
+                  <a attr.aria-label="{{ column.label }} Link"
+                     href="#"> {{ element[column.key] }} </a>
+                } @else {
+                  <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                  {{ tableUtilsService.getDisplayText(column.key, element) }}
+                </span>
+                }
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+    }
+    <tr *matHeaderRowDef="displayedColumns"
+        aria-label="Header Row"
+        mat-header-row></tr>
+    <tr *matRowDef="let row; columns: displayedColumns"
+        aria-label="Data Row"
+        mat-row></tr>
+    <tr *matNoDataRow
+        aria-label="No Data Row">
+      <td [attr.colspan]="displayedColumns.length"
+          aria-label="No Data Cell">
+        No data matching the filter.
+      </td>
+    </tr>
+  </table>
 </div>

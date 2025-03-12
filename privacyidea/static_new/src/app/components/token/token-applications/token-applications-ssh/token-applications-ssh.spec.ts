@@ -41,12 +41,6 @@ describe('TokenApplicationsSsh', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set token serial and selected content on selectToken', () => {
-    component.selectToken('test-serial');
-    expect(component.tokenSerial()).toBe('test-serial');
-    expect(component.selectedContent()).toBe('token_details');
-  });
-
   it('should fetch data using fetchDataHandler', () => {
     const mockResponse = {
       result: {

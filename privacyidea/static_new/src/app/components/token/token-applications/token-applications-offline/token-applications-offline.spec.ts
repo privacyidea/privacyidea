@@ -8,6 +8,7 @@ import {
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { TokenSelectedContent } from '../../token.component';
 import { MachineService } from '../../../../services/machine/machine.service';
+import { MatTableDataSource } from '@angular/material/table';
 
 describe('TokenApplicationsOffline', () => {
   let component: TokenApplicationsOffline;
@@ -29,6 +30,26 @@ describe('TokenApplicationsOffline', () => {
 
     fixture = TestBed.createComponent(TokenApplicationsOffline);
     component = fixture.componentInstance;
+    component.length = signal(0);
+    component.pageSize = signal(10);
+    component.pageIndex = signal(0);
+    component.filterValue = signal('');
+    component.sortby_sortdir = signal({
+      active: 'serial',
+      direction: 'asc',
+    });
+    component.dataSource = signal(
+      new MatTableDataSource(
+        Array.from({ length: component.pageSize() }, () => {
+          const emptyRow: any = {};
+          TokenApplicationsOffline.columnsKeyMap.forEach((column) => {
+            emptyRow[column.key] = '';
+          });
+          return emptyRow;
+        }),
+      ),
+    );
+
     machineService = TestBed.inject(
       MachineService,
     ) as jasmine.SpyObj<MachineService>;
@@ -40,12 +61,6 @@ describe('TokenApplicationsOffline', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
-  });
-
-  it('should set token serial and selected content on selectToken', () => {
-    component.selectToken('testSerial');
-    expect(component.tokenSerial()).toBe('testSerial');
-    expect(component.selectedContent()).toBe('token_details');
   });
 
   it('should fetch data using machine service', () => {

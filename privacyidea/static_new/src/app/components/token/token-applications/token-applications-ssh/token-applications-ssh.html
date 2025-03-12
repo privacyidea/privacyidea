@@ -5,11 +5,10 @@
       <h4>SSH Tokens attached to services</h4>
     </div>
     <div class="application-p-div">
-    <p>SSH Tokens can be attached to a service ID with a user. The user is the user on
-      the SSH server and may differ from the token owner. To attach the token to a service ID go to the
-      token details. </p>
-    <p>To define service IDs go to <a ui-sref="config.serviceid">Service ID config</a>.
-    </p>
+      <p>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH
+        server and may differ from the token owner. To attach the token to a service ID go to the
+        token details. </p>
+      <p>To define service IDs go to <a ui-sref="config.serviceid">Service ID config</a>. </p>
     </div>
   </div>
   <div class="application-table-container">
@@ -19,13 +18,13 @@
         <mat-label>Enter Filter</mat-label>
         <input #input
                (keyup)="tableUtilsService.handleFilterInput(
-                      $event, pageIndex, filterValue, fetchApplicationData)"
+                      $event, pageIndex, filterValue, fetchApplicationSshData)"
                aria-label="Filter Input"
                matInput
                placeholder="Example query: 'service_id: myService'" />
       </mat-form-field>
       <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize, fetchApplicationData)"
+                           $event, pageIndex, pageSize, fetchApplicationSshData)"
                      [length]="length()"
                      [pageIndex]="pageIndex()"
                      [pageSizeOptions]="pageSizeOptions"
@@ -38,7 +37,7 @@
                         [keywordClick]="keywordClick"
                         [tableUtilsService]="tableUtilsService"></app-keyword-filter>
     <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
-  fetchApplicationData)"
+  fetchApplicationSshData)"
            [dataSource]="dataSource()"
            [matSortDisableClear]="false"
            aria-label="Token Applications Table"
