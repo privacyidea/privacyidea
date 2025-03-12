@@ -255,8 +255,8 @@ class MSCAConnector(BaseCAConnector):
         """
         Send a signing request to the Microsoft CA
 
-        options can be
-        template: The name of the certificate template to issue
+        *options* may contain the following entries:
+          * ``template``: The name of the certificate template to issue
 
         :param csr: Certificate signing request
         :type csr: PEM string or SPKAC
@@ -265,8 +265,9 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns a tuple of requestID and the certificate object if cert was provided instantly
         :rtype: (int, X509 or None)
         """
+        template_name = options.get("template") if options else None
         if self.connection:
-            reply = self.connection.SubmitCSR(SubmitCSRRequest(csr=csr, templateName=options.get("template"),
+            reply = self.connection.SubmitCSR(SubmitCSRRequest(csr=csr, templateName=template_name,
                                                                caName=self.ca))
             if reply.disposition == 3:
                 request_id = reply.requestId

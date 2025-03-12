@@ -69,22 +69,27 @@ from typing import Union
 
 from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
+from privacyidea.lib.error import (PolicyError, RegistrationError,
+                                   TokenAdminError, ResourceNotFoundError)
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
-from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
+                                   get_token_owner)
+from privacyidea.lib.utils import (parse_timedelta, is_true,
+                                   generate_charlists_from_pin_policy,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
-from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_token_action_allowed, check_container_action_allowed,
+from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
+                                              get_pushtoken_add_config,
+                                              check_token_action_allowed,
+                                              check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -109,8 +114,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  WebAuthnTokenClass,
                                                   is_webauthn_assertion_response)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
@@ -193,7 +197,6 @@ def set_random_pin(request=None, action=None):
     It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
@@ -1170,7 +1173,6 @@ def check_anonymous_user(request=None, action=None):
     """
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
-    policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
     action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
@@ -1827,7 +1829,9 @@ def u2ftoken_allowed(request, action):
                                         user_object=request.User if request.User else None) \
             .action_values(unique=False)
 
-        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+        if (len(allowed_certs_pols)
+                and not _attestation_certificate_allowed(
+                    attestation_cert.to_cryptography(), allowed_certs_pols)):
             log.warning("The U2F device {0!s} is not "
                         "allowed to be registered due to policy "
                         "restriction".format(serial))
@@ -2263,7 +2267,6 @@ def webauthntoken_allowed(request, action):
     :return:
     :rtype:
     """
-    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
     ttype = request.all_data.get("type")
 
     # Get the registration data of the 2nd step of enrolling a WebAuthn token
@@ -2565,7 +2568,8 @@ def smartphone_config(request, action=None):
         container_type = find_container_by_serial(container_serial).type
     except Exception:
         container_type = None
-        log.info(f"Container type could not be determined. Ignoring smartphone configurations.")
+        log.info(f"Container type could not be determined for Container {container_serial}. "
+                 f"Ignoring smartphone configurations.")
 
     is_smartphone = False
     # Get configuration for smartphones

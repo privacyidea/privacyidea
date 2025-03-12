@@ -134,9 +134,9 @@ def parse_registration_data(reg_data, verify_cert=True):
     # check the validity period of the certificate
     if verify_cert:
         if start_time > time.localtime() or \
-                        end_time < time.localtime():  #pragma no cover
+                        end_time < time.localtime():  # pragma no cover
             log.error("The certificate is not valid. {0!s} -> {1!s}".format(not_before,
-                                                                  not_after))
+                                                                            not_after))
             raise Exception("The time of the attestation certificate is not "
                             "valid.")
 

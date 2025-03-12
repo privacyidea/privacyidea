@@ -339,18 +339,23 @@ class LocalCAConnector(BaseCAConnector):
         """
         Signs a certificate request with the key of the CA.
 
-        options can be
-        WorkingDir: The directory where the configuration like openssl.cnf
-        can be found.
-        CSRDir: The directory, where to save the certificate signing
-        requests. This is relative to the WorkingDir.
-        CertificateDir: The directory where to save the certificates. This is
-        relative to the WorkingDir.
+        *options* may contain the following entries:
+          * ``openssl.cnf``: Path to the local OpenSSL CA configuration file
+          * ``WorkingDir``: The directory where the configuration like openssl.cnf
+                            can be found.
+          * ``CSRDir``: The directory, where to save the certificate signing
+                        requests. This is relative to the WorkingDir.
+          * ``CertificateDir``: The directory where to save the certificates.
+                                This is relative to the WorkingDir.
+          * ``days``: Number of days the certificate should be valid (default 365,
+                      can be overwritten by a given template setting)
+          * ``spkac``: Whether the CSR is in SPKAC format
+          * ``extension``: The extension section to use from the config file
+          * ``template``: The template to use for signing the certificate
 
         :param csr: Certificate signing request (PEM string or SPKAC)
         :type csr: str
-        :param options: Additional options like the validity time or the
-            template or spkac=1
+        :param options: Additional options for signing the CSR (see above)
         :type options: dict
         :return: A tuple containing a return value (0) and the certificate
                  object in PEM encoded format

@@ -455,6 +455,10 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual(token.type, "certificate")
 
         detail = token.get_init_detail()
+        # Check for pkcs12
+        self.assertIn("pkcs12", detail, detail)
+        self.assertIn("pkcs12_password", detail, detail)
+
         certificate = detail.get("certificate")
         # At each testrun, the certificate might get another serial number!
         x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
@@ -475,16 +479,14 @@ class CertificateTokenTestCase(MyTestCase):
                          "/O=privacyidea/CN=CA001'>")
         self.assertEqual("{0!r}".format(x509obj.get_subject()), "<X509Name object '/CN=cornelius'>")
 
+        # Make sure there is no private key in the token info after rollout
         privatekey = token.get_tokeninfo("privatekey")
-        self.assertTrue(privatekey.startswith("-----BEGIN PRIVATE KEY-----"))
-
-        # check for pkcs12
-#        self.assertTrue(detail.get("pkcs12"))
+        self.assertIsNone(privatekey)
 
         # revoke the token
         r = token.revoke()
         self.assertEqual(r, int_to_hex(x509obj.get_serial_number()))
-        remove_token(self.serial3)
+        remove_token(token.get_serial())
 
         # Now create a new token again and also check for subjects with email and realm
         db_token = Token(self.serial3, tokentype="certificate")
