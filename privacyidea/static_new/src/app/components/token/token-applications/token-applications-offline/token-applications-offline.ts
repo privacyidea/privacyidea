@@ -11,33 +11,14 @@ import { TokenSelectedContent } from '../../token.component';
   styleUrls: ['./token-applications-offline.scss'],
 })
 export class TokenApplicationsOffline {
-  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true })
-  selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
 
   constructor(private machineService: MachineService) {}
 
   selectToken(serial: string) {
     this.tokenSerial.set(serial);
     this.selectedContent.set('token_details');
-  }
-
-  getObjectStrings(options: object) {
-    return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
-  }
-
-  splitFilters(filterValue: string) {
-    var filterMap: { [key: string]: string } = {};
-    var regexp = new RegExp(/\w+:\s\w+((?=\s)|$)/, 'g');
-    var matches = filterValue.match(regexp);
-    if (matches) {
-      matches.forEach((match) => {
-        var [key, value] = match.split(': ');
-        filterMap[key] = value;
-      });
-    }
-
-    return filterMap;
   }
 
   /*

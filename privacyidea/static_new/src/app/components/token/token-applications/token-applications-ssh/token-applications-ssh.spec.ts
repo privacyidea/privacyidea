@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TokenApplicationsSsh } from './token-applications-ssh';
-import { of } from 'rxjs';
 import { MatTabsModule } from '@angular/material/tabs';
 import { signal } from '@angular/core';
 import {
@@ -63,18 +62,6 @@ describe('TokenApplicationsSsh', () => {
         ],
       },
     };
-    machineService.getToken.and.returnValue(of(mockResponse));
-    /*
-    component
-      .fetchDataHandler({
-        pageIndex: 0,
-        pageSize: 10,
-        sortby_sortdir: { active: 'id', direction: 'asc' },
-        filterValue: '',
-      })
-      .subscribe((response) => {
-        expect(response).toEqual(mockResponse);
-      });*/
   });
 
   it('should process data source correctly', () => {

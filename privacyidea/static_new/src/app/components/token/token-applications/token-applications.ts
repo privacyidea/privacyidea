@@ -12,8 +12,7 @@ import { TokenSelectedContent } from '../token.component';
   styleUrls: ['./token-applications.scss'],
 })
 export class TokenApplications {
-  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true })
-  selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   selectedApplicationType = signal('ssh');
 }

@@ -10,9 +10,8 @@ import { TokenSelectedContent } from '../token.component';
   styleUrl: './challenges-table.component.scss',
 })
 export class ChallengesTableComponent {
-  @Input({ required: true })
-  selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() tokenSerial!: WritableSignal<string>;
 
   constructor(private tokenService: TokenService) {}
 

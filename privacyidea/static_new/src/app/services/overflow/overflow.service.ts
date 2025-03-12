@@ -24,6 +24,8 @@ export class OverflowService {
         return 1880;
       case 'container_overview':
         return 1880;
+      case 'token_applications':
+        return 1500;
       case 'token_enrollment':
         return 1240;
       case 'token_get_serial':

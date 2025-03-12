@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TokenApplicationsOffline } from './token-applications-offline';
-import { of } from 'rxjs';
 import { signal } from '@angular/core';
 import {
   provideHttpClient,
@@ -49,12 +48,6 @@ describe('TokenApplicationsOffline', () => {
     expect(component.selectedContent()).toBe('token_details');
   });
 
-  it('should split filters correctly', () => {
-    const filterValue = 'serial: 123 hostname: testHost';
-    const expected = { serial: '123', hostname: 'testHost' };
-    expect(component.splitFilters(filterValue)).toEqual(expected);
-  });
-
   it('should fetch data using machine service', () => {
     const mockResponse = {
       result: {
@@ -70,42 +63,5 @@ describe('TokenApplicationsOffline', () => {
         ],
       },
     };
-    machineService.getToken.and.returnValue(of(mockResponse));
-
-    /*
-    component
-      .fetchDataHandler({
-        pageIndex: 0,
-        pageSize: 10,
-        sortby_sortdir: { active: 'id', direction: 'asc' },
-        filterValue: '',
-      })
-      .subscribe((response) => {
-        expect(response).toEqual(mockResponse);
-      });
-  });
-
-  it('should process data source correctly', () => {
-    const mockResponse = {
-      result: {
-        value: [
-          {
-            id: 1,
-            machine_id: 'machine1',
-            options: {},
-            resolver: 'resolver1',
-            serial: 'serial1',
-            type: 'type1',
-          },
-        ],
-      },
-    };
-    const result = component.processDataSource(mockResponse);
-    expect(result.data.length).toBe(1);
-    const expectedDataSource = new MatTableDataSource(
-      MachineTokenData.parseList(mockResponse.result.value),
-    );
-    expect(result.data).toEqual(expectedDataSource.data);
-    */
   });
 });

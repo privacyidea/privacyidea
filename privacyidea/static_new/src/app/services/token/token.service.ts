@@ -120,18 +120,18 @@ export class TokenService {
       const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
       const { filterPairs, remainingFilterText } =
         this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
-      filterPairs.forEach(({ label, value }) => {
+      filterPairs.forEach(({ key, value }) => {
         if (
-          label === 'user' ||
-          label === 'infokey' ||
-          label === 'infovalue' ||
-          label === 'active' ||
-          label === 'assigned' ||
-          label === 'container_serial'
+          key === 'user' ||
+          key === 'infokey' ||
+          key === 'infovalue' ||
+          key === 'active' ||
+          key === 'assigned' ||
+          key === 'container_serial'
         ) {
-          params = params.set(label, `${value}`);
+          params = params.set(key, `${value}`);
         } else {
-          params = params.set(label, `*${value}*`);
+          params = params.set(key, `*${value}*`);
         }
       });
 
@@ -499,13 +499,15 @@ export class TokenService {
     if (filterValue) {
       const { filterPairs, remainingFilterText } =
         this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
-      filterPairs.forEach(({ label, value }) => {
-        params = params.set(label, `*${value}*`);
+      filterPairs.forEach(({ key, value }) => {
+        params = params.set(key, `*${value}*`);
       });
 
+      /* global filtering is missing in api
       if (remainingFilterText) {
         params = params.set('globalfilter', `*${remainingFilterText}*`);
       }
+      */
     }
 
     return this.http.get<any>(this.tokenBaseUrl + 'challenges/', {

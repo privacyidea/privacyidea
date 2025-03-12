@@ -3,7 +3,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 
 interface FilterPair {
-  label: string;
+  key: string;
   value: string;
 }
 
@@ -22,6 +22,9 @@ export class TableUtilsService {
     const filterLabels = apiFilter.flatMap((column) => {
       if (column === 'infokey & infovalue') {
         return ['infokey:', 'infovalue:'];
+      }
+      if (column === 'machineid & resolver') {
+        return ['machineid:', 'resolver:'];
       }
       return column.toLowerCase() + ':';
     });
@@ -50,7 +53,7 @@ export class TableUtilsService {
       if (matchingLabel) {
         if (currentLabel && currentValue) {
           filterPairs.push({
-            label: currentLabel.slice(0, -1),
+            key: currentLabel.slice(0, -1),
             value: currentValue.trim(),
           });
         }
@@ -67,7 +70,7 @@ export class TableUtilsService {
     }
     if (currentLabel) {
       filterPairs.push({
-        label: currentLabel.slice(0, -1),
+        key: currentLabel.slice(0, -1),
         value: currentValue.trim(),
       });
     }
@@ -90,6 +93,26 @@ export class TableUtilsService {
         return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
       } else {
         return `${keyword}: `;
+      }
+    }
+  }
+
+  public toggleActiveInFilter(currentValue: string): string {
+    const activeRegex = /active:\s*(\S+)/i;
+    const match = currentValue.match(activeRegex);
+
+    if (!match) {
+      return (currentValue.trim() + ' active: true').trim();
+    } else {
+      const existingValue = match[1].toLowerCase();
+
+      if (existingValue === 'true') {
+        return currentValue.replace(activeRegex, 'active: false');
+      } else if (existingValue === 'false') {
+        const removed = currentValue.replace(activeRegex, '').trim();
+        return removed.replace(/\s{2,}/g, ' ');
+      } else {
+        return currentValue.replace(activeRegex, 'active: true');
       }
     }
   }
@@ -253,26 +276,6 @@ export class TableUtilsService {
       return 'deactivated';
     } else {
       return state;
-    }
-  }
-
-  public toggleActiveInFilter(currentValue: string): string {
-    const activeRegex = /active:\s*(\S+)/i;
-    const match = currentValue.match(activeRegex);
-
-    if (!match) {
-      return (currentValue.trim() + ' active: true').trim();
-    } else {
-      const existingValue = match[1].toLowerCase();
-
-      if (existingValue === 'true') {
-        return currentValue.replace(activeRegex, 'active: false');
-      } else if (existingValue === 'false') {
-        const removed = currentValue.replace(activeRegex, '').trim();
-        return removed.replace(/\s{2,}/g, ' ');
-      } else {
-        return currentValue.replace(activeRegex, 'active: true');
-      }
     }
   }
 

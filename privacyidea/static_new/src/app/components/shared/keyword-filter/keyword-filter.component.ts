@@ -33,6 +33,11 @@ export class KeywordFilterComponent {
       const regexValue = new RegExp(`\\binfovalue:`, 'i');
       return regexKey.test(inputValue) || regexValue.test(inputValue);
     }
+    if (filter === 'machineid & resolver') {
+      const regexKey = new RegExp(`\\bmachineid:`, 'i');
+      const regexValue = new RegExp(`\\bresolver:`, 'i');
+      return regexKey.test(inputValue) || regexValue.test(inputValue);
+    }
     const regex = new RegExp(`\\b${filter}:`, 'i');
     return regex.test(inputValue);
   }

@@ -44,19 +44,21 @@ export class ContainerService {
     }
 
     if (filterValue) {
+      let combinedFilter = [...this.apiFilter, ...this.advancedApiFilter];
       const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+        this.tableUtilsService.parseFilterString(filterValue, combinedFilter);
 
-      filterPairs.forEach(({ label, value }) => {
+      filterPairs.forEach(({ key, value }) => {
+        console.log(key, value);
         if (
-          label === 'user' ||
-          label === 'generic' ||
-          label === 'container_serial' ||
-          label === 'token_serial'
+          key === 'user' ||
+          key === 'generic' ||
+          key === 'container_serial' ||
+          key === 'token_serial'
         ) {
-          params = params.set(label, `${value}`);
+          params = params.set(key, `${value}`);
         } else {
-          params = params.set(label, `*${value}*`);
+          params = params.set(key, `*${value}*`);
         }
       });
 

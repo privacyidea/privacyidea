@@ -99,7 +99,7 @@ class MockTokenService2 {
 }
 
 class MockMatDialog {
-  open(component: any, config: any) {
+  open() {
     return {
       afterClosed: () => of(true),
     };

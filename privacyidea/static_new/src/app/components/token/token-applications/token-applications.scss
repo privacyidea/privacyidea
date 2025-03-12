@@ -1,10 +1,18 @@
 @use "../../../../styles";
 
 .token-applications {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background-color: var(--table-color);
   margin-left: 1rem;
   overflow: auto;
 
-  mat-form-field {
-    width: 500px;
+  h4 {
+    margin: 0 0 1rem 8px;
+  }
+
+  .application-type-select {
+    width: 32.7rem;
   }
 }

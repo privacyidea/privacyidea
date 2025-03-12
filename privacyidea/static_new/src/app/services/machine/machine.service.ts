@@ -3,32 +3,27 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
-
-interface GetTokenParams {
-  serial?: string;
-  hostname?: string;
-  machineid?: string;
-  resolver?: string;
-  service_id?: string;
-  user?: string;
-  count?: string;
-  rounds?: string;
-  page?: number;
-  pageSize?: number;
-  sortby?: string;
-  sortdir?: string;
-  application?: string;
-}
+import { TableUtilsService } from '../table-utils/table-utils.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MachineService {
   baseUrl: string = environment.proxyUrl + '/machine/';
+  sshApiFilter = ['serial', 'service_id'];
+  sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
+  offlineApiFilter = ['serial'];
+  offlineAdvancedApiFilter = [
+    'hostname',
+    'machineid & resolver',
+    'count',
+    'rounds',
+  ];
 
   constructor(
     private http: HttpClient,
     private localService: LocalService,
+    private tableUtilsService: TableUtilsService,
   ) {}
 
   postTokenOption(
@@ -82,63 +77,61 @@ export class MachineService {
     );
   }
 
-  splitFilters(filterValue: string) {
-    const filterMap: { [key: string]: string } = {};
-    const regexp = new RegExp(/\w+:\s\w+((?=\s)|$)/, 'g');
-    const matches = filterValue.match(regexp);
-    console.log('matches', matches);
-    if (matches) {
-      matches.forEach((match) => {
-        const [key, value] = match.split(': ');
-        filterMap[key] = value;
-      });
-    }
-
-    return filterMap;
-  }
-
-  getToken(named: {
-    sortby?: string;
-    sortdir?: string;
-    page?: number;
-    pageSize: number;
-    currentFilter: string;
-    application: 'ssh' | 'offline';
-  }): Observable<any> {
-    const { sortby, sortdir, currentFilter, page, pageSize, application } =
-      named;
-    let filterMap: { [key: string]: string } = {};
-    if (currentFilter) {
-      filterMap = this.splitFilters(currentFilter);
-    }
-    const {
-      serial,
-      hostname,
-      machineid,
-      resolver,
-      service_id,
-      user,
-      count,
-      rounds,
-    } = filterMap;
-
+  getTokenMachineData(
+    pageSize: number,
+    currentFilter: string,
+    application: 'ssh' | 'offline',
+    sortby?: string,
+    sortdir?: string,
+    page?: number,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
-    let params = new HttpParams();
-    if (serial) params = params.set('serial', `*${serial}*`);
-    if (hostname) params = params.set('hostname', `*${hostname}*`);
-    if (machineid) params = params.set('machineid', `*${machineid}*`);
-    if (resolver) params = params.set('resolver', `*${resolver}*`);
-    if (page) params = params.set('page', page.toString());
-    if (pageSize) params = params.set('pagesize', pageSize.toString());
-    if (sortby) params = params.set('sortby', sortby);
-    if (sortdir) params = params.set('sortdir', sortdir);
-    if (application) params = params.set('application', application);
-    if (application === 'ssh') {
-      if (service_id) params = params.set('service_id', `*${service_id}*`);
-      if (user) params = params.set('user', `*${user}*`);
-    } else if (application === 'offline') {
-      if (count) params = params.set('count', count);
-      if (rounds) params = params.set('rounds', rounds);
+    let params = new HttpParams().set('application', application);
+
+    if (page) {
+      params = params.set('page', page.toString());
+    }
+    params = params.set('pagesize', pageSize.toString());
+    if (sortby) {
+      params = params.set('sortby', sortby);
+    }
+    if (sortdir) {
+      params = params.set('sortdir', sortdir);
+    }
+
+    if (currentFilter) {
+      const combinedFilters = [
+        ...this.sshApiFilter,
+        ...this.sshAdvancedApiFilter,
+      ];
+      const { filterPairs, remainingFilterText } =
+        this.tableUtilsService.parseFilterString(
+          currentFilter,
+          combinedFilters,
+        );
+      filterPairs.forEach(({ key, value }) => {
+        if (['serial'].includes(key)) {
+          params = params.set(key, `*${value}*`);
+        }
+        if (['hostname', 'machineid', 'resolver'].includes(key)) {
+          params = params.set(key, `${value}`);
+        }
+        switch (application) {
+          case 'ssh':
+            if (['service_id'].includes(key)) {
+              params = params.set(key, `*${value}*`);
+            }
+            break;
+          case 'offline':
+            if (['count', 'rounds'].includes(key)) {
+              params = params.set(key, value);
+            }
+            break;
+        }
+      });
+      // if (remainingFilterText) {
+      //   params = params.set('globalfilter', `*${remainingFilterText}*`);
+      // }
     }
 
     return this.http.get(`${this.baseUrl}token`, { headers, params });

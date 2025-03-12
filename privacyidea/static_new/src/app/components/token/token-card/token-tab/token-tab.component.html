@@ -7,8 +7,7 @@
               [ngClass]="[
           selectedContent() === 'token_overview'
             ? 'card-button-active'
-            : 'card-button',
-        ]"
+            : 'card-button',]"
               mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
@@ -21,8 +20,7 @@
                   [ngClass]="[
               selectedContent() === 'token_enrollment'
                 ? 'card-button-active'
-                : 'card-button',
-            ]"
+                : 'card-button',]"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
             Enrollment
@@ -36,7 +34,10 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button class="card-button"
+          <button [ngClass]="[
+              selectedContent() === 'token_challenges'
+                ? 'card-button-active'
+                : 'card-button',]"
                   (click)="onClickShowChallenges()"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
@@ -44,7 +45,10 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button class="card-button"
+          <button [ngClass]="[
+              selectedContent() === 'token_applications'
+                ? 'card-button-active'
+                : 'card-button',]"
                   (click)="onClickTokenApplications()"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
@@ -56,8 +60,7 @@
           <button [ngClass]="[
               selectedContent() === 'token_get_serial'
                 ? 'card-button-active'
-                : 'card-button',
-            ]"
+                : 'card-button',]"
                   mat-flat-button
                   (click)="onClickGetSerial()">
             <mat-icon>help_outline</mat-icon>
@@ -78,8 +81,7 @@
           <button [ngClass]="[
               selectedContent() === 'token_details'
                 ? 'card-button-active'
-                : 'card-button',
-            ]"
+                : 'card-button',]"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
