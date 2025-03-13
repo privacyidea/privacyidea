@@ -25,11 +25,6 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "src/styles/fonts",
-                "output": "media"
               }
             ],
             "styles": [
@@ -40,6 +35,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/static/dist/privacyidea-webui/browser/",
               "optimization": true,
               "budgets": [
                 {

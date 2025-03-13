@@ -51,7 +51,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
-from privacyidea.webui.login import login_blueprint, get_accepted_language, get_build_filenames
+from privacyidea.webui.login import login_blueprint, get_accepted_language
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
@@ -74,6 +74,7 @@ from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
+
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
@@ -137,10 +138,9 @@ def create_app(config_name="development",
     @app.errorhandler(404)
     def fallback(error):
         if request.path.startswith("/ui/"):
-            main_js, polyfills_js = get_build_filenames()
             return send_html(
                 render_template(
-                    "index.html", main_js=main_js, polyfills_js=polyfills_js))
+                    "index.html"))
         return jsonify(error="Not found"), 404
 
     if config_name:

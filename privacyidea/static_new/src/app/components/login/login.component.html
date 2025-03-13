@@ -5,19 +5,18 @@
          aria-label="Logo"
          class="logo"
          height="1856"
-         ngSrc="static/dist/privacyidea-webui/browser/assets/privacyIDEA1.png"
+         ngSrc="assets/privacyIDEA1.png"
          width="1857" /> <img alt="logo-text"
                               aria-label="Logo Text"
                               class="logo-text"
                               height="559"
-                              ngSrc="static/dist/privacyidea-webui/browser/assets/logo-text.png"
+                              ngSrc="assets/logo-text.png"
                               width="2947" />
 
     <form (ngSubmit)="onSubmit()"
           aria-label="Login Form"
           class="login-form">
-      <mat-form-field appearance="outline"
-                      aria-label="Username Field">
+      <mat-form-field appearance="outline">
         <mat-label>Username</mat-label>
         <input [(ngModel)]="username"
                id="username"
@@ -27,8 +26,7 @@
                type="text" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline"
-                      aria-label="Password Field">
+      <mat-form-field appearance="outline">
         <mat-label>Password</mat-label>
         <input [(ngModel)]="password"
                id="password"
