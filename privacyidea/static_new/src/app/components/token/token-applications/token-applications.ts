@@ -150,8 +150,8 @@ export class TokenApplications {
         this.pageSize(),
         this.filterValue(),
         'ssh',
-        'serial',
-        'asc',
+        this.sortby_sortdir().active,
+        this.sortby_sortdir().direction,
         this.pageIndex(),
       )
       .subscribe({
@@ -182,8 +182,8 @@ export class TokenApplications {
         this.pageSize(),
         this.filterValue(),
         'offline',
-        'serial',
-        'asc',
+        this.sortby_sortdir().active,
+        this.sortby_sortdir().direction,
         this.pageIndex(),
       )
       .subscribe({

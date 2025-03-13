@@ -48,24 +48,22 @@ export const columnsKeyMap = [
 })
 export class TokenApplicationsOffline {
   static columnsKeyMap = columnsKeyMap;
-  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true })
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input()
   selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input({ required: true }) length!: WritableSignal<number>;
-  @Input({ required: true }) pageSize!: WritableSignal<number>;
-  @Input({ required: true }) pageIndex!: WritableSignal<number>;
-  @Input({ required: true }) filterValue!: WritableSignal<string>;
-  @Input({ required: true }) sortby_sortdir!: WritableSignal<Sort>;
-  @Input({ required: true }) toggleKeywordInFilter!: (
+  @Input() length!: WritableSignal<number>;
+  @Input() pageSize!: WritableSignal<number>;
+  @Input() pageIndex!: WritableSignal<number>;
+  @Input() filterValue!: WritableSignal<string>;
+  @Input() sortby_sortdir!: WritableSignal<Sort>;
+  @Input() toggleKeywordInFilter!: (
     filterKeyword: string,
     inputElement: HTMLInputElement,
     application: string,
   ) => void;
-  @Input({ required: true }) fetchApplicationOfflineData!: () => void;
-  @Input({ required: true }) tokenSelected!: (serial: string) => void;
-  @Input({ required: true }) dataSource!: WritableSignal<
-    MatTableDataSource<any>
-  >;
+  @Input() fetchApplicationOfflineData!: () => void;
+  @Input() tokenSelected!: (serial: string) => void;
+  @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
   keywordClick = signal<string>('');
   displayedColumns: string[] = columnsKeyMap.map((c) => c.key);
   pageSizeOptions = [5, 10, 15];

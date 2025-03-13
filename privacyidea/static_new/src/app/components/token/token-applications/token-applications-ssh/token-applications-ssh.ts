@@ -55,24 +55,21 @@ export const columnsKeyMap = [
 })
 export class TokenApplicationsSsh {
   static columnsKeyMap = columnsKeyMap;
-  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
-  @Input({ required: true })
-  selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input({ required: true }) length!: WritableSignal<number>;
-  @Input({ required: true }) pageSize!: WritableSignal<number>;
-  @Input({ required: true }) pageIndex!: WritableSignal<number>;
-  @Input({ required: true }) filterValue!: WritableSignal<string>;
-  @Input({ required: true }) sortby_sortdir!: WritableSignal<Sort>;
-  @Input({ required: true }) toggleKeywordInFilter!: (
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() length!: WritableSignal<number>;
+  @Input() pageSize!: WritableSignal<number>;
+  @Input() pageIndex!: WritableSignal<number>;
+  @Input() filterValue!: WritableSignal<string>;
+  @Input() sortby_sortdir!: WritableSignal<Sort>;
+  @Input() toggleKeywordInFilter!: (
     filterKeyword: string,
     inputElement: HTMLInputElement,
     application: string,
   ) => void;
-  @Input({ required: true }) dataSource!: WritableSignal<
-    MatTableDataSource<any>
-  >;
-  @Input({ required: true }) fetchApplicationSshData!: () => void;
-  @Input({ required: true }) tokenSelected!: (serial: string) => void;
+  @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
+  @Input() fetchApplicationSshData!: () => void;
+  @Input() tokenSelected!: (serial: string) => void;
   keywordClick = signal<string>('');
   displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
   pageSizeOptions = [5, 10, 15];
