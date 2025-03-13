@@ -20,14 +20,16 @@
       {{ filterKeyword }}
     </button>
   }
-  <button (click)="onToggleAdvancedFilter()"
-          class="more-keyword-button"
-          extended
-          mat-fab>
-    <mat-icon class="keyword-button-icon">
-      {{ showAdvancedFilter() ? 'remove' : 'add' }}
-    </mat-icon>
-  </button>
+  @if (advancedApiFilter.length > 0) {
+    <button (click)="onToggleAdvancedFilter()"
+            class="more-keyword-button"
+            extended
+            mat-fab>
+      <mat-icon class="keyword-button-icon">
+        {{ showAdvancedFilter() ? 'remove' : 'add' }}
+      </mat-icon>
+    </button>
+  }
   @if (showAdvancedFilter()) {
     @for (filterKeyword of advancedApiFilter; track filterKeyword) {
       <button mat-fab

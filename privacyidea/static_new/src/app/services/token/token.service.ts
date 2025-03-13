@@ -73,6 +73,8 @@ export class TokenService {
     'container_serial',
   ];
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
+  challengesApiFilter = ['serial', 'transaction_id'];
+  challengesAdvancedApiFilter = [];
   private tokenBaseUrl = environment.proxyUrl + '/token/';
   private stopPolling$ = new Subject<void>();
 
@@ -496,21 +498,28 @@ export class TokenService {
       params = params.set('sortby', sort.active).set('sortdir', sort.direction);
     }
 
+    const combinedFilters = [
+      ...this.challengesApiFilter,
+      ...this.challengesAdvancedApiFilter,
+    ];
+    let urlPath = 'challenges/';
     if (filterValue) {
       const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(filterValue, this.apiFilter);
+        this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
       filterPairs.forEach(({ key, value }) => {
-        params = params.set(key, `*${value}*`);
+        if (key === 'serial') {
+          urlPath = `challenges/*${value}*`;
+        } else {
+          params = params.set(key, `*${value}*`);
+        }
       });
-
       /* global filtering is missing in api
-      if (remainingFilterText) {
-        params = params.set('globalfilter', `*${remainingFilterText}*`);
-      }
-      */
+            if (remainingFilterText) {
+              params = params.set('globalfilter', `*${remainingFilterText}*`);
+            } */
     }
 
-    return this.http.get<any>(this.tokenBaseUrl + 'challenges/', {
+    return this.http.get<any>(this.tokenBaseUrl + urlPath, {
       headers,
       params,
     });

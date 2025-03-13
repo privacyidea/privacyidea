@@ -49,6 +49,7 @@ describe('TokenApplicationsOffline', () => {
         }),
       ),
     );
+    component.advancedApiFilter = [];
 
     machineService = TestBed.inject(
       MachineService,

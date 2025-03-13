@@ -35,6 +35,7 @@ describe('TokenApplicationsSsh', () => {
 
     component.tokenSerial = signal<string>('');
     component.selectedContent = signal<TokenSelectedContent>('token_details');
+    component.advancedApiFilter = [];
   });
 
   it('should create', () => {
