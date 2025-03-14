@@ -303,50 +303,6 @@ class UserNotificationEventHandler(BaseEventHandler):
         recipient = None
         reply_to = None
 
-        if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
-            reply_to = ""
-
-        elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
-            reply_to = tokenowner.info.get("email")
-
-        elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
-            username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
-            internal_admin = get_db_admin(username)
-            reply_to = internal_admin.email if internal_admin else ""
-
-        elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
-            # Adds all email addresses from a specific admin realm to the reply-to-header
-            admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
-            attr = is_attribute_at_all()
-            ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
-            # create a list of all user-emails, if the user has an email
-            emails = [u.get("email") for u in ulist if u.get("email")]
-            reply_to = ",".join(emails)
-
-        elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
-            # Add email address from the logged in user into the reply-to header
-            if logged_in_user.get("username") and not logged_in_user.get(
-                    "realm"):
-                # internal admins have no realm
-                internal_admin = get_db_admin(logged_in_user.get("username"))
-                if internal_admin:
-                    reply_to = internal_admin.email if internal_admin else ""
-
-            else:
-                # Try to find the user in the specified realm
-                user_obj = User(logged_in_user.get("username"),
-                                logged_in_user.get("realm"))
-                if user_obj:
-                    reply_to = user_obj.info.get("email") if user_obj else ""
-
-        elif reply_to_type == NOTIFY_TYPE.EMAIL:
-            email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
-            reply_to = email[0]
-
-        else:
-            log.warning("Was not able to determine the email for the reply-to "
-                        "header: {0!s}".format(handler_def))
-
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
             recipient = {
                 "givenname": tokenowner.info.get("givenname"),
@@ -402,8 +358,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             recipient = {
                 "email": email
             }
-        else:
-            log.warning("Was not able to determine the recipient for the user "
+
+        elif not action.lower() == "savefile":
+            log.warning("Was unable to determine the recipient for the user "
                         "notification: {0!s}".format(handler_def))
 
         if recipient or action.lower() == "savefile":
@@ -475,6 +432,51 @@ class UserNotificationEventHandler(BaseEventHandler):
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
+
+                if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
+                    reply_to = ""
+
+                elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+                    reply_to = tokenowner.info.get("email")
+
+                elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
+                    username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
+                    internal_admin = get_db_admin(username)
+                    reply_to = internal_admin.email if internal_admin else ""
+
+                elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
+                    # Adds all email addresses from a specific admin realm to the reply-to-header
+                    admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
+                    attr = is_attribute_at_all()
+                    ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
+                    # create a list of all user-emails, if the user has an email
+                    emails = [u.get("email") for u in ulist if u.get("email")]
+                    reply_to = ",".join(emails)
+
+                elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
+                    # Add email address from the logged in user into the reply-to header
+                    if logged_in_user.get("username") and not logged_in_user.get(
+                            "realm"):
+                        # internal admins have no realm
+                        internal_admin = get_db_admin(logged_in_user.get("username"))
+                        if internal_admin:
+                            reply_to = internal_admin.email if internal_admin else ""
+
+                    else:
+                        # Try to find the user in the specified realm
+                        user_obj = User(logged_in_user.get("username"),
+                                        logged_in_user.get("realm"))
+                        if user_obj:
+                            reply_to = user_obj.info.get("email") if user_obj else ""
+
+                elif reply_to_type == NOTIFY_TYPE.EMAIL:
+                    email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
+                    reply_to = email[0]
+
+                else:
+                    log.warning("Was not able to determine the email for the reply-to "
+                                "header: {0!s}".format(handler_def))
+
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
