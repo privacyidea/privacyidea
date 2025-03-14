@@ -45,7 +45,7 @@
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18rem">
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="selectedRealms"
                                   multiple>
@@ -78,7 +78,7 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18 description">
+                    <mat-form-field class="width-18rem description">
                       <textarea matInput
                                 rows="4"
                                 [(ngModel)]="element.value"
@@ -132,7 +132,7 @@
               @if (isEditingUser() &&
               element.keyMap.key === "user_name" &&
               selectedUserRealm() !== "") {
-                <mat-form-field class="width-18">
+                <mat-form-field class="width-18rem">
                   <mat-label>Enter User</mat-label>
                   <input matInput
                          [(ngModel)]="selectedUsername"
@@ -145,7 +145,7 @@
                   </mat-autocomplete>
                 </mat-form-field>
               } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
-                <mat-form-field class="width-18">
+                <mat-form-field class="width-18rem">
                   <mat-label>Select Realm of User</mat-label>
                   <mat-select [(ngModel)]="selectedUserRealm">
                     @for (option of realmOptions(); track option) {
@@ -226,8 +226,7 @@
                          [length]="this.length"
                          [pageIndex]="pageIndex"
                          [pageSizeOptions]="this.pageSizeOptions"
-                         [pageSize]="pageSize"
-                         aria-label="Select page"></mat-paginator>
+                         [pageSize]="pageSize"></mat-paginator>
         </div>
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>

@@ -29,7 +29,7 @@
           mat-dialog-close>Abort
   </button>
   <button [mat-dialog-close]="true"
-          class="dialog-button-delete"
+          [ngClass]="{'dialog-button-delete': data.action === 'remove' || data.action === 'delete'}"
           mat-button>{{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>
 </mat-dialog-actions>

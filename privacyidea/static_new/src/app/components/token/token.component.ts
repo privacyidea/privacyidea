@@ -18,6 +18,7 @@ import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
 import { TokenApplications } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
+import { LoadingService } from '../../services/loading/loading-service';
 
 export type TokenType =
   | 'hotp'
@@ -238,6 +239,7 @@ export class TokenComponent {
   constructor(
     protected overflowService: OverflowService,
     private notificationService: NotificationService,
+    private loadingService: LoadingService,
   ) {
     effect(() => {
       if (this.refreshTokenDetails()) {
@@ -247,6 +249,11 @@ export class TokenComponent {
     effect(() => {
       if (this.refreshContainerDetails()) {
         this.onRefreshContainerDetails();
+      }
+    });
+    effect(() => {
+      if (this.selectedContent()) {
+        this.loadingService.clearAllLoadings();
       }
     });
   }

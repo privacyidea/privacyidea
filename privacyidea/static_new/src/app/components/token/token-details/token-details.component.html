@@ -33,7 +33,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18 container-form-field">
+                    <mat-form-field class="width-18rem container-form-field">
                       <mat-label>Enter Container</mat-label>
                       <input matInput
                              [(ngModel)]="selectedContainer"
@@ -58,7 +58,7 @@
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18rem">
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="selectedRealms"
                                   multiple>
@@ -89,7 +89,7 @@
                 }
                 @case ("tokengroup") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18rem">
                       <mat-label>Select Token Group</mat-label>
                       <mat-select [(ngModel)]="selectedTokengroup"
                                   multiple>
@@ -122,7 +122,7 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18 description">
+                    <mat-form-field class="width-18rem description">
                       <textarea matInput
                                 rows="4"
                                 [maxlength]="80"
@@ -139,13 +139,13 @@
                 }
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18rem">
                       <input type="number"
                              matInput
                              [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
-                    <mat-form-field class="width-18">
+                    <mat-form-field class="width-18rem">
                       <textarea matInput
                                 rows="1"
                                 [(ngModel)]="element.value"></textarea>

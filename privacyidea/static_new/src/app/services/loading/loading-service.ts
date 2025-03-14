@@ -36,6 +36,7 @@ export class LoadingService {
   }
 
   clearAllLoadings(): void {
+    this.loadings.forEach((l) => l.observable.forEach((o) => o.unsubscribe()));
     this.loadings = [];
     this.notifyListeners();
   }
@@ -45,6 +46,8 @@ export class LoadingService {
   }
 
   removeLoading(key: string): void {
+    const loadingToRemove = this.loadings.find((l) => l.key === key);
+    loadingToRemove?.observable.forEach((o) => o.unsubscribe());
     this.loadings = this.loadings.filter((l) => l.key !== key);
     this.notifyListeners();
   }
