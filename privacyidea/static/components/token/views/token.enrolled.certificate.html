@@ -17,25 +17,41 @@
 </p>
 <!-- If the keys were generated on the server,
      we can download a PKCS12 file -->
-<p ng-show="enrolledToken.pkcs12">
+<div ng-show="enrolledToken.pkcs12">
     <a download="{{ enrolledToken.serial }}.p12"
        ng-href="{{ pkcs12Blob }}">
         <span class="glyphicon glyphicon-bookmark"
-                          aria-hidden="true"></span>
+              aria-hidden="true"></span>
         <span translate>Download the PKCS12 file</span></a>.
-    <div ng-show="enrolledToken.pkcs12_password">
-        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+    <span class="help-block" translate>
+        The PKCS12 container contains the public and private key of the
+        certificate. The container will also be available for download in the
+        token details.
+    </span>
+    <div ng-show="enrolledToken.pkcs12_password" style="display: flex; flex-direction: column; gap: 8px">
+        <button class="btn btn-primary" type="button" data-toggle="collapse"
+                data-target="#collapsePKCS12Password"
+                aria-expanded="false" aria-controls="collapseExample"
+                translate style="width: fit-content">
             Show PKCS12 password
         </button>
-        <button class="btn btn-transparent btn-sm"
-            ng-click="copyTokeninfoClipboard(enrolledToken.pkcs12_password)">
-            <span class="glyphicon glyphicon-copy"></span>
-        </button>
-        <div class="collapse" id="collapseExample">
-            {{ enrolledToken.pkcs12_password }}
+        <div class="collapse" id="collapsePKCS12Password">
+            <span class="well well-sm">{{ enrolledToken.pkcs12_password }}</span>
+            <button class="btn btn-transparent btn-sm"
+                    ng-click="copyPKCS12PasswordToClipboard(enrolledToken.pkcs12_password)">
+                <span class="glyphicon glyphicon-copy"></span>
+            </button>
         </div>
+        <p class="bg-danger" style="padding: 8px" translate>
+            The password for the PKCS12 container is shown here only once. Make sure
+            to keep the password safe now.
+        </p>
     </div>
-</p>
+    <p class="bg-warning" style="padding: 8px"
+       ng-hide="enrolledToken.pkcs12_password" translate>
+        The password of the PKCS12 container is the given token PIN
+    </p>
+</div>
 <pre ng-show="enrolledToken.certificate">
 {{ enrolledToken.certificate }}
 </pre>
