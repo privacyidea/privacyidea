@@ -5,7 +5,12 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { MatError, MatFormField, MatHint } from '@angular/material/form-field';
+import {
+  MatError,
+  MatFormField,
+  MatHint,
+  MatLabel,
+} from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { HttpParams } from '@angular/common/http';
@@ -37,6 +42,7 @@ import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/co
     MatHint,
     MatOption,
     MatError,
+    MatLabel,
   ],
   templateUrl: './token-get-serial.component.html',
   styleUrl: './token-get-serial.component.scss',

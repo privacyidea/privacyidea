@@ -2,15 +2,14 @@
      class="token-get-serial">
   <div class="token-get-serial-container">
     <h3 class="margin-left-1">Get Serial Number</h3>
-    <p class="help-block"
+    <p class="margin-left-1"
        translate>
       By entering an OTP value you can get the serial number of the token. You can also enter
       additional optional parameters, to narrow down the search for the token. So you can only
       search within certain token types or in assigned or unassigned tokens. </p>
-    <h4 class="enroll-h4"
-        translate>OTP Value</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-66">
+        <mat-label>OTP Value</mat-label>
         <input #otpValueInput
                [(ngModel)]="otpValue"
                [disabled]="currentStep() !== 'init'"
@@ -31,8 +30,9 @@
       </button>
     </div>
     <h4 class="enroll-h4"
-        translate>Token Type</h4>
+        translate>Search configuration</h4>
     <mat-form-field class="width-66">
+      <mat-label>Token type</mat-label>
       <mat-select [(ngModel)]="tokenType"
                   placeholder="Select token type">
         @for (type of tokenTypes; track type) {
@@ -40,9 +40,8 @@
         }
       </mat-select>
     </mat-form-field>
-    <h4 class="enroll-h4"
-        translate>Assignment State</h4>
     <mat-form-field class="width-66">
+      <mat-label>Assignment state</mat-label>
       <mat-select [(ngModel)]="assignmentState"
                   placeholder="Specify assignment state">
         @for (assignment of assignmentStates; track assignment) {
@@ -54,9 +53,8 @@
     </mat-form-field>
     <div class="flex-row gap-1">
       <div class="flex-column width-66">
-        <h4 class="enroll-h4"
-            translate>Serial Substring</h4>
         <mat-form-field>
+          <mat-label>Serial substring</mat-label>
           <input [(ngModel)]="serialSubstring"
                  id="serialSubstring"
                  matInput
@@ -64,10 +62,9 @@
                  placeholder="Enter optional serial substring" />
         </mat-form-field>
       </div>
-      <div class="flex-column width-33 margin-button-1">
-        <h4 class="enroll-h4"
-            translate>Count Window</h4>
+      <div class="flex-column width-32 margin-button-1">
         <mat-form-field>
+          <mat-label>Count window</mat-label>
           <input [(ngModel)]="countWindow"
                  id="countWindow"
                  matInput

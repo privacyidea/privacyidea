@@ -26,6 +26,21 @@
         <mat-divider /><br />
         <mat-list-item>
           <button class="card-button"
+                  mat-flat-button>
+            <mat-icon>plagiarism</mat-icon>
+            Templates
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button class="card-button"
+                  mat-flat-button>
+            <mat-icon>note_add</mat-icon>
+            Create Template
+          </button>
+        </mat-list-item><br />
+        <mat-divider /><br />
+        <mat-list-item>
+          <button class="card-button"
                   (click)="versioningService.openDocumentation(selectedContent())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
