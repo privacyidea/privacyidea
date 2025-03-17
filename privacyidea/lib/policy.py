@@ -1062,7 +1062,7 @@ class PolicyClass(object):
                 raise PolicyError(f"Unknown key in the {type} conditions of policy {policy['name']}")
         else:
             log.error(f"Policy {policy['name']} has condition on {type}, but the according object"
-                      f" is not available - possible a configuration issue. Please ensure that the"
+                      f" is not available - possible configuration issue. Please ensure that the"
                       f" required information is included in the request. Stacktrace: {traceback.format_stack()}.")
             # If the policy specifies an userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
