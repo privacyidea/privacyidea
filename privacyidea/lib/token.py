@@ -62,6 +62,7 @@ This is the middleware/glue between the HTTP API and the database
 import datetime
 import logging
 import os
+import secrets
 import string
 import traceback
 from collections import defaultdict
@@ -118,6 +119,9 @@ optional = True
 required = False
 
 ENCODING = "utf-8"
+
+# Configuration to generate a complete random serial
+PI_TOKEN_SERIAL_RANDOM = "PI_TOKEN_SERIAL_RANDOM"
 
 
 # Define function to convert Oracle CLOBs to VARCHAR before using them in a
@@ -1109,7 +1113,7 @@ def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, c
 
 
 @log_with(log)
-def gen_serial(tokentype=None, prefix=None):
+def gen_serial(tokentype: str, prefix: str = None) -> str:
     """
     generate a serial for a given tokentype
 
@@ -1120,18 +1124,25 @@ def gen_serial(tokentype=None, prefix=None):
     :return: serial number
     :rtype: str
     """
+    random_serial = get_app_config_value(PI_TOKEN_SERIAL_RANDOM, False)
+    # TODO: the serial length is currently not configurable through the UI
     serial_len = int(get_from_config("SerialLength") or 8)
+    random_bytes_length = int(serial_len / 2) + 1
 
-    def _gen_serial(_prefix, _tokennum):
-        h_serial = ''
-        num_str = '{:04d}'.format(_tokennum)
-        h_len = serial_len - len(num_str)
-        if h_len > 0:
-            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
-        return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
+    if random_serial:
+        def _gen_serial(token_prefix: str, _tokennum) -> str:
+            # We only need half the random bytes for a hex-string
+            token_serial = secrets.token_hex(random_bytes_length)[0:serial_len]
+            return f"{token_prefix}{token_serial.upper()}"
+    else:
+        def _gen_serial(_prefix, _tokennum):
+            h_serial = ''
+            num_str = '{:04d}'.format(_tokennum)
+            h_len = serial_len - len(num_str)
+            if h_len > 0:
+                h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
+            return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
-    if not tokentype:
-        tokentype = 'PIUN'
     if not prefix:
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
 
