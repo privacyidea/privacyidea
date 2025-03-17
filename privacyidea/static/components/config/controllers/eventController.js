@@ -171,11 +171,14 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             $scope.form.id = $scope.eventid;
             let events = Array();
             // transform the event options to form parameters
+            let handlerOptions = $scope.handlerOptions[$scope.form.action]
             for (let option in $scope.opts) {
-                if ($scope.opts.hasOwnProperty(option)) {
+                if (Object.hasOwn($scope.opts, option) && Object.hasOwn(handlerOptions, option)) {
                     $scope.form["option." + option] = $scope.opts[option];
                 }
             }
+            // Remove the preset "options" object from the form
+            delete $scope.form.options
             // push all ticked events
             angular.forEach($scope.selectedEvents, function (event) {
                 if (event.ticked === true) {
