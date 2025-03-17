@@ -1,12 +1,14 @@
 # Maksym Mohylko <maksym.mohylko@gmail.com>, 2024.
 # Dan <jonweblin2205@protonmail.com>, 2024.
 # Artem <artem@molotov.work>, 2024.
+# Максим Горпиніч <maksimgorpinic2005a@gmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-01-30 15:33+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-03-15 18:17+0000\n"
+"Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
 "Language: uk\n"
@@ -15,11 +17,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
-#, fuzzy
 msgctxt "subscription"
 msgid "Level"
 msgstr "Рівень"
@@ -63,7 +64,6 @@ msgstr ""
 "по неділях.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
-#, fuzzy
 msgid ""
 "<li>Support and\n"
 "                        <a target=\"netknights\" href=\"https://netknights."
@@ -94,35 +94,33 @@ msgid ""
 "                        like code audits.\n"
 "                    </li>"
 msgstr ""
-"<li> Підтримка та\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
-"                            Угоди про рівень обслуговування від NetKnights </"
-"a>, Німеччина.\n"
-"                    </li>\n"
-"                    <li> Стабільні корпоративні пакети для Debian, Ubuntu, "
-"RHEL дозволяють легко оновлювати та захищати\n"
-"                        робочі процеси.\n"
-"                    </li>\n"
-"                    <li> Ексклюзивний <b> Appliance</b> -інструмент, що "
-"дозволяє легко налаштувати RADIUS-клієнти, MySQL master\n"
-"                        master реплікації,\n"
-"                        резервне копіювання та відновлення...\n"
-"                    </li>\n"
-"                    <li> Ексклюзивні своєчасні новини та звіти про помилки. "
-"</li>\n"
-"                    <li> Залежно від рівня підтримки ви отримуєте допомогу з "
-"оновленням та щорічні консультації. </li>\n"
-"                    <li> Купуючи\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise Edition </a>\n"
-"                        ви гарантуєте, що професійні розробники мають змогу "
-"працювати повний робочий день\n"
-"                        над privacyIDEA, додавати новий функціонал та "
-"своєчасно виправляти помилки. До того ж ви дозволяєте\n"
-"                        залучати зовнішні сервіси,\n"
-"                        наприклад аудит коду.\n"
-"                    </li>"
+"<li>Підтримка та\n"
+" <a target=\"netknights\" href="
+"\"https://netknights.it/en/leistungen/service-level-agreements/\">\n"
+" Угоди про рівень обслуговування NetKnights</a>, Німеччина.\n"
+" </li>\n"
+" <li>Стабільні корпоративні пакети для Ubuntu і RHEL дозволяють легко "
+"оновлювати та безпечно\n"
+" операції.\n"
+" </li>\n"
+" <li>Ексклюзивний <b>прилад</b>-інструмент, який дозволяє легко\n"
+" налаштування клієнтів RADIUS, реплікацій MySQL,\n"
+" резервне копіювання та відновлення...\n"
+" </li>\n"
+" <li>Ексклюзивні своєчасні новини та звіти про помилки.</li>\n"
+" <li>Залежно від рівня підтримки ви отримуєте допомогу з оновленнями та "
+"щорічну консультацію.</li>\n"
+" <li>Купуючи\n"
+" <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
+"Edition</a>\n"
+" ви гарантуєте, що професійні розробники можуть працювати повний робочий "
+"день\n"
+" на privacyIDEA, додавайте нові функції та своєчасно виправляйте помилки. "
+"Крім того, ви допускаєте\n"
+" зовнішні послуги\n"
+" як аудит коду.\n"
+" </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
 msgid ""
@@ -544,9 +542,8 @@ msgid "Assign a new token {{ newToken.serial }}"
 msgstr "Призначити новий токен {{newToken.serial}}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
-#, fuzzy
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr "Призначити новий токен {{newToken.serial}}"
+msgstr "Призначити новий маркер {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:54
 #, fuzzy
@@ -961,10 +958,8 @@ msgid "Container Created"
 msgstr "Отримати серійний номер"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:20
-#, fuzzy
-#| msgid "Details for user {{ username }} in realm"
 msgid "Container Details for {{ containerSerial }}"
-msgstr "Деталі для користувача {{ім’я користувача}} в області"
+msgstr "Деталі контейнера для {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
@@ -1001,10 +996,8 @@ msgid "Containers Created With This Template"
 msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:325
-#, fuzzy
-#| msgid "Details for user {{ username }} in realm"
 msgid "Containers for user {{ username }}"
-msgstr "Деталі для користувача {{ім’я користувача}} в області"
+msgstr "Контейнери для користувача {{ username }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:35
 #: privacyidea/static/components/token/views/token.details.html:123
@@ -1132,9 +1125,8 @@ msgid "Create a new SQL Resolver"
 msgstr "Створити новий SQL резолвер"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:5
-#, fuzzy
 msgid "Create a new Service ID {{ params.servicename }}"
-msgstr "Створити новий SMTP-сервер {{params.identifier}}"
+msgstr "Створіть новий ідентифікатор служби {{ params.servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
 msgid "Create a new Tokengroup {{ params.groupname }}"
@@ -1375,9 +1367,8 @@ msgstr ""
 "        {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
-#, fuzzy
 msgid "Details for user {{ username }} in realm"
-msgstr "Деталі для користувача {{ім’я користувача}} в області"
+msgstr "Деталі для користувача {{ username }} у сфері"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
@@ -1515,9 +1506,8 @@ msgid "Edit"
 msgstr "Редагувати"
 
 #: privacyidea/static/components/config/views/config.system.html:208
-#, fuzzy
 msgid "Edit CA Connector {{ connectorname }}"
-msgstr "Редагувати коннектор CA {{connectionname}}"
+msgstr "Редагувати CA Connector {{ connectorname }}"
 
 #: privacyidea/static/components/config/views/config.events.details.html:3
 msgid "Edit Event Handler {{ eventid }}"
@@ -1604,9 +1594,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "Редагувати SQL Resolver {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:2
-#, fuzzy
 msgid "Edit Service ID {{ servicename }}"
-msgstr "Редагувати Resolver {{resolvername}}"
+msgstr "Редагувати ідентифікатор служби {{ servicename }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:119
 #, fuzzy
@@ -2666,9 +2655,8 @@ msgid "New privacyIDEA server"
 msgstr "Новий сервер privacyIDEA"
 
 #: privacyidea/static/components/config/views/config.system.html:223
-#, fuzzy
 msgid "New {{ connectortype | uppercase }} CA Connector"
-msgstr "Новий {{typetype | uppercase }} CA Connector"
+msgstr "Новий {{ connectortype | uppercase }} CA Connector"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:25
 msgid "New {{ mResolvertype | uppercase }} Resolver"
@@ -3035,12 +3023,6 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.containercreate.html:177
 #: privacyidea/static/components/token/views/token.containerdetails.html:291
-#, fuzzy
-#| msgid ""
-#| "Please scan the QR code with the privacyIDEA Authenticator App\n"
-#| "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
-#| "link</a> on your\n"
-#| "            smartphone."
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "                    or click <a href=\"{{ containerRegistrationURL }}\">this "
@@ -3049,11 +3031,12 @@ msgid ""
 "missing registration data to the configured\n"
 "                    endpoint."
 msgstr ""
-"Будь ласка, відскануйте QR-код за допомогою застосунку privacyIDEA "
-"Authenticator\n"
-"            або натисніть <a href=\"{{ enrolledToken.pushurl.value }}\">це "
-"посилання</a> на вашому\n"
-"            смартфоні."
+"Відскануйте QR-код за допомогою програми privacyIDEA Authenticator\n"
+"                    або натисніть <a href=\"{{ containerRegistrationURL }}\""
+">це посилання</a> на вашому\n"
+"                    смартфон для реєстрації вашого контейнера. Він надішле "
+"відсутні реєстраційні дані до налаштованого\n"
+"                    кінцева точка."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
