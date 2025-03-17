@@ -9,4 +9,8 @@
   padding: var(--global-padding);
   margin-left: 1rem;
   overflow: auto;
+
+  .mat-mdc-select-value-text {
+    font-size: 14px;
+  }
 }
