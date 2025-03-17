@@ -26,11 +26,15 @@ export class ContainerService {
   ) {}
 
   getContainerData(
-    page?: number,
-    pageSize?: number,
-    sort?: Sort,
-    filterValue?: string,
+    options: {
+      page?: number;
+      pageSize?: number;
+      sort?: Sort;
+      filterValue?: string;
+      noToken?: boolean;
+    } = {},
   ): Observable<any> {
+    const { page, pageSize, sort, filterValue, noToken } = options;
     const headers = this.localService.getHeaders();
     let params = new HttpParams();
 
@@ -47,12 +51,10 @@ export class ContainerService {
       let combinedFilter = [...this.apiFilter, ...this.advancedApiFilter];
       const { filterPairs, remainingFilterText } =
         this.tableUtilsService.parseFilterString(filterValue, combinedFilter);
-
       filterPairs.forEach(({ key, value }) => {
-        console.log(key, value);
         if (
           key === 'user' ||
-          key === 'generic' ||
+          key === 'type' ||
           key === 'container_serial' ||
           key === 'token_serial'
         ) {
@@ -69,6 +71,10 @@ export class ContainerService {
       */
     }
 
+    if (noToken) {
+      params = params.set('no_token', 1);
+    }
+
     return this.http.get<any>(this.containerBaseUrl, { headers, params }).pipe(
       map((response) => response),
       catchError((error) => {
@@ -77,7 +83,7 @@ export class ContainerService {
         this.notificationService.openSnackBar(
           'Failed to get container data. ' + message,
         );
-        return throwError(error);
+        return throwError(() => error);
       }),
     );
   }
@@ -100,7 +106,7 @@ export class ContainerService {
           this.notificationService.openSnackBar(
             'Failed to assign container. ' + message,
           );
-          return throwError(error);
+          return throwError(() => error);
         }),
       );
   }
@@ -123,7 +129,7 @@ export class ContainerService {
           this.notificationService.openSnackBar(
             'Failed to unassign container. ' + message,
           );
-          return throwError(error);
+          return throwError(() => error);
         }),
       );
   }

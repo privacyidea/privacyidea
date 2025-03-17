@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   Injectable,
   Input,
@@ -75,6 +76,7 @@ import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { VersionService } from '../../../services/version/version.service';
+import { LoadingService } from '../../../services/loading/loading-service';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -192,8 +194,6 @@ export class TokenEnrollmentComponent {
   repeatPinValue = signal('');
   selectedUserRealm = signal('');
   selectedUsername = signal('');
-  filteredContainerOptions = signal<string[]>([]);
-  filteredUserOptions = signal<string[]>([]);
   selectedContainer = signal<string>('');
   containerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
@@ -239,6 +239,18 @@ export class TokenEnrollmentComponent {
   vascoSerial = signal('');
   useVascoSerial = signal(false);
   onlyAddToRealm = signal(false);
+  filteredContainerOptions = computed(() => {
+    const filter = (this.selectedContainer() || '').toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filter),
+    );
+  });
+  filteredUserOptions = computed(() => {
+    const filterValue = (this.selectedUsername() || '').toLowerCase();
+    return this.userOptions().filter((option) =>
+      option.toLowerCase().includes(filterValue),
+    );
+  });
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
 
@@ -250,32 +262,28 @@ export class TokenEnrollmentComponent {
     private tokenService: TokenService,
     protected dialog: MatDialog,
     protected versioningService: VersionService,
+    private loadingService: LoadingService,
   ) {
-    effect(() => {
-      const value = this.selectedContainer();
-      const filteredOptions = this._filterContainerOptions(value || '');
-      this.filteredContainerOptions.set(filteredOptions);
-    });
-
     effect(() => {
       this.getContainerOptions();
     });
 
     effect(() => {
       if (this.selectedType()) {
+        this.loadingService.removeLoading('token-enrollment');
+        this.realmService.getDefaultRealm().subscribe({
+          next: (realm: any) => {
+            this.selectedUserRealm.set(realm);
+          },
+        });
+        this.getRealmOptions();
         this.response.set(null);
         this.tokenSerial.set('');
         this.description.set('');
         this.setPinValue.set('');
         this.repeatPinValue.set('');
-        this.selectedUserRealm.set('');
         this.selectedUsername.set('');
-        this.filteredContainerOptions.set([]);
-        this.filteredUserOptions.set([]);
         this.selectedContainer.set('');
-        this.containerOptions.set([]);
-        this.realmOptions.set([]);
-        this.userOptions.set([]);
         this.generateOnServer.set(true);
         this.otpLength.set(6);
         this.otpKey.set('');
@@ -319,30 +327,13 @@ export class TokenEnrollmentComponent {
     });
 
     effect(() => {
-      this.getRealmOptions();
-      this.getDefaultRealm();
       if (this.selectedUserRealm()) {
         this.userService.getUsers(this.selectedUserRealm()).subscribe({
           next: (users: any) => {
-            this.userOptions.set(
-              users.result.value.map((user: any) => user.username),
-            );
-          },
-          error: (error) => {
-            console.error('Failed to get users.', error);
-            const message = error.error?.result?.error?.message || '';
-            this.notificationService.openSnackBar(
-              'Failed to get users. ' + message,
-            );
+            this.userOptions.set(users.value.map((user: any) => user.username));
           },
         });
       }
-    });
-
-    effect(() => {
-      const value = this.selectedUsername();
-      const filteredOptions = this._filterUserOptions(value || '');
-      this.filteredUserOptions.set(filteredOptions);
     });
 
     effect(() => {
@@ -357,18 +348,11 @@ export class TokenEnrollmentComponent {
       next: (realms: any) => {
         this.realmOptions.set(Object.keys(realms.result.value));
       },
-      error: (error) => {
-        console.error('Failed to get realms.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get realms. ' + message,
-        );
-      },
     });
   }
 
   getContainerOptions() {
-    this.containerService.getContainerData().subscribe({
+    this.containerService.getContainerData({ noToken: true }).subscribe({
       next: (containers: any) => {
         this.containerOptions.set(
           Object.values(
@@ -376,13 +360,6 @@ export class TokenEnrollmentComponent {
               serial: string;
             }[],
           ).map((container) => container.serial),
-        );
-      },
-      error: (error) => {
-        console.error('Failed to get container options.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get container options. ' + message,
         );
       },
     });
@@ -495,17 +472,10 @@ export class TokenEnrollmentComponent {
           this.regenerateToken.set(false);
         }
       },
-      error: (error) => {
-        console.error('Failed to enroll token.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to enroll token. ' + message,
-        );
-      },
     });
   }
 
-  reopenQRCode() {
+  reopenEnrollmentDialog() {
     this.dialog.open(TokenEnrollmentDialogComponent, {
       data: {
         response: this.response(),
@@ -544,42 +514,6 @@ export class TokenEnrollmentComponent {
             `Token ${tokenSerial} enrolled successfully.`,
           );
         }
-      },
-      error: (error: any) => {
-        console.error('Failed to poll token state.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to poll token state. ' + message,
-        );
-      },
-    });
-  }
-
-  private _filterContainerOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  }
-
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  }
-
-  private getDefaultRealm() {
-    this.realmService.getDefaultRealm().subscribe({
-      next: (realm: any) => {
-        this.selectedUserRealm.set(Object.keys(realm.result.value)[0]);
-      },
-      error: (error) => {
-        console.error('Failed to get default realm.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get default realm. ' + message,
-        );
       },
     });
   }

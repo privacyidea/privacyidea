@@ -214,7 +214,10 @@ describe('TokenDetailsComponent', () => {
   it('should get container data', () => {
     spyOn(containerService, 'getContainerData').and.callThrough();
     component.showTokenDetail().subscribe(() => {
-      expect(containerService.getContainerData).toHaveBeenCalledWith(1, 10);
+      expect(containerService.getContainerData).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 10,
+      });
       expect(component.containerOptions().length).toBe(3);
     });
   });

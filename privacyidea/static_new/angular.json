@@ -53,7 +53,7 @@
               "deployUrl": "/static/dist/privacyidea-webui/browser/"
             },
             "development": {
-              "optimization": true,
+              "optimization": false,
               "extractLicenses": false,
               "sourceMap": false,
               "aot": true,

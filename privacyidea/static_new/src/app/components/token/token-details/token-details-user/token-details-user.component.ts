@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   Input,
   signal,
@@ -78,7 +79,12 @@ export class TokenDetailsUserComponent {
   @Input() realmOptions!: WritableSignal<string[]>;
   userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
-  filteredUserOptions = signal<string[]>([]);
+  filteredUserOptions = computed(() => {
+    const filterValue = (this.selectedUsername() || '').toLowerCase();
+    return this.userOptions().filter((option) =>
+      option.toLowerCase().includes(filterValue),
+    );
+  });
 
   constructor(
     private tokenService: TokenService,
@@ -91,25 +97,10 @@ export class TokenDetailsUserComponent {
       if (this.selectedUserRealm()) {
         this.userService.getUsers(this.selectedUserRealm()).subscribe({
           next: (users: any) => {
-            this.userOptions.set(
-              users.result.value.map((user: any) => user.username),
-            );
-          },
-          error: (error) => {
-            console.error('Failed to get users.', error);
-            const message = error.error?.result?.error?.message || '';
-            this.notificationService.openSnackBar(
-              'Failed to get users. ' + message,
-            );
+            this.userOptions.set(users.value.map((user: any) => user.username));
           },
         });
       }
-    });
-
-    effect(() => {
-      const value = this.selectedUsername();
-      const filteredOptions = this._filterUserOptions(value || '');
-      this.filteredUserOptions.set(filteredOptions);
     });
   }
 
@@ -117,13 +108,6 @@ export class TokenDetailsUserComponent {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({
       next: () => {
         this.refreshTokenDetails.set(true);
-      },
-      error: (error) => {
-        console.error('Failed to unassign user.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to unassign user. ' + message,
-        );
       },
     });
   }
@@ -162,7 +146,11 @@ export class TokenDetailsUserComponent {
   ): void {
     this.isEditingUser.set(!this.isEditingUser());
     if (this.selectedUserRealm() === '') {
-      this.getDefaultRealm();
+      this.realmService.getDefaultRealm().subscribe({
+        next: (realm: any) => {
+          this.selectedUserRealm.set(realm);
+        },
+      });
     }
     if (action === 'save') {
       this.saveUser();
@@ -207,20 +195,5 @@ export class TokenDetailsUserComponent {
     return this.userOptions().filter((option) =>
       option.toLowerCase().includes(filterValue),
     );
-  }
-
-  private getDefaultRealm() {
-    this.realmService.getDefaultRealm().subscribe({
-      next: (realm: any) => {
-        this.selectedUserRealm.set(Object.keys(realm.result.value)[0]);
-      },
-      error: (error) => {
-        console.error('Failed to get default realm.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get default realm. ' + message,
-        );
-      },
-    });
   }
 }

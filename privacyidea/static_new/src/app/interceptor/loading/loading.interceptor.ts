@@ -1,14 +1,22 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { share } from 'rxjs/operators';
+import { finalize, share } from 'rxjs/operators';
 import { LoadingService } from '../../services/loading/loading-service';
+import { v4 as uuid } from 'uuid';
 
 export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
   const loadingService = inject(LoadingService);
 
-  const sharedRequest$ = next(req).pipe(share());
+  const loadingId = uuid();
 
-  loadingService.addLoading({ key: req.url, observable: sharedRequest$ });
+  const sharedRequest$ = next(req).pipe(
+    share(),
+    finalize(() => {
+      loadingService.removeLoading(loadingId);
+    }),
+  );
+
+  loadingService.addLoading({ key: loadingId, observable: sharedRequest$ });
 
   return sharedRequest$;
 };

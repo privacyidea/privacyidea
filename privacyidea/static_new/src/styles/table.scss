@@ -183,15 +183,6 @@ th:nth-child(even) {
   }
 }
 
-.filter-icon {
-  display: inline-flex;
-  vertical-align: bottom;
-  margin-right: -3px;
-  margin-bottom: -3px;
-  font-size: $icon-font-size !important;
-  transition: 400ms;
-}
-
 .edit-button-container {
   display: flex;
   justify-content: center;

@@ -108,7 +108,6 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal('');
   repeatPinValue = signal('');
-  filteredContainerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   tokenDetailData = signal<
     {
@@ -162,6 +161,12 @@ export class TokenDetailsComponent {
   containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
   selectedContainer = signal<string>('');
+  filteredContainerOptions = computed(() => {
+    const filter = (this.selectedContainer() || '').toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filter),
+    );
+  });
   selectedRealms = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
   userRealm: string = '';
@@ -178,12 +183,6 @@ export class TokenDetailsComponent {
   ) {
     effect(() => {
       this.showTokenDetail().subscribe();
-    });
-
-    effect(() => {
-      const value = this.selectedContainer();
-      const filteredOptions = this._filterContainerOptions(value || '');
-      this.filteredContainerOptions.set(filteredOptions);
     });
   }
 
@@ -372,7 +371,7 @@ export class TokenDetailsComponent {
 
   private handleContainerSerial(action: string): void {
     if (this.containerOptions().length === 0) {
-      this.containerService.getContainerData().subscribe({
+      this.containerService.getContainerData({ noToken: true }).subscribe({
         next: (containers: any) => {
           this.containerOptions.set(
             Object.values(
@@ -382,13 +381,6 @@ export class TokenDetailsComponent {
             ).map((container) => container.serial),
           );
           this.selectedContainer.set(this.selectedContainer());
-        },
-        error: (error) => {
-          console.error('Failed to get containers.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get containers. ' + message,
-          );
         },
       });
     }

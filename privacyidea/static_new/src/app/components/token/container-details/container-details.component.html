@@ -37,7 +37,7 @@
                   @for (state of element.value; track state; let idx = $index) {
                     <span class="font-14"
                           [ngClass]="[
-                        tableUtilsService.getSpanClassForState(state),
+                        tableUtilsService.getSpanClassForState(state, false),
                       ]">
                       {{ tableUtilsService.getDisplayTextForState(state) }}
                     </span>

@@ -143,23 +143,12 @@ describe('ContainerTableComponent', () => {
     it('should call containerService.getContainerData', () => {
       containerServiceSpy.getContainerData.calls.reset();
       component['fetchContainerData']();
-      expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith(
-        component.pageIndex() + 1,
-        component.pageSize(),
-        component.sortby_sortdir(),
-        component.filterValue(),
-      );
-    });
-
-    it('should handle error response from getContainerData', () => {
-      containerServiceSpy.getContainerData.and.returnValue(
-        throwError(() => new Error('Some error')),
-      );
-
-      component['fetchContainerData']();
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to get container data. ',
-      );
+      expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith({
+        page: component.pageIndex() + 1,
+        pageSize: component.pageSize(),
+        sort: component.sortby_sortdir(),
+        filterValue: component.filterValue(),
+      });
     });
   });
 

@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LoadingService {
   listeners: { [key: string]: (isLoading: boolean) => void } = {};
-  loadings: { key: string; observable: Observable<any> }[] = [];
+  loadings: { key: string; subscription: Subscription }[] = [];
 
   constructor() {}
 
@@ -23,7 +23,7 @@ export class LoadingService {
   }
 
   addLoading(loading: { key: string; observable: Observable<any> }): void {
-    loading.observable.subscribe({
+    const subscription = loading.observable.subscribe({
       complete: () => {
         this.removeLoading(loading.key);
       },
@@ -31,12 +31,14 @@ export class LoadingService {
         this.removeLoading(loading.key);
       },
     });
-    this.loadings.push(loading);
+    this.loadings.push({ key: loading.key, subscription });
     this.notifyListeners();
   }
 
   clearAllLoadings(): void {
-    this.loadings.forEach((l) => l.observable.forEach((o) => o.unsubscribe()));
+    this.loadings.forEach((l) => {
+      l.subscription.unsubscribe();
+    });
     this.loadings = [];
     this.notifyListeners();
   }
@@ -46,8 +48,6 @@ export class LoadingService {
   }
 
   removeLoading(key: string): void {
-    const loadingToRemove = this.loadings.find((l) => l.key === key);
-    loadingToRemove?.observable.forEach((o) => o.unsubscribe());
     this.loadings = this.loadings.filter((l) => l.key !== key);
     this.notifyListeners();
   }

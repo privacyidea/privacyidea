@@ -7,6 +7,7 @@ import {
   switchMap,
   takeUntil,
   takeWhile,
+  throwError,
   timer,
 } from 'rxjs';
 import { LocalService } from '../local/local.service';
@@ -14,6 +15,8 @@ import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenType } from '../../components/token/token.component';
 import { environment } from '../../../environments/environment';
+import { catchError } from 'rxjs/operators';
+import { NotificationService } from '../notification/notification.service';
 
 export interface EnrollmentOptions {
   type: TokenType;
@@ -82,6 +85,7 @@ export class TokenService {
     private http: HttpClient,
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
+    private notificationService: NotificationService,
   ) {}
 
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {
@@ -229,11 +233,22 @@ export class TokenService {
 
   unassignUser(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}unassign`,
-      { serial: tokenSerial },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}unassign`,
+        { serial: tokenSerial },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to unassign user.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to unassign user. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   assignUser(
@@ -463,7 +478,18 @@ export class TokenService {
       payload.genkey = 0;
     }
 
-    return this.http.post(`${this.tokenBaseUrl}init`, payload, { headers });
+    return this.http
+      .post(`${this.tokenBaseUrl}init`, payload, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to enroll token.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to enroll token. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   pollTokenState(tokenSerial: string, startTime: number): Observable<any> {
@@ -475,6 +501,14 @@ export class TokenService {
           response.result.value.tokens[0].rollout_state === 'clientwait',
         true,
       ),
+      catchError((error) => {
+        console.error('Failed to poll token state.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to poll token state. ' + message,
+        );
+        return throwError(() => error);
+      }),
     );
   }
 

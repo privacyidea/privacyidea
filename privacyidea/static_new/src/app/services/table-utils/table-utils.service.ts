@@ -259,13 +259,24 @@ export class TableUtilsService {
     return classes;
   }
 
-  getSpanClassForState(state: string) {
-    if (state === 'active') {
-      return 'highlight-true-clickable';
-    } else if (state === 'disabled') {
-      return 'highlight-false-clickable';
-    } else {
-      return '';
+  getSpanClassForState(state: string, clickable: boolean): string {
+    switch (clickable) {
+      case false:
+        if (state === 'active') {
+          return 'highlight-true';
+        } else if (state === 'disabled') {
+          return 'highlight-false';
+        } else {
+          return '';
+        }
+      case true:
+        if (state === 'active') {
+          return 'highlight-true-clickable';
+        } else if (state === 'disabled') {
+          return 'highlight-false-clickable';
+        } else {
+          return '';
+        }
     }
   }
 

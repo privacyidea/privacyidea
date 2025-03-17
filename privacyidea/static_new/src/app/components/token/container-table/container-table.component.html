@@ -65,7 +65,8 @@
               }
               @case ("states") {
                 <span (click)="handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0])">
+                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0],
+                      true)">
                   {{
                     tableUtilsService.getDisplayTextForState(element[column.key][0])
                   }}

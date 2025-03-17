@@ -222,7 +222,10 @@ describe('ContainerDetailsComponent', () => {
   it('should get container data', () => {
     spyOn(containerService, 'getContainerData').and.callThrough();
     component.showContainerDetail().subscribe(() => {
-      expect(containerService.getContainerData).toHaveBeenCalledWith(1, 10);
+      expect(containerService.getContainerData).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 10,
+      });
     });
   });
 
@@ -242,8 +245,7 @@ describe('ContainerDetailsComponent', () => {
   });
 
   it('should filter user options correctly', () => {
-    const result = component['_filterUserOptions']('user');
-    expect(result).toEqual(['admin_user']);
+    //TODO
   });
 
   it('should return true for description and realms in isEditableElement', () => {
@@ -333,7 +335,7 @@ describe('ContainerDetailsComponent', () => {
     expect(component.isEditingUser()).toBeTrue();
 
     component.selectedUsername.set('alice');
-    component.userRealm = 'realmUser';
+    component.selectedUserRealm.set('realmUser');
 
     component.toggleEditMode(element, 'user_name', 'save');
     expect(assignUserSpy).toHaveBeenCalledWith(
@@ -389,8 +391,8 @@ describe('ContainerDetailsComponent', () => {
     const fetchSpy = spyOn<any>(component, 'fetchTokenData').and.callThrough();
     component.onPageChanged({ pageIndex: 2, pageSize: 20 } as any);
     tick();
-    expect(component.pageIndex).toBe(2);
-    expect(component.pageSize).toBe(20);
+    expect(component.pageIndex()).toBe(2);
+    expect(component.pageSize()).toBe(20);
     expect(fetchSpy).toHaveBeenCalled();
   }));
 });

@@ -155,23 +155,16 @@ export class ContainerTableComponent {
 
   protected fetchContainerData = () => {
     this.containerService
-      .getContainerData(
-        this.pageIndex() + 1,
-        this.pageSize(),
-        this.sortby_sortdir(),
-        this.filterValue(),
-      )
+      .getContainerData({
+        page: this.pageIndex() + 1,
+        pageSize: this.pageSize(),
+        sort: this.sortby_sortdir(),
+        filterValue: this.filterValue(),
+      })
       .subscribe({
         next: (response) => {
           this.length.set(response.result.value.count);
           this.processDataSource(response.result.value.containers);
-        },
-        error: (error) => {
-          console.error('Failed to get container data.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get container data. ' + message,
-          );
         },
       });
   };
