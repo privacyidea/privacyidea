@@ -462,7 +462,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <th ng-show="loggedInUser.role=='admin'" translate> User</th>
             <th ng-show="loggedInUser.role=='admin'" translate> Realm</th>
             <th ng-show="loggedInUser.role=='admin'" translate> Token Realms</th>
-            <th>Container</th>
             <th>
                 <div ng-show="loggedInUser.isAdmin">
                     <button ng-click="removeAllTokens(token.serial)"
@@ -555,11 +554,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <td ng-show="loggedInUser.isAdmin &&
             user_details_in_tokenlist">
                 <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
-            </td>
-            <td>
-                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">
-                    {{ token.container_serial }}
-                </a>
             </td>
             <td>
                 <fieldset ng-disabled="!token.tokentype">
