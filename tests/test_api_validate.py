@@ -4141,7 +4141,6 @@ class MultiChallege(MyApiTestCase):
             detail = res.json.get("detail")
             serial = detail.get("serial")
             enrollment_credential = detail.get("enrollment_credential")
-
         # 2nd step: as performed by the smartphone
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
@@ -4152,10 +4151,13 @@ class MultiChallege(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
 
         # create hotp token for the user with same PIN
-        hotp = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=User("selfservice", self.realm1))
+        hotp = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
+
+        # set policy for challenge response and client mode per user
         set_policy("auth", scope=SCOPE.AUTH,
                    action=f"{ACTION.CHALLENGERESPONSE}=hotp totp, {ACTION.CLIENT_MODE_PER_USER}")
 
+        # ---- auth with PUSH ----
         # authenticate with PIN to trigger challenge-response: first auth, custom user attribute not set
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -4214,6 +4216,54 @@ class MultiChallege(MyApiTestCase):
             detail = res.json.get("detail")
             # custom user attribute set from last auth to poll
             self.assertEqual("poll", detail.get("preferred_client_mode"))
+
+        # ---- Auth from another application ----
+        # authenticate from another application: custom user attribute not set, use default
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": pin},
+                                           headers={"user_agent": "privacyIDEA-Keycloak"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            # custom user attribute not set for this application: use default
+            self.assertEqual("interactive", detail.get("preferred_client_mode"))
+
+        # ---- Auth with HOTP ----
+        # authenticate with another token (hotp): trigger challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": pin},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            # custom user attribute set from last auth to poll
+            self.assertEqual("poll", detail.get("preferred_client_mode"))
+        # finish authentication with hotp token
+        _, _, otp, _ = hotp.get_otp()
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": otp,
+                                                 "transaction_id": transaction_id},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            # custom user attribute changed to interactive
+            preferred_token_types = json.loads(
+                user.attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE))
+            self.assertEqual("hotp", preferred_token_types["privacyidea-cp"])
+        # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1, "pass": pin},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            # custom user attribute set from last auth to poll
+            self.assertEqual("interactive", detail.get("preferred_client_mode"))
 
         delete_policy("auth")
         delete_policy("push")

@@ -5972,9 +5972,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response_details = response.json["detail"]
         self.assertEqual("interactive", response_details.get("preferred_client_mode"))
 
-        # No preferred client mode policy set
+        # No preferred client mode policy set only custom user attribute: use user+application preference
         response = jsonify(response_data)
-        preferred_token_types = json.dumps({"privacyidea-cp": "push"})
+        preferred_token_types = json.dumps({"privacyidea-cp": "push", "privacyIDEA-Shibbole": "u2f"})
         user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, preferred_token_types, INTERNAL_USAGE)
 
         preferred_client_mode(request, response)

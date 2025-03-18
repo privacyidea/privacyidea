@@ -406,12 +406,12 @@ def preferred_client_mode(request, response):
                     content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
                     log.error('There was no acceptable client mode in the multi-challenge list. '
                               'The preferred client mode is set to "interactive". '
-                              'Please check Your policy ({0!s}). '
-                              'Error: {1!s} '.format(preferred_client_mode_list, err))
+                              f'Please check Your policy ({preferred_client_mode_list}). '
+                              f'Error: {err} ')
                 except Exception as err:  # pragma no cover
                     content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
                     log.error('Something went wrong during setting the preferred '
-                              'client mode. Error: {0!s}'.format(err))
+                              f'client mode. Error: {err}')
 
     response.set_data(json.dumps(content))
     return response
