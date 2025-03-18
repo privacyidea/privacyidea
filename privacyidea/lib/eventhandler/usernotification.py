@@ -357,7 +357,6 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": email
             }
 
-
         if recipient or action.lower() == "savefile":
             # In case of "savefile" we do not need a recipient
             # Collect all data
@@ -370,7 +369,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         body = f.read()
                 except Exception as e:
                     log.warning(f"Failed to read email template from file {filename}: {e}")
-                    log.debug(f"{traceback.format_exc()}")
+                    log.debug(traceback.format_exc())
 
             subject = handler_options.get("subject") or "An action was performed on your token."
             serial = (request.all_data.get("serial")
@@ -428,7 +427,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             # Send notification
             if action.lower() == "sendmail":
                 if not recipient:
-                    log.warning("Was not able to determine the recipient for the user")
+                    log.warning("Unable to determine the recipient for the user notification!")
                 if reply_to_type:
                     if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
                         reply_to = ""
@@ -469,9 +468,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                     elif reply_to_type == NOTIFY_TYPE.EMAIL:
                         email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
                         reply_to = email[0]
-
-                else:
-                    log.warning(f"Was not able to determine the email for the reply-to header: {handler_def}")
+                    else:
+                        log.warning(f"Unable to determine the email for the reply-to header: {handler_def}")
 
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
@@ -491,9 +489,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                 subject=subject, body=body,
                                                 reply_to=reply_to,
                                                 mimetype=mimetype)
-                except Exception as exx:  # pragma: no cover
-                    log.error(f"Failed to send email: {exx}")
-                    self.run_details = f"{exx}"
+                except Exception as e:  # pragma: no cover
+                    log.error(f"Failed to send email: {e}")
+                    self.run_details = str(e)
                     ret = False
                 if ret:
                     log.info(f"Sent a notification email to user {recipient}")
@@ -524,8 +522,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                 userphone = recipient.get("mobile")
                 try:
                     ret = send_sms_identifier(smsconfig, userphone, body)
-                except Exception as exx:
-                    log.error(f"Failed to send sms: {exx}")
+                except Exception as e:
+                    log.error(f"Failed to send sms: {e}")
                     ret = False
                 if ret:
                     log.info(f"Sent a notification sms to user {recipient}")
