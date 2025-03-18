@@ -429,7 +429,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             if action.lower() == "sendmail":
                 if not recipient:
                     log.warning("Was not able to determine the recipient for the user")
-                if reply_to:
+                if reply_to_type:
                     if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
                         reply_to = ""
 
