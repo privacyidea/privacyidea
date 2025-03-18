@@ -506,7 +506,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                 "/var/lib/privacyidea/notifications/")
                 filename = handler_options.get("filename")
                 random = get_alphanum_str(16)
-                filename = filename.at(random=random, **tags).lstrip(os.path.sep)
+                filename = filename.format(random=random, **tags).lstrip(os.path.sep)
                 outfile = os.path.normpath(os.path.join(spooldir, filename))
                 if not outfile.startswith(spooldir):
                     log.error(f'Cannot write outside of spooldir {spooldir}!')
