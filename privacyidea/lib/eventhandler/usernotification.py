@@ -121,7 +121,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         mail_img = MIMEImage(url.read())
         mail_img.add_header('Content-ID', '<token_image>')
         mail_img.add_header('Content-Disposition',
-                            'inline; filename="{0!s}.png"'.format(serial))
+                            f'inline; filename="{serial}.png"')
         mail_body.attach(mail_img)
         body = mail_body
         return body
@@ -295,9 +295,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = {}
 
         tokenowner = self._get_tokenowner(request)
-        log.debug("Executing event for action {0!r}, user {1!r}, "
-                  "logged_in_user {2!r}".format(action, tokenowner,
-                                                logged_in_user))
+        log.debug(f"Executing event for action {action}, user {tokenowner}, logged_in_user {logged_in_user}")
 
         # Determine recipient
         recipient = None
@@ -327,7 +325,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             # create a list of all user-emails, if the user has an email
             emails = [u.get("email") for u in ulist if u.get("email")]
             recipient = {
-                "givenname": "admin of realm {0!s}".format(admin_realm),
+                "givenname": f"admin of realm {admin_realm}",
                 "email": emails
             }
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
@@ -359,9 +357,6 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": email
             }
 
-        elif not action.lower() == "savefile":
-            log.warning("Was unable to determine the recipient for the user "
-                        "notification: {0!s}".format(handler_def))
 
         if recipient or action.lower() == "savefile":
             # In case of "savefile" we do not need a recipient
@@ -374,8 +369,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                     with open(filename, "r", encoding="utf-8") as f:
                         body = f.read()
                 except Exception as e:
-                    log.warning("Failed to read email template from file {0!r}: {1!r}".format(filename, e))
-                    log.debug("{0!s}".format(traceback.format_exc()))
+                    log.warning(f"Failed to read email template from file {filename}: {e}")
+                    log.debug(f"{traceback.format_exc()}")
 
             subject = handler_options.get("subject") or "An action was performed on your token."
             serial = (request.all_data.get("serial")
@@ -432,50 +427,51 @@ class UserNotificationEventHandler(BaseEventHandler):
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
+                if not recipient:
+                    log.warning("Was not able to determine the recipient for the user")
+                if reply_to:
+                    if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
+                        reply_to = ""
 
-                if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
-                    reply_to = ""
+                    elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+                        reply_to = tokenowner.info.get("email")
 
-                elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
-                    reply_to = tokenowner.info.get("email")
+                    elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
+                        username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
+                        internal_admin = get_db_admin(username)
+                        reply_to = internal_admin.email if internal_admin else ""
 
-                elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
-                    username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
-                    internal_admin = get_db_admin(username)
-                    reply_to = internal_admin.email if internal_admin else ""
+                    elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
+                        # Adds all email addresses from a specific admin realm to the reply-to-header
+                        admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
+                        attr = is_attribute_at_all()
+                        ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
+                        # create a list of all user-emails, if the user has an email
+                        emails = [u.get("email") for u in ulist if u.get("email")]
+                        reply_to = ",".join(emails)
 
-                elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
-                    # Adds all email addresses from a specific admin realm to the reply-to-header
-                    admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
-                    attr = is_attribute_at_all()
-                    ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
-                    # create a list of all user-emails, if the user has an email
-                    emails = [u.get("email") for u in ulist if u.get("email")]
-                    reply_to = ",".join(emails)
+                    elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
+                        # Add email address from the logged in user into the reply-to header
+                        if logged_in_user.get("username") and not logged_in_user.get(
+                                "realm"):
+                            # internal admins have no realm
+                            internal_admin = get_db_admin(logged_in_user.get("username"))
+                            if internal_admin:
+                                reply_to = internal_admin.email if internal_admin else ""
 
-                elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
-                    # Add email address from the logged in user into the reply-to header
-                    if logged_in_user.get("username") and not logged_in_user.get(
-                            "realm"):
-                        # internal admins have no realm
-                        internal_admin = get_db_admin(logged_in_user.get("username"))
-                        if internal_admin:
-                            reply_to = internal_admin.email if internal_admin else ""
+                        else:
+                            # Try to find the user in the specified realm
+                            user_obj = User(logged_in_user.get("username"),
+                                            logged_in_user.get("realm"))
+                            if user_obj:
+                                reply_to = user_obj.info.get("email") if user_obj else ""
 
-                    else:
-                        # Try to find the user in the specified realm
-                        user_obj = User(logged_in_user.get("username"),
-                                        logged_in_user.get("realm"))
-                        if user_obj:
-                            reply_to = user_obj.info.get("email") if user_obj else ""
-
-                elif reply_to_type == NOTIFY_TYPE.EMAIL:
-                    email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
-                    reply_to = email[0]
+                    elif reply_to_type == NOTIFY_TYPE.EMAIL:
+                        email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
+                        reply_to = email[0]
 
                 else:
-                    log.warning("Was not able to determine the email for the reply-to "
-                                "header: {0!s}".format(handler_def))
+                    log.warning(f"Was not able to determine the email for the reply-to header: {handler_def}")
 
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
@@ -496,45 +492,44 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                 reply_to=reply_to,
                                                 mimetype=mimetype)
                 except Exception as exx:  # pragma: no cover
-                    log.error("Failed to send email: {0!s}".format(exx))
-                    self.run_details = "{0!s}".format(exx)
+                    log.error(f"Failed to send email: {exx}")
+                    self.run_details = f"{exx}"
                     ret = False
                 if ret:
-                    log.info("Sent a notification email to user {0}".format(
-                        recipient))
+                    log.info(f"Sent a notification email to user {recipient}")
                 else:
-                    log.warning("Failed to send a notification email to user {0}".format(recipient))
-                    self.run_details = "Failed: {0!s}.".format(useremail)
+                    log.warning(f"Failed to send a notification email to user {recipient}")
+                    self.run_details = f"Failed: {useremail}."
 
             elif action.lower() == "savefile":
                 spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",
                                                 "/var/lib/privacyidea/notifications/")
                 filename = handler_options.get("filename")
                 random = get_alphanum_str(16)
-                filename = filename.format(random=random, **tags).lstrip(os.path.sep)
+                filename = filename.at(random=random, **tags).lstrip(os.path.sep)
                 outfile = os.path.normpath(os.path.join(spooldir, filename))
                 if not outfile.startswith(spooldir):
-                    log.error('Cannot write outside of spooldir {0!s}!'.format(spooldir))
+                    log.error(f'Cannot write outside of spooldir {spooldir}!')
                 else:
                     try:
                         with open(outfile, "w") as f:
                             f.write(body)
                     except Exception as err:
-                        log.error("Failed to write notification file: {0!s}".format(err))
+                        log.error(f"Failed to write notification file: {err}")
 
             elif action.lower() == "sendsms":
+                if not recipient:
+                    log.warning("Was not able to determine the recipient for the user")
                 smsconfig = handler_options.get("smsconfig")
                 userphone = recipient.get("mobile")
                 try:
                     ret = send_sms_identifier(smsconfig, userphone, body)
                 except Exception as exx:
-                    log.error("Failed to send sms: {0!s}".format(exx))
+                    log.error(f"Failed to send sms: {exx}")
                     ret = False
                 if ret:
-                    log.info("Sent a notification sms to user {0}".format(
-                        recipient))
+                    log.info(f"Sent a notification sms to user {recipient}")
                 else:
-                    log.warning("Failed to send a notification email to user "
-                                "{0}".format(recipient))
+                    log.warning(f"Failed to send a notification sms to user {recipient}")
 
         return ret
