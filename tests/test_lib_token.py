@@ -14,7 +14,7 @@ getToken....
 """
 import logging
 from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -135,10 +135,9 @@ class TokenTestCase(MyTestCase):
         # get unassigned tokens
         tokenobject_list = get_tokens(assigned=False)
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
-        # pass the wrong parameter
-        # This will ignore the filter!
+        # This will interpret the value as true as the functions expects a bool
         tokenobject_list = get_tokens(assigned="True")
-        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
+        self.assertEqual(len(tokenobject_list), 0, tokenobject_list)
 
         # get tokens of type HOTP
         tokenobject_list = get_tokens(tokentype="hotp")
@@ -441,15 +440,16 @@ class TokenTestCase(MyTestCase):
         remove_token(serial)
 
     def test_18_assign_token(self):
+        self.setUp_user_realm2()
         serial = "ASSTOKEN"
-        user = User("cornelius", resolver=self.resolvername1,
-                    realm=self.realm1)
-        tokenobject = init_token({"serial": serial,
-                                  "otpkey": "1234567890123456"})
+        user = User("cornelius", resolver=self.resolvername1, realm=self.realm1)
+        token = init_token({"serial": serial, "otpkey": "1234567890123456"}, tokenrealms=[self.realm2])
+        self.assertSetEqual({self.realm2}, set(token.get_realms()))
 
         r = assign_token(serial, user, pin="1234")
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.first_owner.user_id, "1000")
+        self.assertEqual(token.token.first_owner.user_id, "1000")
+        self.assertSetEqual({self.realm2, self.realm1}, set(token.get_realms()))
 
         # token already assigned...
         self.assertRaises(TokenAdminError, assign_token, serial,
@@ -458,7 +458,7 @@ class TokenTestCase(MyTestCase):
         # unassign token
         r = unassign_token(serial)
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.first_owner, None)
+        self.assertEqual(token.token.first_owner, None)
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -1016,6 +1016,17 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn(token.get_serial(), token_serials)
         for token in tokens_pag["tokens"]:
             self.assertEqual("", token["container_serial"])
+
+        # filter for container serial in lower cases
+        container_serial = init_container({"type": "generic", "container_serial": "CONT0001"})["container_serial"]
+        token_in_container = init_token({"genkey": True, "type": "hotp"})
+        container = find_container_by_serial(container_serial)
+        container.add_token(token_in_container)
+        tokens = get_tokens_paginate(container_serial="cont0001")["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
+        container.delete()
+        token_in_container.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

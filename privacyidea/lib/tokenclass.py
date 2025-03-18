@@ -243,7 +243,7 @@ class TokenClass(object):
                        user_id=uid, resolver=resolvername,
                        realmname=user.realm).save()
         # set the tokenrealm
-        self.set_realms([user.realm])
+        self.set_realms([user.realm], add=True)
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -297,7 +297,7 @@ class TokenClass(object):
                                realm=tokenowner.realm.name)
         return user_object
 
-    def is_orphaned(self):
+    def is_orphaned(self, orphaned_on_error=True):
         """
         Return True if the token is orphaned.
 
@@ -315,8 +315,9 @@ class TokenClass(object):
                     orphaned = True
             except Exception:
                 # If any other resolving error occurs, we also assume the
-                # token to be orphaned
-                orphaned = True
+                # token to be orphaned per default, You can change this with
+                # the parameter orphaned_on_error.
+                orphaned = orphaned_on_error
         return orphaned
 
     def get_user_displayname(self):
@@ -1689,7 +1690,7 @@ class TokenClass(object):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _('please enter otp: ')
-        message = message.replace("\,", ",")
+        message = message.replace(r"\,", ",")
 
         data = None
         reply_dict = {}

@@ -5618,6 +5618,85 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
         self.assertIn(str(EXPIRE_MESSAGE), jresult.get("result").get("value").get("supportmail"))
 
+    def test_12_get_webui_settings_container_wizard(self):
+        self.setUp_user_realms()
+
+        # Mock request
+        builder = EnvironBuilder(method="POST", data={}, headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {}
+
+        user_response = {"jsonrpc": "2.0",
+                         "result": {"status": True,
+                                    "value": {"role": "user",
+                                              "username": "cornelius"}},
+                         "version": "privacyIDEA test",
+                         "id": 1}
+        admin_response = {"jsonrpc": "2.0",
+                          "result": {"status": True,
+                                     "value": {"role": "admin",
+                                               "username": "cornelius"}},
+                          "version": "privacyIDEA test",
+                          "id": 1}
+
+        # User without container, but no container wizard defined
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        self.assertFalse(new_response.json["result"]["value"]["container_wizard"]["enabled"])
+
+        # Set container wizard policy only for template, but not type
+        set_policy(name="container_wizard", scope=SCOPE.WEBUI,
+                   action={ACTION.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
+        # User without container, but container wizard type is missing
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        self.assertFalse(new_response.json["result"]["value"]["container_wizard"]["enabled"])
+        self.assertEqual(1, len(new_response.json["result"]["value"]["container_wizard"].keys()))
+        delete_policy("container_wizard")
+
+        # define correct policy
+        set_policy(name="container_wizard", scope=SCOPE.WEBUI,
+                   action={ACTION.CONTAINER_WIZARD_TYPE: "generic", ACTION.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
+        # User without container
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        container_wizard = new_response.json["result"]["value"]["container_wizard"]
+        self.assertTrue(container_wizard["enabled"])
+        self.assertEqual("generic", container_wizard["type"])
+        self.assertEqual("test", container_wizard["template"])
+        self.assertFalse(container_wizard["registration"])
+
+        # Admin without container: container wizard disabled
+        resp = jsonify(admin_response)
+        new_response = get_webui_settings(req, resp)
+        container_wizard = new_response.json["result"]["value"]["container_wizard"]
+        self.assertFalse(container_wizard["enabled"])
+        self.assertEqual(1, len(container_wizard.keys()))
+
+        # User with container: container wizard disabled
+        container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})["container_serial"]
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        container_wizard = new_response.json["result"]["value"]["container_wizard"]
+        self.assertFalse(container_wizard["enabled"])
+        self.assertEqual(1, len(container_wizard.keys()))
+        find_container_by_serial(container_serial).delete()
+        delete_policy("container_wizard")
+
+        # container wizard with registration
+        set_policy(name="container_wizard", scope=SCOPE.WEBUI,
+                   action=f"{ACTION.CONTAINER_WIZARD_TYPE}=smartphone,{ACTION.CONTAINER_WIZARD_REGISTRATION}")
+        # User without container
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        container_wizard = new_response.json["result"]["value"]["container_wizard"]
+        self.assertTrue(container_wizard["enabled"])
+        self.assertEqual("smartphone", container_wizard["type"])
+        self.assertIsNone(container_wizard["template"])
+        self.assertTrue(container_wizard["registration"])
+        delete_policy("container_wizard")
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",

@@ -23,14 +23,16 @@ import logging
 import os
 from typing import Union
 
+from sqlalchemy import func
 from sqlalchemy.orm import Query
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
@@ -146,7 +148,10 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     :return: container object
     :rtype: privacyidea.lib.containerclass.TokenContainerClass
     """
-    db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
+    if serial:
+        db_container = TokenContainer.query.filter(func.upper(TokenContainer.serial) == serial.upper()).first()
+    else:
+        db_container = None
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
@@ -174,7 +179,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
 
     if serial:
-        sql_query = sql_query.filter(TokenContainer.serial == serial)
+        sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
     if ctype:
         sql_query = sql_query.filter(TokenContainer.type == ctype)
@@ -342,7 +347,7 @@ def get_container_policy_info(container_type: Union[str, None] = None):
         return ret
 
 
-def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
+def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -357,6 +362,7 @@ def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
                 "user": ..., Name of the user (optional)
                 "realm": ..., Name of the realm (optional)
                 "template": {...}, Template as dictionary (optional)
+                "template_name": ..., Name of the template (optional)
             }
 
         To assign a user to the container, the user and realm are required.
@@ -377,28 +383,58 @@ def init_container(params: dict[str, any]) -> dict[str, list[dict[str, any]]]:
     if ctype.lower() not in get_container_classes().keys():
         raise EnrollmentError(f"Type '{ctype}' is not a valid type!")
 
+    template_dict = params.get("template")
+    template_name = params.get("template_name")
+    if template_dict and template_name:
+        raise ParameterError("Both template and template_name are given. Choose only one!")
+
     desc = params.get("description") or ""
-    serial = params.get("container_serial") or _gen_serial(ctype)
+    serial = params.get("container_serial")
+    if serial:
+        # Check if a container with this serial already exists
+        containers = get_all_containers(serial=serial)["containers"]
+        if len(containers) > 0:
+            raise EnrollmentError(f"Container with serial {serial} already exists!")
+    else:
+        serial = _gen_serial(ctype)
     db_container = TokenContainer(serial=serial, container_type=ctype.lower(), description=desc)
     db_container.save()
 
     container = create_container_from_db_object(db_container)
 
     # Template handling
-    template = params.get("template") or {}
     template_tokens = []
-    # Check if a template of a valid type is used
-    if template.get("container_type") == ctype:
-        # check if the template was modified, otherwise save the template name
-        stored_templates = get_templates_by_query(name=template["name"])["templates"]
-        if len(stored_templates) > 0:
-            original_template = stored_templates[0]
-            original_template_used = compare_template_dicts(template, original_template)
-            if original_template_used:
-                container.template = original_template["name"]
-        template_options = template.get("template_options", {})
-        # tokens from template
-        template_tokens = template_options.get("tokens", [])
+    if template_name:
+        # Use template from db
+        try:
+            template = get_template_obj(template_name)
+        except ResourceNotFoundError as ex:
+            template = None
+            log.warning(f"Template {template_name} does not exists, create container without template: {ex}")
+
+        if template:
+            if template.container_type == ctype:
+                template_options = template.get_template_options_as_dict()
+                template_tokens = template_options.get("tokens", [])
+                container.template = template_name
+            else:
+                log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+    elif template_dict:
+        # Use template dictionary
+        if template_dict.get("container_type") == ctype:
+            # check if the template was modified, otherwise save the template name
+            stored_templates = get_templates_by_query(name=template_dict["name"])["templates"]
+            if len(stored_templates) > 0:
+                original_template = stored_templates[0]
+                original_template_used = compare_template_dicts(template_dict, original_template)
+                if original_template_used:
+                    container.template = original_template["name"]
+            template_options = template_dict.get("template_options", {})
+            # tokens from template
+            template_tokens = template_options.get("tokens", [])
+        else:
+            log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+
 
     user = params.get("user")
     realm = params.get("realm")
@@ -689,6 +725,8 @@ def remove_multiple_tokens_from_container(container_serial: str, token_serials: 
 def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     """
     Add the given info to the container with the given serial.
+    If the key already exists, the value is updated. However, if the entry is of type PI_INTERNAL, the value can not be
+    modified.
 
     :param serial: The serial of the container
     :param ikey: The info key
@@ -697,21 +735,40 @@ def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     """
     container = find_container_by_serial(serial)
 
-    container.add_container_info(ikey, ivalue)
+    # Check if key already exists and if it is an internal key
+    internal_keys = container.get_internal_info_keys()
+    if ikey in internal_keys:
+        raise PolicyError(f"The key {ikey} is an internal entry and can not be modified.")
+
+    container.update_container_info([TokenContainerInfoData(key=ikey, value=ivalue)])
     return True
 
 
-def set_container_info(serial, info: dict) -> bool:
+def set_container_info(serial, info: dict) -> dict[str, bool]:
     """
     Set the given info to the container with the given serial.
+    Keys of type PI_INTERNAL can not be modified and will be ignored.
 
     :param serial: The serial of the container
     :param info: The info dictionary in the format {key: value}
-    :returns: True on success
+    :returns: Dictionary with the success state for each info key
     """
     container = find_container_by_serial(serial)
-    container.set_container_info(info)
-    return True
+    result = {}
+
+    # Remove internal keys from the info dictionary, they can not be modified by the user
+    internal_keys = container.get_internal_info_keys()
+    not_internal_info = {}
+    for key, value in info.items():
+        if key not in internal_keys:
+            not_internal_info[key] = value
+            result[key] = True
+        else:
+            result[key] = False
+            log.warning(f"The key {key} is an internal entry and can not be modified.")
+
+    container.set_container_info(not_internal_info)
+    return result
 
 
 def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[str, None]]:
@@ -737,6 +794,7 @@ def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[st
 def delete_container_info(serial: str, ikey: str = None) -> dict[str, bool]:
     """
     Delete the info of the given key or all infos if no key is given.
+    Internal infos are not deleted
 
     :param serial: The serial of the container
     :param ikey: The info key or None to delete all info keys
@@ -744,7 +802,7 @@ def delete_container_info(serial: str, ikey: str = None) -> dict[str, bool]:
     """
     container = find_container_by_serial(serial)
 
-    res = container.delete_container_info(ikey)
+    res = container.delete_container_info(ikey, keep_internal=True)
     return res
 
 
@@ -802,7 +860,7 @@ def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     return res
 
 
-def add_container_states(serial: str, states: str) -> dict[str, bool]:
+def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     """
     Add the states to a container.
 
@@ -933,6 +991,7 @@ def create_container_dict(container_list: list[TokenContainerClass], no_token: b
                             ...
                         }],
                     "info": {"hash_algorithm": "SHA256", ...},
+                    "internal_info_keys": ["hash_algorithm"],
                     "realms": ["realm1", "realm2"],
                     "template": "template1"
                 }, ...
@@ -1007,11 +1066,13 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
         for key, value in container_info.items():
             if key.find("rollover_") == 0:
                 original_key = key.replace("rollover_", "")
-                container.add_container_info(original_key, value)
-                container.delete_container_info(key)
+                container.update_container_info(
+                    [TokenContainerInfoData(key=original_key, value=value, info_type=PI_INTERNAL)])
+                container.delete_container_info(key, keep_internal=False)
 
         finalize_container_rollover(container)
-        container.add_container_info("registration_state", "rollover_completed")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="rollover_completed", info_type=PI_INTERNAL)])
 
     return res
 
@@ -1051,7 +1112,7 @@ def finalize_container_rollover(container: TokenContainerClass):
 
 
 def init_container_rollover(container: TokenContainerClass, server_url: str, challenge_ttl: int, registration_ttl: int,
-                            ssl_verify: str, params: dict) -> dict:
+                            ssl_verify: bool, params: dict) -> dict:
     """
     Initializes the rollover of a container.
     First the response to the challenge is validated. If it is valid, the registration is initialized.
@@ -1077,8 +1138,10 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     res = container.init_registration(server_url, registration_scope, registration_ttl, ssl_verify, params)
 
     # Set registration state
-    container.update_container_info({"registration_state": "rollover", "rollover_server_url": server_url,
-                                     "rollover_challenge_ttl": challenge_ttl})
+    info = [TokenContainerInfoData(key="registration_state", value="rollover", info_type=PI_INTERNAL),
+            TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
+            TokenContainerInfoData(key="rollover_challenge_ttl", value=str(challenge_ttl), info_type=PI_INTERNAL)]
+    container.update_container_info(info)
 
     return res
 
@@ -1189,6 +1252,17 @@ def create_container_template_from_db_object(db_template: TokenContainerTemplate
                 return None
             return template
     return None
+
+
+def get_all_templates_with_type():
+    """
+    Returns a list of display strings containing the name and type of all templates.
+    """
+    templates = TokenContainerTemplate.query.all()
+    template_list = []
+    for template in templates:
+        template_list.append(f"{template.name}({template.container_type})")
+    return template_list
 
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,

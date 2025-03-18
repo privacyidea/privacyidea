@@ -71,7 +71,8 @@
         </div>
 
         <!-- ============ Container ====================== -->
-        <div ng-show="checkRight('container_add_token') && checkRight('container_list')">
+        <div ng-show="checkRight('container_add_token') && checkRight('container_list') &&
+            !$state.includes('token.wizard')">
             <hr class="horizontal-line-invisible"/>
             <h4 translate>Assign the token to a container</h4>
             <div select-or-create-container container-serial="containerSerial"
@@ -187,7 +188,7 @@
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
                 {{ enrolledToken.serial }}</a>.
         </span>
-        <span ng-show="enrolledToken.container_serial" translate>
+        <span ng-show="enrolledToken.container_serial && !$state.includes('token.wizard')" translate>
             The token has been enrolled in the container
             <a ui-sref="token.containerdetails({containerSerial: enrolledToken.container_serial})">
                 {{ enrolledToken.container_serial }}
@@ -222,6 +223,10 @@
         <button ng-click="enrolledToken = null; enrolling = false"
                 ng-hide="$state.includes('token.wizard')"
                 class="btn btn-primary" translate>Enroll a new token
+        </button>
+        <button class="btn btn-primary" ng-show="container_wizard['enabled']"
+                ng-click="$state.go('token.containercreate')" translate>
+            Create new container
         </button>
         <button ng-click="logout()"
                 ng-show="$state.includes('token.wizard')"

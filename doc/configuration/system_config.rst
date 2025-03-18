@@ -92,6 +92,10 @@ or in the back (``123456pin``) of the OTP value.
 
 Include SAML attributes in the authentication response.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. deprecated:: v3.11
+  The :http:post:`/validate/samlcheck` endpoint will be removed in v3.12. Use the
+  :http:post:`/validate/check` endpoint with :ref:`policy_add_user_in_response` and/or
+  :ref:`policy_add_resolver_in_response` policies instead.
 
 This option defines, if during a SAML authentication request
 additional SAML attributes should be returned.

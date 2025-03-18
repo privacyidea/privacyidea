@@ -97,10 +97,12 @@ class MethodsMixin(object):
     def save(self):
         db.session.add(self)
         db.session.commit()
-        return self.id
+        if hasattr(self, 'id'):
+            return self.id
+        return None
 
     def delete(self):
-        ret = self.id
+        ret = self.id if hasattr(self, 'id') else None
         db.session.delete(self)
         db.session.commit()
         return ret
@@ -304,6 +306,9 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenTokengroup) \
             .filter(TokenTokengroup.token_id == self.id) \
             .delete()
+        if self.tokentype.lower() in ["webauthn", "passkey"]:
+            db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
+
         db.session.delete(self)
         db.session.commit()
         return ret
@@ -313,7 +318,7 @@ class Token(MethodsMixin, db.Model):
         """
         On MS SQL server empty fields ("") like the info
         are returned as a string with a space (" ").
-        This functions helps fixing this.
+        This functions helps to fix this.
         Also avoids running into errors, if the data is a None Type.
 
         :param data: a string from the database
@@ -3537,12 +3542,9 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     value = db.Column(db.UnicodeText(), default='')
     type = db.Column(db.Unicode(100), default='')
     description = db.Column(db.Unicode(2000), default='')
-    container_id = db.Column(db.Integer(),
-                             db.ForeignKey('tokencontainer.id'), index=True)
+    container_id = db.Column(db.Integer(), db.ForeignKey('tokencontainer.id'), index=True)
     container = db.relationship('TokenContainer', back_populates='info_list')
-    __table_args__ = (db.UniqueConstraint('container_id',
-                                          'key',
-                                          name='container_id_constraint'),
+    __table_args__ = (db.UniqueConstraint('container_id', 'key', name='container_id_constraint'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, container_id, key, value,
@@ -3610,3 +3612,16 @@ class TokenContainerTemplate(MethodsMixin, db.Model):
         self.container_type = container_type
         self.options = options
         self.default = default
+
+
+class TokenCredentialIdHash(MethodsMixin, db.Model):
+    __tablename__ = "tokencredentialidhash"
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    credential_id_hash = db.Column(db.String(256), nullable=False)
+    token_id = db.Column(db.Integer(), db.ForeignKey("token.id"), nullable=False)
+    __table_args__ = (db.Index('ix_tokencredentialidhash_credentialidhash',
+                               'credential_id_hash', unique=True),)
+
+    def __init__(self, credential_id_hash, token_id):
+        self.credential_id_hash = credential_id_hash
+        self.token_id = token_id

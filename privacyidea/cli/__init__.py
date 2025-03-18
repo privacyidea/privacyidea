@@ -36,6 +36,14 @@ def create_silent_app():
 # Don't load plugin commands
 class NoPluginsFlaskGroup(FlaskGroup):
     """A FlaskGroup class which does not load commands from plugins"""
+
+    def __init__(self, *args, **kwargs):
+        # Hide the app option, we already hardcode the app in the CLI
+        super().__init__(*args, **kwargs)
+        for param in self.params:
+            if param.name == "app":
+                self.params.remove(param)
+
     def _load_plugin_commands(self):
         pass
 

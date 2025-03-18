@@ -47,13 +47,12 @@ from ..lib.policy import (set_policy, ACTION,
                           get_policy_condition_comparators, Match)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.utils import to_unicode, is_true
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
 from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
 
 import logging
 
@@ -395,23 +394,20 @@ def import_policy_api(filename=None):
 
     """
     policy_file = request.files['file']
-    file_contents = ""
-    # In case of form post requests, it is an "instance" of FieldStorage
-    # i.e. the Filename is selected in the browser and the data is
-    # transferred
-    # in an iframe. see: http://jquery.malsup.com/form/#sample4
-    #
-    if type(policy_file) == FieldStorage:  # pragma: no cover
-        log.debug("Field storage file: %s", policy_file)
-        file_contents = policy_file.value
-    elif type(policy_file) == FileStorage:
-        log.debug("Werkzeug File storage file: %s", policy_file)
+    if isinstance(policy_file, FileStorage):
+        log.debug(f"Werkzeug File storage file: {policy_file}")
         file_contents = policy_file.read()
     else:  # pragma: no cover
+        # TODO: is this even possible?
         file_contents = policy_file
 
     # The policy file should contain readable characters
-    file_contents = to_unicode(file_contents)
+    try:
+        if isinstance(file_contents, bytes):
+            file_contents = file_contents.decode()
+    except UnicodeDecodeError as e:
+        log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
+        raise ParameterError("Unable to convert file contents. Binary data is not supported")
 
     if file_contents == "":
         log.error("Error loading/importing policy file. file {0!s} empty!".format(

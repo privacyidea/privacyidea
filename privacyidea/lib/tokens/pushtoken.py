@@ -447,7 +447,8 @@ class PushTokenClass(TokenClass):
                                'desc': _('The options that can be presented to the user to confirm the login. '
                                          '<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, '
                                          '<code>CUSTOM</code>: user defined. '
-                                         f'Does only apply if <em>{PUSH_ACTION.REQUIRE_PRESENCE}</em> is set.'),
+                                         'Does only apply if <em>{0!s}</em> is set.').format(
+                                   PUSH_ACTION.REQUIRE_PRESENCE),
                                'group': 'PUSH',
                                'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
                            },
@@ -457,27 +458,27 @@ class PushTokenClass(TokenClass):
                                          'The string must contain at least 2 options and should be unique. '
                                          'The options are separated by <code>:</code>. '
                                          'e.g.: <code>01:02:03:1A:1B:1C</code>. '
-                                         f'Does only apply if <em>{PUSH_ACTION.PRESENCE_OPTIONS}</em> is set '
-                                         f'to <code>CUSTOM</code>.'),
+                                         'Does only apply if <em>{0!s}</em> is set '
+                                         'to <code>CUSTOM</code>.').format(PUSH_ACTION.PRESENCE_OPTIONS),
                                'group': 'PUSH'
                            },
                            PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
                                'type': 'str',
                                'desc': _('The number of options the user is presented with to confirm the login. '
-                                         f'Does only apply if <em>{PUSH_ACTION.REQUIRE_PRESENCE}</em> is set.'),
+                                         'Does only apply if <em>{0!s}</em> is set.').format(
+                                   PUSH_ACTION.REQUIRE_PRESENCE),
                                'group': 'PUSH',
                                'value': ALLOWED_NUMBER_OF_OPTIONS
                            },
                            PUSH_ACTION.WAIT: {
                                'type': 'int',
-                               'desc': _('Wait for number of seconds for the user '
-                                         'to confirm the challenge in the first request.'),
-                               'group': "PUSH"
+                               'desc': _('Wait for number of seconds for the user to confirm the challenge in the '
+                                         'first request.'),
+                               'group': 'PUSH'
                            },
                            PUSH_ACTION.ALLOW_POLLING: {
                                'type': 'str',
-                               'desc': _('Configure whether to allow push tokens to poll for '
-                                         'challenges'),
+                               'desc': _('Configure whether to allow push tokens to poll for challenges'),
                                'group': 'PUSH',
                                'value': [PushAllowPolling.ALLOW,
                                          PushAllowPolling.DENY,
@@ -596,6 +597,7 @@ class PushTokenClass(TokenClass):
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
+            extra_data["poll_only"] = fb_identifier == POLL_ONLY
 
             # enforce App pin
             if params.get(ACTION.FORCE_APP_PIN):

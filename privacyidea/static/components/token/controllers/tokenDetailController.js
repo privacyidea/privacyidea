@@ -140,10 +140,10 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                                 $scope.loggedinUsername = "failure";
                             }
                         }, function (error) {
-                            AuthFactory.authError(error.data)
+                            inform.add(error.data.result.error.message, {type: "danger", ttl: 5000});
                         });
                     }, function (error) {
-                        AuthFactory.authError(error.data)
+                        inform.add(error.data.result.error.message, {type: "danger", ttl: 5000});
                     });
                 }
             )

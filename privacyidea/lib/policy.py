@@ -186,7 +186,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
 import re
@@ -201,6 +201,9 @@ required = False
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
+
+comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
+                                 "need to escape it with a backslash.")
 
 
 class SCOPE(object):
@@ -423,6 +426,9 @@ class ACTION(object):
     DEFAULT_CONTAINER_TYPE = "default_container_type"
     RSS_FEEDS = "rss_feeds"
     RSS_AGE = "rss_age"
+    CONTAINER_WIZARD_TYPE = "container_wizard_type"
+    CONTAINER_WIZARD_TEMPLATE = "container_wizard_template"
+    CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
     CLIENT_MODE_PER_USER = "client_mode_per_user"
 
 
@@ -456,6 +462,7 @@ class GROUP(object):
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
+    WIZARD = "wizard"
 
 
 class MAIN_MENU(object):
@@ -563,12 +570,11 @@ class PolicyClass(object):
             if value and value[0] in ["!", "-"] and \
                     searchvalue == value[1:]:
                 value_excluded = True
-            elif type(searchvalue) == list and value in \
-                    searchvalue + ["*"]:
+            elif isinstance(searchvalue, list) and value in searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
-            elif type(searchvalue) != list:
+            elif not isinstance(searchvalue, list):
                 # Do not do this search style for resolvers, which come as a list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
@@ -854,7 +860,7 @@ class PolicyClass(object):
         if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
             reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                   serial, extended_condition_check)
-            log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
+            log.debug("Policies after matching conditions: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -1417,7 +1423,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         raise ParameterError("Priority must be at least 1")
     check_all_resolvers = is_true(check_all_resolvers)
     user_case_insensitive = is_true(user_case_insensitive)
-    if type(action) == dict:
+    if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
             if v is not True:
@@ -1427,26 +1433,26 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                 # simple boolean value
                 action_list.append(k)
         action = ", ".join(action_list)
-    if type(action) == list:
+    if isinstance(action, list):
         action = ", ".join(action)
-    if type(realm) == list:
+    if isinstance(realm, list):
         realm = ", ".join(realm)
-    if type(adminrealm) == list:
+    if isinstance(adminrealm, list):
         adminrealm = ", ".join(adminrealm)
-    if type(user) == list:
+    if isinstance(user, list):
         user = ", ".join(user)
-    if type(adminuser) == list:
+    if isinstance(adminuser, list):
         adminuser = ", ".join(adminuser)
-    if type(resolver) == list:
+    if isinstance(resolver, list):
         resolver = ", ".join(resolver)
-    if type(client) == list:
+    if isinstance(client,  list):
         client = ", ".join(client)
     if client is not None:
         try:
             check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
         except AddrFormatError:
             raise privacyIDEAError(_("Invalid client definition!"), id=302)
-    if type(pinode) == list:
+    if isinstance(pinode, list):
         pinode = ", ".join(pinode)
     # validate conditions parameter
     if conditions is not None:
@@ -1622,7 +1628,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
-    from .container import get_container_token_types
+    from .container import get_container_token_types, get_all_templates_with_type
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2139,15 +2145,15 @@ def get_static_policy_definitions(scope=None):
                                     'mainmenu': [MAIN_MENU.TOKENS],
                                     'group': GROUP.CONTAINER},
             ACTION.CONTAINER_REGISTER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to register containers for synchronization.'),
+                                        'desc': _('Admin is allowed to register containers.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Admin is allowed to unregister containers from synchronization.'),
+                                          'desc': _('Admin is allowed to unregister containers.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to perform a container rollover including a'
+                                        'desc': _('Admin is allowed to perform a container rollover including a '
                                                   'rollover of all contained tokens.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
@@ -2173,46 +2179,35 @@ def get_static_policy_definitions(scope=None):
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
             ACTION.DISABLE: {'type': 'bool',
-                             'desc': _(
-                                 'The user is allowed to disable his own '
-                                 'tokens.'),
+                             'desc': _('The user is allowed to disable his own tokens.'),
                              'mainmenu': [MAIN_MENU.TOKENS],
                              'group': GROUP.TOKEN},
             ACTION.ENABLE: {'type': 'bool',
-                            'desc': _(
-                                "The user is allowed to enable his own "
-                                "tokens."),
+                            'desc': _('The user is allowed to enable his own tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.DELETE: {'type': 'bool',
-                            "desc": _(
-                                "The user is allowed to delete his own "
-                                "tokens."),
+                            "desc": _('The user is allowed to delete his own tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.UNASSIGN: {'type': 'bool',
-                              "desc": _("The user is allowed to unassign his "
-                                        "own tokens."),
+                              'desc': _('The user is allowed to unassign his own tokens.'),
                               'mainmenu': [MAIN_MENU.TOKENS],
                               'group': GROUP.TOKEN},
             ACTION.RESYNC: {'type': 'bool',
-                            "desc": _("The user is allowed to resyncronize his "
-                                      "tokens."),
+                            "desc": _('The user is allowed to resynchronize his tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.REVOKE: {'type': 'bool',
-                            'desc': _("The user is allowed to revoke a "
-                                      "token"),
+                            'desc': _('The user is allowed to revoke a token'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.RESET: {'type': 'bool',
-                           'desc': _('The user is allowed to reset the '
-                                     'failcounter of his tokens.'),
+                           'desc': _('The user is allowed to reset the failcounter of his tokens.'),
                            'mainmenu': [MAIN_MENU.TOKENS],
                            'group': GROUP.TOKEN},
             ACTION.SETPIN: {'type': 'bool',
-                            "desc": _("The user is allowed to set the OTP "
-                                      "PIN of his tokens."),
+                            'desc': _('The user is allowed to set the OTP PIN of his tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
             ACTION.SETRANDOMPIN: {'type': 'bool',
@@ -2221,66 +2216,56 @@ def get_static_policy_definitions(scope=None):
                                   'group': GROUP.PIN},
             ACTION.OTPPINSETRANDOM: {'type': 'int',
                                      'value': list(range(1, 32)),
-                                     'desc': _("The length of a random PIN set by the user."),
+                                     'desc': _('The length of a random PIN set by the user.'),
                                      'group': GROUP.PIN},
             ACTION.SETDESCRIPTION: {'type': 'bool',
                                     'desc': _('The user is allowed to set the token description.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
                                     'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
-                               "desc": _("The user is allowed to set the OTP "
-                                         "PIN during enrollment."),
+                               'desc': _('The user is allowed to set the OTP PIN during enrollment.'),
                                'group': GROUP.PIN},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
-                                  "desc": _("Set the maximum allowed length "
-                                            "of the OTP PIN."),
+                                  'desc': _('Set the maximum allowed length of the OTP PIN.'),
                                   'group': GROUP.PIN},
             ACTION.OTPPINMINLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
-                                  "desc": _("Set the minimum required length "
-                                            "of the OTP PIN."),
+                                  'desc': _('Set the minimum required length of the OTP PIN.'),
                                   'group': GROUP.PIN},
             ACTION.OTPPINCONTENTS: {'type': 'str',
-                                    "desc": _("Specifiy the required "
-                                              "contents of the OTP PIN. "
-                                              "(c)haracters, (n)umeric, "
-                                              "(s)pecial. Use modifiers +/- or a list "
-                                              "of allowed characters [1234567890]"),
+                                    'desc': _('Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, '
+                                              '(s)pecial. Use modifiers +/- or a list of allowed '
+                                              'characters [1234567890]'),
                                     'group': GROUP.PIN},
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.'),
                 'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.AUDIT_AGE: {'type': 'str',
-                               "desc": _("The user will only see audit "
-                                         "entries of the last 10d, 3m or 2y."),
+                               'desc': _('The user will only see audit entries of the last 10d, 3m or 2y.'),
                                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        "desc": _("The user will not see the specified columns "
-                                                  "in the audit."),
-                                        "group": GROUP.SYSTEM,
+                                        'desc': _('The user will not see the specified columns in the audit.'),
+                                        'group': GROUP.SYSTEM,
                                         'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',
-                              'desc': _("The user is allowed to view his "
-                                        "own user information."),
+                              'desc': _('The user is allowed to view his own user information.'),
                               'mainmenu': [MAIN_MENU.USERS]},
             ACTION.UPDATEUSER: {'type': 'bool',
-                                'desc': _("The user is allowed to update his "
-                                          "own user information, like changing "
-                                          "his password."),
+                                'desc': _('The user is allowed to update his own user information, like changing '
+                                          'his password.'),
                                 'mainmenu': [MAIN_MENU.USERS]},
             ACTION.PASSWORDRESET: {'type': 'bool',
-                                   'desc': _("The user is allowed to do a "
-                                             "password reset in an editable "
-                                             "UserIdResolver."),
+                                   'desc': _(
+                                       'The user is allowed to do a password reset in an editable UserIdResolver.'),
                                    'mainmenu': []},
             ACTION.SET_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The user is allowed to set certain custom user "
-                          "attributes. If the user should be allowed to set any "
-                          "attribute, set this to '*:*'. Use '*' with CAUTION! "
-                          "For more details, check the documentation."),
+                'desc': _(
+                    "The user is allowed to set certain custom user attributes. If the user should be allowed to set "
+                    "any attribute, set this to '*:*'. Use '*' with CAUTION! For more details, check the "
+                    "documentation."),
                 'mainmenu': [],
                 'group': GROUP.USER},
             ACTION.DELETE_USER_ATTRIBUTES: {
@@ -2340,11 +2325,11 @@ def get_static_policy_definitions(scope=None):
                                     'group': GROUP.CONTAINER},
             ACTION.CONTAINER_REGISTER: {'type': 'bool',
                                         'desc': _(
-                                            'Users are allowed to register their own containers for synchronization.'),
+                                            'Users are allowed to register their own containers.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.CONTAINER},
             ACTION.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Users are allowed to unregister containers from synchronization.'),
+                                          'desc': _('Users are allowed to unregister containers.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
             ACTION.CONTAINER_ROLLOVER: {'type': 'bool',
@@ -2520,8 +2505,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Use an alternative challenge text for telling the '
                           'user to enter an OTP value. You can also use '
                           'tags for automated replacement. Check out the '
-                          'documentation for more details. Note: If you use '
-                          'a comma in the message, you need to escape it with a backslash.')
+                          'documentation for more details.') + " " + comma_escape_text
             },
             ACTION.CHALLENGETEXT_HEADER: {
                 'type': 'str',
@@ -2720,7 +2704,6 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.SETTING_ACTIONS,
             }
         },
-
         SCOPE.WEBUI: {
             ACTION.ADMIN_DASHBOARD: {
                 'type': 'bool',
@@ -2816,12 +2799,14 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENWIZARD: {
                 'type': 'bool',
                 'desc': _("As long as a user has no token, he will only see"
-                          " a token wizard in the UI.")
+                          " a token wizard in the UI."),
+                'group': GROUP.WIZARD
             },
             ACTION.TOKENWIZARD2ND: {
                 'type': 'bool',
                 'desc': _("The tokenwizard will be displayed in the token "
-                          "menu, even if the user already has a token.")
+                          "menu, even if the user already has a token."),
+                'group': GROUP.WIZARD
             },
             ACTION.TOKENROLLOVER: {
                 'type': 'str',
@@ -2853,7 +2838,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.HIDE_WELCOME: {
                 'type': 'bool',
-                'desc': _("If this checked, the administrator will not see "
+                'desc': _("If this is checked, the administrator will not see "
                           "the welcome dialog anymore.")
             },
             ACTION.HIDE_BUTTONS: {
@@ -2901,7 +2886,26 @@ def get_static_policy_definitions(scope=None):
                                          "<code>'Title':'URL'-'Title':'URL'</code> ")},
             ACTION.RSS_AGE: {'type': 'int',
                              'desc': _('The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
-                                       'feed. For admins the default is 180 days and for users 0 days.')}
+                                       'feed. For admins the default is 180 days and for users 0 days.')},
+            ACTION.CONTAINER_WIZARD_TYPE: {'type': 'str',
+                                           'value': list(get_container_token_types().keys()),
+                                           'desc': _('Container type to be created with the container wizard. It is '
+                                                     'required to set at least this option to enable the container '
+                                                     'wizard. As long as the user has no container assigned he will '
+                                                     'only see the container wizard in the UI.'),
+                                           'group': GROUP.WIZARD},
+            ACTION.CONTAINER_WIZARD_TEMPLATE: {'type': 'str',
+                                               'value': get_all_templates_with_type(),
+                                               'desc': _('Name of the container template to be used to create a '
+                                                         'container in the container wizard (optional). Note that the '
+                                                         'template must be of the same type as selected in the '
+                                                         'container_wizard_type.'),
+                                               'group': GROUP.WIZARD},
+            ACTION.CONTAINER_WIZARD_REGISTRATION: {'type': 'bool',
+                                                   'desc': _('In the container wizard, a QR code will be generated '
+                                                             'to register the new container on the smartphone. '
+                                                             '(Only applicable for smartphone containers)'),
+                                                   'group': GROUP.WIZARD}
         },
         SCOPE.CONTAINER: {
             ACTION.PI_SERVER_URL: {
@@ -2958,6 +2962,7 @@ def get_static_policy_definitions(scope=None):
         }
 
     }
+
     if scope:
         ret = pol.get(scope, {})
     else:

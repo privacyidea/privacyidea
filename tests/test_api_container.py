@@ -10,6 +10,7 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
                                        get_container_realms)
+from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
@@ -559,7 +560,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_24_user_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -573,7 +575,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -964,7 +967,8 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_27_admin_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -978,7 +982,8 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         # Admin has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData("registration_state", "registered", info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -1073,6 +1078,48 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         template = get_template_obj(template_params["name"])
         template.delete()
 
+        delete_policy("policy")
+
+    def test_38_admin_set_container_info_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        container_serial = self.create_container_for_user("smartphone")
+        self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
+                                    method='POST')
+        delete_policy("policy")
+
+    def test_39_admin_set_container_info_denied(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        container_serial = self.create_container_for_user("smartphone")
+        self.request_denied_assert_403(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+        # Modify container info is allowed, but internal info can not be modified
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        container_serial = self.create_container_for_user("smartphone")
+        container = find_container_by_serial(container_serial)
+        container.update_container_info(
+            [TokenContainerInfoData(key="public_server_key", value="123456789", info_type=PI_INTERNAL)])
+        self.request_denied_assert_403(f"/container/{container_serial}/info/public_server_key",
+                                       {"value": "1234"}, self.at, method='POST')
+        delete_policy("policy")
+
+    def test_40_admin_delete_container_info_allowed(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        container_serial = self.create_container_for_user("smartphone")
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
+                                    method="DELETE")
+        delete_policy("policy")
+
+    def test_41_admin_delete_container_info_denied(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        container_serial = self.create_container_for_user("smartphone")
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        self.request_denied_assert_403(f"/container/{container_serial}/info/delete/test", {}, self.at,
+                                       method="DELETE")
         delete_policy("policy")
 
 
@@ -1705,7 +1752,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_24_helpdesk_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER, realm=self.realm1)
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
@@ -1718,7 +1766,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Helpdesk has no CONTAINER_ROLLOVER rights for the realm of the container
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.add_container_info("registration_state", "registered")
+        container.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
@@ -1865,6 +1914,121 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         template = get_template_obj(template_params["name"])
         template.delete()
 
+        delete_policy("policy")
+
+    def test_30_helpdesk_set_container_info_allowed(self):
+        self.setUp_user_realm2()
+        # policy for realms
+        container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=[self.realm1, self.realm2])
+        self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
+                                    method='POST')
+        delete_policy("policy")
+
+        # policy for resolver
+        container_serial = self.create_container_for_user()
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername1)
+        self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
+                                    method='POST')
+        delete_policy("policy")
+
+        # policy for user
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="selfservice",
+                   realm=self.realm1, resolver=self.resolvername1)
+        self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
+                                    method='POST')
+        delete_policy("policy")
+
+    def test_31_helpdesk_set_container_info_denied(self):
+        self.setUp_user_realm3()
+        c_serial_user = self.create_container_for_user()
+        c_serial_no_user = init_container({"type": "generic"})["container_serial"]
+
+        # policy for a realm
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=self.realm3)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+        # policy for a resolver
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername3)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+        # policy for a user
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="hans", realm=self.realm1,
+                   resolver=self.resolvername1)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
+                                       method='POST')
+        delete_policy("policy")
+
+    def test_32_helpdesk_delete_container_info_allowed(self):
+        self.setUp_user_realm2()
+        # policy for realms
+        container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=[self.realm1, self.realm2])
+        self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
+                                    method="DELETE")
+        delete_policy("policy")
+
+        # policy for resolver
+        container_serial = self.create_container_for_user()
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername1)
+        self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
+                                    method="DELETE")
+        delete_policy("policy")
+
+        # policy for user
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="selfservice",
+                   realm=self.realm1, resolver=self.resolvername1)
+        self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
+                                    method="DELETE")
+        delete_policy("policy")
+
+    def test_33_helpdesk_delete_container_info_denied(self):
+        self.setUp_user_realm3()
+        c_serial_user = self.create_container_for_user()
+        container_user = find_container_by_serial(c_serial_user)
+        container_user.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+        c_serial_no_user = init_container({"type": "generic"})["container_serial"]
+        container_no_user = find_container_by_serial(c_serial_no_user)
+        container_no_user.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+
+        # policy for a realm
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=self.realm3)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
+        delete_policy("policy")
+
+        # policy for a resolver
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername3)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
+        delete_policy("policy")
+
+        # policy for a user
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="hans", realm=self.realm1,
+                   resolver=self.resolvername1)
+        self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
+        self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
+                                       method="DELETE")
         delete_policy("policy")
 
 
@@ -2316,7 +2480,7 @@ class APIContainer(APIContainerTest):
         self.setUp_user_realm2()
         container.set_realms([self.realm2], add=True)
         # Add info
-        container.add_container_info("key1", "value1")
+        container.update_container_info([TokenContainerInfoData(key="key1", value="value1")])
 
         # Filter for type
         result = self.request_assert_success('/container/',
@@ -2380,6 +2544,29 @@ class APIContainer(APIContainerTest):
                                              {"token_serial": "non-existing", "pagesize": 15},
                                              self.at, 'GET')
         self.assertEqual(result["result"]["value"]["count"], 0)
+
+    def test_23_delete_container_info_success(self):
+        # Arrange
+        container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
+
+        # Delete info
+        self.request_assert_success(f"/container/{container_serial}/info/delete/test",
+                                    {}, self.at, "DELETE")
+
+    def test_24_delete_container_info_fail(self):
+        # Arrange
+        container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.update_container_info([TokenContainerInfoData(key="test", value="1234"),
+                                         TokenContainerInfoData(key="internal_test", value="abcd",
+                                                                info_type=PI_INTERNAL)])
+
+        # Try to delete internal key
+        result = self.request_assert_success(f"/container/{container_serial}/info/delete/internal_test",
+                                             {}, self.at, "DELETE")
+        self.assertFalse(result["result"]["value"])
 
 
 @dataclass
@@ -3985,17 +4172,29 @@ class APIContainerSynchronization(APIContainerTest):
         # tokens
         self.setUp_user_realms()
 
-        push = init_token({"genkey": "1", "type": "push"})
+        push = init_token({"genkey": "1", "type": "push", PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
+        self.assertEqual("poll only", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
         smartphone.add_token(push)
 
         hotp_params = {"type": "hotp",
                        "genkey": True,
                        "realm": self.realm1,
-                       "user": "hans"}
+                       "user": "hans",
+                       "hashlib": "sha256"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
         initial_enroll_url = result["detail"]["googleurl"]["value"]
         hotp = get_one_token(serial=result["detail"]["serial"])
+        self.assertEqual("sha256", hotp.hashlib)
         smartphone.add_token(hotp)
+
+        totp = init_token({"genkey": True, "type": "totp", "otplen": 8, "hashlib": "sha256", "timeStep": 60})
+        self.assertEqual("sha256", totp.hashlib)
+        self.assertEqual(60, totp.timestep)
+        smartphone.add_token(totp)
+        daypassword = init_token({"genkey": True, "type": "daypassword", "hashlib": "sha256", "timeStep": 30})
+        self.assertEqual("sha256", daypassword.hashlib)
+        self.assertEqual(30, daypassword.timestep)
+        smartphone.add_token(daypassword)
 
         # Offline token
         offline_hotp = init_token({"genkey": "1", "type": "hotp"})
@@ -4005,6 +4204,14 @@ class APIContainerSynchronization(APIContainerTest):
 
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        # Firebase config
+        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
+                     FIREBASE_CONFIG.TTL: 10}
+        set_smsgateway("firebase", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                       fb_config)
+        set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "firebase",
+                                                       PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
@@ -4077,10 +4284,20 @@ class APIContainerSynchronization(APIContainerTest):
         token_diff = container_dict_server["tokens"]
         # only online hotp token is included, for the push token the config is missing and offline tokens can not be
         # synchronized
-        self.assertEqual(1, len(token_diff["add"]))
-        self.assertNotEqual(initial_enroll_url, token_diff["add"][0])
+        self.assertEqual(4, len(token_diff["add"]))
+        new_hotp_enroll_url = [enroll_url for enroll_url in token_diff["add"] if hotp.get_serial() in enroll_url][0]
+        self.assertNotEqual(initial_enroll_url, new_hotp_enroll_url)
         self.assertIn(offline_hotp.get_serial(), token_diff["offline"])
         self.assertEqual(103, offline_hotp.token.count)
+
+        # check tokens
+        self.assertEqual("sha256", hotp.hashlib)
+        self.assertEqual("sha256", totp.hashlib)
+        self.assertEqual(60, totp.timestep)
+        self.assertEqual("sha256", daypassword.hashlib)
+        self.assertEqual(30, daypassword.timestep)
+        # due to new policy push token config changed to firebase
+        self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
         self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
@@ -4481,7 +4698,8 @@ class APIContainerSynchronization(APIContainerTest):
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.add_container_info("registration_state", "rollover_completed")
+        smartphone.update_container_info(
+            [TokenContainerInfoData(key="registration_state", value="rollover_completed", info_type=PI_INTERNAL)])
 
         # tokens
         server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -4646,16 +4864,27 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
+        def check_result(result):
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            self.assertEqual("hotp", tokens[0].get_type())
+            # result contains enroll info for one token
+            self.assertEqual(1, len(result["result"]["value"]["tokens"]))
+            container_template = container.template
+            self.assertEqual(template_params["name"], container_template.name)
+
+        # create container by passing the complete template dictionary
         request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        check_result(result)
+
+        # create container by passing only the template name
         result = self.request_assert_success('/container/init',
-                                             request_params,
+                                             {"type": "smartphone", "template_name": template_params["name"]},
                                              self.at, 'POST')
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
-        container_template = container.template
-        self.assertEqual(template_params["name"], container_template.name)
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
@@ -4665,15 +4894,32 @@ class APIContainerTemplate(APIContainerTest):
         template_params = {"name": "test",
                            "container_type": "smartphone",
                            "template_options": {}}
+        create_container_template(container_type=template_params["container_type"],
+                                  template_name=template_params["name"],
+                                  options=template_params["template_options"])
 
+        def check_result(result):
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(0, len(tokens))
+            self.assertIsNone(result["result"]["value"].get("tokens"))
+            self.assertEqual(template_params["name"], container.template.name)
+
+        # with template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(0, len(tokens))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
+
+        # with template from db
+        request_params = json.dumps({"type": "smartphone", "template": template_params})
+        result = self.request_assert_success("/container/init",
+                                             {"type": "smartphone", "template_name": template_params["name"]},
+                                             self.at, "POST")
+        check_result(result)
+
+        template = get_template_obj(template_params["name"])
+        template.delete()
 
         # Create a template without template options
         template_params = {"name": "test",
@@ -4698,21 +4944,29 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
+        def check_result(result):
+            # only hotp token is created, push require policy that is not set
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+
+        # Create a container from the template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # only hotp token is created, push require policy that is not set
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        check_result(result)
+
+        # Create a container from the db template
+        result = self.request_assert_success("/container/init",
+                                             {"type": "smartphone", "template_name": template_params["name"]}, self.at,
+                                             "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
 
     def test_09_create_container_with_template_all_tokens_success(self):
+        self.setUp_user_realm3()
         # Policies
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only",
                                                        PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push",
@@ -4756,56 +5010,64 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
-        self.setUp_user_realm3()
+        def check_result(result):
+            # check tokens that were created
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            self.assertEqual(15, len(tokens))
+            self.assertEqual(15, len(result["result"]["value"]["tokens"]))
+
+            # check tokens and init details
+            owner = User(login="cornelius", realm=self.realm3)
+            init_details = result["result"]["value"]["tokens"]
+            for token in tokens:
+                token_type = token.get_type()
+
+                # check user assignment
+                if token_type in ["hotp", "indexedsecret", "push", "sms", "email", "tiqr"]:
+                    self.assertEqual(owner, token.user)
+                    if token_type == "hotp":
+                        # check default hashlib
+                        self.assertEqual("sha256", token.hashlib)
+                else:
+                    self.assertIsNone(token.user)
+
+                # check init details
+                if token_type in ["hotp", "totp", "daypassword"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
+                elif token_type in ["paper", "tan"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
+                elif token_type == "push":
+                    serial = token.get_serial()
+                    push_url = init_details[serial].get("pushurl")
+                    self.assertTrue(isinstance(push_url, dict))
+                    self.assertIn(f"issuer={self.realm3}", push_url["value"])
+                    self.assertIn(f"serial_{serial}", push_url["value"])
+                elif token_type == "applspec":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
+                elif token_type == "registration":
+                    self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
+                elif token_type == "tiqr":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+
+            [token.delete_token() for token in tokens]
+            container.delete()
+
+        # Create a container from the template dict
         request_params = json.dumps(
             {"type": "generic", "template": template_params, "user": "cornelius", "realm": self.realm3})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # check tokens that were created
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        self.assertEqual(15, len(tokens))
-        self.assertEqual(15, len(result["result"]["value"]["tokens"]))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
 
-        # check tokens and init details
-        owner = User(login="cornelius", realm=self.realm3)
-        init_details = result["result"]["value"]["tokens"]
-        for token in tokens:
-            token_type = token.get_type()
-
-            # check user assignment
-            if token_type in ["hotp", "indexedsecret", "push", "sms", "email", "tiqr"]:
-                self.assertEqual(owner, token.user)
-                if token_type == "hotp":
-                    # check default hashlib
-                    self.assertEqual("sha256", token.hashlib)
-            else:
-                self.assertIsNone(token.user)
-
-            # check init details
-            if token_type in ["hotp", "totp", "daypassword"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
-            elif token_type in ["paper", "tan"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
-            elif token_type == "push":
-                serial = token.get_serial()
-                push_url = init_details[serial].get("pushurl")
-                self.assertTrue(isinstance(push_url, dict))
-                self.assertIn(f"issuer={self.realm3}", push_url["value"])
-                self.assertIn(f"serial_{serial}", push_url["value"])
-            elif token_type == "applspec":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
-            elif token_type == "registration":
-                self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
-            elif token_type == "tiqr":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+        # Create a container from the template name
+        result = self.request_assert_success("/container/init",
+                                             {"type": "generic", "template_name": template_params["name"],
+                                              "user": "cornelius", "realm": self.realm3}, self.at, "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
-        [token.delete_token() for token in tokens]
 
         delete_policy("push")
         delete_policy("admin")
@@ -4853,50 +5115,59 @@ class APIContainerTemplate(APIContainerTest):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
 
-        # Create a container from the template
+        def check_result(result):
+            # check tokens that were created
+            container_serial = result["result"]["value"]["container_serial"]
+            container = find_container_by_serial(container_serial)
+            tokens = container.get_tokens()
+            all_token_types = [token.get_type() for token in tokens]
+            self.assertNotIn("push", all_token_types)
+            self.assertNotIn("tiqr", all_token_types)
+            self.assertEqual(13, len(tokens))
+            self.assertEqual(13, len(result["result"]["value"]["tokens"]))
+
+            # check tokens and init details
+            init_details = result["result"]["value"]["tokens"]
+            for token in tokens:
+                token_type = token.get_type()
+
+                # check user assignment
+                self.assertIsNone(token.user)
+
+                if token_type == "hotp":
+                    # check default hashlib
+                    self.assertEqual("sha256", token.hashlib)
+
+                # check init details
+                if token_type in ["hotp", "totp", "daypassword"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
+                elif token_type in ["paper", "tan"]:
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
+                elif token_type == "applspec":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
+                elif token_type == "registration":
+                    self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
+                elif token_type == "tiqr":
+                    self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+
+            [token.delete_token() for token in tokens]
+            container.delete()
+
+        # Create a container from the template dict
         self.setUp_user_realm3()
         request_params = json.dumps(
             {"type": "generic", "template": template_params})
-        result = self.request_assert_success('/container/init',
-                                             request_params,
-                                             self.at, 'POST')
-        # check tokens that were created
-        container_serial = result["result"]["value"]["container_serial"]
-        container = find_container_by_serial(container_serial)
-        tokens = container.get_tokens()
-        all_token_types = [token.get_type() for token in tokens]
-        self.assertNotIn("push", all_token_types)
-        self.assertNotIn("tiqr", all_token_types)
-        self.assertEqual(13, len(tokens))
-        self.assertEqual(13, len(result["result"]["value"]["tokens"]))
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        check_result(result)
 
-        # check tokens and init details
-        init_details = result["result"]["value"]["tokens"]
-        for token in tokens:
-            token_type = token.get_type()
-
-            # check user assignment
-            self.assertIsNone(token.user)
-
-            if token_type == "hotp":
-                # check default hashlib
-                self.assertEqual("sha256", token.hashlib)
-
-            # check init details
-            if token_type in ["hotp", "totp", "daypassword"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("googleurl"), dict))
-            elif token_type in ["paper", "tan"]:
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("otps"), dict))
-            elif token_type == "applspec":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("password"), str))
-            elif token_type == "registration":
-                self.assertEqual(12, len(init_details[token.get_serial()]["registrationcode"]))
-            elif token_type == "tiqr":
-                self.assertTrue(isinstance(init_details[token.get_serial()].get("tiqrenroll"), dict))
+        # Create container from the db template
+        result = self.request_assert_success("/container/init",
+                                             {"type": "generic", "template_name": template_params["name"]}, self.at,
+                                             "POST")
+        check_result(result)
 
         template = get_template_obj(template_params["name"])
         template.delete()
-        [token.delete_token() for token in tokens]
 
         delete_policy("admin")
         delete_policy("pw_length")

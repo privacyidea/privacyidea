@@ -29,6 +29,7 @@ from flask import json
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
@@ -95,7 +96,7 @@ class TokenContainerClass:
         if not value:
             # key not defined: set default value
             value = class_options[key][0]
-            self.add_container_info(key, value)
+            self.update_container_info([TokenContainerInfoData(key=key, value=value, info_type=PI_INTERNAL)])
         return value
 
     @property
@@ -116,6 +117,10 @@ class TokenContainerClass:
     @property
     def type(self) -> str:
         return self._db_container.type
+
+    @property
+    def db_id(self) -> int:
+        return self._db_container.id
 
     @property
     def last_authentication(self) -> Union[datetime, None]:
@@ -462,27 +467,21 @@ class TokenContainerClass:
 
         :param info: dictionary in the format: {key: value}
         """
-        self.delete_container_info()
+        self.delete_container_info(keep_internal=True)
         if info:
             self._db_container.set_info(info)
 
-    def add_container_info(self, key, value):
+    def update_container_info(self, info: list[TokenContainerInfoData]):
         """
-        Add a key and a value to the DB tokencontainerinfo
+        Updates the container info for the passed list of container info. Non-existing keys are added and the values
+        for existing keys are updated.
 
-        :param key: key
-        :param value: value
+        :param info: list of TokenContainerInfoData objects
         """
-        self._db_container.set_info({key: value})
-
-    def update_container_info(self, info: dict[str, str]):
-        """
-        Updates the container info for the passed dictionary. Non-existing keys are added and the values for existing
-        keys are updated.
-
-        :param info: dictionary in the format: {key: value}
-        """
-        self._db_container.set_info(info)
+        for data in info:
+            TokenContainerInfo(self.db_id, data.key, data.value, type=data.type, description=data.description).save(
+                persistent=False)
+        db.session.commit()
 
     def get_container_info(self) -> list[TokenContainerInfo]:
         """
@@ -491,6 +490,12 @@ class TokenContainerClass:
         :return: list of tokencontainerinfo objects
         """
         return self._db_container.info_list
+
+    def get_internal_info_keys(self) -> list[str]:
+        """
+        Returns the keys of the internal container info.
+        """
+        return [info.key for info in self.get_container_info() if info.type == PI_INTERNAL]
 
     def get_container_info_dict(self) -> dict[str, str]:
         """
@@ -502,11 +507,12 @@ class TokenContainerClass:
         container_info_dict = {info.key: info.value for info in container_info_list}
         return container_info_dict
 
-    def delete_container_info(self, key=None) -> dict[str, bool]:
+    def delete_container_info(self, key=None, keep_internal: bool = True) -> dict[str, bool]:
         """
         Delete the tokencontainerinfo from the DB
 
         :param key: key to delete, if None all keys are deleted
+        :param keep_internal: If True, entries of type PI_INTERNAL are not deleted
         :return: dictionary of deleted keys in the format {key: deleted}
         """
         res = {}
@@ -514,11 +520,18 @@ class TokenContainerClass:
             container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, key=key)
         else:
             container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
-        for ci in container_infos:
-            ci.delete()
-            res[ci.key] = True
+
         if container_infos.count() == 0:
+            res[key] = False
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
+
+        for ci in container_infos:
+            if not keep_internal or ci.type != PI_INTERNAL:
+                ci.delete()
+                res[ci.key] = True
+            else:
+                log.debug(f"Container info with key {ci.key} is of type {PI_INTERNAL} and can not be deleted.")
+                res[ci.key] = False
         return res
 
     def add_options(self, options):
@@ -532,7 +545,7 @@ class TokenContainerClass:
             option_values = class_options.get(key)
             if option_values is not None:
                 if value in option_values:
-                    self.add_container_info(key, value)
+                    self.update_container_info([TokenContainerInfoData(key=key, value=value, info_type=PI_INTERNAL)])
                 else:
                     log.debug(f"Value {value} not supported for option key {key}.")
             else:
@@ -703,6 +716,7 @@ class TokenContainerClass:
                             "hash_algorithm": "SHA256",
                             "key_algorithm": "secp384r1"
                         },
+                "internal_info_keys": ["hash_algorithm"],
                 "realms": ["deflocal"],
                 "users": [{"user_name": "testuser",
                            "user_realm": "deflocal",
@@ -729,6 +743,7 @@ class TokenContainerClass:
         else:
             info_dict = self.get_container_info_dict()
         details["info"] = info_dict
+        details["internal_info_keys"] = self.get_internal_info_keys()
 
         template = self.template
         template_name = ""
@@ -884,7 +899,8 @@ class TokenContainerClass:
 
         # Initial synchronization after registration or rollover
         if initial_transfer_allowed and not is_true(container_info.get("initially_synchronized")):
-            self.add_container_info("initially_synchronized", "True")
+            self.update_container_info(
+                [TokenContainerInfoData(key="initially_synchronized", value="True", info_type=PI_INTERNAL)])
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
             for serial in server_missing_tokens:
                 # Try to add the missing token to the container on the server

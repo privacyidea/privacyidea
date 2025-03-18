@@ -258,7 +258,10 @@ def offlinerefill():
 @event("validate_check", request, g)
 def check():
     """
-    check the authentication for a user or a serial number.
+    .. important::
+        The ``/validate/samlcheck`` endpoint will be deprecated in v3.12
+
+    Check the authentication for a user or a serial number.
     Either a ``serial`` or a ``user`` is required to authenticate.
     The PIN and OTP value is sent in the parameter ``pass``.
     In case of successful authentication it returns ``result->value: true``.
@@ -422,14 +425,17 @@ def check():
     if credential_id:
         # Find the token that responded to the challenge
         transaction_id: str = get_required(request.all_data, "transaction_id")
-        token = get_fido2_token_by_credential_id(credential_id)
+        if serial:
+            token = get_one_token(serial=serial)
+        else:
+            token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            log.info(f"No token found for the given credential id {credential_id}. "
-                     f"Trying to get the token by transaction id...")
+            log.debug(f"No token found for the given credential id {credential_id}. "
+                      f"Trying to get the token by transaction id...")
             # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
-            token = get_fido2_token_by_transaction_id(transaction_id)
+            token = get_fido2_token_by_transaction_id(transaction_id, credential_id)
             if not token:
-                log.info(f"No token found for the given transaction id {transaction_id}.")
+                log.debug(f"No token found for the given transaction id {transaction_id}.")
                 return send_result(False, rid=2, details={
                     "message": "No token found for the given credential ID or transaction ID!"})
 
