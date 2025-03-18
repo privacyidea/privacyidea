@@ -507,12 +507,13 @@ def assign_api():
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     if g.logged_in_user.get("role") == "user":
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, error_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin_param,
+                       error_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -729,7 +730,7 @@ def setpin_api(serial=None):
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
 
     res = 0
     if userpin is not None:
@@ -742,7 +743,7 @@ def setpin_api(serial=None):
 
     if otppin is not None:
         g.audit_object.add_to_log({'action_detail': "otppin, "})
-        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
+        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin_param)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -772,13 +773,13 @@ def setrandompin_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     pin = getParam(request.all_data, "pin")
     if not pin:
         raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
     g.audit_object.add_to_log({'action_detail': "otppin, "})
-    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)
+    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin_param)
     g.audit_object.log({"success": True})
     return send_result(res, details={"pin": pin})
 

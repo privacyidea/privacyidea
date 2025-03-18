@@ -772,6 +772,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             return true;
         };
 
+        $scope.copyPKCS12PasswordToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                inform.add(gettextCatalog.getString("PKCS12 Password copied to clipboard"),
+                    {type: "info", ttl: 3000})
+            });
+        }
+
         // ===========================================================
         // ===============  Date stuff ===============================
         // ===========================================================

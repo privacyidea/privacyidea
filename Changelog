@@ -1,3 +1,8 @@
+Version 3.12dev1, 2025-03-14
+
+  Fixes:
+  * Reduce PyOpenSSL dependencies for certificate token (#4212)
+
 Version 3.11dev3, 2025-02-17
 
   Features:
