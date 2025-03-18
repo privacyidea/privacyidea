@@ -151,7 +151,7 @@ def verify_certificate(certificate: Certificate, chain: list):
     :return: raises an exception
     """
     if not chain:
-        raise privacyIDEAError("Can not verify certificate against an empty chain.")
+        raise privacyIDEAError("Can not verify certificate against an empty chain.")  # pragma: no cover
     # first reverse the list, since it can be popped better
     chain = list(reversed(chain))
     chain = [load_pem_x509_certificate(c.encode()) for c in chain]
@@ -505,6 +505,7 @@ class CertificateTokenClass(TokenClass):
             keysize = get_optional(param, "keysize", 2048)
             # The key size should be at least 2048
             if keysize < 2048:
+                log.info("Adjusting Key size to 2048 bits for improved security.")
                 keysize = 2048
             key = rsa.generate_private_key(
                 public_exponent=65537,

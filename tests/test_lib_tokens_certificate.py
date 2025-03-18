@@ -1,8 +1,9 @@
 """
 This test file tests the lib.tokens.certificatetoken
 """
-
+import base64
 from cryptography import x509
+from cryptography.hazmat.primitives.serialization import pkcs12
 import pytest
 from testfixtures import LogCapture
 
@@ -408,7 +409,7 @@ class CertificateTokenTestCase(MyTestCase):
         remove_token(self.serial2)
 
     @pytest.mark.usefixtures("setup_local_ca")
-    def test_02b_success_request_with_attestation(self):
+    def test_02b_fail_request_with_broken_attestation_path(self):
         db_token = Token(self.serial2, tokentype="certificate")
         db_token.save()
         token = CertificateTokenClass(db_token)
@@ -486,8 +487,7 @@ class CertificateTokenTestCase(MyTestCase):
         privatekey = token.get_tokeninfo("privatekey")
         self.assertIsNone(privatekey)
         # And there is no pkcs12_password in the tokeninfo
-        pkcs12_password = token.get_tokeninfo("pkcs12_password")
-        self.assertIsNone(pkcs12_password)
+        self.assertIsNone(token.get_tokeninfo("pkcs12_password"))
 
         # revoke the token
         r = token.revoke()
@@ -509,6 +509,35 @@ class CertificateTokenTestCase(MyTestCase):
                          f"<Name(OU=realm1,CN=cornelius,"
                          f"{x509.oid.NameOID.EMAIL_ADDRESS.dotted_string}=user@localhost.localdomain)>")
         remove_token(self.serial3)
+
+        # Check that we can use the PIN as password for the PKCS12 container
+        # Also check that the insufficient keysize is updated
+        db_token = Token(self.serial3, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+        token.update({"ca": "localCA",
+                      "genkey": 1,
+                      "keysize": 1024,
+                      "pin": "123456",
+                      "user": "cornelius"})
+        detail = token.get_init_detail()
+        # Check for pkcs12
+        self.assertIn("pkcs12", detail, detail)
+        self.assertNotIn("pkcs12_password", detail, detail)
+        token_dict = token.get_as_dict()
+        self.assertIn("pkcs12", token_dict.get("info"), token_dict)
+        pkcs12_b64 = token_dict.get("info").get("pkcs12")
+        self.assertEqual(pkcs12_b64, detail["pkcs12"])
+        self.assertEqual("123456", token.token.get_pin())
+        # Decrypt the PKCS12 container with the token PIN
+        pkcs12_container = pkcs12.load_key_and_certificates(base64.b64decode(pkcs12_b64),
+                                                            b"123456")
+        self.assertIsNotNone(pkcs12_container)
+        # Check that the key size was adjusted
+        self.assertEqual(2048, pkcs12_container[0].key_size)
+        # Check that the certificate from the container matches the returned one
+        self.assertEqual(x509.load_pem_x509_certificate(detail["certificate"].encode()),
+                         pkcs12_container[1])
 
     def test_05_get_default_settings(self):
         params = {}

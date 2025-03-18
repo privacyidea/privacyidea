@@ -108,8 +108,7 @@ class CAConnectorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -177,3 +176,18 @@ class CAConnectorTestCase(MyApiTestCase):
             self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
+
+    def test_08_get_specific_options(self):
+        with self.app.test_request_context('/caconnector/specific/local',
+                                           method='GET',
+                                           query_string={'type': 'local',
+                                                         'cakey': '/etc/key.pem',
+                                                         'cacert': '/etc/cert.pem'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result['status'], result)
+            # TODO: Add test for MSCA connector
+            # The localca CA connector does return only an empty dictionary
+            self.assertEqual(result['value'], {}, result)

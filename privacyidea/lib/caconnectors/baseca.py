@@ -58,7 +58,7 @@ class BaseCAConnector(object):
         CertificateDir: The directory where to save the certificates. This is
         relative to the WorkingDir.
 
-        :param csr: Certificate signing request (PEM format ot SPKAC)
+        :param csr: Certificate signing request (PEM format or SPKAC)
         :type csr: str
         :param options: Additional options like the validity time or the
             template or spkac=1
