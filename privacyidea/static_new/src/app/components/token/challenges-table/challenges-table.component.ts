@@ -15,9 +15,6 @@ import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../services/auth/auth.service';
-import { NotificationService } from '../../../services/notification/notification.service';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { NgClass } from '@angular/common';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
@@ -73,23 +70,11 @@ export class ChallengesTableComponent {
   constructor(
     private tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
-    private router: Router,
-    private authService: AuthService,
-    private notificationService: NotificationService,
   ) {
     effect(() => {
       this.filterValue();
       this.fetchChallengesData();
     });
-
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchChallengesData();
-    }
   }
 
   fetchChallengesData = () => {

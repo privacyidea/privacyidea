@@ -11,13 +11,10 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { AuthService } from '../../../services/auth/auth.service';
-import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TokenService } from '../../../services/token/token.service';
 import { MatIcon } from '@angular/material/icon';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { NotificationService } from '../../../services/notification/notification.service';
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
@@ -88,25 +85,13 @@ export class TokenTableComponent {
   filterInput!: HTMLInputElement;
 
   constructor(
-    private router: Router,
-    private authService: AuthService,
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
-    private notificationService: NotificationService,
   ) {
     effect(() => {
       this.filterValue();
       this.fetchTokenData();
     });
-
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchTokenData();
-    }
   }
 
   ngAfterViewInit() {

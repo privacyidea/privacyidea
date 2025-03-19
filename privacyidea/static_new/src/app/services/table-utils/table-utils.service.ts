@@ -294,11 +294,9 @@ export class TableUtilsService {
     event: PageEvent,
     pageIndex: WritableSignal<number>,
     pageSize: WritableSignal<number>,
-    fetchData: () => void,
   ) {
     pageSize.set(event.pageSize);
     pageIndex.set(event.pageIndex);
-    fetchData();
   }
 
   handleSortEvent(

@@ -1,9 +1,4 @@
-import {
-  ComponentFixture,
-  fakeAsync,
-  TestBed,
-  tick,
-} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ContainerDetailsComponent } from './container-details.component';
 import { provideHttpClient } from '@angular/common/http';
@@ -386,13 +381,4 @@ describe('ContainerDetailsComponent', () => {
     );
     expect(component.refreshContainerDetails()).toBeTrue();
   });
-
-  it('should reset pageIndex, pageSize, and fetch token data on page change', fakeAsync(() => {
-    const fetchSpy = spyOn<any>(component, 'fetchTokenData').and.callThrough();
-    component.onPageChanged({ pageIndex: 2, pageSize: 20 } as any);
-    tick();
-    expect(component.pageIndex()).toBe(2);
-    expect(component.pageSize()).toBe(20);
-    expect(fetchSpy).toHaveBeenCalled();
-  }));
 });

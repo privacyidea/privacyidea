@@ -10,12 +10,9 @@ import { TokenApplicationsOffline } from './token-applications-offline/token-app
 import { MatSelectModule } from '@angular/material/select';
 import { TokenSelectedContent } from '../token.component';
 import { Sort } from '@angular/material/sort';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MachineService } from '../../../services/machine/machine.service';
 import { NotificationService } from '../../../services/notification/notification.service';
-import { AuthService } from '../../../services/auth/auth.service';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-token-applications',
@@ -65,21 +62,11 @@ export class TokenApplications {
   );
 
   constructor(
-    private tableUtilsService: TableUtilsService,
     private machineService: MachineService,
     private notificationService: NotificationService,
-    private authService: AuthService,
-    private router: Router,
   ) {
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchApplicationSshData();
-      this.fetchApplicationOfflineData();
-    }
+    this.fetchApplicationSshData();
+    this.fetchApplicationOfflineData();
   }
 
   tokenSelected(serial: string) {

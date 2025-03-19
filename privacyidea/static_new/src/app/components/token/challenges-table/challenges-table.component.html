@@ -17,8 +17,7 @@
     <mat-paginator (page)="tableUtilsService.handlePageEvent(
         $event,
         pageIndex,
-        pageSize,
-        fetchChallengesData)"
+        pageSize)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"

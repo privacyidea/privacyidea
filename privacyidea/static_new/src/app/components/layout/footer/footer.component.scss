@@ -37,6 +37,11 @@ $border-radius: var(--border-radius);
     padding-bottom: 10px;
     padding-top: 10px;
     gap: 20px;
+
+    span {
+      margin-left: 20px;
+      color: $link-color;
+    }
   }
 
   .footer-right {
@@ -46,6 +51,19 @@ $border-radius: var(--border-radius);
     gap: 20px;
   }
 
+  .loading-urls-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .loading-url {
+    margin-left: auto;
+    margin-right: 1rem;
+    margin-bottom: 2px;
+    color: var(--blue-base);
+    opacity: 0.33;
+  }
+
   a {
     text-decoration: none;
     color: $link-color;
@@ -53,10 +71,5 @@ $border-radius: var(--border-radius);
     &:hover {
       color: color.adjust($link-color, $lightness: 10%);
     }
-  }
-
-  span {
-    margin-left: 20px;
-    color: $link-color;
   }
 }

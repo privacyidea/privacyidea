@@ -93,15 +93,6 @@ export class ContainerTableComponent {
       this.filterValue();
       this.fetchContainerData();
     });
-
-    if (!this.authService.isAuthenticatedUser()) {
-      this.router.navigate(['']).then((r) => {
-        console.warn('Redirected to login page.', r);
-        this.notificationService.openSnackBar('Redirected to login page.');
-      });
-    } else {
-      this.fetchContainerData();
-    }
   }
 
   ngAfterViewInit() {

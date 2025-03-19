@@ -21,7 +21,7 @@
                placeholder="Example query: 'service_id: myService'" />
       </mat-form-field>
       <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize, fetchApplicationSshData)"
+                           $event, pageIndex, pageSize)"
                      [length]="length()"
                      [pageIndex]="pageIndex()"
                      [pageSizeOptions]="pageSizeOptions"

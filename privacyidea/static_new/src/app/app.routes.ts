@@ -11,7 +11,11 @@ export const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
-      { path: 'token', component: TokenComponent, canActivate: [AuthGuard] },
+      {
+        path: 'token',
+        canActivate: [AuthGuard],
+        component: TokenComponent,
+      },
       { path: '', redirectTo: '/login', pathMatch: 'full' },
     ],
   },

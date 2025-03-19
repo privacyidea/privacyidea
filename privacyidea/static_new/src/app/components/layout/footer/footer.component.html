@@ -1,10 +1,15 @@
 <div aria-label="Footer Container"
      class="footer-container">
-  <div class="progress-bar">
-    @if (showProgressBar()) {
+  @if (showProgressBar()) {
+    <div class="loading-urls-container">
+      @for (url of loadingUrls(); track url) {
+        <span class="loading-url"> {{ url.slice(1) }} </span><br />
+      }
+    </div>
+    <div class="progress-bar">
       <mat-progress-bar mode="indeterminate" />
-    }
-  </div>
+    </div>
+  }
   <div class="footer-bottom">
     <span> privacyIDEA {{ version }} </span>
     <div class="footer-right">

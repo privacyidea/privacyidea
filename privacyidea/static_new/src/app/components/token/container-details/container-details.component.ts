@@ -4,6 +4,7 @@ import {
   effect,
   ElementRef,
   Input,
+  linkedSignal,
   signal,
   ViewChild,
   WritableSignal,
@@ -129,15 +130,6 @@ export class ContainerDetailsComponent {
       isEditing: signal(false),
     })),
   );
-  isAnyEditing = computed(() => {
-    const detailData = this.containerDetailData();
-
-    return (
-      detailData.some((element) => element.isEditing()) ||
-      this.isEditingUser() ||
-      this.isEditingInfo()
-    );
-  });
   infoData = signal<
     {
       value: any;
@@ -167,7 +159,11 @@ export class ContainerDetailsComponent {
     new MatTableDataSource<any>([]),
   );
   length = signal(0);
-  pageIndex = signal(0);
+  filterValue = signal('');
+  pageIndex = linkedSignal({
+    source: this.showOnlyTokenNotInContainer,
+    computation: () => 0,
+  });
   pageSize = signal(10);
   fetchedUsernames = toSignal(
     toObservable(this.selectedUserRealm).pipe(
@@ -187,6 +183,16 @@ export class ContainerDetailsComponent {
     ),
     { initialValue: [] },
   );
+  computedFilterValue = linkedSignal({
+    source: this.showOnlyTokenNotInContainer,
+    computation: (showOnlyTokenNotInContainer) => {
+      if (showOnlyTokenNotInContainer) {
+        return this.filterValue() + ' container_serial:';
+      } else {
+        return this.filterValue().replace(/container_serial:\S*/g, '');
+      }
+    },
+  });
   userOptions = computed(() => this.fetchedUsernames());
   filteredUserOptions = computed(() => {
     const filterValue = (this.selectedUsername() || '').toLowerCase();
@@ -194,8 +200,16 @@ export class ContainerDetailsComponent {
       option.toLowerCase().includes(filterValue),
     );
   });
+  isAnyEditing = computed(() => {
+    const detailData = this.containerDetailData();
+
+    return (
+      detailData.some((element) => element.isEditing()) ||
+      this.isEditingUser() ||
+      this.isEditingInfo()
+    );
+  });
   pageSizeOptions = [10];
-  filterValue = '';
   userRealm = '';
   @ViewChild('tokenFilterInput')
   tokenFilterInput!: ElementRef<HTMLInputElement>;
@@ -213,15 +227,11 @@ export class ContainerDetailsComponent {
     private notificationService: NotificationService,
   ) {
     effect(() => {
-      if (this.showOnlyTokenNotInContainer()) {
-        this.filterValue = this.filterValue.replace(
-          /container_serial:\S*/g,
-          '',
-        );
-        this.filterValue = this.filterValue + ' container_serial:';
-      }
-      this.pageIndex.set(0);
+      this.showOnlyTokenNotInContainer();
       this.fetchTokenData();
+      if (this.tokenFilterInput) {
+        this.tokenFilterInput.nativeElement.focus();
+      }
     });
   }
 
@@ -234,7 +244,7 @@ export class ContainerDetailsComponent {
       this.containerService.getContainerDetails(this.containerSerial()),
       this.realmService.getRealms(),
       this.tokenService.getTokenData(
-        this.paginator.pageIndex,
+        this.paginator.pageIndex + 1,
         this.paginator.pageSize,
         undefined,
         this.tokenToAddFilter().trim() + ' container_serial:',
@@ -387,7 +397,6 @@ export class ContainerDetailsComponent {
   onPageChanged(event: PageEvent): void {
     this.pageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
-    this.fetchTokenData();
 
     setTimeout(() => {
       this.tokenFilterInput.nativeElement.focus();
@@ -396,12 +405,12 @@ export class ContainerDetailsComponent {
   }
 
   handleFilterInput(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
+    this.filterValue.set((event.target as HTMLInputElement).value.trim());
     if (this.showOnlyTokenNotInContainer()) {
-      this.filterValue = this.filterValue + ' container_serial:';
+      this.filterValue.set(this.filterValue() + ' container_serial:');
     }
     this.pageIndex.set(0);
-    this.fetchTokenData();
+    this.paginator.pageIndex = this.pageIndex();
   }
 
   addTokenToContainer(option: TokenOption) {
@@ -432,7 +441,7 @@ export class ContainerDetailsComponent {
         this.pageIndex() + 1,
         this.pageSize(),
         undefined,
-        this.filterValue,
+        this.computedFilterValue(),
       )
       .subscribe({
         next: (response: any) => {

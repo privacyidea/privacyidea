@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
+import { HttpEvent } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LoadingService {
   listeners: { [key: string]: (isLoading: boolean) => void } = {};
-  loadings: { key: string; subscription: Subscription }[] = [];
+  loadings: { key: string; subscription: Subscription; url: string }[] = [];
 
   constructor() {}
 
@@ -22,7 +23,11 @@ export class LoadingService {
     Object.values(this.listeners).forEach((l) => l(this.isLoading()));
   }
 
-  addLoading(loading: { key: string; observable: Observable<any> }): void {
+  addLoading(loading: {
+    key: string;
+    observable: Observable<HttpEvent<unknown>>;
+    url: string;
+  }): void {
     const subscription = loading.observable.subscribe({
       complete: () => {
         this.removeLoading(loading.key);
@@ -31,8 +36,12 @@ export class LoadingService {
         this.removeLoading(loading.key);
       },
     });
-    this.loadings.push({ key: loading.key, subscription });
+    this.loadings.push({ key: loading.key, subscription, url: loading.url });
     this.notifyListeners();
+  }
+
+  getLoadingUrls(): string[] {
+    return this.loadings.map((l) => l.url);
   }
 
   clearAllLoadings(): void {

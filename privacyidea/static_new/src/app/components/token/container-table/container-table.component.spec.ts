@@ -114,20 +114,9 @@ describe('ContainerTableComponent', () => {
   });
 
   describe('constructor', () => {
-    it('should fetch data if authenticated', () => {
-      expect(authServiceSpy.isAuthenticatedUser).toHaveBeenCalled();
+    it('should fetch data', () => {
       expect(containerServiceSpy.getContainerData).toHaveBeenCalled();
       expect(routerSpy.navigate).not.toHaveBeenCalled();
-    });
-
-    it('should navigate if not authenticated', () => {
-      authServiceSpy.isAuthenticatedUser.and.returnValue(false);
-
-      fixture = TestBed.createComponent(ContainerTableComponent);
-      component = fixture.componentInstance;
-      fixture.detectChanges();
-
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['']);
     });
   });
 
@@ -182,10 +171,9 @@ describe('ContainerTableComponent', () => {
       spyOn<any>(component, 'fetchContainerData').and.callThrough();
 
       tableUtilsServiceSpy.handlePageEvent.and.callFake(
-        (event, pageIndexSignal, pageSizeSignal, fetchDataCb) => {
+        (event, pageIndexSignal, pageSizeSignal) => {
           pageIndexSignal.set(event.pageIndex);
           pageSizeSignal.set(event.pageSize);
-          fetchDataCb();
         },
       );
 
@@ -196,7 +184,6 @@ describe('ContainerTableComponent', () => {
         jasmine.objectContaining(testPageEvent),
         component.pageIndex,
         component.pageSize,
-        jasmine.any(Function),
       );
       expect(component.pageIndex()).toBe(2);
       expect(component.pageSize()).toBe(15);
