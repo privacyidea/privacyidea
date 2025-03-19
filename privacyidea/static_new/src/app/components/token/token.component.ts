@@ -252,9 +252,8 @@ export class TokenComponent {
       }
     });
     effect(() => {
-      if (this.selectedContent()) {
-        this.loadingService.clearAllLoadings();
-      }
+      this.selectedContent();
+      this.loadingService.clearAllLoadings();
     });
   }
 
@@ -263,13 +262,6 @@ export class TokenComponent {
       this.tokenDetailsComponent.showTokenDetail().subscribe({
         next: () => {
           this.refreshTokenDetails.set(false);
-        },
-        error: (error) => {
-          console.error('Error refreshing token details.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Error refreshing token details. ' + message,
-          );
         },
       });
     } else {
@@ -285,13 +277,6 @@ export class TokenComponent {
       this.containerDetailsComponent.showContainerDetail().subscribe({
         next: () => {
           this.refreshContainerDetails.set(false);
-        },
-        error: (error) => {
-          console.error('Error refreshing token details.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Error refreshing token details. ' + message,
-          );
         },
       });
     } else {

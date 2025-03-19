@@ -15,7 +15,7 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
       loadingService.removeLoading(loadingId);
     }),
   );
-
+  console.log(req.url); //TODO
   loadingService.addLoading({ key: loadingId, observable: sharedRequest$ });
 
   return sharedRequest$;

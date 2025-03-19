@@ -1,7 +1,6 @@
 import {
   Component,
   effect,
-  ElementRef,
   Input,
   signal,
   ViewChild,
@@ -62,38 +61,27 @@ export class TokenApplicationsSsh {
   @Input() pageIndex!: WritableSignal<number>;
   @Input() filterValue!: WritableSignal<string>;
   @Input() sortby_sortdir!: WritableSignal<Sort>;
-  @Input() toggleKeywordInFilter!: (
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-    application: string,
-  ) => void;
   @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
   @Input() fetchApplicationSshData!: () => void;
   @Input() tokenSelected!: (serial: string) => void;
-  keywordClick = signal<string>('');
+  clickedKeyword = signal<string>('');
+  columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.machineService.sshApiFilter;
   advancedApiFilter = this.machineService.sshAdvancedApiFilter;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
-  columnsKeyMap = columnsKeyMap;
+  @ViewChild('filterInput', { static: true })
+  filterInput!: HTMLInputElement;
 
   constructor(
     private machineService: MachineService,
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      const clickedKeyword = this.keywordClick();
-      if (clickedKeyword) {
-        this.toggleKeywordInFilter(
-          clickedKeyword,
-          this.inputElement.nativeElement,
-          'ssh',
-        );
-        this.keywordClick.set('');
-      }
+      this.filterValue();
+      this.fetchApplicationSshData();
     });
   }
 

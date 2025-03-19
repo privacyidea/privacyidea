@@ -63,7 +63,7 @@ export class LoginComponent {
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
-          this.router.navigate(['token']);
+          this.router.navigate(['token']).then();
           this.notificationService.openSnackBar('Login successful.');
         } else {
           console.error('Login failed. Challenge response required.');
@@ -72,17 +72,14 @@ export class LoginComponent {
           );
         }
       },
-      error: (error: any) => {
-        console.error('Login failed.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar('Login failed. ' + message);
-      },
     });
   }
 
   logout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
-    this.router.navigate(['login']);
+    this.router
+      .navigate(['login'])
+      .then(() => this.notificationService.openSnackBar('Logout successful.'));
   }
 }

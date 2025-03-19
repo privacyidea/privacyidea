@@ -4,7 +4,7 @@ import { TokenDetailsInfoComponent } from './token-details-info.component';
 import { TokenService } from '../../../../services/token/token.service';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { computed, signal } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
@@ -145,18 +145,6 @@ describe('TokenDetailsInfoComponent', () => {
     expect(tokenService.deleteInfo).toHaveBeenCalledWith(
       'Mock serial',
       'infoKey',
-    );
-  });
-
-  it('should handle error when deleting info fails', () => {
-    spyOn(tokenService, 'deleteInfo').and.returnValue(
-      throwError(() => new Error('Deletion' + ' failed.')),
-    );
-    spyOn(console, 'error');
-    component.deleteInfo('infoKey');
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to delete info.',
-      jasmine.any(Error),
     );
   });
 });

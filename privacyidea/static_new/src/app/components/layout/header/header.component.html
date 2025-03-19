@@ -1,13 +1,16 @@
 <div class="header-container">
   <div class="brand">
     <img alt="logo"
+         aria-label="Logo"
          class="logo"
-         height="1856"
+         height="307"
          ngSrc="assets/privacyIDEA1.png"
-         width="1857" />
+         ngSrcset="1x"
+         sizes="(max-width: 307px) 100vw, 307px"
+         width="307" />
   </div>
 
-  <nav class="nav-menu">
+  <nav class="nav-menu"> <!-- TODO: get header labels from auth endpoint -->
     <a class="active"
        extended
        mat-fab
@@ -16,24 +19,24 @@
       <h4>Token</h4></a> <a extended
                             href="#"
                             mat-fab>
-    <mat-icon>supervised_user_circle</mat-icon>
-    <h4>User</h4></a> <a extended
-                         href="#"
-                         mat-fab>
-    <mat-icon>dns</mat-icon>
-    <h4>Machines</h4></a> <a extended
-                             href="#"
-                             mat-fab>
-    <mat-icon>miscellaneous_services</mat-icon>
-    <h4>Config</h4></a> <a extended
+      <mat-icon>supervised_user_circle</mat-icon>
+      <h4>User</h4></a> <a extended
                            href="#"
                            mat-fab>
-    <mat-icon>manage_search</mat-icon>
-    <h4>Audit</h4></a> <a extended
-                          href="#"
-                          mat-fab>
-    <mat-icon>grid_view</mat-icon>
-    <h4>Components</h4></a>
+      <mat-icon>dns</mat-icon>
+      <h4>Machines</h4></a> <a extended
+                               href="#"
+                               mat-fab>
+      <mat-icon>miscellaneous_services</mat-icon>
+      <h4>Configuration</h4></a> <a extended
+                                    href="#"
+                                    mat-fab>
+      <mat-icon>manage_search</mat-icon>
+      <h4>Audit</h4></a> <a extended
+                            href="#"
+                            mat-fab>
+      <mat-icon>grid_view</mat-icon>
+      <h4>Components</h4></a>
   </nav>
 
   <div [ngClass]="[

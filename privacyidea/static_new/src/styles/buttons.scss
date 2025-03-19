@@ -33,14 +33,14 @@ $header-bg: white;
   background: $background;
   box-shadow: $box-shadow;
   cursor: $cursor;
-  transition: 0ms;
+  transition: background 400ms, box-shadow 400ms;
 }
 
 @mixin button-hover($background, $box-shadow) {
   &:hover {
     background: $background;
     box-shadow: $box-shadow;
-    transition: 0ms;
+    transition: background 400ms, box-shadow 400ms;
   }
 }
 

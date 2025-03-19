@@ -143,24 +143,46 @@ export class ContainerService {
   setContainerRealm(containerSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
     let valueString = value ? value.join(',') : '';
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/realms`,
-      {
-        realms: valueString,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/realms`,
+        {
+          realms: valueString,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set container realm.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set container realm. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setContainerDescription(containerSerial: string, value: any) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/description`,
-      {
-        description: value,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/description`,
+        {
+          description: value,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set container description.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set container description. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   toggleActive(containerSerial: string, states: string[]): Observable<any> {
@@ -179,35 +201,68 @@ export class ContainerService {
     if (!(states.includes('active') || states.includes('disabled'))) {
       new_states = states.concat('active').join(',');
     }
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/states`,
-      { states: new_states },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/states`,
+        { states: new_states },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to toggle active.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   unassignUser(containerSerial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/unassign`,
-      {
-        user: username,
-        realm: userRealm,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/unassign`,
+        {
+          user: username,
+          realm: userRealm,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to unassign user.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to unassign user. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   assignUser(containerSerial: string, username: string, userRealm: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/assign`,
-      {
-        user: username,
-        realm: userRealm,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/assign`,
+        {
+          user: username,
+          realm: userRealm,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to assign user.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign user. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setContainerInfos(containerSerial: string, infos: any) {
@@ -216,42 +271,81 @@ export class ContainerService {
     return Object.keys(infos).map((info) => {
       const infoKey = info;
       const infoValue = infos[infoKey];
-      return this.http.post(
-        `${info_url}/${infoKey}`,
-        { value: infoValue },
-        { headers },
-      );
+      return this.http
+        .post(`${info_url}/${infoKey}`, { value: infoValue }, { headers })
+        .pipe(
+          catchError((error) => {
+            console.error('Failed to save container infos.', error);
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to save container infos. ' + message,
+            );
+            return throwError(() => error);
+          }),
+        );
     });
   }
 
   deleteInfo(containerSerial: string, key: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(
-      `${this.containerBaseUrl}${containerSerial}/info/delete/${key}`,
-      { headers },
-    );
+    return this.http
+      .delete(`${this.containerBaseUrl}${containerSerial}/info/delete/${key}`, {
+        headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to delete info.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete info. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   addTokenToContainer(containerSerial: string, tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/add`,
-      {
-        serial: tokenSerial,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/add`,
+        {
+          serial: tokenSerial,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to add token to container.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to add token to container. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/remove`,
-      {
-        serial: tokenSerial,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/remove`,
+        {
+          serial: tokenSerial,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to remove token from container.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to remove token from container. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   toggleAll(
@@ -277,6 +371,7 @@ export class ContainerService {
           );
         }
       }),
+
       switchMap((tokensForAction) => {
         if (tokensForAction.length === 0) {
           console.error('No tokens for action. Returning []');
@@ -297,6 +392,15 @@ export class ContainerService {
             },
           ),
         );
+      }),
+
+      catchError((error) => {
+        console.error('Failed to toggle all.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to toggle all. ' + message,
+        );
+        return throwError(() => error);
       }),
     );
   }
@@ -331,24 +435,54 @@ export class ContainerService {
           { headers },
         );
       }),
+      catchError((error) => {
+        console.error('Failed to remove all.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to remove all. ' + message,
+        );
+        return throwError(() => error);
+      }),
     );
   }
 
   deleteContainer(containerSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${containerSerial}`, {
-      headers,
-    });
+    return this.http
+      .delete(`${this.containerBaseUrl}${containerSerial}`, {
+        headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to delete container.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete container. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   deleteAllTokens(containerSerial: string, serial_list: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.containerBaseUrl}${containerSerial}/removeall`,
-      {
-        serial: serial_list,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/removeall`,
+        {
+          serial: serial_list,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to delete all tokens.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete all tokens. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 }

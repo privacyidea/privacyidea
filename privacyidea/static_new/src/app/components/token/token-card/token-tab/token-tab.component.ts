@@ -16,7 +16,6 @@ import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContent } from '../../token.component';
 
@@ -42,7 +41,6 @@ export class TokenTabComponent {
     private tokenService: TokenService,
     private dialog: MatDialog,
     protected versioningService: VersionService,
-    private notificationService: NotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -58,13 +56,6 @@ export class TokenTabComponent {
       .subscribe({
         next: () => {
           this.refreshTokenDetails.set(true);
-        },
-        error: (error) => {
-          console.error('Failed to toggle active.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to toggle active. ' + message,
-          );
         },
       });
   }
@@ -95,13 +86,6 @@ export class TokenTabComponent {
                 next: () => {
                   this.refreshTokenDetails.set(true);
                 },
-                error: (error) => {
-                  console.error('Failed to revoke token.', error);
-                  const message = error.error?.result?.error?.message || '';
-                  this.notificationService.openSnackBar(
-                    'Failed to revoke token. ' + message,
-                  );
-                },
               });
           }
         },
@@ -127,13 +111,6 @@ export class TokenTabComponent {
               next: () => {
                 this.selectedContent.set('token_overview');
                 this.tokenSerial.set('');
-              },
-              error: (error) => {
-                console.error('Failed to delete token.', error);
-                const message = error.error?.result?.error?.message || '';
-                this.notificationService.openSnackBar(
-                  'Failed to delete token. ' + message,
-                );
               },
             });
           }

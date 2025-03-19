@@ -57,13 +57,6 @@ export class LostTokenComponent {
           'Token marked as lost: ' + this.data.tokenSerial(),
         );
       },
-      error: (error) => {
-        console.error('Failed to mark token as lost.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to mark token as lost. ' + message,
-        );
-      },
     });
   }
 

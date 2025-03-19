@@ -169,14 +169,6 @@ export class ContainerDetailsComponent {
   length = signal(0);
   pageIndex = signal(0);
   pageSize = signal(10);
-  pageSizeOptions = [10];
-  filterValue = '';
-  userRealm = '';
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild('tokenFilterInput')
-  tokenFilterInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('tokenAutoTrigger', { read: MatAutocompleteTrigger })
-  tokenAutoTrigger!: MatAutocompleteTrigger;
   fetchedUsernames = toSignal(
     toObservable(this.selectedUserRealm).pipe(
       distinctUntilChanged(),
@@ -202,6 +194,14 @@ export class ContainerDetailsComponent {
       option.toLowerCase().includes(filterValue),
     );
   });
+  pageSizeOptions = [10];
+  filterValue = '';
+  userRealm = '';
+  @ViewChild('tokenFilterInput')
+  tokenFilterInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('tokenAutoTrigger', { read: MatAutocompleteTrigger })
+  tokenAutoTrigger!: MatAutocompleteTrigger;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(
     protected overflowService: OverflowService,
@@ -365,13 +365,6 @@ export class ContainerDetailsComponent {
         next: () => {
           this.refreshContainerDetails.set(true);
         },
-        error: (error) => {
-          console.error('Failed to assign user.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to assign user. ' + message,
-          );
-        },
       });
   }
 
@@ -387,13 +380,6 @@ export class ContainerDetailsComponent {
       .subscribe({
         next: () => {
           this.refreshContainerDetails.set(true);
-        },
-        error: (error) => {
-          console.error('Failed to unassign user.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to unassign user. ' + message,
-          );
         },
       });
   }
@@ -426,13 +412,6 @@ export class ContainerDetailsComponent {
         next: () => {
           this.showContainerDetail();
         },
-        error: (error) => {
-          console.error('Failed to add token to container.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to add token to container. ' + message,
-          );
-        },
       });
   }
 
@@ -459,13 +438,6 @@ export class ContainerDetailsComponent {
         next: (response: any) => {
           this.tokenOptions.set(response.result.value.tokens);
           this.length = response.result.value.count;
-        },
-        error: (error) => {
-          console.error('Failed to get token data.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get token data. ' + message,
-          );
         },
       });
   }
@@ -500,13 +472,6 @@ export class ContainerDetailsComponent {
         next: () => {
           this.showContainerDetail();
         },
-        error: (error) => {
-          console.error('Failed to save token realms.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to save token realms. ' + message,
-          );
-        },
       });
   }
 
@@ -520,13 +485,6 @@ export class ContainerDetailsComponent {
       .subscribe({
         next: () => {
           this.showContainerDetail();
-        },
-        error: (error) => {
-          console.error('Failed to save token description.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to save token description. ' + message,
-          );
         },
       });
   }

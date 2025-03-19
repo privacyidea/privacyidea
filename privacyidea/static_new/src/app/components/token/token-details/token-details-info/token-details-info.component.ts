@@ -23,7 +23,6 @@ import { Observable, switchMap } from 'rxjs';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -73,7 +72,6 @@ export class TokenDetailsInfoComponent {
 
   constructor(
     private tokenService: TokenService,
-    private notificationService: NotificationService,
     protected overflowService: OverflowService,
   ) {}
 
@@ -103,13 +101,6 @@ export class TokenDetailsInfoComponent {
       next: () => {
         this.refreshDetails.set(true);
       },
-      error: (error) => {
-        console.error('Failed to save token infos.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to save token infos. ' + message,
-        );
-      },
     });
   }
 
@@ -133,13 +124,6 @@ export class TokenDetailsInfoComponent {
       .subscribe({
         next: () => {
           this.refreshDetails.set(true);
-        },
-        error: (error) => {
-          console.error('Failed to delete info.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to delete info. ' + message,
-          );
         },
       });
   }

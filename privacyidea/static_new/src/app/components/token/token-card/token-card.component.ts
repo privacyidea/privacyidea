@@ -1,10 +1,4 @@
-import {
-  Component,
-  effect,
-  Input,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, Input, linkedSignal, WritableSignal } from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIcon } from '@angular/material/icon';
@@ -39,18 +33,18 @@ export class TokenCardComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  selectedTabIndex = signal(0);
+  selectedTabIndex = linkedSignal({
+    source: () => this.selectedContent(),
+    computation: (selectedContent) => {
+      if (selectedContent.startsWith('container')) {
+        return 1;
+      } else {
+        return 0;
+      }
+    },
+  });
 
-  constructor(protected overflowService: OverflowService) {
-    effect(() => {
-      if (this.selectedContent().startsWith('token')) {
-        this.selectedTabIndex.set(0);
-      }
-      if (this.selectedContent().startsWith('container')) {
-        this.selectedTabIndex.set(1);
-      }
-    });
-  }
+  constructor(protected overflowService: OverflowService) {}
 
   onTabChange(): void {
     if (this.isProgrammaticChange()) {

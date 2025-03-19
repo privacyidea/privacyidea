@@ -68,9 +68,4 @@ describe('TokenDetailsUserComponent', () => {
     component.saveUser();
     expect(tokenService.assignUser).not.toHaveBeenCalled();
   });
-
-  it('should filter user options correctly', () => {
-    const result = component['_filterUserOptions']('user');
-    expect(result).toEqual(['user1', 'user2']);
-  });
 });

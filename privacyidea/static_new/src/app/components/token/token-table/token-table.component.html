@@ -4,7 +4,7 @@
     <mat-form-field class="token-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #input
+      <input #filterInput
              (keyup)="tableUtilsService.handleFilterInput(
                       $event, pageIndex, filterValue, fetchTokenData)"
              aria-label="Filter Input"
@@ -21,15 +21,15 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [filterValue]="filterValue"
-                      [keywordClick]="keywordClick"
-                      [tableUtilsService]="tableUtilsService"></app-keyword-filter>
+                      [clickedKeyword]="clickedKeyword"
+                      [filterInput]="filterInput"
+                      [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
   fetchTokenData)"
          [dataSource]="dataSource()"
+         [matSortDisableClear]="false"
          aria-label="Token Data Table"
          class="token-table"
-         [matSortDisableClear]="false"
          mat-table
          matSort>
     @for (column of columnsKeyMap; track column) {
@@ -55,7 +55,7 @@
                 </button>
               }
               @case ("realms") {
-                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
+                <div [ngClass]="(element[column.key]?.length || 0)  > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
                        href="#"> {{ realm }} </a><br style="margin-top: 3px" />

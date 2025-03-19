@@ -12,7 +12,7 @@ import { NotificationService } from '../../../../services/notification/notificat
 import { Router } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatTableDataSource } from '@angular/material/table';
 
@@ -159,17 +159,6 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
       expect(component.refreshContainerDetails()).toBeTrue();
     });
-
-    it('should call notificationService on error', () => {
-      containerServiceSpy.removeTokenFromContainer.and.returnValue(
-        throwError(() => new Error('Remove failed')),
-      );
-
-      component.removeTokenFromContainer('CONT-1', 'Mock serial');
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to remove token from container. ',
-      );
-    });
   });
 
   describe('handleColumnClick', () => {
@@ -202,17 +191,6 @@ describe('ContainerDetailsTokenTableComponent', () => {
       );
       expect(component.refreshContainerDetails()).toBeTrue();
     });
-
-    it('should call notificationService on error', () => {
-      tokenServiceSpy.toggleActive.and.returnValue(
-        throwError(() => new Error('Toggle error')),
-      );
-
-      component.toggleActive({ serial: 'Mock serial', active: true });
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active. ',
-      );
-    });
   });
 
   describe('toggleAll', () => {
@@ -225,17 +203,6 @@ describe('ContainerDetailsTokenTableComponent', () => {
         'activate',
       );
       expect(component.refreshContainerDetails()).toBeTrue();
-    });
-
-    it('should call notificationService on error', () => {
-      containerServiceSpy.toggleAll.and.returnValue(
-        throwError(() => new Error('ToggleAll error')),
-      );
-
-      component.toggleAll('activate');
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle all. ',
-      );
     });
   });
 
@@ -272,17 +239,6 @@ describe('ContainerDetailsTokenTableComponent', () => {
       component.deleteAllTokens();
 
       expect(containerServiceSpy.deleteAllTokens).not.toHaveBeenCalled();
-    });
-
-    it('should call notificationService on error', () => {
-      containerServiceSpy.deleteAllTokens.and.returnValue(
-        throwError(() => new Error('DeleteAll error')),
-      );
-
-      component.deleteAllTokens();
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to delete all tokens. ',
-      );
     });
   });
 });

@@ -96,7 +96,7 @@ export class TokenGetSerial {
       this.assignmentState();
       this.tokenType();
       this.serialSubstring();
-      this.reset();
+      this.resetSteps();
     });
   }
 
@@ -110,7 +110,7 @@ export class TokenGetSerial {
       case 'countDone':
       case 'counting':
       case 'searching':
-        this.reset();
+        this.resetSteps();
         break;
     }
   }
@@ -162,7 +162,7 @@ export class TokenGetSerial {
                 if (result) {
                   this.findSerial();
                 } else {
-                  this.reset();
+                  this.resetSteps();
                 }
               },
             });
@@ -170,13 +170,8 @@ export class TokenGetSerial {
           this.findSerial();
         }
       },
-      error: (error) => {
-        console.error('Failed to get count.', error);
+      error: () => {
         this.currentStep.set('error');
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get count. ' + message,
-        );
       },
     });
   }
@@ -203,7 +198,7 @@ export class TokenGetSerial {
                 this.dialog.closeAll();
               },
               reset: () => {
-                this.reset();
+                this.resetSteps();
               },
             },
           });
@@ -213,7 +208,7 @@ export class TokenGetSerial {
       });
   }
 
-  reset(): void {
+  resetSteps(): void {
     this.serialSubscription?.unsubscribe();
     this.serialSubscription = null;
     this.loadingService.clearAllLoadings();

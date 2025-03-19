@@ -1,4 +1,4 @@
-import { Component, effect, Input, WritableSignal } from '@angular/core';
+import { Component, Input, WritableSignal } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -36,17 +36,7 @@ export class EnrollVascoComponent {
   @Input() vascoSerial!: WritableSignal<string>;
   vascoErrorStatematcher = new VascoErrorStateMatcher();
 
-  constructor() {
-    effect(() => {
-      if (this.useVascoSerial()) {
-        const otpHex = this.otpKey();
-        const serial = this.convertOtpKeyToVascoSerial(otpHex);
-        this.vascoSerial.set(serial);
-      }
-    });
-  }
-
-  private convertOtpKeyToVascoSerial(otpHex: string): string {
+  static convertOtpKeyToVascoSerial(otpHex: string): string {
     let vascoOtpStr = '';
     for (let i = 0; i < otpHex.length; i += 2) {
       vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));

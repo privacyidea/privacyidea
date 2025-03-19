@@ -5,7 +5,7 @@
                     class="challenges-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #input
+      <input #filterInput
              (keyup)="tableUtilsService.handleFilterInput(
           $event,
           pageIndex,
@@ -27,9 +27,9 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [filterValue]="filterValue"
-                      [keywordClick]="keywordClick"
-                      [tableUtilsService]="tableUtilsService"></app-keyword-filter>
+                      [clickedKeyword]="clickedKeyword"
+                      [filterInput]="filterInput"
+                      [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
       fetchChallengesData)"
          [dataSource]="dataSource()"

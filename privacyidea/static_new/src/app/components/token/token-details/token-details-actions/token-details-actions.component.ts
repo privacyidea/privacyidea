@@ -7,7 +7,6 @@ import { MatFabButton, MatIconButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
 import { MatSuffix } from '@angular/material/form-field';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -34,7 +33,6 @@ export class TokenDetailsActionsComponent {
   constructor(
     private tokenService: TokenService,
     private validateService: ValidateService,
-    private notificationService: NotificationService,
     protected overflowService: OverflowService,
   ) {}
 
@@ -49,13 +47,6 @@ export class TokenDetailsActionsComponent {
         next: () => {
           this.refreshTokenDetails.set(true);
         },
-        error: (error) => {
-          console.error('Failed to resync OTP token.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to resync OTP token. ' + message,
-          );
-        },
       });
   }
 
@@ -66,13 +57,6 @@ export class TokenDetailsActionsComponent {
         next: () => {
           this.refreshTokenDetails.set(true);
         },
-        error: (error: any) => {
-          console.error('Failed to test token.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to test token. ' + message,
-          );
-        },
       });
   }
 
@@ -82,13 +66,6 @@ export class TokenDetailsActionsComponent {
       .subscribe({
         next: () => {
           this.refreshTokenDetails.set(true);
-        },
-        error: (error: any) => {
-          console.error('Failed to verify OTP value.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to verify OTP value. ' + message,
-          );
         },
       });
   }

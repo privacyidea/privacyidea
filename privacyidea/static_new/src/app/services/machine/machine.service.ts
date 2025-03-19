@@ -95,10 +95,15 @@ export class MachineService {
     }
 
     if (currentFilter) {
-      const combinedFilters = [
-        ...this.sshApiFilter,
-        ...this.sshAdvancedApiFilter,
-      ];
+      let combinedFilters: string[];
+      if (application === 'ssh') {
+        combinedFilters = [...this.sshApiFilter, ...this.sshAdvancedApiFilter];
+      } else {
+        combinedFilters = [
+          ...this.offlineApiFilter,
+          ...this.offlineAdvancedApiFilter,
+        ];
+      }
       const { filterPairs, remainingFilterText } =
         this.tableUtilsService.parseFilterString(
           currentFilter,
@@ -119,7 +124,7 @@ export class MachineService {
             break;
           case 'offline':
             if (['count', 'rounds'].includes(key)) {
-              params = params.set(key, value);
+              params = params.set(key, `${value}`);
             }
             break;
         }

@@ -6,7 +6,7 @@ import { TokenService } from '../../../../services/token/token.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { VersionService } from '../../../../services/version/version.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
@@ -116,18 +116,6 @@ describe('TokenTabComponent', () => {
       expect(refreshSpy).toHaveBeenCalledWith(true);
       expect(notificationSpy.openSnackBar).not.toHaveBeenCalled();
     });
-
-    it('opens a snackBar on error', () => {
-      tokenServiceSpy.toggleActive.and.returnValue(
-        throwError(() => new Error('Toggle error')),
-      );
-
-      component.toggleActive();
-
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active. ',
-      );
-    });
   });
 
   describe('revokeToken()', () => {
@@ -146,22 +134,6 @@ describe('TokenTabComponent', () => {
       );
       expect(refreshSpy).toHaveBeenCalledWith(true);
     });
-
-    it('opens a snackBar on error', () => {
-      matDialogSpy.open.and.returnValue({
-        afterClosed: () => of(true),
-      } as MatDialogRef<ConfirmationDialogComponent>);
-
-      tokenServiceSpy.revokeToken.and.returnValue(
-        throwError(() => new Error('Revoke error')),
-      );
-
-      component.revokeToken();
-
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to revoke token. ',
-      );
-    });
   });
 
   describe('deleteToken()', () => {
@@ -175,22 +147,6 @@ describe('TokenTabComponent', () => {
       expect(tokenServiceSpy.deleteToken).toHaveBeenCalledWith('Mock serial');
       expect(component.tokenSerial()).toBe('');
       expect(component.selectedContent()).toBe('token_overview');
-    });
-
-    it('opens a snackBar on error', () => {
-      matDialogSpy.open.and.returnValue({
-        afterClosed: () => of(true),
-      } as MatDialogRef<ConfirmationDialogComponent>);
-
-      tokenServiceSpy.deleteToken.and.returnValue(
-        throwError(() => new Error('Delete error')),
-      );
-
-      component.deleteToken();
-
-      expect(notificationSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to delete token. ',
-      );
     });
   });
 

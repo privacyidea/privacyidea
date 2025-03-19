@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,10 @@ export class AuthService {
   isAuthenticated = false;
   private authUrl = environment.proxyUrl + '/auth';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+  ) {}
 
   authenticate(
     username: string,
@@ -35,6 +39,12 @@ export class AuthService {
           if (response?.result?.status) {
             this.isAuthenticated = true;
           }
+        }),
+        catchError((error) => {
+          console.error('Login failed.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar('Login failed. ' + message);
+          return throwError(() => error);
         }),
       );
   }

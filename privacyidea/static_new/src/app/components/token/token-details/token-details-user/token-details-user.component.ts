@@ -1,7 +1,6 @@
 import {
   Component,
   computed,
-  effect,
   Input,
   signal,
   Signal,
@@ -32,6 +31,9 @@ import { UserService } from '../../../../services/user/user.service';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged, from, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-token-details-user',
@@ -77,11 +79,29 @@ export class TokenDetailsUserComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
-  userOptions = signal<string[]>([]);
   selectedUserRealm = signal<string>('');
+  fetchedUsernames = toSignal(
+    toObservable(this.selectedUserRealm).pipe(
+      distinctUntilChanged(),
+      switchMap((realm) => {
+        if (!realm) {
+          return from<string[]>([]);
+        }
+        return this.userService
+          .getUsers(realm)
+          .pipe(
+            map((resp: any) =>
+              resp.result.value.map((user: any) => user.username),
+            ),
+          );
+      }),
+    ),
+    { initialValue: [] },
+  );
+  userOptions = computed(() => this.fetchedUsernames());
   filteredUserOptions = computed(() => {
     const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option) =>
+    return this.userOptions().filter((option: any) =>
       option.toLowerCase().includes(filterValue),
     );
   });
@@ -92,17 +112,7 @@ export class TokenDetailsUserComponent {
     private userService: UserService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
-  ) {
-    effect(() => {
-      if (this.selectedUserRealm()) {
-        this.userService.getUsers(this.selectedUserRealm()).subscribe({
-          next: (users: any) => {
-            this.userOptions.set(users.value.map((user: any) => user.username));
-          },
-        });
-      }
-    });
-  }
+  ) {}
 
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({
@@ -118,25 +128,11 @@ export class TokenDetailsUserComponent {
       this.notificationService.openSnackBar('PINs do not match.');
       return;
     }
-    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
-      error: (error) => {
-        console.error('Failed to set PIN.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar('Failed to set PIN. ' + message);
-      },
-    });
+    this.tokenService.setPin(this.tokenSerial(), this.setPinValue());
   }
 
   setRandomPin() {
-    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
-      error: (error) => {
-        console.error('Failed to set random PIN.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to set random PIN. ' + message,
-        );
-      },
-    });
+    this.tokenService.setRandomPin(this.tokenSerial());
   }
 
   toggleUserEditMode(
@@ -180,20 +176,6 @@ export class TokenDetailsUserComponent {
           this.selectedUserRealm.set('');
           this.refreshTokenDetails.set(true);
         },
-        error: (error) => {
-          console.error('Failed to assign user.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to assign user. ' + message,
-          );
-        },
       });
-  }
-
-  private _filterUserOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.userOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue),
-    );
   }
 }

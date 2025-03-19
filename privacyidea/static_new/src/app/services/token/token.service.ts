@@ -91,20 +91,38 @@ export class TokenService {
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {
     const headers = this.localService.getHeaders();
     const action = active ? 'disable' : 'enable';
-    return this.http.post(
-      `${this.tokenBaseUrl}${action}`,
-      { serial: tokenSerial },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}${action}`,
+        { serial: tokenSerial },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to toggle active.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to toggle active. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   resetFailCount(tokenSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      this.tokenBaseUrl + 'reset',
-      { serial: tokenSerial },
-      { headers },
-    );
+    return this.http
+      .post(this.tokenBaseUrl + 'reset', { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to reset fail count.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to reset fail count. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   getTokenData(
@@ -148,7 +166,16 @@ export class TokenService {
       */
     }
 
-    return this.http.get<any>(this.tokenBaseUrl, { headers, params });
+    return this.http.get<any>(this.tokenBaseUrl, { headers, params }).pipe(
+      catchError((error) => {
+        console.error('Failed to get token data.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to get token data. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
   }
 
   getTokenDetails(tokenSerial: string): Observable<any> {
@@ -164,27 +191,43 @@ export class TokenService {
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
-    if (key === 'maxfail') {
-      return this.http.post(
-        set_url,
-        { serial: tokenSerial, ['max_failcount']: value },
-        { headers },
-      );
-    } else {
-      return this.http.post(
-        set_url,
-        { serial: tokenSerial, [key]: value },
-        { headers },
-      );
-    }
+
+    const payload =
+      key === 'maxfail'
+        ? { serial: tokenSerial, max_failcount: value }
+        : { serial: tokenSerial, [key]: value };
+
+    return this.http.post(set_url, payload, { headers }).pipe(
+      catchError((error) => {
+        console.error('Failed to set token detail.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to set token detail. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
   }
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<any> {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
-    const requests = Object.keys(infos).map((info) => {
-      const infoKey = info;
+
+    const postRequest = (url: string, body: any) => {
+      return this.http.post(url, body, { headers }).pipe(
+        catchError((error) => {
+          console.error('Failed to set token info.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set token info. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+    };
+
+    const requests = Object.keys(infos).map((infoKey) => {
       const infoValue = infos[infoKey];
       if (
         infoKey === 'count_auth_max' ||
@@ -193,17 +236,14 @@ export class TokenService {
         infoKey === 'validity_period_start' ||
         infoKey === 'validity_period_end'
       ) {
-        return this.http.post(
-          set_url,
-          { serial: tokenSerial, [infoKey]: infoValue },
-          { headers },
-        );
+        return postRequest(set_url, {
+          serial: tokenSerial,
+          [infoKey]: infoValue,
+        });
       } else {
-        return this.http.post(
-          `${info_url}/${tokenSerial}/${infoKey}`,
-          { ['value']: infoValue },
-          { headers },
-        );
+        return postRequest(`${info_url}/${tokenSerial}/${infoKey}`, {
+          value: infoValue,
+        });
       }
     });
     return forkJoin(requests);
@@ -216,19 +256,36 @@ export class TokenService {
 
   revokeToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}revoke`,
-      { serial: tokenSerial },
-      { headers },
-    );
+    return this.http
+      .post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to revoke token.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to revoke token. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   deleteInfo(tokenSerial: string, infoKey: string) {
     const headers = this.localService.getHeaders();
-    return this.http.delete(
-      `${this.tokenBaseUrl}info/` + tokenSerial + '/' + infoKey,
-      { headers },
-    );
+    return this.http
+      .delete(`${this.tokenBaseUrl}info/` + tokenSerial + '/' + infoKey, {
+        headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to delete token info.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete token info. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   unassignUser(tokenSerial: string) {
@@ -258,39 +315,72 @@ export class TokenService {
     pin: string,
   ) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}assign`,
-      {
-        serial: tokenSerial,
-        user: username,
-        realm: realm,
-        pin: pin,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}assign`,
+        {
+          serial: tokenSerial,
+          user: username,
+          realm: realm,
+          pin: pin,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to assign user.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to assign user. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setPin(tokenSerial: string, userPin: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}setpin`,
-      {
-        serial: tokenSerial,
-        otppin: userPin,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}setpin`,
+        {
+          serial: tokenSerial,
+          otppin: userPin,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set PIN.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set PIN. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setRandomPin(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}setrandompin`,
-      {
-        serial: tokenSerial,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}setrandompin`,
+        {
+          serial: tokenSerial,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set random PIN.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set random PIN. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   resyncOTPToken(
@@ -299,60 +389,122 @@ export class TokenService {
     secondOTPValue: string,
   ) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}resync`,
-      {
-        serial: tokenSerial,
-        otp1: fristOTPValue,
-        otp2: secondOTPValue,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}resync`,
+        {
+          serial: tokenSerial,
+          otp1: fristOTPValue,
+          otp2: secondOTPValue,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to resync OTP token.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to resync OTP token. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setTokenRealm(tokenSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}realm/` + tokenSerial,
-      {
-        realms: value,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}realm/` + tokenSerial,
+        {
+          realms: value,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set token realm.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set token realm. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   setTokengroup(tokenSerial: string, value: any) {
     const headers = this.localService.getHeaders();
     const valueArray = Array.isArray(value) ? value : Object.values(value);
-    return this.http.post(
-      `${this.tokenBaseUrl}group/` + tokenSerial,
-      {
-        groups: valueArray,
-      },
-      { headers },
-    );
+    return this.http
+      .post(
+        `${this.tokenBaseUrl}group/` + tokenSerial,
+        {
+          groups: valueArray,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to set token group.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to set token group. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http.get(environment.proxyUrl + `/tokengroup/`, { headers });
+    return this.http
+      .get(environment.proxyUrl + `/tokengroup/`, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get token groups.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get tokengroups. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   lostToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.tokenBaseUrl}lost/` + tokenSerial,
-      {},
-      { headers },
-    );
+    return this.http
+      .post(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to mark token as lost.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to mark token as lost. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   getSerial(otp: string, params: HttpParams): Observable<any> {
     const headers = this.localService.getHeaders();
-    return this.http.get(`${this.tokenBaseUrl}getserial/${otp}`, {
-      params: params,
-      headers: headers,
-    });
+    return this.http
+      .get(`${this.tokenBaseUrl}getserial/${otp}`, {
+        params: params,
+        headers: headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get count.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get count. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   enrollToken(options: EnrollmentOptions) {
@@ -553,9 +705,16 @@ export class TokenService {
             } */
     }
 
-    return this.http.get<any>(this.tokenBaseUrl + urlPath, {
-      headers,
-      params,
-    });
+    return this.http
+      .get<any>(this.tokenBaseUrl + urlPath, {
+        headers,
+        params,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to load challenges.', error);
+          return throwError(() => error);
+        }),
+      );
   }
 }

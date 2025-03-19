@@ -1,7 +1,6 @@
 import {
   Component,
   effect,
-  ElementRef,
   Input,
   signal,
   ViewChild,
@@ -56,38 +55,27 @@ export class TokenApplicationsOffline {
   @Input() pageIndex!: WritableSignal<number>;
   @Input() filterValue!: WritableSignal<string>;
   @Input() sortby_sortdir!: WritableSignal<Sort>;
-  @Input() toggleKeywordInFilter!: (
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-    application: string,
-  ) => void;
   @Input() fetchApplicationOfflineData!: () => void;
   @Input() tokenSelected!: (serial: string) => void;
   @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
-  keywordClick = signal<string>('');
+  clickedKeyword = signal<string>('');
+  columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = columnsKeyMap.map((c) => c.key);
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.machineService.offlineApiFilter;
   advancedApiFilter = this.machineService.offlineAdvancedApiFilter;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
-  columnsKeyMap = columnsKeyMap;
+  @ViewChild('filterInput', { static: true })
+  filterInput!: HTMLInputElement;
 
   constructor(
     protected tableUtilsService: TableUtilsService,
     private machineService: MachineService,
   ) {
     effect(() => {
-      const clickedKeyword = this.keywordClick();
-      if (clickedKeyword) {
-        this.toggleKeywordInFilter(
-          clickedKeyword,
-          this.inputElement.nativeElement,
-          'offline',
-        );
-        this.keywordClick.set('');
-      }
+      this.filterValue();
+      this.fetchApplicationOfflineData();
     });
   }
 }

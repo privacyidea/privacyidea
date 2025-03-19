@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { ContainerTableComponent } from './container-table.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -38,7 +38,6 @@ describe('ContainerTableComponent', () => {
       'openSnackBar',
     ]);
     tableUtilsServiceSpy = jasmine.createSpyObj('TableUtilsService', [
-      'toggleKeywordInFilter',
       'parseFilterString',
       'getFilterIconName',
       'getClassForColumnKey',
@@ -87,13 +86,6 @@ describe('ContainerTableComponent', () => {
     containerServiceSpy.toggleActive.and.returnValue(of({}));
 
     routerSpy.navigate.and.returnValue(Promise.resolve(true));
-    tableUtilsServiceSpy.toggleKeywordInFilter.and.callFake(
-      (currentFilter: string, keyword: string) => {
-        return currentFilter.includes(keyword)
-          ? currentFilter.replace(keyword, '')
-          : currentFilter.concat(` ${keyword}`);
-      },
-    );
 
     await TestBed.configureTestingModule({
       imports: [ContainerTableComponent, BrowserAnimationsModule],
@@ -283,32 +275,6 @@ describe('ContainerTableComponent', () => {
     });
   });
 
-  describe('toggleKeywordInFilter()', () => {
-    it('should use tableUtilsService to toggle keyword and re-fetch data', () => {
-      const fetchDataSpy = spyOn(
-        component as any,
-        'fetchContainerData',
-      ).and.callThrough();
-      const inputEl = document.createElement('input');
-      inputEl.value = 'status';
-      tableUtilsServiceSpy.handleFilterInput.and.callFake(
-        (event: Event, pageIndex, filterValue, fetchDataCb) => {
-          filterValue.set((event.target as HTMLInputElement).value.trim());
-          pageIndex.set(0);
-          fetchDataCb();
-        },
-      );
-      tableUtilsServiceSpy.toggleKeywordInFilter.and.callFake(
-        (curVal, keyword) => {
-          return curVal + ' ' + keyword;
-        },
-      );
-      component.toggleKeywordInFilter('type', inputEl);
-      expect(inputEl.value).toContain('type');
-      expect(fetchDataSpy).toHaveBeenCalled();
-    });
-  });
-
   describe('handleStateClick()', () => {
     it('should call toggleActive() and refetch data on success', () => {
       spyOn<any>(component, 'fetchContainerData').and.callThrough();
@@ -321,19 +287,6 @@ describe('ContainerTableComponent', () => {
         ['active'],
       );
       expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-
-    it('should call openSnackBar on error', () => {
-      containerServiceSpy.toggleActive.and.returnValue(
-        throwError(() => new Error('Toggle error')),
-      );
-      const mockElement = { serial: 'Mock serial', states: ['active'] };
-
-      component.handleStateClick(mockElement);
-
-      expect(notificationServiceSpy.openSnackBar).toHaveBeenCalledWith(
-        'Failed to toggle active. ',
-      );
     });
   });
 

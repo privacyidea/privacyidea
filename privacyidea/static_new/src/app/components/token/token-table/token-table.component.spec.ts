@@ -40,7 +40,6 @@ describe('TokenTableComponent', () => {
       'openSnackBar',
     ]);
     tableUtilsSpy = jasmine.createSpyObj('TableUtilsService', [
-      'toggleKeywordInFilter',
       'parseFilterString',
       'getFilterIconName',
       'getClassForColumnKey',
@@ -107,6 +106,7 @@ describe('TokenTableComponent', () => {
     component.containerSerial = signal('Mock container');
     component.isProgrammaticChange = signal(false);
     component.selectedContent = signal('token_overview');
+    component.length = signal(0);
     fixture.detectChanges();
   });
 

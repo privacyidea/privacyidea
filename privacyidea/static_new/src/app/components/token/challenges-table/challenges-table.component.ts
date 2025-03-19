@@ -1,7 +1,6 @@
 import {
   Component,
   effect,
-  ElementRef,
   Input,
   signal,
   ViewChild,
@@ -60,15 +59,16 @@ export class ChallengesTableComponent {
     direction: 'asc',
   });
   dataSource = signal(new MatTableDataSource<any>([]));
+  clickedKeyword = signal<string>('');
   columnsKeyMap = columnsKeyMap;
   displayedColumns = columnsKeyMap.map((c) => c.key);
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.tokenService.challengesApiFilter;
   advancedApiFilter = this.tokenService.challengesAdvancedApiFilter;
-  keywordClick = signal<string>('');
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
+  @ViewChild('filterInput', { static: true })
+  filterInput!: HTMLInputElement;
 
   constructor(
     private tokenService: TokenService,
@@ -78,14 +78,8 @@ export class ChallengesTableComponent {
     private notificationService: NotificationService,
   ) {
     effect(() => {
-      const clickedKeyword = this.keywordClick();
-      if (clickedKeyword) {
-        this.toggleKeywordInFilter(
-          clickedKeyword,
-          this.inputElement.nativeElement,
-        );
-        this.keywordClick.set('');
-      }
+      this.filterValue();
+      this.fetchChallengesData();
     });
 
     if (!this.authService.isAuthenticatedUser()) {
@@ -121,29 +115,8 @@ export class ChallengesTableComponent {
           );
           this.dataSource.set(new MatTableDataSource(mappedData));
         },
-        error: (error) => {
-          console.error('Failed to load challenges.', error);
-        },
       });
   };
-
-  toggleKeywordInFilter(
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-  ): void {
-    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-      inputElement.value.trim(),
-      filterKeyword,
-    );
-
-    this.tableUtilsService.handleFilterInput(
-      { target: inputElement } as unknown as KeyboardEvent,
-      this.pageIndex,
-      this.filterValue,
-      this.fetchChallengesData,
-    );
-    inputElement.focus();
-  }
 
   tokenSelected(serial: string) {
     this.tokenSerial.set(serial);

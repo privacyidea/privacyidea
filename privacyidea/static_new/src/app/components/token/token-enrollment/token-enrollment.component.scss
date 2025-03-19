@@ -28,8 +28,15 @@
 .assign-user-container {
   display: flex;
   flex-direction: row;
-  gap: 1rem;
-  align-items: end;
+  align-items: baseline;
+}
+
+.user-pin-container {
+  background: #f3f3f3;
+  padding-top: 28px;
+  border-radius: var(--border-radius);
+  padding-bottom: 1rem;
+  padding-left: 1rem;
 }
 
 .user-pin-input {
@@ -84,7 +91,7 @@ h5 {
     max-height: unset;
     column-gap: 0;
     background: #dedcdf;
-    padding: 8px 4px 8px 12px;
+    padding: 12px 4px 16px 12px
   }
 
   .token-type-option.mat-mdc-option.mdc-list-item--selected:not(

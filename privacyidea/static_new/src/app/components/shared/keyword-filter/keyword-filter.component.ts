@@ -1,4 +1,10 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  effect,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
@@ -14,13 +20,23 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 export class KeywordFilterComponent {
   @Input() apiFilter!: string[];
   @Input() advancedApiFilter!: string[];
-  @Input() tableUtilsService!: TableUtilsService;
   @Input() filterValue!: WritableSignal<string>;
-  @Input() keywordClick!: WritableSignal<string>;
+  @Input() clickedKeyword!: WritableSignal<string>;
+  @Input() filterInput!: HTMLInputElement;
   showAdvancedFilter = signal(false);
 
+  constructor(private tableUtilsService: TableUtilsService) {
+    effect(() => {
+      const clicked = this.clickedKeyword();
+      if (clicked && this.filterInput) {
+        this.toggleKeywordInFilter(clicked, this.filterInput);
+        this.clickedKeyword.set('');
+      }
+    });
+  }
+
   onKeywordClick(filterKeyword: string): void {
-    this.keywordClick.set(filterKeyword);
+    this.clickedKeyword.set(filterKeyword);
   }
 
   onToggleAdvancedFilter(): void {
@@ -50,16 +66,34 @@ export class KeywordFilterComponent {
       }
 
       const activeValue = activeMatch[1].toLowerCase();
-      if (activeValue === 'true') {
-        return 'change_circle';
-      } else if (activeValue === 'false') {
-        return 'remove_circle';
-      } else {
-        return 'add_circle';
-      }
+      return activeValue === 'true'
+        ? 'change_circle'
+        : activeValue === 'false'
+          ? 'remove_circle'
+          : 'add_circle';
     } else {
       const isSelected = this.isFilterSelected(keyword, currentValue);
       return isSelected ? 'remove_circle' : 'add_circle';
     }
+  }
+
+  private toggleKeywordInFilter(
+    filterKeyword: string,
+    inputElement: HTMLInputElement,
+  ): void {
+    let newValue;
+    if (filterKeyword === 'active') {
+      newValue = this.tableUtilsService.toggleActiveInFilter(
+        inputElement.value,
+      );
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter(
+        inputElement.value.trim(),
+        filterKeyword,
+      );
+    }
+    inputElement.value = newValue;
+    this.filterValue.set(newValue);
+    inputElement.focus();
   }
 }

@@ -26,12 +26,11 @@
     <button (click)="this.reopenEnrollmentDialog()"
             [disabled]="this.response() === null"
             mat-icon-button>
-      <mat-icon>comment</mat-icon>
+      <mat-icon>open_in_new</mat-icon>
     </button>
     <button (click)="enrollToken()"
             [disabled]="
-        motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()
-      "
+        motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()"
             [ngClass]="{
         'disabled-button':
           motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
@@ -39,7 +38,7 @@
       }"
             mat-flat-button>
       <mat-icon>add</mat-icon>
-      Enroll {{ selectedType().key }} token
+      Enroll {{ selectedType().key }} Token
     </button>
   </div>
   @switch (selectedType().key) {
@@ -74,7 +73,8 @@
     @case ("yubikey") {
       <app-enroll-yubikey [otpKey]="otpKey"
                           [otpLength]="otpLength"
-                          [description]="description" />
+                          [description]="description"
+                          [testYubiKey]="testYubiKey" />
     }
     @case ("remote") {
       <app-enroll-remote [remoteSerial]="remoteSerial"
@@ -178,7 +178,7 @@
     <input style="display: none"
            type="password" />
 
-    <mat-form-field class="width-33 heigth-76-5">
+    <mat-form-field class="width-33 height-76-5">
       <mat-label>Select Realm of User</mat-label>
       <mat-select [(ngModel)]="selectedUserRealm">
         @for (option of realmOptions(); track option) {
@@ -187,7 +187,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field class="width-33 heigth-76-5">
+    <mat-form-field class="margin-left-1 width-33 height-76-5">
       <mat-label>Enter User</mat-label>
       <input [(ngModel)]="selectedUsername"
              [matAutocomplete]="userAuto"
@@ -201,7 +201,7 @@
       </mat-autocomplete>
     </mat-form-field>
 
-    <div class="flex-column width-33">
+    <div class="flex-column width-33 user-pin-container">
       <h5>Pin / Password</h5>
       <div class="user-pin-input">
         <input [(ngModel)]="setPinValue"

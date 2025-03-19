@@ -1,7 +1,7 @@
 import {
   Component,
-  effect,
   Input,
+  linkedSignal,
   signal,
   WritableSignal,
 } from '@angular/core';
@@ -33,7 +33,10 @@ export class TokenApplications {
   length = signal(0);
   pageSize = signal(10);
   pageIndex = signal(0);
-  filterValue = signal('');
+  filterValue = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => '',
+  });
   sortby_sortdir: WritableSignal<Sort> = signal({
     active: 'serial',
     direction: 'asc',
@@ -77,71 +80,11 @@ export class TokenApplications {
       this.fetchApplicationSshData();
       this.fetchApplicationOfflineData();
     }
-
-    effect(() => {
-      if (this.selectedApplicationType()) {
-        this.filterValue.set('');
-      }
-    });
   }
 
   tokenSelected(serial: string) {
     this.tokenSerial.set(serial);
     this.selectedContent.set('token_details');
-  }
-
-  toggleKeywordInFilter(
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-    application: string,
-  ): void {
-    if (filterKeyword === 'machineid & resolver') {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'machineid',
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        application === 'ssh'
-          ? this.fetchApplicationSshData
-          : this.fetchApplicationOfflineData,
-      );
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'resolver',
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        application === 'ssh'
-          ? this.fetchApplicationSshData
-          : this.fetchApplicationOfflineData,
-      );
-      inputElement.focus();
-    } else {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        filterKeyword,
-      );
-    }
-    this.tableUtilsService.handleFilterInput(
-      {
-        target: inputElement,
-      } as unknown as KeyboardEvent,
-      this.pageIndex,
-      this.filterValue,
-      application === 'ssh'
-        ? this.fetchApplicationSshData
-        : this.fetchApplicationOfflineData,
-    );
-    inputElement.focus();
   }
 
   fetchApplicationSshData = () => {

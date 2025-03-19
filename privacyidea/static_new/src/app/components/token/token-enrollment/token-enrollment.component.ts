@@ -4,6 +4,7 @@ import {
   effect,
   Injectable,
   Input,
+  linkedSignal,
   signal,
   WritableSignal,
 } from '@angular/core';
@@ -76,7 +77,9 @@ import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { VersionService } from '../../../services/version/version.service';
-import { LoadingService } from '../../../services/loading/loading-service';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged, from, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -197,12 +200,11 @@ export class TokenEnrollmentComponent {
   selectedContainer = signal<string>('');
   containerOptions = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
-  userOptions = signal<string[]>([]);
   generateOnServer = signal(true);
-  otpLength = signal(6);
+  testYubiKey = signal('');
   otpKey = signal('');
   hashAlgorithm = signal('sha1');
-  description = signal('');
+  sshPublicKey = signal('');
   selectedTimezoneOffset = signal('+01:00');
   selectedStartTime = signal('');
   selectedEndTime = signal('');
@@ -213,7 +215,6 @@ export class TokenEnrollmentComponent {
   regenerateToken = signal(false);
   motpPin = signal('');
   repeatMotpPin = signal('');
-  sshPublicKey = signal('');
   checkPinLocally = signal(false);
   remoteServer = signal({ url: '', id: '' });
   remoteSerial = signal('');
@@ -236,18 +237,63 @@ export class TokenEnrollmentComponent {
   readEmailDynamically = signal(false);
   pushEnrolled = signal(false);
   answers = signal<Record<string, string>>({});
-  vascoSerial = signal('');
   useVascoSerial = signal(false);
   onlyAddToRealm = signal(false);
+  otpLength = linkedSignal({
+    source: this.testYubiKey,
+    computation: (testYubiKey) => {
+      if (testYubiKey.length > 0) {
+        return testYubiKey.length;
+      } else {
+        return this.selectedType() ===
+          this.tokenTypesOptions.find((type) => type.key === 'yubikey')
+          ? 44
+          : 6;
+      }
+    },
+  });
+  description = linkedSignal({
+    source: this.sshPublicKey,
+    computation: (sshPublicKey) => {
+      const parts = sshPublicKey?.split(' ') ?? [];
+      return parts.length >= 3 ? parts[2] : '';
+    },
+  });
+  vascoSerial = linkedSignal({
+    source: this.otpKey,
+    computation: (otpKey) => {
+      if (this.useVascoSerial()) {
+        return EnrollVascoComponent.convertOtpKeyToVascoSerial(otpKey);
+      }
+      return '';
+    },
+  });
   filteredContainerOptions = computed(() => {
     const filter = (this.selectedContainer() || '').toLowerCase();
     return this.containerOptions().filter((option) =>
       option.toLowerCase().includes(filter),
     );
   });
+  fetchedUsernames = toSignal(
+    toObservable(this.selectedUserRealm).pipe(
+      distinctUntilChanged(),
+      switchMap((realm) => {
+        if (!realm) {
+          return from<string[]>([]);
+        }
+        return this.userService.getUsers(realm).pipe(
+          map((resp: any) => {
+            return resp.value.map((user: any) => user.username);
+          }),
+        );
+      }),
+    ),
+    { initialValue: [] },
+  );
+  userOptions = computed(() => this.fetchedUsernames());
   filteredUserOptions = computed(() => {
     const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option) =>
+    return this.userOptions().filter((option: any) =>
       option.toLowerCase().includes(filterValue),
     );
   });
@@ -262,78 +308,65 @@ export class TokenEnrollmentComponent {
     private tokenService: TokenService,
     protected dialog: MatDialog,
     protected versioningService: VersionService,
-    private loadingService: LoadingService,
   ) {
-    effect(() => {
-      this.getContainerOptions();
-    });
+    const resetEnrollmentOptions = () => {
+      this.realmService.getDefaultRealm().subscribe({
+        next: (realm: any) => {
+          this.selectedUserRealm.set(realm);
+        },
+      });
+      this.getRealmOptions();
+      this.response.set(null);
+      this.tokenSerial.set('');
+      this.description.set('');
+      this.setPinValue.set('');
+      this.repeatPinValue.set('');
+      this.selectedUsername.set('');
+      this.selectedContainer.set('');
+      this.generateOnServer.set(true);
+      this.otpLength.set(6);
+      this.otpKey.set('');
+      this.hashAlgorithm.set('sha1');
+      this.selectedTimezoneOffset.set('+01:00');
+      this.selectedStartTime.set('');
+      this.selectedEndTime.set('');
+      this.selectedStartDate.set(new Date());
+      this.selectedEndDate.set(new Date());
+      this.timeStep.set(30);
+      this.regenerateToken.set(false);
+      this.motpPin.set('');
+      this.repeatMotpPin.set('');
+      this.sshPublicKey.set('');
+      this.checkPinLocally.set(false);
+      this.remoteServer.set({ url: '', id: '' });
+      this.remoteSerial.set('');
+      this.remoteUser.set('');
+      this.remoteRealm.set('');
+      this.remoteResolver.set('');
+      this.yubikeyIdentifier.set('');
+      this.radiusServerConfiguration.set('');
+      this.radiusUser.set('');
+      this.readNumberDynamically.set(false);
+      this.smsGateway.set('');
+      this.phoneNumber.set('');
+      this.separator.set('');
+      this.requiredTokenOfRealm.set([]);
+      this.serviceId.set('');
+      this.caConnector.set('');
+      this.certTemplate.set('');
+      this.pem.set('');
+      this.emailAddress.set('');
+      this.readEmailDynamically.set(false);
+      this.pushEnrolled.set(false);
+      this.answers.set({});
+      this.vascoSerial.set('');
+      this.useVascoSerial.set(false);
+      this.onlyAddToRealm.set(false);
+    };
 
     effect(() => {
-      if (this.selectedType()) {
-        this.loadingService.removeLoading('token-enrollment');
-        this.realmService.getDefaultRealm().subscribe({
-          next: (realm: any) => {
-            this.selectedUserRealm.set(realm);
-          },
-        });
-        this.getRealmOptions();
-        this.response.set(null);
-        this.tokenSerial.set('');
-        this.description.set('');
-        this.setPinValue.set('');
-        this.repeatPinValue.set('');
-        this.selectedUsername.set('');
-        this.selectedContainer.set('');
-        this.generateOnServer.set(true);
-        this.otpLength.set(6);
-        this.otpKey.set('');
-        this.hashAlgorithm.set('sha1');
-        this.selectedTimezoneOffset.set('+01:00');
-        this.selectedStartTime.set('');
-        this.selectedEndTime.set('');
-        this.selectedStartDate.set(new Date());
-        this.selectedEndDate.set(new Date());
-        this.timeStep.set(30);
-        this.regenerateToken.set(false);
-        this.motpPin.set('');
-        this.repeatMotpPin.set('');
-        this.sshPublicKey.set('');
-        this.checkPinLocally.set(false);
-        this.remoteServer.set({ url: '', id: '' });
-        this.remoteSerial.set('');
-        this.remoteUser.set('');
-        this.remoteRealm.set('');
-        this.remoteResolver.set('');
-        this.yubikeyIdentifier.set('');
-        this.radiusServerConfiguration.set('');
-        this.radiusUser.set('');
-        this.readNumberDynamically.set(false);
-        this.smsGateway.set('');
-        this.phoneNumber.set('');
-        this.separator.set('');
-        this.requiredTokenOfRealm.set([]);
-        this.serviceId.set('');
-        this.caConnector.set('');
-        this.certTemplate.set('');
-        this.pem.set('');
-        this.emailAddress.set('');
-        this.readEmailDynamically.set(false);
-        this.pushEnrolled.set(false);
-        this.answers.set({});
-        this.vascoSerial.set('');
-        this.useVascoSerial.set(false);
-        this.onlyAddToRealm.set(false);
-      }
-    });
-
-    effect(() => {
-      if (this.selectedUserRealm()) {
-        this.userService.getUsers(this.selectedUserRealm()).subscribe({
-          next: (users: any) => {
-            this.userOptions.set(users.value.map((user: any) => user.username));
-          },
-        });
-      }
+      this.selectedType();
+      resetEnrollmentOptions();
     });
 
     effect(() => {
@@ -341,6 +374,10 @@ export class TokenEnrollmentComponent {
         this.enrollToken();
       }
     });
+  }
+
+  ngAfterViewInit() {
+    this.getContainerOptions();
   }
 
   getRealmOptions() {

@@ -1,7 +1,6 @@
 import {
   Component,
   computed,
-  effect,
   Input,
   signal,
   WritableSignal,
@@ -180,10 +179,10 @@ export class TokenDetailsComponent {
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService,
-  ) {
-    effect(() => {
-      this.showTokenDetail().subscribe();
-    });
+  ) {}
+
+  ngAfterViewInit() {
+    this.showTokenDetail().subscribe();
   }
 
   isObject(value: any): boolean {
@@ -254,16 +253,7 @@ export class TokenDetailsComponent {
   resetFailCount(): void {
     this.tokenService
       .resetFailCount(this.tokenSerial())
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        error: (error) => {
-          console.error('Failed to reset fail counter.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to reset fail counter. ' + message,
-          );
-        },
-      });
+      .pipe(switchMap(() => this.showTokenDetail()));
   }
 
   toggleEditMode(element: any, type: string = '', action: string = ''): void {
@@ -299,44 +289,19 @@ export class TokenDetailsComponent {
         next: () => {
           this.showTokenDetail();
         },
-        error: (error) => {
-          console.error('Failed to save token detail.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to save token detail. ' + message,
-          );
-        },
       });
   }
 
   saveContainer() {
     this.containerService
       .assignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        error: (error) => {
-          console.error('Failed to assign container.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to assign container. ' + message,
-          );
-        },
-      });
+      .pipe(switchMap(() => this.showTokenDetail()));
   }
 
   deleteContainer() {
     this.containerService
       .unassignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        error: (error) => {
-          console.error('Failed to unassign container.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to unassign container. ' + message,
-          );
-        },
-      });
+      .pipe(switchMap(() => this.showTokenDetail()));
   }
 
   isEditableElement(key: any) {
@@ -360,13 +325,6 @@ export class TokenDetailsComponent {
     this.isProgrammaticChange.set(true);
     this.selectedContent.set('container_details');
     this.containerSerial.set(containerSerial);
-  }
-
-  private _filterContainerOptions(value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filterValue),
-    );
   }
 
   private handleContainerSerial(action: string): void {
@@ -399,13 +357,6 @@ export class TokenDetailsComponent {
             this.tokenDetailData().find(
               (detail) => detail.keyMap.key === 'tokengroup',
             )?.value,
-          );
-        },
-        error: (error) => {
-          console.error('Failed to get tokengroups.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get tokengroups. ' + message,
           );
         },
       });
@@ -460,13 +411,6 @@ export class TokenDetailsComponent {
         next: () => {
           this.showTokenDetail();
         },
-        error: (error) => {
-          console.error('Failed to save token realms.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to save token realms. ' + message,
-          );
-        },
       });
   }
 
@@ -477,13 +421,6 @@ export class TokenDetailsComponent {
       .subscribe({
         next: () => {
           this.showTokenDetail();
-        },
-        error: (error) => {
-          console.error('Failed to set token group.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to set token group. ' + message,
-          );
         },
       });
   }

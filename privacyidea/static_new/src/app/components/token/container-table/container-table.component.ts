@@ -51,11 +51,8 @@ const columnsKeyMap = [
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
-  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
-  pageSizeOptions = [5, 10, 15];
-  apiFilter = this.containerService.apiFilter;
-  advancedApiFilter = this.containerService.advancedApiFilter;
-  columnsKeyMap = columnsKeyMap;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() containerSerial!: WritableSignal<string>;
   sortby_sortdir: WritableSignal<Sort> = signal({
     active: 'serial',
     direction: 'asc',
@@ -64,8 +61,6 @@ export class ContainerTableComponent {
   pageSize = signal(10);
   pageIndex = signal(0);
   filterValue = signal('');
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
   dataSource = signal(
     new MatTableDataSource(
       Array.from({ length: this.pageSize() }, () => {
@@ -77,8 +72,13 @@ export class ContainerTableComponent {
       }),
     ),
   );
-  keywordClick = signal<string>('');
-  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
+  clickedKeyword = signal<string>('');
+  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
+  pageSizeOptions = [5, 10, 15];
+  apiFilter = this.containerService.apiFilter;
+  advancedApiFilter = this.containerService.advancedApiFilter;
+  columnsKeyMap = columnsKeyMap;
+  @ViewChild('filterInput') inputElement!: ElementRef<HTMLInputElement>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -90,14 +90,8 @@ export class ContainerTableComponent {
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      const clickedKeyword = this.keywordClick();
-      if (clickedKeyword) {
-        this.toggleKeywordInFilter(
-          clickedKeyword,
-          this.inputElement.nativeElement,
-        );
-        this.keywordClick.set('');
-      }
+      this.filterValue();
+      this.fetchContainerData();
     });
 
     if (!this.authService.isAuthenticatedUser()) {
@@ -113,22 +107,6 @@ export class ContainerTableComponent {
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
-  }
-
-  toggleKeywordInFilter(keyword: string, inputElement: HTMLInputElement): void {
-    inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-      inputElement.value.trim(),
-      keyword,
-    );
-    this.tableUtilsService.handleFilterInput(
-      {
-        target: inputElement,
-      } as unknown as KeyboardEvent,
-      this.pageIndex,
-      this.filterValue,
-      this.fetchContainerData,
-    );
-    inputElement.focus();
   }
 
   handleStateClick(element: any) {

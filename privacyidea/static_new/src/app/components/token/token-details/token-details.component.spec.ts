@@ -242,11 +242,6 @@ describe('TokenDetailsComponent', () => {
     );
   });
 
-  it('should filter container options correctly', () => {
-    const result = component['_filterContainerOptions']('admin');
-    expect(result).toEqual(['admin-container']);
-  });
-
   it('should navigate to container details when containerSelected is called', () => {
     component.isProgrammaticChange = signal(false);
     component.selectedContent = signal('token_overview');

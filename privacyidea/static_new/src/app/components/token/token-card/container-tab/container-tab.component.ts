@@ -8,7 +8,6 @@ import { MatDivider } from '@angular/material/divider';
 import { switchMap } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenSelectedContent } from '../../token.component';
@@ -32,7 +31,6 @@ export class ContainerTabComponent {
   constructor(
     private containerService: ContainerService,
     protected versioningService: VersionService,
-    private notificationService: NotificationService,
     private dialog: MatDialog,
   ) {}
 
@@ -51,13 +49,6 @@ export class ContainerTabComponent {
       .subscribe({
         next: () => {
           this.refreshContainerDetails.set(true);
-        },
-        error: (error) => {
-          console.error('Failed to toggle active.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to toggle active. ' + message,
-          );
         },
       });
   }
@@ -83,13 +74,6 @@ export class ContainerTabComponent {
                 next: () => {
                   this.selectedContent.set('container_overview');
                   this.containerSerial.set('');
-                },
-                error: (error) => {
-                  console.error('Failed to delete container.', error);
-                  const message = error.error?.result?.error?.message || '';
-                  this.notificationService.openSnackBar(
-                    'Failed to delete container. ' + message,
-                  );
                 },
               });
           }

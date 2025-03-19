@@ -1,7 +1,6 @@
 import {
   Component,
   effect,
-  ElementRef,
   Input,
   signal,
   ViewChild,
@@ -82,10 +81,11 @@ export class TokenTableComponent {
       }),
     ),
   );
-  keywordClick = signal<string>('');
+  clickedKeyword = signal<string>('');
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('input') inputElement!: ElementRef<HTMLInputElement>;
+  @ViewChild('filterInput', { static: true })
+  filterInput!: HTMLInputElement;
 
   constructor(
     private router: Router,
@@ -95,14 +95,8 @@ export class TokenTableComponent {
     private notificationService: NotificationService,
   ) {
     effect(() => {
-      const clickedKeyword = this.keywordClick();
-      if (clickedKeyword) {
-        this.toggleKeywordInFilter(
-          clickedKeyword,
-          this.inputElement.nativeElement,
-        );
-        this.keywordClick.set('');
-      }
+      this.filterValue();
+      this.fetchTokenData();
     });
 
     if (!this.authService.isAuthenticatedUser()) {
@@ -120,80 +114,10 @@ export class TokenTableComponent {
     this.dataSource().sort = this.sort;
   }
 
-  toggleKeywordInFilter(
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-  ): void {
-    if (filterKeyword === 'active') {
-      inputElement.value = this.tableUtilsService.toggleActiveInFilter(
-        inputElement.value,
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        this.fetchTokenData,
-      );
-      inputElement.focus();
-      return;
-    }
-
-    if (filterKeyword === 'infokey & infovalue') {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'infokey',
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        this.fetchTokenData,
-      );
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        'infovalue',
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        this.fetchTokenData,
-      );
-      inputElement.focus();
-    } else {
-      inputElement.value = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
-        filterKeyword,
-      );
-      this.tableUtilsService.handleFilterInput(
-        {
-          target: inputElement,
-        } as unknown as KeyboardEvent,
-        this.pageIndex,
-        this.filterValue,
-        this.fetchTokenData,
-      );
-      inputElement.focus();
-    }
-  }
-
   toggleActive(element: any): void {
     this.tokenService.toggleActive(element.serial, element.active).subscribe({
       next: () => {
         this.fetchTokenData();
-      },
-      error: (error) => {
-        console.error('Failed to toggle active.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to toggle active. ' + message,
-        );
       },
     });
   }
@@ -202,13 +126,6 @@ export class TokenTableComponent {
     this.tokenService.resetFailCount(element.serial).subscribe({
       next: () => {
         this.fetchTokenData();
-      },
-      error: (error) => {
-        console.error('Failed to reset fail counter.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to reset fail counter. ' + message,
-        );
       },
     });
   }
@@ -248,13 +165,6 @@ export class TokenTableComponent {
           this.length.set(response.result.value.count);
           this.dataSource.set(
             new MatTableDataSource(response.result.value.tokens),
-          );
-        },
-        error: (error) => {
-          console.error('Failed to get token data.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get token data. ' + message,
           );
         },
       });
