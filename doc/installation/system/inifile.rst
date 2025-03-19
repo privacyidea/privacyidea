@@ -304,6 +304,8 @@ A JWT can be created like this::
 Token parameters
 ----------------
 
+.. _picfg_token_serial_random:
+
 Random serial generation
 ........................
 
@@ -313,6 +315,10 @@ A newly generated token serial contains an additional non-random part which
 reduces the amount of possible serials. To generate completely random serials use::
 
     PI_TOKEN_SERIAL_RANDOM = True
+
+.. note::
+    See :py:func:`~privacyidea.lib.token.gen_serial` for more information on
+    the generation of a token serial.
 
 .. _picfg_3rd_party_tokens:
 
