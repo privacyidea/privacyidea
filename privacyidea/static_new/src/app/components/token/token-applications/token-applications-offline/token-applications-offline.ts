@@ -18,6 +18,7 @@ import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -53,7 +54,7 @@ export class TokenApplicationsOffline {
   @Input() pageIndex!: WritableSignal<number>;
   @Input() filterValue!: WritableSignal<string>;
   @Input() sortby_sortdir!: WritableSignal<Sort>;
-  @Input() fetchApplicationOfflineData!: () => void;
+  @Input() fetchApplicationOfflineData!: (filter?: string) => void;
   @Input() tokenSelected!: (serial: string) => void;
   @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
   clickedKeyword = signal<string>('');
@@ -66,14 +67,27 @@ export class TokenApplicationsOffline {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true })
   filterInput!: HTMLInputElement;
+  filterSubject = new Subject<string>();
 
   constructor(
     protected tableUtilsService: TableUtilsService,
     private machineService: MachineService,
   ) {
     effect(() => {
-      this.filterValue();
-      this.fetchApplicationOfflineData();
+      this.filterSubject.next(this.filterValue());
     });
+  }
+
+  ngOnInit() {
+    this.filterSubject
+      .pipe(distinctUntilChanged(), debounceTime(200))
+      .subscribe((filter) => {
+        this.fetchApplicationOfflineData(filter);
+      });
+  }
+
+  onFilterChange(newFilter: string) {
+    this.filterValue.set(newFilter);
+    this.pageIndex.set(0);
   }
 }

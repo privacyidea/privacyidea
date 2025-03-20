@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { NgClass } from '@angular/common';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 export const columnsKeyMap = [
   { key: 'timestamp', label: 'Timestamp' },
@@ -66,24 +67,38 @@ export class ChallengesTableComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true })
   filterInput!: HTMLInputElement;
+  filterSubject = new Subject<string>();
 
   constructor(
     private tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      this.filterValue();
-      this.fetchChallengesData();
+      this.filterSubject.next(this.filterValue());
     });
   }
 
-  fetchChallengesData = () => {
+  ngOnInit() {
+    this.filterSubject
+      .pipe(distinctUntilChanged(), debounceTime(200))
+      .subscribe((filter) => {
+        this.fetchChallengesData(filter);
+      });
+  }
+
+  onFilterChange(newFilter: string) {
+    this.filterValue.set(newFilter);
+    this.pageIndex.set(0);
+    this.filterSubject.next(newFilter);
+  }
+
+  fetchChallengesData = (filterValue?: string) => {
     this.tokenService
       .getChallenges({
         pageIndex: this.pageIndex() + 1,
         pageSize: this.pageSize(),
         sort: this.sortby_sortdir(),
-        filterValue: this.filterValue(),
+        filterValue: filterValue ?? this.filterValue(),
       })
       .subscribe({
         next: (response) => {

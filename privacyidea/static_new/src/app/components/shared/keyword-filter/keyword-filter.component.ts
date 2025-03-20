@@ -29,7 +29,7 @@ export class KeywordFilterComponent {
     effect(() => {
       const clicked = this.clickedKeyword();
       if (clicked && this.filterInput) {
-        this.toggleKeywordInFilter(clicked, this.filterInput);
+        this.toggleFilter(clicked, this.filterInput);
         this.clickedKeyword.set('');
       }
     });
@@ -77,7 +77,7 @@ export class KeywordFilterComponent {
     }
   }
 
-  private toggleKeywordInFilter(
+  private toggleFilter(
     filterKeyword: string,
     inputElement: HTMLInputElement,
   ): void {

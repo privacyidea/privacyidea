@@ -12,8 +12,6 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { AuthService } from '../../../services/auth/auth.service';
-import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ContainerService } from '../../../services/container/container.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
@@ -21,6 +19,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -79,23 +78,35 @@ export class ContainerTableComponent {
   @ViewChild('filterInput') inputElement!: ElementRef<HTMLInputElement>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  filterSubject = new Subject<string>();
 
   constructor(
-    private router: Router,
-    private authService: AuthService,
     private containerService: ContainerService,
     private notificationService: NotificationService,
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      this.filterValue();
-      this.fetchContainerData();
+      this.filterSubject.next(this.filterValue());
     });
+  }
+
+  ngOnInit() {
+    this.filterSubject
+      .pipe(distinctUntilChanged(), debounceTime(200))
+      .subscribe((filter) => {
+        this.fetchContainerData(filter);
+      });
   }
 
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
+  }
+
+  onFilterChange(newFilter: string) {
+    this.filterValue.set(newFilter);
+    this.pageIndex.set(0);
+    this.filterSubject.next(newFilter);
   }
 
   handleStateClick(element: any) {
@@ -120,13 +131,13 @@ export class ContainerTableComponent {
     this.selectedContent.set('container_details');
   }
 
-  protected fetchContainerData = () => {
+  protected fetchContainerData = (filterValue?: string) => {
     this.containerService
       .getContainerData({
         page: this.pageIndex() + 1,
         pageSize: this.pageSize(),
         sort: this.sortby_sortdir(),
-        filterValue: this.filterValue(),
+        filterValue: filterValue ?? this.filterValue(),
       })
       .subscribe({
         next: (response) => {

@@ -23,6 +23,7 @@ import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -60,7 +61,7 @@ export class TokenApplicationsSsh {
   @Input() filterValue!: WritableSignal<string>;
   @Input() sortby_sortdir!: WritableSignal<Sort>;
   @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
-  @Input() fetchApplicationSshData!: () => void;
+  @Input() fetchApplicationSshData!: (filter?: string) => void;
   @Input() tokenSelected!: (serial: string) => void;
   clickedKeyword = signal<string>('');
   columnsKeyMap = columnsKeyMap;
@@ -72,18 +73,31 @@ export class TokenApplicationsSsh {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true })
   filterInput!: HTMLInputElement;
+  filterSubject = new Subject<string>();
 
   constructor(
     private machineService: MachineService,
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      this.filterValue();
-      this.fetchApplicationSshData();
+      this.filterSubject.next(this.filterValue());
     });
+  }
+
+  ngOnInit() {
+    this.filterSubject
+      .pipe(distinctUntilChanged(), debounceTime(200))
+      .subscribe((filter) => {
+        this.fetchApplicationSshData(filter);
+      });
   }
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
+  }
+
+  onFilterChange(newFilter: string) {
+    this.filterValue.set(newFilter);
+    this.pageIndex.set(0);
   }
 }

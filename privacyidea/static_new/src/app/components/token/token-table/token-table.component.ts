@@ -17,6 +17,7 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -81,15 +82,29 @@ export class TokenTableComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true })
   filterInput!: HTMLInputElement;
+  filterSubject = new Subject<string>();
 
   constructor(
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
   ) {
     effect(() => {
-      this.filterValue();
-      this.fetchTokenData();
+      this.filterSubject.next(this.filterValue());
     });
+  }
+
+  ngOnInit() {
+    this.filterSubject
+      .pipe(distinctUntilChanged(), debounceTime(200))
+      .subscribe((filter) => {
+        this.fetchTokenData(filter);
+      });
+  }
+
+  onFilterChange(newFilter: string) {
+    this.filterValue.set(newFilter);
+    this.pageIndex.set(0);
+    this.filterSubject.next(newFilter);
   }
 
   ngAfterViewInit() {
@@ -135,13 +150,13 @@ export class TokenTableComponent {
     this.selectedContent.set('container_details');
   }
 
-  protected fetchTokenData = () => {
+  protected fetchTokenData = (filterValue?: string) => {
     this.tokenService
       .getTokenData(
         this.pageIndex() + 1,
         this.pageSize(),
         this.sortby_sortdir(),
-        this.filterValue(),
+        filterValue ?? this.filterValue(),
       )
       .subscribe({
         next: (response) => {

@@ -74,11 +74,11 @@ export class TokenApplications {
     this.selectedContent.set('token_details');
   }
 
-  fetchApplicationSshData = () => {
+  fetchApplicationSshData = (filterValue?: string) => {
     this.machineService
       .getTokenMachineData(
         this.pageSize(),
-        this.filterValue(),
+        filterValue ?? this.filterValue(),
         'ssh',
         this.sortby_sortdir().active,
         this.sortby_sortdir().direction,
@@ -106,11 +106,11 @@ export class TokenApplications {
       });
   };
 
-  fetchApplicationOfflineData = () => {
+  fetchApplicationOfflineData = (filterValue?: string) => {
     this.machineService
       .getTokenMachineData(
         this.pageSize(),
-        this.filterValue(),
+        filterValue ?? this.filterValue(),
         'offline',
         this.sortby_sortdir().active,
         this.sortby_sortdir().direction,

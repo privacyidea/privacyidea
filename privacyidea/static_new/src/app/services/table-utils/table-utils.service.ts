@@ -79,6 +79,14 @@ export class TableUtilsService {
   }
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string {
+    if (keyword.includes('&')) {
+      const keywords = keyword.split('&').map((k) => k.trim());
+      let newValue = currentValue;
+      for (const key of keywords) {
+        newValue = this.toggleKeywordInFilter(newValue, key);
+      }
+      return newValue;
+    }
     const keywordPattern = new RegExp(
       `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
       'i',
@@ -314,17 +322,6 @@ export class TableUtilsService {
     }
 
     sortby_sortdir.set({ active, direction });
-    pageIndex.set(0);
-    fetchData();
-  }
-
-  handleFilterInput(
-    event: Event,
-    pageIndex: WritableSignal<number>,
-    filterValue: WritableSignal<string>,
-    fetchData: () => void,
-  ) {
-    filterValue.set((event.target as HTMLInputElement).value.trim());
     pageIndex.set(0);
     fetchData();
   }

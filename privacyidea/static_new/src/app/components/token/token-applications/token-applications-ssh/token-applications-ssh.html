@@ -14,8 +14,7 @@
                       subscriptSizing="dynamic">
         <mat-label>Enter Filter</mat-label>
         <input #filterInput
-               (keyup)="tableUtilsService.handleFilterInput(
-                      $event, pageIndex, filterValue, fetchApplicationSshData)"
+               (keyup)="onFilterChange(filterInput.value)"
                aria-label="Filter Input"
                matInput
                placeholder="Example query: 'service_id: myService'" />

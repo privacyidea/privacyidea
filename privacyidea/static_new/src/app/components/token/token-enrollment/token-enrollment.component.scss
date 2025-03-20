@@ -117,4 +117,17 @@ h5 {
   .multi-column-panel .mat-pseudo-checkbox-checked::after {
     color: white !important;
   }
+
+  .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
+    background: #e2e2e2 !important;
+  }
+
+  .mat-expansion-panel {
+    background: white !important;
+  }
+
+  .mat-accordion .mat-expansion-panel {
+    border-radius: var(--border-radius) !important;
+  }
+
 }

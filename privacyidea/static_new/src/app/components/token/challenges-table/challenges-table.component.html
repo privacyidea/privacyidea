@@ -6,11 +6,7 @@
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
       <input #filterInput
-             (keyup)="tableUtilsService.handleFilterInput(
-          $event,
-          pageIndex,
-          filterValue,
-          fetchChallengesData)"
+             (keyup)="onFilterChange(filterInput.value)"
              matInput
              placeholder="Example query: 'transaction_id: 00000000000000000001'" />
     </mat-form-field>
