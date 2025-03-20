@@ -374,14 +374,11 @@ def preferred_client_mode(request, response):
     # check policy if client mode per user shall be used
     client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
                                           user_object=user).allowed()
-    preferred_token_type = None
+    last_used_token_type = None
     if client_mode_per_user_pol:
+        user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
         user_attributes = user.attributes
-        preferred_token_types_str = user_attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE)
-        if preferred_token_types_str:
-            user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
-            preferred_token_types = json.loads(preferred_token_types_str)
-            preferred_token_type = preferred_token_types.get(user_agent)
+        last_used_token_type = user_attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}")
 
     if content.get("detail"):
         detail = content.get("detail")
@@ -390,9 +387,9 @@ def preferred_client_mode(request, response):
 
             # First try to use the users preferred token type
             preferred = None
-            if preferred_token_type:
+            if last_used_token_type:
                 for challenge in multi_challenge:
-                    if challenge.get('type') == preferred_token_type:
+                    if challenge.get('type') == last_used_token_type:
                         preferred = challenge.get('client_mode')
                         content.setdefault("detail", {})["preferred_client_mode"] = preferred
                         break

@@ -104,7 +104,7 @@ from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import ACTION, Match
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -520,20 +520,18 @@ def check():
             except Exception as e:
                 log.debug(f"Could not find container for token {serial}: {e}")
 
-            # set the used token type as the preferred one for the user to indicate the preferred client mode for the
-            # next authentication
-            token = get_one_token(serial=serial, silent_fail=True)
-            if token:
-                user_attribute = user.attributes.get(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE)
-                if user_attribute:
-                    preferred_token_type = json.loads(user_attribute)
-                else:
-                    preferred_token_type = {}
-                token_type = token.get_tokentype()
-                user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
-                preferred_token_type[user_agent] = token_type
-                user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, json.dumps(preferred_token_type),
-                                   INTERNAL_USAGE)
+            # check policy if client mode per user shall be set
+            client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
+                                                  user_object=user).allowed()
+            if client_mode_per_user_pol:
+                # set the used token type as the preferred one for the user to indicate the preferred client mode for
+                # the next authentication
+                token = get_one_token(serial=serial, silent_fail=True)
+                if token:
+                    token_type = token.get_tokentype()
+                    user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+                    user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
+                                       token_type, INTERNAL_USAGE)
 
     serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)
