@@ -11,7 +11,7 @@
              placeholder="Example query: 'type: hotp userid: 1000'" />
     </mat-form-field>
     <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize)"
+                           $event, pageIndex, pageSize, fetchTokenData)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"
