@@ -186,11 +186,11 @@ def check_registration_data(attestation_cert, app_id,
     client_data_hash = sha256(to_bytes(client_data)).digest()
     reg_data = b'\x00' + app_id_hash + client_data_hash \
                + binascii.unhexlify(key_handle) + binascii.unhexlify(user_pub_key)
+    attest_cert = attestation_cert.to_cryptography()
     try:
-        crypto.verify(attestation_cert,
-                      binascii.unhexlify(signature),
-                      reg_data,
-                      "sha256")
+        attest_cert.public_key().verify(binascii.unhexlify(signature),
+                                        reg_data,
+                                        ec.ECDSA(hashes.SHA256()))
     except Exception as exx:
         raise Exception("Error checking the signature of the registration "
                         "data. %s" % exx)
