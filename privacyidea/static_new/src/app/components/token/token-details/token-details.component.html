@@ -4,10 +4,7 @@
     <div class="details-header">
       <h3>Details for Token: </h3>
       <h3 style="color: var(--blue-base)"> {{ tokenSerial() }} </h3>
-      <button [cdkCopyToClipboard]="tokenSerial()"
-              class="copy-button">
-        <mat-icon class="copy-icon">content_copy</mat-icon>
-      </button>
+      <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
     <div [ngClass]="[
         overflowService.isWidthOverflowing('.token-layout', 1310)
@@ -49,10 +46,7 @@
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
                        (click)="containerSelected(element.value)"> {{ element.value }} </a>
                     @if (element.value !== "") {
-                      <button class="copy-button"
-                              [cdkCopyToClipboard]="element.value">
-                        <mat-icon class="copy-icon">content_copy</mat-icon>
-                      </button>
+                      <app-copy-button [copyText]="element.value"></app-copy-button>
                     }
                   }
                 }

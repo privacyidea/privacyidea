@@ -40,7 +40,7 @@
             mat-sort-header>
           {{ column.label }}
         </th>
-        <td *matCellDef="let element"
+        <td *matCellDef="let element, let idx = index"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
             [ngClass]="{ 'width-18rem': column.key === 'description' }">
@@ -49,10 +49,7 @@
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
-                <button class="copy-button"
-                        [cdkCopyToClipboard]="element.serial">
-                  <mat-icon class="copy-icon">content_copy</mat-icon>
-                </button>
+                <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @case ("realms") {
                 <div [ngClass]="(element[column.key]?.length || 0)  > 1 ? 'realm-list' : 'realm'">
@@ -66,10 +63,7 @@
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
                 @if (element.container_serial !== "") {
-                  <button class="copy-button"
-                          [cdkCopyToClipboard]="element.container_serial">
-                    <mat-icon class="copy-icon">content_copy</mat-icon>
-                  </button>
+                  <app-copy-button [copyText]="element.container_serial"></app-copy-button>
                 }
               }
               @default {

@@ -16,12 +16,11 @@ import { AuthService } from '../../../services/auth/auth.service';
 import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ContainerService } from '../../../services/container/container.service';
-import { MatIcon } from '@angular/material/icon';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { NotificationService } from '../../../services/notification/notification.service';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -43,9 +42,8 @@ const columnsKeyMap = [
     MatPaginatorModule,
     MatSortModule,
     NgClass,
-    MatIcon,
-    CdkCopyToClipboard,
     KeywordFilterComponent,
+    CopyButtonComponent,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',

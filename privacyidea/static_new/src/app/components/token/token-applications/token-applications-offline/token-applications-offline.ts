@@ -14,11 +14,10 @@ import { MachineService } from '../../../../services/machine/machine.service';
 import { TokenSelectedContent } from '../../token.component';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -36,11 +35,10 @@ export const columnsKeyMap = [
     MatSortModule,
     KeywordFilterComponent,
     MatFormField,
-    MatIcon,
     MatInput,
     MatLabel,
     NgClass,
-    CdkCopyToClipboard,
+    CopyButtonComponent,
   ],
   templateUrl: './token-applications-offline.html',
   styleUrls: ['./token-applications-offline.scss'],

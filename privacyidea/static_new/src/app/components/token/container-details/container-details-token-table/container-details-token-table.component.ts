@@ -20,8 +20,8 @@ import { ContainerService } from '../../../../services/container/container.servi
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../../token.component';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -50,7 +50,7 @@ const columnsKeyMap = [
     MatIcon,
     MatIconButton,
     MatButton,
-    CdkCopyToClipboard,
+    CopyButtonComponent,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss',

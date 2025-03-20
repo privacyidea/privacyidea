@@ -13,11 +13,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
 import { TokenService } from '../../../services/token/token.service';
-import { MatIcon } from '@angular/material/icon';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -42,9 +41,8 @@ const columnsKeyMap = [
     MatPaginatorModule,
     MatSortModule,
     NgClass,
-    MatIcon,
-    CdkCopyToClipboard,
     KeywordFilterComponent,
+    CopyButtonComponent,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',

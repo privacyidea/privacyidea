@@ -22,8 +22,7 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { MatIcon } from '@angular/material/icon';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -46,8 +45,7 @@ export const columnsKeyMap = [
     MatPaginatorModule,
     MatSortModule,
     NgClass,
-    MatIcon,
-    CdkCopyToClipboard,
+    CopyButtonComponent,
   ],
   templateUrl: './token-applications-ssh.html',
   styleUrls: ['./token-applications-ssh.scss'],

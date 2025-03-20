@@ -4,10 +4,7 @@
     <div class="container-details-header">
       <h3>Details for Container: </h3>
       <h3 style="color: var(--blue-base)"> {{ containerSerial() }} </h3>
-      <button [cdkCopyToClipboard]="containerSerial()"
-              class="copy-button">
-        <mat-icon class="copy-icon">content_copy</mat-icon>
-      </button>
+      <app-copy-button [copyText]="containerSerial()"></app-copy-button>
     </div>
     <div [ngClass]="[
         overflowService.isWidthOverflowing('.token-layout', 1310)

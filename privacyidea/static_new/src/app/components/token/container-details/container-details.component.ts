@@ -50,9 +50,9 @@ import { TokenService } from '../../../services/token/token.service';
 import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { NotificationService } from '../../../services/notification/notification.service';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { TokenSelectedContent } from '../token.component';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -101,7 +101,7 @@ interface TokenOption {
     MatPaginator,
     MatDivider,
     MatCheckbox,
-    CdkCopyToClipboard,
+    CopyButtonComponent,
   ],
   templateUrl: './container-details.component.html',
   styleUrl: './container-details.component.scss',

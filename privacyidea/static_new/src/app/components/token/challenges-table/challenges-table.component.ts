@@ -17,7 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { NgClass } from '@angular/common';
-import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 
 export const columnsKeyMap = [
   { key: 'timestamp', label: 'Timestamp' },
@@ -39,7 +39,7 @@ export const columnsKeyMap = [
     MatIconModule,
     KeywordFilterComponent,
     NgClass,
-    CdkCopyToClipboard,
+    CopyButtonComponent,
   ],
   templateUrl: './challenges-table.component.html',
   styleUrls: ['./challenges-table.component.scss'],

@@ -54,10 +54,7 @@
                 <div>
                   <a (click)="tokenSelected(element.serial)"> {{ element.serial }} </a>
                   @if (element.serial) {
-                    <button class="copy-button"
-                            [cdkCopyToClipboard]="element.serial">
-                      <mat-icon class="copy-icon">content_copy</mat-icon>
-                    </button>
+                    <app-copy-button [copyText]="element.serial"></app-copy-button>
                   }
                 </div>
               }
