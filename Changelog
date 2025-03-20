@@ -1,4 +1,9 @@
-Version 3.11dev3, 2025-02-17
+Version 3.12
+
+  Enhancements:
+  * Remember last used token type per user and application for multi-challenge (#4179)
+
+Version 3.11, 2025-02-27
 
   Features:
   * Passkeys (#4024)
