@@ -104,6 +104,12 @@ class PasskeyTokenClass(TokenClass):
                         'desc': _("Alternative challenge message to use when authenticating with a passkey."
                                   "You can also use tags for replacement, "
                                   "check the documentation for more details.")
+                    },
+                    PasskeyAction.EnableTriggerByPIN: {
+                        'type': 'bool',
+                        'desc': _("When enabled, passkey token can be triggered with the PIN. For privacyIDEA plugins, "
+                                  "this is not recommended. It is advised to use a condition, for example on a "
+                                  "user-agent, with this policy."),
                     }
                 },
                 SCOPE.ENROLL: {
@@ -422,8 +428,9 @@ class PasskeyTokenClass(TokenClass):
         """
         This token type is always challenge-response. If the pin matches, a challenge should be created.
         """
-
-        return self.check_pin(passw, user=user, options=options or {})
+        if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
+            return self.check_pin(passw, user=user, options=options)
+        return False
 
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
