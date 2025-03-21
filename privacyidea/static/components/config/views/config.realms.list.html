@@ -17,8 +17,8 @@
         <thead>
         <tr>
             <th translate>Default</th>
-            <th translate>Realm name</th>
-            <th translate>resolvers</th>
+            <th translate>Realm Name</th>
+            <th translate>Resolvers</th>
             <th></th>
         </tr>
         </thead>
@@ -31,7 +31,7 @@
                     <button class="btn btn-success"
                             ng-hide="realm.default"
                             ng-click="setDefaultRealm(realmName)"
-                            translate>set Default
+                            translate>Set Default
                     </button>
                 </span>
             </td>
@@ -105,7 +105,7 @@
                         <input name="realmname" id="realmname"
                                class="form-control"
                                ng-model="newRealmParams.realmName" required
-                               placeholder="{{ 'new realm'|translate }}"
+                               placeholder="{{ 'New Realm...'|translate }}"
                                ng-pattern="inputNamePatterns.simple.pattern"
                                title="{{ inputNamePatterns.simple.title | translate }}"
                                autofocus/>

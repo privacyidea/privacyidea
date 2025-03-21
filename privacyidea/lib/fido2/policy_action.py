@@ -15,3 +15,4 @@ class FIDO2PolicyAction:
 
 class PasskeyAction:
     AttestationConveyancePreference = "passkey_attestation_conveyance_preference"
+    EnableTriggerByPIN= "passkey_trigger_by_pin"

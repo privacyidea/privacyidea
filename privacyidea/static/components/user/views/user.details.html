@@ -147,11 +147,9 @@
                 <th translate>Serial</th>
                 <th translate>Type</th>
                 <th translate>Active</th>
-                <th translate>Window</th>
                 <th translate>Description</th>
                 <th translate>Failcounter</th>
                 <th translate>Maxfail</th>
-                <th translate>Otplen</th>
                 <th>Container</th>
                 <th ng-if="checkRight('unassign') || checkRight('delete') || !hide_buttons"></th>
             </tr>
@@ -175,7 +173,6 @@
                           translate>disabled
                     </span>
                 </td>
-                <td>{{ token.count_window }}</td>
                 <td>{{ token.description }}</td>
                 <td>
                     <span class="label"
@@ -188,7 +185,6 @@
                     </span>
                 </td>
                 <td>{{ token.maxfail }}</td>
-                <td>{{ token.otplen }}</td>
                 <td>
                     <a ui-sref="token.containerdetails({containerSerial: token.container_serial})"
                        ng-show="checkRight('container_list')">
