@@ -1084,10 +1084,11 @@ class IdResolver(UserIdResolver):
         pool_strat = param.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
         serverpool_strategy = LDAP_STRATEGY.get(pool_strat, SERVERPOOL_STRATEGY)
         start_tls = is_true(param.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
+        tls_verify = is_true(param.get("TLS_VERIFY"))
         tls_context = cls._get_tls_context(ldap_uri=ldap_uri,
                                            start_tls=start_tls,
                                            tls_version=param.get("TLS_VERSION"),
-                                           tls_verify=param.get("TLS_VERIFY"),
+                                           tls_verify=tls_verify,
                                            tls_ca_file=param.get("TLS_CA_FILE"),
                                            tls_options=None)
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
