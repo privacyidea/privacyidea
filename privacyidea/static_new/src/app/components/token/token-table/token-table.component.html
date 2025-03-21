@@ -10,8 +10,7 @@
              matInput
              placeholder="Example query: 'type: hotp userid: 1000'" />
     </mat-form-field>
-    <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize, fetchTokenData)"
+    <mat-paginator (page)="onPageEvent($event)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"

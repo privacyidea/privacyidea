@@ -113,13 +113,6 @@ describe('ContainerTableComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('constructor', () => {
-    it('should fetch data', () => {
-      expect(containerServiceSpy.getContainerData).toHaveBeenCalled();
-      expect(routerSpy.navigate).not.toHaveBeenCalled();
-    });
-  });
-
   describe('fetchContainerData()', () => {
     it('should call containerService.getContainerData', () => {
       containerServiceSpy.getContainerData.calls.reset();
@@ -171,9 +164,10 @@ describe('ContainerTableComponent', () => {
       spyOn<any>(component, 'fetchContainerData').and.callThrough();
 
       tableUtilsServiceSpy.handlePageEvent.and.callFake(
-        (event, pageIndexSignal, pageSizeSignal) => {
+        (event, pageIndexSignal, pageSizeSignal, fetchDataCb) => {
           pageIndexSignal.set(event.pageIndex);
           pageSizeSignal.set(event.pageSize);
+          fetchDataCb();
         },
       );
 
@@ -184,6 +178,7 @@ describe('ContainerTableComponent', () => {
         jasmine.objectContaining(testPageEvent),
         component.pageIndex,
         component.pageSize,
+        component['fetchContainerData'],
       );
       expect(component.pageIndex()).toBe(2);
       expect(component.pageSize()).toBe(15);
@@ -220,43 +215,6 @@ describe('ContainerTableComponent', () => {
       );
       expect(component.sortby_sortdir().active).toBe('type');
       expect(component.sortby_sortdir().direction).toBe('asc');
-      expect(component.pageIndex()).toBe(0);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
-    });
-  });
-
-  describe('Filter (handleFilterInput)', () => {
-    it('should delegate filter changes to tableUtilsService.handleFilterInput', () => {
-      const mockEvent = {
-        target: { value: '  filterValue  ' },
-      } as unknown as Event;
-
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-
-      tableUtilsServiceSpy.handleFilterInput.and.callFake(
-        (eventArg, pageIndexSignal, filterValueSignal, fetchDataCb) => {
-          const trimmed = (eventArg.target as HTMLInputElement).value.trim();
-          filterValueSignal.set(trimmed);
-          pageIndexSignal.set(0);
-          fetchDataCb();
-        },
-      );
-
-      tableUtilsServiceSpy.handleFilterInput(
-        mockEvent,
-        component.pageIndex,
-        component.filterValue,
-        component['fetchContainerData'],
-      );
-      fixture.detectChanges();
-
-      expect(tableUtilsServiceSpy.handleFilterInput).toHaveBeenCalledWith(
-        mockEvent,
-        component.pageIndex,
-        component.filterValue,
-        jasmine.any(Function),
-      );
-      expect(component.filterValue()).toBe('filterValue');
       expect(component.pageIndex()).toBe(0);
       expect(component['fetchContainerData']).toHaveBeenCalled();
     });

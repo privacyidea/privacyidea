@@ -501,10 +501,12 @@ export class TokenEnrollmentComponent {
           },
         });
 
+        if (response.detail.passkey_registration) {
+          EnrollPasskeyComponent.registerPasskey(response.detail);
+        }
         if (response.detail.rollout_state === 'clientwait') {
           this.pollTokenEnrollment(response.detail.serial, 5000);
         }
-
         if (this.regenerateToken()) {
           this.regenerateToken.set(false);
         }

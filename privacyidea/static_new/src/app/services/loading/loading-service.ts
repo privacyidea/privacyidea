@@ -40,8 +40,10 @@ export class LoadingService {
     this.notifyListeners();
   }
 
-  getLoadingUrls(): string[] {
-    return this.loadings.map((l) => l.url);
+  getLoadingUrls(): { key: string; url: string }[] {
+    return this.loadings.map((l) => {
+      return { key: l.key, url: l.url };
+    });
   }
 
   clearAllLoadings(): void {

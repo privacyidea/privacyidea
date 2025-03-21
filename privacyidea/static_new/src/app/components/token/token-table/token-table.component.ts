@@ -8,7 +8,11 @@ import {
 } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import {
+  MatPaginator,
+  MatPaginatorModule,
+  PageEvent,
+} from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
@@ -148,6 +152,15 @@ export class TokenTableComponent {
     this.isProgrammaticChange.set(true);
     this.containerSerial.set(containerSerial);
     this.selectedContent.set('container_details');
+  }
+
+  onPageEvent(event: PageEvent) {
+    this.tableUtilsService.handlePageEvent(
+      event,
+      this.pageIndex,
+      this.pageSize,
+      this.fetchTokenData,
+    );
   }
 
   protected fetchTokenData = (filterValue?: string) => {

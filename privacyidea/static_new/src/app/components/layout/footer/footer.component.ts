@@ -15,7 +15,7 @@ import { LoadingService } from '../../../services/loading/loading-service';
 export class FooterComponent implements OnInit {
   version!: string;
   showProgressBar = signal(false);
-  loadingUrls = signal<string[]>([]);
+  loadingUrls = signal<{ key: string; url: string }[]>([]);
 
   constructor(
     private versioningService: VersionService,

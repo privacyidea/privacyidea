@@ -10,8 +10,7 @@
              matInput
              placeholder="Example query: 'type: generic user: admin'" />
     </mat-form-field>
-    <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize, fetchContainerData)"
+    <mat-paginator (page)="onPageEvent($event)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"

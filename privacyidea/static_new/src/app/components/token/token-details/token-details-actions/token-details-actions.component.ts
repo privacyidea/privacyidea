@@ -25,6 +25,7 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
 export class TokenDetailsActionsComponent {
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() tokenSerial!: WritableSignal<string>;
+  @Input() tokenType!: WritableSignal<string>;
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
@@ -32,7 +33,7 @@ export class TokenDetailsActionsComponent {
 
   constructor(
     private tokenService: TokenService,
-    private validateService: ValidateService,
+    protected validateService: ValidateService,
     protected overflowService: OverflowService,
   ) {}
 

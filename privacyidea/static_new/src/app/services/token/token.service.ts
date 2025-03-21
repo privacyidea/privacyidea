@@ -523,6 +523,12 @@ export class TokenService {
       payload.user = options.user;
     }
 
+    if (options.type === 'passkey') {
+      Object.entries(options).forEach(([key, value]) => {
+        payload[key] = value;
+      });
+    }
+
     if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
       payload.otpkey = options.generateOnServer ? null : options.otpKey;
       payload.genkey = options.generateOnServer ? 1 : 0;

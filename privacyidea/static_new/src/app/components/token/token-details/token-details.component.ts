@@ -168,6 +168,7 @@ export class TokenDetailsComponent {
   });
   selectedRealms = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
+  tokenType = signal<string>('');
   userRealm: string = '';
   maxfail: number = 0;
   protected readonly single = single;
@@ -209,6 +210,7 @@ export class TokenDetailsComponent {
             }))
             .filter((detail) => detail.value !== undefined),
         );
+        this.tokenType.set(tokenDetails.tokentype);
         this.userData.set(
           userDetailsKeyMap
             .map((detail) => ({
