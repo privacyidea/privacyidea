@@ -1,0 +1,11 @@
+{
+  "/proxy": {
+    "target": "https://pi.test:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/proxy": ""
+    }
+  }
+}
