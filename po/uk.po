@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-15 18:17+0000\n"
+"PO-Revision-Date: 2025-03-22 12:50+0000\n"
 "Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
@@ -190,7 +190,6 @@ msgstr ""
 "                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:149
-#, fuzzy
 msgid ""
 "<p><b>You are using privacyIDEA with more than 50 users.</b></p>\n"
 "                <p>Thank you for your trust!</p>\n"
@@ -210,12 +209,14 @@ msgstr ""
 "                <p> Дякуємо за довіру! </p>\n"
 "                <p> Для виробничого корпоративного використання ми "
 "рекомендуємо\n"
-"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
-"produkte/privacyidea/\"> PrivacyIDEA Enterprise Edition </a>.\n"
+"                    <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise "
+"Edition </a>.\n"
 "                </p>\n"
 "                <p> NetKnights надає\n"
-"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
-"produkte/privacyidea/\"> PrivacyIDEA Enterprise Edition </a>\n"
+"                    <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise "
+"Edition </a>\n"
 "                    включаючи <b> Угоди про підтримку та рівень "
 "обслуговування </b>.\n"
 "                    Більше того, NetKnights надає послуги, консультації та\n"
@@ -223,7 +224,6 @@ msgstr ""
 "                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
-#, fuzzy
 msgid ""
 "<p>First, we would like to give you some background\n"
 "                    information on privacyIDEA.</p>\n"
@@ -239,21 +239,19 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p> По-перше, ми хотіли б дати вам деяку довідкову\n"
-"                    інформацію про privacyIDEA. </p>\n"
-"                <p>PrivacyIDEA - система багатофакторної "
-"автентифікації<b>корпоративного рівня</b>.\n"
-"                    Вона з відкритим кодом.\n"
-"                    Основні розробники працюють в NetKnights GmbH, "
-"Німеччина.\n"
-"                    NetKnights постачає\n"
-"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
-"produkte/privacyidea/\">PrivacyIDEA Enterprise Edition</a>\n"
-"                    включаючи <b>Угоди про підтримку та рівень "
-"обслуговування</b>.\n"
-"                    Крім того, NetKnights надає послуги, консультації та\n"
-"                    платну розробку нового функціоналу.\n"
-"                </p>"
+"<p>По-перше, ми хотіли б дати вам деякі передумови\n"
+" інформація про конфіденційністьIDEA.</p>\n"
+" <p>privacyIDEA — це <b>рівень підприємства</b>\n"
+" Багатофакторна система автентифікації. Це відкритий код.\n"
+" Основні розробники працюють у NetKnights GmbH, Німеччина.\n"
+" NetKnights надає\n"
+" <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
+"Edition</a>\n"
+" включаючи <b>Угоди про підтримку та рівень обслуговування</b>.\n"
+" Крім того, NetKnights надає послуги, консультації та\n"
+" платне програмування нових функцій.\n"
+" </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
 msgid ""
@@ -277,12 +275,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:122
 msgid "A description for this policy"
-msgstr ""
+msgstr "Опис цієї політики"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:29
 msgid ""
 "A template with this name already exists. Please choose a different name."
-msgstr ""
+msgstr "Шаблон із такою назвою вже існує. Виберіть інше ім'я."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
@@ -290,7 +288,7 @@ msgstr "Шлюз SMS для вибіркового токена"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:24
 msgid "A unique name for this template"
-msgstr ""
+msgstr "Унікальна назва для цього шаблону"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -305,7 +303,7 @@ msgstr "Ідентифікатор клієнта API"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:802
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Перервати операцію з неперевіреним маркером"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -353,25 +351,21 @@ msgstr "Активні політики"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:780
 msgid "Add"
-msgstr ""
+msgstr "Додати"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
-#, fuzzy
-#| msgid "All tokens"
 msgid "Add Token"
-msgstr "Усі токени"
+msgstr "Додати жетон"
 
 #: privacyidea/static/components/user/views/user.details.html:293
-#, fuzzy
-#| msgid "All tokens"
 msgid "Add Tokens"
-msgstr "Усі токени"
+msgstr "Додати жетони"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:602
 #: privacyidea/static/components/user/views/user.details.html:285
 msgid "Add Tokens to Container"
-msgstr ""
+msgstr "Додайте токени до контейнера"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
@@ -383,27 +377,23 @@ msgstr "Додати нового користувача"
 
 #: privacyidea/static/components/user/views/user.details.html:88
 msgid "Add custom attribute"
-msgstr ""
+msgstr "Додати спеціальний атрибут"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
 msgstr "Додати нове запитання"
 
 #: privacyidea/static/components/token/views/token.details.html:630
-#, fuzzy
-#| msgid "Add a condition"
 msgid "Add to Container"
-msgstr "Додати умову"
+msgstr "Додати в контейнер"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
 msgstr "Додати користувача"
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:38
-#, fuzzy
-#| msgid "Additional conditions"
 msgid "Additional"
-msgstr "Додаткові умови"
+msgstr "Додатковий"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:296
 msgid "Additional conditions"
