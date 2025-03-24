@@ -342,6 +342,8 @@ A corresponding input field for the key data will be disabled/hidden
 in the web UI.
 Default value is *false*.
 
+.. _totp-timestep:
+
 totp_timestep
 ~~~~~~~~~~~~~
 
