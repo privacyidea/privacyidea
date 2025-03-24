@@ -15,6 +15,6 @@ export class CopyButtonComponent {
 
   onCopy(): void {
     this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 800);
+    setTimeout(() => this.copied.set(false), 1600);
   }
 }

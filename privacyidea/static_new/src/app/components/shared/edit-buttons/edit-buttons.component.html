@@ -12,16 +12,11 @@
       <mat-icon> edit</mat-icon>
     </button>
   } @else if (elementIsEditing) {
-    @let isTokenDetailsUser = element.keyMap.key === "username";
-    @if (isEditingUser() && isTokenDetailsUser) {
-      <br />
-    } @else {
-      <button mat-icon-button
-              class="black flex"
-              (click)="toggleEditMode(element, element.keyMap.key, 'save')">
-        <mat-icon>save_as</mat-icon>
-      </button>
-    }
+    <button mat-icon-button
+            class="black flex"
+            (click)="toggleEditMode(element, element.keyMap.key, 'save')">
+      <mat-icon>save_as</mat-icon>
+    </button>
     <button mat-icon-button
             class="red flex"
             (click)="toggleEditMode(element, element.keyMap.key, 'cancel')">
