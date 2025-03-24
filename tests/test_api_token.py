@@ -12,7 +12,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
 from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
-                                   assign_token, token_exist, add_tokeninfo)
+                                   assign_token, token_exist, add_tokeninfo, get_one_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -3201,6 +3201,69 @@ class APITokenTestCase(MyApiTestCase):
             token = result.get("value").get("tokens")[0]
             self.assertEqual(tok.get_serial(), token.get("serial"), token)
         remove_token(tok.get_serial())
+
+    def test_61_init_token_default_params(self):
+        """
+        Test the token init endpoint without passing the required enrollment parameters for TOTP tokens.
+        Test that the correct system defaults are used for the token and in the enroll url.
+        There are three possibilities: Use the system default (sha1, 30 seconds), set the defaults in the
+        configurations, or use a user/admin policy to enforce a specific hashlib and time step. The policies take
+        precedence over the system defaults.
+        """
+        self.authenticate_selfservice_user()
+        set_policy("user_enroll", SCOPE.USER, "enrollTOTP")
+        set_policy("admin_enroll", SCOPE.ADMIN, "enrollTOTP")
+
+        def check_token_init(hashlib, time_step, auth_header=self.at_user):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "totp",
+                                                     "genkey": True,
+                                                     "user": "selfservice",
+                                                     "realm": self.realm1},
+                                               headers={'Authorization': auth_header}):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
+
+                # check enroll url
+                enroll_url = detail.get("googleurl", {}).get("value")
+                if hashlib == "sha1":
+                    self.assertNotIn("&algorithm", enroll_url)
+                else:
+                    self.assertIn(f"&algorithm={hashlib.upper()}", enroll_url)
+                self.assertIn(f"&period={time_step}", enroll_url)
+
+                # check token info
+                serial = detail.get("serial")
+                token = get_one_token(serial=serial)
+                self.assertEqual(hashlib, token.get_tokeninfo(key="hashlib"))
+                self.assertEqual(time_step, token.get_tokeninfo(key="timeStep"))
+
+        # System default
+        check_token_init("sha1", "30")
+
+        # Set system default to sha256 and 60 seconds
+        set_privacyidea_config("totp.hashlib", "sha256", "public", "")
+        set_privacyidea_config("totp.timeStep", "60", "public", "")
+        check_token_init("sha256", "60")
+
+        # Set user policy
+        set_policy("user_policy", SCOPE.USER, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", "30")
+        delete_policy("user_policy")
+
+        # Set admin policy
+        set_policy("admin_policy", SCOPE.ADMIN, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", "30", self.at)
+        delete_policy("admin_policy")
+
+        delete_policy("user_enroll")
+        delete_policy("admin_enroll")
 
 
 class API00TokenPerformance(MyApiTestCase):

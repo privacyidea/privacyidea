@@ -94,7 +94,7 @@ def create_motp_url(key, user=None, realm=None, serial=""):
 
 @log_with(log)
 def create_google_authenticator_url(key=None, user=None,
-                                    realm=None, tokentype="hotp", period=30,
+                                    realm=None, tokentype="hotp", period="30",
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
                                     issuer="privacyIDEA", user_obj=None,
