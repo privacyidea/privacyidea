@@ -1007,7 +1007,7 @@ class WebAuthnTokenClass(TokenClass):
             self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME,
                                public_key_credential_creation_options["rp"]["name"])
 
-        elif self.token.rollout_state == "":
+        elif self.token.rollout_state in [ROLLOUTSTATE.ENROLLED, ""]:
             # This is the second step of the init request. The registration
             # ceremony has been successfully performed.
             response_detail = {
