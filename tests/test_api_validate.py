@@ -6297,6 +6297,72 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("enroll_via_multichallenge")
         remove_token(token1.get_serial())
 
+    @ldap3mock.activate
+    def test_07_enroll_TOTP_default_params(self):
+        """
+        Test that the correct system defaults are used for the token and in the enroll url.
+        There are three possibilities: Use the system default (sha1, 30 seconds), set the defaults in the
+        configurations, or use a user policy to enforce a specific hashlib and time step. The policy take
+        precedence over the system defaults.
+        """
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # set policies: passthru and enroll_via_multichallenge
+        set_policy("policy", scope=SCOPE.AUTH,
+                   action=f"{ACTION.PASSTHRU}=userstore,{ACTION.ENROLL_VIA_MULTICHALLENGE}=totp")
+
+        def check_token_init(hashlib, time_step):
+            # authenticate user via passthru triggers enrollment
+            with self.app.test_request_context("/validate/check",
+                                               method="POST",
+                                               data={"user": "alice",
+                                                     "pass": "alicepw"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"))
+                self.assertFalse(result.get("value"))
+                self.assertEqual(result.get("authentication"), "CHALLENGE")
+
+                detail = res.json.get("detail")
+                self.assertIn("image", detail)
+                self.assertIn("link", detail)
+
+                # check enroll url
+                enroll_url = detail.get("link")
+                if hashlib == "sha1":
+                    self.assertNotIn("&algorithm", enroll_url)
+                else:
+                    self.assertIn(f"&algorithm={hashlib.upper()}", enroll_url)
+                self.assertIn(f"&period={time_step}", enroll_url)
+
+                # check token info
+                serial = detail.get("serial")
+                token = get_one_token(serial=serial)
+                self.assertEqual(hashlib, token.get_tokeninfo(key="hashlib"))
+                self.assertEqual(time_step, token.get_tokeninfo(key="timeStep"))
+
+                token.delete_token()
+
+        # System default
+        check_token_init("sha1", "30")
+
+        # Set system default to sha256 and 60 seconds
+        set_privacyidea_config("totp.hashlib", "sha256", "public", "")
+        set_privacyidea_config("totp.timeStep", "60", "public", "")
+        check_token_init("sha256", "60")
+
+        # Set user policy
+        set_policy("user_policy", SCOPE.USER, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", "30")
+        delete_policy("user_policy")
+
+        delete_policy("policy")
+
     def _authenticate_no_token_enrolled(self, user: User, otp):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
