@@ -11,16 +11,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-02-25 14:25+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-03-24 10:13+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/de/>\n"
+"branch-3-11/de/>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10.2-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -3308,7 +3308,7 @@ msgstr "Bitte authentisieren Sie sich mit Ihrem Passkey!"
 
 #: lib/tokens/passkeytoken.py:395
 msgid "Please confirm the registration with your passkey!"
-msgstr "Bitte bestätigen Sie die Anmeldung mit Ihrem Passkey!"
+msgstr "Bitte bestätigen Sie die Registrierung mit Ihrem Passkey!"
 
 #: lib/tokens/passwordtoken.py:113
 msgid ""
