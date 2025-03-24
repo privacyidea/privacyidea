@@ -6,6 +6,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from testfixtures import log_capture
+from werkzeug.datastructures.headers import Headers
 
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
@@ -6019,7 +6020,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         Tests the preferred_client_mode function when the policy client_mode_per_user is activated.
         """
         # Mock request
-        builder = EnvironBuilder(method="POST", data={}, headers={"user_agent": "privacyidea-cp"})
+        builder = EnvironBuilder(method="POST", data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
         env = builder.get_environ()
         request = Request(env)
         request.all_data = {}
@@ -6053,8 +6054,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # No preferred client mode policy set only custom user attribute: use user+application preference
         response = jsonify(response_data)
-        preferred_token_types = json.dumps({"privacyidea-cp": "push", "privacyIDEA-Shibbole": "u2f"})
-        user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, preferred_token_types, INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f", INTERNAL_USAGE)
 
         preferred_client_mode(request, response)
 
@@ -6096,7 +6097,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         Tests the preferred_client_mode function when the policy client_mode_per_user is not activated.
         """
         # Mock request
-        builder = EnvironBuilder(method='POST', data={}, headers={"user_agent": "privacyidea-cp"})
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
@@ -6120,8 +6121,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         ]
         response_data["detail"]["multi_challenge"] = multi_challenge
         response = jsonify(response_data)
-        preferred_token_types = json.dumps({"privacyidea-cp": "push"})
-        user.set_attribute(InternalCustomUserAttributes.PREFERRED_TOKEN_TYPE, preferred_token_types, INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
 
         # set any policy in scope AUTH
         set_policy("challenge", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"})
