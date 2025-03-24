@@ -3815,11 +3815,12 @@ class WebAuthn(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             data = res.json
             transaction_id = data.get("detail").get("transaction_id")
+            # The WebAuthn token is disabled because it is not enrolled completely, so there is no data of it
+            # But there is a challenge-response message for the HOTP token
             messages = data.get("detail").get("messages")
-            # There is a working chal resp message for the HOTP token
+            self.assertEqual(1, len(messages))
             self.assertIn("please enter otp: ", messages)
-            # The WebAuthn token died not work, so there is no challenge for this one
-            self.assertIn("Token is not yet enrolled", messages)
+            self.assertEqual(1, len(data.get("detail").get("multi_challenge")))
 
         # Authenticate with HOTP
         with self.app.test_request_context('/validate/check',
