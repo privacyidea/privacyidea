@@ -11,6 +11,7 @@ import { FooterComponent } from '../layout/footer/footer.component';
 import { LocalService } from '../../services/local/local.service';
 import { NotificationService } from '../../services/notification/notification.service';
 import { SessionTimerService } from '../../services/session-timer/session-timer.service';
+import { ValidateService } from '../../services/validate/validate.service';
 
 @Component({
   selector: 'app-login',
@@ -38,6 +39,7 @@ export class LoginComponent {
     private localService: LocalService,
     private notificationService: NotificationService,
     private sessionTimerService: SessionTimerService,
+    private validateService: ValidateService,
   ) {
     if (this.authService.isAuthenticatedUser()) {
       console.warn('User is already logged in.');
@@ -46,10 +48,10 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    const usernameValue = this.username();
-    const passwordValue = this.password();
+    const username = this.username();
+    const password = this.password();
 
-    this.authService.authenticate(usernameValue, passwordValue).subscribe({
+    this.authService.authenticate({ username, password }).subscribe({
       next: (response: any) => {
         if (
           response.result &&
@@ -81,5 +83,35 @@ export class LoginComponent {
     this.router
       .navigate(['login'])
       .then(() => this.notificationService.openSnackBar('Logout successful.'));
+  }
+
+  loginPasskey(): void {
+    this.validateService.authenticatePasskey().subscribe({
+      next: (response: any) => {
+        if (
+          response.result &&
+          response.result.value &&
+          response.result.value.token &&
+          this.authService.isAuthenticatedUser()
+        ) {
+          this.localService.saveData(
+            this.localService.bearerTokenKey,
+            response.result.value.token,
+          );
+          this.sessionTimerService.startRefreshingRemainingTime();
+          this.sessionTimerService.startTimer();
+          this.router.navigate(['token']).then();
+          this.notificationService.openSnackBar('Login successful.');
+        } else {
+          this.notificationService.openSnackBar('Login with passkey failed.');
+        }
+      },
+      error: (err: any) => {
+        console.error('Error during Passkey login', err);
+        this.notificationService.openSnackBar(
+          err?.message || 'Error during Passkey login',
+        );
+      },
+    });
   }
 }

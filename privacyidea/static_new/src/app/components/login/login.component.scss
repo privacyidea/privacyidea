@@ -47,4 +47,10 @@ $border-radius: var(--border-radius);
       margin-bottom: 16px;
     }
   }
+
+  .passkey-form {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+  }
 }

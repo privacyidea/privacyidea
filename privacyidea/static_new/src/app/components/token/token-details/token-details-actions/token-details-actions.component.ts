@@ -7,6 +7,7 @@ import { MatFabButton, MatIconButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
 import { MatSuffix } from '@angular/material/form-field';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -35,6 +36,7 @@ export class TokenDetailsActionsComponent {
     private tokenService: TokenService,
     protected validateService: ValidateService,
     protected overflowService: OverflowService,
+    protected notificationService: NotificationService,
   ) {}
 
   resyncOTPToken() {
@@ -69,5 +71,19 @@ export class TokenDetailsActionsComponent {
           this.refreshTokenDetails.set(true);
         },
       });
+  }
+  testPasskey() {
+    this.validateService.authenticatePasskey({ isTest: true }).subscribe({
+      next: (checkResponse: any) => {
+        if (checkResponse.result.value) {
+          this.notificationService.openSnackBar(
+            'Test successful. You would have been logged in as: ' +
+              checkResponse.detail.username,
+          );
+        } else {
+          this.notificationService.openSnackBar('No user found.');
+        }
+      },
+    });
   }
 }

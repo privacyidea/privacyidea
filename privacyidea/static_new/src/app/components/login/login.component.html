@@ -46,10 +46,20 @@
               class="login-btn"
               extended
               mat-fab
-              type="submit">Login
+              type="submit">Log In
         <mat-icon iconPositionEnd>login</mat-icon>
       </button>
     </form>
+    <div class="passkey-form">
+      <button (click)="loginPasskey()"
+              aria-label="Passkey Button"
+              class="login-btn margin-top-1"
+              extended
+              mat-fab
+              type="submit">Log In With a Passkey
+        <mat-icon iconPositionEnd>fingerprint</mat-icon>
+      </button>
+    </div>
   </div>
 </div>
 <app-footer></app-footer>

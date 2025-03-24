@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -9,7 +9,7 @@ import { NotificationService } from '../notification/notification.service';
   providedIn: 'root',
 })
 export class AuthService {
-  isAuthenticated = false;
+  isAuthenticated = signal(false);
   private authUrl = environment.proxyUrl + '/auth';
 
   constructor(
@@ -17,17 +17,11 @@ export class AuthService {
     private notificationService: NotificationService,
   ) {}
 
-  authenticate(
-    username: string,
-    password: string,
-    realm: string = '',
-  ): Observable<{
+  authenticate(params: any): Observable<{
     result: { status: boolean };
   }> {
-    const loginData = { username, password, realm };
-
     return this.http
-      .post(this.authUrl, JSON.stringify(loginData), {
+      .post(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -37,7 +31,7 @@ export class AuthService {
       .pipe(
         tap((response: any) => {
           if (response?.result?.status) {
-            this.isAuthenticated = true;
+            this.acceptAuthentication();
           }
         }),
         catchError((error) => {
@@ -50,10 +44,14 @@ export class AuthService {
   }
 
   isAuthenticatedUser(): boolean {
-    return this.isAuthenticated;
+    return this.isAuthenticated();
+  }
+
+  acceptAuthentication(): void {
+    this.isAuthenticated.set(true);
   }
 
   deauthenticate(): void {
-    this.isAuthenticated = false;
+    this.isAuthenticated.set(false);
   }
 }
