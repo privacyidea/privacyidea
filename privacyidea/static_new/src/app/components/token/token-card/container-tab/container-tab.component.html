@@ -60,7 +60,8 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button class="card-button"
+          <button (click)="enrollTokenInContainer()"
+                  class="card-button"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
             {{ "Enroll Token" }}

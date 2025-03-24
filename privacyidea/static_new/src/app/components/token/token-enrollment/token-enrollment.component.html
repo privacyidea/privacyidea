@@ -170,7 +170,7 @@
       <app-enroll-passkey [description]="description" />
     }
   }
-  <h4 class="enroll-h4">Assign token to user</h4>
+  <h4 class="enroll-h4">Assign Token to User</h4>
   <div class="assign-user-container">
     <input style="display: none"
            type="text" />
@@ -217,7 +217,7 @@
     </div>
   </div>
 
-  <h4 class="enroll-h4">Assign token to a container</h4>
+  <h4 class="enroll-h4">Assign Token to a Container</h4>
   <mat-form-field class="width-32 height-76-5">
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="selectedContainer"
@@ -237,19 +237,19 @@
       </mat-expansion-panel-header>
       <div class="flex-row">
         <mat-form-field class="date-picker">
-          <mat-label>Choose a start date</mat-label>
+          <mat-label>Choose a Start Date</mat-label>
           <input [(ngModel)]="selectedStartDate"
                  [matDatepicker]="startPicker"
                  matInput
                  placeholder="Start date" />
-          <mat-hint>Date format: YYYY-MM-DD</mat-hint>
+          <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
           <mat-datepicker-toggle [for]="startPicker"
                                  matIconSuffix></mat-datepicker-toggle>
           <mat-datepicker #startPicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field class="time-picker">
-          <mat-label>Enter start time</mat-label>
+          <mat-label>Enter Start Time</mat-label>
           <input [(ngModel)]="selectedStartTime"
                  matInput
                  max="23"
@@ -269,19 +269,19 @@
       </div>
       <div class="flex-row">
         <mat-form-field class="date-picker">
-          <mat-label>Choose a end date</mat-label>
+          <mat-label>Choose a End Date</mat-label>
           <input [(ngModel)]="selectedEndDate"
                  [matDatepicker]="endPicker"
                  matInput
                  placeholder="End date" />
-          <mat-hint>Date format: YYYY-MM-DD</mat-hint>
+          <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
           <mat-datepicker-toggle [for]="endPicker"
                                  matIconSuffix></mat-datepicker-toggle>
           <mat-datepicker #endPicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field class="time-picker">
-          <mat-label>Enter end time</mat-label>
+          <mat-label>Enter End Time</mat-label>
           <input [(ngModel)]="selectedEndTime"
                  matInput
                  max="23"

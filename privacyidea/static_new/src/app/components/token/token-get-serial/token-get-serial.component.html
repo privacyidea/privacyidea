@@ -30,9 +30,9 @@
       </button>
     </div>
     <h4 class="enroll-h4"
-        translate>Search configuration</h4>
+        translate>Search Configuration</h4>
     <mat-form-field class="width-66">
-      <mat-label>Token type</mat-label>
+      <mat-label>Token Type</mat-label>
       <mat-select [(ngModel)]="tokenType"
                   placeholder="Select token type">
         @for (type of tokenTypes; track type) {
@@ -41,7 +41,7 @@
       </mat-select>
     </mat-form-field>
     <mat-form-field class="width-66">
-      <mat-label>Assignment state</mat-label>
+      <mat-label>Assignment State</mat-label>
       <mat-select [(ngModel)]="assignmentState"
                   placeholder="Specify assignment state">
         @for (assignment of assignmentStates; track assignment) {
@@ -54,7 +54,7 @@
     <div class="flex-row gap-1">
       <div class="flex-column width-66">
         <mat-form-field>
-          <mat-label>Serial substring</mat-label>
+          <mat-label>Serial Substring</mat-label>
           <input [(ngModel)]="serialSubstring"
                  id="serialSubstring"
                  matInput
@@ -64,7 +64,7 @@
       </div>
       <div class="flex-column width-32 margin-button-1">
         <mat-form-field>
-          <mat-label>Count window</mat-label>
+          <mat-label>Count Window</mat-label>
           <input [(ngModel)]="countWindow"
                  id="countWindow"
                  matInput

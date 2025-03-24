@@ -6,6 +6,7 @@ import {
   Input,
   linkedSignal,
   signal,
+  ViewChild,
   WritableSignal,
 } from '@angular/core';
 import {
@@ -281,11 +282,13 @@ export class TokenEnrollmentComponent {
         if (!realm) {
           return from<string[]>([]);
         }
-        return this.userService.getUsers(realm).pipe(
-          map((resp: any) => {
-            return resp.value.map((user: any) => user.username);
-          }),
-        );
+        return this.userService
+          .getUsers(realm)
+          .pipe(
+            map((result: any) =>
+              result.value.map((user: any) => user.username),
+            ),
+          );
       }),
     ),
     { initialValue: [] },
@@ -297,6 +300,8 @@ export class TokenEnrollmentComponent {
       option.toLowerCase().includes(filterValue),
     );
   });
+  @ViewChild(EnrollPasskeyComponent)
+  enrollPasskeyComponent!: EnrollPasskeyComponent;
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentDialogComponent;
 
@@ -378,6 +383,7 @@ export class TokenEnrollmentComponent {
 
   ngAfterViewInit() {
     this.getContainerOptions();
+    this.selectedContainer.set(this.containerSerial());
   }
 
   getRealmOptions() {
@@ -484,51 +490,31 @@ export class TokenEnrollmentComponent {
             `Token ${response.detail.serial} enrolled successfully.`,
           );
         }
-        this.response.set(response);
         this.tokenSerial.set(response.detail.serial);
-        this.dialog.open(TokenEnrollmentDialogComponent, {
-          data: {
-            response: response,
-            tokenSerial: this.tokenSerial,
-            containerSerial: this.containerSerial,
-            selectedContent: this.selectedContent,
-            regenerateToken: this.regenerateToken,
-            isProgrammaticChange: this.isProgrammaticChange,
-            pushEnrolled: this.pushEnrolled,
-            username: this.selectedUsername(),
-            userRealm: this.selectedUserRealm(),
-            onlyAddToRealm: this.onlyAddToRealm(),
-          },
-        });
-
         if (response.detail.passkey_registration) {
-          EnrollPasskeyComponent.registerPasskey(response.detail);
-        }
-        if (response.detail.rollout_state === 'clientwait') {
-          this.pollTokenEnrollment(response.detail.serial, 5000);
-        }
-        if (this.regenerateToken()) {
-          this.regenerateToken.set(false);
+          this.enrollPasskeyComponent
+            .registerPasskey(response.detail)
+            .subscribe({
+              next: () => {
+                this.openDialog(response);
+              },
+            });
+        } else {
+          this.response.set(response);
+          this.openDialog(response);
+          if (response.detail.rollout_state === 'clientwait') {
+            this.pollTokenEnrollment(response.detail.serial, 5000);
+          }
+          if (this.regenerateToken()) {
+            this.regenerateToken.set(false);
+          }
         }
       },
     });
   }
 
   reopenEnrollmentDialog() {
-    this.dialog.open(TokenEnrollmentDialogComponent, {
-      data: {
-        response: this.response(),
-        tokenSerial: this.tokenSerial,
-        containerSerial: this.containerSerial,
-        selectedContent: this.selectedContent,
-        regenerateToken: this.regenerateToken,
-        isProgrammaticChange: this.isProgrammaticChange,
-        pushEnrolled: this.pushEnrolled,
-        username: this.selectedUsername(),
-        userRealm: this.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm(),
-      },
-    });
+    this.openDialog(this.response());
     if (
       this.response().detail.rollout_state === 'clientwait' &&
       !this.pushEnrolled()
@@ -541,6 +527,23 @@ export class TokenEnrollmentComponent {
     return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
       this.selectedType().key,
     );
+  }
+
+  private openDialog(response: any) {
+    this.dialog.open(TokenEnrollmentDialogComponent, {
+      data: {
+        response: response,
+        tokenSerial: this.tokenSerial,
+        containerSerial: this.containerSerial,
+        selectedContent: this.selectedContent,
+        regenerateToken: this.regenerateToken,
+        isProgrammaticChange: this.isProgrammaticChange,
+        pushEnrolled: this.pushEnrolled,
+        username: this.selectedUsername(),
+        userRealm: this.selectedUserRealm(),
+        onlyAddToRealm: this.onlyAddToRealm(),
+      },
+    });
   }
 
   private pollTokenEnrollment(tokenSerial: string, startTime: number): void {

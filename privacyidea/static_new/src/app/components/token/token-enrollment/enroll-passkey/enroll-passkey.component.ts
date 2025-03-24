@@ -6,6 +6,8 @@ import { MatInput } from '@angular/material/input';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { TokenService } from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
+import { from, Observable, switchMap, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-enroll-passkey',
@@ -16,12 +18,14 @@ import { Base64Service } from '../../../../services/base64/base64.service';
 export class EnrollPasskeyComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'passkey')?.text;
   @Input() description!: WritableSignal<string>;
-  private static notificationService: NotificationService;
-  private static tokenService: TokenService;
-  private static base64Service: Base64Service;
+  constructor(
+    private notificationService: NotificationService,
+    private tokenService: TokenService,
+    private base64Service: Base64Service,
+  ) {}
 
-  static registerPasskey(detail: any): void {
-    const options = detail.passkeyOptions;
+  registerPasskey(detail: any): Observable<any> {
+    const options = detail.passkey_registration;
 
     const excludedCredentials = options.excludeCredentials.map((cred: any) => ({
       id: this.base64Service.base64URLToBytes(cred.id),
@@ -48,9 +52,10 @@ export class EnrollPasskeyComponent {
       attestation: options.attestation,
     };
 
-    navigator.credentials
-      .create({ publicKey: publicKeyOptions })
-      .then((publicKeyCred: any) => {
+    return from(
+      navigator.credentials.create({ publicKey: publicKeyOptions }),
+    ).pipe(
+      switchMap((publicKeyCred: any) => {
         const params: any = {
           user: detail.newUser?.user,
           realm: detail.newUser?.realm,
@@ -75,20 +80,22 @@ export class EnrollPasskeyComponent {
           params.credProps = extResults.credProps;
         }
 
-        this.tokenService.enrollToken(params).subscribe();
-      })
-      .catch((error: any) => {
+        return this.tokenService.enrollToken(params);
+      }),
+      catchError((error: any) => {
         console.error('Error while registering passkey', error);
         this.notificationService.openSnackBar(
           'Error while registering passkey, the token will not be created!',
         );
-        this.tokenService.deleteToken(detail.serial).subscribe({
-          next: () => {
+        return from(this.tokenService.deleteToken(detail.serial)).pipe(
+          switchMap(() => {
             this.notificationService.openSnackBar(
               `Token ${detail.serial} deleted successfully.`,
             );
-          },
-        });
-      });
+            return throwError(() => error);
+          }),
+        );
+      }),
+    );
   }
 }

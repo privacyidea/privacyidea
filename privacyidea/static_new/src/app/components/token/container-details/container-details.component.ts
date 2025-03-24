@@ -175,8 +175,8 @@ export class ContainerDetailsComponent {
         return this.userService
           .getUsers(realm)
           .pipe(
-            map((resp: any) =>
-              resp.result.value.map((user: any) => user.username),
+            map((result: any) =>
+              result.value.map((user: any) => user.username),
             ),
           );
       }),

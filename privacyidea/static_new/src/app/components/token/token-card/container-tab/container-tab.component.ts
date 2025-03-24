@@ -25,6 +25,7 @@ export class ContainerTabComponent {
   @Input() containerSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
   containerIsSelected = computed(() => this.containerSerial() !== '');
   version!: string;
 
@@ -94,5 +95,11 @@ export class ContainerTabComponent {
   onClickOverview() {
     this.selectedContent.set('container_overview');
     this.containerSerial.set('');
+  }
+
+  enrollTokenInContainer() {
+    this.selectedContent.set('token_enrollment');
+    this.isProgrammaticChange.set(true);
+    this.containerSerial.set(this.containerSerial());
   }
 }
