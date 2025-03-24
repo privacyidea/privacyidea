@@ -6,56 +6,60 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2025-03-24 10:13+0000\n"
+"Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
+"Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
+"branch-3-11/uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.16.0\n"
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Автентифікація з вимкненим паролем."
 
 #: api/auth.py:236
 msgid "Authentication failure. The passkey is not registered."
-msgstr ""
+msgstr "Помилка автентифікації. Ключ доступу не зареєстрований."
 
 #: api/auth.py:239
 msgid "Authentication failure. Token has no user."
-msgstr ""
+msgstr "Помилка автентифікації. Токен не має користувача."
 
 #: api/auth.py:250
 msgid "Authentication failure using passkey."
-msgstr ""
+msgstr "Помилка автентифікації за допомогою ключа доступу."
 
 #: api/auth.py:255
 msgid "Authentication failure. Unknown realm:"
-msgstr ""
+msgstr "Помилка автентифікації. Невідома область:"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Помилка автентифікації. Відсутнє ім'я користувача"
 
 #: api/auth.py:377
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Помилка автентифікації. Неправильні облікові дані"
 
 #: api/realm.py:528
 msgid "The given node does not exist!"
-msgstr ""
+msgstr "Даний вузол не існує!"
 
 #: api/realm.py:534 api/realm.py:544
 msgid "Could not verify data in request!"
-msgstr ""
+msgstr "Не вдалося перевірити дані в запиті!"
 
 #: api/validate.py:466 lib/token.py:2571
 msgid "Found matching challenge"
-msgstr ""
+msgstr "Знайдено відповідне завдання"
 
 #: api/lib/postpolicy.py:89
 msgid ""
@@ -68,150 +72,175 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Детально опишіть свою проблему --->\n"
+"\n"
+"<--- Надайте якомога більше додаткової інформації --->\n"
+"\n"
+"privacyIDEA Версія: {version}\n"
+"Підписник: {subscriber_name}\n"
+"Підписки: {subscriptions}\n"
 
 #: api/lib/prepolicy.py:2468
 msgid "Missing description for {} token."
-msgstr ""
+msgstr "Відсутній опис для маркера {}."
 
 #: api/lib/prepolicy.py:2469
 msgid "Description required for {} token."
-msgstr ""
+msgstr "Необхідний опис для маркера {}."
 
 #: api/lib/utils.py:400
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Помилка автентифікації. Відсутній заголовок авторизації."
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr ""
+msgstr "Помилка автентифікації. Помилка декодування маркера авторизації:"
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
 msgid "Authentication failure. Your token has expired:"
-msgstr ""
+msgstr "Помилка автентифікації. Термін дії вашого маркера минув:"
 
 #: api/lib/utils.py:442
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
+"Помилка автентифікації. Ім’я користувача {wrong_username} не може видавати "
+"себе за іншу особу через JWT."
 
 #: api/lib/utils.py:447
 msgid ""
 "Authentication failure. You do not have the necessary role "
 "({required_role}) to access this resource!"
 msgstr ""
+"Помилка автентифікації. Ви не маєте необхідної ролі ({required_role}) для "
+"доступу до цього ресурсу!"
 
 #: api/lib/utils.py:464
 msgid "Invalid policy name:"
-msgstr ""
+msgstr "Недійсна назва політики:"
 
 #: api/lib/utils.py:467
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr ""
+msgstr "Назва політики може містити лише символи a-zA-Z0-9_. -"
 
 #: lib/challengeresponsedecorators.py:149
 msgid "Please enter the new PIN again"
-msgstr ""
+msgstr "Введіть новий PIN ще раз"
 
 #: lib/challengeresponsedecorators.py:163
 msgid "Please enter a new PIN"
-msgstr ""
+msgstr "Введіть новий PIN-код"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Щоб повторно синхронізувати свій маркер, введіть наступне значення OTP"
 
 #: lib/containerclass.py:802
 msgid "General purpose container that can hold any type and any number of token."
 msgstr ""
+"Контейнер загального призначення, який може містити будь-який тип і будь-яку "
+"кількість маркерів."
 
 #: lib/decorators.py:43 lib/token.py:2431
 msgid "This action is not possible, since the token is locked"
-msgstr ""
+msgstr "Ця дія неможлива, оскільки маркер заблоковано"
 
 #: lib/decorators.py:87
 msgid "You either need to provide user or serial"
-msgstr ""
+msgstr "Потрібно вказати або користувача, або серійний номер"
 
 #: lib/decorators.py:114
 msgid "You need to specify a serial, user or credential_id."
 msgstr ""
+"Потрібно вказати серійний номер, ідентифікатор користувача або "
+"обліковий_ідентифікатор."
 
 #: lib/decorators.py:116
 msgid "Invalid serial number."
-msgstr ""
+msgstr "Недійсний серійний номер."
 
 #: lib/decorators.py:118
 msgid "Invalid user."
-msgstr ""
+msgstr "Недійсний користувач."
 
 #: lib/policy.py:205
 msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
+"Примітка: якщо ви використовуєте кому в повідомленні, її потрібно екранувати "
+"зворотною скісною рискою."
 
 #: lib/policy.py:1454
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Недійсне визначення клієнта!"
 
 #: lib/policy.py:1649
 msgid "Define in which resolver the user should be registered."
-msgstr ""
+msgstr "Визначте, в якому резолвері має бути зареєстрований користувач."
 
 #: lib/policy.py:1653
 msgid "Define in which realm the user should be registered."
-msgstr ""
+msgstr "Визначте, у якій області має бути зареєстрований користувач."
 
 #: lib/policy.py:1657
 msgid ""
 "The SMTP server configuration, that should be used to send the "
 "registration email."
 msgstr ""
+"Конфігурація SMTP-сервера, яку слід використовувати для надсилання "
+"реєстраційного електронного листа."
 
 #: lib/policy.py:1661
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr ""
+"Лише користувачі з цією електронною адресою можуть зареєструватися. Це "
+"регулярний вираз."
 
 #: lib/policy.py:1666
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
 msgstr ""
+"Тіло реєстраційного електронного листа. Використовуйте '{regkey}' як тег для "
+"реєстраційного ключа."
 
 #: lib/policy.py:1672
 msgid "Admin is allowed to enable tokens."
-msgstr ""
+msgstr "Адміністратору дозволено вмикати маркери."
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to disable tokens."
-msgstr ""
+msgstr "Адміністратору дозволено відключати токени."
 
 #: lib/policy.py:1680
 msgid "Admin is allowed to set token properties."
-msgstr ""
+msgstr "Адміністратору дозволено встановлювати властивості маркера."
 
 #: lib/policy.py:1685
 msgid "The admin is allowed to set the token description."
-msgstr ""
+msgstr "Адміністратор має право встановлювати опис маркера."
 
 #: lib/policy.py:1689
 msgid "Admin is allowed to set the OTP PIN of tokens."
-msgstr ""
+msgstr "Адміністратор може встановлювати одноразовий PIN-код токенів."
 
 #: lib/policy.py:1695
 msgid "Admin is allowed to set a random OTP PIN of tokens."
-msgstr ""
+msgstr "Адміністратор може встановлювати випадковий PIN-код OTP для токенів."
 
 #: lib/policy.py:1699
 msgid "Admin is allowed to manually set and delete token info."
 msgstr ""
+"Адміністратор може вручну встановлювати та видаляти інформацію про маркер."
 
 #: lib/policy.py:1703
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr ""
+msgstr "Адміністратор може встановлювати PIN-код OTP під час реєстрації."
 
 #: lib/policy.py:1708
 msgid "Admin is allowed to resync tokens."
