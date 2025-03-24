@@ -150,7 +150,7 @@ class PasskeyTokenClass(TokenClass):
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
 
             response_detail: dict = TokenClass.get_init_detail(self, params, token_user)
-
+            response_detail['rollout_state'] = self.token.rollout_state
             nonce_base64 = fido2.challenge.get_fido2_nonce()
             challenge_validity: int = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                                           get_from_config('DefaultChallengeValidityTime', 120)))

@@ -935,7 +935,7 @@ class WebAuthnTokenClass(TokenClass):
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
 
             response_detail = TokenClass.get_init_detail(self, params, user)
-
+            response_detail['rollout_state'] = self.token.rollout_state
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
             # Create the challenge in the database
