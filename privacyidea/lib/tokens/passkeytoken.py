@@ -246,6 +246,7 @@ class PasskeyTokenClass(TokenClass):
 
         if not (attestation and client_data) and not self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.active = False
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(param["description"])
@@ -323,6 +324,7 @@ class PasskeyTokenClass(TokenClass):
                         if attributes:
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
+            self.token.active = True
             # Remove the challenge
             challenges[0].delete()
         return response_detail
