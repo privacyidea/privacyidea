@@ -2601,7 +2601,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('Store the last used token type per user and application in the custom user attributes. '
                           'For the next authentication the last used token type is used to identify the preferred '
-                          'token type.'),
+                          'client mode.'),
             }
         },
         SCOPE.AUTHZ: {

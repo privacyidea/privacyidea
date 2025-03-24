@@ -922,3 +922,15 @@ will show you the correct login for your preferred client mode. For example if t
 then your client will automatically show you the login for a webauthn token.
 
 The default list is "interactive webauthn poll u2f".
+
+client_mode_per_user
+~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this policy is set, the token type recently used during a successful authentication is stored per user and
+application. For the next authentication, the last used token type is used to identify the preferred client mode. The
+client you are using will show the correct login for the user's preferred client mode. For example, if the user lastly
+used a TOTP token to authenticate, an input field to enter the OTP value is displayed.
+
+This policy takes precedence over the `preferred_client_mode` policy.
