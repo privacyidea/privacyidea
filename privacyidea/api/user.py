@@ -23,25 +23,19 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import (Blueprint,
-                   request)
-from .lib.utils import (getParam,
-                        send_result)
-from ..api.lib.prepolicy import (prepolicy, check_base_action, realmadmin,
-                                 check_custom_user_attributes)
-from ..lib.policy import ACTION, get_allowed_custom_attributes
-from privacyidea.api.auth import admin_required, user_required
-from privacyidea.lib.user import create_user, User, is_attribute_at_all
-from privacyidea.lib.event import event
-
-
-from flask import (g)
-from ..lib.user import get_user_list
+from flask import g, Blueprint, request
 import logging
 
+from privacyidea.api.auth import admin_required, user_required
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
+from privacyidea.api.lib.utils import getParam, send_result
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.event import event
+from privacyidea.lib.policy import ACTION, get_allowed_custom_attributes
+from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
-
 
 user_blueprint = Blueprint('user_blueprint', __name__)
 
@@ -58,10 +52,10 @@ def get_users():
     A normal user can call this endpoint and will get information about his
     own account.
 
-    :param realm: a realm that contains several resolvers. Only show users
+    :query realm: a realm that contains several resolvers. Only show users
                   from this realm
-    :param resolver: a distinct resolvername
-    :param <searchexpr>: a search expression, that depends on the ResolverClass
+    :query resolver: a distinct resolvername
+    :query <searchexpr>: a search expression, that depends on the ResolverClass
 
     :return: json result with "result": true and the userlist in "value".
 
@@ -122,12 +116,12 @@ def set_user_attribute():
     The user is specified by the usual parameters user, resolver and realm.
     When a user is calling the endpoint the parameters will be implicitly set.
 
-    :httpparam user: The username of the user, for whom the attribute should be set
-    :httpparam resolver: The resolver of the user (optional)
-    :httpparam realm: The realm of the user (optional)
-    :httpparam key: The name of the attributes
-    :httpparam value: The value of the attribute
-    :httpparam type: an optional type of the attribute
+    :json user: The username of the user, for whom the attribute should be set
+    :json resolver: The resolver of the user (optional)
+    :json realm: The realm of the user (optional)
+    :json key: The name of the attributes
+    :json value: The value of the attribute
+    :json type: an optional type of the attribute
 
     The database id of the attribute is returned. The return
     value thus should be >=0.
@@ -139,6 +133,14 @@ def set_user_attribute():
     attrkey = getParam(request.all_data, "key", optional=False)
     attrvalue = getParam(request.all_data, "value", optional=False)
     attrtype = getParam(request.all_data, "type", optional=True)
+
+    # Check if the attribute starts with an internally used prefix
+    internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
+    for prefix in internal_prefixes:
+        if attrkey.startswith(prefix):
+            raise ParameterError(f"Invalid attribute name! The name shall not start with {prefix}. "
+                                 "This is an internally used prefix.")
+
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,
                         "info": "{0!s}".format(attrkey)})
@@ -155,10 +157,10 @@ def get_user_attribute():
     The user is specified by the usual parameters user, resolver and realm.
     When a user is calling the endpoint the parameters will be implicitly set.
 
-    :httpparam user: The username of the user, for whom the attribute should be set
-    :httpparam resolver: The resolver of the user (optional)
-    :httpparam realm: The realm of the user (optional)
-    :httpparam key: The optional name of the attribute. If it is not specified
+    :query user: The username of the user, for whom the attribute should be set
+    :query resolver: The resolver of the user (optional)
+    :query realm: The realm of the user (optional)
+    :query key: The optional name of the attribute. If it is not specified
          all custom attributes of the user are returned.
 
     """
@@ -181,9 +183,9 @@ def get_editable_attributes():
     are returned. This can be a user specific result.
     When a user is calling the endpoint the parameters will be implicitly set.
 
-    :httpparam user: The username of the user, for whom the attribute should be set
-    :httpparam resolver: The resolver of the user (optional)
-    :httpparam realm: The realm of the user (optional)
+    :query user: The username of the user, for whom the attribute should be set
+    :query resolver: The resolver of the user (optional)
+    :query realm: The realm of the user (optional)
 
     Works for admins and normal users.
     :return:
@@ -203,9 +205,9 @@ def delete_user_attribute(attrkey, username, realm=None):
     Delete a specified custom attribute from the user.
     The user is specified by the positional parameters user and realm.
 
-    :httpparam user: The username of the user, for whom the attribute should be set
-    :httpparam realm: The realm of the user
-    :httpparam key: The name of the attribute that should be deleted from the user.
+    :param username: The username of the user, for whom the attribute should be set
+    :param realm: The realm of the user
+    :param attrkey: The name of the attribute that should be deleted from the user.
 
     Returns the number of deleted attributes.
     """
@@ -225,6 +227,9 @@ def delete_user(resolvername=None, username=None):
     Delete a User in the user store.
     The resolver must have the flag editable, so that the user can be deleted.
     Only administrators are allowed to delete users.
+
+    :param resolvername: The name of the resolver
+    :param username: The username of the user, who should be deleted
 
     Delete a user object in a user store by calling
 
