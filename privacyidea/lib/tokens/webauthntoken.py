@@ -808,6 +808,7 @@ class WebAuthnTokenClass(TokenClass):
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.active = False
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(get_optional(param, "description", default=""))
@@ -898,7 +899,8 @@ class WebAuthnTokenClass(TokenClass):
                 challenge.delete()
             self.challenge_janitor()
             # Reset clientwait rollout_state
-            self.token.rollout_state = ""
+            self.token.rollout_state = ROLLOUTSTATE.ENROLLED
+            self.token.active = True
         else:
             raise ParameterError("regdata and or clientdata provided but token not in clientwait rollout_state.")
 
