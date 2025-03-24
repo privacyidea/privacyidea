@@ -69,6 +69,8 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 detail = res.json["detail"]
                 self.assertIn("passkey_registration", detail)
                 self.validate_default_passkey_registration(detail["passkey_registration"])
+                self.assertIn("rollout_state", detail)
+                self.assertEqual("clientwait", detail["rollout_state"])
                 passkey_registration = detail["passkey_registration"]
                 # PubKeyCredParams: Via the API, all three key algorithms (from webauthn) are valid by default
                 self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 3)
