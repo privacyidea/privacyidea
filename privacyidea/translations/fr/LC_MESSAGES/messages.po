@@ -7,18 +7,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-01-30 11:19+0000\n"
-"Last-Translator: sebastien C <sebastien.netknights@outlook.com>\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/fr/>\n"
+"branch-3-11/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -489,14 +489,13 @@ msgstr "L'administrateur ne verra pas les colonnes spécifiées dans l'audit."
 
 #: lib/policy.py:1927
 msgid "The admin is allowed to download the complete auditlog."
-msgstr ""
-"L'administrateur est autorisé à télécharger le journal d'audit complet."
+msgstr "L'administrateur est autorisé à télécharger le journal d'audit complet."
 
 #: lib/policy.py:1932
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
 msgstr ""
-"L'administrateur est autorisé à ajouter des utilisateurs dans un magasin "
-"d'utilisateur/UserIdResolver."
+"L'administrateur est autorisé à ajouter des utilisateurs dans un magasin d'"
+"utilisateur/UserIdResolver."
 
 #: lib/policy.py:1937
 msgid "Admin is allowed to update the users data in a userstore."
@@ -539,8 +538,7 @@ msgstr ""
 
 #: lib/policy.py:1973
 msgid "Admin is allowed to read RADIUS server definitions."
-msgstr ""
-"L'administrateur est autorisé à lire les définitions du serveur RADIUS."
+msgstr "L'administrateur est autorisé à lire les définitions du serveur RADIUS."
 
 #: lib/policy.py:1978
 msgid "Admin is allowed to write remote privacyIDEA server definitions."
@@ -1001,8 +999,7 @@ msgstr ""
 
 #: lib/policy.py:2369
 msgid "Limit the number of tokens a user may have assigned."
-msgstr ""
-"Limiter le nombre de jetons qui peuvent être assignés à un utilisateur."
+msgstr "Limiter le nombre de jetons qui peuvent être assignés à un utilisateur."
 
 #: lib/policy.py:2374
 msgid "Limit the number of active tokens a user may have assigned."
@@ -1128,9 +1125,9 @@ msgid ""
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
 msgstr ""
-"Spécifier le contenu requis d'un mot de passe de jeton avec mot de passe. "
-"(c)aractères, (n)umériques, (s)péciaux. Utiliser les boutons +/- ou une "
-"liste de caractères autorisés [1234567890]"
+"Spécifier le contenu requis d'un mot de passe de jeton avec mot de passe. (c)"
+"aractères, (n)umériques, (s)péciaux. Utiliser les boutons +/- ou une liste "
+"de caractères autorisés [1234567890]"
 
 #: lib/policy.py:2473
 msgid ""
@@ -1190,8 +1187,8 @@ msgid ""
 "the PIN during a validate/check request via challenge / response."
 msgstr ""
 "Si le PIN d'un jeton doit être modifié, cela permettra à l'utilisateur de "
-"changer le PIN lors d'une demande de validation / vérification via "
-"challenge / réponse."
+"changer le PIN lors d'une demande de validation / vérification via challenge "
+"/ réponse."
 
 #: lib/policy.py:2527
 msgid ""
@@ -1311,8 +1308,8 @@ msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"Permet à l'utilisateur de s'authentifier (par défaut). Si positionner à '{0!"
-"s}', l'authentification de l'utilisateur sera refusée."
+"Permet à l'utilisateur de s'authentifier (par défaut). Si positionner à "
+"'{0!s}', l'authentification de l'utilisateur sera refusée."
 
 #: lib/policy.py:2611
 msgid ""
@@ -1511,8 +1508,7 @@ msgstr "Définit le nombre d'entrées affichées par page sur la vue audit."
 
 #: lib/policy.py:2766
 msgid "Use your own html template for the web UI menu."
-msgstr ""
-"Utilisez votre propre modèle de page html pour menu de l'interface WEB."
+msgstr "Utilisez votre propre modèle de page html pour menu de l'interface WEB."
 
 #: lib/policy.py:2770
 msgid "Use your own html template for the web UI baseline/footer."
@@ -1538,9 +1534,9 @@ msgid ""
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
 "templates/)"
 msgstr ""
-"L'URL d'un emplacement, où les modèles de stratégies peuvent être trouvés. "
-"( Défaut https://raw.githubusercontent.com/privacyidea/policy-templates/"
-"master/templates/ )"
+"L'URL d'un emplacement, où les modèles de stratégies peuvent être trouvés. ( "
+"Défaut https://raw.githubusercontent.com/privacyidea/policy-templates/master/"
+"templates/ )"
 
 #: lib/policy.py:2790
 msgid ""
@@ -1959,8 +1955,8 @@ msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Spécifier le contenu requis du PIN du jeton {0!s} . (c)aractères, "
-"(n)umériques, (s)péciaux, (o)autres. [+/-] !"
+"Spécifier le contenu requis du PIN du jeton {0!s} . (c)aractères, (n)"
+"umériques, (s)péciaux, (o)autres. [+/-] !"
 
 #: lib/token.py:2821 lib/token.py:2837
 msgid "The tokengroup does not exist."
@@ -2007,8 +2003,8 @@ msgid ""
 "The challenge session matches the string or regular expression (like "
 "'challenge_declined' or 'enrollment')"
 msgstr ""
-"La session challenge correspond à la chaine ou à l'expression régulière "
-"(comme 'challenge_declined' ou 'enrollment')"
+"La session challenge correspond à la chaine ou à l'expression régulière ("
+"comme 'challenge_declined' ou 'enrollment')"
 
 #: lib/eventhandler/base.py:182
 msgid "The challenge of a token during the authentication process is expired."
@@ -2061,8 +2057,7 @@ msgstr "La valeur result.status de la réponse est True ou False."
 
 #: lib/eventhandler/base.py:256
 msgid "The result.authentication within the response is the given value."
-msgstr ""
-"La valeur result.authentication dans la réponse est la valeur attendue."
+msgstr "La valeur result.authentication dans la réponse est la valeur attendue."
 
 #: lib/eventhandler/base.py:264
 msgid "Check if the max failcounter of the token is reached."
@@ -2100,8 +2095,7 @@ msgstr "Le jeton est dans un conteneur."
 msgid ""
 "Action is triggered, if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
-msgstr ""
-"L'action est déclenchée, si l'utilisateur a ce nombre de jeton associé."
+msgstr "L'action est déclenchée, si l'utilisateur a ce nombre de jeton associé."
 
 #: lib/eventhandler/base.py:315
 msgid ""
@@ -3005,8 +2999,8 @@ msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr ""
-"Enrôler un jeton certificat peut nécessiter un certificat d'attestation. "
-"(Défaut : ignorer)"
+"Enrôler un jeton certificat peut nécessiter un certificat d'attestation. ("
+"Défaut : ignorer)"
 
 #: lib/tokens/certificatetoken.py:312
 msgid "The CA connector that should be used during certificate enrollment."
@@ -3468,8 +3462,8 @@ msgstr ""
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr ""
-"La seconde étape de l'enrôlement doit être complétée durant cette période "
-"(en minutes)."
+"La seconde étape de l'enrôlement doit être complétée durant cette période ("
+"en minutes)."
 
 #: lib/tokens/pushtoken.py:401
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
@@ -3490,8 +3484,7 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:418
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
-msgstr ""
-"Nécessite de débloquer le smartphone avant d'accepter les requêtes Push"
+msgstr "Nécessite de débloquer le smartphone avant d'accepter les requêtes Push"
 
 #: lib/tokens/pushtoken.py:425
 #, python-brace-format
