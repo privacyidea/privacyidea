@@ -1,9 +1,12 @@
-Version 3.12
+Version 3.12dev1, 2025-03-14
 
   Enhancements:
   * Remember last used token type per user and application for multi-challenge (#4179)
 
-Version 3.11, 2025-02-27
+  Fixes:
+  * Reduce PyOpenSSL dependencies for certificate token (#4212)
+
+Version 3.11dev3, 2025-02-17
 
   Features:
   * Passkeys (#4024)

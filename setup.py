@@ -51,7 +51,7 @@ install_requires = [
     "pydash",
     "PyJWT",
     "PyMySQL",
-    "pyOpenSSL<=24.0.0",
+    "pyOpenSSL",
     "pyrad",
     "python-dateutil",
     "python-gnupg",

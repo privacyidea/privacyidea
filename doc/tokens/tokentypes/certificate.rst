@@ -1,9 +1,11 @@
 .. _certificate_token:
 
 Certificate Token
-------------
+-----------------
 
 .. index:: certificates, client certificates, request, CSR, CA, attestation
+
+.. versionadded:: 2.3 First support of certificate token
 
 Starting with version 2.3 privacyIDEA supports certificates. A user can
 
@@ -12,7 +14,7 @@ Starting with version 2.3 privacyIDEA supports certificates. A user can
 * generate a certificate signing request within privacyIDEA.
 
 privacyIDEA does not sign certificate signing requests itself but connects to
-existing certificate authorities. To do so, you need to define
+existing certificate authorities. To do so, you need to define a
 :ref:`caconnectors`.
 
 Certificates are attached to the user just like normal tokens. One token of
@@ -42,15 +44,18 @@ server.
    *Generate a certificate signing request*
 
 When generating the certificate signing request this way the RSA key pair is
-generated on the server and the private key is available on the server side. The user
-can later download a PKCS12/PFX file from the server.
+generated on the server and the private key is available only on the server side.
+When the token is enrolled, the private key and the certificate is available in
+an encrypted PKCS12 container. The PKCS12 file is encrypted with the token PIN
+or, if the token has not PIN set, a random password will be generated and
+presented to the user only once.
 
-The certificate is signed by the CA connected by the chosen CA connector.
-
-.. figure:: images/generate_csr2.png
+.. figure:: images/enroll_certificate_pkcs12.png
    :width: 500
 
-   *Download or install the client certificate*
+   *Download encrypted PKCS12 container with a generated password*
+
+The certificate is signed by the CA connected by the chosen CA connector.
 
 Afterwards the user can install the certificate into the browser.
 
@@ -81,5 +86,3 @@ To configure this, create a new post event handler on the event `token_init` wit
 In the conditions set the `rollout_state=pending` and in the `actions` choose to send an
 email to the tokenowner. This way, after the token is enrolled and in the state *pending*,
 privacyIDEA will send the notification email.
-
-
