@@ -19,6 +19,7 @@ describe('TokenEnrollmentComponent', () => {
     fixture = TestBed.createComponent(TokenEnrollmentComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
+    component.containerSerial = signal('Mock container serial');
     fixture.detectChanges();
   });
 

@@ -53,12 +53,29 @@ $header-bg: white;
   background: var(--background-blue);
 
   &:hover {
-    box-shadow: none;
+    box-shadow: var(--box-shadow-blue-inset);
     background: var(--background-blue-inset);
     color: white;
     transform: translateY(2px);
   }
 }
+
+.passkey-btn {
+  text-decoration: none;
+  color: black;
+  padding: 10px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: linear-gradient(145deg, #efefef, #ffffff);
+
+  &:hover {
+    box-shadow: var(--box-shadow-inset);
+    background: linear-gradient(145deg, #ffffff, #efefef);
+    color: black;
+    transform: translateY(2px);
+  }
+}
+
 
 .support-btn {
   height: 40px;

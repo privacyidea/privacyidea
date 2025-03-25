@@ -25,4 +25,9 @@ export class Base64Service {
     }
     return window.btoa(binary);
   }
+
+  bufferToBase64Url(buffer: Uint8Array): string {
+    const base64 = this.bytesToBase64(buffer);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
 }

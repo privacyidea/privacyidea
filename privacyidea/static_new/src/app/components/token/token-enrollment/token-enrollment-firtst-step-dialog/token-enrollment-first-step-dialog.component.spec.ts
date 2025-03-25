@@ -4,7 +4,7 @@ import {
   MatDialog,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog.component';
+import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-first-step-dialog.component';
 import { of } from 'rxjs';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -12,8 +12,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('TokenEnrollmentDialogComponent', () => {
-  let component: TokenEnrollmentDialogComponent;
-  let fixture: ComponentFixture<TokenEnrollmentDialogComponent>;
+  let component: TokenEnrollmentFirstStepDialogComponent;
+  let fixture: ComponentFixture<TokenEnrollmentFirstStepDialogComponent>;
   let matDialogSpy: jasmine.SpyObj<MatDialog>;
   let matDialogRefSpy: jasmine.SpyObj<
     MatDialogRef<ConfirmationDialogComponent>
@@ -32,7 +32,10 @@ describe('TokenEnrollmentDialogComponent', () => {
     } as MatDialogRef<ConfirmationDialogComponent>);
 
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentDialogComponent, BrowserAnimationsModule],
+      imports: [
+        TokenEnrollmentFirstStepDialogComponent,
+        BrowserAnimationsModule,
+      ],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -58,7 +61,7 @@ describe('TokenEnrollmentDialogComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenEnrollmentDialogComponent);
+    fixture = TestBed.createComponent(TokenEnrollmentFirstStepDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -8,6 +8,7 @@ import { TokenService } from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-enroll-passkey',
@@ -18,13 +19,14 @@ import { catchError } from 'rxjs/operators';
 export class EnrollPasskeyComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'passkey')?.text;
   @Input() description!: WritableSignal<string>;
+
   constructor(
     private notificationService: NotificationService,
     private tokenService: TokenService,
     private base64Service: Base64Service,
   ) {}
 
-  registerPasskey(detail: any): Observable<any> {
+  registerPasskey(detail: any, firstDialog: MatDialog): Observable<any> {
     const options = detail.passkey_registration;
 
     const excludedCredentials = options.excludeCredentials.map((cred: any) => ({
@@ -89,6 +91,7 @@ export class EnrollPasskeyComponent {
         );
         return from(this.tokenService.deleteToken(detail.serial)).pipe(
           switchMap(() => {
+            firstDialog.closeAll();
             this.notificationService.openSnackBar(
               `Token ${detail.serial} deleted successfully.`,
             );

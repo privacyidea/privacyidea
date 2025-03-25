@@ -51,7 +51,7 @@ import {
 } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { MatDialog } from '@angular/material/dialog';
-import { TokenEnrollmentDialogComponent } from './token-enrollment-dialog/token-enrollment-dialog.component';
+import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
 import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
 import { NgClass } from '@angular/common';
@@ -81,6 +81,7 @@ import { VersionService } from '../../../services/version/version.service';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { distinctUntilChanged, from, switchMap } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -236,7 +237,6 @@ export class TokenEnrollmentComponent {
   pem = signal('');
   emailAddress = signal('');
   readEmailDynamically = signal(false);
-  pushEnrolled = signal(false);
   answers = signal<Record<string, string>>({});
   useVascoSerial = signal(false);
   onlyAddToRealm = signal(false);
@@ -302,8 +302,10 @@ export class TokenEnrollmentComponent {
   });
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
+  @ViewChild(EnrollWebauthnComponent)
+  enrollWebauthnComponent!: EnrollWebauthnComponent;
   protected readonly TokenEnrollmentDialogComponent =
-    TokenEnrollmentDialogComponent;
+    TokenEnrollmentFirstStepDialogComponent;
 
   constructor(
     private containerService: ContainerService,
@@ -311,7 +313,8 @@ export class TokenEnrollmentComponent {
     private notificationService: NotificationService,
     private userService: UserService,
     private tokenService: TokenService,
-    protected dialog: MatDialog,
+    protected firstDialog: MatDialog,
+    protected secondDialog: MatDialog,
     protected versioningService: VersionService,
   ) {
     const resetEnrollmentOptions = () => {
@@ -362,7 +365,6 @@ export class TokenEnrollmentComponent {
       this.pem.set('');
       this.emailAddress.set('');
       this.readEmailDynamically.set(false);
-      this.pushEnrolled.set(false);
       this.answers.set({});
       this.vascoSerial.set('');
       this.useVascoSerial.set(false);
@@ -479,7 +481,6 @@ export class TokenEnrollmentComponent {
       onlyAddToRealm: this.onlyAddToRealm(),
       userRealm: this.selectedUserRealm(),
     };
-    this.pushEnrolled.set(false);
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
         if (
@@ -491,20 +492,32 @@ export class TokenEnrollmentComponent {
           );
         }
         this.tokenSerial.set(response.detail.serial);
-        if (response.detail.passkey_registration) {
-          this.enrollPasskeyComponent
-            .registerPasskey(response.detail)
+        if (response.detail.webAuthnRegisterRequest) {
+          this.openFirstStepDialog(response);
+          this.enrollWebauthnComponent
+            .registerWebauthn(response.detail)
             .subscribe({
               next: () => {
-                this.openDialog(response);
+                this.firstDialog.closeAll();
+                this.openSecondStepDialog(response);
               },
             });
+        } else if (response.detail.passkey_registration) {
+          this.openFirstStepDialog(response);
+          this.enrollPasskeyComponent
+            .registerPasskey(response.detail, this.firstDialog)
+            .subscribe({
+              next: () => {
+                this.firstDialog.closeAll();
+                this.openSecondStepDialog(response);
+              },
+            });
+        } else if (response.detail.rollout_state === 'clientwait') {
+          this.openFirstStepDialog(response);
+          this.pollTokenEnrollment(response.detail.serial, 5000);
         } else {
           this.response.set(response);
-          this.openDialog(response);
-          if (response.detail.rollout_state === 'clientwait') {
-            this.pollTokenEnrollment(response.detail.serial, 5000);
-          }
+          this.openSecondStepDialog(response);
           if (this.regenerateToken()) {
             this.regenerateToken.set(false);
           }
@@ -514,11 +527,8 @@ export class TokenEnrollmentComponent {
   }
 
   reopenEnrollmentDialog() {
-    this.openDialog(this.response());
-    if (
-      this.response().detail.rollout_state === 'clientwait' &&
-      !this.pushEnrolled()
-    ) {
+    this.openSecondStepDialog(this.response());
+    if (this.response().detail.rollout_state === 'clientwait') {
       this.pollTokenEnrollment(this.tokenSerial(), 2000);
     }
   }
@@ -529,8 +539,8 @@ export class TokenEnrollmentComponent {
     );
   }
 
-  private openDialog(response: any) {
-    this.dialog.open(TokenEnrollmentDialogComponent, {
+  private openFirstStepDialog(response: any) {
+    this.firstDialog.open(TokenEnrollmentFirstStepDialogComponent, {
       data: {
         response: response,
         tokenSerial: this.tokenSerial,
@@ -538,7 +548,22 @@ export class TokenEnrollmentComponent {
         selectedContent: this.selectedContent,
         regenerateToken: this.regenerateToken,
         isProgrammaticChange: this.isProgrammaticChange,
-        pushEnrolled: this.pushEnrolled,
+        username: this.selectedUsername(),
+        userRealm: this.selectedUserRealm(),
+        onlyAddToRealm: this.onlyAddToRealm(),
+      },
+    });
+  }
+
+  private openSecondStepDialog(response: any) {
+    this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
+      data: {
+        response: response,
+        tokenSerial: this.tokenSerial,
+        containerSerial: this.containerSerial,
+        selectedContent: this.selectedContent,
+        regenerateToken: this.regenerateToken,
+        isProgrammaticChange: this.isProgrammaticChange,
         username: this.selectedUsername(),
         userRealm: this.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
@@ -549,9 +574,11 @@ export class TokenEnrollmentComponent {
   private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
     this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
       next: (pollResponse: any) => {
-        const currentState = pollResponse.result.value.tokens[0].rollout_state;
-        if (currentState === 'enrolled') {
-          this.pushEnrolled.set(true);
+        this.response.set(pollResponse);
+        if (
+          this.response().result.value.tokens[0].rollout_state === 'enrolled'
+        ) {
+          this.firstDialog.closeAll();
           this.notificationService.openSnackBar(
             `Token ${tokenSerial} enrolled successfully.`,
           );

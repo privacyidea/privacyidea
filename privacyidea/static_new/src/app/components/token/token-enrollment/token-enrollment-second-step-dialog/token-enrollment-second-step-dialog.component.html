@@ -1,21 +1,17 @@
 <h2 mat-dialog-title>Token successfully enrolled</h2>
 <mat-dialog-content>
-  @if (!data.response.detail?.pushurl || data.pushEnrolled()) {
-    <p>
       <span>The token was successfully enrolled with serial number
         <a (click)="tokenSelected(data.response.detail.serial)">
           {{ data.response.detail.serial }} </a>.</span>
-      @if (data.response.detail.container_serial) {
-        <br /><span>It has been enrolled in the container
+  @if (data.response.detail.container_serial) {
+    <br /><span>It has been enrolled in the container
           <a (click)="containerSelected(data.response.detail.container_serial)">
             {{ data.response.detail.container_serial }} </a>.</span>
-      }
-      @if (data.username != "" && data.userRealm != "" && !data.onlyAddToRealm) {
-        <br /><span>The user <a href="#">{{ data.username }}</a> in the realm
+  }
+  @if (data.username != "" && data.userRealm != "" && !data.onlyAddToRealm) {
+    <br /><span>The user <a href="#">{{ data.username }}</a> in the realm
           <a href="#">{{ data.userRealm }}</a> was assigned to the token.
         </span>
-      }
-    </p>
   }
   <div class="flex-row gap-1">
     @if (data.response.detail?.googleurl?.img) {
@@ -35,12 +31,6 @@
            class="qr-code"
            height="300px"
            src="{{ data.response.detail.otpkey.img }}"
-           width="300px" />
-    } @else if (data.response.detail?.pushurl?.img && !data.pushEnrolled()) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.detail.pushurl.img }}"
            width="300px" />
     } @else if (data.response.detail?.tiqrenroll?.img) {
       <img alt="QR Code"
@@ -74,21 +64,6 @@
       @if (data.response.detail?.password) {
         <p>
           Your Password: <strong>{{ data.response.detail.password }}</strong>. </p>
-      }
-
-      @if (data.response.detail?.pushurl && !data.pushEnrolled()) {
-        <span>
-          Your token with serial number {{ data.response.detail.serial }} is not
-          completely enrolled, yet. <br /> </span><span>
-          Please scan the QR code with the privacyIDEA Authenticator App
-          <br />
-          or click
-          <a href="{{ data.response.detail.pushurl.value }}">this link</a> on
-          your smartphone. <br />
-          It will send the missing registration data to the configured endpoint. </span><span>
-          Please note, that your smartphone needs internet access during the
-          authentication process.
-        </span>
       }
 
       @if (data.response.detail?.otpkey?.value && !data.response.detail?.otps) {
@@ -133,20 +108,6 @@
       }
     </div>
   </div>
-  @if (data.response.detail?.u2fRegisterRequest) {
-    <span>Take action on your token:</span><p class="max-width-600">
-      You need to confirm the registration with your token either by pushing the blinking button or
-      by religging your token. This depends on the actual token model.</p>
-  }
-
-  @if (data.response.detail?.webAuthnRegisterRequest) {
-    <span>Take action on your authenticator:</span><p class="max-width-600">You need to confirm the
-      registration with your authenticator. For an external authenticator, this usually means
-      pushing the button on the authenticator, or replugging it (if there is no button on the
-      authenticator). If you want to use an authenticator that is integrated into your device, look
-      for a dialog box from your operating system. If you do not see anything, please make sure that
-      your authenticator supports WebAuthn. </p>
-  }
 </mat-dialog-content>
 
 <mat-dialog-actions>

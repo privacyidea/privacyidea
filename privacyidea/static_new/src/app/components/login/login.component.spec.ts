@@ -118,10 +118,10 @@ describe('LoginComponent', () => {
 
       component.onSubmit();
 
-      expect(authService.authenticate).toHaveBeenCalledWith(
-        'test-user',
-        'test-pass',
-      );
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: 'test-user',
+        password: 'test-pass',
+      });
     });
 
     it('should handle successful login', () => {
