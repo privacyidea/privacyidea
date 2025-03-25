@@ -462,9 +462,8 @@ class IdResolver(UserIdResolver):
         except UnicodeDecodeError as e:
             # in some cases ldap3 fails to decode the uid and return it as a byte-array
             # if the utf-8 decoding fails, we try the UUID little endian conversion
-            log.warning('Found a byte-array as uid ({0!s}), trying to '
-                        'convert it to a UUID. ({1!s})'.format(binascii.hexlify(uid),
-                                                               e))
+            log.warning(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to "
+                        f"convert it to a UUID. ({e})")
             log.debug(traceback.format_exc())
             uid = str(uuid.UUID(bytes_le=uid))
 
